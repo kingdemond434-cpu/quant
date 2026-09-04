@@ -43,6 +43,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from mt5desk.causal_residual import causal_residual
 from mt5desk.families import Signal, _atr, _h1
 
 BASE = Path(__file__).resolve().parent.parent
@@ -917,55 +918,87 @@ def family_cross_asset_residual(
     *,
     factors: list[pd.DataFrame] | None = None,
     lookback: int = 240,
+    beta_win: int | None = None,
     entry_z: float = 2.0,
     atr_n: int = 20,
     stop_atr: float = 2.0,
     rr: float = 1.5,
     ttl_bars: int = 72,
+    side_mode: str = "revert",
+    active_hours: tuple[int, ...] | list[int] | None = None,
 ) -> list[Signal]:
     """What is left of this instrument after removing SEVERAL common factors.
 
     A single-peer spread still carries whatever both legs share with the wider market. Projecting
-    out multiple factors leaves a residual that is closer to instrument-specific, and mean
-    reversion in THAT is a genuinely different claim from a two-name spread. Uses a plain
-    least-squares projection so the assumption is inspectable rather than buried in a model.
+    out multiple factors leaves a residual that is closer to instrument-specific, and an
+    unusually large one is a genuinely different claim from a two-name spread.
+
+    THE LOOKAHEAD THIS USED TO CONTAIN (fixed 2026-09-04). The hedge ratios were fitted with one
+    `lstsq` over the WHOLE sample and the residual was then traded from the first bar onward, so
+    the beta defining "unexplained" had seen every move it was calling unexplained -- on every
+    bar of every out-of-sample fold the gauntlet later carved. `funnel_census` records what that
+    bought: 348 failures, zero certificates, on the desk's one non-directional mechanism. Betas
+    are now fitted strictly on bars before the one they price (`mt5desk.causal_residual`), and
+    the regression carries a constant, so drift the factors do not explain is charged to the
+    intercept instead of being read as a dislocation.
+
+    NO COOLDOWN IS APPLIED HERE ON PURPOSE. `engine` holds one position at a time and skips any
+    signal inside a live trade, so filtering overlaps here would double-count a discipline the
+    execution layer already enforces, and would do it with a different rule.
+
+    SIDE IS A HYPOTHESIS, NOT A CONVENTION. `side_mode` names which claim is being tested --
+    "revert" fades the residual, "continue" follows it. Both are economically real (a dislocation
+    closes; a genuine re-rating runs) and which one holds is exactly the sort of thing that must
+    be MEASURED per instrument and per session rather than assumed. `active_hours` restricts
+    entries to broker stamp-hours, which is how a session-conditional version of the same claim
+    is stated without a second family.
     """
     if not factors:
         return []
+    if side_mode not in {"revert", "continue"}:
+        return []
+    bwin = int(beta_win) if beta_win else int(lookback)
     d = _h1(df)
     frame = d[["close"]].astype(float).rename(columns={"close": "y"})
     for k, fac in enumerate(factors):
         f = _h1(fac)[["close"]].astype(float).rename(columns={"close": f"x{k}"})
         frame = frame.join(f, how="inner")
     frame = frame.dropna()
-    if len(frame) < lookback * 2:
+    # Causal betas cost `bwin` bars before the first residual exists and the z-score costs
+    # `lookback` more on top of that, so the old `lookback * 2` floor no longer describes what
+    # this needs. Refusing is the right answer: a cell with no room for both windows would
+    # otherwise report a handful of trades as a verdict.
+    if len(frame) < bwin + lookback * 2:
         return []
     y = np.log(frame["y"]).diff()
     xs = np.column_stack([np.log(frame[c]).diff() for c in frame.columns if c != "y"])
     ok = np.isfinite(y.to_numpy()) & np.isfinite(xs).all(axis=1)
-    if ok.sum() < lookback * 2:
+    if ok.sum() < bwin + lookback * 2:
         return []
     yv, xv = y.to_numpy()[ok], xs[ok]
-    beta, *_ = np.linalg.lstsq(xv, yv, rcond=None)
-    resid = pd.Series(yv - xv @ beta, index=frame.index[ok])
-    cum = resid.cumsum()
+    resid = pd.Series(causal_residual(yv, xv, bwin), index=frame.index[ok])
+    cum = resid.fillna(0.0).cumsum().where(resid.notna())
     mu = cum.rolling(lookback).mean()
     sd = cum.rolling(lookback).std(ddof=1)
     z = (cum - mu) / sd
     atr = _atr(d, atr_n).reindex(cum.index).ffill()
+    hours = {int(h) for h in active_hours} if active_hours else None
     signals: list[Signal] = []
-    for i in range(lookback, len(cum) - 1):
+    for i in range(bwin + lookback, len(cum) - 1):
         zi = float(z.iloc[i]) if np.isfinite(z.iloc[i]) else np.nan
         if not np.isfinite(zi) or abs(zi) < entry_z:
+            continue
+        ts = cum.index[i]
+        if hours is not None and int(ts.hour) not in hours:
             continue
         a = float(atr.iloc[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        side = -1 if zi > 0 else 1
+        side = (-1 if zi > 0 else 1) if side_mode == "revert" else (1 if zi > 0 else -1)
         px = float(frame["y"].iloc[i])
-        signals.append(Signal(time=cum.index[i], side=side, stop=px - side * stop_atr * a,
+        signals.append(Signal(time=ts, side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="cross_asset_residual", trigger=None, wait_bars=1))
+                              tag=f"cross_asset_residual:{side_mode}", trigger=None, wait_bars=1))
     return signals
 
 
