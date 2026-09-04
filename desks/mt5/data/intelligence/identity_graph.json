@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-09-04T09:24:52+00:00",
+ "rebuilt_at": "2026-09-04T10:24:44+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -531,7 +531,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 8,
+    "longevity_max_d": 9,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -547,7 +547,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 2,
-    "longevity_max_d": 8,
+    "longevity_max_d": 9,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -834,7 +834,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 7,
+    "longevity_max_d": 8,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1461,6 +1461,22 @@
     "independent_evidence": 1,
     "record_count": 1,
     "longevity_max_d": 1,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "chinthakat": {
+   "presences": {
+    "github_topics": 2
+   },
+   "cohorts": [
+    "0b2a0c4e30407d63",
+    "beddfdd71ade9b0a"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 2,
+    "longevity_max_d": 0,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }

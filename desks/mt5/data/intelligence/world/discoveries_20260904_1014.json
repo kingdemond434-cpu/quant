@@ -1,0 +1,928 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quantifiable Edges: Statistics",
+  "url": "http://quantifiableedges.blogspot.com/search/label/Statistics?updated-max=2008-05-27T00:42:00-04:00&max-results=20&start=20&by-date=false",
+  "published": "2026-09-04T10:12:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e4437e1655278c51f64",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicators | Data",
+  "url": "https://data.worldbank.org.cn/indicator",
+  "published": "2026-09-04T10:12:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "452a4928535261802703",
+  "host": "data.worldbank.org.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d2b\u56f0\u5dee\u8ddd\uff0c\u4ee5\u6bcf\u59293\u7f8e\u5143\u4e3a\u8d2b\u56f0\u7ebf\uff08\u63092021\u5e74\u8d2d\u4e70\u529b\u5e73\u4ef7\u8ba1\u7b97\uff09\uff08\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SI.POV.GAPS",
+  "published": "2026-09-04T10:12:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SI.POV.GAPS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6c2fc9ab8c3220d55c09",
+  "host": "data.worldbank.org.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u57fa\u5c3c (GINI) \u7cfb\u6570 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SI.POV.GINI",
+  "published": "2026-09-04T10:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SI.POV.GINI?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1bd6f8567afeb5faac07",
+  "host": "data.worldbank.org.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d2b\u56f0\u5dee\u8ddd\uff0c\u4ee5\u6bcf\u59294.2\u7f8e\u5143\u4e3a\u8d2b\u56f0\u7ebf\uff08\u63092021\u5e74\u8d2d\u4e70\u529b\u5e73\u4ef7\u8ba1\u7b97\uff09\uff08\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SI.POV.LMIC.GP",
+  "published": "2026-09-04T10:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SI.POV.LMIC.GP?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1d57c0b5fe76efaea483",
+  "host": "data.worldbank.org.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Multidimensional poverty headcount ratio (UNDP &amp; OPHI) (% of population) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SI.POV.MPUN",
+  "published": "2026-09-04T10:13:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SI.POV.MPUN?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d585f84e21dbc6cf5170",
+  "host": "data.worldbank.org.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators | The World Bank",
+  "url": "http://wdi.worldbank.org/table/1.2",
+  "published": "2026-09-04T10:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "775c2e5628267f4ecb49",
+  "host": "wdi.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators | The World Bank",
+  "url": "http://wdi.worldbank.org/table/4.16",
+  "published": "2026-09-04T10:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e103c04bb4b990412555",
+  "host": "wdi.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators | The World Bank",
+  "url": "http://wdi.worldbank.org/table/1.1",
+  "published": "2026-09-04T10:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e283c349094e8986929",
+  "host": "wdi.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quantifiable Edges: Statistics",
+  "url": "http://quantifiableedges.blogspot.com/search/label/Statistics",
+  "published": "2026-09-04T10:13:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea8bbdade677b5a7bce6",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u8bc1\u5238\u4ea4\u6613|\u7092\u80a1|\u76ef\u76d8\u5b98\u65b9\u8f6f\u4ef6\u4e0b\u8f7d",
+  "url": "http://www.18.cn/download.html",
+  "published": "2026-09-04T10:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/e34adc18-c94e-4053-8c31-83d65f277dc7.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "971c34c9a0758b165cb6",
+  "host": "www.18.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: Should You Quit Trading Early Today?",
+  "url": "http://quantifiableedges.blogspot.com/2013/12/should-you-quit-trading-early-today.html",
+  "published": "2026-09-04T10:13:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "390edd3f22f6271e5a7d",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: Intraday",
+  "url": "http://quantifiableedges.blogspot.com/search/label/Intraday",
+  "published": "2026-09-04T10:13:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a65756cff6aeef1db34f",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: VXO Is Suggesting An Immediate Pullback - Or None At All",
+  "url": "http://quantifiableedges.blogspot.com/2013/12/vxo-is-suggesting-immediate-pullback-or.html",
+  "published": "2026-09-04T10:13:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "63970387cf6b6133aa65",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: VIX",
+  "url": "http://quantifiableedges.blogspot.com/search/label/VIX",
+  "published": "2026-09-04T10:13:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f072c7e564a158907eca",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: 'Twas 3 Nights Before Christmas (updated Nasdaq version)",
+  "url": "http://quantifiableedges.blogspot.com/2013/12/twas-3-nights-before-christmas-updated.html",
+  "published": "2026-09-04T10:13:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8d9d474dc8a1d7f90d7c",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=1",
+  "published": "2026-09-04T10:13:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9220bdd9e7162b1b68a6",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=4",
+  "published": "2026-09-04T10:13:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7f7907418c76cb8334ca",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=151",
+  "published": "2026-09-04T10:13:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "907137d2063e287bfb4e",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=152",
+  "published": "2026-09-04T10:13:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb634c9e502ecedac85b",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=153",
+  "published": "2026-09-04T10:13:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "http://www.exegetic.biz/blog/2015/01/download-option-chain-from-google-finance-in-r-an-update/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5ec7144f572ca2778e6f",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematic Strategies Archives - QUANTITATIVE RESEARCH AND TRADING",
+  "url": "https://jonathankinlay.com/tag/systematic-strategies/",
+  "published": "2026-09-04T10:13:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fa36fc87c789e06baac9",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematic Trading Archives - QUANTITATIVE RESEARCH AND TRADING",
+  "url": "https://jonathankinlay.com/tag/systematic-trading/",
+  "published": "2026-09-04T10:13:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5779a6f1d1b65926fc45",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Developing Trading Strategies With Synthetic Data",
+  "url": "http://jonathankinlay.com/2022/07/developing-trading-strategies-with-synthetic-data/",
+  "published": "2026-09-04T10:13:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1c405082372b3091419a",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Developing Trading Strategies With Synthetic Data",
+  "url": "https://jonathankinlay.com/2022/07/developing-trading-strategies-with-synthetic-data/",
+  "published": "2026-09-04T10:13:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1c405082372b3091419a",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Simple Momentum Strategy",
+  "url": "http://jonathankinlay.com/2020/06/simple-momentum-strategy/",
+  "published": "2026-09-04T10:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7b54658a95c029391d31",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtest vs. Trading Reality",
+  "url": "https://jonathankinlay.com/2022/06/backtest-vs-trading-reality/",
+  "published": "2026-09-04T10:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8aa3af28d1c28945b150",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Prime Market Cycles",
+  "url": "https://jonathankinlay.com/2020/07/trading-prime-market-cycles/",
+  "published": "2026-09-04T10:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "78977865891dd056baca",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading: 2016",
+  "url": "http://intelligenttradingtech.blogspot.com/2016/",
+  "published": "2026-09-04T10:14:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b9b0519bc4bdf5c51049",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading: January 2016",
+  "url": "http://intelligenttradingtech.blogspot.com/2016/01/",
+  "published": "2026-09-04T10:14:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8488cac9f27aa8696963",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading: 2013",
+  "url": "http://intelligenttradingtech.blogspot.com/2013/",
+  "published": "2026-09-04T10:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99abcdde4d139cf43e58",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading: April 2013",
+  "url": "http://intelligenttradingtech.blogspot.com/2013/04/",
+  "published": "2026-09-04T10:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "59e9f51333c1e30ae3a5",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading: March 2013",
+  "url": "http://intelligenttradingtech.blogspot.com/2013/03/",
+  "published": "2026-09-04T10:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d85dc93838884c0c151",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Trading",
+  "url": "http://epchan.blogspot.com",
+  "published": "2026-09-04T10:14:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ebba6945f3c1a2540f0",
+  "host": "epchan.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING)",
+  "url": "http://tradingwithmatlab.blogspot.com/",
+  "published": "2026-09-04T10:14:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://sites.google.com/site/tradewithmatlab/matlab-files/nasdaq_symbol_change.xlsx?attredirects=0&amp;d=1",
+   "http://sites.google.com/site/tradingusingmatlab/matlab-files/cointegration.zip?attredirects=0&amp;d=1",
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "92a308c8c26a3a375605",
+  "host": "tradingwithmatlab.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "randyzwitch.com | Evaluating BreakoutDetection",
+  "url": "http://randyzwitch.com/twitter-breakoutdetection-r-package-evaluation/",
+  "published": "2026-09-04T10:14:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b8ecb02603b31566ddf9",
+  "host": "randyzwitch.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RealTest - Multi-Strategy Portfolio-Level Backtesting Software",
+  "url": "https://mhptrading.com/",
+  "published": "2026-09-04T10:14:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b7175a6661a97ee69ffd",
+  "host": "mhptrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Time of Day effects in FX",
+  "url": "http://quantsjourney.blogspot.co.uk/2017/09/time-of-day-effects-in-fx.html",
+  "published": "2026-09-04T10:14:25+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDCAD"
+  ],
+  "timeframes": [
+   "M15"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2c858c1b578e9b1739a7",
+  "host": "quantsjourney.blogspot.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TheTradingBible.com | Learn to Trade Forex, Stocks, Crypto",
+  "url": "https://thetradingbible.com/",
+  "published": "2026-09-04T10:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7f7b35407aa09c65cc96",
+  "host": "thetradingbible.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "055 \u2013 The Cal Ripken of Trading (seriously dedicated) \u2013 Interview w Rob Hanna &#8211; Inside Out Trading",
+  "url": "https://insideouttrading.com/podcast/054-the-cal-ripken-of-trading-seriously-dedicated-interview-w-rob-hanna/",
+  "published": "2026-09-04T10:14:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://player.fm/series/consistent-profits-podcast"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "054cef568d1561dfca18",
+  "host": "insideouttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantConnect Shared Backtest Result - SPX ORB Spreads Skip Wed + Fri | 05.2022 - 09.2025",
+  "url": "https://www.quantconnect.cloud/backtest/288e20fafae5a3177c67e19154c5ce1a/?theme=darkly",
+  "published": "2026-09-04T10:14:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantconnect.cloud/api/v2/sharing/backtests/clones/read/?backtestId=288e20fafae5a3177c67e19154c5ce1a",
+   "https://www.quantconnect.cloud/api/v2/sharing/backtests/result/read/?backtestId=288e20fafae5a3177c67e19154c5ce1a"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9f79a6a760f67fee5994",
+  "host": "www.quantconnect.cloud"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantConnect Shared Backtest Result - SPX ORB Spreads | 05.2022 - 08.2025",
+  "url": "https://www.quantconnect.cloud/backtest/4ba78cc497ae0cf3f65d74122f732934/?theme=darkly",
+  "published": "2026-09-04T10:14:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantconnect.cloud/api/v2/sharing/backtests/clones/read/?backtestId=4ba78cc497ae0cf3f65d74122f732934",
+   "https://www.quantconnect.cloud/api/v2/sharing/backtests/result/read/?backtestId=4ba78cc497ae0cf3f65d74122f732934"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6de3447981491578c0a4",
+  "host": "www.quantconnect.cloud"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Alphalens &mdash; Alphalens 0.2.1+48.gad0be10 documentation",
+  "url": "http://quantopian.github.io/alphalens/",
+  "published": "2026-09-04T10:14:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://quantopian.github.io/alphalens/_sources/index.rst.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "12e3cb77d9951d057a22",
+  "host": "quantopian.github.io"
+ }
+]

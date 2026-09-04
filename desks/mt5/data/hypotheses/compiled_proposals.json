@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-04T09:19:10+00:00",
+ "built_at": "2026-09-04T10:19:09+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1939,6 +1939,26 @@
    "data_source": "free MT5 tick history via FXBlue",
    "kill": "kill if median time-in-market > 5 bars post signal or net exit alpha < 0",
    "lens": "MEASUREMENT ADVANTAGE",
+   "promotion_authority": false
+  },
+  {
+   "name": "LIQUIDITY_CONTRACTION_AMPLIFIER",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "positioning_extreme",
+    "context": "overlap",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "positioning_extreme|overlap|magnitude|continuation|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): net non-commercial positioning / open interest, z-scored over 52 weeks, lagged 4 days to publication (CotPositioningAdapter) measures COT/TFF net positioning versus its own history. UNBLOCKED 2026-08-29: the desk always had COT parquets and the generic family used price extension instead. The adapter reads the real series and lags it to publication so no bar sees a report before it was public. VALIDATED_PROXY rather than DIRECT because the release is weekly while the claim is intraday -- the level is real, its resolution is coarse.",
+   "data_source": "CFTC COT data, forexfactory economic calendar + tick volume from myfxbook",
+   "kill": "If 70% of identified sessions show <2x normal price impact during 4-hour window",
+   "lens": "MECHANISM TRANSITION",
    "promotion_authority": false
   }
  ]
