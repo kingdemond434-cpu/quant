@@ -1,0 +1,28 @@
+{
+ "generated_utc": "2026-09-04T19:11:40.409306+00:00",
+ "basis": "shadow",
+ "n_trades": 487,
+ "n_sleeves": 50,
+ "dimensions_tried": 1,
+ "verdicts": {
+  "weekday": {
+   "dimension": "weekday",
+   "verdict": "RETAIN_SHRUNK",
+   "mse_gain": -0.177819189,
+   "t_paired": -1.816,
+   "t_deflated": -1.816,
+   "n_test": 275,
+   "n_buckets": 5,
+   "dimensions_tried": 1,
+   "why": "no measurable improvement; kept only by the shrinkage"
+  }
+ },
+ "gaps": {
+  "session": "no labeller: this dimension cannot be reconstructed from a timestamp alone, or its input (e.g. the broker clock) is unavailable here"
+ },
+ "admitted": [
+  "weekday"
+ ],
+ "graveyard": [],
+ "rule": "a dimension conditions capital only until it is MEASURED worse; RETAIN_SHRUNK is a stay of execution granted by k_state, not a pass"
+}

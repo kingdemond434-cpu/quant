@@ -193,6 +193,23 @@ def _factor_residual() -> None:
          f"measured, {rep['tests_run']} tests, {rep['cells_proposed']} proposed")
 
 
+def _state_admission() -> None:
+    """Re-judge every state dimension against the trades that have accrued since yesterday.
+
+    RUNS BEFORE SHADOW, so the verdicts the allocator reads today are based on every trade closed
+    up to yesterday rather than on a report from whenever someone last ran it by hand. The whole
+    point of the test is that it moves as the evidence does: a dimension that is UNDERPOWERED at
+    487 trades is not underpowered forever, and one that looks fine today can be measured worse
+    next month. A verdict nobody refreshes is a verdict nobody should act on.
+    """
+    import state_admission_run
+
+    doc = state_admission_run.run()
+    dlog(f"state admission: {doc['n_trades']} trades, "
+         f"{len(doc['admitted'])} allowed, {len(doc['graveyard'])} in the graveyard"
+         + (f" ({', '.join(doc['graveyard'])})" if doc["graveyard"] else ""))
+
+
 def _futures_curves() -> None:
     """Accrue real contract curves so roll/calendar hypotheses stop remaining prose-blocked."""
     import fetch_futures_curves
@@ -265,6 +282,7 @@ def _zentech() -> None:
 STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("factor_residual", _factor_residual),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
+         ("state_admission", _state_admission),
          ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("decay", _decay),

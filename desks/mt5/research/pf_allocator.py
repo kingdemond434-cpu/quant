@@ -747,6 +747,23 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
 
     phase = phase_at(_dt.now(UTC), broker_utc_offset_h=off)
 
+    # THE GRAVEYARD BINDS. `state_admission_run` judges each state dimension walk-forward on the
+    # desk's own realised trades: does conditioning on it predict trades it has NEVER SEEN better
+    # than not conditioning? A dimension measured WORSE loses its access here, not in a report
+    # somebody reads. Fails open to conditioning as before when no report exists, because
+    # withdrawing a dimension on the strength of a missing file would be substituting one
+    # unmeasured decision for another.
+    try:
+        from state_admission_run import read_graveyard
+        barred, why = read_graveyard()
+        _log(f"state admission: {why}")
+        if "session" in barred:
+            _log("state: session conditioning is in the GRAVEYARD -- measured worse out of "
+                 "sample, so this pass solves without it")
+            return None, {}, off
+    except Exception as exc:                                     # noqa: BLE001
+        _log(f"state admission unreadable ({type(exc).__name__}: {exc}); conditioning stands")
+
     # PER-SLEEVE TRADES, KEYED THE WAY THE BOOK IS KEYED. The shadow ledgers are
     # ledger_<SYM>_<window>.json and the allocator's columns are the sleeve names, so the join is
     # on the file stem. A ledger that does not match a column is simply unused -- never merged

@@ -1,0 +1,236 @@
+"""Which state dimensions have earned the right to condition capital, and which have not.
+
+THE RULE THIS ENFORCES (principal, 2026-09-04): "no new regime variable gets capital authority
+merely because it sounds sensible. It enters as information, gets PIT-tested, must improve
+forecast calibration or marginal E[log W], and otherwise goes to the graveyard."
+
+Without this, a state vector is an invitation to overfit. Session phase, event phase, liquidity
+state, per-asset regime, global regime, regime age -- every one of them sounds sensible, every one
+of them slices the same finite evidence thinner, and the desk has no way to tell which of them is
+carrying information from which of them is carrying noise that happens to be labelled.
+
+HOW A DIMENSION IS JUDGED. Walk-forward, on the desk's own realised trades. For each block:
+
+    fit    on the training trades, the per-bucket mean, shrunk toward the pooled mean by n/(n+k)
+    score  each TEST trade twice -- once predicted by the pooled mean, once by its bucket's
+    keep   the difference in squared error, per trade
+
+A dimension is only better if it predicts trades it has never seen. Fitting bucket means and
+admiring the in-sample fit is how every one of these dimensions would pass.
+
+SLEEVE EFFECTS ARE REMOVED FIRST. Pooling raw returns across sleeves would let a dimension look
+informative purely because one profitable sleeve trades mostly in one bucket. Each sleeve's
+returns are centred on its own training mean, so what is measured is whether the STATE explains
+variation the sleeve identity does not.
+
+THREE VERDICTS, and the middle one is not a pass:
+
+    ADMIT           measurably better out of sample, after deflation for how many dimensions
+                    were tried. May condition the posterior.
+    RETAIN_SHRUNK   too little evidence to say. The dimension keeps whatever access it already
+                    has, and the ONLY reason that is safe is `robust_elog`'s k_state = 40: a
+                    bucket needs forty observations to outweigh the unconditional posterior, so
+                    an unproven dimension moves the estimate barely at all. This is a stay of
+                    execution granted by the shrinkage, not a verdict in the dimension's favour,
+                    and it should be revisited as the ledgers fill.
+    GRAVEYARD       measurably WORSE out of sample. Removed from conditioning.
+
+DEFLATION, because this is itself a search. Testing eight dimensions and reporting the best one's
+t-statistic is the same error the gauntlet's deflated Sharpe exists to correct, so the paired t on
+the per-trade error difference is deflated by E[max_N Z] over the dimensions tried.
+"""
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass, field
+from typing import Callable, Sequence
+
+import numpy as np
+
+#: Shrinkage of a bucket mean toward the pooled mean, matching `robust_elog`'s k_state so the
+#: test measures the estimator the allocator would actually use rather than a sharper one.
+K_BUCKET = 40.0
+#: Test-fold trades needed before a verdict is possible at all.
+MIN_TEST_TRADES = 150
+#: Trades a bucket needs in training before it may be used to predict anything.
+MIN_BUCKET_TRAIN = 15
+#: Deflated t a dimension must clear to be ADMITted, and to be sent to the GRAVEYARD.
+ADMIT_T = 2.0
+GRAVEYARD_T = -2.0
+#: Walk-forward blocks. Three is the fewest that has both a fit and more than one score.
+N_BLOCKS = 4
+
+ADMIT = "ADMIT"
+RETAIN_SHRUNK = "RETAIN_SHRUNK"
+GRAVEYARD = "GRAVEYARD"
+UNJUDGED = "UNJUDGED"
+
+
+@dataclass(frozen=True)
+class Trade:
+    """One realised trade, with the state it was taken in."""
+
+    sleeve: str
+    when: str
+    r: float
+    #: dimension name -> bucket label for this trade.
+    buckets: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class Verdict:
+    dimension: str
+    verdict: str
+    #: Mean reduction in squared error from conditioning. Positive is better.
+    mse_gain: float
+    t_paired: float
+    t_deflated: float
+    n_test: int
+    n_buckets: int
+    dimensions_tried: int
+    why: str = ""
+
+    def to_dict(self) -> dict:
+        return {"dimension": self.dimension, "verdict": self.verdict,
+                "mse_gain": round(self.mse_gain, 10), "t_paired": round(self.t_paired, 4),
+                "t_deflated": round(self.t_deflated, 4), "n_test": self.n_test,
+                "n_buckets": self.n_buckets, "dimensions_tried": self.dimensions_tried,
+                "why": self.why}
+
+
+def _expected_max_z(n: int) -> float:
+    if n <= 1:
+        return 0.0
+    ln = math.log(n)
+    if ln <= 0:
+        return 0.0
+    return math.sqrt(2 * ln) - (math.log(ln) + math.log(4 * math.pi)) / (2 * math.sqrt(2 * ln))
+
+
+def _blocks(n: int, k: int) -> list[tuple[int, int]]:
+    """Expanding-window folds: train on everything before, score the next slice."""
+    if n < k * 2:
+        return []
+    edges = [int(round(n * i / k)) for i in range(k + 1)]
+    return [(edges[i], edges[i + 1]) for i in range(1, k)]
+
+
+def judge(trades: Sequence[Trade], dimension: str, dimensions_tried: int = 1,
+          k_bucket: float = K_BUCKET) -> Verdict:
+    """Walk-forward: does conditioning on `dimension` predict unseen trades better?"""
+    rows = [t for t in sorted(trades, key=lambda x: x.when) if dimension in t.buckets]
+    n = len(rows)
+    folds = _blocks(n, N_BLOCKS)
+    if not folds:
+        return Verdict(dimension, UNJUDGED, 0.0, 0.0, 0.0, 0, 0, dimensions_tried,
+                       why=f"{n} trades carry this dimension; too few for {N_BLOCKS} folds")
+
+    diffs: list[float] = []
+    buckets_seen: set[str] = set()
+    for start, stop in folds:
+        train, test = rows[:start], rows[start:stop]
+        if not train or not test:
+            continue
+        # SLEEVE EFFECTS OUT FIRST. A dimension must explain variation the sleeve identity does
+        # not, or a single profitable sleeve concentrated in one bucket makes it look informative.
+        by_sleeve: dict[str, list[float]] = {}
+        for t in train:
+            by_sleeve.setdefault(t.sleeve, []).append(t.r)
+        sleeve_mean = {k: float(np.mean(v)) for k, v in by_sleeve.items()}
+        centred = [t.r - sleeve_mean.get(t.sleeve, 0.0) for t in train]
+        pooled = float(np.mean(centred)) if centred else 0.0
+
+        agg: dict[str, list[float]] = {}
+        for t, c in zip(train, centred, strict=True):
+            agg.setdefault(t.buckets[dimension], []).append(c)
+        shrunk = {}
+        for b, vals in agg.items():
+            if len(vals) < MIN_BUCKET_TRAIN:
+                continue
+            lam = len(vals) / (len(vals) + k_bucket)
+            shrunk[b] = lam * float(np.mean(vals)) + (1.0 - lam) * pooled
+            buckets_seen.add(b)
+
+        for t in test:
+            if t.sleeve not in sleeve_mean:
+                continue                     # a sleeve never seen in training explains nothing
+            y = t.r - sleeve_mean[t.sleeve]
+            b = t.buckets[dimension]
+            if b not in shrunk:
+                continue                     # an unseen bucket is not a prediction
+            diffs.append((y - pooled) ** 2 - (y - shrunk[b]) ** 2)
+
+    n_test = len(diffs)
+    if n_test < MIN_TEST_TRADES:
+        return Verdict(dimension, RETAIN_SHRUNK, float(np.mean(diffs)) if diffs else 0.0,
+                       0.0, 0.0, n_test, len(buckets_seen), dimensions_tried,
+                       why=(f"{n_test} out-of-sample predictions, needs {MIN_TEST_TRADES}. "
+                            "UNDERPOWERED, not passed -- what makes keeping it safe is the "
+                            f"k_state={k_bucket:.0f} shrinkage, which leaves an unproven bucket "
+                            "barely able to move the posterior."))
+
+    arr = np.asarray(diffs, dtype=float)
+    sd = float(arr.std(ddof=1))
+    gain = float(arr.mean())
+    t = gain / (sd / math.sqrt(arr.size)) if sd > 0 else 0.0
+    t_def = t - _expected_max_z(max(1, dimensions_tried)) if t > 0 else t
+    if t_def >= ADMIT_T:
+        verdict, why = ADMIT, "predicts unseen trades better, after deflation for the search"
+    elif t <= GRAVEYARD_T:
+        verdict, why = GRAVEYARD, "measurably worse out of sample; conditioning on it adds noise"
+    else:
+        verdict, why = RETAIN_SHRUNK, "no measurable improvement; kept only by the shrinkage"
+    return Verdict(dimension, verdict, gain, t, t_def, n_test, len(buckets_seen),
+                   dimensions_tried, why=why)
+
+
+def judge_all(trades: Sequence[Trade], dimensions: Sequence[str],
+              k_bucket: float = K_BUCKET) -> dict[str, Verdict]:
+    """Judge every dimension against the same trades, each charged for the whole search."""
+    tried = len(dimensions)
+    return {d: judge(trades, d, dimensions_tried=tried, k_bucket=k_bucket) for d in dimensions}
+
+
+def admitted(verdicts: dict[str, Verdict]) -> tuple[str, ...]:
+    """Dimensions that may condition the posterior: everything not sent to the graveyard.
+
+    RETAIN_SHRUNK is included on purpose and it is the conservative choice, not the permissive
+    one: those dimensions already condition today, and removing a dimension on the strength of a
+    test that reports it has no power would be substituting one unmeasured decision for another.
+    Only a MEASURED failure removes access.
+    """
+    return tuple(sorted(d for d, v in verdicts.items() if v.verdict != GRAVEYARD))
+
+
+def build_labeller(name: str) -> Callable[[str], str] | None:
+    """A function from an ISO timestamp to this dimension's bucket, or None if unavailable.
+
+    Only dimensions reconstructible from a timestamp ALONE live here. An asset's regime or the
+    liquidity state at a moment needs the state-vector history to be joined instead, and inventing
+    it from today's fit would label every historical trade with today's world.
+    """
+    if name == "session":
+        try:
+            from research.session_phase import broker_utc_offset_h, phase_at
+        except ImportError:
+            return None
+        off, _src = broker_utc_offset_h()
+        if off is None:
+            return None
+
+        def _session(when: str) -> str:
+            from datetime import datetime
+            try:
+                return phase_at(datetime.fromisoformat(when), broker_utc_offset_h=off)
+            except (TypeError, ValueError):
+                return ""
+        return _session
+    if name == "weekday":
+        def _weekday(when: str) -> str:
+            from datetime import datetime
+            try:
+                return datetime.fromisoformat(when).strftime("%a")
+            except (TypeError, ValueError):
+                return ""
+        return _weekday
+    return None
