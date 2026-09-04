@@ -228,8 +228,9 @@ def _measure_and_diagnose() -> dict[str, Any]:
     """
     import pandas as pd
 
-    from libs.research_os import store
+    from libs.research_os import brain_ab, credit, store
     from libs.research_os.adapters import REGISTRY
+    from libs.research_os.brain_ab import ARMS, assign_arm
     from libs.research_os.failure_states import data_needs, diagnose, policy_report
 
     cells_path = DESK / "data" / "hypotheses" / "compiled_proposals.json"
@@ -240,6 +241,7 @@ def _measure_and_diagnose() -> dict[str, Any]:
 
     uni = DESK / "data" / "universe"
     diagnoses = []
+    paired: list[tuple[Any, dict[str, Any]]] = []
     measured = 0
     for cell in cells[:40]:                     # a pass, not a sweep; the gauntlet does volume
         params = cell.get("params") or {}
@@ -262,22 +264,146 @@ def _measure_and_diagnose() -> dict[str, Any]:
             status=res.status, attributable=res.attributable, pit_safe=res.pit_safe,
             missing_observable="" if res.runnable else mech, notes=res.notes)
 
-        # A cell whose observable cannot be produced has not failed a test -- no test was run.
-        # That distinction is the entire reason the six states exist.
+        # DIAGNOSE THE REAL EXPERIMENT, NOT A STUB. This passed gross=None, net=None,
+        # n_trades=0 -- values that do not exist yet -- so every cell fell through to the
+        # `n_trades < 20` branch and was filed MEASUREMENT_FAILED regardless of what the gauntlet
+        # had actually found. The six states were being applied to the absence of a result, which
+        # is not post-experiment credit assignment at all: COST_FAILED and MECHANISM_REFUTED were
+        # unreachable by construction, so no failure could ever teach anything about a mechanism.
+        #
+        # The outcomes exist: `sync_research_ledger` writes expectancy, cost-stressed expectancy
+        # and trade count into the experiments table from the gauntlet's own gate results. Reading
+        # the latest row per hypothesis is what turns this from "we measured it" into "we tested
+        # it and here is which link broke".
+        hid = str(cell.get("name") or "")
+        exp = _latest_experiment(store, hid)
         d = diagnose(
             mechanism=mech,
             measurement_class=res.status if res.status != "UNAVAILABLE" else "",
-            exp_r_gross=None, exp_r_net=None, novelty_verdict=None,
+            exp_r_gross=exp.get("exp_r_gross"), exp_r_net=exp.get("exp_r_net"),
+            novelty_verdict=exp.get("novelty_verdict"),
             missing_observable="" if res.runnable else (res.notes[:80] or mech),
-            n_trades=0)
+            n_trades=int(exp.get("n_trades") or 0))
         diagnoses.append(d)
-        store.record_failure(d, hypothesis_id=str(cell.get("name") or ""))
+        # PAIR THE CELL WITH ITS DIAGNOSIS HERE, not by zipping the two lists later. `diagnoses`
+        # skips every cell that `continue`d above (absent parquet, unreadable file), so a
+        # positional zip attributes each child to whichever cell sits at that index -- a mutation
+        # logged against a parent that did not produce it, corrupting the lineage credit reads.
+        paired.append((d, cell))
+        store.record_failure(d, hypothesis_id=hid)
+
+        # THE ARM IS FIXED AT PROPOSAL TIME, before any outcome exists, and persisted with the
+        # hypothesis. Nothing wrote this table, which is why lineage and the brain A/B both had
+        # zero rows: the columns for parentage and brain version were designed and never filled.
+        store.record_hypothesis(
+            hypothesis_id=hid, origin="compiled_cell",
+            generator=str(cell.get("generator") or cell.get("origin") or "unknown"),
+            mechanism=mech, coordinate=str(cell.get("coordinate") or ""),
+            parent_ids=[], generation=0, brain_version=assign_arm(hid),
+            spec={**params, "symbol": sym, "measured_by": res.adapter})
 
     for need in data_needs(diagnoses):
         store.record_data_need(need, sources=["see scripts/check_unmeasurable_claims.py"])
 
+    # CLOSE THE LOOP. The diagnosis printed `mutate_measurement` and nothing mutated anything --
+    # the desk identified which link broke and discarded the answer, which is the same as not
+    # diagnosing. Each surviving diagnosis now breeds a CHILD that changes only the indicted link,
+    # or refuses by name.
+    from libs.research_os.mutation import mutate_batch
+
+    parents: dict[str, dict[str, Any]] = {}
+    eligible, withheld = [], 0
+    for d, cell in paired:
+        hid = str(cell.get("name") or "")
+        d.hypothesis_id = hid
+        parents[hid] = {**(cell.get("params") or {}),
+                        "symbol": str(cell.get("symbol") or "EURUSD")}
+        # THE CONTROL ARM DOES NOT BREED. Without this both arms behave identically and the A/B
+        # measures nothing while producing a confident-looking report.
+        if ARMS.get(assign_arm(hid), {}).get("breed_children"):
+            eligible.append(d)
+        else:
+            withheld += 1
+    bred = mutate_batch(eligible, parents)
+
+    for child in bred.get("children", []):
+        pid = str(child.get("parent") or "")
+        store.record_hypothesis(
+            hypothesis_id=f"{pid}+{child.get('mutation')}", origin="mutation",
+            generator=str(parents.get(pid, {}).get("generator") or "mutation"),
+            mechanism=str(parents.get(pid, {}).get("event") or ""),
+            coordinate="", parent_ids=[pid], generation=1, brain_version=assign_arm(pid),
+            spec={**(child.get("params") or {}), "mutation": str(child.get("mutation") or "")})
+    bred["withheld_control_arm"] = withheld
+
     return {"cells_measured": measured, "policy": policy_report(diagnoses),
-            "store": store.summary()}
+            "mutation": bred, "post_experiment": _diagnose_real_experiments(store),
+            "credit": credit.from_store(),
+            "brain_ab": brain_ab.report(), "store": store.summary()}
+
+
+def _diagnose_real_experiments(store: Any, limit: int = 400) -> dict[str, Any]:
+    """Post-experiment credit assignment over candidates that ACTUALLY RAN.
+
+    THE POPULATIONS ARE DISJOINT, and that is the whole finding. Compiled cells are fresh
+    proposals named `LIQUIDITY_FRAGILITY_RATIO`; experiment rows are canon certificates named
+    `external.AFG.discovered.p=ef2e...`. Measured 2026-09-04: 119 experiment ids, 94 cell ids,
+    overlap ZERO. So diagnosing the cell population reads n_trades=0 for every row and files
+    everything MEASUREMENT_FAILED -- COST_FAILED and MECHANISM_REFUTED are unreachable by
+    construction, and no failure can ever teach anything about a mechanism.
+
+    A proposal that has not run is not a failure; it is unrun. The diagnosis that carries
+    information is the one taken over rows holding a real gross, a real net and a real trade
+    count, which is exactly what the experiments table holds. This is where the six states become
+    a verdict about a mechanism rather than a restatement of "no result yet".
+    """
+    from libs.research_os.failure_states import diagnose, policy_report
+    try:
+        with store.connect() as conn:
+            rows = conn.execute(
+                "SELECT hypothesis_id, mechanism, exp_r_gross, exp_r_net, n_trades, "
+                "MAX(id) FROM experiments WHERE n_trades > 0 GROUP BY hypothesis_id "
+                "ORDER BY MAX(id) DESC LIMIT ?", (limit,)).fetchall()
+            classes = {str(r[0]): str(r[1] or "") for r in conn.execute(
+                "SELECT hypothesis_id, status FROM measurements ORDER BY id ASC").fetchall()}
+    except Exception as exc:
+        return {"skipped": f"{type(exc).__name__}: {str(exc)[:80]}"}
+
+    diags = []
+    for hid, mech, gross, net, n, _ in rows:
+        diags.append(diagnose(
+            mechanism=str(mech or ""),
+            measurement_class=classes.get(str(hid), ""),
+            exp_r_gross=gross, exp_r_net=net, novelty_verdict=None,
+            missing_observable="", n_trades=int(n or 0)))
+        for d in diags[-1:]:
+            d.hypothesis_id = str(hid)
+    if not diags:
+        return {"experiments_diagnosed": 0,
+                "why": "no experiment row carries a trade count yet"}
+    for d in diags:
+        store.record_failure(d, hypothesis_id=getattr(d, "hypothesis_id", ""))
+    return {"experiments_diagnosed": len(diags), "policy": policy_report(diags)}
+
+
+def _latest_experiment(store: Any, hypothesis_id: str) -> dict[str, Any]:
+    """The most recent recorded outcome for this hypothesis, or an empty dict.
+
+    Empty is the honest answer for a cell the gauntlet has not reached yet: `diagnose` then sees
+    n_trades=0 and files it as underpowered, which is true. What it must never do is invent a
+    result -- a fabricated expectancy would be credited to the mechanism.
+    """
+    try:
+        with store.connect() as conn:
+            row = conn.execute(
+                "SELECT exp_r_gross, exp_r_net, n_trades FROM experiments "
+                "WHERE hypothesis_id=? ORDER BY id DESC LIMIT 1", (hypothesis_id,)).fetchone()
+    except Exception:
+        return {}
+    if not row:
+        return {}
+    return {"exp_r_gross": row[0], "exp_r_net": row[1], "n_trades": row[2],
+            "novelty_verdict": None}
 
 
 def main() -> int:

@@ -61,6 +61,15 @@ WATCHED: dict[str, str] = {
     # freezing 207 real forward trades -- more evidence than the identity bug had held. The
     # rollback was invisible because the file's MTIME was current; only its `swept_at` was twelve
     # days old, which is precisely the difference this fence reads.
+    # THE SAME 01:28 UTC EVENT took this too: 251 symbols and 22 fields were replaced by a
+    # 23-symbol stump carrying 9 fields and ZERO currency_profit. The gauntlet then swept 23
+    # instruments instead of 251, and with currency_profit gone `spread_cost_per_lot` returns 0.0
+    # so gate 8 (stress_costs) cannot judge a candidate at all -- which is why no new certificate
+    # was minted for hours while the timer ran. The pull's own guard could not help: it refuses a
+    # lossy INCOMING copy, and this was written locally.
+    "desks/mt5/data/universe/universe.json":
+        "the tradeable symbol registry -- a stump here silently shrinks the entire search space "
+        "and blinds the cost gate",
     "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json":
         "the certificate set that IS forward enrolment; a rollback here unenrols the whole book",
     "desks/mt5/reports/UNIVERSAL_SURVIVORS.json":

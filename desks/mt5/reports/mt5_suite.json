@@ -1,20 +1,16 @@
 {
- "checked_at": "2026-09-04T01:49:22+00:00",
- "verdict": "FAIL",
+ "checked_at": "2026-09-04T02:34:51+00:00",
+ "verdict": "OK",
  "counts": {
-  "passed": 885,
-  "failed": 1,
+  "passed": 886,
+  "failed": 0,
   "error": 0,
   "skipped": 0,
   "total": 886
  },
- "new_failing": [
-  "desks.mt5.tests.test_shadow_sleeve_isolation::test_missing_cost_map_entry_blocks_one_sleeve_and_never_the_book"
- ],
+ "new_failing": [],
  "newly_passing": [],
  "known_failing": [],
- "reasons": [
-  "1 NEW failing test(s) on the money path: desks.mt5.tests.test_shadow_sleeve_isolation::test_missing_cost_map_entry_blocks_one_sleeve_and_never_the_book"
- ],
- "pytest_tail": "=========================== short test summary info ============================\nFAILED desks/mt5/tests/test_shadow_sleeve_isolation.py::test_missing_cost_map_entry_blocks_one_sleeve_and_never_the_book\n1 failed, 885 passed in 132.67s (0:02:12)"
+ "reasons": [],
+ "pytest_tail": "........................................................................ [ 97%]\n......................                                                   [100%]\n886 passed in 154.81s (0:02:34)"
 }

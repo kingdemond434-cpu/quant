@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-04T01:54:35+00:00",
+ "built_at": "2026-09-04T02:39:33+00:00",
  "window_days": 7,
  "coverage": {
   "3M": 12,
@@ -217,7 +217,7 @@
   "USDMXN": 13,
   "USDNOK": 13,
   "USDPLN": 13,
-  "USDRUB": 11,
+  "USDRUB": 12,
   "USDSEK": 13,
   "USDSGD": 13,
   "USDTHB": 13,
@@ -248,5 +248,5 @@
   "XZNUSD": 9,
   "ZARJPY": 13
  },
- "newest_tape_write": "2026-09-04T01:19:38+00:00"
+ "newest_tape_write": "2026-09-04T02:21:17+00:00"
 }

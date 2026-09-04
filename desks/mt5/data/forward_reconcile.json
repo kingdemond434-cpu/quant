@@ -1,9 +1,9 @@
 {
- "checked_at": "2026-09-03T00:39:18+00:00",
- "enrolled": 63,
+ "checked_at": "2026-09-04T02:35:08+00:00",
+ "enrolled": 56,
  "enrolment_readable": true,
- "certified_clocks": 59,
- "certified_pairs": 29,
+ "certified_clocks": 52,
+ "certified_pairs": 32,
  "identity_unfrozen": 0,
  "unreachable_certified": {
   "n": 0,
@@ -17,5 +17,86 @@
   ],
   "certificates": []
  },
- "actions": []
+ "actions": [
+  {
+   "key": "EURZAR.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "USDZAR.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "CADCHF.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "CHFDKK.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "CHFNOK.carry.asia#input_symbol=CHFNOK",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "EURNOK.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "GBPCHF.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "GBPMXN.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "GBPNOK.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "GBPSEK.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "GBPZAR.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "USDMXN.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "AUDCHF.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURDKK_z_horizon=1_side=-1",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  }
+ ]
 }
