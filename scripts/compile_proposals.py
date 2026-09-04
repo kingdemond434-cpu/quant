@@ -376,7 +376,7 @@ def main() -> int:
 
     # AUDIT RECOMMENDATIONS BECOME CELLS, NOT PROSE. A named region is enumerated into the same
     # coordinate shape a proposal compiles to, so a recommendation changes where trials go.
-    audit_cells: list[dict[str, Any]] = []
+    audit_props: list[dict[str, Any]] = []
     try:
         free = json.loads(FREE.read_text("utf-8"))
         for res in free.get("results", []):
@@ -385,24 +385,40 @@ def main() -> int:
                 m = re.match(r"^([a-z_]+)\s*\|?\s*([a-z_]*)", region.lower())
                 if not m:
                     continue
-                ev, dr = m.group(1), (m.group(2) or "continuation")
-                if ev in sup["event"] and dr in sup["direction"]:
-                    audit_cells.append({
-                        "name": f"audit:{ev}|{dr}", "compiled": True, "family": "generic",
-                        "params": {"event": ev, "context": "asia", "direction": dr,
-                                   "output": "1h", "quality_atr": 1.0},
-                        "coordinate": f"{ev}|asia|magnitude|{dr}|1h",
-                        "source": "cold_audit_recommendation",
-                        "promotion_authority": False})
+                # ONE COMPILER, NO PRIVILEGED ENTRANCE. This branch used to build the cell
+                # itself: it defaulted an unparsed direction to "continuation", hardcoded
+                # `context: "asia"`, and set `compiled: True` without ever calling
+                # `compile_proposal` -- so it skipped the capability check, the axis resolution,
+                # the ROI refusal, the saturation check and the novelty gate in one step.
+                #
+                # Both of those defaults are the EXACT failures the ordinary path refuses by name
+                # thirty lines above: "guessing 'continuation' for a mechanism that never said so
+                # would test the opposite of the hypothesis half the time", and "a compiler that
+                # fills in the missing half of a claim is deciding what the hypothesis says".
+                # Removing them from one entrance while leaving them in another removed nothing.
+                #
+                # Audit regions now become PROPOSALS and take the same door. Most will be REFUSED
+                # for unresolved context, because a region named `event|direction` genuinely does
+                # not say when it fires -- and a refusal that names the missing axis is a research
+                # finding, where a cell built on a guessed axis is a confident answer to a
+                # question nobody asked.
+                audit_props.append({
+                    "name": f"audit:{region[:48]}",
+                    "mechanism": region,
+                    "test": str(row.get("why") or row.get("evidence") or ""),
+                    "data_source": "named by cold audit; capability checked at compile",
+                    "lens": "cold_audit_recommendation",
+                    "origin": "cold_audit"})
     except (OSError, json.JSONDecodeError):
         pass
 
-    results = [compile_proposal(p, sup) for p in props]
-    ok = [r for r in results if r.get("compiled")] + audit_cells
+    results = [compile_proposal(p, sup) for p in props + audit_props]
+    ok = [r for r in results if r.get("compiled")]
     refused = [r for r in results if not r.get("compiled")]
 
     print(f"PROPOSAL COMPILER {now.isoformat(timespec='seconds')}")
-    print(f"  queue: {len(props)} proposal(s), audit regions: {len(audit_cells)}")
+    print(f"  queue: {len(props)} proposal(s), audit regions: {len(audit_props)} "
+          f"(both through the SAME compiler)")
     print(f"  COMPILED {len(ok)}   REFUSED {len(refused)}")
     for r in ok[:10]:
         print(f"    ok   {str(r.get('name'))[:34]:36s} {r['coordinate']}")
