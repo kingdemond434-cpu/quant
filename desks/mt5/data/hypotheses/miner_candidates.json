@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-04T08:22:09+00:00",
+ "compiled_at": "2026-09-04T09:14:18+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4470,9 +4470,9 @@
  ],
  "per_source": {
   "github": {
-   "rows": 33,
+   "rows": 34,
    "candidates": 0,
-   "deepening": 33
+   "deepening": 34
   },
   "mql5_signals": {
    "rows": 94,
@@ -4520,34 +4520,34 @@
    "deepening": 124
   },
   "trading_latam": {
-   "rows": 71,
+   "rows": 36,
    "candidates": 0,
-   "deepening": 71
+   "deepening": 36
   },
   "litefinance": {
-   "rows": 30,
+   "rows": 15,
    "candidates": 0,
-   "deepening": 30
+   "deepening": 15
   },
   "instaforex_copy": {
-   "rows": 8,
+   "rows": 4,
    "candidates": 0,
-   "deepening": 8
+   "deepening": 4
   },
   "amarkets": {
-   "rows": 224,
+   "rows": 112,
    "candidates": 0,
-   "deepening": 224
+   "deepening": 112
   },
   "fbs_tape": {
-   "rows": 2,
+   "rows": 1,
    "candidates": 0,
-   "deepening": 2
+   "deepening": 1
   },
   "global_frontier": {
-   "rows": 2,
+   "rows": 1,
    "candidates": 0,
-   "deepening": 2
+   "deepening": 1
   },
   "mql5_survivors": {
    "rows": 18,
@@ -4560,9 +4560,9 @@
    "deepening": 1
   },
   "darwinex": {
-   "rows": 1,
+   "rows": 120,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 120
   },
   "tradingview_scripts": {
    "rows": 23,
@@ -4590,9 +4590,9 @@
    "deepening": 7
   },
   "forextsd_cdx": {
-   "rows": 1,
+   "rows": 120,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 120
   },
   "quant_se": {
    "rows": 30,
@@ -4663,15 +4663,10 @@
    "rows": 26,
    "candidates": 0,
    "deepening": 26
-  },
-  "youtube": {
-   "rows": 23,
-   "candidates": 0,
-   "deepening": 23
   }
  },
- "rows_accounted": 1387,
+ "rows_accounted": 1435,
  "executable_candidates": 372,
- "deepening_tasks": 769,
+ "deepening_tasks": 990,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

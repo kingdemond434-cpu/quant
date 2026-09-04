@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-04T08:22:09+00:00",
+ "built_at": "2026-09-04T09:14:18+00:00",
  "tasks": [
   {
    "source": "github",
@@ -525,6 +525,14 @@
   {
    "source": "mql5_signals",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DP Miks",
+   "url": "https://www.mql5.com/en/signals/2387993",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_signals",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "THARA Gold AI Low Risk To 1M",
    "url": "https://www.mql5.com/en/signals/2387326",
    "symbols": [],
@@ -535,14 +543,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "QQ med 3398",
    "url": "https://www.mql5.com/en/signals/2385768",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "mql5_signals",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "DP Miks",
-   "url": "https://www.mql5.com/en/signals/2387993",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -973,16 +973,16 @@
   {
    "source": "mql5_signals",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "LongTermTrading",
-   "url": "https://www.mql5.com/en/signals/2385972",
+   "title": "Precision Signal",
+   "url": "https://www.mql5.com/en/signals/2386932",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "mql5_signals",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Precision Signal",
-   "url": "https://www.mql5.com/en/signals/2386932",
+   "title": "LongTermTrading",
+   "url": "https://www.mql5.com/en/signals/2385972",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3854,8 +3854,960 @@
   {
    "source": "darwinex",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "503 Server Error: Service Unavailable for url: http://web.archive.org/cdx/search/cdx?url=darwinex.com/darwin/*&output=json&limit=300&offset=300&collapse=urlkey",
-   "url": "",
+   "title": "DARWIN AAG.3.15",
+   "url": "https://web.archive.org/web/20191209080337/https://www.darwinex.com/darwin/AAG.3.15",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AAU.3.23",
+   "url": "https://web.archive.org/web/20211023015618/https://www.darwinex.com/darwin/AAU.3.23",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AAW.3.16",
+   "url": "https://web.archive.org/web/20190716124942/https://www.darwinex.com/darwin/AAW.3.16",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ABA",
+   "url": "https://web.archive.org/web/20220718125402/https://www.darwinex.com/darwin/ABA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ACE.3.1",
+   "url": "https://web.archive.org/web/20190716022642/https://www.darwinex.com/darwin/ACE.3.1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ACF.3.3",
+   "url": "https://web.archive.org/web/20190716022808/https://www.darwinex.com/darwin/ACF.3.3",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ACW.3.13",
+   "url": "https://web.archive.org/web/20190717005446/https://www.darwinex.com/darwin/ACW.3.13",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ACX",
+   "url": "https://web.archive.org/web/20220410122452/https://www.darwinex.com/darwin/ACX",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ADD.3.23",
+   "url": "https://web.archive.org/web/20190723094401/https://www.darwinex.com/darwin/ADD.3.23",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ADX.3.17",
+   "url": "https://web.archive.org/web/20210924094352/https://www.darwinex.com/darwin/ADX.3.17",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ADX.4.17",
+   "url": "https://web.archive.org/web/20170702133602/https://www.darwinex.com/darwin/ADX.4.17",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AES.4.21",
+   "url": "https://web.archive.org/web/20191023025028/https://www.darwinex.com/darwin/AES.4.21?utm_source=WidgetDarwin&utm_medium=Referral&utm_campaign=WidgetSummary&utm_content=anonymous",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFA.3.5",
+   "url": "https://web.archive.org/web/20191207122213/https://www.darwinex.com/darwin/AFA.3.5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFD.3.11",
+   "url": "https://web.archive.org/web/20190723092219/https://www.darwinex.com/darwin/AFD.3.11",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFF.3.12",
+   "url": "https://web.archive.org/web/20211016121344/https://www.darwinex.com/darwin/AFF.3.12",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFL.3.14",
+   "url": "https://web.archive.org/web/20190723094720/https://www.darwinex.com/darwin/AFL.3.14",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFL.4.14",
+   "url": "https://web.archive.org/web/20190326024153/https://www.darwinex.com/darwin/AFL.4.14/?ac=JVyGioXVtwW0NiwC3yfFUw",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFO.3.12",
+   "url": "https://web.archive.org/web/20210924093940/https://www.darwinex.com/darwin/AFO.3.12",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFO.4.12",
+   "url": "https://web.archive.org/web/20210926034520/https://www.darwinex.com/darwin/AFO.4.12",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFXJ",
+   "url": "https://web.archive.org/web/20250925110010/https://www.darwinex.com/darwin/AFXJ",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFXJ",
+   "url": "https://web.archive.org/web/20250925105803/https://www.darwinex.com/darwin/AFXJ?detail_view=true",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AFZ.3.5",
+   "url": "https://web.archive.org/web/20190723222700/https://www.darwinex.com/darwin/AFZ.3.5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AGD.3.9",
+   "url": "https://web.archive.org/web/20190723230037/https://www.darwinex.com/darwin/AGD.3.9",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AGD.4.9",
+   "url": "https://web.archive.org/web/20180406185421/http://www.darwinex.com:80/darwin/AGD.4.9/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AGS.3.10",
+   "url": "https://web.archive.org/web/20211204190515/https://www.darwinex.com/darwin/AGS.3.10",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AHB.3.10",
+   "url": "https://web.archive.org/web/20191112234636/https://www.darwinex.com/darwin/AHB.3.10",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AHZ.3.12",
+   "url": "https://web.archive.org/web/20210514232919/https://www.darwinex.com/darwin/AHZ.3.12",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AIE.3.14",
+   "url": "https://web.archive.org/web/20190723092528/https://www.darwinex.com/darwin/AIE.3.14",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AIH.4.12",
+   "url": "https://web.archive.org/web/20191207192120/https://www.darwinex.com/darwin/AIH.4.12",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AIM.3.11",
+   "url": "https://web.archive.org/web/20190723092521/https://www.darwinex.com/darwin/AIM.3.11",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AIN.3.14",
+   "url": "https://web.archive.org/web/20210122165935/https://www.darwinex.com/darwin/AIN.3.14",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AIS.3.21",
+   "url": "https://web.archive.org/web/20200815185650/https://www.darwinex.com/darwin/AIS.3.21",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AJG.4.21",
+   "url": "https://web.archive.org/web/20191210165044/https://www.darwinex.com/darwin/AJG.4.21",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AKK.3.17",
+   "url": "https://web.archive.org/web/20211016121744/https://www.darwinex.com/darwin/AKK.3.17",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AKO.4.5",
+   "url": "https://web.archive.org/web/20190716025644/https://www.darwinex.com/darwin/AKO.4.5/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ALD.3.24",
+   "url": "https://web.archive.org/web/20190720013704/https://www.darwinex.com/darwin/ALD.3.24",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ALE.3.23",
+   "url": "https://web.archive.org/web/20190723092525/https://www.darwinex.com/darwin/ALE.3.23",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ALN.4.3",
+   "url": "https://web.archive.org/web/20190723094814/https://www.darwinex.com/darwin/ALN.4.3?_ga=2.89927635.998153185.1546850353-1762178115.1537426668",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AMB.3.13",
+   "url": "https://web.archive.org/web/20191112230809/https://www.darwinex.com/darwin/AMB.3.13",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AMR.3.5",
+   "url": "https://web.archive.org/web/20211016114107/https://www.darwinex.com/darwin/AMR.3.5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AMT.3.11",
+   "url": "https://web.archive.org/web/20190723222731/https://www.darwinex.com/darwin/AMT.3.11",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ANA.3.24",
+   "url": "https://web.archive.org/web/20200920070412/https://www.darwinex.com/darwin/ANA.3.24",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ANI.4.6",
+   "url": "https://web.archive.org/web/20191210165253/https://www.darwinex.com/darwin/ANI.4.6",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ANO.3.15",
+   "url": "https://web.archive.org/web/20200922083024/https://www.darwinex.com/darwin/ANO.3.15",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ANU.3.14",
+   "url": "https://web.archive.org/web/20190720013127/https://www.darwinex.com/darwin/ANU.3.14",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ANY.3.1",
+   "url": "https://web.archive.org/web/20210617234737/https://www.darwinex.com/darwin/ANY.3.1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AOA.3.24",
+   "url": "https://web.archive.org/web/20211023175547/https://www.darwinex.com/darwin/AOA.3.24",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AOF.3.19",
+   "url": "https://web.archive.org/web/20190716123102/https://www.darwinex.com/darwin/AOF.3.19",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AOJ.3.12",
+   "url": "https://web.archive.org/web/20190723222544/https://www.darwinex.com/darwin/AOJ.3.12",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AOT.3.9",
+   "url": "https://web.archive.org/web/20190723092513/https://www.darwinex.com/darwin/AOT.3.9",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN APP.3.22",
+   "url": "https://web.archive.org/web/20190716023034/https://www.darwinex.com/darwin/APP.3.22",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN APR.3.10",
+   "url": "https://web.archive.org/web/20191210131133/https://www.darwinex.com/darwin/APR.3.10",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN APU.3.10",
+   "url": "https://web.archive.org/web/20191122051919/https://www.darwinex.com/darwin/APU.3.10",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN APX.3.3",
+   "url": "https://web.archive.org/web/20191114214704/https://www.darwinex.com/darwin/APX.3.3",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AQA.3.11",
+   "url": "https://web.archive.org/web/20191111202840/https://www.darwinex.com/darwin/AQA.3.11",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AQA.4.11",
+   "url": "https://web.archive.org/web/20190723222809/https://www.darwinex.com/darwin/AQA.4.11",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AQL.4.12",
+   "url": "https://web.archive.org/web/20180818162902/https://www.darwinex.com/darwin/AQL.4.12?utm_source=WidgetDarwin&utm_medium=Referral&utm_campaign=WidgetChart&utm_content=cbalta",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AQP.3.24",
+   "url": "https://web.archive.org/web/20190717004305/https://www.darwinex.com/darwin/AQP.3.24",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AQU.4.9",
+   "url": "https://web.archive.org/web/20190717005712/https://www.darwinex.com/darwin/AQU.4.9",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ARD.3.20",
+   "url": "https://web.archive.org/web/20210617223417/https://www.darwinex.com/darwin/ARD.3.20",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ARJ.3.9",
+   "url": "https://web.archive.org/web/20211023164911/https://www.darwinex.com/darwin/ARJ.3.9",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ARW.3.15",
+   "url": "https://web.archive.org/web/20191122053912/https://www.darwinex.com/darwin/ARW.3.15",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ASD.3.22",
+   "url": "https://web.archive.org/web/20210227184330/https://www.darwinex.com/darwin/ASD.3.22",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ASL.3.23",
+   "url": "https://web.archive.org/web/20210514232411/https://www.darwinex.com/darwin/ASL.3.23",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ASN.3.24",
+   "url": "https://web.archive.org/web/20211022011509/https://www.darwinex.com/darwin/ASN.3.24",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ASP.3.14",
+   "url": "https://web.archive.org/web/20190723223012/https://www.darwinex.com/darwin/ASP.3.14",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AST.3.11",
+   "url": "https://web.archive.org/web/20200922084305/https://www.darwinex.com/darwin/AST.3.11",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ATA.3.12",
+   "url": "https://web.archive.org/web/20200920065813/https://www.darwinex.com/darwin/ATA.3.12",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ATB.3.9",
+   "url": "https://web.archive.org/web/20191122042952/https://www.darwinex.com/darwin/ATB.3.9",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ATC.3.16",
+   "url": "https://web.archive.org/web/20190716022621/https://www.darwinex.com/darwin/ATC.3.16",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ATD.4.5",
+   "url": "https://web.archive.org/web/20180406185543/http://www.darwinex.com:80/darwin/ATD.4.5/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ATE.4.21",
+   "url": "https://web.archive.org/web/20180406185445/http://www.darwinex.com:80/darwin/ATE.4.21/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ATH.4.18",
+   "url": "https://web.archive.org/web/20191113141600/https://www.darwinex.com/darwin/ATH.4.18",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ATV.3.7",
+   "url": "https://web.archive.org/web/20190717004953/https://www.darwinex.com/darwin/ATV.3.7",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN ATZ.3.19",
+   "url": "https://web.archive.org/web/20190716022749/https://www.darwinex.com/darwin/ATZ.3.19",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AUA.4.24",
+   "url": "https://web.archive.org/web/20190716022904/https://www.darwinex.com/darwin/AUA.4.24/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AUD.3.14",
+   "url": "https://web.archive.org/web/20190723224942/https://www.darwinex.com/darwin/AUD.3.14",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AUJ.4.23",
+   "url": "https://web.archive.org/web/20191209075202/https://www.darwinex.com/darwin/AUJ.4.23/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AUR.3.23",
+   "url": "https://web.archive.org/web/20211016112933/https://www.darwinex.com/darwin/AUR.3.23",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AUX",
+   "url": "https://web.archive.org/web/20220905070840/https://www.darwinex.com/darwin/AUX?ref=vc.ru",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AVB.3.22",
+   "url": "https://web.archive.org/web/20211023180924/https://www.darwinex.com/darwin/AVB.3.22",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AVG.3.19",
+   "url": "https://web.archive.org/web/20191207113003/https://www.darwinex.com/darwin/AVG.3.19",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AVK.3.22",
+   "url": "https://web.archive.org/web/20190717005247/https://www.darwinex.com/darwin/AVK.3.22",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AVM.3.20",
+   "url": "https://web.archive.org/web/20211016115638/https://www.darwinex.com/darwin/AVM.3.20",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AVO.3.16",
+   "url": "https://web.archive.org/web/20191111204137/https://www.darwinex.com/darwin/AVO.3.16",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AVY.3.8",
+   "url": "https://web.archive.org/web/20211016112225/https://www.darwinex.com/darwin/AVY.3.8",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AWA.3.17",
+   "url": "https://web.archive.org/web/20191114224538/https://www.darwinex.com/darwin/AWA.3.17",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AWF.4.3",
+   "url": "https://web.archive.org/web/20180818164042/https://www.darwinex.com/darwin/AWF.4.3?utm_source=WidgetDarwin&utm_medium=Referral&utm_campaign=WidgetChart&utm_content=cbalta",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AWH.4.4",
+   "url": "https://web.archive.org/web/20180818161131/https://www.darwinex.com/darwin/AWH.4.4?utm_source=WidgetDarwin&utm_medium=Referral&utm_campaign=WidgetChart&utm_content=cbalta",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AWJ.3.18",
+   "url": "https://web.archive.org/web/20190716123316/https://www.darwinex.com/darwin/AWJ.3.18",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AWL.3.19",
+   "url": "https://web.archive.org/web/20200922071912/https://www.darwinex.com/darwin/AWL.3.19",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AWO.4.4",
+   "url": "https://web.archive.org/web/20191210165123/https://www.darwinex.com/darwin/AWO.4.4",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AWQ.4.20",
+   "url": "https://web.archive.org/web/20180818165034/https://www.darwinex.com/darwin/AWQ.4.20?utm_source=WidgetDarwin&utm_medium=Referral&utm_campaign=WidgetChart&utm_content=cbalta",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AWU.3.10",
+   "url": "https://web.archive.org/web/20191207112854/https://www.darwinex.com/darwin/AWU.3.10",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AXM.3.4",
+   "url": "https://web.archive.org/web/20211023165229/https://www.darwinex.com/darwin/AXM.3.4",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AXQ.4.15",
+   "url": "https://web.archive.org/web/20180818164341/https://www.darwinex.com/darwin/AXQ.4.15?utm_source=WidgetDarwin&utm_medium=Referral&utm_campaign=WidgetChart&utm_content=cbalta",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AXR.4.3",
+   "url": "https://web.archive.org/web/20190720012501/https://www.darwinex.com/darwin/AXR.4.3/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AXR.4.3",
+   "url": "https://web.archive.org/web/20190716022926/https://www.darwinex.com/darwin/AXR.4.3?utm_source=Widget&utm_medium=Referral&utm_campaign=Widget&utm_content=ICB",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AXS.4.9",
+   "url": "https://web.archive.org/web/20170718074120/https://www.darwinex.com/darwin/AXS.4.9",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AXT.3.16",
+   "url": "https://web.archive.org/web/20191122045027/https://www.darwinex.com/darwin/AXT.3.16",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AXX.3.21",
+   "url": "https://web.archive.org/web/20200809205508/https://www.darwinex.com/darwin/AXX.3.21",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AYM.3.11",
+   "url": "https://web.archive.org/web/20210805132650/https://www.darwinex.com/darwin/AYM.3.11",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AYN",
+   "url": "https://web.archive.org/web/20240522134722/https://www.darwinex.com/darwin/AYN",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AZA.3.2",
+   "url": "https://web.archive.org/web/20200920082516/https://www.darwinex.com/darwin/AZA.3.2",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AZE.3.4",
+   "url": "https://web.archive.org/web/20210122161353/https://www.darwinex.com/darwin/AZE.3.4",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AZG.4.20",
+   "url": "https://web.archive.org/web/20190723223104/https://www.darwinex.com/darwin/AZG.4.20/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN AZM.3.21",
+   "url": "https://web.archive.org/web/20190723094716/https://www.darwinex.com/darwin/AZM.3.21",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BAD.4.18",
+   "url": "https://web.archive.org/web/20230415073547/https://www.darwinex.com/darwin/BAD.4.18",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BAL.3.13",
+   "url": "https://web.archive.org/web/20190723092144/https://www.darwinex.com/darwin/BAL.3.13",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BAR.3.24",
+   "url": "https://web.archive.org/web/20200922085549/https://www.darwinex.com/darwin/BAR.3.24",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BAS.4.5",
+   "url": "https://web.archive.org/web/20200918071839/https://www.darwinex.com/darwin/BAS.4.5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BATO",
+   "url": "https://web.archive.org/web/20241210191442/https://www.darwinex.com/darwin/BATO",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BATO",
+   "url": "https://web.archive.org/web/20241210190903/https://www.darwinex.com/darwin/BATO?detail_view=true",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BAX",
+   "url": "https://web.archive.org/web/20221116210434/https://darwinex.com/darwin/BAX",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BAX",
+   "url": "https://web.archive.org/web/20210506162914/https://www.darwinex.com/darwin/BAX?utm_campaign=30%20days%20of%20DarwinIA&utm_content=165255591&utm_medium=social&utm_source=twitter&hss_channel=tw-331056224",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BAX",
+   "url": "https://web.archive.org/web/20210302100640/https://www.darwinex.com/darwin/BAX?utm_campaign=TWITTER_FR&utm_content=155967913&utm_medium=social&utm_source=twitter&hss_channel=tw-4311500537",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BBM.3.7",
+   "url": "https://web.archive.org/web/20190723092554/https://www.darwinex.com/darwin/BBM.3.7",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BBZP",
+   "url": "https://web.archive.org/web/20260403095626/https://www.darwinex.com/darwin/BBZP?detail_view=true",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BCN.3.17",
+   "url": "https://web.archive.org/web/20190716123716/https://www.darwinex.com/darwin/BCN.3.17",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DARWIN BCU.3.7",
+   "url": "https://web.archive.org/web/20190723095254/https://www.darwinex.com/darwin/BCU.3.7",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4046,320 +4998,320 @@
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 9563946",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=9563946&mode=overview&isinline=1",
+   "title": "FX Blue user aa-023",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-023&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 96145912",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=96145912&mode=overview&isinline=1",
+   "title": "FX Blue user aa-024",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-024&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 9751",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=9751&mode=overview&isinline=1",
+   "title": "FX Blue user aa-025",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-025&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 98535",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=98535&mode=overview&isinline=1",
+   "title": "FX Blue user aa-026",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-026&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 988917",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=988917&mode=overview&isinline=1",
+   "title": "FX Blue user aa-027",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-027&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 99942_fxchoice",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=99942_fxchoice&mode=overview&isinline=1",
+   "title": "FX Blue user aa-028",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-028&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user _conservative",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=_conservative&mode=overview&isinline=1",
+   "title": "FX Blue user aa-029",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-029&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user _fgi_",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=_fgi_&mode=overview&isinline=1",
+   "title": "FX Blue user aa-030",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-030&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user _goldtrade86_",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=_goldtrade86_&mode=overview&isinline=1",
+   "title": "FX Blue user aa-031",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-031&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user _needpin",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=_needpin&mode=overview&isinline=1",
+   "title": "FX Blue user aa-032",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-032&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user _robottradingcerdas",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=_robottradingcerdas&mode=overview&isinline=1",
+   "title": "FX Blue user aa-033",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-033&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user _sharpshooter_ea_",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=_sharpshooter_ea_&mode=overview&isinline=1",
+   "title": "FX Blue user aa-034",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-034&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user _x2",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=_x2&mode=overview&isinline=1",
+   "title": "FX Blue user aa-035",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-035&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user a-c-midasify",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=a-c-midasify&mode=overview&isinline=1",
+   "title": "FX Blue user aa-036",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-036&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user a-j-hakimi-orca2025",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=a-j-hakimi-orca2025&mode=overview&isinline=1",
+   "title": "FX Blue user aa-037",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-037&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user a301039780",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=a301039780&mode=overview&isinline=1",
+   "title": "FX Blue user aa-038",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-038&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user a_j_hakimi_73",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=a_j_hakimi_73&mode=overview&isinline=1",
+   "title": "FX Blue user aa-039",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-039&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user a_scalper_ydx",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=a_scalper_ydx&mode=overview&isinline=1",
+   "title": "FX Blue user aa-040",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-040&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-001",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-001&mode=overview&isinline=1",
+   "title": "FX Blue user aa-041",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-041&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-002",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-002&mode=overview&isinline=1",
+   "title": "FX Blue user aa-042",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-042&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-003",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-003&mode=overview&isinline=1",
+   "title": "FX Blue user aa-043",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-043&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-004",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-004&mode=overview&isinline=1",
+   "title": "FX Blue user aa-044",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-044&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-005",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-005&mode=overview&isinline=1",
+   "title": "FX Blue user aa-045",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-045&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-006",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-006&mode=overview&isinline=1",
+   "title": "FX Blue user aa-046",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-046&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-007",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-007&mode=overview&isinline=1",
+   "title": "FX Blue user aa-047",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-047&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-008",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-008&mode=overview&isinline=1",
+   "title": "FX Blue user aa-048",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-048&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-009",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-009&mode=overview&isinline=1",
+   "title": "FX Blue user aa-049",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-049&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-010",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-010&mode=overview&isinline=1",
+   "title": "FX Blue user aa-050",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-050&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-011",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-011&mode=overview&isinline=1",
+   "title": "FX Blue user aa-051",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-051&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-012",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-012&mode=overview&isinline=1",
+   "title": "FX Blue user aa-052",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-052&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-013",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-013&mode=overview&isinline=1",
+   "title": "FX Blue user aa-053",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-053&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-014",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-014&mode=overview&isinline=1",
+   "title": "FX Blue user aa-054",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-054&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-015",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-015&mode=overview&isinline=1",
+   "title": "FX Blue user aa-055",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-055&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-016",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-016&mode=overview&isinline=1",
+   "title": "FX Blue user aa-056",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-056&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-017",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-017&mode=overview&isinline=1",
+   "title": "FX Blue user aa-057",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-057&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-018",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-018&mode=overview&isinline=1",
+   "title": "FX Blue user aa-058",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-058&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-019",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-019&mode=overview&isinline=1",
+   "title": "FX Blue user aa-059",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-059&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-020",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-020&mode=overview&isinline=1",
+   "title": "FX Blue user aa-060",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-060&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-021",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-021&mode=overview&isinline=1",
+   "title": "FX Blue user aa-061",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-061&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user aa-022",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-022&mode=overview&isinline=1",
+   "title": "FX Blue user aa-062",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=aa-062&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4422,8 +5374,960 @@
   {
    "source": "forextsd_cdx",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "503 Server Error: Service Unavailable for url: http://web.archive.org/cdx/search/cdx?url=forex-tsd.com*&output=json&limit=300&offset=5100&collapse=urlkey",
-   "url": "",
+   "title": "http://www.forex-tsd.com:80/",
+   "url": "https://web.archive.org/web/20051016184519/http://www.forex-tsd.com:80/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!11342!http://www.forex-tsd.com/evaluate-commercial-ideas/11342-evaluation-ea-shark.html);",
+   "url": "https://web.archive.org/web/20081214163953/http://www.forex-tsd.com:80/!11342!http://www.forex-tsd.com/evaluate-commercial-ideas/11342-evaluation-ea-shark.html);",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!12005!http://www.forex-tsd.com/announcements-blog/12005%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140928140428/http://www.forex-tsd.com/!12005!http://www.forex-tsd.com/announcements-blog/12005%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!18449!http://www.forex-tsd.com/rentasignal-service-elite-section-discus%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140922142037/http://www.forex-tsd.com/!18449!http://www.forex-tsd.com/rentasignal-service-elite-section-discus%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!344%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20141007050806/http://www.forex-tsd.com/!344%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!6359!http://www.forex-tsd.c%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20141006124851/http://www.forex-tsd.com/!6359!http://www.forex-tsd.c%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com/%3C!--Unregistered--%3Eelite-section/3580-elite-indicators-6",
+   "url": "https://web.archive.org/web/20150425044026/http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com/%3C!--Unregistered--%3Eelite-section/3580-elite-indicators-657.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!m3580!http://www.forex-tsd.com/manual-trading-systems-indicators/%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140928140431/http://www.forex-tsd.com/!m3580!http://www.forex-tsd.com/manual-trading-systems-indicators/%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com%3C!--Unregistered--%3E/elite-section/3580-elite-indicators-7",
+   "url": "https://web.archive.org/web/20140610002310/http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com%3C!--Unregistered--%3E/elite-section/3580-elite-indicators-733.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!m617!http://www.forex-tsd.com/manual-trading-systems/617-channel-trading-%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140828201458/http://www.forex-tsd.com/!m617!http://www.forex-tsd.com/manual-trading-systems/617-channel-trading-%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!p365373!http://www.forex-tsd.com/365373-%3C!--ReeBok--%3Epost67.html",
+   "url": "https://web.archive.org/web/20130114235826/http://www.forex-tsd.com:80/!p365373!http://www.forex-tsd.com/365373-%3C!--ReeBok--%3Epost67.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/%22http://analysis.forex-trading-signals.info/?wysijap=subscriptions&email_id=3&user_id=3&urlpa",
+   "url": "https://web.archive.org/web/20140816211013/http://www.forex-tsd.com/%22http://analysis.forex-trading-signals.info/?wysijap=subscriptions&email_id=3&user_id=3&urlpassed=aHR0cDovL2FuYWx5c2lzLmZvcmV4LXRyYWRpbmctc2lnbmFscy5pbmZvLz93eXNpamFwPXN1YnNjcmlwdGlvbnMmYW1wO2VtYWlsX2lkPTMmYW1wO3VzZXJfaWQ9MiZhbXA7dXJscGFzc2VkPWFIUjBjRG92TDJGdVlXeDVjMmx6TG1admNtVjRMWFJ5WVdScGJtY3RjMmxuYm1Gc2N5NXBibVp2THo5M2VYTnBhbUZ3UFhOMVluTmpjbWx3ZEdsdmJuTW1ZVzF3TzJWdFlXbHNYMmxrUFRNbVlXMXdPM1Z6WlhKZmFXUTlNaVpoYlhBN2RYSnNjR0Z6YzJWa1BXRklVakJqUkc5MlRESkdkVmxYZURWak1teDZURzFhZG1OdFZqUk1XRko1V1ZkU2NHSnRZM1JqTW14dVltMUdjMk41TlhCaWJWcDJUSG81TTJWWVRuQmhiVVozVUZoT01WbHVUbXBqYld4M1pFZHNkbUp1VFcxWlZ6RjNUekpXZEZsWGJITllNbXhyVUZSTmJWbFhNWGRQTTFaNldsaEtabUZYVVRsTmFWcG9ZbGhCTjJSWVNuTmpSMFo2WXpKV2ExQlhSa2xWYWtKcVVrYzVNbFJFU2tka1ZteFlaVVJXYWsxdGVEWlVSekZoWkcxT2RGWnFVazFYUmtvMVYxWmtVMk5IU25SWk0xSnFUVzE0ZFZsdE1VZGpNazQxVGxoQ2FXSldjREpVU0c4MVRUSldXVlJ1UW1oaVZWb3pWVVpvVDAxV2JIVlViWEJxWWxkNE0xcEZaSE5rYlVwMVZGY3hXbFo2UmpOVWVrcFhaRVpzV0dKSVRsbE5iWGh5VlVaU1RtSldiRmhOV0dSUVRURmFObGRzYUV0YWJVWllWVlJzVGxaRlJqVlViV3hoWVVkS1dWRlVaR3RYUlhCNldUQmtSMlZ0VFhsV2JYUlJWakJhU2xaWGNFTmhiRXBJVDFSS1ZWSkZOWEpVVkVwVFRsVTFXRTFYYkU1TlNFSjZWMnhXVG1WRk1VaFVibEpUWWxoU2IxWnVjRmRrVmxKSFlVVTVhbEp0T1RWVWJHUnZZVlpPUmsxVVJscFdiVTE0V1d4a1MwNVZPVVJXV0hCVFVURndiMWxzYUVKT01XdDVUMWhXYTFORmNESlphMlEwWWtkT2NVMVljR3RTTUZsM1dUTnNZV0ZIU2xsUlZHUmFWakEwZDFsV1l6VmtWa0pZVW01V1dsWXpaekZaZWtwV1lsWnNXRTFZWkZCTk1sRXhXWHBLYzJOV2JGUk5XR1JhVmpKU2MxVkdVa1ppVm14WVRWaGtVRTB5VVRGWmVrcHpZMVpzV1ZGVWJHcE5NVnB3V1hwS1QyVlhSbGxSYWtKb1ZucHNNVmt6WTJ4Tk1GRnNUVEJSYlZsWE1YZFBNazUyWW01U2VXSXllSE5hV0VrNVl6TlNhR1JJVFcxWlZ6RjNUekpHYW1SSGJIWmlhakZvWW0xR2MyVllUbXhLYlVaMFkwUjBNMlZZVG5CaGJVVjBZMGRHYmxwVU1IaEtiVVowWTBSME0yVllUbkJoYlVaM1VGaE9NVmx1VG1wamJXeDNaRWRzZG1KdVRTVXpSQ1poYlhBN1kyOXVkSEp2Ykd4bGNqMXpkR0YwY3laaGJYQTdZV04wYVc5dVBXRnVZV3g1YzJVbVlXMXdPM2Q1YzJscVlTMXdZV2RsUFRFbVlXMXdPM2Q1YzJscVlYQTljM1ZpYzJOeWFYQjBhVzl1Y3clM0QlM0QmYW1wO2NvbnRyb2xsZXI9c3RhdHMmYW1wO2FjdGlvbj1hbmFseXNlJmFtcDt3eXNpamEtcGFnZT0xJmFtcDt3eXNpamFwPXN1YnNjcmlwdGlvbnM%3D&controller=stats&action=analyse&wysija-page",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20-%20Forex%20TSD%7C%20Metatrader%20Indicators%20and%20Experts%20Advisors",
+   "url": "https://web.archive.org/web/20090420185718/http://www.forex-tsd.com:80/%20-%20Forex%20TSD%7C%20Metatrader%20Indicators%20and%20Experts%20Advisors",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20analytics/%2012186-signals-primer.html",
+   "url": "https://web.archive.org/web/20080227113739/http://www.forex-tsd.com:80/%20analytics/%2012186-signals-primer.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20commercial-trading-systems-indicators/%2012080-probability",
+   "url": "https://web.archive.org/web/20080405231746/http://www.forex-tsd.com:80/%20commercial-trading-systems-indicators/%2012080-probability",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011958-shogun-breakout-st&hellip",
+   "url": "https://web.archive.org/web/20080224020717/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011958-shogun-breakout-st&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011997-there-ea-like.html",
+   "url": "https://web.archive.org/web/20080323102645/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011997-there-ea-like.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012011-my-wealth-trading-sy",
+   "url": "https://web.archive.org/web/20080218140249/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012011-my-wealth-trading-sy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012110-please-check-my-firs",
+   "url": "https://web.archive.org/web/20080322021252/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012110-please-check-my-firs",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012184-correlation-grid-ea",
+   "url": "https://web.archive.org/web/20080321110204/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012184-correlation-grid-ea",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012230-oilfxpro-pro-experts",
+   "url": "https://web.archive.org/web/20080226234853/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012230-oilfxpro-pro-experts",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012358-petit-pip-eater.ht&hellip",
+   "url": "https://web.archive.org/web/20080219103755/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012358-petit-pip-eater.ht&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012359-hedge-ea-advice-op&hellip",
+   "url": "https://web.archive.org/web/20080219111128/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012359-hedge-ea-advice-op&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012385-turn-hedging-syste&hellip",
+   "url": "https://web.archive.org/web/20080403033155/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012385-turn-hedging-syste&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012659-ea-m-series-eurjpy-b",
+   "url": "https://web.archive.org/web/20080523161606/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012659-ea-m-series-eurjpy-b",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012843-powersm-semi-marting",
+   "url": "https://web.archive.org/web/20080609191658/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012843-powersm-semi-marting",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20harmonic-trading/%2011145-zup_v73.html",
+   "url": "https://web.archive.org/web/20080201033805/http://www.forex-tsd.com:80/%20harmonic-trading/%2011145-zup_v73.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20harmonic-trading/%2011443-harmonic-zigzags.html",
+   "url": "https://web.archive.org/web/20080121025202/http://www.forex-tsd.com:80/%20harmonic-trading/%2011443-harmonic-zigzags.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20harmonic-trading/%2011472-secrets-meta-trader.html",
+   "url": "https://web.archive.org/web/20080404111826/http://www.forex-tsd.com:80/%20harmonic-trading/%2011472-secrets-meta-trader.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011760-lr-trend.html",
+   "url": "https://web.archive.org/web/20080323102650/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011760-lr-trend.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011834-simple-adtr-indicator.htm",
+   "url": "https://web.archive.org/web/20080219005053/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011834-simple-adtr-indicator.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012016-wave_autotrendlines-new&hellip",
+   "url": "https://web.archive.org/web/20080321221930/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012016-wave_autotrendlines-new&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012188-amazing-gbp-jpy-indicat",
+   "url": "https://web.archive.org/web/20080321210031/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012188-amazing-gbp-jpy-indicat",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012616-where-can-i-find-these-in",
+   "url": "https://web.archive.org/web/20080405231751/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012616-where-can-i-find-these-in",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012779-trade-assistant.html",
+   "url": "https://web.archive.org/web/20080415013026/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012779-trade-assistant.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2015166-index-indicator-best-indi",
+   "url": "https://web.archive.org/web/20090218092018/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2015166-index-indicator-best-indi",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20metatrader-4/%2012769-range-bar-chart-mt4.html",
+   "url": "https://web.archive.org/web/20080418081454/http://www.forex-tsd.com:80/%20metatrader-4/%2012769-range-bar-chart-mt4.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20metatrader-brokers/%2012218-master-forex.html",
+   "url": "https://web.archive.org/web/20080226224920/http://www.forex-tsd.com:80/%20metatrader-brokers/%2012218-master-forex.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20metatrader-brokers/%2012746-varengolbankfx-metatrader-fx-t",
+   "url": "https://web.archive.org/web/20080323151004/http://www.forex-tsd.com:80/%20metatrader-brokers/%2012746-varengolbankfx-metatrader-fx-t",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20post-compare-trades/%2012754-victor-journal.html",
+   "url": "https://web.archive.org/web/20080415093556/http://www.forex-tsd.com:80/%20post-compare-trades/%2012754-victor-journal.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20post-compare-trades/%2012794-fxfariz36s-trading-journal-&hellip",
+   "url": "https://web.archive.org/web/20080319000716/http://www.forex-tsd.com:80/%20post-compare-trades/%2012794-fxfariz36s-trading-journal-&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20post-compare-trades/%2012859-i-dont-know-if-against-rule&hellip",
+   "url": "https://web.archive.org/web/20080322021657/http://www.forex-tsd.com:80/%20post-compare-trades/%2012859-i-dont-know-if-against-rule&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2012175-ozfx-system-100-800-p",
+   "url": "https://web.archive.org/web/20080218142517/http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2012175-ozfx-system-100-800-p",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2014477-ashfx-daily.html",
+   "url": "https://web.archive.org/web/20080628015958/http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2014477-ashfx-daily.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%23",
+   "url": "https://web.archive.org/web/20070113020933/http://www.forex-tsd.com:80/%23",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%E3%80%80%E3%81%93%E3%81%93%E3%81%A7%E3%82%B0%E3%82%B0%E3%82%8B%E3%82%82%E3%82%88%E3%81%97%E",
+   "url": "https://web.archive.org/web/20100211171926/http://www.forex-tsd.com:80/%E3%80%80%E3%81%93%E3%81%93%E3%81%A7%E3%82%B0%E3%82%B0%E3%82%8B%E3%82%82%E3%82%88%E3%81%97%E3%80%82",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/)",
+   "url": "https://web.archive.org/web/20080108064552/http://www.forex-tsd.com:80/)",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/),",
+   "url": "https://web.archive.org/web/20080108064301/http://www.forex-tsd.com:80/),",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/+1-888-591-2951",
+   "url": "https://web.archive.org/web/20140814151245/http://www.forex-tsd.com/+1-888-591-2951",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/-post.html",
+   "url": "https://web.archive.org/web/20061208063057/http://www.forex-tsd.com:80/-post.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/-v12-c02-smoothi-pdf.html",
+   "url": "https://web.archive.org/web/20150403085923/http://www.forex-tsd.com:80/-v12-c02-smoothi-pdf.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/-v15-c07-rainbow-pdf.html",
+   "url": "https://web.archive.org/web/20150403085853/http://www.forex-tsd.com:80/-v15-c07-rainbow-pdf.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-10.html",
+   "url": "https://web.archive.org/web/20130409023128/http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-10.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-5.html",
+   "url": "https://web.archive.org/web/20130409023133/http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-5.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../1662-super-signals-indicator.html",
+   "url": "https://web.archive.org/web/20130409024521/http://www.forex-tsd.com:80/.../1662-super-signals-indicator.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../20659-sniper-forex-system",
+   "url": "https://web.archive.org/web/20121115232421/http://www.forex-tsd.com:80/.../20659-sniper-forex-system",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal-10.html",
+   "url": "https://web.archive.org/web/20130411045245/http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal-10.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal.html",
+   "url": "https://web.archive.org/web/20130409024527/http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../32755-financial-markets-today-winopti...",
+   "url": "https://web.archive.org/web/20120727043327/http://www.forex-tsd.com:80/.../32755-financial-markets-today-winopti...",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../8024-stochastic-oscillator.html",
+   "url": "https://web.archive.org/web/20130412094616/http://www.forex-tsd.com:80/.../8024-stochastic-oscillator.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../8214-simple-entry-exit-ea.html",
+   "url": "https://web.archive.org/web/20130412094922/http://www.forex-tsd.com:80/.../8214-simple-entry-exit-ea.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.ic-trading.html",
+   "url": "https://web.archive.org/web/20071024032302/http://www.forex-tsd.com:80/.ic-trading.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.od-revised.html",
+   "url": "https://web.archive.org/web/20071219185114/http://www.forex-tsd.com:80/.od-revised.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.php",
+   "url": "https://web.archive.org/web/20150612030139/http://www.forex-tsd.com:80/.php",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.rading-187.html",
+   "url": "https://web.archive.org/web/20080108064559/http://www.forex-tsd.com:80/.rading-187.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.rading-214.htmlhttp://picasaweb.google.com/pipimint",
+   "url": "https://web.archive.org/web/20080218043410/http://www.forex-tsd.com:80/.rading-214.htmlhttp://picasaweb.google.com/pipimint",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.site/eminis/how_to/articles/A-Simple-Day-Trading-Strategy-80849.cfm",
+   "url": "https://web.archive.org/web/20150101162534/http://www.forex-tsd.com:80/.site/eminis/how_to/articles/A-Simple-Day-Trading-Strategy-80849.cfm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.site/stocks/how_to/articles/-76494.cfm",
+   "url": "https://web.archive.org/web/20110711161538/http://www.forex-tsd.com:80/.site/stocks/how_to/articles/-76494.cfm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.site/stocks/how_to/articles/How-to-Use--Average-True-Range-for-Short-Term-trad-81414.cfm?a=",
+   "url": "https://web.archive.org/web/20120423070242/http://www.forex-tsd.com:80/.site/stocks/how_to/articles/How-to-Use--Average-True-Range-for-Short-Term-trad-81414.cfm?a=81414",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1-post.html",
+   "url": "https://web.archive.org/web/20070210094610/http://www.forex-tsd.com:80/1-post.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2012/01/the-highly-anticipated-alert-indicator-is-released.html",
+   "url": "https://web.archive.org/web/20140701073938/http://www.forex-tsd.com:80/1/post/2012/01/the-highly-anticipated-alert-indicator-is-released.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2012/10/coming-soon-rsi-and-cci-divergence-indicators.html",
+   "url": "https://web.archive.org/web/20140424054214/http://www.forex-tsd.com:80/1/post/2012/10/coming-soon-rsi-and-cci-divergence-indicators.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2012/10/truetl-175-is-released.html",
+   "url": "https://web.archive.org/web/20140424054219/http://www.forex-tsd.com:80/1/post/2012/10/truetl-175-is-released.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2014/01/triangle-mode-only-two-trendlines-truetl-189-is-released.html",
+   "url": "https://web.archive.org/web/20141016032009/http://www.forex-tsd.com:80/1/post/2014/01/triangle-mode-only-two-trendlines-truetl-189-is-released.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2014/03/changes-from-the-19-versions.html",
+   "url": "https://web.archive.org/web/20141016033219/http://www.forex-tsd.com:80/1/post/2014/03/changes-from-the-19-versions.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2014/03/triangle-mode-for-all-trendline-indicators-truetl-v190.html",
+   "url": "https://web.archive.org/web/20141016033224/http://www.forex-tsd.com:80/1/post/2014/03/triangle-mode-for-all-trendline-indicators-truetl-v190.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10-post6.html",
+   "url": "https://web.archive.org/web/20070106122056/http://www.forex-tsd.com:80/10-post6.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100%.txt",
+   "url": "https://web.archive.org/web/20130520192043/http://www.forex-tsd.com:80/100%.txt",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100-post2.html",
+   "url": "https://web.archive.org/web/20080226234858/http://www.forex-tsd.com:80/100-post2.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10000-post3.html",
+   "url": "https://web.archive.org/web/20061026043608/http://www.forex-tsd.com:80/10000-post3.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/100001-post9.html",
+   "url": "https://web.archive.org/web/20080821180706/http://www.forex-tsd.com/100001-post9.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100002-post44.html",
+   "url": "https://web.archive.org/web/20090822232151/http://www.forex-tsd.com:80/100002-post44.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100003-post22.html",
+   "url": "https://web.archive.org/web/20070519133558/http://www.forex-tsd.com:80/100003-post22.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/100004-post10.html",
+   "url": "https://web.archive.org/web/20080830070132/http://www.forex-tsd.com/100004-post10.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100005-post45.html",
+   "url": "https://web.archive.org/web/20090823002110/http://www.forex-tsd.com:80/100005-post45.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100006-post3.html",
+   "url": "https://web.archive.org/web/20080411084146/http://www.forex-tsd.com:80/100006-post3.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100008-post128.html",
+   "url": "https://web.archive.org/web/20071207170449/http://www.forex-tsd.com:80/100008-post128.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100009-post92.html",
+   "url": "https://web.archive.org/web/20070423224401/http://www.forex-tsd.com:80/100009-post92.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10001-post25.html",
+   "url": "https://web.archive.org/web/20081005130726/http://www.forex-tsd.com:80/10001-post25.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100011-post93.html",
+   "url": "https://web.archive.org/web/20070618141552/http://www.forex-tsd.com:80/100011-post93.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100012-post94.html",
+   "url": "https://web.archive.org/web/20070503113312/http://www.forex-tsd.com:80/100012-post94.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100013-post95.html",
+   "url": "https://web.archive.org/web/20070918192247/http://www.forex-tsd.com:80/100013-post95.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100015-post96.html",
+   "url": "https://web.archive.org/web/20070501024727/http://www.forex-tsd.com:80/100015-post96.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100016-post89.html",
+   "url": "https://web.archive.org/web/20070501204510/http://www.forex-tsd.com:80/100016-post89.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100017-post97.html",
+   "url": "https://web.archive.org/web/20070503183311/http://www.forex-tsd.com:80/100017-post97.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100019-post98.html",
+   "url": "https://web.archive.org/web/20070921002113/http://www.forex-tsd.com:80/100019-post98.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10002-post143.html",
+   "url": "https://web.archive.org/web/20080202185535/http://www.forex-tsd.com:80/10002-post143.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100024-post99.html",
+   "url": "https://web.archive.org/web/20070501175727/http://www.forex-tsd.com:80/100024-post99.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100025-post100.html",
+   "url": "https://web.archive.org/web/20070430235912/http://www.forex-tsd.com:80/100025-post100.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100027-post4.html",
+   "url": "https://web.archive.org/web/20070520092111/http://www.forex-tsd.com:80/100027-post4.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100029-post109.html",
+   "url": "https://web.archive.org/web/20071114003837/http://www.forex-tsd.com:80/100029-post109.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10003-post11.html",
+   "url": "https://web.archive.org/web/20060310004217/http://www.forex-tsd.com:80/10003-post11.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100032-post110.html",
+   "url": "https://web.archive.org/web/20071114003839/http://www.forex-tsd.com:80/100032-post110.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100033-post5.html",
+   "url": "https://web.archive.org/web/20071123112114/http://www.forex-tsd.com:80/100033-post5.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100035-post4.html",
+   "url": "https://web.archive.org/web/20080411084152/http://www.forex-tsd.com:80/100035-post4.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100036-post5.html",
+   "url": "https://web.archive.org/web/20080411071944/http://www.forex-tsd.com:80/100036-post5.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100037-post321.html",
+   "url": "https://web.archive.org/web/20071103214411/http://www.forex-tsd.com:80/100037-post321.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100038-post16.html",
+   "url": "https://web.archive.org/web/20080108033235/http://www.forex-tsd.com:80/100038-post16.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100038-post40.html",
+   "url": "https://web.archive.org/web/20081005105455/http://www.forex-tsd.com:80/100038-post40.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10004-post144.html",
+   "url": "https://web.archive.org/web/20080202185541/http://www.forex-tsd.com:80/10004-post144.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100040-post101.html",
+   "url": "https://web.archive.org/web/20070503042226/http://www.forex-tsd.com:80/100040-post101.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100042-post111.html",
+   "url": "https://web.archive.org/web/20071024003834/http://www.forex-tsd.com:80/100042-post111.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100044-post17.html",
+   "url": "https://web.archive.org/web/20080108033240/http://www.forex-tsd.com:80/100044-post17.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100044-post41.html",
+   "url": "https://web.archive.org/web/20081005103717/http://www.forex-tsd.com:80/100044-post41.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100046-post214.html",
+   "url": "https://web.archive.org/web/20070521171935/http://www.forex-tsd.com:80/100046-post214.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100047-post11.html",
+   "url": "https://web.archive.org/web/20070717075537/http://www.forex-tsd.com:80/100047-post11.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100048-post1.html",
+   "url": "https://web.archive.org/web/20070422193747/http://www.forex-tsd.com:80/100048-post1.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10005-post1.html",
+   "url": "https://web.archive.org/web/20070521085716/http://www.forex-tsd.com:80/10005-post1.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100050-post13.html",
+   "url": "https://web.archive.org/web/20071023074725/http://www.forex-tsd.com:80/100050-post13.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100053-post861.html",
+   "url": "https://web.archive.org/web/20090921025802/http://www.forex-tsd.com:80/100053-post861.html",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4870,14 +6774,6 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Advancing banking, governance and financial innovation in Malaysia and Asia",
-   "url": "https://www.bis.org/speeches/20260901-advancing-banking-governance-and-financial-innovation-malaysia-and-asia",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "The restrictive stance of monetary policy",
    "url": "https://www.bis.org/speeches/20260901-restrictive-stance-monetary-policy",
    "symbols": [],
@@ -4926,8 +6822,8 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Building deep and resilient financial markets for a Viksit Bharat",
-   "url": "https://www.bis.org/speeches/20260817-building-deep-and-resilient-financial-markets-viksit-bharat",
+   "title": "Advancing banking, governance and financial innovation in Malaysia and Asia",
+   "url": "https://www.bis.org/speeches/20260901-advancing-banking-governance-and-financial-innovation-malaysia-and-asia",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5008,6 +6904,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Outlook for the US and Alaskan economies",
    "url": "https://www.bis.org/speeches/20260817-outlook-us-and-alaskan-economies",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Building deep and resilient financial markets for a Viksit Bharat",
+   "url": "https://www.bis.org/speeches/20260817-building-deep-and-resilient-financial-markets-viksit-bharat",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5102,14 +7006,6 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Understanding supply shocks and their implications for monetary policy",
-   "url": "https://www.bis.org/speeches/20260731-understanding-supply-shocks-and-their-implications-monetary-policy",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "The economic and financial system amidst uncertainty and innovation",
    "url": "https://www.bis.org/speeches/20260731-economic-and-financial-system-amidst-uncertainty-and-innovation",
    "symbols": [],
@@ -5184,6 +7080,46 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Release of the Monetary Policy Report",
    "url": "https://www.bis.org/speeches/20260731-release-monetary-policy-report",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Understanding supply shocks and their implications for monetary policy",
+   "url": "https://www.bis.org/speeches/20260731-understanding-supply-shocks-and-their-implications-monetary-policy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Abhishek-97735/Equity-Line",
+   "url": "https://github.com/Abhishek-97735/Equity-Line",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "mainpclab/metatrader5-websocket-tickers",
+   "url": "https://github.com/mainpclab/metatrader5-websocket-tickers",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "shazzadu1/Trade-Halting-Safeguard",
+   "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Aloni-zin/Equity-Ray-Tracer",
+   "url": "https://github.com/Aloni-zin/Equity-Ray-Tracer",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5278,32 +7214,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "title": "Eltano1985/tradememory-protocol",
+   "url": "https://github.com/Eltano1985/tradememory-protocol",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/MT5-Risk-Management-EA",
-   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/Mt5-Forex-position-size-calculator",
-   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5352,6 +7272,38 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "RPNATION1/Tradingalgos",
    "url": "https://github.com/RPNATION1/Tradingalgos",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/MT5-Risk-Management-EA",
+   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/Mt5-Forex-position-size-calculator",
+   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -7028,252 +8980,6 @@
     "orderflow",
     "seasonality",
     "volatility"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "September 4, 2026 GOLD XAUUSD NEXT MOVE \ud83d\udd25 BUY or SELL? | Gold Price Analysis #shorts #tradingshorts",
-   "url": "https://youtube.com/watch?v=nafhnmiqz8o",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "#xauusd #trading #auraforextrading03 \ud835\udc12\ud835\udc1e\ud835\udc29\ud835\udc2d\ud835\udc1e\ud835\udc26\ud835\udc1b\ud835\udc1e\ud835\udc2b 2026 \ud835\udc0f\ud835\udc00\ud835\udc0c\ud835\udc0c \ud835\udc05\ud835\udc0e\ud835\udc11\ud835\udc04\ud835\udc17 \ud835\udc11\ud835\udc04\ud835\udc12\ud835\udc14\ud835\udc0b\ud835\udc13\ud835\udc12 #stockmarket #pammaccount",
-   "url": "https://youtube.com/watch?v=wO8M0TCqLik",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\ude80 BITCOIN Analysis\u2014Perfect Entry TODAY 4.09.2026  \ud83d\udd25",
-   "url": "https://youtube.com/watch?v=vZaSx7epD5A",
-   "symbols": [
-    "BTCUSD"
-   ],
-   "mechanism_tags": [
-    "support",
-    "resistance"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "#gold  #xauusd  #goldtrading  #goldprice  #forex  #trading  #technicalanalysis  #bitcoin",
-   "url": "https://youtube.com/watch?v=JGQqIFlw3q0",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "GOLD 30min CHoCH = Bullish Reversal Day 2/30 #gold #choch #xauusd",
-   "url": "https://youtube.com/watch?v=ojMF2jI9g_g",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "reversal"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udca5 Powerful Morning Scalping Trade: $600 Cash Booked &amp; $500 Running Profit Live! \ud83d\udcc8",
-   "url": "https://youtube.com/watch?v=bu1wOwS7oT4",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Fed \u0e02\u0e36\u0e49\u0e19-\u0e25\u0e14\u0e14\u0e2d\u0e25\u0e25\u0e32\u0e23\u0e4c \u0e17\u0e2d\u0e07\u0e04\u0e33\u0e44\u0e1b\u0e17\u0e32\u0e07\u0e44\u0e2b\u0e19 | Fed Rate Decision Gold #Shorts",
-   "url": "https://youtube.com/watch?v=_HrpLREmUx4",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Gold Breakout Levels \u0915\u0948\u0938\u0947 Identify \u0915\u0930\u0947\u0902? XAUUSD Trading Guide",
-   "url": "https://youtube.com/watch?v=4qxcl87MwB8",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34LIVE GOLD TRADING /XAUUSD LIVE /BTCUSDLIVE #crypto #goldtrading #livetrading @Ashutosh_kumar_live",
-   "url": "https://youtube.com/watch?v=i4SogLCVqTs",
-   "symbols": [
-    "BTCUSD",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=_tIfEaPl1TQ",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Detik-Detik Kena MC di Gold! \ud83d\ude2d Ini Alasan Algoritma Market Ganas Bulan Ini #Shorts",
-   "url": "https://youtube.com/watch?v=28Nit4N7w6Q",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\u3010USD/JPY\u3000\u30ed\u30f3\u30b0\u6c7a\u6e08\u3070\u3063\u3061\u3057\u3082\u30112026/9/4   #USDJPY\u3000#\u30c9\u30eb\u5186\u3000#FX\u3000#\u30c8\u30ec\u30fc\u30c9\u3000#shorts",
-   "url": "https://youtube.com/watch?v=wWbaha9j7sI",
-   "symbols": [
-    "USDJPY"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "USDJPY Long - Waverider Trading Technologies - Leverage the AI edge!",
-   "url": "https://youtube.com/watch?v=TdFyZb149uE",
-   "symbols": [
-    "USDJPY"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "EURJPY Forecast \u2014 Is a New Downtrend Starting? | September 3",
-   "url": "https://youtube.com/watch?v=NtUZVC_a6Ks",
-   "symbols": [
-    "EURJPY"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34XAUUSD Gold Live Trading | US session |28 August #live #trading #forex #eurusd #crypto",
-   "url": "https://youtube.com/watch?v=8JqTVQ-slt8",
-   "symbols": [
-    "EURUSD",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAUUSD/Gold New York Session Breakout Strategy | Buy &amp; Sell Levels Today 28/08/2026  #trading",
-   "url": "https://youtube.com/watch?v=Ml9casf3y3c",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "BTCUSD 15M BUY Setup \ud83d\udd25 | BOS + Price Action Trading. #xauusd #xauusdanalysis #btc",
-   "url": "https://youtube.com/watch?v=LasieuN7FoU",
-   "symbols": [
-    "BTCUSD",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=xdtu4xu_7EA",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=QF3oh-Os2OY",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=A8RtCNdfOWQ",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Gold Trader Alert \ud83d\udea8 Aaj 6 PM NFP! Gold \u092e\u0947\u0902 \u092c\u0921\u093c\u093e Move \u0906\u090f\u0917\u093e? #xauusd #gold #goldtrader #fxnews #nfp",
-   "url": "https://youtube.com/watch?v=DIG_UJz4Yf8",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Aaj Gold Me NFP Se Bachke! \u26a0\ufe0f | XAUUSD Key Levels + NFP Alert | TanmayFX",
-   "url": "https://youtube.com/watch?v=oSG3RPlrxyw",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "GOLD NFP LIQUIDITY TRAP: The 4509.80 Sweep Before the Crash | XAUUSD ICT Strategy",
-   "url": "https://youtube.com/watch?v=MBBC8x-_sLg",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "liquidity",
-    "ICT",
-    "zone"
    ]
   }
  ],

@@ -1,0 +1,980 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u6570\u636e-\u884d\u751f\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u8d22\u52a1\u6570\u636e-\u884d\u751f\u6570\u636e",
+  "published": "2026-09-04T09:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc1ebd0c328703daf23f",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u6570\u636e-\u8d22\u52a1\u5206\u6790-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u8d22\u52a1\u6570\u636e-\u8d22\u52a1\u5206\u6790",
+  "published": "2026-09-04T09:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91f071646318f919cb35",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u6570\u636e-\u4e00\u81f4\u9884\u671f-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u8d22\u52a1\u6570\u636e-\u4e00\u81f4\u9884\u671f",
+  "published": "2026-09-04T09:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c443e43edc2678134397",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6307\u6570\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u6307\u6570\u6570\u636e",
+  "published": "2026-09-04T09:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a79abf54f3f994bd5c49",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6307\u6570\u6570\u636e-\u6307\u6570\u884c\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u6307\u6570\u6570\u636e-\u6307\u6570\u884c\u60c5",
+  "published": "2026-09-04T09:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "37b1782a6e8aa54b8d45",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6307\u6570\u6570\u636e-\u6307\u6570\u4fe1\u606f-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u6307\u6570\u6570\u636e-\u6307\u6570\u4fe1\u606f",
+  "published": "2026-09-04T09:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50728c86f086e8843ce5",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u4e1a\u677f\u5757-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u884c\u4e1a\u677f\u5757",
+  "published": "2026-09-04T09:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8b31e8c600da51cbe592",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quantifiable Edges: Statistics",
+  "url": "http://quantifiableedges.blogspot.com/search/label/Statistics",
+  "published": "2026-09-04T09:13:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ddde788d897b63eaa80d",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d2b\u56f0\u4eba\u53e3\u6bd4\u4f8b\uff0c\u4ee5\u6bcf\u59293\u7f8e\u5143\u4e3a\u8d2b\u56f0\u7ebf\uff08\u63092021\u5e74\u8d2d\u4e70\u529b\u5e73\u4ef7\u8ba1\u7b97\uff09\uff08\u5360\u603b\u4eba\u53e3\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SI.POV.DDAY",
+  "published": "2026-09-04T09:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SI.POV.DDAY?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "92642021523a2f5e5738",
+  "host": "data.worldbank.org.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "PPP\u8f6c\u6362\u56e0\u5b50\uff0cGDP\uff08\u6bcf\u4e00\u56fd\u9645\u5143\u7684\u672c\u5e01\u5355\u4f4d\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/PA.NUS.PPP",
+  "published": "2026-09-04T09:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/PA.NUS.PPP?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5d44d923ac6ba50e6aaf",
+  "host": "data.worldbank.org.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d2b\u56f0\u4eba\u53e3\u6bd4\u4f8b\uff0c\u6309\u56fd\u5bb6\u8d2b\u56f0\u7ebf\u8861\u91cf\u7684\uff082017 PPP\uff09\uff08\u5360\u4eba\u53e3\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SI.POV.NAHC",
+  "published": "2026-09-04T09:14:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SI.POV.NAHC?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4364abca6e4ce43269dd",
+  "host": "data.worldbank.org.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Trader Workstation (TWS) | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+  "published": "2026-09-04T09:14:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php",
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "2380809c1ce08296e32a",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u8bc1\u5238\u4ea4\u6613|\u7092\u80a1|\u76ef\u76d8\u5b98\u65b9\u8f6f\u4ef6\u4e0b\u8f7d",
+  "url": "http://www.18.cn/download.html",
+  "published": "2026-09-04T09:14:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/e34adc18-c94e-4053-8c31-83d65f277dc7.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "146b2b522eeb8321a38a",
+  "host": "www.18.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - TradingMarkets",
+  "url": "http://www.tradingmarkets.com/",
+  "published": "2026-09-04T09:14:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "578eb930482bf5c2ea1d",
+  "host": "www.tradingmarkets.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "US Spot Gold | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-metals.php?menu=B",
+  "published": "2026-09-04T09:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5b31e63025adc1a672e0",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bonds Marketplace - Fixed Income | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-bonds.php?menu=B",
+  "published": "2026-09-04T09:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6adf57f5f02bb7b86292",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Hedge Fund Investing Through Your IBKR Account | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-hedge-funds.php?menu=B",
+  "published": "2026-09-04T09:14:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "H1"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a5b2a5bd2d03d4499576",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Products, Exchanges and Contracts Search | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-exchanges.php?menu=B",
+  "published": "2026-09-04T09:14:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "590ee8aacecd45136343",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI-Powered Portfolio Analysis & Trading Tools | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/ai-integrations.php?menu=B",
+  "published": "2026-09-04T09:14:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "018686b3269b001361ce",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QUANTITATIVE RESEARCH AND TRADING - The latest theories, models and investment strategies in quantitative research and trading",
+  "url": "https://jonathankinlay.com/",
+  "published": "2026-09-04T09:14:52+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M",
+   "5M",
+   "D1",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8434003735aa72310713",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic Trading Archives - QUANTITATIVE RESEARCH AND TRADING",
+  "url": "https://jonathankinlay.com/tag/algorithmic-trading/",
+  "published": "2026-09-04T09:14:56+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "caa1603cee4d1aee2150",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "High Frequency Trading Archives - QUANTITATIVE RESEARCH AND TRADING",
+  "url": "https://jonathankinlay.com/tag/high-frequency-trading/",
+  "published": "2026-09-04T09:14:58+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0419ce99d66ccce8f4f9",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pairs Trading Archives - QUANTITATIVE RESEARCH AND TRADING",
+  "url": "https://jonathankinlay.com/tag/pairs-trading/",
+  "published": "2026-09-04T09:15:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "66859fb9c22fc3569f06",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Research Archives - QUANTITATIVE RESEARCH AND TRADING",
+  "url": "https://jonathankinlay.com/tag/quantitative-research/",
+  "published": "2026-09-04T09:15:02+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f13f92c6675cc73c0404",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Scalping Archives - QUANTITATIVE RESEARCH AND TRADING",
+  "url": "https://jonathankinlay.com/tag/scalping/",
+  "published": "2026-09-04T09:15:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "http://jonathankinlay.com/wp-content/uploads/Easylanguage-code-for-ES-scalping-strategy.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3bc5f92bdd6ebd6d4f9d",
+  "host": "jonathankinlay.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "My Backtest Said &quot;SURVIVES.&quot; The Per-Year Numbers Said No. I Learned to Trust the Second One.",
+  "url": "https://yizon.substack.com/p/my-backtest-said-survives-the-per",
+  "published": "2026-09-04T09:15:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ecf3d0e7e0dd7de389e5",
+  "host": "yizon.substack.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=2",
+  "published": "2026-09-04T09:15:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c4b0e1a5435ba14eb53",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=3",
+  "published": "2026-09-04T09:15:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3466dd2d216b3fc7b6c4",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Mashup - Quantocracy",
+  "url": "http://www.quantocracy.com?pg=154",
+  "published": "2026-09-04T09:15:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a4fe891490e409e9f32d",
+  "host": "www.quantocracy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading: Kaggle Winton Stock Market Challenge - Post-Mortem",
+  "url": "http://intelligenttradingtech.blogspot.com/2016/01/kaggle-winton-stock-market-challenge.html",
+  "published": "2026-09-04T09:15:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b9af6c7ecad5e77fad36",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading: Kaggle",
+  "url": "http://intelligenttradingtech.blogspot.com/search/label/Kaggle",
+  "published": "2026-09-04T09:15:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8a632f2c3f7e5d7066b8",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading: R",
+  "url": "http://intelligenttradingtech.blogspot.com/search/label/R",
+  "published": "2026-09-04T09:15:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "20431ecc90ba73f1da92",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading: Winton",
+  "url": "http://intelligenttradingtech.blogspot.com/search/label/Winton",
+  "published": "2026-09-04T09:15:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "03b155bec39e603b8c1e",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading",
+  "url": "http://intelligenttradingtech.blogspot.com/search?updated-max=2015-04-03T00:24:00-07:00&max-results=3",
+  "published": "2026-09-04T09:15:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ef91a30ad4dba1fe4f3",
+  "host": "intelligenttradingtech.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: Check Out The New Quantifiable Edges!",
+  "url": "http://quantifiableedges.blogspot.com/2014/01/check-out-new-quantifiable-edges.html",
+  "published": "2026-09-04T09:15:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e8254ac7cad64396633c",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: Back to Back Outside Days for SPY",
+  "url": "http://quantifiableedges.blogspot.com/2014/01/back-to-back-outside-days-for-spy.html",
+  "published": "2026-09-04T09:15:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51555a988baae29b07d9",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: Quantitative Study",
+  "url": "http://quantifiableedges.blogspot.com/search/label/Quantitative%20Study",
+  "published": "2026-09-04T09:15:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "62908665a816c19a604b",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: A Turnaround Tuesday Setup",
+  "url": "http://quantifiableedges.blogspot.com/2014/01/a-turnaround-tuesday-setup.html",
+  "published": "2026-09-04T09:15:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9a267b6c3c021a0b10b6",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: seasonality",
+  "url": "http://quantifiableedges.blogspot.com/search/label/seasonality",
+  "published": "2026-09-04T09:15:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "gap",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "27cf93cf6378b8d2e3bb",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges: Some Evidence It Is About Time For SPY To Pull Back",
+  "url": "http://quantifiableedges.blogspot.com/2014/01/some-evidence-it-is-about-time-for-spy.html",
+  "published": "2026-09-04T09:15:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "520d952c8e1058e75448",
+  "host": "quantifiableedges.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Coding the markets | Electronic trading in the fixed income markets",
+  "url": "https://etrading.wordpress.com/",
+  "published": "2026-09-04T09:15:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://github.com/SpreadServe/SSAddin/blob/master/xls/flight_bare_model2.xls",
+   "http://spreadserve.com/s3/downloads.html",
+   "http://sscalc0.online/flight_bare_model2.xls/MRR%20Export"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "fb2edb403e52c80db890",
+  "host": "etrading.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Colin Lancaster&#8217;s Fed Up | Coding the markets",
+  "url": "https://etrading.wordpress.com/2021/06/09/colin-lancasters-fed-up/",
+  "published": "2026-09-04T09:15:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f60436410e52d0c3d9a0",
+  "host": "etrading.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uncategorized | Coding the markets",
+  "url": "https://etrading.wordpress.com/category/uncategorized/",
+  "published": "2026-09-04T09:15:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b379bb90b71257d4ece6",
+  "host": "etrading.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "coding | Coding the markets",
+  "url": "https://etrading.wordpress.com/category/coding/",
+  "published": "2026-09-04T09:15:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://spreadserve.com/s3/downloads.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7572117f6c1e65bca56b",
+  "host": "etrading.wordpress.com"
+ }
+]
