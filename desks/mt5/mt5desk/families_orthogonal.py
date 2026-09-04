@@ -1418,3 +1418,13 @@ from mt5desk.family_generic import family_generic  # noqa: E402
 
 ORTHOGONAL_FAMILIES["generic"] = family_generic
 FAMILY_INPUTS["generic"] = ("price only", "data/universe/*_H1.parquet")
+
+# THE REGIME CHANGE ITSELF AS A MECHANISM (2026-09-04). `vol_transition` trades a realised-vol
+# ratio crossing, which is a proxy for "something is changing". This trades P(the regime ENDS
+# within h) conditioned on how long it has already run -- the quantity the allocator's hazard
+# layer already computes. A vol ratio can cross inside a stable regime; a mature trend can be one
+# bar from exhaustion with its vol ratio quiet. Different claim, different failure mode.
+from mt5desk.family_regime_transition import family_regime_transition  # noqa: E402
+
+ORTHOGONAL_FAMILIES["regime_transition"] = family_regime_transition
+FAMILY_INPUTS["regime_transition"] = ("price only", "data/universe/*_H1.parquet")
