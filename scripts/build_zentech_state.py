@@ -327,7 +327,20 @@ def _mt5_snapshot() -> dict[str, Any]:
 
 def build() -> dict[str, Any]:
     gateway = _read(DESK / "data" / "gateway_state.json")
-    account = _mt5_snapshot() or _read(DESK / "data" / "account_state.json") or gateway
+    # NEVER FALL BACK TO gateway_state FOR THE ACCOUNT (2026-09-04). On a box with no MT5
+    # terminal _mt5_snapshot() returns None, account_state.json is often absent, and this fell
+    # through to gateway_state -- whose `equity` was a stale 21127.01 while the live account held
+    # 743.14. The VPS then OVERWROTE the correct figure it had just pulled from the trading box,
+    # so the dashboard published a number 28x the real balance, and the equity curve recorded it
+    # 32 times. Two writers, and the one WITHOUT a terminal won.
+    #
+    # A machine that cannot see the account must not publish a figure for it. Absence is not
+    # permission to invent: when there is no snapshot, the previously PULLED desk_state is the
+    # best available truth and is preserved rather than replaced.
+    account = _mt5_snapshot() or _read(DESK / "data" / "account_state.json")
+    if not account:
+        _pulled = _read(ROOT / "web" / "desk_state.json").get("account") or {}
+        account = _pulled if _number(_find(_pulled, "equity", "account_equity")) else {}
     qquant = _read(DESK / "reports" / "QQUANT_GATES.json")
     universal = _read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json")
     markout = _read(DESK / "reports" / "markout.json")
