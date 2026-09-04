@@ -170,6 +170,29 @@ def _cost_fields() -> None:
         raise RuntimeError(f"refresh_cost_fields returned {rc}")
 
 
+def _factor_residual() -> None:
+    """Strip every instrument to its economic drivers and propose what the residual pays.
+
+    RUNS RIGHT AFTER THE BARS AND THE COST FIELDS, because it needs both: the panel is built from
+    the refreshed H1 parquets and every expectancy is scored against `Costs.from_symbol`, which is
+    empty until `cost_fields` has filled `tick_value`.
+
+    DAILY, NOT HOURLY, AND THAT IS A STATISTICAL CHOICE RATHER THAN A BUDGET ONE. The sweep takes
+    seconds, so cadence is not about compute -- it is about multiplicity. Re-running 936 tests
+    every hour would search 24x harder per day while charging the same deflation, which is the
+    quiet way to manufacture a survivor. The inputs are H1 bars and driver relationships that move
+    on a scale of weeks; once a day is as often as this has anything new to say.
+
+    PROPOSES ONLY. The donation lands in data/intelligence/factor_residual/ and the ordinary
+    hourly compiler admits it as EXACT_RECIPE, so every proposal still faces the ten gates.
+    """
+    from research import factor_residual_engine
+
+    rep = factor_residual_engine.run()
+    dlog(f"factor residual: {rep['hypotheses_measured']}/{rep['hypotheses_stated']} claims "
+         f"measured, {rep['tests_run']} tests, {rep['cells_proposed']} proposed")
+
+
 def _futures_curves() -> None:
     """Accrue real contract curves so roll/calendar hypotheses stop remaining prose-blocked."""
     import fetch_futures_curves
@@ -240,6 +263,7 @@ def _zentech() -> None:
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
 STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
+         ("factor_residual", _factor_residual),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
          ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("promoter", _promote), ("markout", _markout),
