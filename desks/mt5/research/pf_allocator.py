@@ -426,7 +426,10 @@ def search_trials() -> dict[str, int]:
 
 def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     live: dict[str, int],
-                    trials: dict[str, int] | None = None) -> list[SleeveEvidence]:
+                    trials: dict[str, int] | None = None,
+                    phase: str | None = None,
+                    trades_by_sleeve: dict[str, list[dict]] | None = None,
+                    broker_utc_offset_h: int = 0) -> list[SleeveEvidence]:
     """Fold backtest, certified, forward and live evidence into one record per sleeve.
 
     THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
@@ -471,8 +474,37 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             # honest 2x baseline); this is the per-trade scale used to size the UNCERTAINTY
             # around it, never a second charge.
             cost_r=0.05,
+            # THE HOUR, AS THE NARROWEST LEVEL OF A SHRINKAGE THAT ALREADY EXISTED. Empty unless
+            # a phase and this sleeve's own trades were supplied, and empty means the posterior
+            # behaves exactly as it did before -- a caller that does not know the hour is not
+            # penalised for saying so. `_posterior_mu` shrinks this at k=40, so a six-trade
+            # bucket moves the estimate slightly and forty move it fully.
+            state_r=_state_returns(name, phase, trades_by_sleeve, broker_utc_offset_h),
+            state_key=phase or "",
         ))
     return out
+
+
+def _state_returns(name: str, phase: str | None,
+                   trades_by_sleeve: dict[str, list[dict]] | None,
+                   broker_utc_offset_h: int) -> np.ndarray:
+    """This sleeve's realised R for trades entered in `phase`, or empty when unknown.
+
+    Returns EMPTY rather than zeros on every failure path. A zero-filled state series would read
+    to the posterior as measured evidence of no edge at this hour, which is a claim; absence is
+    not, and the unconditional mean is the honest answer when the hour is unknown.
+    """
+    if not phase or not trades_by_sleeve:
+        return np.array([], dtype=float)
+    rows = trades_by_sleeve.get(name)
+    if not rows:
+        return np.array([], dtype=float)
+    try:
+        from session_phase import returns_in_phase
+        return returns_in_phase(rows, phase, broker_utc_offset_h=broker_utc_offset_h)
+    except Exception as exc:                                        # noqa: BLE001
+        _log(f"state conditioning unavailable for {name}: {type(exc).__name__}: {exc}")
+        return np.array([], dtype=float)
 
 
 def worst_dd_r(daily: pd.DataFrame) -> dict[str, float]:

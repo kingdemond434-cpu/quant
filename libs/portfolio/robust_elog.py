@@ -84,6 +84,14 @@ class SleeveEvidence:
     #: observations is precisely estimated AND selected out of thousands of trials, so its sample
     #: mean is biased upward by selection no matter how long its history. 1 means "not selected".
     n_trials: int = 1
+    #: THIS SLEEVE'S OWN RETURNS IN THE STATE BEING SOLVED FOR -- the session phase, and nothing
+    #: else about the moment. Empty is the honest default and costs nothing: the posterior then
+    #: uses the unconditional mean exactly as it did before this field existed, so a caller that
+    #: does not know the hour is not penalised for saying so.
+    state_r: np.ndarray = field(default_factory=lambda: np.array([], dtype=float))
+    #: Which state `state_r` was collected in. Carried for the allocation explanation, never used
+    #: in the arithmetic -- a number the desk cannot attribute to an hour is not an explanation.
+    state_key: str = ""
 
     def __post_init__(self) -> None:
         if self.daily_r.ndim != 1:
@@ -310,6 +318,41 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
     # more certain, and pretending otherwise would let a heavily-shrunk sleeve look precise.
     se = np.where(obs > 1, s / np.sqrt(np.maximum(obs, 1.0)), np.abs(m) + 1e-3)
     se = se * (2.0 - lam_s)
+
+    # ------------------------------------------------------------------ STATE, THE FOURTH LEVEL
+    # THE HOUR IS PART OF THE EDGE AND THE BOOK COULD NOT SEE IT. Everything above is measured on
+    # the sleeve's whole history, so an edge that lives in the London expansion and dies in the
+    # 22:00 roll carries ONE mean into every hour of the day. Measured 2026-09-03: `pf_allocator`
+    # contained zero references to hour-of-day or session phase, so the same book was solved at
+    # London open and at thin-liquidity roll from identical inputs.
+    #
+    # This is the shrinkage the three levels above already use, with the state as the narrowest:
+    # state -> sleeve -> family -> no edge. `state_r` holds the sleeve's OWN returns observed in
+    # the current state, so it is evidence about this sleeve, never a borrowing from another.
+    #
+    # K_STATE IS DELIBERATELY LARGER THAN A STATE BUCKET USUALLY IS. Conditioning is where
+    # overfitting gets in: slice any sleeve by phase and some bucket holds six trades averaging
+    # +0.9R, and an allocator that believes it hands that hour the book forever. At k=40 a bucket
+    # needs forty observations to outweigh the unconditional posterior, so a lucky week moves the
+    # estimate slightly and a real seasonal effect moves it fully. This desk has paid for the
+    # class once already: `degenerate_evidence` in the promoter exists because a statistic
+    # computed on too little cannot carry a decision.
+    #
+    # UNCERTAINTY WIDENS, IT NEVER NARROWS. A conditional estimate is measured on less data than
+    # the unconditional one it replaces, so `se` grows with the disagreement between them. The
+    # objective is CVaR over sampled worlds, so an estimate that admits it is uncertain is sized
+    # smaller automatically -- which is what a thin bucket deserves and what makes this safe.
+    k_state = 40.0
+    n_state = np.array([float(np.asarray(getattr(e, "state_r", ())).size) for e in ev])
+    if float(n_state.sum()) > 0.0:
+        m_state = np.array([
+            float(np.asarray(e.state_r).mean())
+            if np.asarray(getattr(e, "state_r", ())).size else 0.0 for e in ev])
+        lam_state = n_state / (n_state + k_state)
+        conditioned = lam_state * m_state + (1.0 - lam_state) * post_mean
+        se = se + np.abs(conditioned - post_mean)
+        post_mean = conditioned
+
     draws = post_mean[None, :] + rng.standard_normal((n_worlds, n)) * se[None, :]
     return draws, post_mean
 
