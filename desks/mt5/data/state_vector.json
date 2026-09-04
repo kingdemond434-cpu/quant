@@ -1,0 +1,365 @@
+{
+ "at": "2026-09-04T18:28:42.947491+00:00",
+ "id": "7d052bb410ba05db",
+ "global": {
+  "symbol": "XAUUSD",
+  "clock": "daily",
+  "labels": [
+   "bear/mid_vol",
+   "bull/high_vol",
+   "bull/low_vol"
+  ],
+  "probs": {
+   "bear/mid_vol": 0.024227,
+   "bull/high_vol": 0.975773,
+   "bull/low_vol": 0.0
+  },
+  "filtered": {
+   "bear/mid_vol": 0.0,
+   "bull/low_vol": 0.0,
+   "bull/high_vol": 1.0
+  },
+  "age_bars": 173,
+  "p_leave": {
+   "1": 0.024227,
+   "2": 0.047795,
+   "5": 0.114497,
+   "21": 0.383469
+  },
+  "entropy": {
+   "1": 0.103823,
+   "2": 0.176305,
+   "5": 0.338106,
+   "21": 0.761196
+  },
+  "duration_weight": 0.72973,
+  "n_obs": 2000,
+  "last_bar": "2026-08-28",
+  "engine_confidence": 0.5,
+  "note": "54 completed runs; duration weight 0.73",
+  "top": "bull/high_vol"
+ },
+ "assets": {
+  "EURUSD@H4": {
+   "symbol": "EURUSD",
+   "clock": "H4",
+   "labels": [
+    "bear/mid_vol",
+    "bull/high_vol",
+    "bull/low_vol"
+   ],
+   "probs": {
+    "bear/mid_vol": 0.219636,
+    "bull/high_vol": 0.003812,
+    "bull/low_vol": 0.776552
+   },
+   "filtered": {
+    "bull/high_vol": 0.001444,
+    "bear/mid_vol": 0.208931,
+    "bull/low_vol": 0.789625
+   },
+   "age_bars": 108,
+   "p_leave": {
+    "1": 0.223448,
+    "6": 0.272319,
+    "30": 0.430209
+   },
+   "entropy": {
+    "1": 0.501119,
+    "6": 0.604966,
+    "30": 0.826475
+   },
+   "duration_weight": 0.81982,
+   "n_obs": 3000,
+   "last_bar": "2026-08-28 20:00:00+00:00",
+   "engine_confidence": 0.79,
+   "note": "91 completed runs; duration weight 0.82",
+   "top": "bull/low_vol"
+  },
+  "EURUSD@daily": {
+   "symbol": "EURUSD",
+   "clock": "daily",
+   "labels": [
+    "bear/low_vol",
+    "bull/high_vol",
+    "bull/mid_vol"
+   ],
+   "probs": {
+    "bear/low_vol": 0.981207,
+    "bull/high_vol": 0.001868,
+    "bull/mid_vol": 0.016926
+   },
+   "filtered": {
+    "bear/low_vol": 0.999709,
+    "bull/high_vol": 8e-06,
+    "bull/mid_vol": 0.000283
+   },
+   "age_bars": 93,
+   "p_leave": {
+    "1": 0.018793,
+    "2": 0.036789,
+    "5": 0.087215,
+    "21": 0.287576
+   },
+   "entropy": {
+    "1": 0.090469,
+    "2": 0.154504,
+    "5": 0.297748,
+    "21": 0.66392
+   },
+   "duration_weight": 0.701493,
+   "n_obs": 2000,
+   "last_bar": "2026-08-28",
+   "engine_confidence": 0.49,
+   "note": "47 completed runs; duration weight 0.70",
+   "top": "bear/low_vol"
+  },
+  "USDJPY@H4": {
+   "symbol": "USDJPY",
+   "clock": "H4",
+   "labels": [
+    "bear/high_vol",
+    "bull/low_vol",
+    "bull/mid_vol"
+   ],
+   "probs": {
+    "bear/high_vol": 0.003159,
+    "bull/low_vol": 0.976106,
+    "bull/mid_vol": 0.020735
+   },
+   "filtered": {
+    "bull/mid_vol": 0.000118,
+    "bull/low_vol": 0.999873,
+    "bear/high_vol": 9e-06
+   },
+   "age_bars": 73,
+   "p_leave": {
+    "1": 0.023894,
+    "6": 0.130297,
+    "30": 0.452666
+   },
+   "entropy": {
+    "1": 0.111195,
+    "6": 0.403227,
+    "30": 0.852056
+   },
+   "duration_weight": 0.826087,
+   "n_obs": 3000,
+   "last_bar": "2026-08-28 20:00:00+00:00",
+   "engine_confidence": 1.0,
+   "note": "95 completed runs; duration weight 0.83",
+   "top": "bull/low_vol"
+  },
+  "USDJPY@daily": {
+   "symbol": "USDJPY",
+   "clock": "daily",
+   "labels": [
+    "bear/high_vol",
+    "bull/low_vol",
+    "bull/mid_vol"
+   ],
+   "probs": {
+    "bear/high_vol": 0.029037,
+    "bull/low_vol": 0.072142,
+    "bull/mid_vol": 0.898821
+   },
+   "filtered": {
+    "bull/low_vol": 0.041172,
+    "bear/high_vol": 0.003177,
+    "bull/mid_vol": 0.955651
+   },
+   "age_bars": 6,
+   "p_leave": {
+    "1": 0.101179,
+    "2": 0.135118,
+    "5": 0.190856,
+    "21": 0.468962
+   },
+   "entropy": {
+    "1": 0.353459,
+    "2": 0.438161,
+    "5": 0.558166,
+    "21": 0.918924
+   },
+   "duration_weight": 0.756098,
+   "n_obs": 2000,
+   "last_bar": "2026-08-28",
+   "engine_confidence": 0.535,
+   "note": "62 completed runs; duration weight 0.76",
+   "top": "bull/mid_vol"
+  },
+  "XAUUSD@H4": {
+   "symbol": "XAUUSD",
+   "clock": "H4",
+   "labels": [
+    "bear/high_vol",
+    "bull/low_vol",
+    "bull/mid_vol"
+   ],
+   "probs": {
+    "bear/high_vol": 0.973673,
+    "bull/low_vol": 5.3e-05,
+    "bull/mid_vol": 0.026274
+   },
+   "filtered": {
+    "bull/mid_vol": 0.008926,
+    "bear/high_vol": 0.991074,
+    "bull/low_vol": 0.0
+   },
+   "age_bars": 2,
+   "p_leave": {
+    "1": 0.026327,
+    "6": 0.106891,
+    "30": 0.49654
+   },
+   "entropy": {
+    "1": 0.111152,
+    "6": 0.320746,
+    "30": 0.837206
+   },
+   "duration_weight": 0.761905,
+   "n_obs": 3000,
+   "last_bar": "2026-08-28 20:00:00+00:00",
+   "engine_confidence": 0.026,
+   "note": "64 completed runs; duration weight 0.76",
+   "top": "bear/high_vol"
+  },
+  "XAUUSD@daily": {
+   "symbol": "XAUUSD",
+   "clock": "daily",
+   "labels": [
+    "bear/mid_vol",
+    "bull/high_vol",
+    "bull/low_vol"
+   ],
+   "probs": {
+    "bear/mid_vol": 0.024227,
+    "bull/high_vol": 0.975773,
+    "bull/low_vol": 0.0
+   },
+   "filtered": {
+    "bear/mid_vol": 0.0,
+    "bull/low_vol": 0.0,
+    "bull/high_vol": 1.0
+   },
+   "age_bars": 173,
+   "p_leave": {
+    "1": 0.024227,
+    "2": 0.047795,
+    "5": 0.114497,
+    "21": 0.383469
+   },
+   "entropy": {
+    "1": 0.103823,
+    "2": 0.176305,
+    "5": 0.338106,
+    "21": 0.761196
+   },
+   "duration_weight": 0.72973,
+   "n_obs": 2000,
+   "last_bar": "2026-08-28",
+   "engine_confidence": 0.5,
+   "note": "54 completed runs; duration weight 0.73",
+   "top": "bull/high_vol"
+  }
+ },
+ "factors": {
+  "GOLD": {
+   "symbol": "XAUUSD",
+   "clock": "daily",
+   "labels": [
+    "bear/mid_vol",
+    "bull/high_vol",
+    "bull/low_vol"
+   ],
+   "probs": {
+    "bear/mid_vol": 0.024227,
+    "bull/high_vol": 0.975773,
+    "bull/low_vol": 0.0
+   },
+   "filtered": {
+    "bear/mid_vol": 0.0,
+    "bull/low_vol": 0.0,
+    "bull/high_vol": 1.0
+   },
+   "age_bars": 173,
+   "p_leave": {
+    "1": 0.024227,
+    "2": 0.047795,
+    "5": 0.114497,
+    "21": 0.383469
+   },
+   "entropy": {
+    "1": 0.103823,
+    "2": 0.176305,
+    "5": 0.338106,
+    "21": 0.761196
+   },
+   "duration_weight": 0.72973,
+   "n_obs": 2000,
+   "last_bar": "2026-08-28",
+   "engine_confidence": 0.5,
+   "note": "54 completed runs; duration weight 0.73",
+   "top": "bull/high_vol"
+  },
+  "USD": {
+   "symbol": "EURUSD",
+   "clock": "daily",
+   "labels": [
+    "bear/low_vol",
+    "bull/high_vol",
+    "bull/mid_vol"
+   ],
+   "probs": {
+    "bear/low_vol": 0.981207,
+    "bull/high_vol": 0.001868,
+    "bull/mid_vol": 0.016926
+   },
+   "filtered": {
+    "bear/low_vol": 0.999709,
+    "bull/high_vol": 8e-06,
+    "bull/mid_vol": 0.000283
+   },
+   "age_bars": 93,
+   "p_leave": {
+    "1": 0.018793,
+    "2": 0.036789,
+    "5": 0.087215,
+    "21": 0.287576
+   },
+   "entropy": {
+    "1": 0.090469,
+    "2": 0.154504,
+    "5": 0.297748,
+    "21": 0.66392
+   },
+   "duration_weight": 0.701493,
+   "n_obs": 2000,
+   "last_bar": "2026-08-28",
+   "engine_confidence": 0.49,
+   "note": "47 completed runs; duration weight 0.70",
+   "top": "bear/low_vol"
+  }
+ },
+ "session": {
+  "phase": null,
+  "broker_utc_offset_source": "unknown"
+ },
+ "event": {
+  "phase": "DRIFT",
+  "hours_to_next": Infinity,
+  "hours_since_last": 4.48,
+  "n_events": 86
+ },
+ "liquidity": {
+  "state": "UNMEASURED",
+  "basis": "no tape recorded for any book symbol"
+ },
+ "gaps": {
+  "factor:RATES": "none of ('UST10Y', 'UST05Y', 'UKGILT') has H1 bars here",
+  "factor:RISK": "none of ('US500', 'NAS100', 'AUS200') has H1 bars here",
+  "factor:OIL": "none of ('XBRUSD', 'XTIUSD') has H1 bars here",
+  "factor:GROWTH": "none of ('XCUUSD', 'CHINAH', 'HK50') has H1 bars here",
+  "session": "session: broker UTC offset unknown -- refusing to assume UTC"
+ }
+}

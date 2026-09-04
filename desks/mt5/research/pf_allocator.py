@@ -735,20 +735,12 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
         _log(f"state: session_phase unavailable ({exc}); solving unconditioned")
         return None, {}, 0
 
-    off = None
-    try:
-        import MetaTrader5 as _mt5
-
-        from h1_source import broker_utc_offset_hours
-        off = int(round(float(broker_utc_offset_hours(_mt5))))
-    except Exception:                                                # noqa: BLE001
-        # No terminal on this host. The RECORDED offset is the next-best answer and it is a
-        # measurement rather than a guess; absent that too, there is no state.
-        try:
-            rec = json.loads((BASE / "data" / "broker_clock.json").read_text("utf-8"))
-            off = int(round(float(rec["utc_offset_hours"])))
-        except Exception:                                            # noqa: BLE001
-            off = None
+    # Live terminal, then the recorded measurement, then nothing. The rule lives in
+    # `session_phase` so the state-vector builder resolves the SAME clock this does; two answers
+    # to "what time does the broker think it is" is how a cell gets certified in one clock and
+    # traded in another.
+    from session_phase import broker_utc_offset_h
+    off, off_source = broker_utc_offset_h()
     if off is None:
         _log("state: broker UTC offset unknown -- solving unconditioned rather than assuming UTC")
         return None, {}, 0
@@ -798,6 +790,21 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     ev = sleeve_evidence(daily, forward, live, trials, phase=phase,
                          trades_by_sleeve=trades_by_sleeve, broker_utc_offset_h=broker_off)
     dd = worst_dd_r(daily)
+
+    # THE STATE VECTOR ENTERS AS INFORMATION, NOT AS AUTHORITY. `state_vector_build` fits the
+    # per-asset, per-factor and per-clock states the hourly cycle can afford and this reads the
+    # artifact in milliseconds. It is RECORDED here and its id is available to stamp on orders;
+    # what draws the scenario worlds is still the global regime below, unchanged. A new state
+    # dimension takes capital authority by improving calibration or marginal E[log W] against the
+    # existing gates -- never by being plausible, and never in the change that introduces it.
+    state_vec, sv_why = (None, "not read on the fast clock")
+    if mode in ("heavy", "normal"):
+        try:
+            from state_vector_build import load as _load_sv
+            state_vec, sv_why = _load_sv()
+        except Exception as exc:                                     # noqa: BLE001
+            state_vec, sv_why = None, f"{type(exc).__name__}: {exc}"
+        _log(f"state vector: {sv_why}")
 
     labels, probs, regime_diag = (regime_state(daily) if mode in ("heavy", "normal")
                                   else ((), (), {"skipped": f"{mode} clock"}))
@@ -1013,6 +1020,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # the size of the forward adjustment is always visible rather than inferred.
         "regime": {"probabilities": dict(probs), "conditioned": bool(labels),
                    "transition": regime_diag},
+        # The world as the desk described it when this book was solved. `state_vector_id` is what
+        # ties a fill, weeks later, back to the conditions the decision was made under.
+        "state_vector": ({"id": state_vec.id, "at": state_vec.at, "why": sv_why,
+                          **state_vec.to_dict()} if state_vec is not None
+                         else {"id": None, "why": sv_why}),
         "evidence": {
             "sleeves": len(ev), "rows": int(daily.shape[0]),
             "with_forward": sum(1 for e in ev if e.forward_days > 0),

@@ -21,10 +21,42 @@ than failing, and it would mislabel it in the direction of a confident wrong con
 """
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable, Mapping
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
+
+_DESK = Path(__file__).resolve().parent.parent
+
+
+def broker_utc_offset_h() -> tuple[int | None, str]:
+    """The feed's offset from UTC, and where the answer came from. `None` means UNKNOWN.
+
+    ONE RULE, EVERY CONSUMER. This resolution used to live inside `pf_allocator._live_state`, and
+    the state-vector builder needed exactly the same answer. Two implementations of "what time
+    does this broker think it is" is precisely the drift that produces a certificate earned in one
+    clock and traded in another, so there is one, here, next to the phases it defines.
+
+    LIVE TERMINAL, THEN THE RECORDED MEASUREMENT, THEN NOTHING. `data/broker_clock.json` is a
+    measurement the desk made when it last had a terminal, which is a far better answer than UTC;
+    absent both, the answer is None and every caller must degrade rather than assume. A hardcoded
+    0 does not raise -- it silently mislabels every hour by three hours in summer, and it does so
+    in the direction of a confident wrong conditional mean.
+    """
+    try:
+        import MetaTrader5 as _mt5
+
+        from h1_source import broker_utc_offset_hours
+        return int(round(float(broker_utc_offset_hours(_mt5)))), "live_terminal"
+    except Exception:                                                # noqa: BLE001
+        pass
+    try:
+        rec = json.loads((_DESK / "data" / "broker_clock.json").read_text("utf-8"))
+        return int(round(float(rec["utc_offset_hours"]))), "recorded_broker_clock"
+    except Exception:                                                # noqa: BLE001
+        return None, "unknown"
 
 #: Session phases in broker stamp-hours as [start, end) over a 24h clock. Deliberately finer than
 #: the desk's asia/london_am/afternoon sleeve names: the London OPEN expansion and the London MID

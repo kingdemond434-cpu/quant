@@ -226,15 +226,39 @@ def record_tape() -> dict:
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
+def state_vector() -> dict:
+    """Rebuild the desk's description of the world, once, for every consumer to read.
+
+    RUNS AFTER THE TAPE AND BEFORE THE ALLOCATOR'S NEXT PASS. A `RegimeEngine` fit costs ~8.5ms
+    per observation -- 17s for 2,000 daily bars -- and the allocator's fast clock is five minutes,
+    so the state vector cannot be assembled inline without eating the clock it informs. Every fit
+    is cached against the bar it saw, so an hour whose daily bars have not turned over re-reads
+    rather than refits and this step costs seconds.
+
+    NEVER FAILS THE CYCLE. A state vector that cannot be built is a recorded gap, and the
+    allocator degrades to the unconditioned solve it ran before this existed.
+    """
+    try:
+        import state_vector_build
+
+        rc = state_vector_build.main()
+        return {"exit_code": int(rc), "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except Exception as exc:                                          # noqa: BLE001
+        return {"exit_code": 1, "error": f"{type(exc).__name__}: {exc}",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
 def main() -> None:
     h = health()
     t = record_tape()
+    s = state_vector()
     d = daily()
     m = mine()
     frontier_report(h)
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
-                    "health": h, "tape": t, "daily": d, "mine": m}, indent=1), encoding="utf-8")
+                    "health": h, "tape": t, "state_vector": s, "daily": d, "mine": m},
+                   indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 
 
