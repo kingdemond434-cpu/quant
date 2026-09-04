@@ -15,7 +15,9 @@ Gate order (original, verbatim from quant-platform libs/validation):
   7 walk_forward       - WalkForwardEngine 4 splits, test_size = len//6,
                          min_oos_sharpe 0, min_stability 0.5
   8 stress_costs       - X3 cost scenario expected R > 0
-  9 lockbox            - wf OOS Sharpe >= 0
+  9 lockbox            - Sharpe >= 0 on the reserved final 20% of the campaign
+                         calendar, carved BEFORE the program matrix and read by
+                         no other gate (was: a second reading of gate 7's wf OOS)
  10 expected_value     - mean daily R > 0
 
 Covers hunt17/19/20/21/22 + hunt18_* loop-experiment reports. Waits for
@@ -123,6 +125,35 @@ def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
     return Costs.from_symbol(meta.get(sym, {}), mult=mult)
 
 
+#: Fraction of the campaign calendar reserved as lockbox -- untouched by every other gate, read
+#: exactly once, at the end. 20% of a multi-year daily series is enough rows to measure a Sharpe
+#: while leaving the development window long enough for CPCV's six groups and walk-forward's
+#: splits to remain meaningful.
+LOCKBOX_FRAC = 0.20
+#: Below this many held-out rows a lockbox Sharpe is noise, and the gate FAILS rather than passes.
+#: Absence of evidence is not permission: a campaign too short to hold anything back has not
+#: earned the tenth hurdle, and saying so is the honest answer.
+LOCKBOX_MIN_DAYS = 40
+
+
+def _lockbox_cut(series: list[pd.Series], frac: float = LOCKBOX_FRAC) -> pd.Timestamp | None:
+    """The single calendar date at which every cell's lockbox begins, or None when too short.
+
+    Derived from the UNION of every cell's dates so one cut serves the whole campaign. Returning
+    None leaves the caller with no lockbox at all, which the verdict then fails closed on -- it
+    must never silently degrade into 'no held-out data, therefore fine'.
+    """
+    if not series:
+        return None
+    cal = pd.DatetimeIndex(sorted({d for s in series for d in s.index}))
+    if len(cal) < LOCKBOX_MIN_DAYS * 2:
+        return None
+    idx = int(len(cal) * (1.0 - frac))
+    if len(cal) - idx < LOCKBOX_MIN_DAYS:
+        return None
+    return cal[idx]
+
+
 def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
     res = run_backtest(df, sigs, costs)
     # A dict silently retained only the final trade on multi-trade days. Preserve every trade.
@@ -204,7 +235,8 @@ def _ug_daily(args) -> pd.Series | None:
 
 
 def _ug_verdict(args) -> dict:
-    cid, sym, arr, arr_x3, pbo_ok, pbo_val, spa_ok, spa_p, n_trials, sh_var = args
+    (cid, sym, arr, arr_x3, arr_lock, pbo_ok, pbo_val, spa_ok, spa_p,
+     n_trials, sh_var) = args
     arr = np.asarray(arr, dtype=float)
     if len(arr) < 60:
         return {"cell": cid, "error": "series too short"}
@@ -242,8 +274,19 @@ def _ug_verdict(args) -> dict:
                               "stability": round(wf_stab, 4)}
     exp3 = float(np.asarray(arr_x3, dtype=float).mean()) if len(arr_x3) else 0.0
     stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
-    stages["lockbox"] = {"passed": bool(wf_oos >= 0.0),
-                         "lockbox_sharpe": round(wf_oos, 4)}
+    # THE TENTH HURDLE, ON DATA NO OTHER GATE HAS SEEN. `arr` above is the development window
+    # only; `arr_lock` is the reserved tail, carved in run_hunt before the program matrix was
+    # built. Fails closed when the campaign was too short to reserve anything -- a certificate
+    # claiming ten gates must have paid for ten.
+    lock = np.asarray(arr_lock, dtype=float)
+    if len(lock) < LOCKBOX_MIN_DAYS:
+        stages["lockbox"] = {"passed": False, "lockbox_sharpe": None, "n_days": int(len(lock)),
+                             "why": f"held-out window is {len(lock)} days, under the "
+                                    f"{LOCKBOX_MIN_DAYS}-day floor; no lockbox evidence exists"}
+    else:
+        lock_sr = float(sharpe_ratio(lock))
+        stages["lockbox"] = {"passed": bool(lock_sr >= 0.0),
+                             "lockbox_sharpe": round(lock_sr, 4), "n_days": int(len(lock))}
     ev = float(arr.mean())
     stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
     return {"cell": cid, "sym": sym, "days": len(arr),
@@ -294,6 +337,25 @@ def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
         with mp.Pool(workers) as pool:
             daily = list(pool.map(_ug_daily, daily_args))
             daily_x3 = list(pool.map(_ug_daily, x3_args))
+    # ------------------------------------------------------------------ THE LOCKBOX, CARVED FIRST
+    # GATE 9 WAS GATE 7 READ TWICE. `lockbox` passed on `wf_oos >= 0` -- the walk-forward gate's
+    # own out-of-sample Sharpe -- so a certified survivor printed WF OOS 0.3708 and "lockbox"
+    # 0.3708, the same number, and the desk counted ten independent hurdles where it had nine.
+    #
+    # A lockbox that is not carved BEFORE everything else is not a lockbox. The cut happens here,
+    # above the matrix, because PBO and SPA are program-level and would otherwise read the held-out
+    # rows -- a slice the multiplicity gates have already seen cannot then be evidence about them.
+    #
+    # ONE GLOBAL DATE, never a per-series fraction: every cell must hold out the SAME calendar
+    # period or the matrix rows stop being comparable observations, which is the same-ruler law
+    # the alignment below exists to keep.
+    lock_cut = _lockbox_cut([s for s in daily if s is not None])
+    lock_daily: list[pd.Series | None] = [None] * len(daily)
+    if lock_cut is not None:
+        lock_daily = [None if s is None else s[s.index >= lock_cut] for s in daily]
+        daily = [None if s is None else s[s.index < lock_cut] for s in daily]
+        daily_x3 = [None if s is None else s[s.index < lock_cut] for s in daily_x3]
+
     cols: dict[str, pd.Series] = {}
     for idx, s in enumerate(daily):
         if s is None:
@@ -323,19 +385,21 @@ def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
     args = []
     for k, c in enumerate(cells):
         if daily[k] is None:
-            args.append((c.id, c.sym, np.array([]), np.array([]),
+            args.append((c.id, c.sym, np.array([]), np.array([]), np.array([]),
                          pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
                          n_trials, float(sharpes.var(ddof=1))))
             continue
         arr = daily[k].to_numpy(float)
         if len(arr) < 60:
-            args.append((c.id, c.sym, np.array([]), np.array([]),
+            args.append((c.id, c.sym, np.array([]), np.array([]), np.array([]),
                          pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
                          n_trials, float(sharpes.var(ddof=1))))
             continue
         x3 = daily_x3[k]
+        lk = lock_daily[k]
         args.append((c.id, c.sym, arr, x3.to_numpy(float) if x3 is not None
                      else np.array([]),
+                     lk.to_numpy(float) if lk is not None else np.array([]),
                      pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
                      n_trials, float(sharpes.var(ddof=1))))
     if workers <= 1:
