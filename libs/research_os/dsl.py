@@ -125,9 +125,12 @@ def _series(x: Any, ctx: Ctx) -> pd.Series:
 def evaluate(tree: Any, ctx: Ctx) -> pd.Series:
     """Walk the validated tree. Only the operations named in OPS are ever called."""
     op = tree[0]
-    a = tree[1] if len(tree) > 1 else None
-    b = tree[2] if len(tree) > 2 else None
-    c = tree[3] if len(tree) > 3 else None
+    # `validate` has already checked arity, so these are present for every op that reads them.
+    # Defaulting to 0 rather than None keeps the numeric conversions below total -- a None would
+    # only ever mean "validate did not run", which is not a state this function can be in.
+    a: Any = tree[1] if len(tree) > 1 else 0
+    b: Any = tree[2] if len(tree) > 2 else 0
+    c: Any = tree[3] if len(tree) > 3 else 0
     idx = ctx.primary.index
 
     if op == "const":

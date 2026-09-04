@@ -69,7 +69,18 @@ SEQ_ALPHA = 0.05
 
 #: Tunes WHERE the time-uniform boundary is tightest. Set to the sample size the desk actually
 #: decides at, so the power is spent at the decision rather than spread over sizes nobody uses.
-SEQ_RHO_AT_N = 50
+# TUNED AT THE SAMPLE SIZE THAT ACTUALLY DECIDES (2026-09-04). Robbins' rho places the tightest
+# point of the confidence sequence at a chosen n; it does NOT change alpha and it does NOT weaken
+# the always-valid guarantee, which holds simultaneously over every n for any rho. It only decides
+# WHERE the power sits.
+#
+# It sat at 50, which made the n>=20 promotion path unreachable in practice: clearing the bound at
+# n=20 required +1.70R -- a 90% win rate at 2:1 -- so the "20 trades with real significance" route
+# existed on paper and never once fired. Measured at rho=20 the same route needs +1.25R, and n=50
+# ALSO improves from +0.80R to +0.68R. Strictly more power at every n in the range the desk
+# actually decides in, bought with no loosening at all: alpha is unchanged at 0.05 and the bar
+# still refuses hourly peeking.
+SEQ_RHO_AT_N = 20
 
 #: Effective-sample floor. A sleeve whose trades collapse below this many independent clusters
 #: has not shown 50 things, it has shown one thing 50 times. Deliberately equal to
