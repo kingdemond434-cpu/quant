@@ -1,0 +1,14 @@
+[
+ {
+  "source": "myfxbook_outlook",
+  "kind": "walled",
+  "title": "ANTIBOT_CHALLENGE (probe not due)",
+  "url": "https://www.myfxbook.com/community/outlook",
+  "text": "Cloudflare managed challenge fronts the whole host -- even /robots.txt returns the 'Just a moment...' interstitial (cType: 'managed'). Passing it means defeating an access control, which \u00a713 forbids outright.",
+  "symbols": [],
+  "found_at": "2026-08-31T04:24:45+00:00",
+  "verdict": "ANTIBOT_CHALLENGE",
+  "walled_since": "2026-08-26",
+  "needs_selector_work": false
+ }
+]

@@ -1,0 +1,21 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-08-31T08:00:00+00:00",
+    "title": "Quarterly Schedule of Outright Purchases of Japanese Government Bonds (Competitive Auction Method) (July-September 2026) (Schedule Updates)",
+    "link": "https://www.boj.or.jp/en/mopo/mpmdeci/mpr_2026/mpr260831a.pdf",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  }
+]

@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-04T03:20:32+00:00",
+ "built_at": "2026-09-04T04:19:20+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1879,6 +1879,26 @@
    "data_source": "Free: CME Group SPAN risk arrays, OCC OCCLive data",
    "kill": "If price deviation mean reverts to within 0.5% within 5 minutes post-call window for 20 consecutive observations",
    "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "Thus line: Hypothesis1",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "inventory_rebalance",
+    "context": "overlap",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "inventory_rebalance|overlap|magnitude|divergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: distance from a 20-bar mean is a heuristic stand-in for dealer inventory or a flow imbalance. The cell may run; its result may NOT be read as evidence about inventory_rebalance.",
+   "data_source": "Dukascopy FX tick data",
+   "kill": "Failure to show significant ATR increase in >80% of tests (p>0.05)",
+   "lens": "MECHANISM TRANSITION",
    "promotion_authority": false
   }
  ]

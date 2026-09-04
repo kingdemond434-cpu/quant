@@ -1,0 +1,98 @@
+[
+  {
+    "source": "sec_edgar",
+    "type": "13f_filing",
+    "fund": "Bridgewater",
+    "cik": "0001350694",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "Bridgewater has recent 13F filing - check for position changes"
+  },
+  {
+    "source": "sec_edgar",
+    "type": "13f_filing",
+    "fund": "Citadel",
+    "cik": "0001423053",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "Citadel has recent 13F filing - check for position changes"
+  },
+  {
+    "source": "sec_edgar",
+    "type": "13f_filing",
+    "fund": "Point72",
+    "cik": "0001567464",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "Point72 has recent 13F filing - check for position changes"
+  },
+  {
+    "source": "sec_edgar",
+    "type": "13f_filing",
+    "fund": "D.E. Shaw",
+    "cik": "0001649339",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "D.E. Shaw has recent 13F filing - check for position changes"
+  },
+  {
+    "source": "sec_edgar",
+    "type": "13f_filing",
+    "fund": "Two Sigma",
+    "cik": "0001590974",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "Two Sigma has recent 13F filing - check for position changes"
+  },
+  {
+    "source": "sec_edgar",
+    "type": "13f_filing",
+    "fund": "Millennium",
+    "cik": "0001103804",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "Millennium has recent 13F filing - check for position changes"
+  },
+  {
+    "source": "sec_edgar",
+    "type": "13f_filing",
+    "fund": "Baupost",
+    "cik": "0001061768",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "Baupost has recent 13F filing - check for position changes"
+  },
+  {
+    "source": "sec_edgar",
+    "type": "13f_filing",
+    "fund": "Soros",
+    "cik": "0001028931",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "Soros has recent 13F filing - check for position changes"
+  }
+]

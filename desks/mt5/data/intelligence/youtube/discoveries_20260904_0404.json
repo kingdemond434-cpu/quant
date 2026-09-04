@@ -1,0 +1,57 @@
+[
+  {
+    "source": "youtube",
+    "title": "\ud83d\ude80 BITCOIN Analysis\u2014Perfect Entry TODAY 4.09.2026  \ud83d\udd25",
+    "channel": "TRADE ROUTE",
+    "url": "https://youtube.com/watch?v=vZaSx7epD5A",
+    "published": "2026-09-04T02:26:46Z",
+    "symbols": [
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "support",
+      "resistance"
+    ],
+    "confidence": 0.5
+  },
+  {
+    "source": "youtube",
+    "title": "LIVESTREAM TRADING Th\u1ef1c chi\u1ebfn l\u01b0\u1edbt s\u00f3ng v\u00e0ng ng\u00e0y 04/09/2026. #xauusd                  #forextrading",
+    "channel": "\u0110\u1ee9c Anh Trader (Th\u1ea7n R\u00f9a)",
+    "url": "https://youtube.com/watch?v=OgqRq8hBzzU",
+    "published": "2026-09-04T01:30:54Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Gold Update for 4 Sep 2026 | B2_Traders #forextrading #goldtrading #goldanalysis #xauusd #trading",
+    "channel": "B2_Traders",
+    "url": "https://youtube.com/watch?v=4jVE5V4Sr04",
+    "published": "2026-09-03T23:39:09Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD Malam ini NFP Penentu, Bullish ATAU Mulai Koreksi\u2049\ufe0f 04 Sept 2026",
+    "channel": "Zona forex",
+    "url": "https://youtube.com/watch?v=_E1uPki5ze0",
+    "published": "2026-09-03T22:49:10Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  }
+]

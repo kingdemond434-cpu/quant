@@ -1,0 +1,362 @@
+[
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexcyborg-demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexcyborg-demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexcyborg-demo2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexcyborg-demo2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexcyborg-v2demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexcyborg-v2demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexdevice",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexdevice&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexdevice_live",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexdevice_live&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexdiamond-a1",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexdiamond-a1&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexdiamond-usdjpy",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexdiamond-usdjpy&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexdraw",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexdraw&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexdraw_ea_demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexdraw_ea_demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexdraw_ea_live",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexdraw_ea_live&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexdroiderea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexdroiderea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexdynamiceurusd",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexdynamiceurusd&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexextract",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexextract&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexextract-demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexextract-demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexextract-live2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexextract-live2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexfastron",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexfastron&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexfastron2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexfastron2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexfbi",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexfbi&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexfib",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexfib&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexfib56",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexfib56&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexflexea_review",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexflexea_review&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexfreedom",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexfreedom&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexfuryv3",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexfuryv3&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgain",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgain&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgbpavenger7",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgbpavenger7&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgermany_6",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgermany_6&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgermany_63",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgermany_63&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgermany_64",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgermany_64&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgermany_68",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgermany_68&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgoldinv",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgoldinv&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgump-taku-high",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgump-taku-high&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgump-taku-low",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgump-taku-low&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgump-taku-mid",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgump-taku-mid&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgump_ea_demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgump_ea_demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexgumpea-demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexgumpea-demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexhero",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexhero&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user forexid",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=forexid&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user foreximba",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=foreximba&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user foreximba-live2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=foreximba-live2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user foreximba-real",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=foreximba-real&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-31T09:23:44+00:00"
+ }
+]
