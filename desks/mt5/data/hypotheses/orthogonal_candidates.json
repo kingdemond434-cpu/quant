@@ -1,58 +1,56 @@
 {
- "swept_at": "2026-09-03T22:22:24+00:00",
- "symbols": 91,
+ "swept_at": "2026-09-04T02:25:05+00:00",
+ "symbols": 63,
  "families_ran": {
-  "correlation_regime": 89,
-  "cross_asset_residual": 89,
-  "drawdown_conditional": 87,
-  "fx_fixing_reversal": 89,
-  "generic": 27,
-  "hedging_demand_close": 32,
-  "liquidity_gamma_reversal": 88,
-  "overnight_gap_decay": 88,
-  "pca_residual": 88,
-  "relative_value": 89,
-  "turn_of_month": 89,
-  "vol_mean_reversion": 89,
-  "vol_transition": 89,
-  "lvc_asia_london": 23,
-  "session_handoff": 23,
-  "carry": 10,
-  "cot_positioning": 1,
-  "event_reaction": 8,
-  "orderflow_imbalance": 8,
-  "liquidity_regime": 2
+  "correlation_regime": 61,
+  "cross_asset_residual": 61,
+  "drawdown_conditional": 60,
+  "fx_fixing_reversal": 61,
+  "generic": 17,
+  "hedging_demand_close": 18,
+  "liquidity_gamma_reversal": 60,
+  "overnight_gap_decay": 60,
+  "pca_residual": 60,
+  "relative_value": 61,
+  "turn_of_month": 61,
+  "vol_mean_reversion": 61,
+  "vol_transition": 61,
+  "lvc_asia_london": 15,
+  "session_handoff": 15,
+  "macro_conditional": 32,
+  "carry": 7,
+  "cot_positioning": 1
  },
  "input_gaps": {
-  "calendar_month:needs-source-evidence (active_month, side_bias)": 89,
-  "carry:no-signals (contract/swap terms)": 79,
-  "cot_positioning:no-signals (COT net positioning)": 88,
-  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 89,
-  "event_reaction:no-signals (an economic calendar)": 81,
-  "liquidity_regime:no-signals (spread series from the tick tape)": 87,
-  "lvc_asia_london:no-signals (unknown)": 66,
-  "macro_conditional:no-signals (a macro state series)": 89,
-  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 81,
-  "session_handoff:no-signals (price only)": 66,
-  "generic:no-signals (price only)": 62,
-  "hedging_demand_close:no-signals (price only)": 57,
+  "calendar_month:needs-source-evidence (active_month, side_bias)": 61,
+  "carry:no-signals (contract/swap terms)": 54,
+  "cot_positioning:no-signals (COT net positioning)": 60,
+  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 61,
+  "event_reaction:no-signals (an economic calendar)": 61,
+  "liquidity_regime:no-signals (spread series from the tick tape)": 61,
+  "lvc_asia_london:no-signals (unknown)": 46,
+  "macro_conditional:no-signals (a macro state series)": 29,
+  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 61,
+  "session_handoff:no-signals (price only)": 46,
+  "generic:no-signals (price only)": 44,
+  "hedging_demand_close:no-signals (price only)": 43,
   "liquidity_gamma_reversal:no-signals (price only)": 1,
   "overnight_gap_decay:no-signals (price only)": 1,
   "pca_residual:no-signals (4+ factor instruments' H1 (the more of the universe, the better the latent factors))": 1,
-  "drawdown_conditional:no-signals (price only)": 2
+  "drawdown_conditional:no-signals (price only)": 1
  },
  "family_errors": {},
  "family_errors_note": "exceptions raised BY THIS DESK'S CODE while calling a family. Distinct from input_gaps, which are data the box does not have: an error here is a defect to FIX, and folding the two together is how 297 identical TypeErrors read as a missing feed.",
  "untestable_by_family": {
   "correlation_regime:untestable (56 trading days < 60 the gates need)": 3,
-  "pca_residual:untestable (58 trading days < 60 the gates need)": 4,
+  "pca_residual:untestable (58 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (56 trading days < 60 the gates need)": 4,
   "correlation_regime:untestable (57 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (47 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (45 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (33 trading days < 60 the gates need)": 3,
   "vol_transition:untestable (54 trading days < 60 the gates need)": 2,
-  "drawdown_conditional:untestable (32 trading days < 60 the gates need)": 4,
+  "drawdown_conditional:untestable (32 trading days < 60 the gates need)": 3,
   "liquidity_gamma_reversal:untestable (51 trading days < 60 the gates need)": 3,
   "correlation_regime:untestable (33 trading days < 60 the gates need)": 1,
   "cross_asset_residual:untestable (42 trading days < 60 the gates need)": 1,
@@ -84,7 +82,7 @@
   "vol_transition:untestable (55 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (37 trading days < 60 the gates need)": 2,
   "lvc_asia_london:untestable (56 trading days < 60 the gates need)": 1,
-  "overnight_gap_decay:untestable (30 trading days < 60 the gates need)": 2,
+  "overnight_gap_decay:untestable (30 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (40 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (30 trading days < 60 the gates need)": 1,
   "pca_residual:untestable (51 trading days < 60 the gates need)": 1,
@@ -93,14 +91,14 @@
   "liquidity_gamma_reversal:untestable (52 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (56 trading days < 60 the gates need)": 1,
   "pca_residual:untestable (56 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (50 trading days < 60 the gates need)": 3,
+  "liquidity_gamma_reversal:untestable (50 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (52 trading days < 60 the gates need)": 2,
-  "liquidity_gamma_reversal:untestable (55 trading days < 60 the gates need)": 2,
+  "liquidity_gamma_reversal:untestable (55 trading days < 60 the gates need)": 1,
   "correlation_regime:untestable (50 trading days < 60 the gates need)": 1,
   "pca_residual:untestable (48 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (49 trading days < 60 the gates need)": 4,
   "pca_residual:untestable (50 trading days < 60 the gates need)": 1,
-  "vol_transition:untestable (59 trading days < 60 the gates need)": 2,
+  "vol_transition:untestable (59 trading days < 60 the gates need)": 1,
   "correlation_regime:untestable (58 trading days < 60 the gates need)": 3,
   "liquidity_gamma_reversal:untestable (43 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (49 trading days < 60 the gates need)": 1,
@@ -111,30 +109,19 @@
   "vol_mean_reversion:untestable (50 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (37 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (51 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (46 trading days < 60 the gates need)": 2,
-  "vol_transition:untestable (57 trading days < 60 the gates need)": 2,
+  "liquidity_gamma_reversal:untestable (46 trading days < 60 the gates need)": 1,
+  "vol_transition:untestable (57 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (42 trading days < 60 the gates need)": 1,
   "cross_asset_residual:untestable (59 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (36 trading days < 60 the gates need)": 1,
   "pca_residual:untestable (43 trading days < 60 the gates need)": 1,
   "vol_mean_reversion:untestable (58 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (53 trading days < 60 the gates need)": 2,
-  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 3,
+  "liquidity_gamma_reversal:untestable (53 trading days < 60 the gates need)": 1,
+  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (39 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (31 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (43 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (33 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (44 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (42 trading days < 60 the gates need)": 1,
-  "drawdown_conditional:untestable (31 trading days < 60 the gates need)": 1,
-  "drawdown_conditional:untestable (50 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (41 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (40 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (48 trading days < 60 the gates need)": 1,
-  "vol_transition:untestable (42 trading days < 60 the gates need)": 1,
-  "drawdown_conditional:untestable (46 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (45 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (40 trading days < 60 the gates need)": 1
+  "lvc_asia_london:untestable (33 trading days < 60 the gates need)": 1
  },
  "untestable_note": "cells that traded but on fewer than 60 distinct days -- the gauntlet cannot judge them (CPCV purge+embargo and walk-forward folds need the observations), so proposing them wastes the cycle. This is a TESTABILITY route, not a quality screen: nothing here rejects a cell for being weak.",
  "hypotheses": [
@@ -1931,6 +1918,21 @@
   },
   {
    "symbol": "ADSK",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 221,
+   "exp_r": 0.1882,
+   "max_dd_r": -9.31,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ADSK",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 484,
@@ -2012,6 +2014,21 @@
   },
   {
    "symbol": "ADYEN",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 303,
+   "exp_r": 0.1008,
+   "max_dd_r": -21.31,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ADYEN",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 446,
@@ -2077,6 +2094,21 @@
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AENA",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 301,
+   "exp_r": 0.045,
+   "max_dd_r": -24.5,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "AENA",
@@ -2165,6 +2197,21 @@
    "source": "orthogonal_sweep:fx_fixing_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AEP",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 199,
+   "exp_r": 0.0271,
+   "max_dd_r": -20.41,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "AEP",
@@ -2258,6 +2305,21 @@
   },
   {
    "symbol": "AFL",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 222,
+   "exp_r": 0.0799,
+   "max_dd_r": -12.41,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "AFL",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 487,
@@ -2303,6 +2365,21 @@
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AFX",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 310,
+   "exp_r": 0.0344,
+   "max_dd_r": -73.42,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "AFX",
@@ -2393,6 +2470,21 @@
    "source": "orthogonal_sweep:liquidity_gamma_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AGG",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 278,
+   "exp_r": 0.1083,
+   "max_dd_r": -23.89,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "AGG",
@@ -2611,6 +2703,21 @@
   },
   {
    "symbol": "AI",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 277,
+   "exp_r": 0.096,
+   "max_dd_r": -13.44,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "AI",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 808,
@@ -2676,6 +2783,21 @@
    "source": "orthogonal_sweep:fx_fixing_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AIG",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 187,
+   "exp_r": 0.1138,
+   "max_dd_r": -10.8,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "AIG",
@@ -2850,6 +2972,21 @@
   },
   {
    "symbol": "AKAM",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 216,
+   "exp_r": 0.0124,
+   "max_dd_r": -17.98,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "AKAM",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 501,
@@ -2891,6 +3028,21 @@
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AKZA",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 300,
+   "exp_r": 0.0383,
+   "max_dd_r": -18.59,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "AKZA",
@@ -3195,6 +3347,21 @@
   },
   {
    "symbol": "ALGUSD",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 963,
+   "exp_r": 0.0254,
+   "max_dd_r": -36.37,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ALGUSD",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 63,
@@ -3225,6 +3392,21 @@
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ALIBABA",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 312,
+   "exp_r": 0.058,
+   "max_dd_r": -24.92,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "ALIBABA",
@@ -3318,6 +3500,21 @@
   },
   {
    "symbol": "ALIBABA.24H",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 401,
+   "exp_r": 0.08,
+   "max_dd_r": -24.63,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ALIBABA.24H",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 129,
@@ -3372,6 +3569,21 @@
    "source": "orthogonal_sweep:fx_fixing_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALK",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 219,
+   "exp_r": 0.1743,
+   "max_dd_r": -14.81,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "ALK",
@@ -3438,6 +3650,21 @@
    "source": "orthogonal_sweep:fx_fixing_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALLC",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 213,
+   "exp_r": 0.0767,
+   "max_dd_r": -12.04,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "ALLC",
@@ -3741,146 +3968,6 @@
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AVAXUSD",
-   "family": "drawdown_conditional",
-   "params": {},
-   "n": 107,
-   "exp_r": 0.06,
-   "max_dd_r": -11.88,
-   "source": "orthogonal_sweep:drawdown_conditional",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "BTCUSD",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "BCHUSD"
-   },
-   "n": 565,
-   "exp_r": 0.0428,
-   "max_dd_r": -40.18,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "BTCUSD",
-   "family": "drawdown_conditional",
-   "params": {},
-   "n": 120,
-   "exp_r": 0.0959,
-   "max_dd_r": -14.4,
-   "source": "orthogonal_sweep:drawdown_conditional",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "BTCUSD",
-   "family": "vol_transition",
-   "params": {},
-   "n": 466,
-   "exp_r": 0.0029,
-   "max_dd_r": -24.02,
-   "source": "orthogonal_sweep:vol_transition",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CADJPY",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "NZDJPY"
-   },
-   "n": 594,
-   "exp_r": 0.0366,
-   "max_dd_r": -24.62,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "CADJPY",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 259,
-   "exp_r": 0.1221,
-   "max_dd_r": -3.82,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CADJPY",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "NZDJPY"
-   },
-   "n": 1044,
-   "exp_r": 0.0166,
-   "max_dd_r": -47.9,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "CADJPY",
-   "family": "vol_transition",
-   "params": {},
-   "n": 346,
-   "exp_r": 0.1084,
-   "max_dd_r": -18.67,
-   "source": "orthogonal_sweep:vol_transition",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFDKK",
-   "family": "carry",
-   "params": {
-    "input_symbol": "CHFDKK"
-   },
-   "n": 1837,
-   "exp_r": 0.0165,
-   "max_dd_r": -64.72,
-   "source": "orthogonal_sweep:carry",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "contract/swap terms"
-  },
-  {
-   "symbol": "CHFDKK",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 834,
-   "exp_r": 0.1853,
-   "max_dd_r": -2.0,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFDKK",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 279,
-   "exp_r": 0.0109,
-   "max_dd_r": -14.18,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
   }
  ],
  "partial": true
