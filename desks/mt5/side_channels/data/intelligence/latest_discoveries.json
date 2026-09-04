@@ -462,7 +462,7 @@
     ]
   },
   "reddit": {
-    "count": 21,
+    "count": 25,
     "discoveries": [
       {
         "source": "reddit",
@@ -481,8 +481,8 @@
         "title": "FINAL UPDATE: Turning Around a 1$ blown account",
         "url": "",
         "symbols": [
-          "XAUUSD",
-          "DXY"
+          "DXY",
+          "XAUUSD"
         ],
         "patterns": [
           "EMA"
@@ -605,8 +605,8 @@
         "title": "One more with Gold /XAUUSD",
         "url": "",
         "symbols": [
-          "XAUUSD",
-          "DXY"
+          "DXY",
+          "XAUUSD"
         ],
         "patterns": [
           "support",
@@ -693,40 +693,82 @@
       },
       {
         "source": "reddit",
-        "subreddit": "wallstreetbets",
-        "title": "The Heating Oil Short",
+        "subreddit": "algotrading",
+        "title": "Which platform should I use to automate my trading?",
         "url": "",
         "symbols": [
-          "USOIL"
-        ],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "wallstreetbets",
-        "title": "$50k WEAT Yolo",
-        "url": "",
-        "symbols": [
-          "USOIL"
+          "XAUUSD"
         ],
         "patterns": [],
         "confidence": 0.3
       },
       {
         "source": "reddit",
-        "subreddit": "wallstreetbets",
-        "title": "SPY options+30k (for the month)",
+        "subreddit": "algotrading",
+        "title": "Search for BTC daily trading signals is coming to an end. Keep going or stop?",
         "url": "",
         "symbols": [
-          "US500"
+          "BTCUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "Is tradingview strategy tester reliable?",
+        "url": "",
+        "symbols": [
+          "BTCUSD",
+          "ETHUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "What's the difference between $15 Nasdaq TotalView subscription and Lvl2 data obtained via a broker?",
+        "url": "",
+        "symbols": [
+          "NAS100"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "Possible to algotrade Liquidity concept like ICT/SMC or CRT?",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
         ],
         "patterns": [
-          "scalp",
-          "trend"
+          "liquidity"
         ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "Where do I go from here",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "made a pairs screener for us equities. 1.7 million pairs a week, poke at it maybe?",
+        "url": "",
+        "symbols": [
+          "DXY"
+        ],
+        "patterns": [],
         "confidence": 0.3
       }
     ]
@@ -1091,48 +1133,8 @@
     "discoveries": []
   },
   "academic": {
-    "count": 3,
-    "discoveries": [
-      {
-        "source": "arxiv",
-        "type": "academic_paper",
-        "title": "\\texorpdfstring{$\u03b1$}{}-decay for superheavy nucleus: The alpha decay energy to the one-fourth power",
-        "summary": "Recently, Sobhani and Luo \\cite{sobhani2025unified} proposed a new empirical formula for $\u03b1$ decay based on the $Q_\u03b1^{-1/4}$ energy dependence, incorporating the proton number $Z$, neutron number $N$,",
-        "url": "https://arxiv.org/abs/2609.03902v1",
-        "published": "2026-09-03T14:21:34Z",
-        "trading_terms": [
-          "alpha"
-        ],
-        "symbols": [],
-        "confidence": 0.1
-      },
-      {
-        "source": "arxiv",
-        "type": "academic_paper",
-        "title": "\\texorpdfstring{$\u03b1$}{}-decay for superheavy nucleus: The alpha decay energy to the one-fourth power",
-        "summary": "Recently, Sobhani and Luo \\cite{sobhani2025unified} proposed a new empirical formula for $\u03b1$ decay based on the $Q_\u03b1^{-1/4}$ energy dependence, incorporating the proton number $Z$, neutron number $N$,",
-        "url": "https://arxiv.org/abs/2609.03902v1",
-        "published": "2026-09-03T14:21:34Z",
-        "trading_terms": [
-          "alpha"
-        ],
-        "symbols": [],
-        "confidence": 0.1
-      },
-      {
-        "source": "arxiv",
-        "type": "academic_paper",
-        "title": "\\texorpdfstring{$\u03b1$}{}-decay for superheavy nucleus: The alpha decay energy to the one-fourth power",
-        "summary": "Recently, Sobhani and Luo \\cite{sobhani2025unified} proposed a new empirical formula for $\u03b1$ decay based on the $Q_\u03b1^{-1/4}$ energy dependence, incorporating the proton number $Z$, neutron number $N$,",
-        "url": "https://arxiv.org/abs/2609.03902v1",
-        "published": "2026-09-03T14:21:34Z",
-        "trading_terms": [
-          "alpha"
-        ],
-        "symbols": [],
-        "confidence": 0.1
-      }
-    ]
+    "count": 0,
+    "discoveries": []
   },
   "correlations": {
     "count": 0,

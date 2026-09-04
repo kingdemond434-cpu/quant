@@ -1,31 +1,25 @@
 {
     "free_gb":  13.6,
-    "checked_at":  "2026-09-04T02:51:45.4925093Z",
+    "checked_at":  "2026-09-04T03:20:12.4418344Z",
     "actions":  [
+                    "FAILING MT5-Gauntlet: last result -1 twice in a row -- re-run",
                     "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
-                    "RAM-LOW: 217MB free (phys 217MB / virt 19061MB, strike 1 of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box"
+                    "FEED LAG: 2 CLOCKED symbol(s) \u003e6h stale: USDCAD,USDCHF",
+                    "FEED LAG fixer: re-selected 2 symbol(s) in MarketWatch"
                 ],
-    "low_mem_strikes":  1,
+    "low_mem_strikes":  0,
     "procs":  {
-                  "shadow_cycle.7220":  {
-                                            "cpu":  208.875,
-                                            "at":  "2026-09-04T04:20:45.0340216+02:00"
+                  "fail.MT5-Gauntlet":  {
+                                            "cpu":  -1,
+                                            "at":  "2026-09-04T05:20:05.1476330+02:00"
                                         },
                   "fail.MT5-MoatRecorder":  {
                                                 "cpu":  1,
-                                                "at":  "2026-09-04T04:20:45.0340216+02:00"
+                                                "at":  "2026-09-04T05:20:05.1476330+02:00"
                                             },
-                  "orthogonal_sweep.988":  {
-                                               "cpu":  539.546875,
-                                               "at":  "2026-09-04T04:20:45.0340216+02:00"
-                                           },
-                  "external_gauntlet.9612":  {
-                                                 "cpu":  3.5625,
-                                                 "at":  "2026-09-04T04:20:45.0340216+02:00"
-                                             },
-                  "moat_silver.2532":  {
-                                           "cpu":  14.609375,
-                                           "at":  "2026-09-04T04:20:45.0340216+02:00"
-                                       }
+                  "shadow_cycle.8252":  {
+                                            "cpu":  182.703125,
+                                            "at":  "2026-09-04T05:20:05.1476330+02:00"
+                                        }
               }
 }
