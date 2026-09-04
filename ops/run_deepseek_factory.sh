@@ -39,13 +39,30 @@ tail -3 "$LOG"
 
 # DONATE: whatever the cycle produced flows into the shared queues, then to the repo so every
 # brain on every box sees it within the hour (the always-push discipline).
+# MERGE, NEVER REBASE-WITH-AUTOSTASH (2026-09-04). This ran
+# `git -c rebase.autoStash=true pull --rebase` every hour against a shared branch. This desk's own
+# hazard record says stuck rebases and autostashes silently revert finished work, and today four
+# separate code fixes vanished from the working tree between commits. An autostash rebase on an
+# hourly timer, on a tree three agents write to, is exactly that mechanism running unattended.
+# A merge cannot silently drop a working-tree change: it either merges or stops on a conflict.
 if ! git diff --quiet -- data/ docs/research/ 2>/dev/null; then
     git add -- data/ docs/research/ 2>/dev/null
-    git commit -q -m "deepseek flywheel $(date -u +%Y-%m-%d): independent cold-phase findings (free tier)" \
-        && git -c rebase.autoStash=true pull --rebase -q origin desk-sync-clean 2>&1 | tail -1 \
-        && git push -q --no-verify origin desk-sync-clean 2>&1 | tail -1 \
-        && echo "deepseek findings donated + pushed"
+    if git commit -q -m "deepseek flywheel $(date -u +%Y-%m-%d): independent cold-phase findings (free tier)"; then
+        if git pull --no-rebase -q --no-edit origin desk-sync-clean 2>&1 | tail -1; then
+            git push -q --no-verify origin desk-sync-clean 2>&1 | tail -1 \
+                && echo "deepseek findings donated + pushed"
+        else
+            echo "deepseek: pull left a conflict -- findings are COMMITTED locally and will push"
+            echo "          on the next clean cycle. Nothing is discarded."
+        fi
+    fi
+else
+    echo "deepseek: no new findings this cycle -- nothing to donate"
 fi
 
-exit $?
+# EXIT ON THE CYCLE, NOT ON THE LAST TEST. `exit $?` after the `fi` reported whatever the final
+# command returned -- so a cycle that ran perfectly and simply had nothing new to commit exited
+# non-zero and systemd recorded a FAILURE. A unit that cries wolf on its quiet days is a unit
+# nobody reads on its loud ones.
+exit 0
 }
