@@ -3401,7 +3401,7 @@
     "moat_persist:fut:BTCUSDT|microprice_gap|60": {
       "p": 0.0819,
       "kind": "moat_persistence",
-      "updated": "2026-09-04T04:04:51.059727+00:00",
+      "updated": "2026-09-04T05:01:43.224596+00:00",
       "resolve_by": "2026-09-02T02:32:07.120366+00:00",
       "claim": "moat candidate fut:BTCUSDT|microprice_gap|60 survives its next screening (18/230 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3409,7 +3409,7 @@
     "moat_persist:fut:ETHUSDT|imbalance|60": {
       "p": 0.0852,
       "kind": "moat_persistence",
-      "updated": "2026-09-04T04:04:51.076983+00:00",
+      "updated": "2026-09-04T05:01:43.242346+00:00",
       "resolve_by": "2026-09-02T02:32:07.142808+00:00",
       "claim": "moat candidate fut:ETHUSDT|imbalance|60 survives its next screening (18/221 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3547,7 +3547,7 @@
     "moat_persist:fut:SOLUSDT|microprice_gap|60": {
       "p": 0.0685,
       "kind": "moat_persistence",
-      "updated": "2026-09-04T04:04:51.085674+00:00",
+      "updated": "2026-09-04T05:01:43.252009+00:00",
       "resolve_by": "2026-09-02T04:55:13.893386+00:00",
       "claim": "moat candidate fut:SOLUSDT|microprice_gap|60 survives its next screening (16/246 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -5938,7 +5938,10 @@
       "kind": "calibration_probe",
       "updated": "2026-09-04T00:16:03.959230+00:00",
       "resolve_by": "2026-09-04T04:16:03.908958+00:00",
-      "claim": "Will BTCUSDT trade ABOVE 77662.5 in 4 hours' time?"
+      "claim": "Will BTCUSDT trade ABOVE 77662.5 in 4 hours' time?",
+      "resolved": true,
+      "outcome": 1.0,
+      "resolved_at": "2026-09-04T05:01:15.611364+00:00"
     },
     "probe:2026-09-04T00:16:03.908958+00:00:q2": {
       "p": 0.5,
@@ -5959,7 +5962,10 @@
       "kind": "calibration_probe",
       "updated": "2026-09-04T00:16:04.811092+00:00",
       "resolve_by": "2026-09-04T04:16:03.908958+00:00",
-      "claim": "Will PAXGUSDT trade ABOVE 4457.16 in 4 hours' time?"
+      "claim": "Will PAXGUSDT trade ABOVE 4457.16 in 4 hours' time?",
+      "resolved": true,
+      "outcome": 1.0,
+      "resolved_at": "2026-09-04T05:01:15.676826+00:00"
     },
     "probe:2026-09-04T00:16:03.908958+00:00:q5": {
       "p": 0.49,
