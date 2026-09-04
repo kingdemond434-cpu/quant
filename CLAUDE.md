@@ -56,6 +56,26 @@ vocabulary. Do not decide something the desk already decided.
   silently reverts YOUR uncommitted edits in the same sweep. Its message reads identically
   whether the tree was clean or your work was just discarded. Gate, commit, then test.
 
+## COMMITTING CODE FROM THIS BOX (read this before your first commit)
+
+`ops/githooks/pre-commit` runs `moneypath_precommit_guard.py`, whose FIRST layer fires whenever
+`SSH_CONNECTION` is set -- which it is for every Claude session here. It **unstages your staged
+`desks/mt5/**/*.py` change and `git checkout HEAD` over your working copy**, then lets the commit
+succeed with the file silently absent. It is not a bug: an hourly Dell-side sync (`Codex mt5 desk
+hourly sync`, still running) once scp'd stale code over `desks/mt5` and committed it, removing
+1,078 lines from `gateway.py`. The guard is what stops that.
+
+It cannot tell your session from that sync, so YOUR code edits are reverted too:
+
+```bash
+QUANT_ALLOW_SSH_PY=1 git commit -m "..."
+```
+
+Measured 2026-09-04: four attempts at one `shadow_forward.py` fix were silently reverted this way,
+and one "shipped and hash-verified identical" check compared two files that had BOTH been reverted.
+If a `.py` edit you just made is missing from disk, this is why. Sibling overrides for the other
+two layers: `QUANT_ALLOW_EVIDENCE_FALL=1`, `ALLOW_PROTECTED_RECORD_LOSS=1`.
+
 ## Gates (all four, before any push)
 
 ```
