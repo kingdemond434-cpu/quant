@@ -33,10 +33,13 @@ THE FOUR THINGS THAT ACTUALLY BREAK A RECORDER ON THIS BOX, and what each one do
   restarting.
 
   THE DISK FILLS. The previous generation of recorders on this desk filled the VPS. This one
-  stops capturing and writes DISK_FLOOR gap rows every cycle while it is paused. IT NEVER
-  DELETES TAPE TO MAKE ROOM. Deleting an unbuyable asset to acquire a cheaper one is a trade at
-  infinitely bad odds, and a recorder that can do it once will do it on the day the disk fills
-  for an unrelated reason.
+  stops capturing and records the pause as a gap EPISODE while it lasts. IT NEVER DELETES TAPE TO
+  MAKE ROOM. Deleting an unbuyable asset to acquire a cheaper one is a trade at infinitely bad
+  odds, and a recorder that can do it once will do it on the day the disk fills for an unrelated
+  reason. What it does instead is compact: a day that has stopped receiving is folded from ~1,440
+  per-cycle segments into one, measured at ~25x smaller, before it is sealed. That is not
+  downsampling -- every tick survives byte-for-byte -- and it is why the disk floor is a rare
+  event rather than a weekly one.
 
 WHAT IT NEVER DOES. It cannot place, modify or cancel an order; it imports nothing from
 `gateway`, `execution_policy`, `netting` or `decision_core`, and a test asserts that. It is a
@@ -78,6 +81,7 @@ from recorders.tape_store import (  # noqa: E402
     GAP_SOURCE_UNAVAILABLE,
     GAP_SYMBOL_ADDED,
     GAP_SYMBOL_REMOVED,
+    GAP_TRUNCATED,
     GAP_WRITE_FAILED,
     GapRecord,
     TapeStore,
@@ -136,7 +140,7 @@ MAX_TICKS_PER_PULL = 2_000_000
 #: PULL_EMPTY is NOT here -- the broker answered and had nothing, so there is nothing to recover
 #: -- and neither are the boundary markers, which are facts rather than holes.
 BACKFILLABLE = (GAP_RECORDER_DOWN, GAP_SOURCE_UNAVAILABLE, GAP_PULL_FAILED, GAP_DISK_FLOOR,
-                GAP_WRITE_FAILED)
+                GAP_WRITE_FAILED, GAP_TRUNCATED)
 
 #: How many open backfillable windows are TRACKED per symbol for later resolution. The ledger
 #: keeps every one of them forever; this is only the working set the recorder tries to close.
@@ -149,6 +153,26 @@ MAX_TRACKED_GAPS = 50
 #: that the desk queried those hours and the broker had nothing. Fifteen minutes is long enough
 #: that ordinary inter-tick silence on a thin equity CFD does not produce a row every cycle.
 QUIET_RECORD_MS = 15 * 60 * 1000
+
+#: How often a PAUSE (terminal down, disk floor) re-states itself in the gap ledger while it
+#: lasts. Same insurance logic as QUIET_RECORD_MS and the same reason it is not every cycle: see
+#: `_note_pause`, where the arithmetic of the per-cycle version is written out.
+PAUSE_RECORD_MS = 15 * 60 * 1000
+
+#: Symbol-days compacted per cycle, and the wall-clock allowance they share. BOTH ARE MEASURED
+#: BOUNDS, NOT ROUND NUMBERS. Compacting one real-rate symbol-day costs 8.2s (EURUSD, 82,744
+#: ticks) to 10.7s (XAUUSD, 553,742) in this container -- it reads 1,440 segments, merges,
+#: dedupes and re-encodes. Four of those is 43 seconds, which is the ENTIRE default cycle budget
+#: spent on housekeeping, on a 60-second beat, at exactly the moment 251 symbols all become
+#: eligible together six hours after the day rolls.
+#:
+#: The wall allowance is the real control and the count is the cheap guard behind it. At ~10s
+#: apiece the allowance admits one or two per cycle, so a full universe's daily backlog clears in
+#: ~2.5 hours out of the 1,440 cycles a day offers, and no cycle carries more than ~15s of it.
+#: Nothing is lost by going slowly: an uncompacted day is a COMPLETE day that costs more disk
+#: than it needs to, and disk is the cheap side of every trade in this package.
+MAX_COMPACTIONS_PER_CYCLE = 4
+DEFAULT_COMPACT_BUDGET_S = 15.0
 
 STATE_CURSORS = "cursors"
 STATE_RECORDER = "recorder"
@@ -172,6 +196,10 @@ class RecorderConfig:
     cold_start_days: int = DEFAULT_COLD_START_DAYS
     disk_floor_bytes: int = DEFAULT_DISK_FLOOR_BYTES
     cycle_budget_s: float = DEFAULT_CYCLE_BUDGET_S
+    #: Wall-clock allowance for compaction, spent AFTER capture and separately from it. Separate
+    #: on purpose: sharing the capture budget would starve compaction on a busy box, and a
+    #: recorder that never compacts fills the disk it was compacting to protect.
+    compact_budget_s: float = DEFAULT_COMPACT_BUDGET_S
     max_window_ms: int = MAX_WINDOW_MS
     overlap_ms: int = OVERLAP_MS
     settle_ms: int = SETTLE_MS
@@ -210,6 +238,9 @@ class CycleReport:
     removed: list[str] = field(default_factory=list)
     sealed: list[str] = field(default_factory=list)
     truncations: int = 0
+    clock_behind: int = 0
+    compacted: int = 0
+    bytes_reclaimed: int = 0
     paused: str = ""
     errors: dict[str, str] = field(default_factory=dict)
     budget_exhausted: bool = False
@@ -232,8 +263,14 @@ class CycleReport:
             bits.append(f"-{len(self.removed)} symbol(s): {', '.join(self.removed[:6])}")
         if self.sealed:
             bits.append(f"sealed {len(self.sealed)}")
+        if self.compacted:
+            bits.append(f"compacted {self.compacted} day(s), "
+                        f"{self.bytes_reclaimed/1e6:.1f} MB reclaimed")
         if self.truncations:
             bits.append(f"{self.truncations} truncated pull(s), deferred")
+        if self.clock_behind:
+            bits.append(f"{self.clock_behind} symbol(s) IDLE: the query mark is ahead of the "
+                        f"wall clock -- the system clock stepped backward")
         if self.budget_exhausted:
             bits.append("budget spent; next cycle resumes where this stopped")
         if self.errors:
@@ -308,12 +345,9 @@ class TickRecorder:
             rep.errors["_alive"] = f"{type(exc).__name__}: {exc}"
         if not alive:
             rep.paused = "source not connected"
-            for sym in active:
-                self.store.record_gap(GapRecord(
-                    symbol=sym, from_ms=max(last_end, end_ms - self.config.cycle_s * 1000),
-                    to_ms=end_ms, reason=GAP_SOURCE_UNAVAILABLE, cycle_id=cycle_id,
-                    detail="terminal not connected on this cycle"))
-                rep.gaps_recorded += 1
+            rep.gaps_recorded += self._note_pause(
+                state, cursors, active, GAP_SOURCE_UNAVAILABLE, last_end, end_ms, cycle_id,
+                "terminal not connected on this cycle")
             rep.symbols_seen = len(active)
             self._finish(rep, state, end_ms, t_start, cursors)
             return rep
@@ -323,14 +357,14 @@ class TickRecorder:
         if free is not None and free < self.config.disk_floor_bytes:
             rep.paused = (f"free space {free/1e9:.1f}GB below the "
                           f"{self.config.disk_floor_bytes/1e9:.1f}GB floor")
-            for sym in active:
-                self.store.record_gap(GapRecord(
-                    symbol=sym, from_ms=max(last_end, end_ms - self.config.cycle_s * 1000),
-                    to_ms=end_ms, reason=GAP_DISK_FLOOR, cycle_id=cycle_id, detail=rep.paused))
-                rep.gaps_recorded += 1
+            rep.gaps_recorded += self._note_pause(
+                state, cursors, active, GAP_DISK_FLOOR, last_end, end_ms, cycle_id, rep.paused)
             rep.symbols_seen = len(active)
             self._finish(rep, state, end_ms, t_start, cursors)
             return rep
+
+        # -- A PAUSE THAT HAS ENDED IS WRITTEN IN FULL, exactly like a quiet run.
+        rep.gaps_recorded += self._close_pause(state, cursors, end_ms, cycle_id)
 
         # -- THE UNIVERSE IS WHATEVER THE TERMINAL SAYS IT IS, RIGHT NOW.
         last_uni = float(state.get("universe_at_ms") or 0)
@@ -367,6 +401,8 @@ class TickRecorder:
             rep.gaps_recorded += len(res.gaps)
             if res.truncated:
                 rep.truncations += 1
+            if res.idle_clock_behind:
+                rep.clock_behind += 1
             if res.error:
                 rep.errors[sym] = res.error
             if res.ticks or res.segments:
@@ -377,8 +413,8 @@ class TickRecorder:
         # alphabet, which is the standing defect of every "first N symbols" slice.
         state["rotation_offset"] = (offset + processed) % max(1, len(active))
 
-        # -- SEAL what has stopped moving.
-        rep.sealed = self._seal_due(cursors, now_ms)
+        # -- COMPACT AND SEAL what has stopped moving.
+        rep.sealed = self._seal_due(cursors, now_ms, rep)
 
         # -- THE CLOCK. Two integers, unbuyable after the fact.
         probe_sym = self.config.clock_probe_symbol or (active[0] if active else "")
@@ -454,6 +490,15 @@ class TickRecorder:
         window_end = min(end_ms, start + self.config.max_window_ms)
         res.cursor_ms = cursor
         if window_end <= start:
+            # NOTHING TO ASK FOR: the query mark is already at or past the settled edge of the
+            # wall clock. Normally that means the previous cycle finished the window, which is
+            # harmless. It ALSO happens when the system clock steps BACKWARD -- w32time resyncs
+            # on this box -- and then every symbol silently does nothing, for as long as the step
+            # was, while the heartbeat goes on saying RECORDING. That is the pairing the integrity
+            # report calls the loudest finding available: the process believes it is working and
+            # the output disagrees. It is not a GAP (no window is missing; the mark is ahead of
+            # the clock, not behind it), so it is counted and surfaced rather than filed.
+            res.idle_clock_behind = cursor > end_ms
             return res
 
         spec = None
@@ -494,9 +539,24 @@ class TickRecorder:
             row["cursor_ms"] = window_end
             return res
 
+        # A TRUNCATED PULL DEFERS ITS TAIL; IT DOES NOT DROP IT, AND IT USED TO.
+        #
+        # The cap's own comment said "the remainder deferred to the next cycle" and nothing
+        # deferred it: the array was trimmed, the trimmed ticks were written, and then the cursor
+        # advanced to `window_end` -- past every tick the trim had just discarded. Nothing was
+        # re-queried, no gap row was written, and GAP_TRUNCATED sat in the ledger's vocabulary
+        # unused. That is a permanent, silent loss that reads as a successful capture, which is
+        # the single failure class this whole package exists to end, sitting inside the package.
+        #
+        # The deferral is now real: the query mark is rewound to just past the last tick KEPT, so
+        # the tail is re-pulled next cycle, and a TRUNCATED row records the deferred window so a
+        # crash before that cycle still leaves evidence. The row is backfillable and closes itself
+        # when the tail actually lands.
+        defer_from = 0
         if ticks.size > MAX_TICKS_PER_PULL:
             order = np.argsort(np.asarray(ticks["time_msc"]), kind="mergesort")
             ticks = ticks[order][:MAX_TICKS_PER_PULL]
+            defer_from = int(np.asarray(ticks["time_msc"], dtype=np.int64).max()) + 1
             res.truncated = True
 
         # A QUIET RUN HAS ENDED. Record it as one interval so a reader sees one weekend rather
@@ -543,6 +603,20 @@ class TickRecorder:
 
         tms = np.asarray(ticks["time_msc"], dtype=np.int64)
         res.resolved = self._close_tracked_gaps(sym, row, tms, cycle_id)
+
+        # The window this cycle can honestly claim to have finished with. Normally the whole
+        # window; after a truncation, only up to the last tick kept.
+        done_to = window_end
+        if defer_from and defer_from < window_end:
+            done_to = defer_from
+            g = GapRecord(symbol=sym, from_ms=defer_from, to_ms=window_end,
+                          reason=GAP_TRUNCATED, cycle_id=cycle_id,
+                          detail=(f"pull hit the {MAX_TICKS_PER_PULL:,}-tick cap; the tail of "
+                                  f"this window is DEFERRED, not dropped -- the query mark stays "
+                                  f"at {defer_from} and the next cycle re-reads from there"))
+            self.store.record_gap(g)
+            self._track_gap(row, g)
+            res.gaps.append(GAP_TRUNCATED)
         # STEP 6 OF THE WRITE ORDER: the cursor moves only now, and only after a durable write.
         #
         # IT MOVES TO `window_end`, NOT TO THE LAST TICK, AND THAT DISTINCTION IS A BUG THIS CODE
@@ -560,12 +634,86 @@ class TickRecorder:
         # between them is a quiet interval the ledger records. Advancing the query mark past a
         # fully-queried window is safe for the same reason advancing past an empty one is: the
         # window closed SETTLE_MS ago and every pull re-reads OVERLAP_MS behind itself.
-        row["cursor_ms"] = max(cursor, window_end)
+        row["cursor_ms"] = max(cursor, done_to)
         row["last_tick_ms"] = int(tms.max())
         row["quiet_from_ms"] = int(tms.max()) + 1
         row["last_write_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         res.cursor_ms = row["cursor_ms"]
         return res
+
+    def _note_pause(self, state: dict[str, Any], cursors: dict[str, dict[str, Any]],
+                    active: list[str], reason: str, last_end: int, end_ms: int, cycle_id: str,
+                    detail: str) -> int:
+        """A cycle the recorder could not capture on. Recorded ONCE PER EPISODE, not per cycle.
+
+        THE ARITHMETIC THAT FORCED THIS, and it is the disk-floor case that makes it urgent. The
+        obvious implementation writes one gap row per enrolled symbol per cycle. At 251 symbols
+        and a 60-second beat that is 15,060 rows an hour, roughly 3.7 MB an hour, ~90 MB a day --
+        appended to the very disk whose exhaustion triggered the pause. The guard that exists to
+        stop the recorder filling the disk would have filled it about three times faster than
+        capturing would have, and it would have done so while reporting that it was protecting the
+        box. A protective mechanism whose cost exceeds the thing it protects against is not a
+        conservative choice.
+
+        So a pause is an EPISODE, recorded the way `_note_quiet` records a quiet run: once when it
+        starts, again every PAUSE_RECORD_MS as insurance against a crash mid-episode, and once in
+        full when it ends. The integrity checker unions gap intervals, so the overlapping rows
+        cover the same minutes once and the coverage arithmetic is unchanged. What changes is 96
+        rows a day per symbol instead of 1,440, and a ledger in which a real outage is still
+        legible.
+        """
+        ep = dict(state.get("pause_episode") or {})
+        started = ep.get("reason") == reason and int(ep.get("from_ms") or 0) > 0
+        if not started:
+            # A NEW EPISODE CLOSES THE OLD ONE FIRST. A terminal that drops and then a disk that
+            # fills are two different facts about two different windows, and letting the second
+            # extend the first would file the outage under the wrong cause.
+            n = self._close_pause(state, cursors, end_ms, cycle_id)
+            ep = {"reason": reason, "from_ms": max(last_end, end_ms - self.config.cycle_s * 1000),
+                  "symbols": list(active), "recorded_to_ms": 0, "cycle_id": cycle_id}
+        else:
+            n = 0
+        from_ms = int(ep["from_ms"])
+        ep["to_ms"] = end_ms
+        ep["symbols"] = sorted({*(ep.get("symbols") or []), *active})
+        due = (not ep.get("recorded_to_ms")
+               or (end_ms - int(ep["recorded_to_ms"])) >= PAUSE_RECORD_MS)
+        if due:
+            for sym in (ep["symbols"] or active):
+                self.store.record_gap(GapRecord(
+                    symbol=sym, from_ms=from_ms, to_ms=end_ms, reason=reason, cycle_id=cycle_id,
+                    detail=detail))
+                n += 1
+            ep["recorded_to_ms"] = end_ms
+        state["pause_episode"] = ep
+        return n
+
+    def _close_pause(self, state: dict[str, Any], cursors: dict[str, dict[str, Any]],
+                     end_ms: int, cycle_id: str) -> int:
+        """Write the full window of a pause that has ended, and track it for backfill.
+
+        The final row is what makes the episode's TOTAL extent a fact rather than a series of
+        fifteen-minute fragments, and tracking it is what lets a later cycle mark it RESOLVED once
+        the broker's own tick history fills it in. Without the tracking, SOURCE_UNAVAILABLE and
+        DISK_FLOOR would sit in `BACKFILLABLE` and never actually be backfilled -- open forever in
+        a ledger whose reader would learn that open outages are normal.
+        """
+        ep = dict(state.get("pause_episode") or {})
+        reason = str(ep.get("reason") or "")
+        from_ms, to_ms = int(ep.get("from_ms") or 0), int(ep.get("to_ms") or 0)
+        state["pause_episode"] = {}
+        if not reason or to_ms <= from_ms:
+            return 0
+        n = 0
+        for sym in (ep.get("symbols") or []):
+            g = GapRecord(symbol=sym, from_ms=from_ms, to_ms=to_ms, reason=reason,
+                          cycle_id=str(ep.get("cycle_id") or cycle_id),
+                          detail=(f"capture paused for {(to_ms - from_ms)/1000.0:.0f}s and has "
+                                  f"resumed; this row is the episode in full"))
+            self.store.record_gap(g)
+            self._track_gap(cursors.get(sym), g)
+            n += 1
+        return n
 
     def _track_gap(self, row: dict[str, Any] | None, gap: GapRecord) -> None:
         """Remember a backfillable window so a LATER cycle can close it.
@@ -586,6 +734,18 @@ class TickRecorder:
         open_gaps = list(row.get("open_gaps") or [])
         entry = {"from_ms": gap.from_ms, "to_ms": gap.to_ms, "reason": gap.reason,
                  "cycle_id": gap.cycle_id}
+        # CONTIGUOUS WINDOWS OF THE SAME REASON ARE ONE WINDOW. Successive cycles of one outage
+        # produce windows that abut exactly, and appending each of them would push a six-hour
+        # outage's 360 fragments through a 50-entry ring buffer -- evicting the START of the very
+        # outage being tracked, and writing a megabyte of cursor state every cycle for 251
+        # symbols. Extending the tail keeps the episode whole and the state file small.
+        for prev in reversed(open_gaps):
+            if (prev.get("reason") == gap.reason
+                    and int(prev.get("to_ms") or 0) >= gap.from_ms
+                    and int(prev.get("from_ms") or 0) <= gap.from_ms):
+                prev["to_ms"] = max(int(prev.get("to_ms") or 0), gap.to_ms)
+                row["open_gaps"] = open_gaps[-MAX_TRACKED_GAPS:]
+                return
         if entry not in open_gaps:
             open_gaps.append(entry)
         row["open_gaps"] = open_gaps[-MAX_TRACKED_GAPS:]
@@ -640,8 +800,9 @@ class TickRecorder:
                         "still leaves evidence that the desk asked")))
             res.gaps.append(GAP_PULL_EMPTY)
 
-    def _seal_due(self, cursors: dict[str, dict[str, Any]], now_ms: int) -> list[str]:
-        """Seal every day that has stopped receiving. Two conditions, and both are necessary.
+    def _seal_due(self, cursors: dict[str, dict[str, Any]], now_ms: int,
+                  rep: CycleReport) -> list[str]:
+        """Compact and seal every day that has stopped receiving. Both conditions are necessary.
 
         The wall clock says enough of the next day has passed that a late delivery is unlikely.
         THE CURSOR says this recorder has actually finished with the day -- and that one is the
@@ -650,24 +811,49 @@ class TickRecorder:
         would stamp "complete" on a day the recorder was mid-way through filling. The seal is a
         claim about completeness; a claim made while still writing is a false one.
 
-        Bounded per cycle so sealing a backlog cannot starve capture -- capture is the job that
-        cannot be caught up later.
+        COMPACTION HAPPENS HERE, IMMEDIATELY BEFORE THE SEAL, because this is the one moment the
+        recorder knows a day is finished. It folds ~1,440 per-cycle segments into one and takes a
+        symbol-day from ~5 MB to ~0.2 MB (measured; see `tape_store`'s retention section). Sealing
+        after compacting rather than before means the seal describes what the day actually holds.
+
+        THE WATERMARK IS NOT AN OPTIMISATION, it is what stops this method growing without bound.
+        Without it, every cycle stat-ed and JSON-parsed the seal of every day the tape has ever
+        held: 251 symbols x 365 days is 91,000 file reads a minute after one year, on a box also
+        running the terminal. Days are listed in ascending order and every eligibility test here
+        is monotone in the day, so the first ineligible day ends the symbol -- and the watermark
+        only ever advances across a contiguous prefix of finished days.
         """
         today = broker_day(now_ms)
         cutoff_day = broker_day(now_ms - self.config.seal_after_hours * 3600 * 1000)
         sealed: list[str] = []
+        budget = MAX_COMPACTIONS_PER_CYCLE
+        t_compact = time.monotonic()
         for sym in sorted(cursors):
             row = cursors.get(sym) or {}
             cursor_day = broker_day(int(row.get("cursor_ms") or 0)) if row.get("cursor_ms") else ""
+            mark = str(row.get("sealed_through") or "")
             for day in self.store.days(sym):
-                if day >= today or day >= cutoff_day:
+                if mark and day <= mark:
                     continue
-                if cursor_day and day >= cursor_day:
-                    continue                       # still catching up INTO this day
-                if self.store.seal(sym, day) is not None:
-                    continue
-                self.store.seal_day(sym, day)
-                sealed.append(f"{sym}/{day}")
+                if day >= today or day >= cutoff_day or (cursor_day and day >= cursor_day):
+                    break                          # ascending: nothing after this is eligible
+                if self.store.seal(sym, day) is None:
+                    if budget <= 0 or (time.monotonic() - t_compact
+                                       > self.config.compact_budget_s):
+                        # Out of compaction budget: leave the day UNSEALED so the next cycle
+                        # compacts it. Sealing it now would leave a finished day PERMANENTLY
+                        # uncompacted, because nothing revisits a sealed day -- ~25x its
+                        # necessary size, forever, for the sake of finishing this cycle sooner.
+                        return sealed
+                    res = self.store.compact_day(sym, day)
+                    budget -= 1
+                    if res["status"] == "COMPACTED":
+                        rep.compacted += 1
+                        rep.bytes_reclaimed += max(0, res["bytes_before"] - res["bytes_after"])
+                    self.store.seal_day(sym, day)
+                    sealed.append(f"{sym}/{day}")
+                mark = day
+                row["sealed_through"] = day
                 if len(sealed) >= 200:
                     return sealed
         return sealed
@@ -716,6 +902,12 @@ class TickRecorder:
                 "gaps_recorded_this_cycle": rep.gaps_recorded,
                 "gaps_resolved_this_cycle": rep.gaps_resolved,
                 "truncated_pulls": rep.truncations,
+                # Nonzero means the system clock stepped BACKWARD and capture is stalled until it
+                # catches up. Surfaced beside the heartbeat on purpose: the heartbeat alone would
+                # go on reporting RECORDING throughout.
+                "symbols_idle_clock_behind": rep.clock_behind,
+                "days_compacted_this_cycle": rep.compacted,
+                "bytes_reclaimed_this_cycle": rep.bytes_reclaimed,
                 "budget_exhausted": rep.budget_exhausted,
                 # HOW FAR BEHIND THE FEED THE SLOWEST SYMBOL IS. The single number that says
                 # whether the recorder is keeping up: a heartbeat proves the process is alive,
@@ -767,6 +959,9 @@ class TickRecorder:
 class _PullResult(SymbolResult):
     #: Tracked gap windows this pull actually put ticks into and therefore closed.
     resolved: int = 0
+    #: The query mark is AHEAD of the settled wall clock -- the system clock stepped backward.
+    #: Not a gap; a stall, and one that would otherwise be invisible behind a healthy heartbeat.
+    idle_clock_behind: bool = False
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -129,11 +129,57 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/reports/shadow/", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
                 # the daily re-judge of every certificate at today's costs: a fresh
                 # COST_REGRADE_FAIL refuses promotion (BLOCKED_COST_REGRADE)
-                "desks/mt5/reports/recertification_audit.json"),
+                "desks/mt5/reports/recertification_audit.json",
+                # THE CAPITAL DOOR (principal 2026-09-05). `admission.candidates[*]` is the
+                # dE[log W] of adding each candidate to the book the desk holds, and the
+                # promoter gives capital to nothing that fails it; `book` and `book_zeroed`
+                # are the current reading a LIVE sleeve is demoted on. A scan older than
+                # `promoter.ADMISSION_MAX_AGE_H` may neither add risk nor remove it.
+                "desks/mt5/reports/pf_allocation.json"),
+         freshness_s={"desks/mt5/reports/pf_allocation.json": 26 * 3600},
          authority=("promotion",)),
     Node("recertify_canon", "desks/mt5/scripts/recertify_canon.py",
          reads=("desks/mt5/reports/UNIVERSAL_SURVIVORS.json", "desks/mt5/data/universe/"),
          writes=("desks/mt5/reports/recertification_audit.json",)),
+    # THE WORLD'S CLOCK, and note what it does NOT claim. Its authority is over WHEN the
+    # allocator solves, never over what the allocator decides -- so it is wired here as a
+    # timing organ, not a sizing one. Every fitted quantity it owns reads UNMEASURED until its
+    # ledger holds real events, and it refuses capital authority to every category until then.
+    Node("macro_intel", "desks/mt5/macro/run_macro_intel.py",
+         # reads its OWN prior state back -- the taxonomy centroids, the credibility
+         # posteriors, the factor basis and the multiplicity charge are all cumulative. That
+         # self-edge is the thing that makes this learn rather than restate.
+         # Named one by one, not as a directory: the fence checks artifacts, and a directory
+         # prefix let three of these read as DEAD_PRODUCER while they were in fact this node's
+         # own memory. `multiplicity.json` is the cumulative Bonferroni charge -- re-read every
+         # pass precisely so re-testing a cell makes admission HARDER, never easier -- and
+         # `event_attribution.jsonl` is where the measured decay half-lives come back from,
+         # which is the loop that lets the interrupt gate ever fire.
+         reads=("desks/mt5/data/universe/", "desks/mt5/data/macro/",
+                "desks/mt5/data/macro/taxonomy.json",
+                "desks/mt5/data/macro/source_credibility.json",
+                "desks/mt5/data/macro/factor_basis.json",
+                "desks/mt5/data/macro/exposures.json",
+                "desks/mt5/data/macro/multiplicity.json",
+                "desks/mt5/data/macro/event_attribution.jsonl",
+                "desks/mt5/data/macro/event_ledger.jsonl"),
+         writes=("desks/mt5/data/macro/event_ledger.jsonl",
+                 "desks/mt5/data/macro/allocator_interrupt.json",
+                 "desks/mt5/data/macro/interrupt_log.jsonl",
+                 "desks/mt5/data/macro/taxonomy.json",
+                 "desks/mt5/data/macro/source_credibility.json",
+                 "desks/mt5/data/macro/factor_basis.json",
+                 "desks/mt5/data/macro/exposures.json",
+                 "desks/mt5/data/macro/multiplicity.json",
+                 "desks/mt5/data/macro/event_attribution.jsonl",
+                 "desks/mt5/reports/MACRO_INTEL.json"),
+         # ITS AUTHORITY IS THE CLOCK, NOT THE BOOK. `research_supervisor.tick_periodic` reads
+         # `allocator_interrupt.json` and may bring the allocator's fast leg forward; nothing
+         # here ever reaches a weight. Declared so the fence measures what this actually
+         # decides -- without it the node reads as ADVISORY_ONLY, which would be wrong in the
+         # dangerous direction: a timing organ that silently gained sizing authority would look
+         # identical to one that never had any.
+         authority=("allocator_solve_timing",)),
     Node("world_causal_graph", "desks/mt5/research/world_causal_graph.py",
          reads=("desks/mt5/data/universe/", "desks/mt5/data/deep_forest_claims.jsonl",
                 "desks/mt5/reports/CROSS_ASSET_GRAPH.json",
@@ -209,26 +255,47 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/order_intents.jsonl",
                 "desks/mt5/data/theoretical_positions.jsonl"),
          writes=("desks/mt5/reports/NETTING.json", "desks/mt5/reports/NETTING_BOOK.json")),
+    # ALPHA CAPTURE (2026-09-05, the principal's order): realised edge over predicted
+    # FRICTIONLESS edge, per sleeve, session and symbol, trended over its own history. The one
+    # number that separates a strategy that stopped working from a strategy being taken apart
+    # between the decision and the fill. Reads the fill corpus the hourly twin assembles.
     Node("execution_intelligence", "desks/mt5/research/execution_intelligence.py",
          reads=("desks/mt5/data/order_intents.jsonl",
                 "desks/mt5/data/theoretical_positions.jsonl",
-                "desks/mt5/data/execution_algo_outcomes.jsonl", "desks/mt5/reports/markout.json"),
+                "desks/mt5/data/execution_algo_outcomes.jsonl", "desks/mt5/reports/markout.json",
+                "desks/mt5/data/fill_corpus.jsonl",
+                "desks/mt5/data/alpha_capture_history.jsonl"),
          writes=("desks/mt5/reports/FILL_SURFACE.json", "desks/mt5/reports/NETTING.json",
-                 "desks/mt5/reports/NETTING_BOOK.json")),
+                 "desks/mt5/reports/NETTING_BOOK.json", "desks/mt5/reports/ALPHA_CAPTURE.json",
+                 "desks/mt5/data/alpha_capture_history.jsonl")),
     # THE EXECUTION DIGITAL TWIN (2026-09-05): every live intent joined to what the venue did,
     # calibrated, and turned into the correction the simulator should apply. ADVISORY until
     # engine.Costs / external_gauntlet.costs_for read EXECUTION_TWIN.json: when that wiring
     # lands, add the report to the external_gauntlet node's `reads` and drop it from HUMAN_READ
     # so the graph shows the Live -> Simulator path instead of a report a person reads.
+    # THE FILL CORPUS (2026-09-05, the principal's order) is assembled on the SAME clock, because
+    # it is a join over the ledgers this node already reads plus four that resolve late (the
+    # decision ledger, the counterfactual dataset, the excursions and the tick tape). It is the
+    # desk's one unrebuildable asset -- an unrecorded fill cannot be recovered -- and it is
+    # HUMAN_READ on purpose: `execution_intelligence` prices the alpha capture ratio off it, but
+    # neither the conditional execution-choice model nor the meta-labeler is wired to anything
+    # that sends an order, and both are UNMEASURED until the corpus reaches their required n.
+    # When one of them is wired, drop the corpus from HUMAN_READ and declare the consumer here.
     Node("execution_twin", "desks/mt5/research/execution_twin.py",
          reads=("desks/mt5/data/order_intents.jsonl",
                 "desks/mt5/data/execution_algo_outcomes.jsonl",
                 "desks/mt5/data/live_ledger.jsonl", "desks/mt5/data/universe/",
                 "desks/mt5/data/execution_twin_state.json",
-                "desks/mt5/data/execution_twin_cases.jsonl"),
+                "desks/mt5/data/execution_twin_cases.jsonl",
+                "desks/mt5/data/decision_ledger.jsonl",
+                "desks/mt5/data/decision_dataset.jsonl",
+                "desks/mt5/data/excursions.jsonl",
+                "desks/mt5/data/tape/",
+                "desks/mt5/data/fill_corpus.jsonl"),
          writes=("desks/mt5/reports/EXECUTION_TWIN.json",
                  "desks/mt5/data/execution_twin_cases.jsonl",
-                 "desks/mt5/data/execution_twin_state.json")),
+                 "desks/mt5/data/execution_twin_state.json",
+                 "desks/mt5/data/fill_corpus.jsonl")),
     # THE PORTFOLIO GAP (scheduled 2026-09-05; it existed with no clock): what the book cannot
     # fill and where research should point. ADVISORY until the research bandit reads it.
     # THE COUNTERFACTUAL WORLD (2026-09-05, the principal's order): every decision minute joined
@@ -318,6 +385,29 @@ NODES: tuple[Node, ...] = (
          reads=("backups/moat/shadow_ledgers/", "desks/mt5/reports/STATE_ADMISSION.json",
                 "desks/mt5/reports/ALPHA_GENOME.json"),
          writes=("desks/mt5/reports/REGIME_COVERAGE.json",
+                 "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
+    # THE BREADTH LANE (2026-09-05). Three producers answering the principal's three questions --
+    # how many independent bets the book actually is, what pays inside its own worst periods, and
+    # which states of a surviving edge deserve capital. Each reaches a decision the same way
+    # regime_coverage and opportunity_curve do: through the deepening queue, which the worker
+    # reads hourly and whose deepened candidates the gauntlet certifies.
+    Node("alpha_breadth", "desks/mt5/research/alpha_breadth.py",
+         reads=("backups/moat/shadow_ledgers/", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+                "desks/mt5/data/universe/"),
+         writes=("desks/mt5/reports/EFFECTIVE_BREADTH.json",
+                 "desks/mt5/data/effective_breadth.jsonl",
+                 "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
+    # The lane is a CHAIN, not three parallel reports: the breadth ledger owns cluster occupancy
+    # and the drawdown factory reads it rather than recomputing a second answer to the same word;
+    # the survivor miner reads the drawdown's state signature, because a state where a surviving
+    # edge is stronger AND the rest of the book is losing is drawdown alpha the desk already owns.
+    Node("drawdown_alpha", "desks/mt5/research/drawdown_alpha.py",
+         reads=("backups/moat/shadow_ledgers/", "desks/mt5/reports/EFFECTIVE_BREADTH.json"),
+         writes=("desks/mt5/reports/DRAWDOWN_ALPHA.json",
+                 "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
+    Node("survivor_neighbourhood", "desks/mt5/research/survivor_neighbourhood.py",
+         reads=("backups/moat/shadow_ledgers/", "desks/mt5/reports/DRAWDOWN_ALPHA.json"),
+         writes=("desks/mt5/reports/SURVIVOR_NEIGHBOURHOOD.json",
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
     Node("resurrection", "desks/mt5/research/resurrection.py",
          reads=("desks/mt5/data/regime_state.json", "desks/mt5/data/state_vector.json",
@@ -524,6 +614,9 @@ NODES: tuple[Node, ...] = (
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
 #: node advisory. Listed so the check has a definition rather than an opinion.
 HUMAN_READ = frozenset({
+    # The macro layer's report. Read by a person; the layer's one decision edge is the
+    # interrupt above, declared in EXTERNAL_READERS with its reader named.
+    "desks/mt5/reports/MACRO_INTEL.json",
     "desks/mt5/reports/markout.json", "desks/mt5/reports/allocator_attribution.json",
     "desks/mt5/reports/RESURRECTION.json", "desks/mt5/reports/DATA_PROSPECTOR.json",
     "desks/mt5/data/LIVE_MANIFEST.jsonl", "desks/mt5/reports/factor_residual.json",
@@ -540,6 +633,13 @@ HUMAN_READ = frozenset({
     # model reads the report (see the execution_twin node). The portfolio gap likewise until
     # the research bandit reads it.
     "desks/mt5/reports/EXECUTION_TWIN.json", "desks/mt5/data/execution_twin_cases.jsonl",
+    # THE FILL CORPUS and the alpha-capture ratio it prices. Human-read is the HONEST state
+    # today, not a placeholder: the corpus is the collection asset, `ALPHA_CAPTURE.json` is the
+    # measurement a person acts on, and the two models built on it (conditional execution choice,
+    # meta-labeler) are UNMEASURED harnesses wired to nothing that sends an order. The day one of
+    # them is wired, its consumer is declared and the corpus leaves this set.
+    "desks/mt5/data/fill_corpus.jsonl", "desks/mt5/reports/ALPHA_CAPTURE.json",
+    "desks/mt5/data/alpha_capture_history.jsonl",
     # The counterfactual world's report, its versioned dataset and its watermark: advisory
     # until missed_growth reads VETO_ALPHA off the report (see the counterfactual_replay node).
     "desks/mt5/reports/FEATURE_ROI.json", "desks/mt5/reports/MODULE_RENT.json",
@@ -576,6 +676,13 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/EXIT_ACCOUNTS.json", "desks/mt5/reports/ACTION_COUNTERFACTUALS.json",
     "desks/mt5/reports/RESEARCH_PNL.json", "desks/mt5/reports/MUTATION_YIELD.json",
     "desks/mt5/reports/RESEARCH_BANDIT.json",
+    # THE BREADTH LANE'S REPORTS. Each producer's DECISION path is the deepening queue it also
+    # writes; these three files are the evidence a person reads beside it -- nominal against
+    # effective breadth with every reading's status, the book's own drawdown windows and what
+    # earns inside them, and where a surviving edge is stronger or absent. None of them
+    # conditions capital, and listing them here is the claim that they do not.
+    "desks/mt5/reports/EFFECTIVE_BREADTH.json", "desks/mt5/reports/DRAWDOWN_ALPHA.json",
+    "desks/mt5/reports/SURVIVOR_NEIGHBOURHOOD.json",
 })
 
 #: Consumers outside this graph that are known to read an artifact -- the crawler reads the
@@ -600,6 +707,36 @@ EXTERNAL_READERS = {
     "desks/mt5/data/missed_growth.jsonl": "missed_growth (its own append-only memory)",
     "desks/mt5/data/action_counterfactuals.jsonl": "action_counterfactuals (its own memory)",
     "desks/mt5/data/deep_forest_claims.jsonl": "deep_forest_miner (its own append-only memory)",
+    # THE MACRO LAYER'S MEMORY. Each of these is read back by `macro_intel` on its next pass and
+    # by nothing else, which is precisely what makes the layer LEARN rather than restate: the
+    # taxonomy's centroids move with the instances assigned to them, the credibility posteriors
+    # accumulate a source's record, the factor basis is refitted, and the multiplicity charge
+    # only ever grows so that re-testing a cell makes admission harder. Declared here with the
+    # reason rather than left to read as DEAD_PRODUCER, because "nothing reads it" and "only its
+    # own author reads it" are different facts and only one of them is a defect.
+    "desks/mt5/data/macro/taxonomy.json": "macro_intel (its own category centroids)",
+    "desks/mt5/data/macro/source_credibility.json": "macro_intel (its own Beta posteriors)",
+    "desks/mt5/data/macro/factor_basis.json": "macro_intel (its own discovered factor basis)",
+    "desks/mt5/data/macro/exposures.json": "macro_intel (its own admitted category->factor edges)",
+    "desks/mt5/data/macro/multiplicity.json": ("macro_intel (its own never-shrinking Bonferroni "
+                                               "charge; monotone by design)"),
+    "desks/mt5/data/macro/event_attribution.jsonl": ("macro_intel (its own append-only memory; "
+                                                     "the measured decay half-lives come back "
+                                                     "from here, which is the loop that lets the "
+                                                     "interrupt gate ever fire)"),
+    "desks/mt5/data/macro/event_ledger.jsonl": "macro_intel (its own append-only event record)",
+    "desks/mt5/data/macro/allocator_interrupt.json": ("research_supervisor.tick_periodic -- it "
+                                                      "reads this to bring the allocator's fast "
+                                                      "leg forward. The supervisor is a process "
+                                                      "manager, not a graph node, so the edge is "
+                                                      "declared here rather than left to read as "
+                                                      "DEAD_PRODUCER. This is the ONLY artifact "
+                                                      "of this layer that reaches a decision, and "
+                                                      "the decision it reaches is WHEN to solve, "
+                                                      "never what to hold."),
+    "desks/mt5/data/macro/interrupt_log.jsonl": ("macro_intel (its own rate-limit window; an "
+                                                 "interrupt that fires constantly is an "
+                                                 "expensive clock)"),
     "desks/mt5/data/deep_forest_seen.json": "deep_forest_miner (its own seen-ledger)",
     "desks/mt5/data/intelligence/anomaly_cursor.json": "anomaly_miner (its own rotation cursor)",
     "desks/mt5/data/memory/": "deepening_worker.task_text (memory.prompt_context on every prompt)",
@@ -615,6 +752,9 @@ EXTERNAL_READERS = {
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/survivor_distiller/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/features/": "feature_store (content-addressed cache)",
+    "desks/mt5/data/effective_breadth.jsonl": ("alpha_breadth (its own append-only series; a "
+                                               "breadth number with no history cannot say whether "
+                                               "the desk is widening or only adding names)"),
 }
 
 _PATH_RE = re.compile(r"[\"']((?:desks/mt5/|backups/|reports/|data/)[A-Za-z0-9_./-]+)[\"']")

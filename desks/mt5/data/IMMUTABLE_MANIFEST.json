@@ -1,25 +1,25 @@
 {
- "signed_utc": "2026-09-05T13:01:44.404026+00:00",
- "signed_by": "gauntlet capped at its declared 1200MB (measured holding 4882MB on an 8GB box, starving every other leg); signed in session",
+ "signed_utc": "2026-09-05T17:24:37.401663+00:00",
+ "signed_by": "principal",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "a916da8c17a1be8f",
   "desks/mt5/research/universal_gate.py": "564b02439b938431",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "830723c7f399411c",
-  "desks/mt5/research/heat_policy.py": "cc5f0201f0135ad1",
-  "desks/mt5/research/promoter.py": "c4a7efabe551cd97",
+  "desks/mt5/research/heat_policy.py": "25b9469c860d1fb6",
+  "desks/mt5/research/promoter.py": "e6e4221be6b93baa",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
-  "libs/portfolio/allocator_proof.py": "8c590d6c8b445dac",
-  "libs/portfolio/rails.py": "6139b46d7b42b875",
+  "libs/portfolio/allocator_proof.py": "ab3cdbd00048bb78",
+  "libs/portfolio/rails.py": "8f5f7d313712447a",
   "libs/portfolio/capital_modifiers.py": "71d70e73ef3ed693",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
   "libs/validation/replay2.py": "81abc1b46a04b694",
   "libs/validation/calibration.py": "39b1af6276bb31bf",
   "libs/regime/state_admission.py": "555c1d3fa9067362",
-  "scripts/check_growth_governance.py": "4c6f74d047832cb7",
+  "scripts/check_growth_governance.py": "fee72b6abc265220",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
   "scripts/check_immutable_evaluator.py": "15095e24bb8a1b45",
-  "scripts/run_deadman_switch.py": "<absent>"
+  "scripts/run_deadman_switch.py": "799db26dadc9c8e3"
  },
  "rule": "these files judge hypotheses; a change must arrive with a re-signed manifest -- research organs may change the hypothesis, never the judge"
 }

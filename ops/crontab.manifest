@@ -3253,6 +3253,7 @@ SYSTEMD unit="quant-perishability.timer" on="*-*-* 05:40:00" exec="scripts/check
 SYSTEMD unit="quant-prompt-prefix.timer" on="*-*-* 04,16:50:00 UTC" exec="scripts/check_prompt_prefix.py"
 SYSTEMD unit="quant-queue-guard.timer" on="*:4/10" exec="scripts/check_research_queue.py"
 SYSTEMD unit="quant-quota-resume.timer" on="boot+180 then every 300" exec="scripts/check_quota_resume.py"
+SYSTEMD unit="quant-recertify-canon.timer" on="*-*-* 06:20:00" exec="desks/mt5/scripts/recertify_canon.py"
 SYSTEMD unit="quant-regime-monitor.timer" on="*-*-* *:08/30:00" exec="desks/mt5/research/regime_monitor.py"
 SYSTEMD unit="quant-research-health-weekly.timer" on="Sun 06:15" exec="scripts/check_research_health.py"
 SYSTEMD unit="quant-research-health.timer" on="*:03,33" exec="scripts/check_research_health.py"

@@ -34,7 +34,9 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 CIO = ROOT / "data/research_cio.json"
 LEDGER = ROOT / "data/stage_a_verdicts.jsonl"
-PRICE_SRC = ROOT / "data/coinmetrics_flows.jsonl"
+#: The MT5 desk's own H1 bar store (read-only) and the instrument the forward return is taken on.
+_UNIVERSE = ROOT / "desks/mt5/data/universe"
+_TARGET = "BTCUSD"
 _MIN_N = 60
 _BATCH = 6                    # screened per cycle; unbounded queue, bounded compute per run
 
@@ -60,12 +62,34 @@ def _rows(p: pathlib.Path, cap: int = 20000):
 
 
 def _price_series() -> dict[str, float]:
-    """Daily BTC close from the coinmetrics archive -- the desk's longest clean price history."""
-    out = {}
-    for r in _rows(PRICE_SRC):
-        if r.get("asset") == "btc" and r.get("price_usd") and r.get("date"):
-            out[str(r["date"])[:10]] = float(r["price_usd"])
-    return out
+    """Daily close of the target MT5 instrument, keyed YYYY-MM-DD.
+
+    REPOINTED 2026-09-05 (universe mandate). This read `data/coinmetrics_flows.jsonl` -- a Coin
+    Metrics community archive of exchange-native BTC prices -- and called it "the desk's longest
+    clean price history". Its collector was deleted with the crypto-exchange desk, so the file has
+    no writer and is not on disk; `_rows` swallows the OSError and returns [], which meant this
+    screen has been aligning every candidate against an EMPTY price series and returning
+    UNDERPOWERED for all of them while reporting itself as having run. A screen that cannot fail
+    loudly is the failure this file's own honesty rails were written for.
+
+    The target is now BTCUSD from the MT5 desk's H1 parquet -- a Fusion-executable CFD, so the
+    instrument is inside the mandated universe rather than a reference price for one outside it.
+    An unreadable source now RAISES instead of yielding a silent empty series.
+    """
+    path = _UNIVERSE / f"{_TARGET}_H1.parquet"
+    if not path.exists():
+        raise SystemExit(f"stage-a: no H1 parquet for {_TARGET} at {path.relative_to(ROOT)} -- "
+                         "the forward-return leg is UNREADABLE. That is not a screen that found "
+                         "nothing; refusing to report verdicts computed against no prices.")
+    import pandas as pd
+
+    df = pd.read_parquet(path)
+    daily = (df.set_index(pd.to_datetime(df.index, utc=True))
+               .resample("1D").agg({"close": "last"}).dropna())
+    # The last calendar day may still be forming: a partial bar at the panel edge would let a
+    # candidate be scored against a return that has not finished happening.
+    daily = daily.iloc[:-1]
+    return {d.strftime("%Y-%m-%d"): float(v) for d, v in daily["close"].items()}
 
 
 def _spearman(a, b):

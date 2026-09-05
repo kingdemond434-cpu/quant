@@ -2,14 +2,57 @@
 
 Runs daily at 22:00 UTC inside the gateway loop (after shadow_forward.main()).
 
-PROMOTE (fully automatic, immediate -- principal 2026-09-04: "all promotion candidates get
-into the live account immediately, no waiting, no permission, always"):
+CAPITAL IS EARNED BY dE[log W], AND THE ASYMMETRY IS THE POINT (principal, 2026-09-05):
+
+    "Don't rank candidates primarily by Sharpe. Rank by dE[log W] after adding the candidate to
+     the existing portfolio ... Now make that principle the actual automatic admission criterion."
+
+    "Never have 'this strategy is allocated 3% forever'. Have 'this strategy currently earns 7.4%
+     portfolio risk because its posterior edge, uncertainty, conditional state and covariance make
+     that the current robust log-optimal allocation.' Five minutes/hour/session later, it can
+     be 0%."
+
+    "promotion slow / demotion immediate, evidence-based allocation, and fractional Kelly."
+
+WHAT THAT CHANGES HERE, AND WHAT IT SUPERSEDES. The 2026-09-04 order ("all promotion candidates
+get into the live account immediately, no waiting, no permission, always") is about the ROSTER and
+it still stands: a matured candidate is written to `data/sleeves.json` on the run its clock
+matures, and nothing holds it in a queue. What it never said, and what the 2026-09-05 order now
+settles, is how much CAPITAL that row carries. Three rules, all of them stricter than what stood:
+
+  ADDING RISK IS SLOW. A row goes to `status: LIVE` only when the accumulated evidence is in --
+  the forward clock matured, the certificate stands, the cost re-grade is not failing -- AND
+  `pf_allocator`'s fresh admission scan says adding it to the book the desk is actually holding
+  RAISES robust E[log W] at the same total heat. A candidate that does not is written
+  `status: STANDBY` with the number that refused it. Standby is not retirement: the row, its
+  clock and its certificate all stand, and it is re-judged every run. Every LATER move out of
+  standby needs `PROMOTE_ADMIT_STREAK` consecutive positive readings, counted on the row itself,
+  so a marginal sitting on zero cannot flap the book in and out on sampling noise.
+
+  REMOVING RISK IS IMMEDIATE. One current reading is enough. A LIVE sleeve the latest solve gives
+  no heat goes to STANDBY on that reading alone -- no trade count, no drawdown bar, no waiting.
+  It is NOT retired and NOT killed in its shadow clock: the moment the solve wants it again it
+  comes back. That is the "0%, and five minutes later it can be 7.4%" the principal asked for.
+
+  SIZE IS AN OUTPUT, NOT A CONSTANT. `PROMOTED_RISK_FRAC` used to be written onto every promoted
+  row -- literally "this strategy is allocated 3% forever". The row now carries the heat the
+  allocator's own solve gave that sleeve, with `risk_frac_source` naming where it came from, and
+  the old constant survives only as a CEILING on what this module may write, so nothing here can
+  raise size by fiat.
+
+RETIREMENT IS UNCHANGED and stays the one-way door: its thresholds are untouched, and it still
+writes KILL into the shadow clock. Standby is the reversible one; retirement is not.
+
+PROMOTE (automatic, on the run the clock matures -- principal 2026-09-04):
   - every lane's forward clock (shadow_forward, qquant_shadow, scalp_shadow) says
     PROMOTION CANDIDATE and the sleeve is not yet promoted: it is written to
-    data/sleeves.json (status LIVE) on THIS run and the gateway trades it on its next
-    pass (< 1 min). The only refusal is the certificate: a candidate whose exact spec is
-    not in the ten-gate authority set is BLOCKED_UNIVERSAL_GATES, because a candidate
-    without a certificate is not a candidate.
+    data/sleeves.json on THIS run, and the gateway trades it on its next pass (< 1 min)
+    IF the allocator's fresh dE[log W] scan admits it -- otherwise the row is written
+    STANDBY and re-judged every run (see ADDING RISK IS SLOW above). The refusals are the
+    certificate (a candidate whose exact spec is not in the ten-gate authority set is
+    BLOCKED_UNIVERSAL_GATES, because a candidate without a certificate is not a candidate)
+    and the marginal (a candidate that does not raise the book's robust growth gets no
+    capital, however good its standalone Sharpe).
   - XAUUSD window challengers no longer wait for, or die to, the armed gold book. The
     comparison against the armed window's forward expectancy is still MEASURED and written
     on the sleeve row (`vs_armed`) for the allocator and the attribution to read; capital
@@ -31,6 +74,7 @@ The armed gold book is NOT managed here (hunt5 authority, armed by human).
 """
 
 import json
+import math
 import sys
 import time
 from datetime import UTC, datetime
@@ -64,7 +108,35 @@ _LOG_RETRY_SLEEP_S = 0.03
 # equity base risk off the bracket's own stop distance (mt5desk/sizing.py), authority-ramped
 # 0.75%/1.5%/3% by live trade count. Raising a sleeve's risk_frac above the base requires
 # recorded economic justification and is capped at MAX_RISK_FRAC there.
+#
+# NO LONGER THE ALLOCATION -- ONLY THE CEILING ON ONE (principal 2026-09-05). This constant was
+# written verbatim onto every promoted row, which is exactly the "allocated 3% forever" the
+# principal ordered removed. `promoted_risk_frac()` now derives the number from the allocator's
+# own solve for that sleeve and clamps it HERE, so this change can only ever reduce what the
+# promoter writes, never raise it.
 PROMOTED_RISK_FRAC = 0.03
+
+#: The allocation artifact whose `admission` block is the criterion, and whose `book` is the
+#: current reading. Module-level so a test can point the promoter at a fixture tree.
+ALLOCATION = BASE / "reports" / "pf_allocation.json"
+#: How old the allocator's scan may be and still price capital. `pf_allocator` re-measures on its
+#: hourly heavy clock and the short clocks carry the last one forward stamped with its age, so a
+#: scan older than this means the allocator has not run for a day -- the same 26h
+#: `libs.portfolio.allocator_proof.MAX_AGE_S` allows the sizing certificate, one freshness rule.
+#: Taken from the allocator's own published expiry when it is readable (`admission.max_age_s`),
+#: so the rule cannot drift apart between the writer and this reader.
+ADMISSION_MAX_AGE_H = 26.0
+#: Consecutive passes a STANDBY sleeve's dE[log W] must be positive before it takes capital AGAIN.
+#: One reading removes risk; two consecutive readings restore it. That asymmetry is the whole
+#: instruction, and it is what stops a sleeve whose marginal sits on zero from flapping the book
+#: in and out on sampling noise. First promotion does not use it: a candidate has already spent
+#: the forward clock's 50 trades / 14 days earning the right to be judged at all.
+PROMOTE_ADMIT_STREAK = 2
+#: What each direction costs in evidence, said out loud so the asymmetry cannot be edited away by
+#: accident. Read by `desks/mt5/tests/test_marginal_admission.py`.
+EVIDENCE_TO_ADD_RISK = ("matured forward clock", "standing certificate", "no fresh cost regrade",
+                        "a fresh, positive dE[log W] against the held book")
+EVIDENCE_TO_REMOVE_RISK = ("the current dE[log W] reading",)
 PROMOTED_LOT = 0.01     # legacy display value; sleeve_set() overrides lot to "auto_ramp"
 CHAMPION_MARGIN = 0.02   # challenger must beat armed forward exp by this much
 RETIRE_MIN_N = 10
@@ -293,6 +365,274 @@ def degenerate_evidence(ledger: list[dict], name: str) -> str:
     return ""
 
 
+# ------------------------------------------------------------------- dE[log W] AS THE CRITERION
+
+def _join_keys(name: str, symbol: str = "", family: str = "", selector: str = "") -> list[str]:
+    """Every key a sleeve can be recognised by, most specific first.
+
+    THE TWO SIDES NAME THE SAME SLEEVE DIFFERENTLY, and pretending otherwise is how a join
+    silently matches nothing. `pf_allocator` prices `SYM_family_window`; the forward clocks key
+    `SYM.window[.STATE]` or the certificate's own key. So the join is on the PARTS -- symbol,
+    mechanism, selector -- with the raw name first for the case where they already agree, and
+    every key is lowercased because neither side promises a case convention.
+    """
+    out = [str(name).strip().lower()] if name else []
+    sym, fam, sel = (str(symbol).strip().lower(), str(family).strip().lower(),
+                     str(selector).strip().lower())
+    if sym and fam and sel:
+        out.append(f"{sym}|{fam}|{sel}")
+    if sym and sel:
+        out.append(f"{sym}|{sel}")
+    return out
+
+
+def _index(rows: dict[str, dict]) -> dict[str, dict]:
+    """Join key -> candidate row. AMBIGUOUS KEYS ARE DROPPED, never resolved by guessing.
+
+    Two sleeves on the same symbol and selector but different mechanisms would both answer to
+    `sym|selector`; funding one on the other's measurement is worse than not funding either, so a
+    key that two rows claim is removed and those rows stay reachable only by their exact names.
+    """
+    idx: dict[str, dict] = {}
+    clash: set[str] = set()
+    for name, row in rows.items():
+        if not isinstance(row, dict):
+            continue
+        for k in _join_keys(name, str(row.get("symbol") or ""), str(row.get("family") or ""),
+                            str(row.get("selector") or "")):
+            if k in idx and idx[k] is not row:
+                clash.add(k)
+            idx[k] = row
+    for k in clash:
+        idx.pop(k, None)
+    return idx
+
+
+def allocation_view(now: datetime | None = None) -> dict:
+    """What the allocator currently says about every sleeve, or a named refusal to say anything.
+
+    Returns `{fresh, why, age_h, at, candidates, book, zeroed, total_heat}` where `candidates` and
+    `book` are indexed by every key `_join_keys` can produce. `fresh` is False -- and every
+    capital decision below then refuses to ADD risk -- when the artifact is absent, unreadable,
+    stale, or carries no measured admission scan. Absence is never permission (L1.28a): a desk
+    that cannot price a candidate's marginal has not measured that the candidate raises growth.
+    """
+    try:
+        doc = json.loads(ALLOCATION.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"fresh": False, "why": f"{ALLOCATION.name} unreadable ({type(exc).__name__})",
+                "candidates": {}, "book": {}, "zeroed": {}, "total_heat": 0.0, "age_h": None}
+    stamp = str(doc.get("generated_utc") or "")
+    try:
+        age_h = ((now or datetime.now(tz=UTC)) - datetime.fromisoformat(stamp)
+                 ).total_seconds() / 3600.0
+    except ValueError:
+        age_h = float("inf")
+    adm = doc.get("admission") if isinstance(doc.get("admission"), dict) else {}
+    # THE PARTS OF EVERY PRICED SLEEVE, so a FUNDED sleeve joins on the same terms a candidate
+    # does. `book` is name -> heat and carries no symbol or mechanism; without this the funded
+    # half of the join would only ever match on an exact name.
+    universe = adm.get("universe") if isinstance(adm.get("universe"), dict) else {}
+    book_rows = {str(k): {"heat": float(v), **{f: str((universe.get(str(k)) or {}).get(f) or "")
+                                               for f in ("symbol", "family", "selector")}}
+                 for k, v in (doc.get("book") or {}).items()
+                 if isinstance(v, (int, float))}
+    view = {
+        "at": stamp, "age_h": (None if not math.isfinite(age_h) else round(age_h, 2)),
+        "total_heat": float((doc.get("heat") or {}).get("total") or 0.0),
+        "candidates": _index(adm.get("candidates") or {}),
+        "book": _index(book_rows),
+        # ROSTERED AND GIVEN NOTHING BY THIS SOLVE. A real reading, and the one a demotion may act
+        # on when the admission scan's own budget did not reach the sleeve.
+        "zeroed": _index({str(k): {"why": str(v),
+                                   **{f: str((universe.get(str(k)) or {}).get(f) or "")
+                                      for f in ("symbol", "family", "selector")}}
+                          for k, v in (doc.get("book_zeroed") or {}).items()}),
+        "admission_status": str(adm.get("status") or "ABSENT"),
+        "admission_at": str(adm.get("measured_utc") or ""),
+        "carried_from": str(adm.get("carried_from") or ""),
+    }
+    # THE SCAN HAS ITS OWN AGE, AND IT IS NOT THE ARTIFACT'S. The allocator measures the admission
+    # scan on its HEAVY clock and the short clocks carry the answer forward into a freshly
+    # timestamped artifact. So a scan taken a day ago can sit inside a file written a minute ago,
+    # and reading the file's timestamp alone would be reading a stale measurement as fresh --
+    # exactly the defect the carry-forward stamp exists to make visible. Both must be inside the
+    # window; the older of the two is the one that decides.
+    scan_age_h = age_h
+    try:
+        scan_age_h = max(age_h, ((now or datetime.now(tz=UTC))
+                                 - datetime.fromisoformat(view["admission_at"])
+                                 ).total_seconds() / 3600.0)
+    except (TypeError, ValueError):
+        pass
+    view["scan_age_h"] = None if not math.isfinite(scan_age_h) else round(scan_age_h, 2)
+    # THE WRITER'S OWN EXPIRY WHEN IT PUBLISHES ONE. Two copies of a freshness rule is how one of
+    # them is silently edited; the local constant is the fallback for an artifact that carries
+    # none, and a longer published expiry is never accepted -- stricter, never looser.
+    max_age_h = ADMISSION_MAX_AGE_H
+    published = adm.get("max_age_s")
+    if isinstance(published, (int, float)) and 0 < float(published) / 3600.0 <= max_age_h:
+        max_age_h = float(published) / 3600.0
+    view["max_age_h"] = round(max_age_h, 2)
+    if scan_age_h > max_age_h:
+        view["fresh"] = False
+        view["why"] = (f"the allocation is {age_h:.1f}h old and its admission scan "
+                       f"{scan_age_h:.1f}h old (max {max_age_h:.0f}h): it describes a "
+                       f"book that no longer exists, so it may not price capital")
+        return view
+    if view["admission_status"] != "MEASURED":
+        view["fresh"] = False
+        view["why"] = (f"the allocator published no measured admission scan "
+                       f"(status {view['admission_status']!r}); no candidate has a dE[log W]")
+        return view
+    view["fresh"] = True
+    view["why"] = (f"allocation {age_h:.1f}h old, admission scan {scan_age_h:.1f}h old over "
+                   f"{len(adm.get('candidates') or {})} candidate(s) taken "
+                   f"{view['admission_at']}" + (" (carried forward)" if view["carried_from"]
+                                                else ""))
+    return view
+
+
+def admission_of(view: dict, name: str, symbol: str = "", family: str = "",
+                 selector: str = "") -> tuple[dict | None, str]:
+    """The sleeve's current reading and the key it joined on, or (None, why there is none).
+
+    THREE PLACES A READING CAN COME FROM, most specific first, and each is a different sentence:
+
+        the admission scan   this candidate was re-solved INTO the book and here is its dE[log W]
+        the funded book      the allocator is already holding it, and its heat IS the reading
+        the zeroed list      it is rostered and this solve gave it nothing -- a real refusal
+
+    None means NONE OF THE THREE, which is not a refusal: it is a sleeve the allocator has never
+    priced, or one the admission budget did not reach. That distinction matters, because a
+    demotion may act on a refusal and must never act on a compute limit.
+    """
+    keys = _join_keys(name, symbol, family, selector)
+    for k in keys:
+        row = (view.get("candidates") or {}).get(k)
+        if isinstance(row, dict):
+            return row, f"joined on {k!r}"
+    for k in keys:
+        row = (view.get("book") or {}).get(k)
+        if isinstance(row, dict):
+            # Already funded by the allocator: its marginal was measured when it entered and its
+            # heat IS the current reading. There is no candidate row for something already held.
+            return ({"delta_elogw_per_day": None, "heat_earned": float(row.get("heat") or 0.0),
+                     "admit": float(row.get("heat") or 0.0) > 0.0,
+                     "why": f"already funded by the allocator at {float(row['heat']):.2%} heat"},
+                    f"joined on {k!r} (funded book)")
+    for k in keys:
+        row = (view.get("zeroed") or {}).get(k)
+        if isinstance(row, dict):
+            return ({"delta_elogw_per_day": None, "heat_earned": 0.0, "admit": False,
+                     "why": str(row.get("why") or "this solve gave the sleeve no heat")},
+                    f"joined on {k!r} (zeroed by this solve)")
+    return None, (f"no allocator row answers to any of {keys!r}: this sleeve is not in the priced "
+                  f"universe, or the admission scan's budget did not reach it, so its marginal "
+                  f"contribution has not been measured on this pass")
+
+
+def promoted_risk_frac(row: dict | None, *, cap: float = PROMOTED_RISK_FRAC) -> tuple[float, str]:
+    """The risk fraction to WRITE on a row: the allocator's own heat for it, clamped by `cap`.
+
+    THE CLAMP IS ONE-SIDED ON PURPOSE. The allocator may want more than the old constant, and on
+    the money path it gets it -- `gateway` sizes a funded sleeve from the book directly
+    (`from_book`), not from this field. What this field does is bound what the promoter writes for
+    the case where the book cannot be read, and raising THAT by fiat is exactly what the rules
+    forbid. So the number moves down freely with the evidence and never up past what stood.
+    """
+    h = None
+    if isinstance(row, dict):
+        try:
+            h = float(row.get("heat_earned"))
+        except (TypeError, ValueError):
+            h = None
+    if h is None or not (h > 0.0):
+        return 0.0, ("the allocator's solve gives this sleeve no heat; the row carries zero and "
+                     "the sleeve holds no capital until a solve wants it")
+    frac = min(h, float(cap))
+    return round(frac, 6), (
+        f"the allocator's current solve gives this sleeve {h:.2%} heat"
+        + (f", written at the {cap:.0%} promoter ceiling" if h > cap else ""))
+
+
+def capital_verdict(view: dict, name: str, *, symbol: str = "", family: str = "",
+                    selector: str = "", streak: int = 0,
+                    first_promotion: bool = True) -> dict:
+    """May this sleeve hold capital right now, and why. The single door both lanes use.
+
+    Returns `{status, risk_frac, why, delta_elogw_per_day, heat_earned, streak, joined}` with
+    `status` in {LIVE, STANDBY, UNMEASURED}. Never returns RETIRED: retirement is a different,
+    one-way decision with its own thresholds, and conflating "the book does not want you today"
+    with "you are finished" is precisely the conflation the principal's demotion rule removes.
+
+    UNMEASURED IS NOT STANDBY, and the difference decides what may act on it. STANDBY is a
+    REFUSAL -- the allocator looked and said no -- and a demotion may act on it. UNMEASURED means
+    nobody looked: the sleeve is not in the priced universe, the artifact is stale, or the scan's
+    budget ran out. A row that has never held capital gets none either way (capital requires a
+    measured marginal); a row that HOLDS capital keeps it, because removing risk on a compute
+    limit is not a risk decision, it is an outage wearing one.
+    """
+    out: dict = {"status": "UNMEASURED", "risk_frac": 0.0, "streak": int(streak),
+                 "delta_elogw_per_day": None, "heat_earned": None, "joined": ""}
+    if not view.get("fresh"):
+        out["why"] = (f"no fresh dE[log W] measurement: {view.get('why', 'unavailable')}. "
+                      f"Nothing is added and nothing is removed -- the row and its clock stand "
+                      f"and the next allocator pass decides.")
+        return out
+    row, joined = admission_of(view, name, symbol, family, selector)
+    out["joined"] = joined
+    if row is None:
+        out["why"] = (f"{joined}. Capital requires a measured marginal, and an unmeasured one is "
+                      f"not a positive one -- but it is not a refusal either, so risk already "
+                      f"held is not removed on it.")
+        return out
+    out["delta_elogw_per_day"] = row.get("delta_elogw_per_day")
+    out["heat_earned"] = row.get("heat_earned")
+    if not row.get("admit"):
+        out["status"] = "STANDBY"
+        out["streak"] = 0
+        out["why"] = f"standby on the current reading -- {row.get('why', 'not admitted')}"
+        return out
+    # CAPPED, because the number's only job is to answer "has it been positive often enough".
+    # An uncapped counter on a long-lived LIVE row grows into the hundreds and then reads, after
+    # a demotion, as if the sleeve had already earned its way back.
+    out["streak"] = min(int(streak) + 1, PROMOTE_ADMIT_STREAK)
+    if not first_promotion and out["streak"] < PROMOTE_ADMIT_STREAK:
+        out["status"] = "STANDBY"
+        out["why"] = (f"admitted on this reading ({out['streak']}/{PROMOTE_ADMIT_STREAK} "
+                      f"consecutive) -- risk was removed from this sleeve once, and restoring it "
+                      f"takes consecutive readings where removing it took one. "
+                      f"{row.get('why', '')}")
+        return out
+    frac, why_frac = promoted_risk_frac(row)
+    if not (frac > 0.0):
+        out["status"] = "STANDBY"
+        out["why"] = f"admitted but sized at zero: {why_frac}"
+        return out
+    out.update({"status": "LIVE", "risk_frac": frac,
+                # BOTH NUMBERS, because they can legitimately differ: the gateway sizes a funded
+                # sleeve straight from the book (`from_book`), and this field is only what the
+                # promoter is permitted to WRITE. A row showing 3% beside an allocator that solved
+                # 7.4% would otherwise read as the constant coming back.
+                "allocator_heat": out["heat_earned"],
+                "written_at_promoter_ceiling": bool(
+                    isinstance(out["heat_earned"], (int, float))
+                    and float(out["heat_earned"]) > PROMOTED_RISK_FRAC),
+                "why": f"{row.get('why', 'admitted')}; {why_frac} ({joined})"})
+    return out
+
+
+def _door_status(cap: dict) -> str:
+    """What a NEWLY promoted row's status is: LIVE only on a measured admission, else STANDBY.
+
+    UNMEASURED and STANDBY differ for a row that already HOLDS capital -- one may remove it, the
+    other may not. For a row being written for the first time there is nothing to preserve, so
+    both mean the same thing: it joins the roster and holds no capital until a solve wants it.
+    """
+    return "LIVE" if str(cap.get("status") or "") == "LIVE" else "STANDBY"
+
+
 def load_qquant_shadow() -> dict:
     """The qquant (hunt-certified) forward clock, kept in its own state file."""
     p = SHADOW_DIR / "qquant_shadow_state.json"
@@ -314,7 +654,7 @@ def load_scalp_shadow() -> dict:
 
 
 def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
-                  gate_authority: set | None = None) -> bool:
+                  gate_authority: set | None = None, view: dict | None = None) -> bool:
     """The scalp lane's automatic door (principal 2026-09-04).
 
     A scalp sleeve promotes when its own Fusion-native forward clock says PROMOTION_CANDIDATE
@@ -365,17 +705,26 @@ def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
         spec = ("XAUUSD", str(name), None, "gold_scalp", False)
         cert = (f"ten_gate:scalp.{name}" if spec in (gate_authority or set())
                 else "forward_clock")
+        # THE CAPITAL DOOR IS dE[log W] (principal 2026-09-05). The clock decides that the sleeve
+        # is real; the allocator decides whether adding it to the book the desk holds raises
+        # robust growth. A refusal writes STANDBY, not a rejection: the row and its clock stand.
+        cap = capital_verdict(view or {}, name, symbol="XAUUSD",
+                              family=str(recipe.get("family") or "gold_scalp"),
+                              selector=str(name))
         sleeves.append({"name": name, "symbol": "XAUUSD", **recipe,
                         "exec": "scalp_market", "lot": "auto_ramp",
-                        "risk_frac": PROMOTED_RISK_FRAC, "status": "LIVE",
+                        "risk_frac": cap["risk_frac"], "status": _door_status(cap),
+                        "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
+                        "admission": cap,
                         "certificate": cert,
                         "forward_verdict": row.get("forward_verdict"),
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": row.get("expectancy_r", 0.0),
                         "shadow_n": row.get("n", 0), "shadow_days": row.get("days", 0)})
-        plog(f"AUTO-PROMOTED (scalp) {name} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk, "
-             f"ramped, exec=scalp_market {tf} {recipe['family']}/{recipe['session']} "
-             f"(shadow exp={float(row.get('expectancy_r') or 0.0):.3f}R n={row.get('n', 0)})")
+        plog(f"PROMOTED (scalp) {name} -> {_door_status(cap)} at {cap['risk_frac']:.2%} risk "
+             f"(exec=scalp_market {tf} {recipe['family']}/{recipe['session']}; shadow "
+             f"exp={float(row.get('expectancy_r') or 0.0):.3f}R n={row.get('n', 0)}) -- "
+             f"{cap['why']}")
         changed = True
     return changed
 
@@ -449,6 +798,114 @@ def regrade_block(name: str, fails: dict[str, dict]) -> dict | None:
     return None
 
 
+def _after(a: str, b: str) -> bool:
+    """Is timestamp `a` strictly later than `b`? False whenever either cannot be parsed.
+
+    COMPARED AS INSTANTS, NOT AS STRINGS. The two sides are written by different writers at
+    different precisions ("...:00+00:00" against "...:00.123456+00:00"), and lexicographic order
+    on those disagrees with time order -- which would silently invert the "do not judge a sleeve
+    on a measurement that predates it" guard.
+    """
+    try:
+        return datetime.fromisoformat(a) > datetime.fromisoformat(b)
+    except (TypeError, ValueError):
+        return False
+
+
+def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None = None,
+                      only: set[str] | None = None) -> bool:
+    """Move every standing row toward what the CURRENT solve says, in both directions.
+
+    THE ASYMMETRY, EXPLICIT AND IN ONE PLACE (principal, 2026-09-05: "promotion slow / demotion
+    immediate"):
+
+        LIVE -> STANDBY needs ONE reading. The latest solve gives this sleeve no heat, so it
+        holds none. No trade count, no drawdown bar, no waiting. `demoted_at` and `demote_reason`
+        say why. It is NOT retired: the row stands, the shadow clock is untouched, `retired_at`
+        is not set, and the sleeve is judged again on the next pass.
+
+        STANDBY -> LIVE needs PROMOTE_ADMIT_STREAK consecutive positive readings, counted on the
+        row itself. A sleeve whose marginal sits on zero would otherwise be admitted and demoted
+        alternately forever, and every one of those flips is turnover the desk pays for.
+
+        RETIRED never moves. Retirement is the one-way door with its own thresholds; standby is
+        the reversible one. Conflating them is what this function exists to stop.
+
+    A sleeve promoted since the allocation was taken is left alone: the solve has not had a
+    chance to see it, and demoting on a measurement that predates the sleeve would be reading
+    absence as evidence. `only`, when given, limits this to rows that already existed before this
+    pass's promotion doors ran -- a row written moments ago has just been judged by
+    `capital_verdict` and re-judging it here would demote it on its own promotion.
+
+    Returns True when any row changed. Pure over `sleeves` (mutated in place) and `view`.
+    """
+    if not view.get("fresh"):
+        plog(f"capital reconciliation SKIPPED: {view.get('why', 'no fresh allocation')}. "
+             f"Rows stand as they are -- an unmeasured reading removes nothing and adds nothing.")
+        return False
+    changed = False
+    at = str(view.get("at") or "")
+    stamp = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    for s in sleeves:
+        status = str(s.get("status") or "").upper()
+        if status not in ("LIVE", "STANDBY"):
+            continue                                    # RETIRED is a one-way door
+        if only is not None and str(s.get("name") or "") not in only:
+            continue
+        # EVERY READING IS RECORDED, not only the ones that move a row. The streak that governs
+        # restoration lives ON the row, so a pass whose verdict changed nothing but whose count
+        # advanced still has to be written -- otherwise "two consecutive readings" silently
+        # becomes "two readings in the same second".
+        before = json.dumps(s, sort_keys=True, default=str)
+        promoted_at = str(s.get("promoted_at") or "")
+        if status == "LIVE" and _after(promoted_at, at):
+            s.setdefault("admission", {})["why"] = (
+                f"promoted {promoted_at}, after the {at} allocation: not judged on a measurement "
+                f"that predates the sleeve")
+            changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+            continue
+        cap = capital_verdict(view, str(s.get("name") or ""),
+                              symbol=str(s.get("symbol") or ""),
+                              family=str(s.get("family") or ""),
+                              selector=str(s.get("selector") or s.get("window") or ""),
+                              streak=int(s.get("admit_streak") or 0),
+                              # A LIVE row is not ADDING risk, it is keeping what it holds, so the
+                              # streak does not apply to it -- only to a STANDBY row taking
+                              # capital, which is the direction the principal ordered made slow.
+                              first_promotion=(status == "LIVE"))
+        s["admission"] = cap
+        s["admit_streak"] = cap["streak"]
+        if cap["status"] == "UNMEASURED":
+            # NOBODY LOOKED. Not in the priced universe, or the scan's budget ran out. Removing
+            # risk on that is removing it on a compute limit, which is an outage wearing a risk
+            # decision; adding it would be adding on nothing at all. The row stands, and the
+            # reason stands on it so the gap is visible rather than silent.
+            changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+            continue
+        if cap["status"] == "LIVE" and status == "STANDBY":
+            s.update({"status": "LIVE", "risk_frac": cap["risk_frac"],
+                      "risk_frac_source": "allocator_marginal",
+                      "restored_at": stamp, "restore_reason": cap["why"]})
+            s.pop("demoted_at", None)
+            s.pop("demote_reason", None)
+            plog(f"RESTORED {s['name']} -> LIVE at {cap['risk_frac']:.2%} risk after "
+                 f"{cap['streak']} consecutive positive reading(s) -- {cap['why']}")
+            changed = True
+        elif cap["status"] == "STANDBY" and status == "LIVE":
+            s.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                      "demoted_at": stamp, "demote_reason": cap["why"]})
+            plog(f"DEMOTED {s['name']} -> STANDBY (0% risk, NOT retired) on the current "
+                 f"reading -- {cap['why']}")
+            changed = True
+        elif status == "LIVE" and abs(float(s.get("risk_frac") or 0.0) - cap["risk_frac"]) > 1e-9:
+            # SIZE IS AN OUTPUT OF THE CURRENT SOLVE, not a constant carried from promotion day.
+            old = float(s.get("risk_frac") or 0.0)
+            s.update({"risk_frac": cap["risk_frac"], "risk_frac_source": "allocator_marginal"})
+            plog(f"RESIZED {s['name']}: {old:.2%} -> {cap['risk_frac']:.2%} -- {cap['why']}")
+        changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+    return changed
+
+
 def load_cert_specs() -> dict[str, dict]:
     """Certificate key -> published shadow_spec, exact policy only (fail closed)."""
     from gate_policy import all_ten_pass, is_exact_policy
@@ -468,7 +925,8 @@ def load_cert_specs() -> dict[str, dict]:
 
 
 def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
-                    gate_authority: set, regrade: dict[str, dict] | None = None) -> bool:
+                    gate_authority: set, regrade: dict[str, dict] | None = None,
+                    view: dict | None = None) -> bool:
     """GAP 124: hunt-certified (qquant) candidates gain the same automatic door.
 
     A qquant sleeve promotes when its OWN Fusion-native forward clock says
@@ -508,17 +966,22 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
             # set is registry drift, recorded here and blocking nothing (principal 2026-09-05).
             plog(f"{key}: spec not in the current authority set -- recorded as drift, "
                  f"promotion proceeds on the clock's own certificate")
+        cap = capital_verdict(view or {}, key, symbol=tup[0], family=tup[3], selector=tup[1])
         sleeves.append({"name": key, "symbol": tup[0], "selector": tup[1],
                         "state": tup[2], "family": tup[3],
                         "side": str(spec.get("side", "LONG")).upper(),
                         "exec": "family_market",
-                        "lot": "auto_ramp", "risk_frac": PROMOTED_RISK_FRAC,
-                        "status": "LIVE",
+                        "lot": "auto_ramp", "risk_frac": cap["risk_frac"],
+                        "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
+                        "admission": cap,
+                        "status": _door_status(cap),
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": row.get("exp_r", 0.0)})
-        plog(f"AUTO-PROMOTED (generic) {key} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk, "
-             f"ramped, exec=family_market (shadow exp={row.get('exp_r', 0.0):.3f}R "
-             f"n={row.get('n', 0)}) -- orders LOG-ONLY until data/GENERIC_EXEC_ENABLED")
+        plog(f"PROMOTED (generic) {key} -> {_door_status(cap)} at {cap['risk_frac']:.2%} risk, "
+             f"exec=family_market (shadow exp={row.get('exp_r', 0.0):.3f}R "
+             f"n={row.get('n', 0)}) -- {cap['why']}"
+             + ("; orders LOG-ONLY until data/GENERIC_EXEC_ENABLED"
+                if _door_status(cap) == "LIVE" else ""))
         changed = True
     return changed
 
@@ -533,11 +996,18 @@ def main() -> None:
     identities = clock_identities()
     changed = False
 
+    # WHAT THE ALLOCATOR CURRENTLY SAYS. Read ONCE per pass: the three promotion doors and the
+    # reconciliation below must all decide from the same solve, or two rows written in the same
+    # run could carry two different answers to "what does the book want".
+    view = allocation_view()
+    plog(f"allocation view: {'FRESH' if view.get('fresh') else 'NOT USABLE'} -- "
+         f"{view.get('why', '')}")
+
     qshadow = load_qquant_shadow()
     qchanged = promote_generic(sleeves, qshadow, existing, gate_authority,
-                               regrade=regrade_fails)
+                               regrade=regrade_fails, view=view)
     sshadow = load_scalp_shadow()
-    schanged = promote_scalp(sleeves, sshadow, existing, gate_authority)
+    schanged = promote_scalp(sleeves, sshadow, existing, gate_authority, view=view)
     changed = changed or qchanged or schanged
 
     for key, st in shadow.items():
@@ -581,8 +1051,12 @@ def main() -> None:
             plog(f"{key}: live promotion refused -- {st['gate_reason']}")
             changed = True
             continue
-        row = {"name": key, "symbol": sym, "lot": PROMOTED_LOT, "risk_frac": PROMOTED_RISK_FRAC,
-               "status": "LIVE", "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        cap = capital_verdict(view, key, symbol=sym, family=family, selector=win)
+        row = {"name": key, "symbol": sym, "lot": PROMOTED_LOT, "risk_frac": cap["risk_frac"],
+               "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
+               "admission": cap,
+               "status": _door_status(cap),
+               "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                "shadow_exp": st.get("exp_r", 0.0), "family": family,
                "side": side_txt, "certificate_drift": st["certificate_drift"]}
         if family == "session_range_breakout":
@@ -634,13 +1108,24 @@ def main() -> None:
             row.update({"selector": win, "state": cond, "params": params,
                         "exec": "family_market", "lot": "auto_ramp"})
         sleeves.append(row)
-        plog(f"AUTO-PROMOTED {key} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk, ramped "
+        plog(f"PROMOTED {key} -> {_door_status(cap)} at {cap['risk_frac']:.2%} risk "
              f"({family} {side_txt}, exec={row.get('exec', 'bracket')}; shadow "
-             f"exp={st.get('exp_r', 0.0):.3f}R n={st.get('n', 0)})")
+             f"exp={st.get('exp_r', 0.0):.3f}R n={st.get('n', 0)}) -- {cap['why']}")
+        changed = True
+
+    # ---------------------------------------------------- CAPITAL, ON THE CURRENT READING
+    # Demotion needs one reading and restoration needs several: `reconcile_capital` is where that
+    # asymmetry lives. It runs BEFORE retirement so a sleeve the solve no longer wants is at 0%
+    # risk on this pass whatever the retirement thresholds later decide, and it never retires
+    # anything itself.
+    if reconcile_capital(sleeves, view, only=existing):
         changed = True
 
     for s in sleeves:
-        if s.get("status") != "LIVE":
+        # RETIREMENT JUDGES STANDBY ROWS TOO. A sleeve demoted to 0% keeps its live record, and a
+        # record that trips the retirement bar must still retire it -- otherwise a demotion would
+        # be a way to escape the one-way door and be restored months later on a stale certificate.
+        if str(s.get("status") or "").upper() not in ("LIVE", "STANDBY"):
             continue
         why_not = degenerate_evidence(ledger, s["name"])
         if why_not:

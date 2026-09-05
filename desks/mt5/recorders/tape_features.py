@@ -40,9 +40,13 @@ FOUR CONSUMERS, ALL OF WHICH ALREADY EXIST. Nothing here builds a parallel featu
      the latency-slippage curve WITHOUT needing a single fill. That is a strictly better prior
      than "half the spread", it is available on day one, and it is per symbol and per hour.
 
-  4. THE INTRABAR PATH -- `data/tape/intrabar/<SYM>/<DAY>.parquet`. Whether the high came before
-     the low, per bar, measured. See the CONSUMERS note at the bottom of this file for exactly
-     what has to change to use it and why this module does not make that change itself.
+  4. THE BAR STACK -- `data/tape/intrabar/<SYM>/<FREQ>/<DAY>.parquet`, on the full hierarchical
+     clock: M1, M5, M15, H1, H4, D1. Per bar it carries the true path (whether the high came
+     before the low, and when each arrived), the excursions, and the realised/bipower variance
+     decomposition with its jump count. H1 stops being the information ceiling: a scalp family
+     reads M5 structure and a swing family reads D1 path from MEASURED bars instead of inferring
+     both from the same hourly OHLC. See the CONSUMERS note at the bottom of this file for
+     exactly what has to change to use it and why this module does not make that change itself.
 
 WHAT THIS MODULE WILL NOT DO. It will not write a number it did not measure. Every symbol-hour
 cell below `MIN_TICKS_PER_CELL` is UNMEASURED and carries no value, so a consumer cannot read one
@@ -100,8 +104,16 @@ INTEGRITY = _DESK / "reports" / "TICK_INTEGRITY.json"
 #: observed runs -- a declaration is a floor, never a claim.
 NEED_MB = 900
 
-#: Bars the intrabar path is measured on. H1 is the desk's main clock; M15 is the scalp lane's.
-INTRABAR_FREQS = ("1h", "15min")
+#: THE HIERARCHICAL BAR CLOCK, and it exists because H1 was being treated as the information
+#: ceiling. The desk's engine, its certificates and its gauntlet all run on H1 bars; a scalp lane
+#: that wants M5 structure and a swing lane that wants D1 path have had to infer both from the
+#: same hourly OHLC. Tick → M1 → M5 → M15 → H1 → H4 → D1 lets each alpha family work at its own
+#: natural horizon on MEASURED bars rather than on an hourly proxy of them.
+#:
+#: The cost is bounded and worth stating: 1,848 rows per symbol-day across the whole stack, a few
+#: tens of KB, in the DERIVED layer that `tape_store`'s retention section already declares
+#: prunable to 90 days because every row of it is a pure function of the bronze tape.
+INTRABAR_FREQS = ("1min", "5min", "15min", "1h", "4h", "1D")
 
 #: Days to look back when nothing has been built yet. Bounded so a first run on a long tape does
 #: not try to build a year in one pass -- the watermark makes the next run continue.
@@ -181,15 +193,15 @@ def build_day(store: TapeStore, symbol: str, day: str, point: float) -> dict[str
         cell = ms.hour_cell(chunk, symbol, h, point)
         out["cells"].append(cell)
 
-    # -- 3. INTRABAR PATH.
+    # -- 3. THE BAR STACK: path, excursions, realised variation and jumps, per horizon.
     for freq in INTRABAR_FREQS:
-        path = ms.path_excursions(ms.intrabar_path(df, freq), point)
+        path = ms.bar_statistics(df, freq, point)
         if path.empty:
             continue
-        p = INTRABAR / symbol / freq.replace("min", "m") / f"{day}.parquet"
+        p = INTRABAR / symbol / _freq_dir(freq) / f"{day}.parquet"
         p.parent.mkdir(parents=True, exist_ok=True)
         _atomic_parquet(path.reset_index(), p)
-        out["intrabar"][freq] = {
+        row: dict[str, Any] = {
             "bars": len(path),
             # THE NUMBER THAT RETIRES THE ASSUMPTION. A backtest that assumes the high came first
             # is right this often and wrong the rest of the time, and until now the desk had no
@@ -198,7 +210,29 @@ def build_day(store: TapeStore, symbol: str, day: str, point: float) -> dict[str
             "median_t_high_ms": int(path["t_high_ms"].median()),
             "median_t_low_ms": int(path["t_low_ms"].median()),
         }
+        for col, key in (("rv_bp", "median_rv_bp"), ("bv_bp", "median_bv_bp"),
+                         ("jump_frac", "median_jump_frac"),
+                         ("jump_intensity", "median_jump_per_h")):
+            if col in path.columns:
+                v = pd.to_numeric(path[col], errors="coerce").dropna()
+                # NO BARS MEASURED IS NOT A ZERO. A frequency whose bars all fell below
+                # RV_MIN_RETURNS carries no variance number at all rather than a median of
+                # nothing rendered as 0.0.
+                row[key] = round(float(v.median()), 5) if not v.empty else None
+        row["rv_bars_measured"] = (int(pd.to_numeric(path.get("rv_bp"), errors="coerce")
+                                       .notna().sum()) if "rv_bp" in path.columns else 0)
+        out["intrabar"][freq] = row
     return out
+
+
+def _freq_dir(freq: str) -> str:
+    """A filesystem-safe directory for a pandas frequency alias.
+
+    `15min` -> `15m`, `1D` -> `1d`. Lower-cased because Windows filesystems are case-INSENSITIVE
+    but case-preserving, so `1D` and `1d` would be the same directory there and two different ones
+    here -- a difference that would only show up as a silently merged artifact on the box.
+    """
+    return freq.replace("min", "m").lower()
 
 
 def _failed_days() -> tuple[dict[str, str], str]:
@@ -540,6 +574,13 @@ CONSUMERS: dict[str, str] = {
         "NOT CHANGED HERE ON PURPOSE: every live certificate was minted by this engine, so "
         "changing its fill semantics silently re-prices the whole canon. The measurement is now "
         "available; the change is a deliberate, separately-evidenced revaluation."),
+    "desks/mt5/mt5desk/families.py::the volatility-conditioned families": (
+        "the same per-bar files carry rv_bp, bv_bp, jump_frac and jump_intensity on M1/M5/M15/"
+        "H1/H4/D1. Every family that currently conditions on ATR is conditioning on a RANGE, "
+        "which cannot separate a smooth drift from one gap of the same size -- the two states a "
+        "stop behaves completely differently in. NOT WIRED HERE: families.py is the certificate "
+        "surface and a new conditioning variable there is an enrolment decision, not a feature "
+        "commit. The measurement exists now and the enrolment is the next, separate step."),
 }
 
 

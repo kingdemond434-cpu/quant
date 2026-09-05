@@ -21,4 +21,9 @@ TimeoutStartSec=90min
 MemoryHigh=3G
 MemoryMax=4G
 
-ExecStart=/home/quant/quant-platform/.venv/bin/python -u -W ignore scripts/recertify_canon.py
+# Absolute path, as quant-regime-monitor.service and quant-sge-premium.service already do: the
+# scheduler-manifest fence maps ExecStart onto the repo by stripping the VPS root, so a
+# cwd-relative path resolves to a file that "does not exist in repo" and the unit goes invisible
+# to the DR floor while running perfectly well on the box. WorkingDirectory still governs the
+# process's cwd; only the fence's view of WHICH script this is depends on the path being absolute.
+ExecStart=/home/quant/quant-platform/.venv/bin/python -u -W ignore /home/quant/quant-platform/desks/mt5/scripts/recertify_canon.py
