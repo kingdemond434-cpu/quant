@@ -108,8 +108,13 @@ resolves but the gateway cannot trade that population yet -- a wiring defect to 
 row the book would hold as air). Scalp sleeves carry their exact recipe (timeframe, family,
 session, ATR geometry) with `exec="scalp_market"` and are executed by `mt5desk/scalp_exec.py`
 through `gateway.run_scalp_sleeves()` -- replay-faithful, one stated deviation (the stop's ATR is
-the last closed bar's); the scalp lane admits any clock row, not only `authorized_specs`. Other
-families promote as `exec="family_market"` rows. The old gold-challenger wait/kill against the
+the last closed bar's); the scalp lane admits any clock row, not only `authorized_specs`. The
+scalp lane now has its own backtest-equivalent gauntlet (principal 2026-09-05: "a lane with no
+gauntlet is third-world behaviour"): `scripts/scalp_gauntlet.py` judges every candidate daily on
+the box's M5/M15 bars through the SAME ten gates (`external_gauntlet.run_gauntlet`, multiplicity
+charged for the full swept grid), `external_gauntlet` merges the passes into the canon as
+`scalp.<name>`, and the clock row and the sleeve row name the certificate (`ten_gate:scalp.<name>`
+or `forward_clock`). Other families promote as `exec="family_market"` rows. The old gold-challenger wait/kill against the
 armed window is gone: the comparison is recorded on the sleeve row (`vs_armed`) and capital is
 the allocator's ΔE[log W] decision. Retirement stays automatic and kills the row in whichever
 lane owns it.
@@ -140,3 +145,60 @@ mode wins, a heavier pass resets the lighter clocks, `data/HOLD_pf_allocator` pa
 gateway reads the newest book every minute and the no-trade filter -- not the clock -- decides
 whether to trade toward it. Data cadence is truthful: a feature carries the `available_time` of
 its source, and a minute solve over hourly data is a minute solve over the same hour.
+
+## After the blueprint: no architecture without rent (principal 2026-09-05)
+
+The gap-closure blueprint (typed AlphaDSL and multi-engine search with portfolio- and
+tail-aware fitness; factor x model co-evolution; the PIT feature warehouse with FeatureROI; the
+world causal graph and the information-decay state engine; theoretical sleeve positions and
+netting; the execution policy registry and the Fusion digital twin; backtest/live event parity;
+the counterfactual decision ledger; the posterior multi-period E[log W] allocator against every
+standard challenger; dynamic latent factors and effective breadth tied to heat; the research
+bandit/VOI by conversion; genealogy, graveyard and revival; the private decision/fill dataset)
+is the LAST round of "missing architecture". Once those are built, wired and measured, the
+frontier is better data, more independent genuine edges, more live observations, better cost
+knowledge and faster discovery -- none of which is a new module.
+
+Binding from here: every component, including any AI organ, must earn its place --
+ModuleRent = E[log W] with it minus E[log W] without it, measured forward, on the desk's own
+ledgers. A component whose rent reads <= 0 for its measurement window is retired, not argued
+for. A new component is admissible only with (1) the ledger line that will measure its rent,
+(2) its capability-graph node with producer, consumer, freshness and test, and (3) its schedule
+-- in the same commit. Public mechanisms are ported by reimplementing the IDEA under the desk's
+own contracts and tests (never by pasting restrictively-licensed code, never from private or
+leaked material), and each port is judged by the same rent. "More impressive modules" is the
+named failure mode; forward net portfolio E[log W] is the only score.
+
+## The world is one graph, and every input carries its age (2026-09-05)
+
+`libs/research/causal_graph.py` holds the world as nodes (country, central bank, yield curve,
+currency, commodity, equity index, volatility, physical and futures market, flow, positioning,
+event, MT5 instrument) and X_t -> Y_{t+h} edges carrying lag, direction, strength, stability,
+state dependence, nonlinearity, plausibility, incremental information and decay class. MT5
+instrument ids come from `data/universe/universe.json` and nowhere else, so no foreign alias can
+become a node the desk cannot trade. The mechanism chains the principal named -- China physical
+gold -> SGE premium -> XAUUSD; Australia commodity data -> iron/copper -> AUD -> AUDJPY; US CPI
+-> 2Y -> USD -> gold -- plus the standard FX/metals/energy/rates/risk/positioning chains are
+SEEDED as PLAUSIBLE_UNMEASURED with a written reason, so a chain exists before data proves it and
+a measurement that contradicts its prior is visible as exactly that.
+
+`research/world_causal_graph.py` runs hourly under `hourly_discovery`, measures oldest-first
+inside its budget, and admits an edge ONLY when its block-bootstrap interval excludes zero AFTER
+a Bonferroni charge over every (pair, lag) cell the graph has ever tested AND the edge adds to
+Y's own lags against a circular-shift null; everything else is RECORDED_NOT_ADMITTED with its
+reason. The ledger never shrinks and the bar is never loosened -- on the desk's real bars it
+currently admits nothing, and that is the module working. Its yield is `discovered`: edges and
+chains NEW since the last report, never the candidate count.
+
+`libs/research/information_decay.py` is the other half: one class per kind of input with a
+half-life, a truthful cadence, a publication lag and the REASON each number is what it is -- a
+tick in seconds, a bar in one span, COT in a week dated from the Friday it is public (never the
+Tuesday it is about), a macro print until the next print with the vintage rule, a policy decision
+in force until the next meeting. Age is measured from AVAILABILITY and a negative age is refused
+as a point-in-time violation, never clipped -- clipping is how a backtest reads Friday's report
+on Wednesday. `state_vector_build` reads the admitted upstream nodes as conditioning hints and
+stamps every input of X_t with its class, its true age and its weight, so the allocator sees
+which parts of the vector are still information instead of one file stamp.
+
+None of it decides anything: the graph writes hints, the allocator still owns every decision, and
+a dimension the admission gauntlet has not judged may not condition capital.

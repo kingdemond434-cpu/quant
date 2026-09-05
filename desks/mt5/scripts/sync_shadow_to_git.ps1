@@ -74,7 +74,11 @@ $relPaths = @(
     "desks/mt5/reports/shadow/shadow_health.json",
     "desks/mt5/data/gateway_state.json",
     "desks/mt5/data/sleeves.json",
-    "desks/mt5/data/regime_state.json"
+    "desks/mt5/data/regime_state.json",
+    # The release-identity verdict the gateway writes every pass: running SHA against the sealed
+    # release, and whether new risk is allowed. It is the one line that answers "is the box
+    # running the code that was tested" from any machine that can read this branch.
+    "desks/mt5/data/release_identity.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {

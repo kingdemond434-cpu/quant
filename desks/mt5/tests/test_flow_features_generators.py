@@ -511,17 +511,22 @@ def _evo_bars(n: int = 3000, seed: int = 7) -> pd.DataFrame:
     return df
 
 
-def test_every_individual_records_its_generator(tmp_path: Path,
-                                                monkeypatch: pytest.MonkeyPatch) -> None:
+def test_every_individual_records_its_population(tmp_path: Path,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """The search is nine populations now, not three generators (2026-09-05). Every individual
+    still has to say which one made it -- that is what lets the bandit learn which KIND of
+    research pays, and it is the whole reason the arms were split."""
+    from libs.research import search_populations as spop
     monkeypatch.setattr(alpha_evolution, "GENERATOR_WEIGHTS", tmp_path / "absent.json")
     # pop must exceed ELITE for any child to be bred: the elite fills the next generation first.
     ev = alpha_evolution.evolve("SYN", _evo_bars(), cost=0.0002, drivers={}, survivors=None,
                                 seed=1, budget_s=120.0, pop=alpha_evolution.ELITE + 4, gens=2)
     rows = list(ev.rows.values())
-    allowed = set(gen.GENERATORS) | {"mutate", "crossover"}
+    allowed = set(spop.POPULATIONS) | {"mutate", "crossover", "random"}
     assert len(rows) >= 12 and all(r["generator"] in allowed for r in rows)
     assert {r["generator"] for r in rows} & {"mutate", "crossover"}
-    assert ev.generator_weights["weights"] is None and "uniform" in ev.generator_weights["basis"]
+    assert ev.generator_weights["population_weights"] is None
+    assert "uniform" in ev.generator_weights["population_basis"]
     assert ev.generator_failures == []
     y = alpha_evolution.generator_yield(rows)
     assert sum(v["tried"] for v in y.values()) == len(rows)
@@ -531,27 +536,31 @@ def test_every_individual_records_its_generator(tmp_path: Path,
 def test_the_weight_file_steers_fresh_individuals(tmp_path: Path,
                                                   monkeypatch: pytest.MonkeyPatch) -> None:
     w = tmp_path / "generator_weights.json"
-    w.write_text(json.dumps({"weights": {"symreg": 1.0}}))
+    w.write_text(json.dumps({"populations": {"symreg": 1.0}}))
     monkeypatch.setattr(alpha_evolution, "GENERATOR_WEIGHTS", w)
     ev = alpha_evolution.evolve("SYN", _evo_bars(seed=3), cost=0.0002, drivers={},
                                 survivors=None, seed=2, budget_s=120.0,
                                 pop=alpha_evolution.ELITE + 2, gens=2)
     made = {r["generator"] for r in ev.rows.values()}
-    assert "symreg" in made and not made & {"random", "gflow"}
-    assert ev.generator_weights["weights"] == {"symreg": 1.0}
+    # THE SEMANTICS CHANGED ON PURPOSE. A weight now reorders which population runs FIRST under
+    # a tight budget; it never starves the others (`search_populations._order`). Excluding an
+    # arm outright was how a weight file could quietly turn the search into one generator.
+    assert "symreg" in made
+    assert ev.generator_weights["population_weights"] == {"symreg": 1.0}
 
 
-def test_a_broken_generator_costs_one_individual_not_the_sweep(
+def test_a_broken_population_costs_its_own_share_not_the_sweep(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    w = tmp_path / "generator_weights.json"
-    w.write_text(json.dumps({"gflow": 1.0}))
-    monkeypatch.setattr(alpha_evolution, "GENERATOR_WEIGHTS", w)
+    """The failure surface moved from one generator to one population, and the rule is the same:
+    a sampler that dies costs its own share and is NAMED, never the whole sweep."""
+    from libs.research import search_populations as spop
+    monkeypatch.setattr(alpha_evolution, "GENERATOR_WEIGHTS", tmp_path / "absent.json")
 
     def _boom(*a: object, **k: object) -> object:
         raise RuntimeError("sampler down")
-    monkeypatch.setitem(gen.GENERATORS, "gflow", _boom)
+    monkeypatch.setitem(spop.POPULATIONS, "gflownet", _boom)
     ev = alpha_evolution.evolve("SYN", _evo_bars(seed=4), cost=0.0002, drivers={},
                                 survivors=None, seed=3, budget_s=120.0, pop=6, gens=1)
     assert len(ev.rows) >= 6
     assert ev.generator_failures and all("sampler down" in f for f in ev.generator_failures)
-    assert {r["generator"] for r in ev.rows.values()} <= {"random", "mutate", "crossover"}
+    assert "gflownet" not in {r["generator"] for r in ev.rows.values()}

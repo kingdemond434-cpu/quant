@@ -184,3 +184,43 @@ def test_the_floor_is_flat_and_the_whole_band_is_available() -> None:
         assert resolve(0.24, curve=GOOD, readiness=r).total_heat == pytest.approx(0.24)
         assert resolve(0.45, curve=GOOD, readiness=r).total_heat == pytest.approx(
             HEAT_HARD_CEILING)
+
+
+# ------------------------------------------------------------------- the four heats, asymmetric
+
+def test_the_floor_counts_nominal_heat_and_the_ceiling_counts_effective_heat() -> None:
+    """THE ASYMMETRY IS THE LAW, not an implementation detail (2026-09-05).
+
+    The floor is a standing instruction about CAPITAL AT WORK -- measuring it in effective terms
+    would let the desk claim it had deployed 20% while holding 45% nominal. The ceiling is
+    catastrophe containment, and a catastrophe does not count tickets: four sleeves that are one
+    hidden USD factor lose like one bet at four times the size. So the room ABOVE the floor is
+    bought with independent risk and the floor itself never is.
+    """
+    from research.heat_policy import effective_ceiling
+
+    one_bet = {"nominal": 0.28, "covariance": 0.26, "factor": 0.27, "tail": 0.25}
+    cap, why, _detail = effective_ceiling(one_bet)
+    assert cap == pytest.approx(HEAT_TARGET), why
+    assert cap >= HEAT_TARGET, "the ceiling may take the upside; it may never take the floor"
+
+    v = resolve(0.28, curve=GOOD, effective_heat=one_bet)
+    assert v.binding == "effective_ceiling" and v.total_heat == pytest.approx(HEAT_TARGET)
+    assert v.effective_ceiling == pytest.approx(HEAT_TARGET)
+    assert v.effective["nominal"] == pytest.approx(0.28)
+    # The nominal reading was never the binding one, and the artifact can prove it.
+    assert v.effective["effective"] > 0.9 * v.effective["nominal"]
+
+    spread = {"nominal": 0.28, "covariance": 0.09, "factor": 0.10, "tail": 0.08}
+    assert resolve(0.28, curve=GOOD, effective_heat=spread).total_heat == pytest.approx(0.28)
+
+
+def test_the_state_conditioned_target_never_leaves_the_band() -> None:
+    """H*_t = argmax E[log W | X_t] over [floor, ceiling] -- learned, and still fenced."""
+    from research.heat_policy import StateCurve
+
+    for peak in (0.01, 0.20, 0.27, 0.55):
+        curves = {"s": StateCurve("s", {h: -((h - peak) ** 2) for h in
+                                        (0.05, 0.15, 0.20, 0.25, 0.30, 0.40)}, 64)}
+        v = resolve(0.205, curve=GOOD, state="s", curves=curves)
+        assert HEAT_TARGET - 1e-12 <= v.total_heat <= HEAT_HARD_CEILING + 1e-12, peak

@@ -1,7 +1,0 @@
-[Unit]
-Description=Restored organ: live-guard (cron manifest line re-homed to a user timer; root cron daemon dead since 2026-08-20)
-
-[Service]
-Type=oneshot
-WorkingDirectory=/home/quant/quant-platform
-ExecStart=/bin/sh -c 'flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1'

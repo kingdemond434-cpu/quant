@@ -1,0 +1,24 @@
+[Unit]
+Description=Recertify the canon under the CURRENT cost model -- a certificate is not a fact forever
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform/desks/mt5
+TimeoutStartSec=90min
+
+# WHY THIS EXISTS ON A TIMER AT ALL. recertification_audit.json was last written 2026-08-29 and
+# still is, seven days later, because nothing ever ran this script twice. In that stale audit 15
+# of 17 re-judged certificates were COST_REGRADE_FAIL: they had been certified under a cost model
+# the desk has since corrected, and nothing re-examined them. Certificates grew 23 -> 66 over the
+# same week, so the desk's confidence grew while its evidence aged.
+#
+# A certificate is a claim under a cost model. When the cost model changes the claim must be
+# re-judged or withdrawn -- that is the whole point of a sealed lockbox, and a lockbox that is
+# only ever opened once is just a filing cabinet.
+
+# A CEILING ABOVE THE WORKING SET, NOT THROUGH IT (learned 2026-09-04: MemoryHigh below a job's
+# working set makes it swap-thrash at 20% CPU rather than protecting anything).
+MemoryHigh=3G
+MemoryMax=4G
+
+ExecStart=/home/quant/quant-platform/.venv/bin/python -u -W ignore scripts/recertify_canon.py

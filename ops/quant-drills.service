@@ -1,7 +1,0 @@
-[Unit]
-Description=Restored organ: drills (cron manifest line re-homed to a user timer; root cron daemon dead since 2026-08-20)
-
-[Service]
-Type=oneshot
-WorkingDirectory=/home/quant/quant-platform
-ExecStart=/bin/sh -c '.venv/bin/python scripts/run_drills.py >> data/cro_ai_logs/drills.log 2>&1'

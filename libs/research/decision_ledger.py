@@ -28,23 +28,47 @@ a rejection REASON is wrong across its whole population, and the new-hypothesis 
 the finding back through preregistration on untouched data.
 
 Records and measures. Trades nothing, promotes nothing, and cannot.
+
+THE FULL DECISION RECORD (2026-09-05, the principal's counterfactual-world order). The gateway's
+`_record_decision` writes a hand-rolled dict -- sleeve, side, price, stop, target, taken, reason
+-- and nothing on the desk could price "what if 0.5x / limit / trail / partial" from it, because
+the size chosen, the execution chosen, the exit rule and the portfolio context at the moment
+were never on the row. `Decision` now carries every one of those as a field with a default, so
+a row written today is a superset of a row written last month and `read()` accepts both.
+`write_decision` is the one writer: the gateway's replacement for its own dict is one call that
+never raises, because a ledger fault must cost a row and never an order.
 """
 
 from __future__ import annotations
 
+import json
 import math
-from dataclasses import dataclass, field
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
 
 __all__ = [
+    "DEFAULT_REJECTION",
     "MIN_POPULATION_FOR_BIAS",
     "OUTCOMES",
+    "REASON_TO_OUTCOME",
     "REJECTION_CLASSES",
+    "SCHEMA_VERSION",
     "Decision",
     "counterfactual_summary",
+    "decision_from_row",
+    "outcome_for",
     "promotion_is_forbidden",
+    "read",
     "summarise",
     "systematic_bias",
+    "write_decision",
 ]
+
+#: The row schema the desk's decision dataset keys on. Bumped only when a field changes meaning;
+#: adding a defaulted field is not a bump, because every old row still reads under it.
+SCHEMA_VERSION: int = 1
 
 #: Every terminal state a candidate opportunity can reach. EXECUTED is one of ten, which is roughly
 #: the share of the decision surface it actually occupies -- nine ways to decline, one to act.
@@ -68,10 +92,48 @@ REJECTION_CLASSES: frozenset[str] = frozenset(o for o in OUTCOMES if o != "EXECU
 #: ledger itself to produce one.
 MIN_POPULATION_FOR_BIAS: int = 50
 
+#: THE GATEWAY'S REASON STRINGS, EACH IN ITS CLASS. The gateway names the gate that said no in
+#: its own vocabulary (`reason=` on `_record_decision`); the ledger counts by class. The map is
+#: written down so the two vocabularies cannot drift apart silently, and so a reader of the
+#: dataset can see that "shadow_not_armed" was a venue the process could not reach, not a
+#: signal the desk disliked. A reason not listed here lands in DEFAULT_REJECTION with its text
+#: intact -- the class is a coarse count, the reason is the fact.
+REASON_TO_OUTCOME: Mapping[str, str] = {
+    "placed": "EXECUTED",
+    # a rejection returned by the venue, after the desk wanted the trade
+    "broker_rejected": "EXECUTION_REJECTED",
+    # the bracket level sat inside the broker's freeze band: the market did not offer it
+    "entry_inside_freeze_band": "VENUE_UNAVAILABLE",
+    # the regime monitor silenced the sleeve for the day
+    "regime_hibernate": "SIGNAL_REJECTED",
+    # a conditioned sleeve could not confirm its state
+    "state_gate": "VALIDATION_REJECTED",
+    "margin_guard": "RISK_REJECTED",
+    # the process could not send: shadow mode, or the release identity refused new risk
+    "shadow_not_armed": "VENUE_UNAVAILABLE",
+    "release_identity_refused": "VENUE_UNAVAILABLE",
+}
+DEFAULT_REJECTION: str = "VALIDATION_REJECTED"
+
+
+def outcome_for(reason: str, taken: bool) -> str:
+    """The ledger class of a gateway reason. Taken is EXECUTED whatever the reason says."""
+    if taken:
+        return "EXECUTED"
+    out = REASON_TO_OUTCOME.get(str(reason or ""), DEFAULT_REJECTION)
+    return out if out != "EXECUTED" else DEFAULT_REJECTION
+
 
 @dataclass(frozen=True)
 class Decision:
-    """One evaluated opportunity, executed or not, with the exact reason and the state it saw."""
+    """One evaluated opportunity, executed or not, with the exact reason and the state it saw.
+
+    Every field after `intended_notional` was added for the counterfactual world and defaults,
+    so a row written before it existed still constructs. They are what `counterfactual_world`
+    needs to price the road not taken: the size the desk chose (`size_mult`, against the
+    allocator's 1.0x), how it chose to execute, which exit rule governed, the veto that fired,
+    the portfolio the decision was made inside, and where in which ledger the row came from.
+    """
 
     decision_id: str
     strategy_id: str
@@ -94,6 +156,42 @@ class Decision:
     counterfactual_bps: float | None = None
     #: Size that would have been taken, for weighting the counterfactual.
     intended_notional: float = 0.0
+    # ------------------------------------------------------------------ the full record
+    #: The sleeve that produced the signal (the gateway's `sleeve`); `strategy_id` stays the
+    #: family-level identity for the bias test.
+    sleeve: str = ""
+    #: "buy" | "sell" | "buy_stop" | "sell_stop" | "" (a refusal recorded before a side existed).
+    side: str = ""
+    #: The bracket the desk would have placed (or placed): level, stop, target, lot.
+    price: float | None = None
+    sl: float | None = None
+    tp: float | None = None
+    lot: float | None = None
+    #: The id of the state vector current at the decision -- the WorldState join key.
+    world_state_id: str = ""
+    release_id: str = ""
+    #: Every action the desk could have taken here, as the dataset's CandidateActions.
+    candidate_actions: list[dict[str, Any]] = field(default_factory=list)
+    #: The one it took: {"kind": "enter"|"skip", ...}. Empty means "derive from taken/reason".
+    chosen_action: dict[str, Any] = field(default_factory=dict)
+    #: The size multiplier the desk applied against the allocator's normal size (the capital
+    #: modifier's category: 0.5x REDUCE, 1.5x BOOST ...). 1.0 is "as the allocator said".
+    size_mult: float = 1.0
+    #: How the order was (or would have been) sent: market | pending_stop | limit | delayed.
+    execution: str = ""
+    #: The exit rule that governed the position: fixed_tp (the bracket) | trail | hold | partial.
+    exit_rule: str = ""
+    #: The gate that refused, when one did; empty on an executed decision.
+    veto_reason: str = ""
+    #: The book the decision was made inside: allocator heat, the sleeve's fraction, the
+    #: sleeve's position before this decision, the capital-modifier category.
+    portfolio_context: dict[str, Any] = field(default_factory=dict)
+    #: Where the record came from: ledger name -> physical line offsets (append-only ledgers, so
+    #: an offset is a stable address).
+    provenance: dict[str, Any] = field(default_factory=dict)
+    ticket: int | None = None
+    retcode: int | None = None
+    schema_version: int = SCHEMA_VERSION
 
     def __post_init__(self) -> None:
         if self.outcome not in OUTCOMES:
@@ -106,6 +204,129 @@ class Decision:
     @property
     def resolved(self) -> bool:
         return self.counterfactual_bps is not None
+
+    @property
+    def taken(self) -> bool:
+        return self.outcome == "EXECUTED"
+
+    def to_row(self) -> dict[str, Any]:
+        """The JSON line. Every field, in declaration order, so a row reads like the class."""
+        return asdict(self)
+
+
+def decision_from_row(row: Mapping[str, Any]) -> Decision:
+    """A `Decision` from a ledger line -- this module's own, or the gateway's hand-rolled one.
+
+    The gateway's legacy row has no `outcome`: it has `taken` and `reason`, and the class is
+    derived through `outcome_for`. Its `time` is the decision time. Its `sleeve` stands in for
+    `strategy_id` because the family identity was never on the row; a reader that needs the
+    family derives it from the sleeve name, as the desk's other engines do.
+    """
+    r = dict(row)
+    taken = bool(r.get("taken", r.get("outcome") == "EXECUTED"))
+    reason = str(r.get("reason") or "")
+    outcome = str(r.get("outcome") or outcome_for(reason, taken))
+    sleeve = str(r.get("sleeve") or r.get("strategy_id") or "")
+    decided_at = str(r.get("decided_at") or r.get("time") or "")
+    side = str(r.get("side") or "")
+    decision_id = str(r.get("decision_id") or f"{sleeve}|{side}|{decided_at}")
+
+    def _f(key: str) -> float | None:
+        v = r.get(key)
+        if v is None or isinstance(v, bool):
+            return None
+        try:
+            x = float(v)
+        except (TypeError, ValueError):
+            return None
+        return x if math.isfinite(x) else None
+
+    def _i(key: str) -> int | None:
+        v = r.get(key)
+        if v is None or isinstance(v, bool):
+            return None
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return None
+
+    veto = str(r.get("veto_reason") or ("" if taken else reason))
+    # 0.0 is a real multiplier (STRONG_VETO), so absence is tested, never falsiness.
+    size_mult = _f("size_mult")
+    return Decision(
+        decision_id=decision_id, strategy_id=str(r.get("strategy_id") or sleeve),
+        symbol=str(r.get("symbol") or ""), decided_at=decided_at, outcome=outcome,
+        reason=reason, features=dict(r.get("features") or {}), regime=str(r.get("regime") or ""),
+        signal_bps=float(r.get("signal_bps") or 0.0),
+        modelled_cost_bps=float(r.get("modelled_cost_bps") or 0.0),
+        counterfactual_bps=_f("counterfactual_bps"),
+        intended_notional=float(r.get("intended_notional") or 0.0),
+        sleeve=sleeve, side=side, price=_f("price"), sl=_f("sl"), tp=_f("tp"), lot=_f("lot"),
+        world_state_id=str(r.get("world_state_id") or r.get("state_vector_id") or ""),
+        release_id=str(r.get("release_id") or ""),
+        candidate_actions=list(r.get("candidate_actions") or []),
+        chosen_action=dict(r.get("chosen_action") or {}),
+        size_mult=size_mult if size_mult is not None else 1.0,
+        execution=str(r.get("execution") or ""), exit_rule=str(r.get("exit_rule") or ""),
+        veto_reason=veto, portfolio_context=dict(r.get("portfolio_context") or {}),
+        provenance=dict(r.get("provenance") or {}), ticket=_i("ticket"), retcode=_i("retcode"),
+        schema_version=int(r.get("schema_version") or SCHEMA_VERSION))
+
+
+def write_decision(path: Path | str, decision: Decision | Mapping[str, Any], *,
+                   log: Callable[[str], None] | None = None) -> bool:
+    """Append one decision as one JSON line. NEVER raises: on the money path a ledger fault
+    costs a row, and a row is cheaper than an order. Returns whether the line was written.
+
+    Accepts a `Decision` or the gateway's keyword dict (`sleeve=, side=, taken=, reason=...`),
+    which is normalised through `decision_from_row` so the file holds one schema whichever
+    caller wrote the line. Legacy keys (`state_vector_id`, `time`) are kept on the line beside
+    their canonical names so `counterfactual_markout`'s join, keyed on them, keeps working.
+    """
+    try:
+        d = decision if isinstance(decision, Decision) else decision_from_row(decision)
+        row = d.to_row()
+        # the two names the existing engines join on, kept verbatim
+        row["time"] = d.decided_at
+        row["state_vector_id"] = d.world_state_id
+        row["taken"] = d.taken
+        if not isinstance(decision, Decision):
+            for k in ("detail",):
+                if k in decision:
+                    row[k] = decision[k]
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+        return True
+    except Exception as exc:  # telemetry must not break the money path
+        if log is not None:
+            log(f"decision record failed (non-fatal): {type(exc).__name__}: {exc}")
+        return False
+
+
+def read(path: Path | str) -> list[Decision]:
+    """Every readable decision in a ledger file, legacy rows included; a torn line is skipped."""
+    out: list[Decision] = []
+    try:
+        lines: Iterable[str] = Path(path).read_text("utf-8").splitlines()
+    except OSError:
+        return out
+    for ln in lines:
+        ln = ln.strip()
+        if not ln:
+            continue
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue
+        if not isinstance(r, dict):
+            continue
+        try:
+            out.append(decision_from_row(r))
+        except ValueError:
+            continue
+    return out
 
 
 def promotion_is_forbidden(d: Decision) -> str:

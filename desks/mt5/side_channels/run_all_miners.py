@@ -27,7 +27,13 @@ def _run_miner_inner(name, fn_ref, q):
 
 
 def _run_miner(name, fn):
-    """Run one miner under a hard timeout. Returns ("ok", discs) | ("err", msg) | ("timeout",)."""
+    """Run one miner under a hard timeout. Returns ("ok", discs) | ("err", msg) | ("timeout", why).
+
+    EVERY PATH RETURNS A PAIR. The timeout path returned a 1-tuple while the caller unpacks two,
+    so a single slow miner raised ValueError out of run_all_miners and killed the whole pipeline
+    before STEP 1 finished -- no discover, no backtest, no gates, no certify. The youtube miner
+    times out at 180s on most runs, so full-pipeline had been dying on it every hour.
+    """
     q = process_ctx.Queue()
     p = process_ctx.Process(target=_run_miner_inner, args=(name, fn, q), daemon=True)
     p.start()
@@ -39,7 +45,7 @@ def _run_miner(name, fn):
             p.kill()
             p.join()
         print(f"  {name}: TIMED OUT after {MINER_TIMEOUT_S}s (killed)")
-        return ("timeout",)
+        return ("timeout", f"killed after {MINER_TIMEOUT_S}s")
     try:
         return q.get(timeout=5)
     except Exception:

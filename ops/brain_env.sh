@@ -81,10 +81,26 @@ brain_mutex() {
 # header, then brain_mutex, then brain_auth_check; the probes there spawn claude, and an OOM
 # kill of the whole group leaves only the 58-byte header. Hunting harder cannot fix a box that
 # cannot hold the launch, so a launcher must DEFER cleanly first instead of dying silently.
-# Grace value in MB: a 158-line stub of failed-claude + the seat's own python. Below ~500MB
-# available an --effort max seam can push the box over the cliff; defer to the next catchup
-# tick (5 min) and it resumes the moment memory frees.
-_BRAIN_MEM_FLOOR_MB="${_BRAIN_MEM_FLOOR_MB:-500}"
+# THE FLOOR MUST COVER WHAT THE SEAT NEEDS TO RUN, NOT WHAT IT NEEDS TO START (2026-09-05).
+# 500MB was chosen as "enough that the launch does not immediately die", and the measured
+# outcome was that it died anyway: six gap-wirer launches OOM-killed on 2026-08-28 (recorded in
+# check_seat_launch_yield.classify), three more in the 24h to 2026-09-05, and gap-wirer and
+# video-hunter both at ZERO produced in seven days. A seat admitted at 500MB starts a
+# `claude --effort max` process whose own working set is larger than that, so the gate was
+# waving through launches the box could not hold and the kernel finished the decision.
+#
+# Being admitted and then killed is the worst of the three outcomes: it spends the launch, it
+# produces nothing, it destabilises every neighbour on the way down, and it reports as a crash
+# rather than as a resource condition -- so seven days of "the seat is broken" were really
+# "the box was full". Standing down is cheap by comparison: organ_catchup re-fires within five
+# minutes and the seat resumes the moment memory frees.
+#
+# 1500MB is the seat's own working set plus the headroom to survive a neighbour growing. It is
+# satisfiable now in a way it was not this morning: `external_gauntlet` is capped at the 1200MB
+# it declares (job_lock + MEMORY_BUDGET_MB), so an 8GB box has room for a seat and a sweep at
+# the same time instead of one process taking 4.9GB and the kernel choosing among the rest.
+# Raise or lower it from a MEASUREMENT of what a seat actually uses, never from a guess.
+_BRAIN_MEM_FLOOR_MB="${_BRAIN_MEM_FLOOR_MB:-1500}"
 brain_mem_gate() {
     local avail_mb
     avail_mb="$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)"

@@ -21,6 +21,11 @@ sys.path.insert(0, str(ROOT))
 from desks.mt5.research import forward_verdict  # noqa: E402
 from desks.mt5.research import scalp_family_expansion as families  # noqa: E402
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
+from desks.mt5.research.shadow_admission import (  # noqa: E402
+    SCALP_KEY_PREFIX,
+    SCALP_LANE_FAMILY,
+    authorized_specs,
+)
 
 DESK = Path(__file__).resolve().parents[1]
 DATA = DESK / "data" / "universe"
@@ -143,8 +148,19 @@ def run(now: datetime | None = None) -> dict:
     # after the frozen pre-registration boundary. Promotion (research/promoter.py) reads that.
     admitted = dict(CANDIDATES)
     blocked_names: list[str] = []
+    # WHICH CANDIDATES HOLD A TEN-GATE CERTIFICATE. scripts/scalp_gauntlet.py judges every
+    # candidate daily on the box's M5/M15 bars through the one validator, and the canon carries
+    # the passes under `scalp.<name>`. The clock runs either way (2026-09-04); the certificate is
+    # NAMED on the row so a reader can tell a gauntlet-backed clock from a forward-only one.
+    try:
+        certified = {s[1] for s in authorized_specs(DESK) if s[3] == SCALP_LANE_FAMILY}
+        certificate_lookup_error = None
+    except Exception as exc:              # admission unreadable: claim no certificate
+        certified = set()
+        certificate_lookup_error = f"{type(exc).__name__}: {exc}"
     state: dict = {
         "updated_at": now.isoformat(timespec="seconds"),
+        "certificate_lookup_error": certificate_lookup_error,
         "shadow_start": SHADOW_START.isoformat(), "source": source,
         "declared_sleeves": len(CANDIDATES), "configured_sleeves": len(admitted),
         "gate_blocked_sleeves": len(blocked_names), "sleeves": {},
@@ -248,7 +264,10 @@ def run(now: datetime | None = None) -> dict:
             "status": status, "timeframe": tf, "choice": choice.__dict__,
             "n": n, "n_historical": n_historical, "days": days,
             "expectancy_r": exp, "max_drawdown_r": max_dd, "forward_verdict": diagnostics,
-            "certificate": "forward_clock (no backtest gauntlet exists for M5/M15 scalps)",
+            "certificate": (f"ten_gate:{SCALP_KEY_PREFIX}{name}" if name in certified else
+                            "forward_clock (no ten-gate certificate for this cell yet; "
+                            "scripts/scalp_gauntlet.py judges it daily -> "
+                            "reports/SCALP_GAUNTLET.json)"),
             "last_source_bar": last_bar.isoformat(), "matured": matured,
             "source_trading_lag_hours": lag_hours, "source_stale": stale_source,
             "promotion_authority": authority,

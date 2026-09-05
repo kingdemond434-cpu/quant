@@ -42,17 +42,22 @@ mkdir -p "$OUT_DIR"
 # ---------------------------------------------------------------- what a study actually needs
 # Named explicitly rather than "everything except secrets". An allow-list cannot leak a file class
 # nobody thought about; a deny-list leaks every one added after it was written.
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18) -- removed from the allow-list:
+#   "data/funding_history.jsonl"        perpetual funding history; the venue is retired ground
+#   "data/sor_autodiscovery.sqlite"     the crypto smart-order-router's autodiscovery store
+#   "data/cashcarry_shadow_state.json"  cash-and-carry shadow state; that book is closed
+# They are named here rather than silently dropped because this is an ALLOW-LIST: a file that
+# quietly stops being copied is indistinguishable from a file nobody ever needed, and a study
+# restored from a snapshot would not know what it was missing. If any of these still exist on a
+# box, they are residue of the retired desk and should be deleted, not snapshotted.
 INCLUDE_FILES=(
-  "data/funding_history.jsonl"
   "data/decision_ledger.json"
   "data/nav_attestation.jsonl"
-  "data/sor_autodiscovery.sqlite"
   "data/desk_metrics.sqlite"
   "data/mine_conversion_log.jsonl"
   "data/moat_survivors.json"
   "data/moat_coverage.json"
   "data/axis_shadow_state.json"
-  "data/cashcarry_shadow_state.json"
   "data/crossasset_shadow_state.json"
 )
 INCLUDE_TREES=(

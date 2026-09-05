@@ -34,36 +34,142 @@ def _exec_family(name: str) -> str:
     return _FAMILY_ALIASES.get(str(name).casefold(), str(name) or "session_range_breakout")
 
 
-#: THE ONLY SIDE THE FORWARD ENGINE CAN ACTUALLY RUN.
+#: THE ONLY SIDE THE FIVE-TUPLE SPEC CAN EXPRESS -- which is NOT the same question as what the
+#: forward engine can run, and conflating the two is what made this constant say something false.
 #:
-#: This is a declared restriction on the money path, not a preference, and it is
-#: declared here because until now it was neither. Two of the three certificate
-#: sources below carried a bare `if side != "LONG": continue` and the third had
-#: no side test at all, so a certificate that passed all ten gates on the SHORT
-#: side was dropped in silence by two doors and admitted by the third.
+#: WHAT WAS TRUE WHEN THIS WAS WRITTEN AND IS NOT TRUE NOW. It read "THE ONLY SIDE THE FORWARD
+#: ENGINE CAN ACTUALLY RUN", justified by "shadow_forward freezes direction=LONG and calls
+#: fam_fn(h1, side=1, ...)". Both halves have since been fixed in the engine: `_runnable_side`
+#: resolves the certified side, `run_forward` calls `fam_fn(h1, side=-1, ...)` for a short, and
+#: the identity is stamped `direction=str(side).upper()`. The engine HAS a short leg. Leaving the
+#: old text in place meant every unreachable certificate on the health report was attributed to a
+#: cause that no longer exists -- a measurement pointing the reader at code that is already
+#: correct, which is worse than no measurement at all.
 #:
-#: DELETING THE TEST WOULD NOT OPEN THE DOOR, IT WOULD CORRUPT THE EVIDENCE.
-#: `shadow_forward` stamps `direction="LONG"` into the frozen identity of every
-#: clock it mints and calls the family as `fam_fn(h1, side=1, ...)`. The spec
-#: tuple carries no side at all. So a SHORT certificate admitted here enrols a
-#: clock that REPLAYS LONG and then accrues forward evidence for the opposite
-#: direction to the one that was certified, under an identity claiming it was
-#: LONG all along. That is worse than the sleeve never running.
+#: WHAT IS STILL TRUE, AND IS WHY THE DOOR STAYS SHUT. The five-tuple
+#: `(symbol, selector, state, family, is_universe)` carries no side at all, and every consumer
+#: depends on that shape. So a SHORT certificate admitted here would hash to exactly the same
+#: tuple as its LONG twin: a door comparing tuples could not tell the two apart, and a LONG
+#: certificate would silently authorise a SHORT clock or the reverse. That is an evidence defect,
+#: not a capability one, and deleting the test would not open the door -- it would corrupt the
+#: authority set.
 #:
-#: So the door stays shut, and `unreachable_certificates` counts what it costs.
-#: A cap nobody can see is a cap nobody will ever pay to remove; the number is
-#: what turns "give the engine a short leg" from an opinion into a priced job.
-ENGINE_SIDES = frozenset({"LONG"})
+#: So the door stays shut for the RIGHT reason, and `unreachable_certificates` now prices the
+#: real fix: it says, per blocked certificate, whether the ENGINE could replay it. A cap nobody
+#: can see is a cap nobody will ever pay to remove, and a cap misattributed to the wrong cause is
+#: one somebody pays to remove in the wrong place.
+SPEC_TUPLE_SIDES = frozenset({"LONG"})
+#: Historical name, kept because the ceiling test and the health report both read it. Its VALUE
+#: is unchanged; only the claim it makes about WHY has been corrected above.
+ENGINE_SIDES = SPEC_TUPLE_SIDES
 
 #: Why a certified row could not enrol. One string per cause, so the health
 #: report can group by it instead of showing a bare total.
+UNREACHABLE_SIDE_NOT_IN_SPEC_TUPLE = (
+    "the five-tuple spec carries no side, so admitting this SHORT certificate would collapse it "
+    "onto its LONG twin's tuple; the forward engine CAN replay this family short, so the cost is "
+    "a missing field in the spec, not a missing short leg -- thread `side` through the spec "
+    "tuple, the frozen identity and fam_fn")
+UNREACHABLE_ENGINE_CANNOT_REPLAY_SHORT = (
+    "the forward engine cannot replay this family short: its constructor either does not resolve "
+    "in this lane or takes no `side` parameter, so enrolling it would accrue forward evidence "
+    "for the opposite direction under an identity claiming LONG")
+#: The pre-2026-09-05 text, kept ONLY so a reader who greps the health archive can find what the
+#: old rows meant. Nothing emits it any more; it described an engine that no longer exists.
 UNREACHABLE_NO_SHORT_LEG = ("forward engine has no short leg: shadow_forward "
                             "freezes direction=LONG and calls fam_fn(side=1)")
 
 
 def _engine_can_run(side: str) -> bool:
-    """Can the forward engine execute a certificate on this side, as built today?"""
-    return str(side or "LONG").upper() in ENGINE_SIDES
+    """Can the five-tuple spec express a certificate on this side?
+
+    NAMED FOR WHAT IT DECIDES. It gates `authorized_specs`, which returns tuples with no side
+    field, so the question it can honestly answer is about the SPEC and never about the engine.
+    `engine_can_replay` below asks the engine.
+    """
+    return str(side or "LONG").upper() in SPEC_TUPLE_SIDES
+
+
+def engine_can_replay(family: str, side: str) -> bool | None:
+    """Could the forward engine actually run this certificate, asked of the ENGINE?
+
+    ASKED, NOT ASSERTED. The answer lives in `shadow_forward`'s own resolver and its own
+    signature check, so reading it here means this file cannot drift from what the engine does --
+    which is exactly how the previous constant came to describe an engine that had been fixed
+    underneath it. Imported lazily because `shadow_forward` imports this module.
+
+    None means the engine could not be asked on this host (import failure, no bars module): an
+    unaskable question is reported as unknown, never as a False that would read as a capability
+    gap nobody has.
+    """
+    if str(side or "LONG").upper() != "SHORT":
+        return True
+    try:
+        import shadow_forward as _sf
+    except Exception:
+        return None
+    try:
+        fn = _sf._family_fn(str(family))
+        return bool(fn is not None and _sf._accepts_side(fn))
+    except Exception:
+        return None
+
+
+def _unreachable_cause(family: str, side: str) -> tuple[str, bool | None]:
+    """(cause, engine_can_replay) for one certified row the five-tuple door refuses."""
+    replay = engine_can_replay(family, side)
+    if replay is False:
+        return UNREACHABLE_ENGINE_CANNOT_REPLAY_SHORT, replay
+    return UNREACHABLE_SIDE_NOT_IN_SPEC_TUPLE, replay
+
+
+#: THE SCALP LANE'S CERTIFICATES live in the same canon, under `scalp.<candidate>`, minted by
+#: `scripts/scalp_gauntlet.py` through the one validator and merged by the canon's one writer.
+#: Until they existed, the promoter compared the tuple below against an authority set that
+#: could never contain it and had to call the forward clock the lane's certificate. The tuple is
+#: the promoter's own historical construction (`("XAUUSD", name, None, "gold_scalp", False)`) and
+#: the shape `tests/test_scalp_promotion.py` certifies -- matched exactly, not approximately,
+#: because a certificate that hashes differently from the door is a certificate that never opens
+#: it, and that is the failure this lane was in.
+SCALP_KEY_PREFIX = "scalp."
+SCALP_LANE_FAMILY = "gold_scalp"
+SCALP_EXEC = "scalp_market"
+#: The exact executable the gateway trades through `mt5desk.scalp_exec` -- the six keys
+#: `promoter.promote_scalp` writes on a sleeve row. A row missing any of them is not runnable and
+#: is refused here rather than guessed at, which is the same rule `authorized_runs` applies to
+#: H1 params.
+SCALP_RECIPE_KEYS = ("timeframe", "family", "session", "stop_atr", "target_atr", "max_hold")
+
+
+def scalp_spec(symbol: str, candidate: str) -> tuple[str, str, str | None, str, bool]:
+    """The five-tuple the promoter compares for a scalp sleeve.
+
+    Symbol, the candidate name as selector, no condition, the LANE family (not the mechanism --
+    the recipe's `anti_donchian_breakout` is carried on the run row, not here), not-universe.
+    """
+    return (str(symbol), str(candidate), None, SCALP_LANE_FAMILY, False)
+
+
+def scalp_certificates(universal: dict) -> dict[str, dict]:
+    """candidate name -> canon row, for every `scalp.*` row that is an exact ten-gate pass under
+    the exact attestation and carries the complete recipe. Fail closed on every other shape."""
+    out: dict[str, dict] = {}
+    if not is_exact_policy(universal.get("gate_policy")):
+        return out
+    survivors = universal.get("survivors")
+    if not isinstance(survivors, dict):
+        return out
+    for key, row in survivors.items():
+        name = str(key)
+        if not name.startswith(SCALP_KEY_PREFIX):
+            continue
+        if not isinstance(row, dict) or not all_ten_pass(row.get("gates")):
+            continue
+        spec = row.get("shadow_spec")
+        if not isinstance(spec, dict) or not {"symbol", *SCALP_RECIPE_KEYS} <= set(spec):
+            continue
+        out[name[len(SCALP_KEY_PREFIX):]] = row
+    return out
 
 
 def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, bool]]:
@@ -121,7 +227,12 @@ def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
 
     universal = _read(reports / "UNIVERSAL_SURVIVORS.json")
     if is_exact_policy(universal.get("gate_policy")):
-        for row in universal.get("survivors", {}).values():
+        for key, row in universal.get("survivors", {}).items():
+            if str(key).startswith(SCALP_KEY_PREFIX):
+                # The scalp lane's rows carry the mechanism as `family`; read through the
+                # generic branch they would mint a tuple no door compares. They are admitted
+                # below, in the lane's own shape.
+                continue
             if not isinstance(row, dict) or not all_ten_pass(row.get("gates")):
                 continue
             spec = row.get("shadow_spec")
@@ -133,6 +244,8 @@ def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
             out.add((str(spec["symbol"]), str(spec["selector"]),
                      spec.get("condition") or None, str(spec["family"]),
                      spec["is_universe"] is True))
+        for candidate, row in scalp_certificates(universal).items():
+            out.add(scalp_spec(row["shadow_spec"]["symbol"], candidate))
     return out
 
 
@@ -177,9 +290,11 @@ def unreachable_certificates(base: Path = BASE) -> dict:
             symbol, family, side, selector, _condition = parts
             if _engine_can_run(side):
                 continue
+            cause, replay = _unreachable_cause(_exec_family(family), side)
             blocked.append({"source": "QQUANT_GATES", "symbol": symbol,
                             "family": _exec_family(family), "side": side.upper(),
-                            "selector": selector, "cause": UNREACHABLE_NO_SHORT_LEG})
+                            "selector": selector, "cause": cause,
+                            "engine_can_replay": replay})
 
     real = _read(reports / "REAL_SURVIVORS.json")
     readable["REAL_SURVIVORS"] = bool(real)
@@ -193,18 +308,31 @@ def unreachable_certificates(base: Path = BASE) -> dict:
             side = str(row.get("side") or "LONG")
             if _engine_can_run(side):
                 continue
+            fam = _exec_family(str(row.get("fam") or ""))
+            cause, replay = _unreachable_cause(fam, side)
             blocked.append({"source": "REAL_SURVIVORS", "symbol": str(row.get("sym") or "?"),
-                            "family": _exec_family(str(row.get("fam") or "")),
+                            "family": fam,
                             "side": side.upper(), "selector": str(row.get("win") or "?"),
-                            "cause": UNREACHABLE_NO_SHORT_LEG})
+                            "cause": cause, "engine_can_replay": replay})
 
     by_cause: dict[str, int] = {}
     for row in blocked:
         by_cause[row["cause"]] = by_cause.get(row["cause"], 0) + 1
+    # THE PRICE OF THE FIX, AS A NUMBER. A certificate the ENGINE can already replay is blocked
+    # only by the missing side field in the five-tuple: threading `side` through the spec, the
+    # frozen identity and fam_fn recovers exactly these, with no gate touched and no new
+    # evidence required. The rest need the family itself to learn a side, which is real work and
+    # a different job. Separating them is what makes either one rankable.
+    recoverable = sum(1 for r in blocked if r.get("engine_can_replay") is True)
+    unaskable = sum(1 for r in blocked if r.get("engine_can_replay") is None)
     return {"n": len(blocked) if any(readable.values()) else None,
             "sources_readable": readable,
             "by_cause": by_cause,
-            "engine_sides": sorted(ENGINE_SIDES),
+            # What the FIVE-TUPLE can express -- the thing this door actually tests.
+            "spec_tuple_sides": sorted(SPEC_TUPLE_SIDES),
+            "engine_sides": sorted(SPEC_TUPLE_SIDES),
+            "recoverable_by_threading_side": recoverable,
+            "engine_replay_unaskable_here": unaskable,
             "certificates": blocked}
 
 
@@ -314,8 +442,15 @@ def power_cure_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
     return out
 
 
-def authorized_runs(base: Path = BASE) -> list[dict]:
+def authorized_runs(base: Path = BASE,
+                    lanes: tuple[str, ...] = ("h1", "scalp")) -> list[dict]:
     """Exactly-specified RUNNABLE certificates: symbol, selector, family AND certified params.
+
+    `lanes` names which engines' rows to return. H1 rows are what `shadow_forward` enrols; scalp
+    rows (`scalp.*` keys, `exec == "scalp_market"`) carry the recipe `mt5desk.scalp_exec` trades
+    and belong to `scalp_shadow`'s clock. Both are returned by default so a reader that counts
+    certificates counts all of them; an H1-only consumer passes `lanes=("h1",)`, or skips rows
+    whose `exec` names an executor it is not.
 
     WHY THIS EXISTS ALONGSIDE `authorized_specs`. That function answers "is this cell allowed?"
     and its five-tuple deliberately has no params -- every existing consumer depends on that
@@ -335,6 +470,10 @@ def authorized_runs(base: Path = BASE) -> list[dict]:
         return []
     runs: list[dict] = []
     for name, row in (universal.get("survivors") or {}).items():
+        if str(name).startswith(SCALP_KEY_PREFIX):
+            continue                       # a scalp recipe is not an H1 parameterization
+        if "h1" not in lanes:
+            continue
         if not isinstance(row, dict) or not all_ten_pass(row.get("gates")):
             continue
         spec = row.get("shadow_spec")
@@ -372,6 +511,20 @@ def authorized_runs(base: Path = BASE) -> list[dict]:
             "side": (str(spec["side"]).upper() if spec.get("side") else None),
             "side_basis": "declared" if spec.get("side") else "undeclared",
         })
+    if "scalp" in lanes:
+        for candidate, row in scalp_certificates(universal).items():
+            spec = row["shadow_spec"]
+            runs.append({
+                "certificate": f"{SCALP_KEY_PREFIX}{candidate}",
+                "symbol": str(spec["symbol"]), "selector": str(candidate),
+                # the MECHANISM, which is what the executor needs; the lane family
+                # (`gold_scalp`) is the tuple's business, see `scalp_spec`
+                "family": str(spec["family"]), "condition": None,
+                "params": {k: spec[k] for k in SCALP_RECIPE_KEYS},
+                "side": str(spec.get("side") or "BOTH").upper(),
+                "side_basis": "declared" if spec.get("side") else "undeclared",
+                "exec": SCALP_EXEC, "lane": "scalp", "timeframe": str(spec["timeframe"]),
+            })
     return runs
 
 

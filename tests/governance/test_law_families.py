@@ -63,7 +63,10 @@ def test_aggression_family_holds_the_full_stack():
 
 def test_l23_reaches_the_organs_now():
     # The proving instance: fenced in the matrix, absent from doctrine, never told to an organ.
-    assert "L2.3" in Path("ops/principal_doctrine.txt").read_text("utf-8")
+    # Reach is judged on the PAYLOAD an organ receives (doctrine + docs/LAWS.md since the
+    # 2026-08-25 consolidation), the same corpus the fence and the fast gate read.
+    from libs.doctrine.corpus import doctrine_text
+    assert "L2.3" in doctrine_text()
 
 
 def test_timidity_fence_sweeps_every_prompt_surface():
@@ -242,8 +245,8 @@ def test_l39_draws_the_action_vs_validation_distinction():
     assert "L1.39 ZERO IDLE FINDINGS" in const
     assert "never size it immediately" in const
     assert "a candidate is never an edge" in const
-    doc = Path("ops/principal_doctrine.txt").read_text("utf-8")
-    assert "THE IMMEDIACY IS IN THE ROUTING, NEVER IN THE BAR" in doc
+    from libs.doctrine.corpus import doctrine_text
+    assert "THE IMMEDIACY IS IN THE ROUTING, NEVER IN THE BAR" in doctrine_text()
 
 
 # --- the gate must be green on a VIRGIN tree, not only on one that has run it before -----------

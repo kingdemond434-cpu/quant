@@ -1,5 +1,10 @@
 """GROUP-RELATIVE OPERATORS, AND THE BAR THAT MUST NOT BE IMPORTED WITH THEM.
 
+Since 2026-09-05 the last block also pins the SINGLE-SERIES reading of the same idea against
+`libs.research.alpha_grammar`, which reimplements these operators rather than importing them
+(the grammar is on the live signal path and this package is not). Two implementations of one
+idea drift unless something measures them against each other; that is what those tests are.
+
 A community summary of WorldQuant BRAIN practice arrived carrying two things at once: operators the
 desk's expression language genuinely lacked, and an IN-SAMPLE submission threshold from a platform
 whose economics are the opposite of this desk's. The operators are worth adopting; the threshold
@@ -17,13 +22,17 @@ import pandas as pd
 from libs.alpha_factory.combination_engine import TRANSFORMS, space_size
 from libs.alpha_factory.wq_operators import (
     GROUP_TRANSFORMS,
+    TS_GROUP_TRANSFORMS,
     UNIVERSE_IF_ADOPTED,
     fitness,
     group_rank,
     group_zscore,
     trade_when,
     ts_backfill,
+    ts_group_rank,
+    ts_group_zscore,
 )
+from libs.research import alpha_grammar as ag
 
 #: three "L1" names and two "DeFi" names, so group and universe answers must differ
 _GROUPS = {"BTC": "L1", "ETH": "L1", "SOL": "L1", "UNI": "DEFI", "AAVE": "DEFI"}
@@ -209,3 +218,66 @@ def test_THE_COST_OF_ADOPTION_IS_WRITTEN_DOWN_BEFORE_IT_IS_PAID() -> None:
     after = math.sqrt(2 * math.log(UNIVERSE_IF_ADOPTED))
     assert after > before
     assert round(after, 3) == 5.356
+
+
+# ------------------------------------------------- the single-series reading of the same idea
+def _series(n: int = 300, seed: int = 0) -> tuple[pd.Series, pd.Series]:
+    rng = np.random.default_rng(seed)
+    idx = pd.date_range("2024-01-01", periods=n, freq="h", tz="UTC")
+    return (pd.Series(rng.normal(size=n), index=idx),
+            pd.Series(np.concatenate([np.full(n // 2, -1.0), np.full(n - n // 2, 1.0)])
+                      + rng.normal(0, 0.1, n), index=idx))
+
+
+def test_THE_PEER_GROUP_CAN_BE_A_STATE_WHEN_THERE_IS_NO_PANEL() -> None:
+    """The desk trades one instrument per cell, so the panel form is unusable there. What
+    transfers is the QUESTION -- extreme against its peers, not against everything -- and the
+    peers of a bar are the bars in the same state."""
+    x, by = _series()
+    w = 24
+    rank = ts_group_rank(x, by, w)
+    assert rank.iloc[:w - 1].isna().all()                # causal: no verdict before the window
+    valid = rank.dropna()
+    assert len(valid) > 200 and valid.between(0.0, 1.0).all() and (valid > 0).all()
+    z = ts_group_zscore(x, by, w)
+    assert z.iloc[:w - 1].isna().all() and z.dropna().abs().max() < 10.0
+    # a bar is ranked only against bars on ITS side of the conditioning series' window mean,
+    # so a series that is extreme overall but ordinary for its state does not rank extreme
+    flat = pd.Series(np.tile([0.0, 1.0], 150), index=x.index)
+    state = pd.Series(np.tile([0.0, 1.0], 150), index=x.index)
+    perfect = ts_group_rank(flat, state, w).dropna()
+    assert (perfect == 1.0).all()                        # every bar is the max OF ITS OWN state
+    # too short a window, or a mismatched partner, is NaN rather than an exception
+    assert ts_group_rank(x, by, 1).isna().all()
+    assert ts_group_rank(x, by.iloc[:10], 24).isna().all()
+    assert ts_group_zscore(x.iloc[:5], by.iloc[:5], 24).isna().all()
+
+
+def test_THE_GRAMMAR_REIMPLEMENTS_THESE_OPERATORS_AND_MUST_NOT_DRIFT_FROM_THEM() -> None:
+    """`alpha_grammar` cannot import this package -- it is on the live signal path and this
+    pulls the whole Alpha Factory -- so it reimplements. This is what keeps the two equal."""
+    x, by = _series(400, seed=3)
+    frames = {"x": x, "by": by}
+    for w in (5, 12, 24, 48):
+        assert np.allclose(ag.evaluate(["group_rank", "x", "by", w], frames).to_numpy(),
+                           ts_group_rank(x, by, w).to_numpy(), equal_nan=True), w
+        assert np.allclose(ag.evaluate(["group_zscore", "x", "by", w], frames).to_numpy(),
+                           ts_group_zscore(x, by, w).to_numpy(), equal_nan=True), w
+    # and the two operators the grammar took verbatim in behaviour
+    gappy = x.mask(x > 0.5)
+    assert ag.evaluate(["ts_backfill", "x", 3], {"x": gappy}).equals(ts_backfill(gappy, limit=3))
+    gate = pd.Series([1.0, -1.0, -1.0, 1.0], index=x.index[:4])
+    sig = pd.Series([5.0, 6.0, 7.0, 8.0], index=x.index[:4])
+    assert ag.evaluate(["trade_when", "g", "s"], {"g": gate, "s": sig}).equals(
+        trade_when(gate > 0, sig))
+    # the grammar TYPES them, which this module does not and does not need to
+    assert ag.type_of(["group_rank", "close", "vol", 24]) == "RANK"
+    assert ag.well_formed(["group_zscore", "close", "vol", 24])
+
+
+def test_THE_TIME_SERIES_FORMS_ARE_ALSO_OUTSIDE_THE_DECLARED_UNIVERSE() -> None:
+    """They are operators of the expression grammar, charged inside that search's own
+    multiplicity -- never a silent extra arm of a pre-registered cross-sectional family."""
+    assert not set(TS_GROUP_TRANSFORMS) & set(TRANSFORMS)
+    assert not set(TS_GROUP_TRANSFORMS) & set(GROUP_TRANSFORMS)
+    assert space_size(13, n_transforms=len(TRANSFORMS)) == 898_560

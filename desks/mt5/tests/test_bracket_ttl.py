@@ -15,8 +15,13 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
+from mt5desk import decision_core as _dc  # noqa: E402
+
 _SRC = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
 _TREE = ast.parse(_SRC)
+#: The session constants and `bracket_deadline` live in the decision core since the 2026-09-05
+#: split; the sweep and the broker-expiry request stay in the gateway, which talks to the venue.
+_CORE_TREE = ast.parse((_DESK / "mt5desk" / "decision_core.py").read_text(encoding="utf-8"))
 
 
 def _fn(name: str) -> ast.FunctionDef:
@@ -27,11 +32,11 @@ def _fn(name: str) -> ast.FunctionDef:
 
 
 def _const(name: str) -> float:
-    for node in _TREE.body:
+    for node in _CORE_TREE.body:
         if isinstance(node, ast.Assign) and any(
                 getattr(t, "id", "") == name for t in node.targets):
             return float(ast.literal_eval(node.value))
-    raise AssertionError(f"{name} is not defined in gateway.py")
+    raise AssertionError(f"{name} is not defined in decision_core.py")
 
 
 def test_the_ttl_is_shorter_than_the_end_of_day_backstop() -> None:
@@ -47,18 +52,9 @@ def test_the_ttl_cannot_span_two_sessions() -> None:
 
 
 def _deadline_fn():
-    """`bracket_deadline` alone, exec'd without importing MetaTrader5."""
-    import math  # noqa: PLC0415
-    from datetime import UTC, datetime, timedelta  # noqa: PLC0415
-
-    ns: dict = {"datetime": datetime, "timedelta": timedelta, "UTC": UTC, "math": math}
-    keep = [n for n in _TREE.body
-            if (isinstance(n, ast.FunctionDef) and n.name == "bracket_deadline")
-            or (isinstance(n, ast.Assign) and any(
-                getattr(t, "id", "") in ("GOLD_WINDOWS", "CLOSE_HOUR", "BRACKET_TTL_HOURS")
-                for t in n.targets))]
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), ns)  # noqa: S102
-    return ns
+    """`bracket_deadline` and the windows it derives from, imported from the decision core."""
+    return {"bracket_deadline": _dc.bracket_deadline, "GOLD_WINDOWS": _dc.GOLD_WINDOWS,
+            "CLOSE_HOUR": _dc.CLOSE_HOUR, "BRACKET_TTL_HOURS": _dc.BRACKET_TTL_HOURS}
 
 
 def test_each_session_s_bracket_dies_when_that_session_does() -> None:

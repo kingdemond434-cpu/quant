@@ -41,6 +41,12 @@ CATCHUP_CAP_MIN = 20
 #: runtime; a token with no surviving manifest row simply never fires. EVERYTHING ELSE in the
 #: manifest stays dead until a human moves it here or builds it a real timer -- most rows are
 #: crypto-era organs the MT5 mandate (LAWS §1) forbids waking.
+#:
+#: FIVE TOKENS REMOVED 2026-09-05: check_gate0_ready, run_sleeve_allocator, run_rejection_rescore,
+#: run_execution_quality and check_margin_topology. Each named a script deleted with the retired
+#: book, and the header above already states the rule -- a token with no file can never fire, so
+#: leaving them would have made this allowlist read longer than the set of organs it can actually
+#: wake, which is the drift it exists to prevent.
 ALLOWLIST: dict[str, str] = {
     "scripts/run_law_gate.py": "hourly law gate -- the enforcement entry point for every organ",
     "scripts/check_conversion.py": "hourly §33 conversion fence",
@@ -71,17 +77,9 @@ ALLOWLIST: dict[str, str] = {
     "scripts/check_change_window.py": "hourly L1.38 sterile-cockpit window (money-path guard)",
     "scripts/check_promotion_gate.py": "hourly L1.6 promotion-gate rung state",
     "scripts/run_promotion_queue.py": "6-hourly promotion queue -- the forward->live door",
-    "scripts/check_gate0_ready.py": "hourly Gate-0 readiness ledger",
     "scripts/check_risk_units.py": "daily L1.67 risk-UNITS audit (the CADJPY 1.26%-logged/"
                                    "7.41%-run defect class; no other fence asks this)",
     "scripts/run_portfolio_risk.py": "daily portfolio risk aggregation",
-    "scripts/run_sleeve_allocator.py": "R0141 -- risk across discretionary sleeves by MARGINAL "
-                                       "growth contribution, so N correlated sleeves are not "
-                                       "sized as N independent bets (L1.18/L1.24). Reason "
-                                       "expanded 2026-08-26 from a bare restatement of the "
-                                       "filename; NOT run to verify -- it writes allocation on "
-                                       "the money path and LAWS s4 reserves that for the "
-                                       "promoter, so this cites the module's own docstring",
     "scripts/max_audit.py": "daily live-defect audit -- the desk's own defect finder was dead",
     "scripts/rerank_gaps.py": "weekly §35 gap re-rank (GAP_REGISTER is the only work driver)",
     "scripts/record_desk_metrics.py": "daily desk metric trend (a snapshot is not a trend)",
@@ -166,10 +164,6 @@ ALLOWLIST: dict[str, str] = {
     "scripts/run_fusion_search.py": "MT5/FUSION-NATIVE SEARCH -- the mandated universe's own "
                                     "searcher, scheduled by nothing; live rc=0 -> "
                                     "data/fusion_search.json",
-    "scripts/run_rejection_rescore.py": "the near-survivor bank (GAP 96); live rc=0 queued 50 "
-                                        "near-miss rejects of 420 eligible and wrote 2 forward "
-                                        "scores -- the cheapest survivor-manufacturing device "
-                                        "the desk has, and it was running never",
     "scripts/graveyard_resurrect.py": "L1.16a re-open on a NAMED enabling change; live rc=0 -> "
                                       "data/graveyard_resurrection_queue.json",
     "scripts/hunt_source_alternatives.py": "the PERMANENT free-frontier hunt (RESEARCH §3); live "
@@ -191,8 +185,6 @@ ALLOWLIST: dict[str, str] = {
                                       "runtime rather than an assumed one",
     "scripts/run_reality_gap.py": "L2.10 backtest->shadow->paper->live->venue-truth comparison; "
                                   "live rc=0, currently NO-DATA on two links and saying so",
-    "scripts/run_execution_quality.py": "the BOTTLENECK LAW's own instrument; live rc=0 MEASURED "
-                                        "exit_timing 0.5802 capture ratio over n=35 real fills",
     "scripts/run_execution_intel.py": "execution intel roll-up; live rc=0 DEGRADED "
                                       "(cost_drift=NO-DATA, fee_attribution=DEGRADED)",
     "scripts/score_forecasts.py": "L1.29 calibration; live rc=0. max_audit reports 20 forecasts "
@@ -243,7 +235,10 @@ ALLOWLIST: dict[str, str] = {
     #                                  there is no tape to measure". No MT5 tape reaches it.
     #   scripts/check_crowding.py      crypto ground (universe 875 snapshots).
     #   scripts/run_fee_attribution.py crypto-era ledger (COOKIEUSDT, 1000CATUSDT, MOVEUSDT).
-    #   scripts/check_margin_topology.py  crypto venue topology (split_spot_usdtm).
+    #   (check_margin_topology.py stood here as "crypto venue topology" until wave 4 measured it
+    #   live at rc=2 on an MT5 money-path quantity and ALLOWLISTED it above; the two entries then
+    #   contradicted each other in one file, which is exactly the clash the wiring test refuses.
+    #   The later, measured decision wins; the stale exclusion is gone.)
     #   scripts/check_partition_power.py  its partitions are funding_state/funding_breadth --
     #                                  crypto vocabulary; the FINDING is real but the axes are
     #                                  retired ground, so it needs MT5 partitions first.
@@ -313,9 +308,6 @@ ALLOWLIST: dict[str, str] = {
                                          "slots. SATURATED -- the forward stage is occupied by "
                                          "noise and the discovery rate is ~zero however good the "
                                          "candidates are. 41min at nice 19, 350MB peak, weekly",
-    "scripts/check_margin_topology.py": "live rc=2 -- margin construction inherited from connector "
-                                        "order and never chosen. Margin is an MT5 money-path "
-                                        "quantity and no other fence asks this",
     "scripts/check_cost_surface.py": "live rc=0 over 3424 measured cells (535 unmeasured): 920 "
                                      "cells materially disperse from the pooled scalar, 676 "
                                      "undercharged and 244 OVERCHARGED. Cost is the bottleneck "

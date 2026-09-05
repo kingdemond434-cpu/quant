@@ -1460,12 +1460,23 @@ def check_findings(defects) -> None:
     # file in the same second. A human reading one and a gate reading the other is the shared-
     # constant divergence L1.61 exists for, and it errs toward silence, which is the direction
     # nobody notices. The constant is now imported rather than re-typed, so they cannot drift.
-    from scripts.track_findings import UNFIXED_DEFECT_D
+    # AN ESCALATED FINDING IS OWED BY A NAMED PERSON, ON A CLOCK -- and the two ends of that
+    # clock are DIFFERENT defects, never one. While the hold is live the row is silent here: the
+    # repair is legally reserved to a human (F0025 asks for a change to the Tier-3 ruin rail,
+    # which every worker prompt forbids editing), so firing `findings-rotting` at it demands work
+    # nobody is permitted to do -- the exact cry-wolf that gets a fence switched off. Once the
+    # hold LAPSES it fires its own louder defect NAMING the person, because "a seat has not got
+    # round to it" and "the principal has not ruled in two weeks" want different responses and
+    # folding them together loses the only actionable half.
+    from scripts.track_findings import UNFIXED_DEFECT_D, escalation_lapsed
 
     now = datetime.now(tz=UTC)
-    old = [f for f in d.get("findings", [])
-           if f.get("ruling") == "accepted" and not f.get("fixed")
-           and not f.get("superseded_by")
+    open_rows = [f for f in d.get("findings", [])
+                 if f.get("ruling") == "accepted" and not f.get("fixed")
+                 and not f.get("superseded_by")]
+    lapsed = [f for f in open_rows if f.get("escalated") and escalation_lapsed(f)]
+    old = [f for f in open_rows
+           if not f.get("escalated")
            and (now - datetime.fromisoformat(f["raised"])).total_seconds() / 86400.0
            > UNFIXED_DEFECT_D]
     if old:
@@ -1474,6 +1485,13 @@ def check_findings(defects) -> None:
                         f"{len(old)} ACCEPTED panel findings unfixed >{UNFIXED_DEFECT_D:.0f}d "
                         f"({ids}) -- the loop "
                         "the audit system exists for is open"))
+    if lapsed:
+        who = ", ".join(sorted({str(f.get("escalated_to") or "(unnamed)") for f in lapsed}))
+        ids = ", ".join(f["id"] for f in lapsed[:5])
+        defects.append(("findings-escalation-lapsed",
+                        f"{len(lapsed)} escalated finding(s) ({ids}) outlived their hold with no "
+                        f"decision from {who} -- an escalation silences this fence, so an expired "
+                        "one is an amnesty until it is renewed, ruled on, or withdrawn"))
 
 
 def check_idle_capability(defects) -> None:
@@ -2580,33 +2598,15 @@ def check_prompt_layer(defects) -> None:
         pass
 
 
-def check_bnb_funded(defects) -> None:
-    """BNB fee-burn is enabled (feeBurn:True) but only DISCOUNTS when BNB is held. Audit 2026-07-24:
-    balance 0 -> the whole commission line was paid at rack rate while the desk believed the ~25%
-    discount was active. feeBurn:True is STATE; a funded BNB balance is the OUTCOME that matters."""
-    try:
-        from libs.execution import binance_testnet as _fut
-        bal = 0.0
-        for b in _fut._signed("/fapi/v2/balance", {}):
-            if b.get("asset") == "BNB":
-                bal = float(b.get("balance", 0.0))
-        if bal <= 0.0:
-            defects.append(("bnb-burn-unfunded",
-                            "fee-burn is ON (feeBurn:True) but BNB balance is 0 -- the ~25% "
-                            "discount is INERT and commissions are paid at rack rate. Fund a small "
-                            "BNB balance (or accept it as a testnet limitation and ledger why)."))
-    except Exception as exc:
-        # UNKNOWN IS NOT "NO BREACH". This was `except Exception: pass`, so whenever the venue was
-        # unreachable or the credentials were absent the check reported a clean bill of health
-        # having measured nothing -- which is precisely the state it was written to catch, since
-        # the 2026-07-24 incident was a desk paying rack rate while believing the discount was
-        # live. Found by scripts/run_law_police.py on its first pass: raised nothing, consulted
-        # nothing, graded CANNOT-EVALUATE.
-        defects.append(("bnb-burn-unmeasured",
-                        f"BNB fee-burn funding could not be read ({type(exc).__name__}: "
-                        f"{str(exc)[:120]}). This is UNKNOWN, not healthy: the ~25% discount is "
-                        "inert unless a BNB balance is actually held, and a silent pass here is "
-                        "how the desk once paid rack rate for weeks believing otherwise."))
+# RETIRED 2026-09-05 (universe mandate): `check_bnb_funded`. It signed a GET against the Binance
+# futures testnet balance endpoint to confirm the ~25% BNB fee-burn discount was actually funded.
+# BNB is a crypto-exchange asset and the burn is a Binance account setting; neither has any
+# meaning on an MT5/Fusion book, where the cost line is spread + commission + swap and the desk
+# reads it from the broker, not from a token balance. Nothing replaces it because there is nothing
+# to replace: the equivalent MT5 question ("is the cost model the one the broker actually
+# charges?") is already asked by desks/mt5/research/cost_surface.py.
+#
+# Its law row went with it -- see the `bnb-funded` entry removed from CHECKS below.
 
 
 def _git_age_h(rel: str) -> float:
@@ -4144,6 +4144,22 @@ _TERMINAL_ARTIFACTS = {
     # 2026-08-26 consolidation docs (gap-wirer): the two operative governing documents, their
     # disposition map, and two standing specs -- classified in ARTIFACT_GOVERNANCE.md same cycle.
     "docs/LAWS.md": "operative constitution of the 2026-08-25 consolidation -- amendment is a principal act, never a cadence",
+    # CLASSIFIED 2026-09-05 at the birth-property boundary: three docs landed unclaimed between
+    # 2026-08-27 and 2026-09-04 and the law gate was red on every push until each got a decision.
+    "docs/GROWTH_GOVERNANCE.md":
+        "standing principal order (2026-09-04): both growth rules verbatim, enforced by "
+        "check_growth_governance.py at every law-gate boundary and by check_heat_floor_wiring.py "
+        "on the box -- binds organs, amended by principal decision, never a cadence",
+    "docs/research/offbook_source_seeds.md":
+        "RETIRED GROUND. A Binance/crypto-native source-seed map (its own header says so), "
+        "re-landed by a free-tier seat on 2026-08-30 -- twelve days after the MT5 universe "
+        "mandate forbade every crypto-exchange hunt. No miner may draw a ground from it, so it "
+        "is a record of what was once mapped, never a queue; whether it should exist at all is "
+        "the principal's call, not a cadence's",
+    "docs/research/prospector_harvesters.md":
+        "seat handoff record: the resumable MQL5 slippage harvester a research-frozen prospector "
+        "seat could not land in scripts/ (2026-08-27). The obligation it carries -- wiring the "
+        "collector -- is the ledger row the doc names, not a re-read of the doc",
     "docs/RESEARCH.md": "operative research mandate -- every organ's first standing order, amended by decision only",
     "docs/MANDATE_COVERAGE.md": "terminal disposition map of the consolidation -- a re-consolidation writes a NEW map",
     "docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md": "standing principal mandate -- donation-only flywheel authority limits",
@@ -5245,6 +5261,16 @@ _ONESHOT_SCRIPTS = frozenset({
     # archive daily. Idempotent and resumable by design: a future listing-gap fill is a manual
     # re-invocation of the same script, not a cadence.
     "dl_metrics_universe.py",
+    # classified 2026-09-05 (birth-property boundary, the orphan-scripts sweep of the 08-28..09-04
+    # seat builds). Both are ANALYSES whose only input that can move -- completed forward
+    # evidence -- does not exist yet: optimise_prop_settings' own docstring records ZERO
+    # completed forward windows and recommends waiting for the first cohort rather than picking
+    # a row; compare_book_growth measured 1-4 forward days per sleeve on 2026-09-01 and labels
+    # its ranking a backtest PRIOR. A cadence would re-derive the same conditional tables from
+    # unchanged evidence and make a settled "not yet" look perpetually open. Each is re-run by
+    # hand when the first forward cohort completes, with its result banked in the ledger.
+    "optimise_prop_settings.py",
+    "compare_book_growth.py",
 })
 
 
@@ -6892,7 +6918,6 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("rejection-shadow", check_rejection_shadow),
                       ("post-gate0-activation", check_post_gate0_activation),
                       ("production", check_production),
-                      ("bnb-funded", check_bnb_funded),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]
@@ -7001,83 +7026,23 @@ def check_holdings_never_shrink(defects) -> None:
                         "it or record the replacement that supersedes it."))
 
 
-FEE_RECORD = ROOT / "docs/research/fee_ratio_record.json"   # git-tracked; ratchets DOWN only
-
-
-def check_fee_carry_ratio(defects) -> None:
-    """§40: fees must always shrink RELATIVE to the carry they consume.
-
-    Absolute fees say nothing -- a bigger book pays more and earns more. The viability number is
-    what fraction of the harvest the fees eat. This desk went from fees at 2.4x funding to
-    commission -133 -> -30 over 7 days once patient-maker opens and the single-book invariant
-    landed; that gain becomes the floor, and any material worsening is a defect rather than a new
-    normal.
-    """
-    try:
-        import time as _t
-
-        from libs.execution import binance_testnet as _fut
-        # PAGINATE (2026-07-26). This called `_signed(/fapi/v1/income, limit=1000)` directly and
-        # got back exactly 1000 rows -- the cap. Binance serves <=1000 rows/call, and this book
-        # books >1000 income rows in 7 days, so the window silently truncated to its most recent
-        # slice: funding read 2.80 against a true 13.57, commission 29.14 against a true 129.18.
-        # The understated funding then tripped this function's own flat-book guard, so §40 never
-        # fired even once it was registered. Worse, the truncated 2.80 was mistaken for a real
-        # flat book and written into the guard's comment as the 07-25 dead-man fire -- the bug
-        # manufactured its own justification. `income_summary` is the audited paginated+deduped
-        # helper and is the ONLY sanctioned way to read this endpoint (institutional_knowledge:
-        # "paginate every venue history endpoint... truncation never throws an error").
-        inc = _fut.income_summary(int((_t.time() - 7 * 86400) * 1000))
-    except Exception as exc:
-        # "Venue unreachable is not a fee defect" is true, and returning SILENTLY still made the
-        # §40 fee ratchet unenforced for exactly as long as the venue stayed unreachable, with
-        # nothing anywhere saying so. The ratchet is the thing that stops a worsened fee ratio
-        # becoming the new normal, so an unmeasured window is the window in which that happens.
-        # Reported as UNMEASURED -- a distinct, lower-severity fact than a breached ratio, and
-        # NOT a defect about fees (found by run_law_police.py: raised nothing, consulted nothing).
-        defects.append(("fee-carry-unmeasured",
-                        f"the §40 fee/carry ratchet could not read venue income "
-                        f"({type(exc).__name__}: {str(exc)[:120]}). Not a fee breach -- an "
-                        "unmeasured window, and the ratchet cannot hold a floor it cannot see."))
-        return
-    funding = float(inc.get("funding", 0.0))
-    commission = abs(float(inc.get("commission", 0.0)))
-    if funding < 5.0:
-        # FLAT-BOOK GUARD: with almost no harvest the ratio explodes for reasons unrelated to
-        # execution quality. Firing here would be a false defect, and false defects train the
-        # desk to ignore the check.
-        return
-    ratio = commission / funding
-    try:
-        rec = json.loads(FEE_RECORD.read_text("utf-8")) if FEE_RECORD.exists() else {}
-    except Exception:
-        rec = {}
-    best = float(rec.get("best_ratio", 9e9))
-    if ratio < best:
-        FEE_RECORD.write_text(json.dumps(
-            {"best_ratio": round(ratio, 4), "commission_7d": round(commission, 2),
-             "funding_7d": round(funding, 2),
-             "updated": datetime.now(tz=UTC).isoformat(),
-             "note": "§40 ratchet: fees as a fraction of funding earned. Ratchets DOWN only -- a "
-                     "material worsening is a defect, never a new normal."}, indent=1), "utf-8")
-        # NO EARLY RETURN (2026-07-26): banking a new best must never suppress the ABSOLUTE alarm
-        # below. The first run on this book would otherwise record fees at 9.5x the harvest as
-        # "best ever" and report nothing at all -- a ratchet is a relative test, and a sleeve
-        # whose fees exceed its entire harvest is broken in absolute terms however it trends.
-    if ratio > best * 1.3 and best < 9e8:
-        defects.append((
-            "fee-ratio-regression",
-            f"§40: fees are eating {ratio:.2f}x the funding harvest (7d: commission "
-            f"{commission:.2f} vs funding {funding:.2f}) against a best-ever of {best:.2f}x. "
-            "Fees must always fall RELATIVE to carry. Check maker fill-rate (patient opens should "
-            "keep it climbing), churn (24h min-hold), BNB burn funding at live, and whether "
-            "turnover rose without a matching rise in harvest."))
-    if ratio > 1.0:
-        defects.append((
-            "fee-ratio-above-one",
-            f"§40: fees ({commission:.2f}) EXCEED the funding earned ({funding:.2f}) over 7d "
-            f"-- ratio {ratio:.2f}x. The sleeve cannot be net-positive while this holds, "
-            "regardless of how good the signal is. This is the single most direct drag on CAGR."))
+# RETIRED 2026-09-05 (universe mandate): `check_fee_carry_ratio`, the §40 fee/carry ratchet. It
+# paginated Binance `/fapi/v1/income` and graded commission as a fraction of PERP FUNDING
+# harvested. Both halves are crypto-exchange-native: the income ledger is a venue endpoint this
+# desk may no longer call, and "funding harvested" is the cash-and-carry sleeve's revenue line,
+# deleted the same day with the sleeve.
+#
+# THE PRINCIPLE IS NOT RETIRED, ONLY THIS INSTRUMENT. "Fees must shrink relative to what they
+# consume" survives on the MT5 side as the cost surface and execution-quality decomposition under
+# desks/mt5/, which grade spread + commission + swap against realised R. What is deliberately NOT
+# done here is a fake repoint: re-pointing a funding-denominated ratchet at a book with no funding
+# line would publish a ratio computed from a zero denominator and call it a floor.
+#
+# The `FEE_RECORD` constant (docs/research/fee_ratio_record.json) was this check's ratchet store
+# and is removed with it -- a ratchet file with no writer reads as a floor the desk is still
+# holding. The §40 row is removed from CHECKS below rather than left pointing at a function that
+# cannot run. The historical record itself stays on disk under docs/, which is memory, not a
+# live mandate (see scripts/check_mt5_purity.py).
 
 
 def check_close_retry_loop(defects) -> None:
@@ -7575,7 +7540,7 @@ def check_sync_launder(defects) -> None:
                         "data/sync_launder.json and close each one with a judgement."))
 
 
-CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
+CHECKS += [
            ("close-retry-loop", check_close_retry_loop),
            ("paid-target-registry", check_paid_target_registry),
            ("holdings-ratchet", check_holdings_never_shrink),

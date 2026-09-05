@@ -268,19 +268,84 @@ def candidate(source: str, symbol: str, family: str, params: dict, mechanism: st
                                                 "self-deflated"}}
 
 
+#: What the last `donate` did with its candidates, so a proposer's report can carry the refusal
+#: count without every proposer being rewritten to thread it through. Replaced on every call.
+LAST_DONATION: dict[str, Any] = {}
+
+
+def donation_counts() -> dict[str, Any]:
+    """`{"donated": n, "refused_unstamped": m, "refusals": [...]}` from the last `donate` call.
+
+    A proposer's report should carry this: a refusal that only the intake knows about is a
+    refusal nobody acts on.
+    """
+    return dict(LAST_DONATION)
+
+
+def _stamped(source: str, candidates: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Split candidates into (stamped, refused). THE STAMP IS REQUIRED, NOT ATTEMPTED.
+
+    IT USED TO BE ATTEMPTED, AND THAT IS WHY THE CENSUS READ ZERO. The stamp sat inside a bare
+    `try: ... except Exception: pass`, so any failure -- an import that could not resolve, a row
+    the stamper choked on -- silently produced an UNSTAMPED donation that looked exactly like a
+    stamped one downstream. Measured 2026-09-05 at the PIT ratchet's sealing: 0 of 4,768
+    candidate rows across 43 sources carried `available_time`, and nothing in the pipeline was
+    able to notice, because "absence is not permission" was written in a docstring rather than
+    enforced at the door.
+
+    Now a row that cannot be stamped is REFUSED and COUNTED with its reason, and never written.
+    A row with no `available_time` cannot be refused for a decision earlier than the desk could
+    have known it, which is the whole point of the contract -- so admitting one is worse than
+    donating nothing.
+    """
+    try:
+        from libs.data.pit import is_stamped
+        from libs.data.pit import stamp as pit_stamp
+    except Exception as exc:                                          # pragma: no cover - install
+        # NO STAMPER, NO DONATION. Refusing the whole batch is the conservative direction: an
+        # unstamped row entering the intake cannot be told from a stamped one later.
+        return [], [{"why": f"libs.data.pit unimportable ({type(exc).__name__}: {exc}); every "
+                            "candidate refused rather than donated unstamped",
+                     "title": str(c.get("title") or c.get("cell") or "")} for c in candidates]
+    ok: list[dict] = []
+    refused: list[dict] = []
+    for c in candidates:
+        try:
+            row = pit_stamp(c, source)
+        except Exception as exc:
+            refused.append({"why": f"stamp raised {type(exc).__name__}: {exc}",
+                            "title": str(c.get("title") or c.get("cell") or "")})
+            continue
+        if not is_stamped(row):
+            missing = [k for k in ("available_time", "ingested_time", "source_version",
+                                   "payload_hash") if not row.get(k)]
+            refused.append({"why": f"stamp produced no {', '.join(missing)}",
+                            "title": str(c.get("title") or c.get("cell") or "")})
+            continue
+        ok.append(row)
+    return ok, refused
+
+
 def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
-    """Write the discovery contract. A control run must NEVER call this."""
+    """Write the discovery contract. A control run must NEVER call this.
+
+    POINT-IN-TIME BY CONSTRUCTION AND BY REFUSAL. Every row that leaves here carries
+    available_time, ingested_time, source_version and a payload hash, so a joiner can refuse it
+    for any decision earlier than the desk could have known it -- and a row that cannot carry
+    them does not leave at all. The counts ride on the contract file (`counts.refused_unstamped`)
+    and on `donation_counts()` for the proposer's own report.
+    """
+    global LAST_DONATION
+    LAST_DONATION = {"source": source, "donated": 0, "refused_unstamped": 0, "refusals": []}
     if not candidates:
         return None
-    # POINT-IN-TIME BY CONSTRUCTION. Every proposer row leaves here carrying available_time,
-    # ingested_time, source_version and a payload hash, so a joiner can refuse it for any
-    # decision earlier than the desk could have known it. The stamp is applied in the one place
-    # rows are written rather than by each proposer remembering to.
-    try:
-        from libs.data.pit import stamp as _pit_stamp
-        candidates = [_pit_stamp(c, source) for c in candidates]
-    except Exception:
-        pass
+    candidates, refused = _stamped(source, candidates)
+    LAST_DONATION["refused_unstamped"] = len(refused)
+    LAST_DONATION["refusals"] = refused[:20]
+    if not candidates:
+        # Nothing survived the door. Writing an empty contract would put a file into the intake
+        # that says a proposer produced nothing, when it produced rows the door turned away.
+        return None
     # PRE-REGISTERED BEFORE THE VERDICT. Each candidate's hypothesis card -- mechanism,
     # direction, variables, universe, horizon, parameters allowed, acceptance criterion,
     # falsifier -- is hashed and appended to the pre-registration ledger, and the hash rides on
@@ -295,9 +360,17 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
     path = out / f"discoveries_{stamp}.json"
+    LAST_DONATION["donated"] = len(candidates)
+    LAST_DONATION["path"] = str(path)
     path.write_text(json.dumps({"source": source,
                                 "generated_at": datetime.now(tz=UTC).isoformat(),
-                                "tests_run": tests_run, "discoveries": candidates},
+                                "tests_run": tests_run, "discoveries": candidates,
+                                "counts": {"donated": len(candidates),
+                                           "refused_unstamped": len(refused)},
+                                "refusals": refused[:20],
+                                "rule": ("a candidate without a point-in-time stamp is refused "
+                                         "here and counted, never written: absence of an "
+                                         "available_time is not permission to use the row")},
                                indent=1, default=str), "utf-8")
     return path
 

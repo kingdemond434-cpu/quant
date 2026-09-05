@@ -61,6 +61,19 @@ RAILS: tuple[Rail, ...] = (
     Rail("family_cap", "cap", "heat_policy.enforce_family_cap (MAX_FAMILY_HEAT_SHARE)",
          "measure_bounds"),
     Rail("hard_ceiling", "cap", "heat_policy.resolve HEAT_HARD_CEILING 30%", "measure_ceiling"),
+    # THE CEILING THAT COUNTS EFFECTIVE HEAT. `heat_policy.effective_ceiling` caps NOMINAL heat at
+    # the heat the book's independent risk earns -- target * sqrt(N_eff / 2.26) with N_eff from
+    # max(covariance, factor, tail) -- so four sleeves that are one hidden USD factor cannot buy
+    # the room four independent bets would. It can never pull the book below the 20% floor, which
+    # is why it is a cap on the UPSIDE band and not a de-risking mechanism.
+    Rail("effective_heat_ceiling", "cap",
+         "heat_policy.resolve/effective_ceiling: max(covariance, factor, tail) heat",
+         "measure_effective_ceiling"),
+    Rail("hazard_shrink", "shrink",
+         "pf_allocator.apply_hazard_shrink <- drift_monitor hazard_by_sleeve",
+         "measure_hazard_shrink", tunable=True, lo=0.5, hi=1.0,
+         weaken_means="a smaller fraction of the hazard is applied, so a sleeve keeps more of "
+                      "its posterior mean while the question resolves"),
     Rail("floor_mandate", "mandate", "heat_policy.resolve HEAT_TARGET 20% floor",
          "measure_floor"),
     Rail("proof_fallback", "gate", "gateway.allocator_book <- allocator_proof",

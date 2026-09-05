@@ -128,9 +128,13 @@ gate 2700 "pytest"      .venv/bin/pytest -q
 
 # ---------------------------------------------------------------- 1. install the units
 say "2. install unit files"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): quant-recorder-fut.service,
+# quant-recorder-spot.service and quant-recorder-bybit.service recorded the Binance/Bybit tape.
+# The units are deleted from ops/ and must not come back -- the desk's tape is the MT5/Fusion one
+# (docs/research/MOAT_NODE_SPEC.md), recorded on the Windows host. They are named here rather than
+# silently dropped because `[ -f ops/$u ]` would have skipped them in silence, and a deploy script
+# that quietly installs three fewer units than its list claims is how a box drifts from its manifest.
 UNITS=(
-    quant-recorder-fut.service quant-recorder-spot.service quant-recorder-bybit.service
-    quant-moat-miner.service quant-moat-screen.service
     quant-watchdog.service quant-watchdog.timer
     quant-alerts.service   quant-alerts.timer
     quant-cadence.service  quant-cadence.timer
@@ -158,38 +162,42 @@ if have_sudo; then
 else
     echo "  NO SUDO -- /etc/systemd/system is unreachable."
     echo "  That is not a reason to leave the desk unstarted. Use the zero-privilege path:"
-#   [retired 2026-08-17] start_recorders_nosudo -- crypto tape, constitution 224
-#   [retired 2026-08-17] start_recorders_nosudo -- crypto tape, constitution 224
-#   [retired 2026-08-17] start_recorders_nosudo -- crypto tape, constitution 224
-#   [retired 2026-08-17] start_recorders_nosudo -- crypto tape, constitution 224
-    echo "     ) | crontab -"
+    # REPAIRED 2026-09-05. The four lines here were an identical retired-comment stub repeated
+    # four times, left behind when start_recorders_nosudo.sh was retired on 2026-08-17 -- so the
+    # operator was told "use the zero-privilege path", shown nothing, and then handed a dangling
+    # `) | crontab -`. The path that actually works without root is the user-timer route:
+    echo "     bash ops/install_early_seat_timers.sh    # user-level systemd timers, no root"
+    echo "     sh deploy/reconstitute_cron.sh           # or re-home the manifest rows into cron"
     echo "  ...then re-run this script's verification step:  $PY scripts/verify_deployment.py"
     exit 2
 fi
 
 # ---------------------------------------------------------------- 2. start, in dependency order
-# RECORDERS FIRST, ALWAYS. Everything downstream reads what they write, and a miner reporting 0%
-# because no tape exists is noise that hides the real signal. Every unrecorded second is
-# permanently unbuyable -- the only cost on this desk money cannot fix afterwards.
-say "3. start the recorders (tape first -- nothing downstream has anything to read without them)"
-# RETIRED 2026-08-17 -- crypto recorders are no longer part of this desk (constitution 224).
-# Re-enabling them refills 19GB of disk with a tape nothing trades on.
-# sudo systemctl enable --now quant-recorder-fut quant-recorder-spot quant-recorder-bybit
-echo "   crypto recorders: RETIRED (see constitution 224); MT5 tape is mt5desk.tape"
-sleep 20
-FILES=$(find data/moat -name '*.jsonl.gz' 2>/dev/null | wc -l)
-echo "  tape files after 20s: $FILES"
-if [ "$FILES" -eq 0 ]; then
-    echo "  WARNING: still no tape. Check egress before continuing:"
-    echo "     journalctl -u quant-recorder-fut -n 40 --no-pager"
-    echo "  A 403 on CONNECT to fapi.binance.com means this box cannot reach the venue."
-fi
+# RETIRED 2026-08-17, and finished 2026-09-05 under the MT5 universe mandate (2026-08-18).
+# This step used to start the Binance/Bybit recorders and then block for 20 seconds counting tape
+# files under data/moat, warning the operator to check egress to fapi.binance.com if none arrived.
+# All three recorder units are gone, so the step counted a directory nothing writes any more,
+# always found zero, and always printed a warning naming a venue this desk may not reach -- a
+# deploy that ends in a false alarm teaches an operator to ignore its output.
+#
+# THE TAPE STILL MATTERS; IT IS JUST NOT RECORDED HERE. Every unrecorded second is permanently
+# unbuyable, which is the one cost money cannot fix afterwards -- but the desk's tape is now the
+# MT5/Fusion one, recorded on the Windows moat node (docs/research/MOAT_NODE_SPEC.md), not on this
+# Linux box. Nothing to start here, and the 20-second sleep is gone with it.
+say "3. tape: recorded on the MT5 moat node, not on this host"
+echo "   crypto recorders: RETIRED (constitution 224 + MT5 universe mandate 2026-08-18)"
+echo "   MT5 tape health is reported by the desk chain under desks/mt5/, not by this script"
 
 say "4. start the survival organs and the unique midnight frontier timer"
 sudo systemctl enable --now quant-watchdog.timer quant-alerts.timer quant-cadence.timer quant-midnight-frontier.timer
 
-say "5. start the moat organs (mine describes the tape; screen interrogates it)"
-sudo systemctl enable --now quant-moat-miner quant-moat-screen
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): the moat organs
+# (quant-moat-miner, quant-moat-screen, their run_moat_*.sh launchers and scripts/mine_moat.py +
+# scripts/screen_moat.py) described and interrogated the crypto L2 tape under data/moat. That tape
+# is no longer recorded and the venue is retired ground, so the pair looped over an empty
+# directory. All six files are deleted. The desk's moat is now the MT5/Fusion tape on the Windows
+# moat node (docs/research/MOAT_NODE_SPEC.md), which has its own describe/screen path.
+say "5. moat organs: RETIRED (crypto L2 tape); MT5 moat lives on the Windows moat node"
 
 say "6. start the daily sweep and the credit-gated diggers"
 sudo systemctl enable --now quant-daily-max.timer

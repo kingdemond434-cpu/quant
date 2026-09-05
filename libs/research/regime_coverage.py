@@ -19,12 +19,12 @@ it is the honest half: a clock whose observations are POSITIVELY autocorrelated 
 CREDITED too much, since the unmeasured default of 0.0 leaves the serial deflator at 1.0. Turning
 these on can make a clock slower, and a measurement that can only ever help is not a measurement.
 
-**THE REGIME DEFINITION IS BORROWED, NOT INVENTED.** trend = sign of the 50-day change, vol =
-30-day realised vol against its own 180-day median. Those are exactly `crypto_regime.regime_labels`'
-first two axes, reproduced here on a single close series because the axis clocks are single-symbol
-and cannot assemble the cross-sectional frame that function needs. Writing a second, subtly
-different regime definition would give the desk two answers to one question, which is the defect
-`slot_registry` was written to end for the cohort count.
+**THE REGIME DEFINITION IS THE DESK'S ONE DEFINITION, NOT A SECOND ONE.** trend = sign of the
+50-day change, vol = 30-day realised vol against its own 180-day median. It is stated here, on a
+single close series, because the axis clocks are single-symbol and cannot assemble a
+cross-sectional frame. Any other organ that needs a regime label must READ THESE CONSTANTS rather
+than restate them: a second, subtly different regime definition gives the desk two answers to one
+question, which is the defect `slot_registry` was written to end for the cohort count.
 
 **THIS IS A COVERAGE COUNT, NOT A ROBUSTNESS PARTITION, and the distinction is L1.63.** That law
 was written because three gates certified "regime robust" on vol terciles that were structurally
@@ -49,7 +49,9 @@ __all__ = [
     "regime_coverage",
 ]
 
-#: Borrowed verbatim from `crypto_regime.regime_labels` so the desk has ONE regime definition.
+#: THE desk's regime definition. Import these rather than restating them -- one definition, one
+#: answer. Changing a number here changes every coverage count taken since, so it is a ratchet
+#: decision and not a tuning knob.
 TREND_LOOKBACK = 50
 VOL_WINDOW = 30
 VOL_MEDIAN_WINDOW = 180
@@ -104,8 +106,8 @@ def regime_coverage(
     ret = np.zeros_like(c)
     ret[1:] = c[1:] / c[:-1] - 1.0
 
-    # LAGGED, mirroring crypto_regime: a regime label that used the current bar would describe a
-    # state the clock could not have known it was in.
+    # LAGGED, always: a regime label that used the current bar would describe a state the clock
+    # could not have known it was in.
     trend = np.full(c.size, "", dtype=object)
     for i in range(TREND_LOOKBACK + 1, c.size):
         trend[i] = "bull" if c[i - 1] > c[i - 1 - TREND_LOOKBACK] else "bear"
@@ -141,7 +143,7 @@ def regime_coverage(
         "cells": dict(sorted(cells.items())),
         "definition": (f"trend = sign of the {TREND_LOOKBACK}-day change, vol = {VOL_WINDOW}-day "
                        f"realised vol against its own {VOL_MEDIAN_WINDOW}-day median -- the first "
-                       "two axes of crypto_regime.regime_labels, on one close series"),
+                       "two axes of the desk's regime definition, on one close series"),
         "why": ("A COVERAGE COUNT, NOT A ROBUSTNESS CERTIFICATE (L1.63). It makes no accept or "
                 "reject decision and no promotion path reads it as a verdict; it records which "
                 "regime cells this clock's OWN observations fell in, so evidence_clock stops "

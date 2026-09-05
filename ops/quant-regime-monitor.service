@@ -4,4 +4,7 @@ Description=Regime/decay monitor with shadow-replay wake evidence (GAP 130)
 [Service]
 Type=oneshot
 WorkingDirectory=/home/quant/quant-platform/desks/mt5
-ExecStart=/home/quant/quant-platform/.venv/bin/python research/regime_monitor.py
+# Absolute path, as quant-sge-premium.service already does: the scheduler-manifest fence maps
+# ExecStart onto the repo by stripping the VPS root, and a cwd-relative path resolved to a file
+# that "does not exist in repo" -- the unit was live and the DR floor could not see it.
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/research/regime_monitor.py

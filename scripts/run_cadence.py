@@ -400,7 +400,13 @@ _FREEZE_SOURCES: dict[str, tuple[str, str]] = {
     "gate0": ("data/gate0_complete", "scripts/max_audit.py"),
     "fills_4wk": ("data/moat/execution_tape/cashcarry_trades.jsonl",
                   "libs/execution/execution_tape.py"),
-    "cost_model": ("data/cost_model.json", "scripts/run_cost_model.py"),
+    # Was ("data/cost_model.json", "scripts/run_cost_model.py") -- the L2-tape cost walk, deleted
+    # 2026-09-05 with the retired recorders. Re-pointed at the MT5 desk's cost surface, which is
+    # the artifact that now answers "are this desk's costs MEASURED?". The whole point of the
+    # second element is that a freeze-exit criterion must read something this repo WRITES: leaving
+    # a deleted writer here would have made the criterion unsatisfiable while looking strict,
+    # which is the exact defect `check_freeze_exit_sources` below exists to catch.
+    "cost_model": ("desks/mt5/data/cost_surface.json", "desks/mt5/research/cost_surface.py"),
     "calib_10": ("data/forecast_log.json", "libs/self_improvement/forecast_calibration.py"),
     "no_criticals": ("data/DEADMAN_FIRED", "scripts/run_deadman_switch.py"),
 }
@@ -713,22 +719,13 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
         print(f"cadence: constitution check failed to run ({type(_e).__name__}: {_e}) -- "
               "the objective is unenforced this cycle")
 
-    # MOAT MINING (EVERY CYCLE, maximum cadence). The desk's information-advantage ranking puts
-    # self-recorded order books at 1.03 and the next source at 0.37 -- the only asset here that
-    # cannot be bought, scraped or replicated, and it sat at 0.4% exploitation with ZERO
-    # mechanisms tested while every other organ was maximised. Hole-first and budgeted, so it
-    # mines cells nobody has ever measured before re-measuring anything: that ordering is what
-    # converges on 100% exploration instead of re-grinding the same convenient symbol. Runs every
-    # cycle deliberately -- the archive only grows, so any cycle that skips it is coverage the
-    # desk permanently ran late on.
-    _r = _srun([sys.executable, "scripts/mine_moat.py"],
-                        capture_output=True, text=True, timeout=420, check=False)
-    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
-    if _r.returncode != 0 or not Path("data/moat_mine.json").exists():
-        print(f"cadence: moat-mine rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
-    else:
-        fired.append("moat-mine")
-        print(f"cadence: {_tail[0][:150]}")
+    # MOAT MINING AND MOAT SCREENING WERE REMOVED 2026-09-05 (universe mandate). The whole moat
+    # pipeline -- mine_moat, screen_moat, promote_moat_survivors, review_moat_clocks -- read the
+    # self-recorded crypto-exchange L2 tape, and it was deleted with the recorders that wrote it.
+    # The information-advantage argument that justified running it every cycle was specifically
+    # about THAT tape being unbuyable; it does not transfer to a market the desk reaches through a
+    # broker terminal. The MT5 desk records its own tape under desks/mt5/recorders and mines it in
+    # its own cycle, so the capability is not lost, only relocated to the desk that owns it.
 
     # MOAT SCREENING AND SURVIVOR EXPLOITATION (EVERY CYCLE). Mining DESCRIBES the tape; screening
     # ASKS it whether any mechanism predicts, and promotion turns a persistent answer into a
@@ -739,12 +736,6 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # when screening produced nothing this pass, because persistence accumulates ACROSS passes and
     # a candidate can cross the bar on a cycle that found no new survivor at all.
     for _organ, _script, _artifact in (
-            ("moat-screen", "scripts/screen_moat.py", "data/moat_screen.json"),
-            ("moat-promote", "scripts/promote_moat_survivors.py", "data/moat_promotion.json"),
-            # And the only OUT-OF-SAMPLE question in the whole pipeline: does a candidate that was
-            # pre-registered still predict on tape recorded AFTER it was named? Everything above
-            # this line is answered on tape that already existed when the candidate was chosen.
-            ("moat-clocks", "scripts/review_moat_clocks.py", "data/moat_clock_review.json"),
             # THE CALLERS THAT WERE THEMSELVES ORPHANS. Each of these was written to make a
             # library module reachable -- emergence, wallet_graph, ict.cross_sectional -- and then
             # nothing ran the caller. The libs orphan check went green because the import existed,
@@ -759,14 +750,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
             # in seconds; run_prediction_markets keeps libs.data.prediction_markets reachable and
             # now reports an empty fetch instead of dying on a pandas KeyError, so a cycle where
             # the venue is unreachable costs a line of output rather than a traceback.
-            ("axis-generate", "scripts/run_axis_generate.py", "data/cadence_state.json"),
-            ("prediction-markets", "scripts/run_prediction_markets.py", "data/cadence_state.json"),
-            # The failed-breakout study. Runs its MECHANISM stage every cycle and halts there when
-            # open interest is unavailable, so "we cannot yet test this hypothesis" is a dated
-            # statement rather than a silence. It synthesises nothing and has no authority; the
-            # kill criteria are pre-registered and binding before it ever sees data.
-            ("failed-breakout", "scripts/run_failed_breakout_study.py",
-             "data/failed_breakout_study.json")):
+            ("prediction-markets", "scripts/run_prediction_markets.py", "data/cadence_state.json")):
         _r = _srun([sys.executable, _script],
                             capture_output=True, text=True, timeout=420, check=False)
         _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
@@ -808,19 +792,11 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:150]}")
 
-    # TAPE -> BARS (EVERY CYCLE, BEFORE THE SCREEN). The recorders write 15s L2+trades; every
-    # screen, feature and label on this desk eats OHLCV bars, and nothing converted between them --
-    # so the ICT family reported NO BARS while 8.2GB of its input sat on disk in the wrong shape.
-    # Ordered before screen_ict deliberately: screening last cycle's bars would silently evaluate
-    # a stale window and report it as current.
-    _r = _srun([sys.executable, "scripts/build_bars.py"],
-                        capture_output=True, text=True, timeout=900, check=False)
-    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
-    if Path("data/build_bars.json").exists():
-        fired.append("build-bars")
-        print(f"cadence: {_tail[0][:150]}")
-    else:
-        print(f"cadence: build-bars rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    # TAPE -> BARS WAS REMOVED 2026-09-05 with build_bars.py: it converted the retired
+    # crypto-exchange recorders' 15s L2+trades into OHLCV, and both ends of that conversion are
+    # gone. screen_ict below now runs against whatever `data/bars` holds and reports NO BARS when
+    # it is empty, which is its documented refusal and the honest state on a desk whose bars come
+    # from the MT5 terminal rather than from a recorder in this repo.
 
     # ICT SCREEN (EVERY CYCLE). The second strategy family landed with full test suites and NO
     # CALLER -- the desk's own "built but never runs" class, committed while fixing instances of it

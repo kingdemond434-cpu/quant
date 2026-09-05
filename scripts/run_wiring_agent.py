@@ -53,6 +53,10 @@ _FENCE_START = "# >>> WIRING AGENT (auto-wired, idempotent) >>>"
 _FENCE_END = "# <<< WIRING AGENT <<<"
 
 # Never scheduled by an agent, ever. Not proposed either -- these are principal decisions.
+#: run_cashcarry_executor.py stays named here after its 2026-09-05 deletion ON PURPOSE: this is a
+#: never-touch DENYLIST, and a denylist that forgets a name is one that stops refusing the day the
+#: name comes back. The cost of an extra entry is nothing; the cost of a missing one is an agent
+#: rewiring a money path.
 _NEVER = {"run_deadman_switch.py", "run_cashcarry_executor.py"}
 
 # Safe-by-writes is not the same as sane-to-schedule (2026-07-31: the agent cron'd ops_server.py

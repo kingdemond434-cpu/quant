@@ -20,7 +20,7 @@ remaining grounds are genuinely low-value or the budget is gone.
 
 SKIPPING A GROUND IS A DECISION THAT MUST BE NAMED. For each ground you do NOT work, state which
 one and why -- "measured conversion 0.00 across the last N runs", "no owed debt and covered 6h
-ago", "blocked at s13". "Ran out of list" and "it was not in the top three" are not reasons. A
+ago", "blocked at s13". "Ran out of list" and "it ranked below the ones I took" are not reasons. A
 high-value ground left unworked because a cap said so is idle capital's research twin (LAWS 2a).
 
 Candidate grounds:

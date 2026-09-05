@@ -1,16 +1,30 @@
 """Daily institutional research cycle -- the CRO everyday loop.
 
-ONE complete cycle, run daily by Task Scheduler:
-  1. run_daily_research.py   -- forward-accumulating pipeline: candidate generation + validation +
-                                data archiving (feeds the research system for testing)
-  2. research_cycle.py       -- regenerate the 3 state files, ROI reprioritization, calibration
-  3. run_leverage_opt.py     -- recompute growth-optimal leverage per sleeve + joint
-  4. run_live_combined.py    -- refresh the molded book
+ONE complete cycle, run daily by Task Scheduler. The backbone:
+  1. run_ci.py               -- the whole-tree gate; nothing downstream is trusted if this is red
+  2. collect_fred_macro.py + derive_walcl_clock.py -- the free macro axis and its forward clock
+  3. research_cycle.py       -- regenerate the 3 state files, ROI reprioritization, calibration
+  4. the governance battery  -- doctrine, ratchets, fences, blind spots, coverage, autopsies
 Then it appends a DATED entry to data/cro_cycle_log.json (bottleneck, next highest-ROI task,
 deployed metrics, calibration, candidates tested) and prints the next action. Continuous process:
 no terminal state except the absence of positive expected-Research-ROI work.
 
 Each step is isolated -- one failure never aborts the cycle. Idempotent + safe to re-run.
+
+REDUCED TO THE MT5 DESK, 2026-09-05. This chain carried 113 steps and 45 of them drove the
+retired book -- the lake ingest, the recorder watch, the spot/margin/mechanism
+order paths, the perp-funding and kimchi and on-chain and stablecoin collectors, the copytrading
+and leaderboard panels, the listing watch and its event study, the moat book screens. Every one of
+those scripts was deleted under the universe mandate, so every one of those steps would have run a
+subprocess against a file that is not there and logged rc=2 forever. The 68 steps left are the
+venue-neutral research and governance loop plus the MT5-facing macro axes; the money path itself
+now lives in desks/mt5/, which runs its own cycle.
+
+WHY REDUCED RATHER THAN DELETED. `check_build_standard.py` reads this file as a SCHEDULING SOURCE:
+an organ named in `_STEPS` is scheduled, and three of its exemption rows cite this chain by name.
+Deleting the file would silently unschedule every organ that was only scheduled here, which is the
+"built-never-scheduled" defect the build standard exists to catch -- so the chain keeps its
+identity and loses its retired half.
 
     python scripts/daily_research_cycle.py
 """
@@ -25,7 +39,6 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from libs.execution.wallet import WALLETS
 from libs.ops.platform_paths import venv_python
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -47,23 +60,18 @@ _STEPS = [
     # rise costs nothing on a healthy day and buys a NAMED failure on a bad one. The ordering is
     # asserted by tests/ops/test_ci_gate_timeouts.py against run_ci.STEP_BUDGET_TOTAL_S.
     ("ci_gate",           "scripts/run_ci.py",             9600),
-    ("recorder_watch",    "scripts/ensure_recorder.py",      60),  # data moat must never sleep
-    ("stablecoin_flows",  "scripts/run_stablecoin_flows.py", 180),  # daily on-chain clock tick
     ("fred_macro",        "scripts/collect_fred_macro.py",   120),  # free US-macro (key-gated)
     ("walcl_clock",       "scripts/derive_walcl_clock.py",    60),  # R0031 forward clock, reads
     #                      the fred archive the previous step just refreshed (phase = cadence)
     ("rfb_vintages",      "scripts/harvest_rfb_vintages.py", 300),  # R0472 vintage stack: checks
     #                      the live RFB listing for new releases, then re-harvests the archive
     #                      (append-only store, so an unchanged day appends nothing)
-    ("naver_krsearch",    "scripts/collect_naver_krsearch.py", 60),  # KR attention (key-gated)
     ("root_cause",        "scripts/run_root_cause.py",       120),  # classify losses pre-reaction
     ("desk_digest",       "scripts/render_desk_digest.py",    60),  # Obsidian-readable daily brief
     ("micro_audit",       "scripts/run_micro_audit.py",      480),  # 3 cold LLMs on 24h delta
     ("cadence",           "scripts/run_cadence.py",          900),  # stage-aware review scheduler
     ("research_feed",     "scripts/collect_research_feed.py", 120),  # arXiv q-fin -> vault inbox
     ("growth_audit",      "scripts/run_growth_audit.py",       60),  # under-utilization = defect
-    ("research_pipeline", "scripts/run_daily_research.py",  7200),
-    ("autodiscovery",     "scripts/run_crypto_research.py", 1800),  # industrialized crypto factory
     # the research-coordination engines: rank the agenda queue, screen novelty against the
     # do-not-repeat list, assess crowding/capacity, and flag candidates that duplicate a
     # deployed sleeve. 17 of 21 alpha_factory modules had no caller before this.
@@ -75,7 +83,6 @@ _STEPS = [
     # de-risk ladder, 6h canary, numeric ramp gate, stage machine). Inert at S0/without keys --
     # but it must run daily from S0 so the rails are exercised BEFORE they are load-bearing,
     # rather than executing for the first time on the day real money is behind them.
-    ("live_guard",        "scripts/run_live_guard.py",       120),
     # THE MONEY PATH, IN THE PIPELINE THAT PROVABLY RUNS. Measured 2026-08-15: the spot book, the
     # discretionary sleeve and the leaderboard panel were all wired into ops/run_research_cycle.sh,
     # which is driven by a USER systemd unit -- and user units do not fire at all unless lingering
@@ -124,18 +131,13 @@ _STEPS = [
     # carry, and the highest-orthogonality class whose data the census records as already on disk.
     # The screen honestly reports UNMEASURED while its inputs are missing; running it daily is what
     # turns "we never got to it" into a named, dated deficit that accrues.
-    ("unlock_calendar",   "scripts/collect_unlock_calendar.py", 180),
-    ("circulating_supply", "scripts/collect_circulating_supply.py", 180),
     # THE THIRD INPUT THE SUPPLY SCREEN NAMED AND NOBODY BUILT: daily bars for the unlocking
     # universe, resampled from the 15min lake. Runs BEFORE the screen, which now actually receives
     # the panel -- `bars=None` was hardcoded in its runner, so it would have gone on reporting
     # "no daily bars supplied" against a panel sitting on disk.
-    ("daily_panel",       "scripts/build_daily_panel.py",      240),
-    ("supply_screen",     "scripts/screen_unlock_supply_series.py", 240),
     # CENSUS GAP #1 (0.48, NO-CANDIDATE) -- the desk's highest-ranked mechanism, never screened.
     # Runs daily and reports UNMEASURED with its missing input NAMED until the event feed exists:
     # a screen that only starts running once its data arrives is a screen nobody remembers to run.
-    ("index_recon_feed",  "scripts/collect_index_reconstitution.py", 180),
     # THE LAKE MUST BE WIDER THAN THE MONEY CAN REACH, OR DATA BINDS INSTEAD OF CAPITAL.
     # Measured 2026-08-16 on a $1,000 dry run: the sleeve universe wanted 10 symbols per sleeve at
     # 1x and 30 at 3x, and the lake carried TEN symbols total -- 38 of 48 candidates had no history
@@ -147,55 +149,41 @@ _STEPS = [
     # the one source of truth, `select` ranks by measured depth anyway, and a second tuple of
     # tickers here would drift out of step with the sleeve candidates exactly as silently as the
     # first one did.
-    ("lake_ingest",       "scripts/ingest_crypto.py --universe liquid --max-symbols 60", 1800),
-    ("index_recon",       "scripts/screen_index_reconstitution.py", 180),
     # THE HIGHEST-ORTHOGONALITY CLASS THE DESK HAS, AND NEITHER SCREEN RAN ON A SCHEDULE.
     # `screen_orderbook_state.py` carried a cron line in its own header marked "NOT wired here"
     # and it was never installed; `libs/research/book_microstructure.py` was imported by nothing
     # but its test. Two pre-registered screens on `orderbook_microstructure_state` (census
     # orthogonality 0.90 -- the only lever that lowers rho rather than raising n), both idle.
     # Read-only over data/moat; on a clone without the tape both exit 0 reporting UNMEASURED.
-    ("book_state",        "scripts/screen_orderbook_state.py --files 240", 900),
-    ("book_constructions", "scripts/screen_book_constructions.py --files 48", 600),
     ("supply_report",     "scripts/report_mechanism_supply.py", 120),
     # IS EVERYTHING ACTUALLY ARMED -- nine independent facts across three directories, two of them
     # gitignored, whose sense is inverted for the three rails. `run_golive_preflight` checked ONE
     # of them, so the question was answered by running four scripts and reading prose, which is how
     # a desk comes to believe a switch is on because it was on last week. Runs BEFORE the order
     # steps so the day's artifact records the arming state the orders were actually placed under.
-    ("arming",            "scripts/report_arming.py",        60),
     # THE CHEAPEST COST LEVER ON THE DESK, READ EVERY DAY. The BNB burn is 25% off every commission
     # and off margin interest, and it is invisible from inside the repo: every TCA and net-edge
     # number here is computed from an ASSUMED commission rate that nobody was checking against the
     # venue. Read-only without --enable, so the cycle reports the state and never changes it.
-    ("fee_discount",      "scripts/run_fee_discount.py",     60),
     # WHICH VENUE IS CHEAPER TO CARRY THE SAME LONG. Interest is charged on the BORROWED part,
     # funding on the WHOLE notional, so the comparison moves with leverage and cannot be settled
     # once. Daily, so a regime where funding goes negative -- the case where perps actually win --
     # is caught rather than assumed away. Access under MiCA gates it before cost does.
-    ("funding_vs_borrow", "scripts/compare_funding_vs_borrow.py", 120),
     # CAN THE DESK SHORT AT ALL. Read-only. rho_bar 0.375 and the ~+17%/yr ceiling both follow
     # from every sleeve being long crypto, and the desk concluded shorts were impossible by
     # conflating MiCA's DERIVATIVES ban with an unbuilt order path. A cross-margin short borrows
     # the BASE asset -- margin lending, not a derivative. Daily because borrow availability and
     # base-asset rates move, and a short that is right about direction can still lose to carry.
-    ("short_capability",  "scripts/probe_short_capability.py", 120),
     ("paper_sleeve_spawner", "scripts/run_paper_sleeve_spawner.py", 600),
     ("paper_sleeve_forward", "scripts/run_paper_sleeve_forward.py", 600),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
-    ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),
-    ("spot_targets",      "scripts/run_spot_momentum.py --equity 200 --min-notional 10", 300),
-    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place --reserve-frac 0.3 --wallet {WALLET}", 300),
     # --place: the eleven playbook rules now TRADE, each entry carrying a venue-held stop placed
     # through the same primitive the momentum book uses. --spot-only refuses every short they call
     # and journals the refusal, which on a spot account IS the measurement for H1/H7/H11.
-    ("discretionary",     "scripts/run_discretionary_live.py --equity auto --spot-only "
-                          "--quote USDC --place --min-notional 5 --wallet {WALLET}", 600),
     # THE LEVERED PATH. Inert without data/MARGIN_ENABLE and without capital in the margin wallet,
     # both of which are the principal's acts. The leverage is COMPUTED every run -- no flag -- so a
     # thin edge borrows nothing and the same line is correct at any Sharpe.
-    ("margin_orders",     "scripts/run_margin_executor.py --quote USDC --place", 300),
     # THE MECHANISM SLEEVES, running under a DECLARED SUSPENSION of L1.6 recorded in
     # docs/research/LIVE_EXCEPTION_LEDGER.json. Both steps fail closed without that ledger row, so
     # revoking the exception is one field and binds on the next cycle. They trade as a SEPARATE
@@ -205,32 +193,16 @@ _STEPS = [
     # LAKE frame carries a funding column, and data/lake holds OHLCV -- so funding_stress_reversal
     # degraded to zeros on every symbol, every run. One of two LIVE mechanism sleeves, structurally
     # unable to produce a signal. Runs BEFORE the sleeves so the same cycle that collects it uses it.
-    ("perp_funding",     "scripts/collect_perp_funding.py",   300),
-    ("mechanism_sleeves", "scripts/run_mechanism_sleeves.py", 300),
-    ("mechanism_orders",  "scripts/run_margin_executor.py --quote USDC --place "
-                          "--targets data/mechanism_sleeve_targets.json", 300),
-    ("leaderboards",      "scripts/collect_leaderboards.py", 300),
-    ("copytrading_panel", "scripts/screen_copytrading.py",   300),
-    ("listing_watch",     "scripts/run_listing_watch.py",    60),  # gap-53 data clock
     # §42(6): the CONSUMER for that clock. Collection without a promotion path is acquisition the
     # desk can never convert, so the study runs on the same cadence as the collector rather than
     # waiting for someone to remember it exists.
-    ("event_study",       "scripts/run_event_study.py",     300),
     # §42: cross-venue funding on the THIN tail -- where a small book is not the worst-capitalised
     # participant. The liquid names are already screened; this starts the clock on the other end.
-    ("tail_funding",      "scripts/collect_tail_funding_divergence.py", 120),
-    ("kimchi_premium",    "scripts/collect_kimchi_premium.py", 90),  # gap-74 forward clock
-    ("onchain_activity",  "scripts/collect_onchain_activity.py", 120),
     # licence-clean Glassnode/Coin-Metrics replacement (facts reconstructed from chain)
-    ("onchain_metrics",   "scripts/collect_onchain_metrics.py", 180),  # on-chain throughput
-    ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),  # supply momentum clock
     ("breadth_expander", "scripts/breadth_expander.py", 420),  # external-LLM breadth scout (Stage-A only)
-    ("signal_halflife",  "scripts/signal_halflife.py", 180),  # signal ageing/decay tracker
     ("measurement_gate",  "scripts/measurement_gate.py", 120),  # inputs must be verified before any optimisation
-    ("exec_bottleneck",   "scripts/execution_bottleneck.py", 60),  # live book vs live gate
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
     ("stage_a_exec",       "scripts/stage_a_executor.py", 120),  # RUN the ranked queue, not order it
-    ("defi_axis",          "scripts/build_defi_axis.py", 60),  # pool rows -> daily z20 axis feed
     ("conversion",        "scripts/conversion_engine.py", 90),  # mined data -> ranked experiments, every cycle
     ("enforce_proof",     "scripts/prove_future.py", 90),  # adversarial: guards must FAIL on planted violations
     ("principle_audit",   "scripts/principle_audit.py", 30),  # STRICT: all 15 principles must reach models
@@ -268,11 +240,7 @@ _STEPS = [
     ("research_erv",      "scripts/research_erv.py", 60),  # rank hypotheses before spending slots
     ("mechanism_board",   "scripts/mechanism_board.py", 60),  # mechanism kills + portfolio + gate
     ("screen_auditor",    "scripts/screen_auditor.py", 60),  # missing-rail audit on screens
-    ("cny_premium",       "scripts/collect_cny_premium.py", 60),  # USDT/CNY P2P premium (#76)
-    ("axis_shadows",      "scripts/run_axis_shadows.py",     120),  # Stage-B forward eval
-    ("reject_rescore",    "scripts/run_rejection_rescore.py", 300),  # feed near-miss reject scores
     ("rejection_shadow",  "scripts/run_rejection_shadow.py",  60),  # gate-leak recovery audit
-    ("cost_model",        "scripts/run_cost_model.py",      600),  # measured exec costs (daily)
     # THE THIRD COST BASIS, and it runs IMMEDIATELY AFTER the book walk on purpose: it publishes
     # the two side by side, so reading a stale cost_model.json here would compare today's prints
     # against yesterday's depth and call the difference a finding (L1.44 at the read site).
@@ -280,9 +248,7 @@ _STEPS = [
     # partitions are the growing half. A timeout sized AT the measurement is a timeout that starts
     # killing the step the week the tape thickens (R0146, the stale-consumer class).
     ("print_impact",      "scripts/fit_print_impact.py",   1500),  # L1.45 3rd basis: others' fills
-    ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow
     ("leverage_opt",      "scripts/run_leverage_opt.py",    120),
-    ("molded_refresh",    "scripts/run_live_combined.py",   120),
     # the self-improvement queue: derive review dates so decisions can MATURE, and publish
     # the matured-and-unscored worklist. Never writes an outcome -- scoring is a judgement.
     ("decision_review",   "scripts/run_decision_review.py",  60),
@@ -354,29 +320,15 @@ def _nav_equity() -> dict[str, object]:
 
 def main() -> None:
     steps: dict[str, dict[str, object]] = {}
-    # THE WALLET IS SUBSTITUTED HERE, NOT HARDCODED IN THE STEP TABLE. Binance treats spot and
-    # cross-margin as separate balances, so the day the principal moves capital between them, every
-    # sleeve pointed at the old one keeps running perfectly and places nothing. An env var means
-    # that move is one line on the box rather than a code change -- and the executors additionally
-    # name the other wallet at runtime when it holds the money (`wallet.misplaced_capital`), so a
-    # cycle left on the wrong setting reports it instead of going quiet.
-    # ENV FIRST, THEN A REPO FILE. `/etc/environment` needs root, and the principal running the
-    # desk is not root on this box -- a control surface that requires sudo to change is one that
-    # gets left wrong. `data/DESK_WALLET` sits beside the other arming markers, is gitignored so it
-    # cannot travel into a clone, and is writable by the account that actually moves the capital.
-    desk_wallet = (os.environ.get("DESK_WALLET") or "").strip().lower()
-    if not desk_wallet:
-        try:
-            desk_wallet = (_ROOT / "data" / "DESK_WALLET").read_text("utf-8").strip().lower()
-        except OSError:
-            desk_wallet = "spot"
-    desk_wallet = desk_wallet or "spot"
-    if desk_wallet not in WALLETS:
-        raise SystemExit(f"DESK_WALLET={desk_wallet!r} is not one of {WALLETS}. Refusing to "
-                         "default: a typo that silently trades the wrong wallet is the failure "
-                         "this substitution exists to prevent")
+    # THE `{WALLET}` SUBSTITUTION AND ITS `DESK_WALLET` CONTROL SURFACE WERE REMOVED 2026-09-05.
+    # They existed because Binance holds spot and cross-margin as separate balances, so the three
+    # order steps carried `--wallet {WALLET}` and this function refused to run on a typo rather
+    # than trade the wrong balance. Those steps -- run_spot_executor, run_margin_executor,
+    # run_discretionary_live -- are deleted with the crypto-exchange desk, so no row here contains
+    # a `{WALLET}` placeholder any more. A substitution with nothing to substitute into is a
+    # control surface that can only ever be wrong about a wallet this desk does not hold.
     for label, script, timeout in _STEPS:
-        steps[label] = _run(script.replace("{WALLET}", desk_wallet), timeout)
+        steps[label] = _run(script, timeout)
         print(f"[{label}] {steps[label]}")
     _write_status(steps)  # R0258: pager artifact, before any bookkeeping below can raise
 

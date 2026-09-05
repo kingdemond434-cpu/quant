@@ -53,11 +53,14 @@ if str(_ROOT) not in sys.path:
 
 #: Modules whose module-level numbers decide position size, leverage or risk. Kept to the money
 #: path on purpose -- a fence that flags every constant in the repo is a fence nobody reads.
-_SIZING_MODULES: tuple[str, ...] = (
-    "scripts/run_conviction_trader.py",
-    "scripts/run_llm_trader.py",
-    "scripts/resolve_paper_book.py",
-)
+#: EMPTY SINCE 2026-09-05 (universe mandate), and that is a MEASURED state, not a disabled fence.
+#: All three modules -- run_conviction_trader, run_llm_trader, resolve_paper_book -- were deleted
+#: with the retired book, so this repo currently holds no scripts/-level module whose top-level
+#: constants set position size. `build()` must therefore report its empty-scope verdict rather
+#: than "OK", because a sizing fence that grades zero modules and prints OK is indistinguishable
+#: from one that found nothing wrong. The MT5 sizing constants live under desks/mt5/ and are
+#: fenced there; pointing this scope at them is a wiring decision, not a cleanup's to make.
+_SIZING_MODULES: tuple[str, ...] = ()
 
 #: Words that mark a real derivation. A comment must contain at least one AND a digit, so
 #: "measured" alone does not pass -- the number itself has to appear in the justification.
@@ -216,9 +219,19 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "law": "L1.41/L2.4 -- a number that moves money is a decision, and an undocumented "
                "decision cannot be reviewed, disputed or improved. Four money-path constants were "
                "found defective in one session, all of them round numbers picked by analogy.",
-        "status": "OK" if not bad else "UNJUSTIFIED-CONSTANTS",
+        # AN EMPTY SCOPE IS "UNMEASURED", NEVER "OK" (L1.28a). `_SIZING_MODULES` emptied on
+        # 2026-09-05 when the retired book's three sizing modules were deleted, and a fence that
+        # grades zero modules and prints OK is indistinguishable from one that looked and found
+        # nothing wrong -- the exact conflation this desk fences everywhere else. Reported as its
+        # own state so the day someone re-points this scope, the gap is visible in the artifact.
+        "status": ("UNMEASURED" if not mods
+                   else "OK" if not bad else "UNJUSTIFIED-CONSTANTS"),
         "n_modules": len(mods), "n_unjustified": n_bad,
-        "detail": (f"{sum(m.get('n_constants', 0) for m in mods)} money-path constants across "
+        "detail": ("no module is in scope -- the money path this fence was built for was deleted "
+                   "with the retired universe (2026-09-05) and no replacement scope has been "
+                   "wired, so NOTHING was graded. This is a wiring gap, not a clean bill of health"
+                   if not mods else
+                   f"{sum(m.get('n_constants', 0) for m in mods)} money-path constants across "
                    f"{len(mods)} modules, {n_bad} without a cited derivation"
                    + ("" if not n_bad else ": " + ", ".join(
                        f"{m['module'].split('/')[-1]}:{b['name']}"

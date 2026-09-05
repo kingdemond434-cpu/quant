@@ -91,22 +91,35 @@ def triggers_met() -> dict[str, tuple[bool, str]]:
     rows = sum(1 for c in clocks[:40] for _ in c.open("r", encoding="utf-8", errors="ignore"))
     out["more_data_available"] = (rows > 0, f"{rows} rows across {len(clocks)} clocks accruing")
 
-    # oos_available: does the reconstructed held-out OOS validator exist?
-    oos = ROOT / "scripts/backfill_onchain_oos.py"
+    # oos_available: does a held-out OOS validator exist?
+    # Was keyed on scripts/backfill_onchain_oos.py -- one crypto-axis backfill script, deleted
+    # 2026-09-05 with the on-chain axis. Re-keyed on the LIBRARY that does the work rather than on
+    # any single caller, which is the more honest question anyway: this trigger asks "can a dead
+    # idea be re-tested out of sample yet?", and the answer depends on the validator existing, not
+    # on which script last invoked it. Keyed to a script name, it would have answered False for
+    # ever the moment that one caller was retired, silently stopping the whole revival path.
+    oos = ROOT / "libs/validation/walk_forward.py"
     out["oos_available"] = (
         oos.exists(),
-        "reconstructed OOS validator exists" if oos.exists() else "no OOS tool",
+        "held-out OOS validator exists" if oos.exists() else "no OOS tool",
     )
 
-    # cost_model_improved: is there a measured cost model from recorded L2?
-    cm = ROOT / "data/cost_model.json"
+    # cost_model_improved: is there a measured cost model?
+    # Was data/cost_model.json, written by run_cost_model.py from the retired L2 tape (both gone
+    # 2026-09-05). The MT5 desk's own cost surface is the successor artifact and answers the same
+    # question -- "are costs measured rather than assumed?" -- for the market this desk trades.
+    cm = ROOT / "desks/mt5/data/cost_surface.json"
     out["cost_model_improved"] = (
         cm.exists(),
-        "measured L2 cost model present" if cm.exists() else "none",
+        "measured MT5 cost surface present" if cm.exists() else "none",
     )
 
     # live_axis_retired: has any tracked axis been retired?
-    sh = ROOT / "scripts/run_axis_shadows.py"
+    # Was scripts/run_axis_shadows.py (deleted 2026-09-05); the retirement notices were prose
+    # inside that one module. Read the clock registry instead, which is where a retirement is
+    # RECORDED rather than commented -- a stronger source, and one that cannot go quiet because a
+    # single script was rewritten.
+    sh = ROOT / "libs/research/clock_registry.py"
     txt = sh.read_text("utf-8") if sh.exists() else ""
     out["live_axis_retired"] = (
         "RETIRED" in txt,

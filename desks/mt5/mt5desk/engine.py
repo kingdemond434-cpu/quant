@@ -135,23 +135,6 @@ class Costs:
                    commission_per_lot=commission_per_lot, contract_oz=cs,
                    quote_per_account=qpa)
 
-    @classmethod
-    def from_symbol(cls, meta: dict, mult: float = 1.0,
-                    commission_per_lot: float = 2.25) -> "Costs":
-        """Costs for one symbol from its universe.json metadata.
-
-        `mult` scales the SPREAD ONLY. Commission is contractual and does not
-        widen, so stressing it models nothing that happens. mult=2.0 is the
-        honest baseline rather than a stress: a round trip crosses the spread on
-        the way in and again on the way out, and a median is a median -- half of
-        all fills are worse than it.
-        """
-        cs = float(meta.get("contract_size", 1e5))
-        spread = (float(meta.get("median_spread_pts", 0.0))
-                  * float(meta.get("tick_size", 0.0)) * cs)
-        return cls(spread_per_lot=max(spread * mult, 0.05),
-                   commission_per_lot=commission_per_lot, contract_oz=cs)
-
 
 @dataclass
 class Trade:

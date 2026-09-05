@@ -46,7 +46,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from libs.ict import canonical as ict_canon  # noqa: E402
-from libs.ict import crypto as ict_crypto  # noqa: E402
 from libs.ict import patterns as ict  # noqa: E402
 from libs.research.axis_screen import stage_a_screen  # noqa: E402
 
@@ -54,8 +53,9 @@ BARS = ROOT / "data/bars"
 REPORT = ROOT / "data/ict_screen.json"
 HISTORY = ROOT / "data/ict_screen_history.jsonl"
 
-#: name -> callable. Both halves of the family, screened together: the classical detectors run on
-#: any OHLC, the crypto-native ones need perp columns and say so when they are missing.
+#: name -> callable. Every detector here runs on plain OHLC, which is what makes this screen
+#: portable across the MT5/Fusion universe. It used to carry a second, venue-native half that
+#: needed perp columns; see the note in the table below for what went and why.
 DETECTORS = {
     "ict_fvg": ict.fair_value_gap,
     "ict_fvg_size": ict.fvg_size,
@@ -65,12 +65,14 @@ DETECTORS = {
     "ict_order_block": ict.order_block,
     "ict_breaker": ict.breaker_block,
     "ict_premium_discount": ict.premium_discount,
-    "ict_funding_window": ict_crypto.funding_window,
-    "ict_session": ict_crypto.session_partition,
-    "ict_equal_highs": ict_crypto.equal_highs,
-    "ict_equal_lows": ict_crypto.equal_lows,
-    "ict_oi_flush": ict_crypto.oi_flush,
-    "ict_sweep_into_funding": ict_crypto.sweep_into_funding,
+    # SIX DETECTORS REMOVED 2026-09-05 (universe mandate): ict_funding_window, ict_session,
+    # ict_equal_highs, ict_equal_lows, ict_oi_flush and ict_sweep_into_funding came from
+    # `libs/ict/crypto.py`, deleted with the crypto-exchange desk. Four of them needed perp
+    # columns (`open_interest`, funding stamps) that no MT5 bar carries; the two that did not
+    # -- equal highs/lows and the session partition -- are CLASSICAL ICT and belong in
+    # `libs/ict/patterns.py` or `libs/ict/canonical.py`, not in a venue-specific module. Losing
+    # them here is a real gap, named rather than hidden: re-add them to the classical modules and
+    # they come back to this registry. Nothing was left importing a module that is gone.
     # CANONICAL SET -- his definitions from the mentorship transcripts, kept alongside my earlier
     # approximations rather than replacing them. Three of mine were wrong about WHICH CANDLE and
     # WHICH PRICE, so "my reading of ICT" and "ICT" are different hypotheses and the screen is
@@ -129,8 +131,8 @@ def screen_one(name: str, fn, df: pd.DataFrame, horizon_days: float) -> dict:
         sig = fn(df).to_numpy(dtype="float64")
     except KeyError as e:
         return {"detector": name, "verdict": "INPUT-MISSING", "why": str(e)[:140],
-                "note": ("the crypto-native detectors need perp columns (open_interest, "
-                         "timestamp); absence is reported, never imputed")}
+                "note": ("a detector asked for a column these bars do not carry; absence is "
+                         "reported, never imputed")}
     except Exception as e:
         return {"detector": name, "verdict": "ERROR", "why": f"{type(e).__name__}: {str(e)[:120]}"}
     if not np.isfinite(sig).any() or float(np.nanstd(sig)) <= 0:

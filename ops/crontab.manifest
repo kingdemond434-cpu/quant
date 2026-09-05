@@ -257,7 +257,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # frequency ceiling is data arrival (daily snapshot growth), and daily is that ceiling.
 # EVIDENCE: scripts/micro_factory.py (moat-local; primary box only -- the twin holds no L2)
 # CONFIDENCE: committed-script (new this cycle)
-30 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_micro_factory.lock .venv/bin/python scripts/micro_factory.py >> data/cro_ai_logs/micro_factory.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/micro_factory.py was a
+# research/execution organ of the retired crypto-exchange desk, deleted with it. The MT5 desk
+# runs its own equivalent under desks/mt5/research/.
+# (was: 30 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_micro_factory.lock .venv/bin/python scripts/micro_factory.py >> data/cro_ai_logs/micro_factory.log 2>&1)
 
 # THIRD DIG SLOTS (principal 2026-07-31 "max frequency left"): midday opportunistic harvest.
 # flock -n makes an occupied seat a FREE instant skip, so extra slots cost nothing when the
@@ -274,7 +277,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # executor's freshness gate is 15 minutes; the guard must beat that clock comfortably.
 # EVIDENCE: scripts/run_live_guard.py -> data/live_guard.json; executor _refresh_guard()
 # CONFIDENCE: committed-script (new this cycle)
-*/5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_live_guard.py was
+# an ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder. The
+# MT5 gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: */5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1)
 
 # STERILE COCKPIT (L1.38, 2026-07-31): reports whether the desk is in a change-freeze window
 # (launch week / <20 live fills / rail unwinding). Advisory as a cron line -- its teeth are in
@@ -291,7 +297,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # evidence for a principal allocation decision -- it moves no funds and never auto-switches.
 # EVIDENCE: scripts/screen_collateral_allocation.py -> data/collateral_allocation.json; R0120
 # CONFIDENCE: committed-script (new this cycle)
-50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_collateral_allocation.py >> data/cro_ai_logs/collateral_allocation.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_collateral_allocation.py was an axis screen over the retired crypto-exchange
+# universe. Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to
+# crypto exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_collateral_allocation.py >> data/cro_ai_logs/collateral_allocation.log 2>&1)
 
 # ORDER-BOOK MICROSTRUCTURE STATE SCREEN (max_audit defect `unwired-caller`, 2026-08-05). Stage A
 # only, zero promotion authority. The script carried its own intended cron line as a COMMENT --
@@ -324,7 +334,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: scripts/screen_orderbook_state.py -> data/orderbook_state_screen.json (verified
 #   status=SCREENED on a 24-file run 2026-08-05); libs/research/orderbook_state.py
 # CONFIDENCE: committed-script (cadence and budget as pre-registered by the script's own header)
-23 */6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_obstate.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/screen_orderbook_state.py --files 240 >> data/cro_ai_logs/orderbook_state_screen.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_orderbook_state.py was an axis screen over the retired crypto-exchange universe.
+# Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to crypto
+# exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 23 */6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_obstate.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/screen_orderbook_state.py --files 240 >> data/cro_ai_logs/orderbook_state_screen.log 2>&1)
 
 # FUNDING-SPREAD SCREEN (R0115, L1.39 zero-idle: the candidate advances its next stage
 # AUTOMATICALLY rather than waiting for a human to run it). Stage A only -- measures whether the
@@ -333,7 +347,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # Daily is the right cadence: funding prints every 8h, so a day adds ~3 observations per venue.
 # EVIDENCE: scripts/screen_funding_spread.py -> data/funding_spread_screen.json; row R0115
 # CONFIDENCE: committed-script (new this cycle)
-40 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_funding_spread.py >> data/cro_ai_logs/funding_spread_screen.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_funding_spread.py was an axis screen over the retired crypto-exchange universe.
+# Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to crypto
+# exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 40 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_funding_spread.py >> data/cro_ai_logs/funding_spread_screen.log 2>&1)
 
 # BYBIT PRINT-FLAGS RE-SCREEN (R0484, orphan-scripts wiring 2026-08-19). The isBlockTrade/isRPI
 # conditioning axis is UNBACKFILLABLE (flags absent from Bybit's public archive; the 08-17 rm -rf
@@ -344,7 +362,9 @@ QUANT_ROOT=/home/quant/quant-platform
 # constructions, so this burns no new multiplicity.
 # EVIDENCE: scripts/screen_bybit_print_flags.py -> reports/axis_screens/bybit_print_flags.json
 # CONFIDENCE: committed-script (cadence chosen here, data-arrival matched)
-35 5 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_bybit_print_flags.lock nice -n 19 .venv/bin/python scripts/screen_bybit_print_flags.py >> data/cro_ai_logs/bybit_print_flags_screen.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). Bybit print-flag screen over a
+# retired venue.
+# (was: 35 5 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_bybit_print_flags.lock nice -n 19 .venv/bin/python scripts/screen_bybit_print_flags.py >> data/cro_ai_logs/bybit_print_flags_screen.log 2>&1)
 
 # SETTLEMENT-CALENDAR MISMATCH SCREEN (R0121, §42 capacity lens). Stage A only, zero promotion
 # authority. Asks whether two venues' funding grids are genuinely OFFSET in phase -- the only
@@ -362,7 +382,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # landing, which are the only two events that can move this verdict.
 # EVIDENCE: scripts/screen_funding_interval_mismatch.py -> reports/screen_funding_interval_mismatch.json; row R0121
 # CONFIDENCE: committed-script (new this cycle; first run SCREEN-CONDITIONAL, no clock opened)
-25 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_ivmismatch.lock .venv/bin/python scripts/screen_funding_interval_mismatch.py >> data/cro_ai_logs/funding_interval_mismatch.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_funding_interval_mismatch.py was an axis screen over the retired crypto-exchange
+# universe. Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to
+# crypto exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 25 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_ivmismatch.lock .venv/bin/python scripts/screen_funding_interval_mismatch.py >> data/cro_ai_logs/funding_interval_mismatch.log 2>&1)
 
 # CONVICTION SLEEVE (R0125, principal request 2026-07-31: "the Binance equivalent of my MT5
 # leveraged discretionary trading -- aggressive"). Claude takes AGGRESSIVE leveraged directional
@@ -378,7 +402,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # bounded total exposure IS the compounding lever; bigger shots are not.
 # EVIDENCE: scripts/run_conviction_trader.py -> data/conviction_trader.json + conviction_book.jsonl
 # CONFIDENCE: committed-script (new this cycle)
-45 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_conviction.lock .venv/bin/python scripts/run_conviction_trader.py >> data/cro_ai_logs/conviction.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/run_conviction_trader.py was a research/execution organ of the retired crypto-exchange
+# desk, deleted with it. The MT5 desk runs its own equivalent under desks/mt5/research/.
+# (was: 45 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_conviction.lock .venv/bin/python scripts/run_conviction_trader.py >> data/cro_ai_logs/conviction.log 2>&1)
 
 # CHART CONTEXT (R0134): the charts the discretionary sleeve was never shown. It was asked to name
 # swing levels it had no price structure for -- a headline reader with a leverage dial, which is
@@ -392,7 +419,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # instruments are RECORDED -- a universe that shrinks to whatever answered is one nobody chose.
 # EVIDENCE: scripts/build_chart_context.py -> data/chart_context.json
 # CONFIDENCE: committed-script (new this cycle, 18-instrument universe verified live on OKX)
-*/20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_charts.lock .venv/bin/python scripts/build_chart_context.py >> data/cro_ai_logs/chart_context.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/build_chart_context.py
+# was a research/execution organ of the retired crypto-exchange desk, deleted with it. The MT5
+# desk runs its own equivalent under desks/mt5/research/.
+# (was: */20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_charts.lock .venv/bin/python scripts/build_chart_context.py >> data/cro_ai_logs/chart_context.log 2>&1)
 
 # PAPER BOOK RESOLVER (R0133): marks EVERY paper call against real bars. Both sleeves above wrote
 # books nobody read -- an unmarked book accumulates confident rows, reports no failure and reads
@@ -408,7 +438,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # Prices: Binance USD-M first, OKX fallback (Binance answers 451 from this egress region).
 # EVIDENCE: scripts/resolve_paper_book.py -> data/paper_book_pnl.json + paper_book_marks.jsonl
 # CONFIDENCE: committed-script (new this cycle, OKX endpoints verified live 2026-07-31)
-20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_paperbook.lock .venv/bin/python scripts/resolve_paper_book.py >> data/cro_ai_logs/paper_book.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/resolve_paper_book.py
+# was a research/execution organ of the retired crypto-exchange desk, deleted with it. The MT5
+# desk runs its own equivalent under desks/mt5/research/.
+# (was: 20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_paperbook.lock .venv/bin/python scripts/resolve_paper_book.py >> data/cro_ai_logs/paper_book.log 2>&1)
 
 # UNSTRUCTURED EVENT COLLECTOR (R0122b): the feed the LLM sleeve actually trades. EVERY 15 MIN,
 # and the cadence IS the edge: steady-state information latency equals the collection interval,
@@ -421,7 +454,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # recover it. Failures are RECORDED, never silently absent.
 # EVIDENCE: scripts/collect_announcements.py -> data/exchange_announcements.jsonl
 # CONFIDENCE: committed-script (new this cycle, verified against live endpoints)
-*/15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_announcements.lock .venv/bin/python scripts/collect_announcements.py >> data/cro_ai_logs/announcements.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/collect_announcements.py was a crypto-exchange/on-chain data collector. The venue it
+# read is retired ground and the script was deleted with the desk; nothing on the MT5 book
+# consumed it.
+# (was: */15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_announcements.lock .venv/bin/python scripts/collect_announcements.py >> data/cro_ai_logs/announcements.log 2>&1)
 
 # KR VENUE FLAG RECORDER (R0299, KR-s1 B): Upbit market_event (warning + 5 caution flags incl.
 # the venue's own kimchi-premium detector GLOBAL_PRICE_DIFFERENCES) + Bithumb market_warning +
@@ -433,7 +470,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # inside every documented limit. Phase-offset from the :00 announcements tick to spread load.
 # EVIDENCE: scripts/collect_kr_venue_flags.py -> data/kr_venue_flags.jsonl (baseline+transitions)
 # CONFIDENCE: committed-script (verified against all three live endpoints 2026-08-12)
-7-59/15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_krflags.lock .venv/bin/python scripts/collect_kr_venue_flags.py >> data/cro_ai_logs/kr_venue_flags.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/collect_kr_venue_flags.py was a crypto-exchange/on-chain data collector. The venue it
+# read is retired ground and the script was deleted with the desk; nothing on the MT5 book
+# consumed it.
+# (was: 7-59/15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_krflags.lock .venv/bin/python scripts/collect_kr_venue_flags.py >> data/cro_ai_logs/kr_venue_flags.log 2>&1)
 
 # UPBIT FULL-MARKET CANDLE SNAPSHOT (R0303): the venue PURGES candle history at delisting
 # (6/6 delisted markets 404; AQT/AERGO lost 2026-08-03 because this ran 9 days late). Daily
@@ -444,7 +485,9 @@ QUANT_ROOT=/home/quant/quant-platform
 # timer and the 14:00 dataaxis slot. Keyless quotation GETs at ~8/s, inside Upbit's 10/s.
 # EVIDENCE: scripts/run_upbit_snapshot.py -> data/upbit_snapshot/{daily,minute,manifest.json}
 # CONFIDENCE: committed-script (first full backfill run 2026-08-12)
-40 15 * * * cd "$QUANT_ROOT" && flock -n data/.cron_upbit_snapshot.lock .venv/bin/python scripts/run_upbit_snapshot.py >> data/cro_ai_logs/upbit_snapshot.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). Upbit is a crypto exchange; the
+# KR premium axis it fed is retired ground.
+# (was: 40 15 * * * cd "$QUANT_ROOT" && flock -n data/.cron_upbit_snapshot.lock .venv/bin/python scripts/run_upbit_snapshot.py >> data/cro_ai_logs/upbit_snapshot.log 2>&1)
 
 # LLM DISCRETIONARY SLEEVE (R0122, principal request 2026-07-31 "a strategy where Claude acts
 # like a human trader with a brain, 24/7"). PAPER ONLY -- places no orders, imports no connector,
@@ -455,7 +498,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # story generator. PASS is a first-class answer and most windows should be one.
 # EVIDENCE: scripts/run_llm_trader.py -> data/llm_trader.json + data/llm_trader_book.jsonl
 # CONFIDENCE: committed-script (new this cycle)
-15 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_llm_trader.lock .venv/bin/python scripts/run_llm_trader.py >> data/cro_ai_logs/llm_trader.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_llm_trader.py was a
+# research/execution organ of the retired crypto-exchange desk, deleted with it. The MT5 desk
+# runs its own equivalent under desks/mt5/research/.
+# (was: 15 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_llm_trader.lock .venv/bin/python scripts/run_llm_trader.py >> data/cro_ai_logs/llm_trader.log 2>&1)
 
 # DECLINE GRADER (R0123). The line above promises the model that "a PASS is also scored ... marked
 # against the same horizon as a real call"; record_call kept that promise only for CALLs, and the
@@ -473,7 +519,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # score_forecasts at :50. Running hourly would re-read unchanged state three times in four.
 # EVIDENCE: scripts/resolve_llm_trader_book.py -> reports/llm_trader_decline_value.json; row R0123
 # CONFIDENCE: committed-script (new this cycle)
-25 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_declinegrade.lock .venv/bin/python scripts/resolve_llm_trader_book.py >> data/cro_ai_logs/llm_trader_declines.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/resolve_llm_trader_book.py was a research/execution organ of the retired
+# crypto-exchange desk, deleted with it. The MT5 desk runs its own equivalent under
+# desks/mt5/research/.
+# (was: 25 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_declinegrade.lock .venv/bin/python scripts/resolve_llm_trader_book.py >> data/cro_ai_logs/llm_trader_declines.log 2>&1)
 
 # FENCE YIELD (L1.43, 2026-07-31): does the governance layer EARN its brain cycles? A fence that
 # has never caught anything is decoration, and this desk added ~15 laws in one session -- L1.26
@@ -688,7 +738,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # spend venue weight to learn nothing. Daily, ahead of the morning cycle.
 # EVIDENCE: scripts/run_fee_attribution.py (built 2026-08-12, R0371)
 # CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
-41 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_fee_attribution.py >> data/cro_ai_logs/fee_attribution.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_fee_attribution.py
+# was an ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder.
+# The MT5 gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: 41 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_fee_attribution.py >> data/cro_ai_logs/fee_attribution.log 2>&1)
 
 # REALITY GAP: backtest -> shadow -> live -> venue-truth chain comparison (constitution L2.10).
 # EVIDENCE: scripts/run_reality_gap.py (built 2026-07-29, triage #127)
@@ -715,7 +768,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # the sum run_deadman_reconciliation.py:108-110 already performs). First run on this checkout:
 # status UNMEASURED with every term NOT-READABLE-HERE (no runtime state here), exit 0.
 # CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
-30 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_exec_economics.lock .venv/bin/python scripts/run_execution_economics.py >> data/cro_ai_logs/execution_economics.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/run_execution_economics.py was an ops/execution organ bound to the retired crypto
+# executor and its Gate-0 staging ladder. The MT5 gateway carries its own cost, quality and guard
+# path under desks/mt5/.
+# (was: 30 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_exec_economics.lock .venv/bin/python scripts/run_execution_economics.py >> data/cro_ai_logs/execution_economics.log 2>&1)
 
 # DATA ASSET REGISTRY + LABEL FACTORY (EXECUTION_QUEUE.md RANK 4 + RANK 6). Both also run inside
 # run_intelligence_cycle (every 6h) because the organs there navigate by the registry; these daily
@@ -842,20 +899,32 @@ QUANT_ROOT=/home/quant/quant-platform
 
 # EVIDENCE: .../20260729_data-intelligence.md:76 ("defi_lending hourly (:17)")
 # CONFIDENCE: documented-cadence
-17 * * * * cd "$QUANT_ROOT" && flock -n /tmp/defi_lend.lock .venv/bin/python scripts/collect_defi_lending.py >> data/cro_ai_logs/defi_lending_cron.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/collect_defi_lending.py
+# was a crypto-exchange/on-chain data collector. The venue it read is retired ground and the
+# script was deleted with the desk; nothing on the MT5 book consumed it.
+# (was: 17 * * * * cd "$QUANT_ROOT" && flock -n /tmp/defi_lend.lock .venv/bin/python scripts/collect_defi_lending.py >> data/cro_ai_logs/defi_lending_cron.log 2>&1)
 
 # EVIDENCE: .../20260729_data-intelligence.md:76 ("oi_ls_live hourly (:32)")
 # CONFIDENCE: documented-cadence
-32 * * * * cd "$QUANT_ROOT" && flock -n /tmp/oils.lock .venv/bin/python scripts/collect_oi_ls_live.py >> data/cro_ai_logs/oi_ls_live_cron.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/collect_oi_ls_live.py
+# was a crypto-exchange/on-chain data collector. The venue it read is retired ground and the
+# script was deleted with the desk; nothing on the MT5 book consumed it.
+# (was: 32 * * * * cd "$QUANT_ROOT" && flock -n /tmp/oils.lock .venv/bin/python scripts/collect_oi_ls_live.py >> data/cro_ai_logs/oi_ls_live_cron.log 2>&1)
 
 # EVIDENCE: .../20260729_data-intelligence.md:76 ("coinmetrics daily 03:47")
 # CONFIDENCE: documented-cadence
-47 3 * * * cd "$QUANT_ROOT" && flock -n /tmp/cmflows.lock .venv/bin/python scripts/collect_coinmetrics_flows.py >> data/cro_ai_logs/coinmetrics_cron.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). on-chain/exchange flow
+# collector for the retired crypto-exchange universe; the script was deleted with it. No MT5
+# instrument consumed it.
+# (was: 47 3 * * * cd "$QUANT_ROOT" && flock -n /tmp/cmflows.lock .venv/bin/python scripts/collect_coinmetrics_flows.py >> data/cro_ai_logs/coinmetrics_cron.log 2>&1)
 
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("dl_oi_ls_universe daily 06:20")
 # CONFIDENCE: documented-cadence
 # LOCK ported 2026-07-31 from the legacy line (same-minute twin under a split lock = parquet race):
-20 6 * * * cd "$QUANT_ROOT" && flock -n /tmp/dl_oils.lock .venv/bin/python scripts/dl_oi_ls_universe.py >> data/cro_ai_logs/oi_ls_universe_cron.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/dl_oi_ls_universe.py
+# was a crypto-exchange/on-chain data collector. The venue it read is retired ground and the
+# script was deleted with the desk; nothing on the MT5 book consumed it.
+# (was: 20 6 * * * cd "$QUANT_ROOT" && flock -n /tmp/dl_oils.lock .venv/bin/python scripts/dl_oi_ls_universe.py >> data/cro_ai_logs/oi_ls_universe_cron.log 2>&1)
 
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("ingest_axes daily 06:40"); the log name is
 #   the live one (docs/research/deep_sweep/20260726_data-intelligence.md:153 "ingest_axes_cron.log")
@@ -904,7 +973,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # cron ownership; max_audit fences its product at <=30h (scripts/max_audit.py:1081), so at
 # least daily. Slot chosen here.
 # CONFIDENCE: inferred
-30 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crypto_factory.lock /bin/bash ops/run_crypto_factory.sh
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). ops/run_crypto_factory.sh drove
+# the Binance/crypto discovery factory and was deleted with that desk. A manifest row naming a
+# deleted script is the DEAD CRON class this file exists to prevent, so it is recorded retired
+# rather than reconstituted.
+# (was: 30 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crypto_factory.lock /bin/bash ops/run_crypto_factory.sh)
 
 # deep cold-audit organ: WEEKLY, per the recorded cadence ruling further down this file
 # ("deep sweep stays WEEKLY -- 8 max-effort auditors; 2x/wk would re-audit unchanged state at
@@ -943,15 +1016,18 @@ SYSTEMD unit="quant-dataaxis.timer" on="*-*-* 14:00:00" exec="ops/run_dataaxis_d
 # ROOT timers firing into the measured-exhausted quota window (0-14% of launches produce). These
 # user-scope twins fire the SAME scripts in the measured-productive window (05:00-09:00, 80-100%),
 # installed by ops/install_early_seat_timers.sh. Registered here so the scheduler manifest sees
-# them; they are user units, so they are not ops/*.timer files.
-SYSTEMD unit="quant-seat-dataaxis.timer" on="*-*-* 05:00:00" exec="ops/run_dataaxis_dig.sh"
-SYSTEMD unit="quant-seat-prospector.timer" on="*-*-* 06:00:00" exec="ops/run_prospector_dig.sh"
-SYSTEMD unit="quant-seat-litminer.timer" on="*-*-* 07:00:00" exec="ops/run_litminer_dig.sh"
-SYSTEMD unit="quant-seat-frontier.timer" on="*-*-* 08:00:00" exec="ops/run_frontier_rotation.sh"
-SYSTEMD unit="quant-seat-frontier2.timer" on="*-*-* 03:00:00" exec="ops/run_frontier_rotation.sh"
-SYSTEMD unit="quant-seat-launch-yield.timer" on="*-*-* 10:00:00" exec="scripts/check_seat_launch_yield.py"
+# them. Since 6f90426f the units are ALSO committed as ops/quant-seat-*.timer, and the schedule
+# is read from those files exactly: every one carries an explicit UTC suffix, and frontier2
+# fires at 06:20 UTC (inside the measured-productive window above), which the 03:00 this
+# manifest carried until 2026-09-05 never was.
+SYSTEMD unit="quant-seat-dataaxis.timer" on="*-*-* 05:00:00 UTC" exec="ops/run_dataaxis_dig.sh"
+SYSTEMD unit="quant-seat-prospector.timer" on="*-*-* 06:00:00 UTC" exec="ops/run_prospector_dig.sh"
+SYSTEMD unit="quant-seat-litminer.timer" on="*-*-* 07:00:00 UTC" exec="ops/run_litminer_dig.sh"
+SYSTEMD unit="quant-seat-frontier.timer" on="*-*-* 08:00:00 UTC" exec="ops/run_frontier_rotation.sh"
+SYSTEMD unit="quant-seat-frontier2.timer" on="*-*-* 06:20:00 UTC" exec="ops/run_frontier_rotation.sh"
+SYSTEMD unit="quant-seat-launch-yield.timer" on="*-*-* 10:00:00 UTC" exec="scripts/check_seat_launch_yield.py"
 # The ONLY producer of coverage.json, and therefore the L1.50 ratchet's only input.
-SYSTEMD unit="quant-coverage-ratchet.timer" on="Sun *-*-* 01:00:00" exec="ops/gates.sh"
+SYSTEMD unit="quant-coverage-ratchet.timer" on="Sun *-*-* 01:00:00 UTC" exec="ops/gates.sh"
 
 # EVIDENCE: ops/quant-frontier.timer:4 (daily 15:00); ops/quant-frontier.service:9. The
 #   rotation runs ALL 7 regions, resumable, via ops/run_frontier_miner.sh per region
@@ -976,7 +1052,12 @@ SYSTEMD unit="quant-prospector.timer" on="*-*-* 18:00:00" exec="ops/run_prospect
 # EVIDENCE: docs/PROJECT_HANDOFF.md:33 ("quant-cashcarry (executor)");
 #   scripts/watchdog.py:58 (unit->script map); args as spawned: scripts/watchdog.py:187-188
 # CONFIDENCE: documented-cadence
-SYSTEMD unit="quant-cashcarry.service" on="always" exec="scripts/run_cashcarry_executor.py"
+# RETIRED 2026-09-05: scripts/run_cashcarry_executor.py was deleted with the Binance executors
+# (dadac868) and is NOT restored -- the MT5 universe mandate (2026-08-18) retired the venue. A
+# manifest row naming a deleted script is the DEAD CRON class this file exists to prevent, so
+# the unit is recorded here as retired rather than reconstituted. The deadman rail below is
+# different: a Tier-3 organ the same sync commit deleted by accident, restored byte-for-byte.
+# (was: SYSTEMD unit="quant-cashcarry.service" on="always" exec="scripts/run_cashcarry_executor.py")
 
 # EVIDENCE: docs/PROJECT_HANDOFF.md:33 ("quant-deadman (ruin rail)"); scripts/watchdog.py:59.
 #   Tier-3 NEVER-TOUCH rail -- exactly one instance ever under systemd
@@ -1004,7 +1085,10 @@ SYSTEMD unit="quant-dashboard.service" on="always" exec="scripts/serve_dashboard
 
 # EVIDENCE: docs/PROJECT_HANDOFF.md:34; scripts/watchdog.py:60
 # CONFIDENCE: documented-cadence
-SYSTEMD unit="quant-liquidations.service" on="always" exec="scripts/liquidation_listener.py"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). exchange liquidation-feed
+# listener. Liquidation cascades are venue-native to crypto exchanges and have no
+# Fusion-executable expression.
+# (was: SYSTEMD unit="quant-liquidations.service" on="always" exec="scripts/liquidation_listener.py")
 
 # cloudflared named tunnel -- NOT a repo script ("systemd quant-tunnel runs `cloudflared
 # tunnel run quant-dash`", ops/memory/crypto-desk-state.md:21). exec left empty on purpose:
@@ -1049,9 +1133,16 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # Every entry here was proven: runnable main(), no money-path import, no spend
 # capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
 # scripts/run_decline_detection.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-52 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_decline_detection.py >> data/cro_ai_logs/run_decline_detection.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/run_decline_detection.py was a research/execution organ of the retired crypto-exchange
+# desk, deleted with it. The MT5 desk runs its own equivalent under desks/mt5/research/.
+# (was: 52 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_decline_detection.py >> data/cro_ai_logs/run_decline_detection.log 2>&1)
 # scripts/screen_breadth_supply_axes.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-2 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_breadth_supply_axes.py >> data/cro_ai_logs/screen_breadth_supply_axes.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_breadth_supply_axes.py was an axis screen over the retired crypto-exchange
+# universe. Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to
+# crypto exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 2 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_breadth_supply_axes.py >> data/cro_ai_logs/screen_breadth_supply_axes.log 2>&1)
 # scripts/make_probe_worktree.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 37 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/make_probe_worktree.py >> data/cro_ai_logs/make_probe_worktree.log 2>&1
 # scripts/retire_unfillable_candidates.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
@@ -1073,17 +1164,33 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # scripts/report_gate_audit.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 34 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/report_gate_audit.py >> data/cro_ai_logs/report_gate_audit.log 2>&1
 # scripts/run_kama_squeeze_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-32 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_kama_squeeze_backtest.py >> data/cro_ai_logs/run_kama_squeeze_backtest.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/run_kama_squeeze_backtest.py was a research/execution organ of the retired
+# crypto-exchange desk, deleted with it. The MT5 desk runs its own equivalent under
+# desks/mt5/research/.
+# (was: 32 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_kama_squeeze_backtest.py >> data/cro_ai_logs/run_kama_squeeze_backtest.log 2>&1)
 # scripts/run_trend_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-40 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_trend_gauntlet.py >> data/cro_ai_logs/run_trend_gauntlet.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_trend_gauntlet.py
+# was a research/execution organ of the retired crypto-exchange desk, deleted with it. The MT5
+# desk runs its own equivalent under desks/mt5/research/.
+# (was: 40 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_trend_gauntlet.py >> data/cro_ai_logs/run_trend_gauntlet.log 2>&1)
 # scripts/run_prediction_markets.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 57 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_prediction_markets.py >> data/cro_ai_logs/run_prediction_markets.log 2>&1
 # scripts/run_onchain_history_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-25 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_onchain_history_backtest.py >> data/cro_ai_logs/run_onchain_history_backtest.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). on-chain history backtest over
+# a crypto universe. Kept as a retired row rather than deleted so a future session can see the
+# organ existed and why it stopped.
+# (was: 25 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_onchain_history_backtest.py >> data/cro_ai_logs/run_onchain_history_backtest.log 2>&1)
 # scripts/run_xsec_funding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-53 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_xsec_funding.py >> data/cro_ai_logs/run_xsec_funding.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). cross-sectional perp funding.
+# Same reasoning as collect_perpdex_funding.py: the mechanism is venue-native to crypto
+# exchanges.
+# (was: 53 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_xsec_funding.py >> data/cro_ai_logs/run_xsec_funding.log 2>&1)
 # scripts/run_carry_harvest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-55 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_harvest.py >> data/cro_ai_logs/run_carry_harvest.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_carry_harvest.py
+# was a research/execution organ of the retired crypto-exchange desk, deleted with it. The MT5
+# desk runs its own equivalent under desks/mt5/research/.
+# (was: 55 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_harvest.py >> data/cro_ai_logs/run_carry_harvest.log 2>&1)
 # scripts/compute_performance.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 34 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/compute_performance.py >> data/cro_ai_logs/compute_performance.log 2>&1
 # scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- HOURLY
@@ -1098,15 +1205,25 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # scripts/research_alpha_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 24 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/research_alpha_optimizer.py >> data/cro_ai_logs/research_alpha_optimizer.log 2>&1
 # scripts/run_carry_crowding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-5 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_crowding.py >> data/cro_ai_logs/run_carry_crowding.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_carry_crowding.py
+# was a research/execution organ of the retired crypto-exchange desk, deleted with it. The MT5
+# desk runs its own equivalent under desks/mt5/research/.
+# (was: 5 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_crowding.py >> data/cro_ai_logs/run_carry_crowding.log 2>&1)
 # scripts/carry_viability.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-47 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/carry_viability.py was
+# an axis screen over the retired crypto-exchange universe. Its mechanism (funding, unlocks,
+# venue subsidy, on-chain supply) is venue-native to crypto exchanges and has no
+# Fusion-executable expression, so the screen went with the desk.
+# (was: 47 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1)
 # scripts/run_research_tick.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 44 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_research_tick.py >> data/cro_ai_logs/run_research_tick.log 2>&1
 # scripts/bundle_all.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 4 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_all.py >> data/cro_ai_logs/bundle_all.log 2>&1
 # scripts/bundle_algo.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-25 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_algo.py >> data/cro_ai_logs/bundle_algo.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/bundle_algo.py was a
+# research/execution organ of the retired crypto-exchange desk, deleted with it. The MT5 desk
+# runs its own equivalent under desks/mt5/research/.
+# (was: 25 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_algo.py >> data/cro_ai_logs/bundle_algo.log 2>&1)
 # <<< WIRING AGENT <<<
 # GATE 0 READINESS (launch day, 2026-07-30). s1_entry_met is the gate that admits real capital,
 # and NOTHING assembled its evidence dict from reality -- so "what is actually left?" required
@@ -1116,7 +1233,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # measure" as satisfied is how capital gets admitted it should not.
 # EVIDENCE: scripts/check_gate0_ready.py -> data/gate0_readiness.json
 # CONFIDENCE: committed-script (new this cycle)
-9 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_gate0_ready.py >> data/cro_ai_logs/gate0_readiness.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/check_gate0_ready.py
+# was an ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder.
+# The MT5 gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: 9 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_gate0_ready.py >> data/cro_ai_logs/gate0_readiness.log 2>&1)
 
 # GENERATION DIVERSITY (HYPOTHESIS_MAX #2/#3/#6, unblocked at Gate 0 entry 2026-07-30). The spec
 # deferred the collapse detector with an explicit trigger -- "build it when generation cadence
@@ -1148,7 +1268,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_drills.py -> data/drill_report.json + data/drill_log.jsonl;
 #           tests/ops/test_drills.py breaks each rail and proves the drill catches it
 # CONFIDENCE: committed-script (new this cycle)
-40 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_drills.py >> data/cro_ai_logs/drills.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_drills.py was an
+# ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder. The MT5
+# gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: 40 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_drills.py >> data/cro_ai_logs/drills.log 2>&1)
 
 # --------------------------------------------------------------------------------------------
 # MINER SEATS -- CRON FALLBACK, NO ROOT REQUIRED (2026-07-30). The five seats were systemd-only,
@@ -1274,7 +1397,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # Chain: reject_forward_scores.json -> run_rejection_shadow -> web/reject_shadow.json -> max_audit.
 # EVIDENCE: _forward_score smoke-tested 10/10 on backdated cutoffs this cycle (log in ledger)
 # CONFIDENCE: committed-script
-50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_rejection_rescore.py >> data/cro_ai_logs/reject_rescore.log 2>&1 && .venv/bin/python scripts/run_rejection_shadow.py >> data/cro_ai_logs/reject_rescore.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/run_rejection_rescore.py imports libs.autodiscovery.crypto_adapter, deleted with the
+# crypto-exchange desk, so the row schedules a script that cannot import. The paired
+# run_rejection_shadow.py on the same line goes with it -- half a chained row is not a runnable
+# row. Re-home both against the MT5 rejection path before rescheduling.
+# (was: 50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_rejection_rescore.py >> data/cro_ai_logs/reject_rescore.log 2>&1 && .venv/bin/python scripts/run_rejection_shadow.py >> data/cro_ai_logs/reject_rescore.log 2>&1)
 
 # MECHANISM ATTRIBUTION (R0137): no sleeve may read as SURVIVED on P&L its stated mechanism cannot
 # explain. Built after a live near-miss -- the dashboard showed funding carry as a survivor on
@@ -1301,7 +1429,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 3x/day, offset from the resolver so it reads freshly-closed trades.
 # EVIDENCE: scripts/run_trade_review.py -> data/trading_playbook.json + data/trade_review.json
 # CONFIDENCE: committed-script (new this cycle)
-40 2,10,18 * * * cd "$QUANT_ROOT" && flock -n data/.cron_review.lock .venv/bin/python scripts/run_trade_review.py >> data/cro_ai_logs/trade_review.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_trade_review.py was
+# an ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder. The
+# MT5 gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: 40 2,10,18 * * * cd "$QUANT_ROOT" && flock -n data/.cron_review.lock .venv/bin/python scripts/run_trade_review.py >> data/cro_ai_logs/trade_review.log 2>&1)
 
 # EXECUTION-QUALITY DECOMPOSITION (R0334, principal 2026-08-01): the sleeve's six execution
 # decisions -- entry, stop, target, sizing, trade management, exit timing -- scored SEPARATELY.
@@ -1317,7 +1448,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_execution_quality.py -> data/execution_quality.json, consumed by
 # scripts/run_trade_review.sleeve_profile; 14 closed PAPER trades at first measurement.
 # CONFIDENCE: committed-script (new this cycle)
-30 1,9,17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_execquality.lock .venv/bin/python scripts/run_execution_quality.py >> data/cro_ai_logs/execution_quality.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/run_execution_quality.py was an ops/execution organ bound to the retired crypto
+# executor and its Gate-0 staging ladder. The MT5 gateway carries its own cost, quality and guard
+# path under desks/mt5/.
+# (was: 30 1,9,17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_execquality.lock .venv/bin/python scripts/run_execution_quality.py >> data/cro_ai_logs/execution_quality.log 2>&1)
 
 # COPYTRADING SCREEN (R0140): Stage A, ZERO promotion authority. Two hypotheses live under the
 # word "copytrading" and they get opposite verdicts. H1 FOLLOW A LEAD TRADER is NOT TESTABLE from
@@ -1333,7 +1468,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # days apart the verdict is NO-DATA, never "promising".
 # EVIDENCE: scripts/screen_copytrading.py -> data/copytrading_screen.json + copytrading_panel.jsonl
 # CONFIDENCE: committed-script (new this cycle; OKX endpoints verified live, Binance 451s here)
-50 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_copytrade.lock .venv/bin/python scripts/screen_copytrading.py >> data/cro_ai_logs/copytrading.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/screen_copytrading.py
+# was an axis screen over the retired crypto-exchange universe. Its mechanism (funding, unlocks,
+# venue subsidy, on-chain supply) is venue-native to crypto exchanges and has no
+# Fusion-executable expression, so the screen went with the desk.
+# (was: 50 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_copytrade.lock .venv/bin/python scripts/screen_copytrading.py >> data/cro_ai_logs/copytrading.log 2>&1)
 
 # SLEEVE ALLOCATOR (R0141): risk across DISCRETIONARY sleeves by MARGINAL growth contribution.
 # Adding sleeves only multiplies growth if they are INDEPENDENT -- five sleeves all long crypto
@@ -1348,7 +1487,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # DAILY, after the resolver has marked the day's closes.
 # EVIDENCE: scripts/run_sleeve_allocator.py -> data/sleeve_allocation.json
 # CONFIDENCE: committed-script (new this cycle)
-25 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_alloc.lock .venv/bin/python scripts/run_sleeve_allocator.py >> data/cro_ai_logs/sleeve_alloc.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_sleeve_allocator.py
+# was an ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder.
+# The MT5 gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: 25 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_alloc.lock .venv/bin/python scripts/run_sleeve_allocator.py >> data/cro_ai_logs/sleeve_alloc.log 2>&1)
 
 # CALIBRATION PROBE (R0142): does this model family's stated probability mean ANYTHING? The whole
 # discretionary sizer consumes one number -- Kelly is f*=(pb-q)/b, so if p is noise the sizer is
@@ -1434,7 +1576,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 4x/day.
 # EVIDENCE: scripts/run_discretionary_max.py -> data/discretionary_max.json
 # CONFIDENCE: committed-script (new this cycle)
-15 1,7,13,19 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discmax.lock .venv/bin/python scripts/run_discretionary_max.py >> data/cro_ai_logs/disc_max.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/run_discretionary_max.py was a research/execution organ of the retired crypto-exchange
+# desk, deleted with it. The MT5 desk runs its own equivalent under desks/mt5/research/.
+# (was: 15 1,7,13,19 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discmax.lock .venv/bin/python scripts/run_discretionary_max.py >> data/cro_ai_logs/disc_max.log 2>&1)
 
 # DISCRETIONARY EDGE HUNT (R0152): find the NEXT discretionary edge, not just tune the current one.
 # The section had an optimiser (R0151 pushes the existing sleeve's hit rate) and a learner (R0139
@@ -1458,7 +1603,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # edge or the first one wearing a new name. DAILY.
 # EVIDENCE: scripts/run_discretionary_hunt.py -> data/discretionary_hunt.json + discretionary_edges.json
 # CONFIDENCE: committed-script (new this cycle)
-40 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dischunt.lock .venv/bin/python scripts/run_discretionary_hunt.py >> data/cro_ai_logs/disc_hunt.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/run_discretionary_hunt.py was a research/execution organ of the retired crypto-exchange
+# desk, deleted with it. The MT5 desk runs its own equivalent under desks/mt5/research/.
+# (was: 40 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dischunt.lock .venv/bin/python scripts/run_discretionary_hunt.py >> data/cro_ai_logs/disc_hunt.log 2>&1)
 
 # ---------------------------------------------------------------------------------------------
 # COST HUNT (R0198) -- the one growth lever that needs no proven edge.
@@ -1473,7 +1621,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 8h freshness contract trade_cost_view declares, with margin for a missed run.
 # EVIDENCE: scripts/run_cost_hunt.py -> data/cost_hunt.json
 # CONFIDENCE: committed-script (new this cycle)
-23 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costhunt.lock .venv/bin/python scripts/run_cost_hunt.py >> data/cro_ai_logs/cost_hunt.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_cost_hunt.py was an
+# ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder. The MT5
+# gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: 23 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costhunt.lock .venv/bin/python scripts/run_cost_hunt.py >> data/cro_ai_logs/cost_hunt.log 2>&1)
 
 # ---------------------------------------------------------------------------------------------
 # STRATEGY-FAMILY COVERAGE (R0200) -- what KINDS of edge the miners come back with.
@@ -1546,7 +1697,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # from this measurement again -- at that point the answer IS moving and the cadence should follow.
 # EVIDENCE: scripts/screen_carry_basis_path.py -> reports/carry_basis_path.json
 # CONFIDENCE: committed-script (new this cycle)
-20 4 1 * * cd "$QUANT_ROOT" && flock -n data/.cron_carrybasis.lock .venv/bin/python scripts/screen_carry_basis_path.py >> data/cro_ai_logs/carry_basis_path.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_carry_basis_path.py was an axis screen over the retired crypto-exchange
+# universe. Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to
+# crypto exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 20 4 1 * * cd "$QUANT_ROOT" && flock -n data/.cron_carrybasis.lock .venv/bin/python scripts/screen_carry_basis_path.py >> data/cro_ai_logs/carry_basis_path.log 2>&1)
 
 # --- L1.45 EXECUTION EXCITATION (capability hunt s4, 2026-08-01) ---------------------------
 # CEILING TYPE (L1.28c): DATA-ARRIVAL bound for both lines. Their inputs are the execution tape
@@ -1589,7 +1744,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # rather than a weak number that reads like a result.
 # EVIDENCE: scripts/run_moat_campaign.py -> reports/moat_campaign.json
 # CONFIDENCE: committed-script (new; first run may legitimately report BLOCKED on sample length)
-10 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatcamp.lock .venv/bin/python scripts/run_moat_campaign.py >> data/cro_ai_logs/moat_campaign.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_moat_campaign.py
+# was part of the crypto moat campaign. The desk's moat is now the MT5/Fusion tape
+# (docs/research/MOAT_NODE_SPEC.md), recorded by a different organ.
+# (was: 10 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatcamp.lock .venv/bin/python scripts/run_moat_campaign.py >> data/cro_ai_logs/moat_campaign.log 2>&1)
 
 # THE MOAT SCREEN AND ITS EXPLOIT LEG -- both were UNSCHEDULED, on the one dataset the desk owns
 # that the crowd cannot buy. `run_moat_campaign` (above) and `run_moat_utilisation` were in the
@@ -1611,8 +1769,15 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # scripts/promote_moat_survivors.py -> the pre-registration ledger.
 # CONFIDENCE: measured for the resolution arithmetic (17,424 bars at Holm z=2.64, read from
 # libs/research/slot_admission); the tape's own volume is NOT readable in this checkout.
-40 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatscreen.lock nice -n 19 .venv/bin/python scripts/screen_moat.py >> data/cro_ai_logs/moat_screen.log 2>&1
-55 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatpromote.lock .venv/bin/python scripts/promote_moat_survivors.py >> data/cro_ai_logs/moat_promote.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/screen_moat.py was an
+# axis screen over the retired crypto-exchange universe. Its mechanism (funding, unlocks, venue
+# subsidy, on-chain supply) is venue-native to crypto exchanges and has no Fusion-executable
+# expression, so the screen went with the desk.
+# (was: 40 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatscreen.lock nice -n 19 .venv/bin/python scripts/screen_moat.py >> data/cro_ai_logs/moat_screen.log 2>&1)
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/promote_moat_survivors.py was part of the crypto moat campaign. The desk's moat is now
+# the MT5/Fusion tape (docs/research/MOAT_NODE_SPEC.md), recorded by a different organ.
+# (was: 55 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatpromote.lock .venv/bin/python scripts/promote_moat_survivors.py >> data/cro_ai_logs/moat_promote.log 2>&1)
 # CHIEF RESEARCH OFFICER (principal 2026-08-01). The desk's SECOND BRAIN: a cross-family model
 # whose only job is to think, criticise, discover, prioritise and recommend -- never to implement.
 # Implementation agents execute what it validates; the separation is the point.
@@ -1731,7 +1896,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_real_campaign.py -> reports/real_campaign.json
 # CONFIDENCE: committed-script (measured 2026-08-01: 196 candidates over 2,018-2,439 OKX daily
 # bars; admitted set correlation 0.247 vs pool 0.047, 5.2x a random subset, p=0.002)
-0 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_realcamp.lock .venv/bin/python scripts/run_real_campaign.py >> data/cro_ai_logs/real_campaign.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): this campaign hunts a crypto-
+# exchange universe (OKX perpetual candles, the Binance Vision daily archive), and its
+# --venue binance-vision path imports scripts/fetch_binance_vision.py, deleted in dadac868 and
+# not restored. Scheduling it would fire a forbidden hunt that dies on ImportError. The script
+# and its arithmetic tests stay for the L0009 panel-depth lesson they pin.
+# (was: 0 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_realcamp.lock .venv/bin/python scripts/run_real_campaign.py >> data/cro_ai_logs/real_campaign.log 2>&1)
 # --- L1.46 CLOCK PROVENANCE (capability hunt s0, 2026-08-01) --------------------------------
 # CEILING TYPE (L1.28c): DATA-ARRIVAL bound, and the arrival granularity is EXACTLY ONE HOUR --
 # the moat tape rotates hourly (data/moat/<venue>/<SYMBOL>/YYYYMMDD_HH.jsonl.gz), so the fence's
@@ -1781,7 +1951,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # (265 closes booked $93.58 of estimated funding, not one differenced against venue truth),
 # FORFEITING (59/265 closes inside 1h of a settlement, z=+4.8), MIS-MARKED (41.5% of closes wrong
 # by >=0.5 settlement) and PHASE-BLIND (close rows carry no rail/reason field))
-43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundcap.lock .venv/bin/python scripts/check_funding_capture.py --report-only >> data/cro_ai_logs/funding_capture.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/check_funding_capture.py was an axis screen over the retired crypto-exchange universe.
+# Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to crypto
+# exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundcap.lock .venv/bin/python scripts/check_funding_capture.py --report-only >> data/cro_ai_logs/funding_capture.log 2>&1)
 
 # CROSS-SECTIONAL FUNDING SNAPSHOT (R0119 producer -- the crowding denominator).
 # `current_funding()` returns all ~855 USD-M perps at ONE instant and five production callers
@@ -1796,7 +1970,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # PHASE :07 -- not aligned to any funding stamp (00/04/08/12/16/20 UTC), and clear of the :4x
 # fence cluster so the tape is already written when check_crowding reads it at :46.
 # EVIDENCE: scripts/collect_funding_cross_section.py -> data/funding_cross_section.jsonl; §42
-7 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundxs.lock .venv/bin/python scripts/collect_funding_cross_section.py >> data/cro_ai_logs/funding_cross_section.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/collect_funding_cross_section.py was a crypto-exchange/on-chain data collector. The
+# venue it read is retired ground and the script was deleted with the desk; nothing on the MT5
+# book consumed it.
+# (was: 7 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundxs.lock .venv/bin/python scripts/collect_funding_cross_section.py >> data/cro_ai_logs/funding_cross_section.log 2>&1)
 
 # CROWDING FENCE (R0119 -- §42 capacity parity / L1.19 information decay).
 # The desk's capacity assumption is that its carry names are too small for funds to bother with,
@@ -1810,7 +1988,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # PHASE :46 -- inside the fence cluster (:40 clock provenance, :43 funding capture, :45), and 39
 # minutes after the collector so a snapshot is always on tape before it is read.
 # EVIDENCE: scripts/check_crowding.py -> data/crowding_status.json; CONSTITUTION L1.19 / §42
-46 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_crowding.lock .venv/bin/python scripts/check_crowding.py --report-only >> data/cro_ai_logs/crowding.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/check_crowding.py was
+# an axis screen over the retired crypto-exchange universe. Its mechanism (funding, unlocks,
+# venue subsidy, on-chain supply) is venue-native to crypto exchanges and has no
+# Fusion-executable expression, so the screen went with the desk.
+# (was: 46 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_crowding.lock .venv/bin/python scripts/check_crowding.py --report-only >> data/cro_ai_logs/crowding.log 2>&1)
 
 # FORECAST SCORER (L1.29 calibration). The desk had a forecast LOGGER and no SCORER, so
 # check_calibration sat OVERDUE with 7 unscored predictions -- the worst asymmetry available,
@@ -1859,7 +2041,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 00:20 UTC: early enough that the snapshot describes the day it is named for, clear of midnight.
 # EVIDENCE: scripts/snapshot_universe.py -> data/universe_snapshots.jsonl.gz (append-only)
 # CONFIDENCE: committed-script (first run recorded 851 symbols across 3 statuses)
-20 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_universe.lock .venv/bin/python scripts/snapshot_universe.py >> data/cro_ai_logs/universe_snapshot.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/snapshot_universe.py
+# was a crypto-exchange/on-chain data collector. The venue it read is retired ground and the
+# script was deleted with the desk; nothing on the MT5 book consumed it.
+# (was: 20 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_universe.lock .venv/bin/python scripts/snapshot_universe.py >> data/cro_ai_logs/universe_snapshot.log 2>&1)
 
 # RECOMMENDATION WORKER (principal 2026-08-01: "make claude keep up with recommendation
 # implementations, immediate, automated"). §41 made every recommendation reach a disposition and
@@ -1980,7 +2165,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # live-book concentration: HHI/greeks of the actual book -- sole importer of libs/portfolio/
 # concentration; unwired until 2026-08-04 (same defect class as the two rows above).
 # EVIDENCE: scripts/measure_live_book_concentration.py; CONFIDENCE: inferred (daily -- the book moves daily)
-55 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bookconc.lock .venv/bin/python scripts/measure_live_book_concentration.py >> data/cro_ai_logs/book_concentration.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/measure_live_book_concentration.py was an axis screen over the retired crypto-exchange
+# universe. Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to
+# crypto exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 55 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bookconc.lock .venv/bin/python scripts/measure_live_book_concentration.py >> data/cro_ai_logs/book_concentration.log 2>&1)
 
 # WEEKLY WHOLE-DESK RE-TRIAGE (principal 2026-08-04: "just like today, weekly the whole quant
 # gets sweeped to get maxxed out"). The daily layer (max_audit every cycle, daily_max defect
@@ -2006,7 +2195,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # holder_concentration 21 new rows (DEGRADED, 1 token error of 22); perpdex_funding 233,030 new
 # rows (aster 50,974 / lighter 131,299 / klines 50,757) + screen-on-discovery in the same run.
 # CONFIDENCE: measured (row counts above are from the runs, not estimates).
-15 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dexscreener.lock .venv/bin/python scripts/collect_dexscreener.py >> data/cro_ai_logs/collect_dexscreener.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/collect_dexscreener.py
+# was a crypto-exchange/on-chain data collector. The venue it read is retired ground and the
+# script was deleted with the desk; nothing on the MT5 book consumed it.
+# (was: 15 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dexscreener.lock .venv/bin/python scripts/collect_dexscreener.py >> data/cro_ai_logs/collect_dexscreener.log 2>&1)
 
 # GECKOTERMINAL SIGNED DEX TRADES (R0291) -- HOURLY, the OPPOSITE cadence argument to the
 # history collectors above: the venue serves only the LAST ~300 trades per pool (no paging,
@@ -2014,7 +2206,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # The ceiling type is DATA-ARRIVAL from the retention side: hourly is the floor that bounds
 # loss, and the collector flags per-pool window overflow so the residual loss is MEASURED,
 # never silent. ~14 keyless calls/run at 2.6s pacing vs the documented 30/min limit.
-43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_geckoterminal.lock .venv/bin/python scripts/collect_geckoterminal_trades.py >> data/cro_ai_logs/collect_geckoterminal.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/collect_geckoterminal_trades.py was a crypto-exchange/on-chain data collector. The
+# venue it read is retired ground and the script was deleted with the desk; nothing on the MT5
+# book consumed it.
+# (was: 43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_geckoterminal.lock .venv/bin/python scripts/collect_geckoterminal_trades.py >> data/cro_ai_logs/collect_geckoterminal.log 2>&1)
 
 # CIRCULATING-SUPPLY HISTORY -- the half of the unlock screen that can ONLY be built forward.
 # screen_unlock_supply_series is blocked on two inputs and they are NOT symmetric: the unlock
@@ -2039,7 +2235,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # data/circulating_supply_status.json (reports days_covered, never row count -- a thousand rows
 # collected in one afternoon is not a series).
 # CONFIDENCE: measured (6 of 6 ids written across two live runs 2026-08-05).
-10 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_circsupply.lock .venv/bin/python scripts/collect_circulating_supply.py >> data/cro_ai_logs/circulating_supply.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/collect_circulating_supply.py was a crypto-exchange/on-chain data collector. The venue
+# it read is retired ground and the script was deleted with the desk; nothing on the MT5 book
+# consumed it.
+# (was: 10 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_circsupply.lock .venv/bin/python scripts/collect_circulating_supply.py >> data/cro_ai_logs/circulating_supply.log 2>&1)
 
 # UNLOCK CALENDAR -- the recoverable half, now recurring (R0288). First-seen events append with
 # the supply OBSERVED AT COLLECTION, so a future event carries a genuine point-in-time
@@ -2052,7 +2252,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # forward_horizon_utc; a parse failure exits non-zero with the error in the status, never a
 # silent zero-append). CONFIDENCE: measured (first live run 2026-08-11: 368 protocols, 38,770
 # events, 271 forward cliffs, horizon 2026-09-10).
-55 5 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockcal.lock .venv/bin/python scripts/collect_unlock_calendar.py >> data/cro_ai_logs/unlock_calendar.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/collect_unlock_calendar.py was a crypto-exchange/on-chain data collector. The venue it
+# read is retired ground and the script was deleted with the desk; nothing on the MT5 book
+# consumed it.
+# (was: 55 5 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockcal.lock .venv/bin/python scripts/collect_unlock_calendar.py >> data/cro_ai_logs/unlock_calendar.log 2>&1)
 
 # CAPITAL-BASIS FENCE (R0287, L1.58): no published return without its declared denominator --
 # the Quantopian-2019 class the desk has hit three times (R0234, R0235, 13,155/4,500). Holds the
@@ -2061,8 +2265,14 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # cadences (minutes-hours), daily is sufficient to catch a new undeclared artifact within its
 # first day. EVIDENCE: scripts/check_capital_basis.py -> data/capital_basis_check.json.
 43 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_capital_basis.py >> data/cro_ai_logs/capital_basis.log 2>&1
-25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
-35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). on-chain holder-concentration
+# metric; there is no MT5-expressible instrument behind it, so it is untradeable-here by
+# definition.
+# (was: 25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1)
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). perpetual-DEX funding
+# collector. Perp funding is a crypto-exchange-native mechanism; its MT5 analogue is the broker
+# swap/carry surface, collected elsewhere.
+# (was: 35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1)
 
 # Spawner CEILING TYPE is INFORMATION-ARRIVAL: it converts corrected Stage-A survivors into paper
 # sleeves, and both of its inputs move at most daily -- screen verdicts (a screen campaign is a
@@ -2265,7 +2475,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # checkout reported NOT-READABLE-HERE with 4 missing paths, 10 screened-but-unrecorded names, 5
 # unread bybit depth levels and 14 scripts that open the tape and record nothing they read.
 # CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
-56 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moat_util.lock .venv/bin/python scripts/run_moat_utilisation.py >> data/cro_ai_logs/moat_utilisation.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_moat_utilisation.py
+# was part of the crypto moat campaign. The desk's moat is now the MT5/Fusion tape
+# (docs/research/MOAT_NODE_SPEC.md), recorded by a different organ.
+# (was: 56 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moat_util.lock .venv/bin/python scripts/run_moat_utilisation.py >> data/cro_ai_logs/moat_utilisation.log 2>&1)
 
 # ---------------------------------------------------------------------------------------------
 # THREE STAGE-A SCREENS THAT WERE BUILT AND THEN NOT RUN (2026-08-05).
@@ -2288,13 +2501,25 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # ---------------------------------------------------------------------------------------------
 # EVIDENCE: scripts/screen_announcement_diffusion.py -> data/announcement_diffusion_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_anndiff.lock nice -n 19 .venv/bin/python scripts/screen_announcement_diffusion.py >> data/cro_ai_logs/announcement_diffusion.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_announcement_diffusion.py was an axis screen over the retired crypto-exchange
+# universe. Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to
+# crypto exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_anndiff.lock nice -n 19 .venv/bin/python scripts/screen_announcement_diffusion.py >> data/cro_ai_logs/announcement_diffusion.log 2>&1)
 # EVIDENCE: scripts/screen_unlock_supply_series.py -> data/unlock_supply_series_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-25 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockseries.lock nice -n 19 .venv/bin/python scripts/screen_unlock_supply_series.py >> data/cro_ai_logs/unlock_supply_series.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_unlock_supply_series.py was an axis screen over the retired crypto-exchange
+# universe. Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to
+# crypto exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 25 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockseries.lock nice -n 19 .venv/bin/python scripts/screen_unlock_supply_series.py >> data/cro_ai_logs/unlock_supply_series.log 2>&1)
 # EVIDENCE: scripts/screen_venue_subsidy.py -> data/venue_subsidy_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-53 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_venuesub.lock nice -n 19 .venv/bin/python scripts/screen_venue_subsidy.py --probe-venues >> data/cro_ai_logs/venue_subsidy.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/screen_venue_subsidy.py
+# was an axis screen over the retired crypto-exchange universe. Its mechanism (funding, unlocks,
+# venue subsidy, on-chain supply) is venue-native to crypto exchanges and has no
+# Fusion-executable expression, so the screen went with the desk.
+# (was: 53 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_venuesub.lock nice -n 19 .venv/bin/python scripts/screen_venue_subsidy.py --probe-venues >> data/cro_ai_logs/venue_subsidy.log 2>&1)
 
 # NATURAL EXPERIMENT -- the desk's first CAUSAL study (R0207, 2026-08-05). Every hypothesis this
 # desk had ever tested was OBSERVATIONAL: an IC or a Sharpe on a correlational panel, defended by
@@ -2311,7 +2536,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_natural_experiment.py -> data/natural_experiment.json; row R0207
 # CONFIDENCE: committed-script (new this cycle; first run REFUSED on all three designs at the
 #   parallel-trends rail -- a refusal is a first-class result and no clock was opened)
-50 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_natexp.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/run_natural_experiment.py >> data/cro_ai_logs/natural_experiment.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/run_natural_experiment.py imports libs.autodiscovery.crypto_adapter, deleted with the
+# crypto-exchange desk. The natural-experiment method is universe-independent and worth
+# rebuilding on the MT5 book; the crypto adapter it was written against is not.
+# (was: 50 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_natexp.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/run_natural_experiment.py >> data/cro_ai_logs/natural_experiment.log 2>&1)
 # ---------------------------------------------------------------------------------------------
 # FOUR MORE ORGANS THAT ASKED TO BE SCHEDULED AND WERE NOT (2026-08-05, second batch).
 #
@@ -2333,22 +2562,40 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # ---------------------------------------------------------------------------------------------
 # EVIDENCE: scripts/collect_primary_market_flow.py -> data/primary_market_flow.jsonl
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-41 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_c.lock nice -n 19 .venv/bin/python scripts/collect_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/collect_primary_market_flow.py was a crypto-exchange/on-chain data collector. The venue
+# it read is retired ground and the script was deleted with the desk; nothing on the MT5 book
+# consumed it.
+# (was: 41 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_c.lock nice -n 19 .venv/bin/python scripts/collect_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow.log 2>&1)
 # ...and its consumer, 36min later, so it reads the collection that just closed the trading day.
 # EVIDENCE: scripts/screen_primary_market_flow.py -> data/primary_market_flow_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-17 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_s.lock nice -n 19 .venv/bin/python scripts/screen_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow_screen.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_primary_market_flow.py was an axis screen over the retired crypto-exchange
+# universe. Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to
+# crypto exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 17 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_s.lock nice -n 19 .venv/bin/python scripts/screen_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow_screen.log 2>&1)
 # The widened Deribit vol-market collector: daily snapshot is what accrues CALENDAR TIME on the
 # option chain, and calendar time is the binding constraint the gap-#5 screen measured (69 common
 # days against 1,068 needed). The weekly backfill widens history where a listed contract allows.
 # EVIDENCE: scripts/collect_deribit_vol_markets.py -> data/deribit_vol_markets.jsonl
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-17 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode snapshot >> data/cro_ai_logs/deribit_vol_markets.log 2>&1
-41 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode backfill >> data/cro_ai_logs/deribit_vol_markets.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). Deribit is a crypto-exchange
+# venue and may never be hunted again. Options intelligence for this desk comes from the MT5
+# book's own underlyings instead.
+# (was: 17 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode snapshot >> data/cro_ai_logs/deribit_vol_markets.log 2>&1)
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). Deribit is a crypto-exchange
+# venue and may never be hunted again. Options intelligence for this desk comes from the MT5
+# book's own underlyings instead.
+# (was: 41 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode backfill >> data/cro_ai_logs/deribit_vol_markets.log 2>&1)
 # ...and its consumer, 80min after the snapshot lands.
 # EVIDENCE: scripts/screen_vol_risk_premium.py -> data/vol_risk_premium_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-37 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_vrp.lock nice -n 19 .venv/bin/python scripts/screen_vol_risk_premium.py >> data/cro_ai_logs/vol_risk_premium.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/screen_vol_risk_premium.py was an axis screen over the retired crypto-exchange
+# universe. Its mechanism (funding, unlocks, venue subsidy, on-chain supply) is venue-native to
+# crypto exchanges and has no Fusion-executable expression, so the screen went with the desk.
+# (was: 37 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_vrp.lock nice -n 19 .venv/bin/python scripts/screen_vol_risk_premium.py >> data/cro_ai_logs/vol_risk_premium.log 2>&1)
 
 # ---------------------------------------------------------------------------------------------
 # LLM ROUTING EXPOSURE (L1.54 clause 1). Twelve-plus organs read the panel roster and, measured
@@ -2466,7 +2713,9 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   wiped data/ cannot silently disarm the baseline the alarm is measured against)
 # CONFIDENCE: committed-script + 10 tests, including the partial-outage case that would otherwise
 #   converge on a too-recent boundary and shout ROLLING
-20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bybit_archive.lock .venv/bin/python scripts/probe_bybit_archive.py >> data/cro_ai_logs/bybit_archive.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). Bybit venue archive probe;
+# Bybit may never be hunted again and the script was deleted with the desk.
+# (was: 20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bybit_archive.lock .venv/bin/python scripts/probe_bybit_archive.py >> data/cro_ai_logs/bybit_archive.log 2>&1)
 
 # R0313 VENUE-SIDE DELISTED-INSTRUMENT PROBE -- the dead names, asked for rather than reconstructed.
 # WHY IT EXISTS: snapshot_universe (R0239) fixes survivorship FORWARD and its own docstring leaves
@@ -2486,7 +2735,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   catalogue, and a catalogue is half a deliverable)
 # CONFIDENCE: 18 tests, including the pagination case that read "500 dead, 0 live" until the
 #   walk was fixed (3077 after), and the purge case where a venue drops a name it once reported
-35 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_delisted_probe.lock .venv/bin/python scripts/probe_delisted_instruments.py >> data/cro_ai_logs/delisted_probe.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/probe_delisted_instruments.py was a crypto-exchange/on-chain data collector. The venue
+# it read is retired ground and the script was deleted with the desk; nothing on the MT5 book
+# consumed it.
+# (was: 35 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_delisted_probe.lock .venv/bin/python scripts/probe_delisted_instruments.py >> data/cro_ai_logs/delisted_probe.log 2>&1)
 
 # ---------------------------------------------------------------------------------------------
 # STALE-DAEMON REPAIR (L1.28b detect->repair; installed live 2026-08-11, cycle commit pending).
@@ -2643,7 +2896,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # consumed by libs/research/lending_haircut.py <- idle_yield.reachable_floor +
 # screen_collateral_allocation.build_report; CONSTITUTION L1.51 (a clamp without a price)
 # CONFIDENCE: committed-script (new 2026-08-12); first run READ 6/6 protocols, $120.2B TVL-years
-12 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_lending_base_rates.lock .venv/bin/python scripts/collect_lending_risk_base_rates.py >> data/cro_ai_logs/lending_base_rates.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/collect_lending_risk_base_rates.py was a crypto-exchange/on-chain data collector. The
+# venue it read is retired ground and the script was deleted with the desk; nothing on the MT5
+# book consumed it.
+# (was: 12 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_lending_base_rates.lock .venv/bin/python scripts/collect_lending_risk_base_rates.py >> data/cro_ai_logs/lending_base_rates.log 2>&1)
 
 # --- PARTITION POWER (L1.63) -------------------------------------------------------------------
 # CADENCE: daily. Its input is the D1 funding panel, which appends one bar per symbol per day, so
@@ -2653,7 +2910,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (new this cycle); first run graded 4 robustness partitions over
 # 213 symbols x 2,384 days and found ALL FOUR WELDED -- including the vol-tercile axis that gates
 # REGISTRY promotion, sleeve sizing and LIVE at 15% of book.
-11 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_partition_power.py >> data/cro_ai_logs/partition_power.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18):
+# scripts/check_partition_power.py imports libs.research.crypto_regime, deleted with the
+# crypto-exchange desk. L1.63 still binds -- when the check is re-pointed at the MT5 regime
+# engine, UN-RETIRE this row rather than adding a new one, so the law keeps one scheduled
+# enforcement point.
+# (was: 11 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_partition_power.py >> data/cro_ai_logs/partition_power.log 2>&1)
 
 # --- MARGIN TOPOLOGY (L1.64) -------------------------------------------------------------------
 # The deployed sleeve's margin construction (spot wallet + separately-margined USDT-M short) was
@@ -2673,8 +2935,20 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # (the whole-book alternative) has NO keyless endpoint (both candidates 404, refusals recorded in
 # fetch_log) and stays UNMEASURED pending a keyed/manual dated read; dollar pricing of the clamp
 # correctly REFUSED on the molded paper book.
-29 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_margin_topology.py >> data/cro_ai_logs/margin_topology.log 2>&1
-37 6 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/check_margin_topology.py --collect >> data/cro_ai_logs/margin_topology.log 2>&1
+# RETIRED 2026-09-05 -- NOT a universe retirement, and this one is a RESTORATION CANDIDATE:
+# scripts/check_margin_topology.py imports libs.portfolio.margin_topology, which was deleted in
+# 1657d5f7. Margin topology is an MT5-relevant risk concept, so if that module returns, UN-RETIRE
+# these rows. They are parked here only because a row scheduling a script that cannot import is
+# the DEAD CRON class this file exists to prevent. L1.64 has no other scheduled enforcement point
+# while these are parked.
+# (was: 29 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_margin_topology.py >> data/cro_ai_logs/margin_topology.log 2>&1)
+# RETIRED 2026-09-05 -- NOT a universe retirement, and this one is a RESTORATION CANDIDATE:
+# scripts/check_margin_topology.py imports libs.portfolio.margin_topology, which was deleted in
+# 1657d5f7. Margin topology is an MT5-relevant risk concept, so if that module returns, UN-RETIRE
+# these rows. They are parked here only because a row scheduling a script that cannot import is
+# the DEAD CRON class this file exists to prevent. L1.64 has no other scheduled enforcement point
+# while these are parked.
+# (was: 37 6 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/check_margin_topology.py --collect >> data/cro_ai_logs/margin_topology.log 2>&1)
 
 # --- LIVE RECOVERY + VALIDATION JOBS (verified against VPS 2026-08-15) ------------------------
 # The recorder supervisor is a five-minute idempotent watchdog, so it also supplies bounded
@@ -2684,7 +2958,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: verified-live plus committed-script.
 
 # */5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recorder_supervisor.lock bash ops/start_recorders_nosudo.sh >> data/recorder_supervisor.log 2>&1
-20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_axis_shadows.lock .venv/bin/python scripts/run_axis_shadows.py >> data/cro_ai_logs/axis_shadows.log 2>&1
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_axis_shadows.py was
+# a research/execution organ of the retired crypto-exchange desk, deleted with it. The MT5 desk
+# runs its own equivalent under desks/mt5/research/.
+# (was: 20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_axis_shadows.lock .venv/bin/python scripts/run_axis_shadows.py >> data/cro_ai_logs/axis_shadows.log 2>&1)
 5 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cohort_integrity.lock .venv/bin/python scripts/check_cohort_integrity.py --report-only >> data/cro_ai_logs/cohort_integrity.log 2>&1
 15 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_gate_reachability.lock .venv/bin/python scripts/check_gate_reachability.py --report-only >> data/cro_ai_logs/gate_reachability.log 2>&1
 
@@ -2728,7 +3005,9 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   feeds cot_positioning_reversal generator via libs/autodiscovery/crypto_adapter.py)
 # NOTE: all three run on the USER TIMER PLANE (systemd), like the autodiscovery slices; the
 # cron plane is not used for them, so they carry SYSTEMD entries, not cron lines.
-SYSTEMD unit="quant-x-collector.timer" on="*:05" exec="scripts/collect_x_signals.py"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the X/social collector fed the
+# crypto sentiment axis and its systemd units (quant-x-collector.*) were deleted with the desk.
+# (was: SYSTEMD unit="quant-x-collector.timer" on="*:05" exec="scripts/collect_x_signals.py")
 SYSTEMD unit="quant-x-deepmine.timer" on="*-*-* 06,14,22:15:00" exec="scripts/deep_mine_x.py"
 SYSTEMD unit="quant-cot-fetch.timer" on="Fri *-*-* 20:30:00" exec="scripts/fetch_cot.py"
 
@@ -2739,16 +3018,46 @@ SYSTEMD unit="quant-cot-fetch.timer" on="Fri *-*-* 20:30:00" exec="scripts/fetch
 # 30-symbol chunk = the PROVEN memory-safe size on this 3.8GB/2-core box (50-symbol chunks
 # OOM-killed: CI pytest + moats hold ~1.2GB RSS, leaving <500MB for candidate series).
 # NOTE: user timer plane only, like the x-intel timers -- cron lines would double-run them.
-SYSTEMD unit="quant-autodiscovery-slice0.timer" on="*:0" exec="scripts/run_crypto_research.py"
-SYSTEMD unit="quant-autodiscovery-slice1.timer" on="*:10" exec="scripts/run_crypto_research.py"
-SYSTEMD unit="quant-autodiscovery-slice2.timer" on="*:20" exec="scripts/run_crypto_research.py"
-SYSTEMD unit="quant-autodiscovery-slice3.timer" on="*:30" exec="scripts/run_crypto_research.py"
-SYSTEMD unit="quant-autodiscovery-slice4.timer" on="*:40" exec="scripts/run_crypto_research.py"
-SYSTEMD unit="quant-autodiscovery-slice5.timer" on="*:50" exec="scripts/run_crypto_research.py"
-SYSTEMD unit="quant-autodiscovery-slice6.timer" on="*:3" exec="scripts/run_crypto_research.py"
-SYSTEMD unit="quant-autodiscovery-slice7.timer" on="*:13" exec="scripts/run_crypto_research.py"
-SYSTEMD unit="quant-autodiscovery-slice8.timer" on="*:23" exec="scripts/run_crypto_research.py"
-SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_crypto_research.py"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice0.timer" on="*:0" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice1.timer" on="*:10" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice2.timer" on="*:20" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice3.timer" on="*:30" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice4.timer" on="*:40" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice5.timer" on="*:50" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice6.timer" on="*:3" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice7.timer" on="*:13" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice8.timer" on="*:23" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_crypto_research.py")
 
 # --- RISK UNITS ON THE SIZING PATH (L1.67) -----------------------------------------------------
 # A stop distance multiplied by the wrong instrument's contract size produces a lot that is
@@ -2862,6 +3171,166 @@ SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_cryp
 # A writer that stages outside the tree and publishes in one pass declares ORPHAN-SAFE and
 # stops reporting; today that is fxblue_track_record_miner and cohort_and_identity.
 41 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_orphanable_writers.py >> data/cro_ai_logs/orphanable_writers_fence.log 2>&1
+
+# =============================================================================================
+# COMMITTED USER-TIMER PLANE, COMPLETE (2026-09-05)
+# Sixty-nine ops/*.timer units were committed between 2026-08-20 (the root cron death) and
+# 2026-09-04 without a row here, so the scheduler-manifest fence reported "the manifest has
+# rotted behind the committed units" on every push and CI was red for a reason no code change
+# could fix. Every schedule below is read from the unit file itself (OnCalendar verbatim; for
+# monotonic timers the OnBootSec/OnUnitActiveSec pair), and every exec path is the unit's own
+# ExecStart mapped onto this repo. Three units needed their unit file corrected first, not this
+# file: quant-regime-monitor ran a cwd-relative path the fence could not map, shadow-forward
+# hid its script in a `python -c` import string, and quant-coverage-ratchet quoted its path.
+# CONFIDENCE: committed-unit, all of them.
+# NOTE: quant-autodiscovery{,-h8} and the ten slices above run scripts/run_crypto_research.py,
+# a crypto-exchange hypothesis factory. They are recorded because the units are committed and
+# the DR floor must be truthful; whether they may still fire is the MT5 mandate's question
+# (principal decision pending), not this file's.
+SYSTEMD unit="full-pipeline.timer" on="*-*-* 06:00:00" exec="desks/mt5/side_channels/full_pipeline.py"
+SYSTEMD unit="hourly-controller.timer" on="hourly" exec="hourly_controller.py"
+SYSTEMD unit="qquant-shadow.timer" on="*-*-* *:00/30:00" exec="scripts/monitor_mt5_shadow_sync.py"
+# RETIRED 2026-09-05: dead cron. scratch/ is untracked, so this ExecStart has never resolved
+# inside the repo. Nothing to restore and nothing to schedule; the row is kept as a record of
+# what the unit once ran.
+# (was: SYSTEMD unit="quant-aggregator.timer" on="*:0/30:05" exec="scratch/master_aggregator_final.py")
+SYSTEMD unit="quant-alert-canary.timer" on="*-*-* *:17:00" exec="scripts/run_alert_canary.py"
+SYSTEMD unit="quant-artifact-monotonic.timer" on="*:0/5" exec="scripts/check_artifact_monotonic.py"
+SYSTEMD unit="quant-authority-ratchet.timer" on="*:2/10" exec="scripts/check_authority_ratchet.py"
+SYSTEMD unit="quant-auto-push.timer" on="*:0/10" exec="scripts/auto_push.sh"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery-h8.timer" on="*:05" exec="scripts/run_crypto_research.py")
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). the crypto autodiscovery
+# slices. All 24 quant-autodiscovery*.{service,timer} units were deleted; research now runs
+# through desks/mt5/research/.
+# (was: SYSTEMD unit="quant-autodiscovery.timer" on="*:0/30" exec="scripts/run_crypto_research.py")
+SYSTEMD unit="quant-bar-span.timer" on="*-*-* 06:53" exec="scripts/check_bar_span.py"
+SYSTEMD unit="quant-blindspot-autofix.timer" on="*:0/6" exec="scripts/blindspot_autofix.py"
+SYSTEMD unit="quant-brain-chain.timer" on="*-*-* 09:00:00 UTC" exec="ops/run_daily_brain_chain.sh"
+SYSTEMD unit="quant-capratchet-auto.timer" on="*:0/12" exec="scripts/run_capability_ratchet.py"
+SYSTEMD unit="quant-cert-yield.timer" on="*:14,44" exec="scripts/check_cert_yield.py"
+SYSTEMD unit="quant-certify-gauntlet.timer" on="*:10" exec="scripts/certify_gauntlet.py"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_cost_hunt.py was an
+# ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder. The MT5
+# gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: SYSTEMD unit="quant-cost-hunt.timer" on="*-*-* *:23:00" exec="scripts/run_cost_hunt.py")
+SYSTEMD unit="quant-cost-ident.timer" on="*-*-* *:20:00" exec="scripts/run_cost_identification.py"
+SYSTEMD unit="quant-cot-zcache.timer" on="Tue,Wed,Sat 07:35" exec="scripts/refresh_cot_zcache.py"
+SYSTEMD unit="quant-deepseek.timer" on="*-*-* 04:20:00 UTC" exec="ops/run_deepseek_factory.sh"
+SYSTEMD unit="quant-desk-cycles.timer" on="*:2,17,32,47" exec="scripts/check_desk_cycles.py"
+SYSTEMD unit="quant-desk-module-drift.timer" on="*:0/10" exec="scripts/check_desk_module_drift.py"
+SYSTEMD unit="quant-desk-parity.timer" on="*:11/30" exec="scripts/check_desk_code_parity.py"
+SYSTEMD unit="quant-desk-pull.timer" on="boot+60 then every 120" exec="ops/pull_desk_state.sh"
+SYSTEMD unit="quant-desk-tasks.timer" on="*:9/15" exec="scripts/check_desk_tasks.py"
+SYSTEMD unit="quant-dig-roi.timer" on="*:09,39" exec="scripts/check_dig_roi.py"
+SYSTEMD unit="quant-disk-guard.timer" on="*-*-* 02,08,14,20:12:00" exec="scripts/disk_guard.py"
+SYSTEMD unit="quant-doc-replay-fence.timer" on="*:*:00" exec="scripts/check_doc_replay_fence.py"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_drills.py was an
+# ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder. The MT5
+# gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: SYSTEMD unit="quant-drills.timer" on="*-*-* 03:40:00" exec="scripts/run_drills.py")
+SYSTEMD unit="quant-external-pipeline.timer" on="*:05" exec="ops/run_external_pipeline.sh"
+SYSTEMD unit="quant-external-promote.timer" on="*:50" exec="scripts/promote_external_to_queue.py"
+SYSTEMD unit="quant-fence-battery.timer" on="*-*-* 05:20:00" exec="ops/run_fence_battery.sh"
+SYSTEMD unit="quant-forward-clock.timer" on="*:00,30" exec="scripts/check_forward_clock_ratchet.py"
+SYSTEMD unit="quant-fxblue-harvest.timer" on="*-*-* 00/2:19:00" exec="desks/mt5/scripts/fxblue_track_record_miner.py"
+SYSTEMD unit="quant-gap-wirer.timer" on="Tue *-*-* 18:00:00 Europe/Dublin" exec="ops/run_gap_wirer.sh"
+SYSTEMD unit="quant-governance-pulse.timer" on="*:03,18,33,48" exec="scripts/check_governance_pulse.py"
+SYSTEMD unit="quant-growth-audit.timer" on="*-*-* *:00/30:00" exec="scripts/run_growth_audit.py"
+SYSTEMD unit="quant-job-manifest.timer" on="*:07/30" exec="scripts/check_job_manifest.py"
+SYSTEMD unit="quant-kimi-hunter.timer" on="*-*-* 05:40:00 UTC" exec="scripts/kimi_hunter.py"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_live_guard.py was
+# an ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder. The
+# MT5 gateway carries its own cost, quality and guard path under desks/mt5/.
+# (was: SYSTEMD unit="quant-live-guard.timer" on="*-*-* *:00/5:00" exec="scripts/run_live_guard.py")
+SYSTEMD unit="quant-live-readiness.timer" on="*:45" exec="scripts/check_live_readiness.py"
+SYSTEMD unit="quant-manifest-dispatch.timer" on="boot+3min then every 5min" exec="scripts/run_manifest_dispatch.py"
+SYSTEMD unit="quant-miner-conversion.timer" on="*-*-* 05:40:00 UTC" exec="scripts/check_miner_conversion.py"
+SYSTEMD unit="quant-moat-backup.timer" on="*-*-* 03:55:00" exec="scripts/run_moat_backup.py"
+SYSTEMD unit="quant-moneypath-fence.timer" on="*:0/5" exec="scripts/check_moneypath_fence.py"
+SYSTEMD unit="quant-mt5-suite.timer" on="*-*-* 01,07,13,19:47:00" exec="scripts/check_mt5_suite.py"
+SYSTEMD unit="quant-organ-catchup.timer" on="*-*-* *:00/5:00" exec="scripts/organ_catchup.py"
+SYSTEMD unit="quant-p0-watch.timer" on="*:3/15" exec="scripts/check_p0_liveness.py"
+SYSTEMD unit="quant-perishability.timer" on="*-*-* 05:40:00" exec="scripts/check_perishability.py"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18). perpetual-DEX funding
+# collector. Perp funding is a crypto-exchange-native mechanism; its MT5 analogue is the broker
+# swap/carry surface, collected elsewhere.
+# (was: SYSTEMD unit="quant-perpdex.timer" on="*:0/15" exec="scripts/collect_perpdex_funding.py")
+SYSTEMD unit="quant-prompt-prefix.timer" on="*-*-* 04,16:50:00 UTC" exec="scripts/check_prompt_prefix.py"
+SYSTEMD unit="quant-queue-guard.timer" on="*:4/10" exec="scripts/check_research_queue.py"
+SYSTEMD unit="quant-quota-resume.timer" on="boot+180 then every 300" exec="scripts/check_quota_resume.py"
+SYSTEMD unit="quant-regime-monitor.timer" on="*-*-* *:08/30:00" exec="desks/mt5/research/regime_monitor.py"
+SYSTEMD unit="quant-research-health-weekly.timer" on="Sun 06:15" exec="scripts/check_research_health.py"
+SYSTEMD unit="quant-research-health.timer" on="*:03,33" exec="scripts/check_research_health.py"
+SYSTEMD unit="quant-restore-drill.timer" on="Sun 06:25" exec="scripts/run_restore_drill.py"
+SYSTEMD unit="quant-sameday-fence.timer" on="*:20" exec="scripts/check_sameday_pipeline.py"
+SYSTEMD unit="quant-seed-miners.timer" on="*:22" exec="ops/run_seed_miners_hourly.sh"
+SYSTEMD unit="quant-sge-premium.timer" on="*-*-* 07:45:00" exec="desks/mt5/research/fetch_sge_premium.py"
+SYSTEMD unit="quant-suite-verdict.timer" on="Sun *-*-* 04:00:00" exec="ops/run_suite_verdict.sh"
+SYSTEMD unit="quant-unit-health.timer" on="*:0/10" exec="scripts/check_unit_health.py"
+SYSTEMD unit="quant-unit-parity.timer" on="*:48" exec="scripts/check_unit_parity.py"
+SYSTEMD unit="quant-universe-registry.timer" on="*:3/20" exec="scripts/repair_universe_registry.py"
+SYSTEMD unit="quant-video-hunter.timer" on="*-*-* 10:30:00 UTC" exec="ops/run_video_hunter.sh"
+SYSTEMD unit="quant-watchdog.timer" on="boot+2min then every 5min" exec="scripts/watchdog.py"
+SYSTEMD unit="quant-worktree-reap.timer" on="*-*-* 04:20:00" exec="scripts/check_worktree_reap.py"
+SYSTEMD unit="quant-youtube-corpus.timer" on="*:37" exec="scripts/collect_youtube_corpus.py"
+SYSTEMD unit="shadow-forward.timer" on="*-*-* 05:00:00" exec="desks/mt5/research/shadow_forward.py"
+
+# --- ORGANS BORN UNWIRED, 2026-08-27..09-04 (birth-property fence, 2026-09-05) ----------------
+# Eight scripts were committed by seat builds with no cadence, no caller and no runbook -- each
+# one's own docstring names the clock it expected. Wired here at the cadence the docstring asks
+# for; each writes its artifact under data/ and exits non-zero only on a finding it names.
+# CONFIDENCE: committed-script (slots chosen here, clear of every existing exact minute).
+
+# scripts/run_desk_integrity.py -- reads the PAIRS that a rollback breaks (canon vs report,
+# registry vs state, manifest vs installed timer). --report is the audit half only: the three
+# repairers it can run (universe floor, artifact rollback, schedule parity --fix-schedules)
+# change tracked files and stay a principal decision, not a cadence chosen in a CI repair.
+# EVIDENCE: scripts/run_desk_integrity.py -> data/desk_integrity.json
+26 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_desk_integrity.lock .venv/bin/python scripts/run_desk_integrity.py --report >> data/cro_ai_logs/desk_integrity.log 2>&1
+
+# scripts/check_promotion_readiness.py -- what each certificate would be worth and be sized at,
+# BEFORE anything is armed (LAWS III.16). Daily, after shadow_forward's 07:58 pass has written
+# the forward evidence it ranks. It arms nothing.
+# EVIDENCE: scripts/check_promotion_readiness.py -> data/promotion_readiness.json
+12 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_promotion_readiness.py >> data/cro_ai_logs/promotion_readiness.log 2>&1
+
+# scripts/check_capability_registry.py -- ORPHANED / TEST_ONLY / WIRED / ACTIVE for every
+# capability the repo defines ("answers it on a clock"). Daily.
+# EVIDENCE: scripts/check_capability_registry.py -> data/capability_registry.json
+20 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_capability_registry.py >> data/cro_ai_logs/capability_registry.log 2>&1
+
+# scripts/check_dual_context_imports.py -- a module importable two ways must import two ways;
+# the box-only ImportError class measured three times on 2026-08-29. Daily (~60s over 898
+# modules).
+# EVIDENCE: scripts/check_dual_context_imports.py -> data/dual_context_imports.json
+50 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_dual_context_imports.py >> data/cro_ai_logs/dual_context_imports.log 2>&1
+
+# scripts/check_backtest_realism.py -- a published framework's bug list run as a standing audit
+# of OUR engine ("WHY IT RUNS ON A CLOCK: a cost model is edited more often than it is audited,
+# and the failure is silent by construction"). Daily.
+# EVIDENCE: scripts/check_backtest_realism.py -> data/backtest_realism.json
+55 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_backtest_realism.py >> data/cro_ai_logs/backtest_realism.log 2>&1
+
+# scripts/act_on_findings.py -- deep-audit findings and data blocks become routed work daily
+# (principal 2026-08-30); exits non-zero on an UNROUTED block by design. Reads data/deep_audit.json
+# whenever the audit has written one.
+# EVIDENCE: scripts/act_on_findings.py -> data/act_on_findings.json
+20 10 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/act_on_findings.py >> data/cro_ai_logs/act_on_findings.log 2>&1
+
+# scripts/run_research_intake.py -- THE caller for the semantic space, novelty engine,
+# tri-alignment gate and halving ladder (LAWS III.16); reports the toll, kills nothing yet.
+# Daily under a lock: the docket is >20k candidates.
+# EVIDENCE: scripts/run_research_intake.py -> data/research_intake.json
+45 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_research_intake.lock .venv/bin/python scripts/run_research_intake.py >> data/cro_ai_logs/research_intake.log 2>&1
+
+# scripts/purge_untradeable_certs.py -- archives certificates on symbols the broker does not
+# list ("IDEMPOTENT ... safe on a timer"); refuses on a truncated universe. Daily, after the
+# hourly gauntlet has minted.
+# EVIDENCE: scripts/purge_untradeable_certs.py -> desks/mt5/data/UNTRADEABLE_CERTS.json
+30 11 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/purge_untradeable_certs.py >> data/cro_ai_logs/purge_untradeable_certs.log 2>&1
 
 # HOURLY DISCOVERY (principal 2026-09-05: every miner, proposer and data organ hourly at
 # minimum). One pass an hour, each organ in its own subprocess on a bandit-weighted budget behind

@@ -5,8 +5,9 @@ ledger rows for them, retires nothing, and reports success. The armed book would
 the decay protection it was just given, and the only symptom would be an absence -- which is
 what L1.28a exists to forbid.
 
-The gateway cannot be imported here (it imports MetaTrader5, which is Windows-only), so the
-names are read from its source the same way desks/mt5/tests/test_risk_units.py reads gateway.py.
+GOLD_WINDOWS lives in `mt5desk/decision_core.py` since the 2026-09-05 split (the gateway
+re-exports it); the labels are read from that source as a LITERAL, so a window that became a
+computed value would fail here rather than silently drift from the promoter's names.
 """
 from __future__ import annotations
 
@@ -20,11 +21,12 @@ for p in (str(DESK), str(DESK / "research")):
         sys.path.insert(0, p)
 
 _GATEWAY_SRC = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+_CORE_SRC = (DESK / "mt5desk" / "decision_core.py").read_text("utf-8")
 
 
 def _gold_windows_from_source() -> list[str]:
-    """The `label` of every entry in the gateway's GOLD_WINDOWS literal."""
-    tree = ast.parse(_GATEWAY_SRC)
+    """The `label` of every entry in the decision core's GOLD_WINDOWS literal."""
+    tree = ast.parse(_CORE_SRC)
     for node in tree.body:
         if not isinstance(node, ast.Assign):
             continue
@@ -38,7 +40,7 @@ def _gold_windows_from_source() -> list[str]:
             assert isinstance(label, ast.Constant), "the window label must stay a literal"
             out.append(str(label.value))
         return out
-    raise AssertionError("GOLD_WINDOWS not found in gateway.py")
+    raise AssertionError("GOLD_WINDOWS not found in decision_core.py")
 
 
 def test_promoter_names_match_the_windows_the_gateway_emits() -> None:

@@ -67,13 +67,27 @@ EX_TEMPFAIL = 75
 #: them on one YIELD line and the pass keeps a rolling total per organ, so the report says how
 #: many cells, claims, tasks, endpoints and datasets each hour bought, and an organ that runs and
 #: yields nothing reads as exactly that.
+#: `stages_measured` and `cell_types` are the MEASUREMENT organs' yield. Without them a pass that
+#: measured the whole funnel reads as `organs_with_zero_yield`, which is how an organ that
+#: produces knowledge rather than cells eventually gets cut for producing nothing.
 YIELD_KEYS = ("cells_proposed", "donated_rows", "proposals", "claims_new", "tasks_queued",
-              "tasks", "endpoints", "acquired", "targets", "discovered", "candidates")
+              "tasks", "endpoints", "acquired", "targets", "discovered", "candidates",
+              "cases_joined", "symbols_calibrated", "symbols_unmeasured",
+              "stages_measured", "cell_types")
 YIELD_PREFIX = "YIELD "
 
 #: name -> (how to call it). "run_budget" = run(budget_s=...); "run" = run(); "main" = main().
 #: Ordered cheap-to-heavy within each group; the pass itself re-orders by staleness.
 ORGANS: dict[str, str] = {
+    # MEASUREMENT, and cheap: 4s and 1s against the full 47k-card docket, measured 2026-09-05.
+    # The funnel ledger names the binding stage; the allocator turns the same measurement into
+    # the trial budget. The proposers below call `trial_allocator.observed()` themselves rather
+    # than reading its artifact, so nothing here depends on the pass order -- these two exist on
+    # the roster so the measurement is refreshed every hour and its report never goes stale while
+    # the thing it measures moves. Neither proposes a cell, neither touches a gate, both are
+    # read-only.
+    "conversion_ledger": "run",
+    "trial_allocator": "run",
     # world miners: mechanism claims from public ground
     "repo_miner": "run",
     "deep_forest_miner": "run_budget",
@@ -91,10 +105,13 @@ ORGANS: dict[str, str] = {
     "alpha_evolution": "run_budget",
     "style_premia_sweep": "run_budget",
     "cross_asset_graph": "run_budget",
+    "world_causal_graph": "run_budget",
     "anomaly_factory": "run_budget",
     "tail_alpha_search": "run_budget",
     "survivor_distiller": "run_budget",
     "factor_model_coevolution": "run_budget",
+    # execution: the digital twin of every live intent (reads the gateway's ledgers; cheap)
+    "execution_twin": "run_budget",
 }
 
 

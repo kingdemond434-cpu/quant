@@ -337,11 +337,180 @@ def role_audit(panel: Any) -> dict[str, Any]:
             "unparseable": None if rows else "model returned no delimited line; nothing stored"}
 
 
+#: Where the world crawler deposits what it finds.
+_INTEL_DIRS = (ROOT / "desks" / "mt5" / "data" / "intelligence", ROOT / "data" / "intelligence")
+#: Artifacts already turned into proposals. Without this the newest batch is re-proposed hourly.
+_CRAWL_CURSOR = ROOT / "data" / "crawler_hypothesis_cursor.json"
+#: WHAT THE EVIDENCE IS WORTH, by the kind of number it carries. A broker's financing rate is a
+#: cost the desk actually pays and can price; a COT print is a real positioning series; a
+#: calendar actual-vs-forecast is a measurable surprise. A scraped "+36382% return" is
+#: survivorship with a number attached -- it cannot ground a mechanism, so it ranks last.
+_PAYLOAD_VALUE = {
+    "swap_long": 400, "swap_short": 400,          # financing -- carry, priced and payable
+    "actual": 350, "forecast": 350, "previous": 300,  # macro surprise -- measurable
+    "net_position": 350, "long_pct": 300, "short_pct": 300,  # positioning -- a real series
+    "nearby_pcts": 120,
+    "stats": 40,                                   # a claimed track record, unverifiable
+}
+#: No single source may fill the batch. Six artifacts from one scraper produce six variants of
+#: one idea; the cross-source batch is where a relation nothing found alone can appear.
+_MAX_PER_SOURCE = 4
+
+#: An artifact earns a place in the evidence batch by carrying something a MECHANISM could rest
+#: on -- a priced instrument, a financing cost, a positioning print, a real track record. A title
+#: alone never qualifies: "Gold-Medal Performance in Coding Competitions" matched the trading
+#: term "gold" and entered the corpus as a commodity signal.
+_EVIDENCE_FIELDS = ("stats", "swap_long", "swap_short", "nearby_pcts", "actual", "forecast",
+                    "previous", "net_position", "long_pct", "short_pct")
+
+
+def _mt5_symbols() -> list[str]:
+    """Instruments the desk can actually trade, from the bars it actually holds."""
+    d = ROOT / "desks" / "mt5" / "data" / "universe"
+    return sorted({f.name.split("_")[0] for f in d.glob("*_H1.parquet")}) if d.exists() else []
+
+
+def _crawl_evidence(limit: int = 24) -> list[dict[str, Any]]:
+    """The crawler's most tradeable artifacts, newest first, never re-served.
+
+    350,021 artifacts were collected in 14 days and NOT ONE reached a backtest, because a crawl
+    artifact is not a hypothesis -- it is a URL, a title, and sometimes a number. Nothing on this
+    desk turned one into a claim. This is that missing stage: it selects rows carrying evidence a
+    mechanism could rest on and hands them to the panel to reason FROM, rather than asking the
+    panel to invent a mechanism out of nothing.
+    """
+    seen: set[str] = set()
+    with suppress(OSError, json.JSONDecodeError):
+        seen = set(json.loads(_CRAWL_CURSOR.read_text("utf-8")).get("used") or [])
+
+    rows: list[tuple[float, dict[str, Any]]] = []
+    for base in _INTEL_DIRS:
+        if not base.exists():
+            continue
+        for src in (d for d in base.iterdir() if d.is_dir()):
+            for f in sorted(src.glob("*.json"), reverse=True)[:4]:
+                try:
+                    mtime = f.stat().st_mtime
+                    data = json.loads(f.read_text("utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                items = data if isinstance(data, list) else [
+                    v for vs in data.values() if isinstance(vs, list) for v in vs]
+                for r in items:
+                    if not isinstance(r, dict):
+                        continue
+                    url = str(r.get("url") or r.get("title") or "")
+                    if not url or url in seen:
+                        continue
+                    has_payload = any(r.get(k) for k in _EVIDENCE_FIELDS)
+                    has_symbol = bool(r.get("symbols"))
+                    if not (has_payload or has_symbol):
+                        continue
+                    grade = str(r.get("evidence_grade") or "")
+                    # Evidence QUALITY dominates recency: the newest scrape is not the most
+                    # useful one, and ranking by mtime alone filled every batch with whichever
+                    # scraper had run last.
+                    worth = max((_PAYLOAD_VALUE.get(k, 0) for k in _EVIDENCE_FIELDS if r.get(k)),
+                                default=0)
+                    score = (worth * 10_000.0 + (5_000.0 if grade == "A" else 0.0)
+                             + (2_000.0 if r.get("symbols") else 0.0) + mtime / 1e6)
+                    rows.append((score, {"source": src.name, "url": url,
+                                         "title": str(r.get("title") or "")[:150],
+                                         "symbols": r.get("symbols") or [],
+                                         "grade": grade,
+                                         "payload": {k: r[k] for k in _EVIDENCE_FIELDS if r.get(k)}}))
+    rows.sort(key=lambda kv: -kv[0])
+    out: list[dict[str, Any]] = []
+    per_source: dict[str, int] = {}
+    for _, r in rows:
+        n = per_source.get(r["source"], 0)
+        if n >= _MAX_PER_SOURCE:
+            continue
+        per_source[r["source"]] = n + 1
+        out.append(r)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def role_crawler(panel: Any) -> dict[str, Any]:
+    """Crawl artifacts become MT5 hypotheses -- the stage the world crawler never had."""
+    ev = _crawl_evidence()
+    if not ev:
+        return {"role": "crawler", "skipped": "no unused crawl artifact carries tradeable evidence"}
+    try:
+        system, _ = _rich_prompt()
+    except Exception as exc:
+        return {"role": "crawler", "error": f"rich prompt unavailable: {type(exc).__name__}: {exc}"}
+
+    syms = _mt5_symbols()
+    dead = _graveyard()
+    props: list[dict[str, str]] = []
+    used_models: list[str] = []
+    per_batch: dict[str, int] = {}
+    # Batches of six: enough evidence to find a relation ACROSS artifacts, small enough that the
+    # model quotes the specific number rather than generalising over a wall of text.
+    batches = [ev[i:i + 6] for i in range(0, len(ev), 6)]
+    for i, batch in enumerate(batches):
+        lines = []
+        for e in batch:
+            pay = json.dumps(e["payload"])[:200] if e["payload"] else ""
+            lines.append(f"  - [{e['source']}] {e['title']}"
+                         + (f" | symbols={e['symbols']}" if e["symbols"] else "")
+                         + (f" | data={pay}" if pay else ""))
+        user = (
+            "OBSERVATIONS the desk's own crawler collected from the world. They are EVIDENCE, "
+            "not hypotheses -- your job is to say what they make TESTABLE:\n"
+            + "\n".join(lines)
+            + "\n\nTRADEABLE INSTRUMENTS (nothing outside this list exists for this desk):\n  "
+            + ", ".join(syms[:80])
+            + "\n\nALREADY DEAD OR ALREADY OWNED -- do not re-propose:\n"
+            + "\n".join(f"  - {d}" for d in dead)
+            + "\n\nPropose 3 hypotheses that THIS EVIDENCE makes testable on the instruments "
+              "above. Each must cite what in the evidence motivates it -- a hypothesis that "
+              "would read the same with the evidence deleted is not grounded and is worthless "
+              "here. One per line, exactly:\n"
+              "NAME | MECHANISM (<=25 words) | DATA SOURCE | TEST | KILL CONDITION | "
+              "EVENT | CONTEXT | DIRECTION\n"
+              "The last three are the CLAIM'S OWN AXES, ONE word each from these lists, chosen "
+              "because the mechanism says so -- never to fill the field:\n"
+              f"  EVENT:     {', '.join(_AXIS_EVENT)}\n"
+              f"  CONTEXT:   {', '.join(_AXIS_CONTEXT)}\n"
+              f"  DIRECTION: {', '.join(_AXIS_DIRECTION)}\n"
+              "If the evidence does not pick an axis, propose a different hypothesis rather than "
+              "guessing. No preamble, no headings. Any line without seven '|' is discarded.")
+        try:
+            r = panel.ask("generation", system, user, max_tokens=1200, temperature=0.9)
+        except Exception:
+            continue
+        got = _parse_proposals(r.text)
+        for g in got:
+            g["lens"] = "WORLD EVIDENCE"
+            g["origin"] = "world_crawler"
+            g["evidence"] = [e["url"] for e in batch][:6]
+        props.extend(got)
+        per_batch[f"batch{i}"] = len(got)
+        used_models.append(r.model)
+
+    # Only artifacts that actually reached a model are burned -- a batch lost to a panel error
+    # must come back on the next run rather than being silently consumed.
+    burned = [e["url"] for i, b in enumerate(batches) if f"batch{i}" in per_batch for e in b]
+    if burned:
+        prev: list[str] = []
+        with suppress(OSError, json.JSONDecodeError):
+            prev = list(json.loads(_CRAWL_CURSOR.read_text("utf-8")).get("used") or [])
+        _CRAWL_CURSOR.write_text(json.dumps({"used": (prev + burned)[-5000:]}), "utf-8")
+
+    return {"role": "crawler", "model": ",".join(sorted(set(used_models)))[:120],
+            "evidence_used": len(burned), "batches": per_batch,
+            "proposals": props, "raw_lines": sum(per_batch.values()), "parsed": len(props)}
+
+
 def main() -> int:
     from libs.research import free_panel as panel
 
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--roles", default="generate,feedback,audit")
+    ap.add_argument("--roles", default="generate,crawler,feedback,audit")
     args = ap.parse_args()
 
     now = datetime.now(tz=UTC)
@@ -352,7 +521,8 @@ def main() -> int:
           f"{'  cooling: ' + str(list(health['cooling_down'])) if health['cooling_down'] else ''}")
 
     results: list[dict[str, Any]] = []
-    runners = {"generate": role_generate, "feedback": role_feedback, "audit": role_audit}
+    runners = {"generate": role_generate, "crawler": role_crawler,
+               "feedback": role_feedback, "audit": role_audit}
     for name in [r.strip() for r in args.roles.split(",") if r.strip()]:
         fn = runners.get(name)
         if fn is None:

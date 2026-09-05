@@ -198,29 +198,96 @@ def vault(url: str, raw: bytes) -> str:
 #: Timeframe tokens, multilingual where the word differs. Used only to ANNOTATE a lead -- the
 #: compiler decides what becomes executable, and this module never guesses a family.
 _TF = re.compile(r"\b(M1|M5|M15|M30|H1|H4|D1|W1|MN|1m|5m|15m|30m|1h|4h|daily|weekly|"
-                 r"分钟|小时|日线|時間足|日足)\b", re.IGNORECASE)
+                 r"分钟|小时|日线|分鐘|日線|週線|時間足|日足|週足|분봉|일봉|주봉|дневн|недельн|"
+                 r"intraday|intradía|intradiário|journalier|giornaliero|täglich|günlük|dzienn|"
+                 r"nến ngày|รายวัน|harian|दैनिक)\b", re.IGNORECASE)
 
 #: Mechanism vocabulary. A HIT IS A LEAD, NEVER A FAMILY. The compiler admits a family only when
 #: the page names a registered one explicitly with params; this list exists so a lead can say
 #: what it is ABOUT and steer the family-free search, which is the desk's own rule that a family
 #: may not be guessed from a buzzword.
+#: WORLD REGISTER (2026-09-05, principal: "deep forests in ALL major languages"). Each pattern
+#: now carries the word in every script the desk mines -- traditional Chinese, Vietnamese,
+#: Thai, Indonesian, Hindi, the European languages, Arabic, Turkish, Hebrew, Polish, the Nordic
+#: languages -- so a Thai or Polish page is annotated with what it is ABOUT rather than read as
+#: prose with no mechanism. Written as literals: a lexicon in escapes is unreadable.
 _MECH = {
-    "breakout": r"breakout|break out|突破|ブレイク|돌파|пробой|ruptura",
-    "mean_reversion": r"mean revers|reversion|回归|逆張り|평균회귀|возврат",
-    "momentum": r"momentum|trend follow|动量|趋势|モメンタム|추세|импульс|tendencia",
-    "carry": r"carry trade|swap rate|息差|carry|キャリー|캐리",
-    "session": r"asian session|london open|new york open|亚盘|欧盘|美盘|東京時間|ロンドン",
-    "gap": r"\bgap\b|跳空|窓開け|갭",
-    "volatility": r"volatility|波动率|ボラティリティ|변동성|волатильность",
-    "seasonality": r"seasonal|day of week|turn of month|季节性|曜日|계절성",
-    "correlation": r"correlation|相关性|相関|상관관계|корреляц",
-    "orderflow": r"order flow|liquidity|流动性|オーダーフロー|유동성|ликвидн",
+    "breakout": r"breakout|break out|突破|ブレイク|돌파|пробой|пробій|ruptura|phá vỡ|ทะลุ|"
+                r"penembusan|"
+                r"ब्रेकआउट|ausbruch|cassure|rottura|rompimento|kırılım|פריצה|wybici|uitbraak|"  # noqa: RUF001
+                r"utbrott|"
+                r"udbrud|utbrudd|läpimur|اختراق",
+    "mean_reversion": r"mean revers|reversion|回归|回歸|逆張り|평균회귀|возврат|đảo chiều|hồi quy|"
+                      r"กลับตัว|pembalikan|रिवर्सल|umkehr|rückkehr|retournement|inversione|"
+                      r"reversión|"
+                      r"reversão|dönüş|היפוך|odwrócen|omkeer|vändning|vending|käänne|انعكاس",
+    "momentum": r"momentum|trend follow|动量|趋势|動量|趨勢|モメンタム|추세|импульс|tendencia|"
+                r"xu hướng|"
+                r"động lượng|โมเมนตัม|แนวโน้ม|tren\b|मोमेंटम|ट्रेंड|tendance|tendenza|tendência|"
+                r"trendi|mwelekeo|زخم|اتجاه",
+    "carry": r"carry trade|swap rate|息差|carry|キャリー|캐리|кэрри|chênh lệch lãi suất|"
+             r"ส่วนต่างดอกเบี้ย|zinsdifferenz|différentiel de taux|cupom cambial|taşıma",  # noqa: RUF001
+    "session": r"asian session|london open|new york open|亚盘|欧盘|美盘|東京時間|ロンドン|런던장|"
+               r"뉴욕장|"
+               r"лондон|нью-йорк|phiên|เปิดตลาด|sesi pagi|handelsschluss|séance|seduta|sesión|"
+               r"pregão|"
+               r"seans|sesj",
+    "gap": r"\bgap\b|跳空|缺口|窓開け|갭|гэп|khoảng trống|แก๊ป|kurslücke|hueco|luka",
+    "volatility": r"volatility|波动率|波動率|ボラティリティ|변동성|волатильн|biến động|"
+                  r"ความผันผวน|"
+                  r"volatilitas|वोलैटिलिटी|volatilität|volatilité|volatilità|volatilidad|"
+                  r"volatilidade|"
+                  r"oynaklık|תנודתיות|zmienność|volatiliteit|volatilitet|volatiliteetti|تذبذب",  # noqa: RUF001
+    "seasonality": r"seasonal|day of week|turn of month|季节性|季節性|曜日|계절성|сезонн|mùa vụ|"
+                   r"ฤดูกาล|"
+                   r"musiman|मौसमी|saisonal|saisonnalité|stagionalità|estacionalidad|sazonalidade|"
+                   r"mevsimsel|sezonow|seizoen|säsong|sæson|sesong|kausi|موسمي",
+    "correlation": r"correlation|相关性|相關性|相関|상관관계|корреляц|tương quan|ความสัมพันธ์|"
+                   r"korelasi|"
+                   r"सहसंबंध|korrelation|corrélation|correlazione|correlación|correlação|"
+                   r"korelasyon|"
+                   r"מתאם|korelacj|correlatie|korrelasjon|korrelaatio|ارتباط",
+    "orderflow": r"order flow|liquidity|流动性|流動性|オーダーフロー|유동성|ликвидн|thanh khoản|"
+                 r"สภาพคล่อง|likuiditas|लिक्विडिटी|orderfluss|liquidité|liquidità|liquidez|"
+                 r"likidite|"
+                 r"נזילות|płynność|liquiditeit|likviditet|likviditeetti|سيولة",
     # zh practitioner register (2026-09-04): basis / calendar-spread / roll, the night session,
     # arbitrage, positioning -- the words a 七禾网 interview or a competition write-up uses.
-    "basis": r"basis|基差|升水|贴水|跨期|换月|展期|term structure|期限结构",
-    "arbitrage": r"arbitrage|套利|跨市|跨品种|内外盘|沪伦比|金银比|金油比|cointegrat|协整",
-    "night_session": r"夜盘|night session|收盘前|尾盘|早盘|开盘后",
-    "positioning": r"positioning|持仓量|多空比|主力|cot report|净持仓",
+    "basis": r"basis|基差|升水|贴水|跨期|换月|換月|展期|轉倉|term structure|期限结构|ベーシス|限月|"
+             r"베이시스|базис|contango|backwardation|cơ sở|เบสิส|vencimiento|vencimento|vade",
+    "arbitrage": r"arbitrage|套利|跨市|跨品种|内外盘|沪伦比|金银比|金油比|cointegrat|协整|裁定|"
+                 r"차익거래|"
+                 r"арбитраж|arbitraje|arbitragem|arbitraggio",
+    "night_session": r"夜盘|夜盤|night session|收盘前|尾盘|早盘|开盘后|ナイトセッション|夜間|야간|"
+                     r"вечерн|ข้ามคืน|qua đêm|after-hours|overnight",
+    "positioning": r"positioning|持仓量|多空比|主力|cot report|净持仓|未平倉|建玉|미결제약정|"
+                   r"수급|외국인|"
+                   r"открыт интерес|khối ngoại|ต่างชาติ|asing|ओपन इंटरेस्ट|positionierung|"
+                   r"positionnement|posizionamento|posicionamiento|posicionamento|法人|籌碼",
+    # THE INDIRECT CHANNELS (2026-09-05): policy, flows, inventories, auctions -- the words a
+    # central-bank release, a customs table or a harvest report uses, in the languages they
+    # are written in, so a Brazilian soy page or a CBRT statement is a lead about a pair.
+    "policy": r"rate decision|central bank|intervention|央行|加息|降息|升息|干预|干預|介入|"
+              r"政策金利|"
+              r"日銀|기준금리|한은|ставк|интервенц|цб рф|lãi suất|ngân hàng nhà nước|ดอกเบี้ย|ธปท|"
+              r"suku bunga|bank indonesia|ब्याज दर|आरबीआई|leitzins|ezb|taux directeur|bce|tassi|"
+              r"tipos de interés|tasa de interés|banxico|selic|copom|bacen|faiz|tcmb|"
+              r"merkez bankası|"  # noqa: RUF001
+              r"ריבית|בנק ישראל|stóp procentow|nbp|rpp|riksbank|norges bank|nationalbank|"
+              r"korkopäätö|"
+              r"sarb|cbrt|rbi|mas\b|hkma|boj|fomc|البنك المركزي|ساما|فائدة",
+    "flow": r"fund flows|etf flows|exports|imports|remittances|northbound|southbound|资金流|資金流|"
+            r"北向|南下|港股通|出口|進口|实需|輸出|投信|수출|экспорт|експорт|dòng tiền|xuất khẩu|"
+            r"ส่งออก|ekspor|"
+            r"निर्यात|export|fret|flux|flujo|fluxo|exportações|ihracat|eksport|vracht|frakt|vienti|"
+            r"صادرات",
+    "inventory": r"inventor(?:y|ies)|stockpile|warehouse stocks|harvest|crop|wasde|库存|庫存|"
+                 r"产量|在庫|"
+                 r"재고|запас|урожа|tồn kho|สต็อก|stok|persediaan|भंडार|lagerbestand|ernte|récolte|"
+                 r"scorte|raccolto|existencias|cosecha|estoque|safra|hasat|zapas|voorraad|lager|"
+                 r"skörd|høst|avling|varasto|مخزون",
+    "auction": r"auction|tender results|入札|国债拍卖|국채 입찰|аукцион|офз|leilão|subasta|asta|"
+               r"adjudication|ihale|przetarg|veiling|auktion|emissione|adjudicación",
 }
 _MECH_RE = {k: re.compile(v, re.IGNORECASE) for k, v in _MECH.items()}
 
@@ -642,6 +709,134 @@ SEEDS = (
     "https://www.cfachina.org/",
     "https://futures.hexun.com/",
     "https://futures.eastmoney.com/",
+    # ---- THE WORLD FOREST (principal 2026-09-05: "every place deep forest for all edges") ------
+    #
+    # One or two HUBS per region whose links lead outward into that region's practitioner
+    # ground, in that region's language. `research/deep_forest_miner.py` works the same
+    # regions by ROUTE (search index, platform APIs, feeds, archives) and feeds every URL it
+    # finds into this frontier; these seeds are where the link-walk starts when the frontier
+    # has nothing from that region yet. Seeds, never limits.
+    # ja
+    "https://fx.minkabu.jp/",
+    "https://kabutan.jp/news/marketnews/",
+    "https://media.rakuten-sec.net/",
+    "https://zenn.dev/topics/systemtrade",
+    # ko
+    "https://www.paxnet.co.kr/",
+    "https://velog.io/tags/퀀트",
+    "https://ecos.bok.or.kr/",
+    # zh-Hant (TW / HK)
+    "https://www.ptt.cc/bbs/Stock/index.html",
+    "https://www.ptt.cc/bbs/Option/index.html",
+    "https://www.wantgoo.com/",
+    "https://www.macromicro.me/blog",
+    "https://news.cnyes.com/news/cat/forex",
+    "https://www.etnet.com.hk/www/tc/news/categorized_news.php?category=commentary",
+    "https://www.hkex.com.hk/News/Research-Reports?sc_lang=en",
+    # sea (sg / vn / th / id / my / ph)
+    "https://forums.hardwarezone.com.sg/forums/money-mind.31/",
+    "https://www.investingnote.com/",
+    "https://f319.com/",
+    "https://cafef.vn/thi-truong-chung-khoan.chn",
+    "https://pantip.com/forum/sinthorn",
+    "https://stock2morrow.com/",
+    "https://investasi.kontan.co.id/",
+    "https://klse.i3investor.com/web/blog/list",
+    "https://www.pinoyinvestor.com/",
+    # in / south asia
+    "https://tradingqna.com/latest",
+    "https://forum.valuepickr.com/latest",
+    "https://blog.quantinsti.com/",
+    "https://zerodha.com/varsity/",
+    "https://www.mcxindia.com/market-data",
+    # anz
+    "https://hotcopper.com.au/",
+    "https://www.aussiestockforums.com/forums/",
+    "https://www.rba.gov.au/publications/rdp/",
+    "https://www.sharetrader.co.nz/",
+    # mena (ar / tr / he)
+    "https://www.arabictrader.com/",
+    "https://www.argaam.com/",
+    "https://www.bloomberght.com/",
+    "https://evds2.tcmb.gov.tr/",
+    "https://www.globes.co.il/",
+    "https://www.boi.org.il/en/",
+    # africa
+    "https://www.moneyweb.co.za/",
+    "https://www.resbank.co.za/en/home/what-we-do/statistics",
+    "https://nairametrics.com/",
+    "https://www.businessdailyafrica.com/",
+    "https://www.cbe.org.eg/en/",
+    "https://www.bkam.ma/",
+    # west (en)
+    "https://www.elitetrader.com/et/",
+    "https://forum.wilmott.com/",
+    "https://quant.stackexchange.com/questions?tab=votes&pagesize=50",
+    "https://www.quantconnect.com/forum",
+    "https://forums.babypips.com/latest",
+    "https://www.forexpeacearmy.com/community/forums/",
+    "https://quantpedia.com/blog/",
+    "https://alphaarchitect.com/blog/",
+    "https://macrosynergy.com/research/",
+    "https://www.cmegroup.com/insights/economic-research.html",
+    "https://www.cboe.com/insights/",
+    "https://www.trade2win.com/",
+    "https://www.bankofengland.co.uk/working-paper/working-papers",
+    "https://www.bankofcanada.ca/research/staff-working-papers/",
+    # institutional
+    "https://www.imf.org/en/Publications/WP",
+    "https://www.ecb.europa.eu/pub/research/working-papers/html/index.en.html",
+    "https://www.federalreserve.gov/econres/feds/index.htm",
+    "https://www.newyorkfed.org/research/staff_reports/index.html",
+    "https://www.bis.org/cbspeeches/index.htm",
+    "https://www.usda.gov/oce/commodity/wasde",
+    "https://www.jodidata.org/oil/",
+    "https://www.icco.org/statistics/",
+    "https://www.ico.org/new_historical.asp",
+    "https://www.gold.org/goldhub/data",
+    "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+    "https://www.treasurydirect.gov/auctions/announcements-data-results/",
+    "https://alfred.stlouisfed.org/",
+    # eu (de / fr / it / es / nl)
+    "https://www.wallstreet-online.de/diskussion/",
+    "https://stock3.com/",
+    "https://www.bundesbank.de/de/publikationen/forschung/diskussionspapiere",
+    "https://www.boursorama.com/bourse/forum/",
+    "https://forum.finanzaonline.com/",
+    "https://www.x-trader.net/",
+    "https://www.iex.nl/forum/",
+    "https://data.snb.ch/",
+    # nordics
+    "https://www.riksbank.se/en-gb/statistics/",
+    "https://www.norges-bank.no/en/topics/Statistics/",
+    "https://www.nationalbanken.dk/en/what-we-do/statistics",
+    "https://www.suomenpankki.fi/fi/tilastot/",
+    # east eu (pl / cz / hu / ua)
+    "https://www.stockwatch.pl/",
+    "https://nbp.pl/statystyka-i-sprawozdawczosc/",
+    "https://www.cnb.cz/en/statistics/",
+    "https://www.mnb.hu/en/statistics",
+    "https://bank.gov.ua/ua/statistic",
+    # ru (full depth)
+    "https://forum.mfd.ru/forum/",
+    "https://t.me/s/markettwits",
+    "https://t.me/s/russianmacro",
+    "https://www.moex.com/ru/marketdata/",
+    "https://www.cbr.ru/statistics/",
+    "https://rosstat.gov.ru/",
+    "https://habr.com/ru/hubs/finance/",
+    # latam (pt / es)
+    "https://www.infomoney.com.br/mercados/",
+    "https://clubedovalor.com.br/blog/",
+    "https://quantbrasil.com.br/",
+    "https://www.bcb.gov.br/publicacoes/wps",
+    "https://www.conab.gov.br/info-agro/safras",
+    "https://www.eleconomista.com.mx/mercados/",
+    "https://www.banxico.org.mx/SieInternet/",
+    "https://si3.bcentral.cl/Siete/",
+    "https://www.cochilco.cl/",
+    "https://www.rava.com/",
+    "https://www.bcra.gob.ar/PublicacionesEstadisticas/Principales_variables.asp",
 )
 
 

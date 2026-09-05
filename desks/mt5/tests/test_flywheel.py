@@ -189,14 +189,25 @@ def _gw_exec(names: tuple[str, ...], consts: tuple[str, ...], ns: dict) -> dict:
 
 
 def _gw_ns(tmp_path: Path) -> dict:
+    from mt5desk import decision_core as _dc
     logs: list[str] = []
+    # The bracket arithmetic (`day_range`, `bracket_spec`, `bracket_from_bars`) is the decision
+    # core's since the 2026-09-05 split; the ledger writers stay in the gateway and are exec'd
+    # here over the real core.
     ns: dict = {"json": json, "pd": pd, "np": np, "datetime": datetime, "UTC": UTC,
                 "timedelta": timedelta, "log": logs.append, "_logs": logs,
                 "now": lambda: "2026-09-04T07:05:00+00:00", "_state_vector_id": lambda: "sv1",
                 "_release_id": lambda: "rel1",
-                "DECISIONS": tmp_path / "decision_ledger.jsonl", "BASE": tmp_path}
-    return _gw_exec(("_record_decision", "_record_vetoed_bracket", "day_range", "bracket_spec"),
-                    ("ATR_N", "RR"), ns)
+                "DECISIONS": tmp_path / "decision_ledger.jsonl", "BASE": tmp_path,
+                # The row now carries the book it was decided inside; `allocator_book` is the
+                # gateway's own three-file read, stubbed here so the ledger writer is measured
+                # and not the allocator artifacts.
+                "allocator_book": lambda: ({"gold_asia": 0.05, "x": 0.03}, "allocator book (ok)"),
+                "_PF_CTX": {"at": "", "book": None, "why": ""},
+                "day_range": _dc.day_range, "bracket_spec": _dc.bracket_spec,
+                "bracket_from_bars": _dc.bracket_from_bars, "ATR_N": _dc.ATR_N, "RR": _dc.RR}
+    return _gw_exec(("_record_decision", "_decision_portfolio_context",
+                     "_record_vetoed_bracket"), (), ns)
 
 
 def _last_day_bars(hours: range, day: str = "2026-09-04") -> pd.DataFrame:
@@ -217,6 +228,47 @@ def test_record_decision_appends_one_json_line_with_the_state_vector(tmp_path) -
     assert len(rows) == 1
     assert rows[0]["reason"] == "margin_guard" and rows[0]["taken"] is False
     assert rows[0]["state_vector_id"] == "sv1" and rows[0]["time"]
+    # THE COUNTERFACTUAL FIELDS (2026-09-05). Nothing could price "what if 0.5x / limit / trail"
+    # off the old hand-rolled dict, because the size chosen, the execution chosen, the exit rule
+    # and the book the decision was made inside were never on the row. They are now, defaulted
+    # so a legacy caller writes a superset rather than a different schema.
+    assert rows[0]["size_mult"] == 1.0
+    assert rows[0]["execution"] == "pending_stop"        # a buy_stop is not a market order
+    assert rows[0]["exit_rule"] == "fixed_tp"
+    assert rows[0]["veto_reason"] == "margin_guard"      # not taken -> the filter that said no
+    assert rows[0]["portfolio_context"] == {"h": 0.05, "n_book": 2, "total_heat": 0.08,
+                                            "why": "allocator book (ok)"}
+    # A TAKEN row carries no veto reason, and a sideless one is not called a pending stop.
+    ns["_record_decision"](sleeve="gold_asia", symbol="XAUUSD", side=None, taken=True,
+                           reason="placed")
+    taken = json.loads((tmp_path / "decision_ledger.jsonl").read_text().splitlines()[-1])
+    assert taken["veto_reason"] == "" and taken["execution"] == "market"
+
+
+def test_the_portfolio_context_is_read_once_a_minute_and_never_raises(tmp_path) -> None:
+    """`allocator_book()` is three disk reads and one pass records many rows, so the book is
+    memoised per minute. A failure costs the context and never an order."""
+    ns = _gw_ns(tmp_path)
+    calls: list[int] = []
+
+    def _book():
+        calls.append(1)
+        return {"gold_asia": 0.05}, "ok"
+    ns["allocator_book"] = _book
+    for _ in range(5):
+        ns["_decision_portfolio_context"]("gold_asia")
+    assert len(calls) == 1, "the book was re-read within the same minute"
+
+    def _boom():
+        raise OSError("disk")
+    ns["allocator_book"] = _boom
+    ns["_PF_CTX"]["at"] = ""                              # force a refresh
+    assert ns["_decision_portfolio_context"]("gold_asia") == {"book": None, "why": "OSError: disk"}
+    # No book at all is the reason, not a crash and not a fabricated heat.
+    ns["allocator_book"] = lambda: (None, "no pf_allocation.json")
+    ns["_PF_CTX"]["at"] = ""
+    assert ns["_decision_portfolio_context"]("gold_asia") == {
+        "book": None, "why": "no pf_allocation.json"}
 
 
 def test_record_decision_never_raises(tmp_path) -> None:

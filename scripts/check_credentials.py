@@ -47,37 +47,38 @@ class Credential:
 #: Ordered by consequence, not alphabetically: the money path first, then what unblocks the most
 #: dark capability, then the rest. `unlocks`/`without` are the two columns worth reading.
 CREDENTIALS: tuple[Credential, ...] = (
-    Credential(
-        name="binance_live.json",
-        shape=("api_key", "api_secret"),
-        unlocks="LIVE futures order placement",
-        without="the live executor refuses to place; testnet and research are unaffected",
-        how="Binance API management -> create key -> enable Futures trading, DISABLE withdrawals, "
-            "and set an IP allow-list to this box. Withdrawal permission is never required and "
-            "granting it converts a key leak into a total loss rather than a bad trade.",
-        tier="money", cost="free (funded account required)"),
-    Credential(
-        name="binance_live_spot.json",
-        shape=("api_key", "api_secret"),
-        unlocks="LIVE spot leg of the cash-and-carry",
-        without="the spot leg refuses; the futures leg alone is NOT the strategy, so the carry "
-                "sleeve stays flat rather than running half-hedged",
-        how="same Binance key management, Spot trading enabled, withdrawals DISABLED. A separate "
-            "key from the futures one, so revoking either does not take both legs down.",
-        tier="money", cost="free (funded account required)"),
+    # RETIRED 2026-09-05 (universe mandate): `binance_live.json` and `binance_live_spot.json`
+    # unlocked LIVE futures placement and the cash-and-carry spot leg. Both executors are deleted
+    # and no organ on this desk may place an order on a crypto exchange, so a row telling a reader
+    # how to mint those keys is an instruction to rebuild the desk that was just retired.
+    #
+    # The two TESTNET rows below stay, and only for one reason, stated so nobody prunes them as
+    # leftovers: they are the Tier-3 DEAD-MAN RAIL's keys. run_deadman_switch.py (never-touch),
+    # run_deadman_reconciliation.py and run_deadman_stranded_sweep.py read these exact filenames
+    # to reconcile and close positions the retired venue may still hold. Losing them does not
+    # retire a strategy, it strands real money with nothing watching it.
+    #
+    # Their `how` fields no longer carry the venue's signup URLs. This desk is not opening new
+    # accounts on a universe it may not hunt; the keys either already exist on the box or the rail
+    # is honestly BLOCKED, and an inventory that reads like an onboarding guide is exactly the
+    # second-desk signal check_mt5_purity exists to catch.
     Credential(
         name="binance_testnet.json",
         shape=("api_key", "api_secret"),
-        unlocks="futures TESTNET execution -- the staging path every change ships through",
-        without="staging cannot run, so the only way to exercise the order path is live",
-        how="https://testnet.binancefuture.com -> log in with GitHub -> API key shown on the page",
+        unlocks="the Tier-3 dead-man rail's futures leg: reconciliation and stranded-position "
+                "close-out on the retired venue",
+        without="stranded futures positions from the retired era cannot be seen or closed -- the "
+                "one remaining path by which this desk can still lose real money goes dark",
+        how="already provisioned on the trading box; not re-issued. If absent, the rail reports "
+            "BLOCKED and an operator restores it from the existing account -- no new key is minted",
         tier="money"),
     Credential(
         name="binance_spot_testnet.json",
         shape=("api_key", "api_secret"),
-        unlocks="spot TESTNET execution",
-        without="the spot half of staging is unexercised",
-        how="https://testnet.binance.vision -> log in with GitHub -> generate HMAC key",
+        unlocks="the Tier-3 dead-man rail's spot leg -- same rail, other half of the book",
+        without="the spot half of the stranded sweep is blind, so a residual balance is invisible",
+        how="already provisioned on the trading box; not re-issued. Same restore path as the "
+            "futures leg above",
         tier="money"),
     Credential(
         name="llm_panel.json",

@@ -399,6 +399,25 @@ def sweep() -> dict:
 
     meta = _read(UNIVERSE / "universe.json") or {}
     symbols = sorted(p.stem.replace("_H1", "") for p in UNIVERSE.glob("*_H1.parquet"))
+    # ALPHABETICAL ORDER STARVES THE GROUND THAT PAYS, and this sweep has no rotation cursor to
+    # correct it: it restarts from the first symbol every run and is killed at a stage timeout,
+    # so the same head is re-swept forever and the tail is never reached at all. Measured
+    # 2026-09-05 (research/conversion_ledger): this sweep's own overnight_gap_decay on fx_exotic
+    # is the desk's single best cell type at 18 certificates from 122 trials (14.8%), against
+    # 0.03% for the equity ground that took 61.5% of the whole docket. Interleaving by measured
+    # certification yield means a run cut short at ANY point has spent itself on the mix the ten
+    # gates have actually rewarded, and the explore floor inside `trial_allocator` keeps every
+    # class present in every prefix so nothing is abandoned. Order only: no family is dropped, no
+    # screen moves, and every cell still faces the identical gauntlet.
+    try:
+        import trial_allocator as _ta
+        _w = _ta.class_weights(_ta.observed())
+        if _w:
+            symbols = _ta.order_symbols(symbols, _w)
+            print("  yield-ordered sweep: "
+                  + ", ".join(f"{c}={_w[c]:.0%}" for c in sorted(_w)))
+    except Exception as _exc:                      # a measurement outage must not stop the sweep
+        print(f"  yield ordering unavailable ({type(_exc).__name__}: {_exc}); alphabetical")
     hypotheses: list[dict] = []
     gaps: dict[str, int] = {}
     errors: dict[str, int] = {}

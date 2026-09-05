@@ -1,21 +1,28 @@
-"""ORDER-BOOK MICROSTRUCTURE STATE -- the alignment and de-contamination primitives for the
-Stage-A screen of the desk's #1 ranked untested mechanism class.
+"""ORDER-BOOK MICROSTRUCTURE STATE -- the alignment and de-contamination primitives for any
+depth-of-market tape.
 
-WHY THIS MODULE EXISTS AND WHAT IT REFUSES TO DO. `scripts/screen_orderbook_state.py` asks whether
-resting-depth STATE at a bar boundary predicts the NEXT bar's return. Every prior attempt on the
-neighbouring class died the same death -- book state is CONCURRENT with price, so a raw correlation
-is a restatement of the move that just happened wearing the vocabulary of a forecast. This module
-holds the two things that decide whether that death is avoided:
+VENUE-NEUTRAL BY CONSTRUCTION, AND REPOINTED AT THE MT5 TAPE (2026-09-05). This module was first
+written against a crypto-exchange order-book recorder, and that recorder is gone. Nothing here
+went with it, because nothing here was ever about that venue: every function takes ARRAYS and
+PLAIN ROWS and returns numbers. The subject is resting-depth STATE at a bar boundary and whether
+it predicts the NEXT bar's return -- a question the MT5/Fusion universe asks in exactly the same
+form, because MT5 publishes depth-of-market (`MarketBookGet`) and a tick tape with volume. When
+the desk's MT5 tick/DOM recorder lands, it feeds this module directly: hand `depth_snapshots` rows
+carrying a millisecond stamp and bid/ask level arrays and every construction below works unchanged.
+
+WHAT THIS MODULE REFUSES TO DO. Every prior attempt on this mechanism class died the same death --
+book state is CONCURRENT with price, so a raw correlation is a restatement of the move that just
+happened wearing the vocabulary of a forecast. This module holds the two things that decide
+whether that death is avoided:
 
   (1) THE ALIGNMENT. Fixed, wall-clock-anchored, half-open bars, and a target priced only from
       prints AT OR AFTER the bar's right edge, so the signal can never touch the window it is
       asked to predict. `Alignment` carries the rule as data and every artifact echoes it --
       charter section 26 clause 4: unstated alignment voids the screen.
   (2) THE RESIDUALISATION. `residualise` orthogonalises the state against the SAME-BAR return
-      using a beta fitted on STRICTLY PRIOR bars only. A full-sample beta would be the same leak
-      `moat_features._expanding_z` was written to kill -- the residual at bar k would depend on
-      returns that had not happened yet -- and it would be invisible, because it looks like
-      preprocessing rather than like a decision.
+      using a beta fitted on STRICTLY PRIOR bars only. A full-sample beta would leak: the residual
+      at bar k would depend on returns that had not happened yet, and it would be invisible,
+      because it looks like preprocessing rather than like a decision.
 
 WHAT THE RESIDUAL IS AND WHY IT IS TRADEABLE. resid[k] = state[k] - (a_k + b_k * r[k]), where r[k]
 is the return realised OVER bar k and (a_k, b_k) come from bars strictly before k. Every input is
@@ -24,26 +31,21 @@ decision is taken. That is the whole point: subtracting the concurrent return is
 because the concurrent return is already known when the bet is placed. Subtracting the NEXT bar's
 return would not be, and nothing here can do it -- `residualise` never indexes forward.
 
-NO I/O, NO TAPE PARSING OF ITS OWN. Depth rows are parsed by `libs.hypmax.moat_mine._depth_snaps`
--- the audited reader that sorts levels, drops crossed books and understands BOTH recorder schemas
-(`k="d"` from run_recorder{,_spot}.py, `k="depth"` from run_recorder_bybit.py). A second reader
-here would be a second place for the mixed-schema silent-zero bug that already scarred
-`moat_audit.py`. Trade PRICES are passed in as arrays by the caller, which parses them with the
-one existing price reader (`scripts.build_bars.trades_from`), so this module stays pure numeric and
-testable without a tape.
+NO I/O. `depth_snapshots` parses already-loaded rows; it opens nothing and fetches nothing. Trade
+PRICES are passed in as arrays by the caller, so this module stays pure numeric and testable
+without a tape.
 
 Pure numpy. Zero promotion authority.
 """
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-
-from libs.hypmax.moat_mine import _depth_snaps
 
 __all__ = [
     "CONSTRUCTIONS",
@@ -54,6 +56,7 @@ __all__ = [
     "bar_close_states",
     "boundary_prices",
     "contiguous_mask",
+    "depth_snapshots",
     "period_returns",
     "residualise",
     "snapshot_states",
@@ -71,7 +74,8 @@ STATE_NAMES = ("obi_touch", "obi_deep", "slope_asym", "spread_bps", "depth_bid",
 
 #: The two forms every construction is screened in. BOTH are reported, always: reporting only the
 #: residualised form would hide the contamination measurement, and reporting only the raw form is
-#: the mistake that killed coinbase-premium, turkey-premium and kimchi.
+#: the mistake that killed every cross-venue premium axis this desk has ever screened: each one
+#: read as a forecast and was a restatement of the concurrent move.
 FORMS = ("raw", "residualised")
 
 #: Levels summed for the "deep" primitives. The touch is public everywhere; the shape behind it is
@@ -98,8 +102,8 @@ class Alignment:
     OVER bar k is r[k] = p[k] / p[k-1] - 1. That is exactly `axis_screen`'s contract --
     "target_ret[t] = return realised over period t" -- and the harness performs the forward shift
     itself, pairing state[k] with r[k+1]. Handing it an already-shifted target makes it shift
-    twice, which is the misalignment signature its own lookahead rail fires on (`screen_moat.py`
-    lost fourteen of nineteen hypotheses to precisely that).
+    twice, which is the misalignment signature its own lookahead rail fires on -- the retired
+    order-book screen lost fourteen of nineteen hypotheses to precisely that.
 
     SO THE PREDICTED WINDOW IS [b_k, b_{k+1}) AND THE BAR CONTAINING THE SNAPSHOT IS NOT IN IT.
     The snapshot at t sits in [b_k - bar_ms, b_k); the return it is asked to predict starts at the
@@ -149,15 +153,80 @@ class Alignment:
         }
 
 
-def snapshot_states(rows: list[dict[str, Any]]) -> tuple[np.ndarray, dict[str, np.ndarray]]:
-    """Per-snapshot book-STATE primitives from raw tape rows.
+def _levels(side: Any) -> tuple[np.ndarray, np.ndarray]:
+    """One side of a book as (prices, sizes), dropping rows that cannot be read.
 
-    Delegates parsing to `moat_mine._depth_snaps`, which sorts levels, drops crossed books and
-    accepts both recorder schemas. Returns (snapshot ms ascending, {name: values}) over
-    `STATE_NAMES`; an unmeasurable primitive is NaN, never zero -- a zero imbalance is a real and
-    balanced book, which is the opposite of "this snapshot could not be read".
+    BAD ROWS ARE DROPPED, NEVER COERCED TO ZERO. A zero size is a real and meaningful book state
+    -- the level is quoted and empty -- so inventing one manufactures a withdrawal event that never
+    happened, and `withdrawal_asymmetry` would then read it as liquidity leaving.
     """
-    snaps = _depth_snaps(rows)
+    px: list[float] = []
+    sz: list[float] = []
+    for lv in side or ():
+        try:
+            p, s = float(lv[0]), float(lv[1])
+        except (TypeError, ValueError, IndexError, KeyError):
+            continue
+        if math.isfinite(p) and math.isfinite(s) and p > 0 and s >= 0:
+            px.append(p)
+            sz.append(s)
+    return np.asarray(px, dtype="float64"), np.asarray(sz, dtype="float64")
+
+
+def depth_snapshots(
+    rows: list[dict[str, Any]],
+) -> list[tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+    """Parse depth rows into (stamp_ms, bid_px, bid_sz, ask_px, ask_sz), ascending by stamp.
+
+    THE ROW SCHEMA IS THE LOWEST COMMON DENOMINATOR OF A DEPTH FEED, so a recorder can satisfy it
+    without negotiating: a millisecond stamp under ``t`` or ``ts_ms``, and two sides of
+    ``[[price, size], ...]`` under ``b``/``bids`` and ``a``/``asks``. Strings are accepted --
+    MT5's `MarketBookGet` hands back typed floats, most JSON tapes hand back strings, and refusing
+    one of those is how a reader silently returns an empty book.
+
+    ORDER IS NOT GUARANTEED BY THE FEED, and every construction below indexes ``[0]`` as the touch.
+    Sorting here rather than trusting the source costs nothing and removes a whole class of finding
+    that would look like microstructure and be a parse bug.
+
+    CROSSED BOOKS ARE DROPPED, NOT USED. bid >= ask is physically impossible and means a torn or
+    interleaved snapshot. Feeding one to a spread calculation yields a NEGATIVE cost -- "the venue
+    pays us to trade" -- and that is precisely the kind of artifact that survives review because it
+    is exciting. Dropping is silent by design at this layer; the CALLER counts what it lost, since
+    only the caller knows what fraction is tolerable for its screen.
+    """
+    out: list[tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        bp, bs = _levels(r.get("b") if r.get("b") is not None else r.get("bids"))
+        ap, asz = _levels(r.get("a") if r.get("a") is not None else r.get("asks"))
+        if not len(bp) or not len(ap):
+            continue
+        bo, ao = np.argsort(-bp), np.argsort(ap)
+        bp, bs, ap, asz = bp[bo], bs[bo], ap[ao], asz[ao]
+        if bp[0] >= ap[0]:
+            continue
+        stamp: Any = r.get("t")
+        if stamp is None:
+            stamp = r.get("ts_ms", 0)
+        try:
+            ms = int(stamp)
+        except (TypeError, ValueError):
+            continue
+        out.append((ms, bp, bs, ap, asz))
+    out.sort(key=lambda x: x[0])
+    return out
+
+
+def snapshot_states(rows: list[dict[str, Any]]) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    """Per-snapshot book-STATE primitives from raw depth rows.
+
+    Delegates parsing to `depth_snapshots`, which sorts levels and drops crossed books. Returns
+    (snapshot ms ascending, {name: values}) over `STATE_NAMES`; an unmeasurable primitive is NaN,
+    never zero -- a zero imbalance is a real and balanced book, which is the opposite of "this
+    snapshot could not be read".
+    """
+    snaps = depth_snapshots(rows)
     n = len(snaps)
     ms = np.zeros(n, dtype="int64")
     out = {k: np.full(n, np.nan) for k in STATE_NAMES}
@@ -184,9 +253,9 @@ def snapshot_states(rows: list[dict[str, Any]]) -> tuple[np.ndarray, dict[str, n
 def _side_slope(px: np.ndarray, size: np.ndarray, mid: float) -> float:
     """log(size) regressed on distance-from-mid in bps, one side only. NaN when unfittable.
 
-    ONE SIDE, NOT BOTH TOGETHER. `moat_mine.book_slope` fits the pooled book and answers "is depth
-    concentrated at the touch"; the ASYMMETRY of the two sides is a different question -- which
-    side is thin BEHIND the quote -- and pooling averages exactly the difference being asked about.
+    ONE SIDE, NOT BOTH TOGETHER. A pooled fit over both sides answers "is depth concentrated at
+    the touch"; the ASYMMETRY of the two sides is a different question -- which side is thin BEHIND
+    the quote -- and pooling averages away exactly the difference being asked about.
     """
     d = np.abs(np.asarray(px, dtype="float64") - mid) / mid * 1e4
     s = np.asarray(size, dtype="float64")
@@ -211,9 +280,9 @@ def bar_close_states(
     THE LAST SNAPSHOT, NOT THE MEAN OF THE BAR. An average over the bar is a summary of a window
     that ENDS at b_k, so it is still causal -- but it is not the state a decision taken at b_k
     would see, and the mechanism under test is about the book's condition at the moment of the
-    bet. `moat_microstructure.resample` averages deliberately for a different question (it wants
-    the quantity with signal in it, not the quantity a trader observes); this screen needs the
-    observable one, because a survivor here has to be actionable at b_k.
+    bet. Averaging is the right choice for a different question (the quantity with the most
+    signal in it, rather than the quantity a trader observes); this screen needs the OBSERVABLE
+    one, because a survivor here has to be actionable at b_k.
 
     Bars with no snapshot simply do not appear -- the edges array is not guaranteed contiguous, and
     `contiguous_mask` is what turns that into a dropped period rather than a mispriced one.
@@ -258,8 +327,8 @@ def boundary_prices(
     `side="left"` is the load-bearing argument. It selects the first print with t >= target; the
     bar is half-open, so a print landing exactly on b_k belongs to the NEXT bar and is a price
     obtainable strictly after the state was observed. Using the last print at or BEFORE the edge --
-    which an earlier version of the moat screen did -- lands 14 seconds BEFORE the signal on this
-    tape and prices the very move the feature was measured during.
+    which an earlier version of this screen did -- lands seconds BEFORE the signal on a
+    4-second-cadence tape and prices the very move the feature was measured during.
     """
     t = np.asarray(trade_ms, dtype="int64")
     p = np.asarray(trade_px, dtype="float64")
@@ -296,8 +365,7 @@ def residualise(
     side that just got hit is the thin one -- so a raw forward IC is very largely a restatement of
     the bar that just finished. This subtracts that restatement BEFORE the series is asked to
     predict anything, which is the escalation the desk's own graveyard prescribes for exactly this
-    failure mode ("orthogonalize FIRST or screen at the mechanism's native horizon",
-    docs/graveyard.md, cm_mvrv_btc_daily_level).
+    failure mode: orthogonalise FIRST, or screen at the mechanism's native horizon.
 
     resid[k] = signal[k] - (a_k + b_k * ret[k]), with (a_k, b_k) the ordinary least squares fit
     over bars j < k on which both series are finite. STRICTLY PRIOR: bar k never contributes to
@@ -353,7 +421,8 @@ def withdrawal_asymmetry(depth_bid: np.ndarray, depth_ask: np.ndarray) -> np.nda
 
     NaN at index 0 (no previous bar) and wherever the previous depth was zero. Drops are NOT netted
     against additions on the same side; netting would average the exact event of interest into
-    invisibility, which is `moat_mine.withdrawal_rate`'s own argument.
+    invisibility -- size vanishing just before a move is not cancelled out by size arriving
+    after it, and treating them as one number is how this signal gets averaged into nothing.
     """
     b = np.asarray(depth_bid, dtype="float64")
     a = np.asarray(depth_ask, dtype="float64")

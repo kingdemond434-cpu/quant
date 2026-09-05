@@ -60,10 +60,19 @@ from libs.ops.lawful import guard as _law_guard  # noqa: E402
 _PASSING = frozenset({"ALLOW"})
 
 #: The money path: code whose defects can only be discovered by losing money.
+#: NARROWED 2026-09-05 (universe mandate): run_cashcarry_executor.py, run_live_guard.py and
+#: data/cashcarry_config.json went with the retired book. This is a PREFIX scope over changed
+#: paths, so a dead entry is inert rather than dangerous -- but an inert entry also cannot be
+#: distinguished from a live one by reading the tuple, and the whole point of naming the money
+#: path explicitly is that a reader can tell what it covers. desks/mt5/ is added because that is
+#: where money now moves: the gateway, the netting policy and the execution policy are precisely
+#: "code whose defects can only be discovered by losing money".
 MONEY_PATH = (
-    "scripts/run_cashcarry_executor.py", "libs/execution/", "libs/risk/",
-    "scripts/record_capital_event.py", "scripts/run_live_guard.py",
-    "scripts/run_deadman_switch.py", "data/cashcarry_config.json",
+    "libs/execution/", "libs/risk/",
+    "scripts/record_capital_event.py",
+    "scripts/run_deadman_switch.py",
+    "desks/mt5/mt5desk/gateway.py", "desks/mt5/mt5desk/netting.py",
+    "desks/mt5/mt5desk/execution_policy.py",
 )
 
 LAUNCH_WINDOW_DAYS = 7

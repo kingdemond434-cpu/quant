@@ -1,13 +1,13 @@
 {
- "signed_utc": "2026-09-05T11:16:01.463775+00:00",
- "signed_by": "principal standing orders 2026-09-05: universal promotion (a forward clock is its own sleeve's authority in every lane; cost-regrade and executor-gap are the only refusals), the no-trade verdict binds the published book, the allocator has a clock; signed in session",
+ "signed_utc": "2026-09-05T13:01:44.404026+00:00",
+ "signed_by": "gauntlet capped at its declared 1200MB (measured holding 4882MB on an 8GB box, starving every other leg); signed in session",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "beec055a5f4357f2",
+  "desks/mt5/scripts/external_gauntlet.py": "a916da8c17a1be8f",
   "desks/mt5/research/universal_gate.py": "564b02439b938431",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "830723c7f399411c",
   "desks/mt5/research/heat_policy.py": "cc5f0201f0135ad1",
-  "desks/mt5/research/promoter.py": "ee4234fe98ae46a3",
+  "desks/mt5/research/promoter.py": "c4a7efabe551cd97",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
   "libs/portfolio/allocator_proof.py": "8c590d6c8b445dac",
   "libs/portfolio/rails.py": "6139b46d7b42b875",

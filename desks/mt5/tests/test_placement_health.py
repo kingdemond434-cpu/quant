@@ -9,8 +9,6 @@ produced the same silence, because nothing ever checked for SUCCESS.
 from __future__ import annotations
 
 import ast
-import json
-import math
 import sys
 from pathlib import Path
 
@@ -20,22 +18,24 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
+from mt5desk import decision_core as _dc  # noqa: E402
+
 _SRC = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+_CORE_SRC = (_DESK / "mt5desk" / "decision_core.py").read_text(encoding="utf-8")
 
 
 def _load(tmp_paused: Path):
-    """Exec the pure health helpers; gateway.py imports MetaTrader5."""
+    """`diagnose`, `entry_is_legal` and the placement verdict come from the decision core, by
+    import. `note_placement` stays in the gateway -- it writes the pause file -- and is exec'd
+    out of the gateway's source over that same core, with the pause path, clock and log faked."""
     logged: list = []
     tree = ast.parse(_SRC)
-    ns = {"math": math, "json": json, "PAUSED": tmp_paused,
-          "now": lambda: "2026-08-18T00:00:00+00:00",
-          "log": logged.append}
-    wanted_fn = {"diagnose", "note_placement", "entry_is_legal"}
-    wanted_const = {"RETCODE_MEANING", "MAX_TOTAL_REJECTIONS"}
+    ns = {k: v for k, v in vars(_dc).items() if not k.startswith("__")}
+    ns.update({"PAUSED": tmp_paused, "now": lambda: "2026-08-18T00:00:00+00:00",
+               "log": logged.append})
     keep = [n for n in tree.body
-            if (isinstance(n, ast.FunctionDef) and n.name in wanted_fn)
-            or (isinstance(n, ast.Assign) and any(
-                getattr(t, "id", "") in wanted_const for t in n.targets))]
+            if isinstance(n, ast.FunctionDef) and n.name == "note_placement"]
+    assert keep, "note_placement is no longer defined in gateway.py"
     exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), ns)
     ns["_logged"] = logged
     return ns
@@ -182,8 +182,8 @@ def test_the_entry_is_never_pushed_out_to_a_legal_level(gw):
     """Moving it would silently trade a different strategy: the edge was
     measured at the range boundary, not the boundary plus the broker's freeze
     distance."""
-    assert "NOT AVAILABLE today rather" in _SRC
-    assert "silently trade a different strategy" in _SRC
+    assert "NOT AVAILABLE today rather" in _CORE_SRC
+    assert "silently trade a different strategy" in _CORE_SRC
 
 
 def test_a_zero_stops_level_never_blocks_a_bracket(gw):

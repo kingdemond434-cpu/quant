@@ -35,9 +35,9 @@ def _bids(n: int = 10, top: float = 99.99, tick: float = 0.01, size: float = 1.0
 # ------------------------------------------------------------------- parsing
 
 def test_both_recorder_schemas_parse() -> None:
-    """Binance stamps depth k='d' with b/a; Bybit uses k='depth'. Reading one and not the other
-    returns clean, plausible, half-empty results over the other venue's archive -- the bug that
-    made moat_mine blind to 4.4GB."""
+    """Two recorders spell the depth-row tag differently (k='d' with b/a, and k='depth'). Reading
+    one and not the other returns clean, plausible, HALF-EMPTY results over the other recorder's
+    archive -- the bug that left 4.4GB invisible until DEPTH_KINDS covered both."""
     for kind in ("d", "depth"):
         row = {"k": kind, "t": 1, "b": [["99.9", "2"]], "a": [["100.1", "3"]]}
         parsed = book_from_row(row)

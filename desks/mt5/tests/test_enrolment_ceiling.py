@@ -9,17 +9,27 @@ which report carried it. Nothing counted the drops. A reader comparing
 "certified" against "enrolled" saw a gap and had no way to tell a bug from a
 queue from a wall.
 
-WHY THE DOOR MUST STAY SHUT, which is the half that matters. `shadow_forward`
-freezes `direction="LONG"` into the identity of every clock it mints and calls
-families as `fam_fn(h1, side=1, ...)`; the spec tuple carries no side at all. So
-admitting a SHORT certificate would enrol a clock that REPLAYS LONG and accrues
-forward evidence for the opposite direction to the one certified, under an
-identity claiming LONG. The first test below is the one that must never be
-"fixed" by deleting the filter.
+WHY THE DOOR MUST STAY SHUT, which is the half that matters. The five-tuple spec
+`(symbol, selector, state, family, is_universe)` carries no side at all, so a
+SHORT certificate admitted here would hash to exactly the same tuple as its LONG
+twin and a door comparing tuples could not tell them apart. The first test below
+is the one that must never be "fixed" by deleting the filter.
 
-The measurement is what makes the real fix -- threading `side` through the spec,
-the frozen identity and `fam_fn` -- rankable against everything else competing
-for the same hour.
+AND THE CAUSE MUST BE DERIVED, NOT ASSERTED (2026-09-05). Until this date the
+cause read "forward engine has no short leg: shadow_forward freezes
+direction=LONG and calls fam_fn(side=1)". Both halves had since been fixed in the
+engine -- `_runnable_side` resolves the certified side, `run_forward` calls
+`fam_fn(h1, side=-1, ...)`, and the identity is stamped
+`direction=str(side).upper()` -- so every blocked certificate on the health
+report was attributed to a defect that no longer existed, sending a reader to fix
+code that was already correct. The cause is now asked of `shadow_forward`'s own
+resolver, so this file cannot drift from the engine again, and the two causes are
+different jobs: a certificate the engine CAN replay is blocked only by the
+missing spec field (`recoverable_by_threading_side`), while one it cannot needs
+the family itself to learn a side.
+
+The measurement is what makes either fix rankable against everything else
+competing for the same hour.
 """
 from __future__ import annotations
 
@@ -74,9 +84,10 @@ def _row(symbol: str, family: str, side: str, selector: str, condition: str = "N
 # ------------------------------------------------- the door stays shut, on purpose
 
 def test_a_certified_short_is_still_refused_admission(base: Path) -> None:
-    """NEVER delete this. The engine freezes direction=LONG and calls fam_fn(side=1),
-    and the spec tuple carries no side -- so admitting a SHORT certificate enrols a
-    clock that replays LONG and accrues evidence for the wrong direction."""
+    """NEVER delete this. The five-tuple spec carries no side, so a SHORT certificate
+    admitted here hashes to exactly its LONG twin's tuple and no door comparing tuples
+    could tell the two apart -- a LONG certificate would authorise a SHORT clock, or
+    the reverse. The engine's short leg does not change that; the SPEC's shape does."""
     _write(base, "QQUANT_GATES.json", _qquant([_row("EURUSD", "breakout", "SHORT", "asia")]))
     assert authorized_specs(base) == set()
 
@@ -90,9 +101,12 @@ def test_a_certified_long_is_admitted_exactly_as_before(base: Path) -> None:
     assert family == "session_range_breakout"
 
 
-def test_the_only_side_the_engine_runs_is_declared():
-    """It was a bare `continue` in two places and absent in a third."""
-    assert frozenset({"LONG"}) == ENGINE_SIDES
+def test_the_only_side_the_spec_tuple_can_express_is_declared():
+    """It was a bare `continue` in two places and absent in a third. The name changed on
+    2026-09-05 because the value was right and the claim behind it was not."""
+    import shadow_admission as sa
+
+    assert frozenset({"LONG"}) == ENGINE_SIDES == sa.SPEC_TUPLE_SIDES
 
 
 # ----------------------------------------------------------- and it is now counted
@@ -103,8 +117,60 @@ def test_the_refused_short_is_counted_with_its_cause(base: Path) -> None:
     assert out["n"] == 1
     assert out["certificates"][0]["symbol"] == "EURUSD"
     assert out["certificates"][0]["side"] == "SHORT"
-    assert "no short leg" in out["certificates"][0]["cause"]
+    assert out["certificates"][0]["cause"]
     assert sum(out["by_cause"].values()) == 1
+
+
+def test_the_cause_is_asked_of_the_engine_not_asserted_by_this_file(base: Path) -> None:
+    """The defect this replaces: a constant that described an engine that had been fixed.
+
+    `session_range_breakout` genuinely takes no `side`, so the engine cannot replay it short and
+    the row must say so. The point is that the answer comes from `shadow_forward`'s resolver --
+    change the engine and this row changes with it, which is what the old constant could not do.
+    """
+    import shadow_admission as sa
+
+    _write(base, "QQUANT_GATES.json", _qquant([_row("EURUSD", "breakout", "SHORT", "asia")]))
+    out = unreachable_certificates(base)
+    row = out["certificates"][0]
+    assert row["engine_can_replay"] is False
+    assert row["cause"] == sa.UNREACHABLE_ENGINE_CANNOT_REPLAY_SHORT
+    assert out["recoverable_by_threading_side"] == 0
+
+
+def test_a_short_the_engine_could_replay_is_priced_as_a_missing_spec_field(base: Path) -> None:
+    """The number that makes the real fix rankable, and it must not read as a capability gap.
+
+    A family whose constructor resolves AND takes a side is blocked by ONE thing: the five-tuple
+    has nowhere to put the side. Recovering it needs no gate, no new evidence and no change to
+    any family -- so it is counted separately from the certificates that need real engineering.
+    """
+    import shadow_admission as sa
+
+    monkey_family = "pinned_side_family"
+    original = sa.engine_can_replay
+    sa.engine_can_replay = lambda family, side: (
+        True if family == sa._exec_family(monkey_family) else original(family, side))
+    try:
+        _write(base, "QQUANT_GATES.json",
+               _qquant([_row("EURUSD", monkey_family, "SHORT", "asia")]))
+        out = unreachable_certificates(base)
+        assert out["certificates"][0]["engine_can_replay"] is True
+        assert out["certificates"][0]["cause"] == sa.UNREACHABLE_SIDE_NOT_IN_SPEC_TUPLE
+        assert out["recoverable_by_threading_side"] == 1
+    finally:
+        sa.engine_can_replay = original
+
+
+def test_the_stale_cause_is_no_longer_emitted() -> None:
+    """It named a defect that no longer exists, so nothing may still write it on a row."""
+    import shadow_admission as sa
+
+    src = (Path(__file__).resolve().parent.parent
+           / "research" / "shadow_admission.py").read_text(encoding="utf-8")
+    assert src.count("UNREACHABLE_NO_SHORT_LEG") == 1, (
+        "the pre-2026-09-05 cause may be kept for archive readers but must not be emitted")
+    assert "freezes direction=LONG" in sa.UNREACHABLE_NO_SHORT_LEG
 
 
 def test_an_admitted_long_is_not_counted_as_blocked(base: Path) -> None:

@@ -30,7 +30,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from scripts.revalidate_clocks import shift_ic
+from libs.validation.shift_leak import shift_ic
 
 _N = 400
 

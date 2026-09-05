@@ -30,11 +30,13 @@ later, which costs nothing statistically -- and (2) MORE OBSERVATIONS PER DAY.
 
 The second one is where a desk quietly deceives itself, so it is fenced here.
 
-  * FOR EVENT-DRIVEN P&L -- funding settlements, auctions, rebalances, discrete cash flows -- a
-    higher observation frequency means MORE ACTUAL EVENTS. Perp funding settles 3x daily, so an 8h
-    panel accrues 3 realised payments per day instead of 1. The desk measured these at vif 1.008,
-    i.e. essentially independent, so effective N genuinely triples and the same t-stat bar is
-    reached in roughly a third of the wall clock. The BAR IS UNCHANGED; only the calendar moves.
+  * FOR EVENT-DRIVEN P&L -- swap rollovers, dividend adjustments, session opens, index rebalances,
+    scheduled releases, any discrete cash flow -- a higher observation frequency means MORE ACTUAL
+    EVENTS. An FX cross trading three liquid sessions a day accrues three distinct realised
+    session-open events instead of one daily bar. Where such events measure at a variance-inflation
+    factor near 1 -- essentially independent -- effective N genuinely multiplies and the same t-stat
+    bar is reached in a fraction of the wall clock. The BAR IS UNCHANGED; only the calendar moves,
+    and the vif must be MEASURED on the actual events, never assumed from their count.
 
   * FOR DIFFUSIVE P&L -- anything whose return is a price change -- it is FALSE. Estimating the
     drift of a diffusion depends on the HORIZON, not the sampling frequency: sampling a 90-day

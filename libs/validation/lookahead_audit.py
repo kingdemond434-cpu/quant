@@ -8,10 +8,10 @@ rigged signal that knows the current candle scores Sharpe > 100 when allowed to 
 collapses below zero once the engine's one-bar delay is applied).
 
 WHY THIS DESK NEEDS IT, stated as a measurement rather than a worry. `grep -rln "look.ahead"`
-across libs/ and scripts/ returns EIGHT modules -- crypto_adapter, backtest/engine,
-backtest/strategy, axis_screen, microstructure, transcript_candidates, crossasset, label_factory
--- every one of them asserting in prose that it is causal. `grep -rc "def test_"` across tests/
-returns not one file testing it. Eight claims, zero readers. That is rubric class 1 on this
+across libs/ and scripts/ returned EIGHT modules -- backtest/engine, backtest/strategy,
+axis_screen, microstructure, transcript_candidates, crossasset, label_factory and the lab's data
+adapter -- every one of them asserting in prose that it is causal. `grep -rc "def test_"` across
+tests/ returned not one file testing it. Eight claims, zero readers. That is rubric class 1 on this
 desk's own list: a thing is only true if something READS it.
 
 And look-ahead is the failure that most deserves a mechanical check, because it is silent and

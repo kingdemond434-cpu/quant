@@ -30,9 +30,11 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
+from mt5desk import decision_core as _dc  # noqa: E402
 from mt5desk import risk_units as ru  # noqa: E402
 
 _SRC = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+_CORE_SRC = (_DESK / "mt5desk" / "decision_core.py").read_text(encoding="utf-8")
 
 #: Straight from the venue snapshot the desk actually trades against.
 UNIVERSE = json.loads(
@@ -43,43 +45,15 @@ LEGACY_CONSTANT = 100 * 0.92
 
 
 def _load():
-    """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
-    import json as _json
-    import time as _time
-    from mt5desk.gateway_config_fallback import (
-        BOOK_WORST_DD_R, HEAT_HARD_CEILING, HEAT_TARGET, MAX_DRAWDOWN_TOLERANCE,
-        MAX_SLEEVE_HEAT_SHARE, Q_OPT)
-    from mt5desk.sizing import clamp_risk_frac, decay_factor
-    tree = ast.parse(_SRC)
-    ns = {"math": math, "Q_OPT": Q_OPT,
-          "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
-          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
-          # The heat law lives in gateway_config_fallback and gateway.py imports it; the AST
-          # extraction keeps only function/const defs, so the names have to be supplied here.
-          "HEAT_TARGET": HEAT_TARGET, "HEAT_HARD_CEILING": HEAT_HARD_CEILING,
-          "MAX_SLEEVE_HEAT_SHARE": MAX_SLEEVE_HEAT_SHARE,
-          # cap_by_heat now consults the allocator's book before falling back to the derived
-          # budget; those two helpers need json/time/BASE, which the AST extraction drops.
-          "json": _json, "time": _time, "BASE": _DESK,
-          # gateway.py imports this from mt5desk.sizing; the AST extraction drops imports,
-          # so promoted_lot needs it supplied here (same repair as test_stop_aware_sizing)
-          "clamp_risk_frac": clamp_risk_frac,
-          # Same repair, same reason (gap-fixer 2026-08-29): promoted_lot now
-          # multiplies by the L1.59 fade and the AST extraction drops imports.
-          "decay_factor": decay_factor}
-    wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "promoted_lot",
-                 "heat_budget", "cap_by_heat", "_eur_per_price_unit",
-                 "min_lot_risk_eur",
-                 "allocator_heat", "allocator_order"}
-    wanted_const = {"HEAT_SLIDE", "DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
-                    "MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS",
-                    "GOLD_SYMBOL"}
-    keep = [n for n in tree.body
-            if (isinstance(n, ast.FunctionDef) and n.name in wanted_fn)
-            or (isinstance(n, ast.Assign) and any(
-                getattr(t, "id", "") in wanted_const for t in n.targets))]
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), ns)
-    return ns
+    """The sizing laws, IMPORTED from the decision core (split 2026-09-05).
+
+    These used to be AST-extracted out of gateway.py because it imports MetaTrader5; every
+    import the extraction dropped had to be re-supplied by hand and the execution was attributed
+    to a compiled string rather than to the file. The core imports on any host, so the same
+    functions are used by name from the module that now holds them, and the coverage report
+    sees them run.
+    """
+    return dict(vars(_dc))
 
 
 NS = _load()
@@ -302,34 +276,40 @@ def test_the_trade_loop_passes_the_sleeve_s_own_symbol_and_live_info():
 
 
 def test_no_sizing_call_site_omits_the_symbol():
-    """A bare auto_lot(equity, dist) in the trade loop is the bug returning, one argument later."""
-    tree = ast.parse(_SRC)
+    """A bare auto_lot(equity, dist) in the trade loop is the bug returning, one argument later.
+
+    Both files: the gateway holds the call sites, the core holds the laws (and promoted_lot's
+    own delegation to auto_lot, which passes the symbol)."""
     bad = []
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        name = getattr(node.func, "id", "")
-        if name == "auto_lot" and len(node.args) < 3:
-            bad.append(("auto_lot", node.lineno))
-        if name == "promoted_lot" and len(node.args) < 4:
-            bad.append(("promoted_lot", node.lineno))
+    for src in (_SRC, _CORE_SRC):
+        for node in ast.walk(ast.parse(src)):
+            if not isinstance(node, ast.Call):
+                continue
+            name = getattr(node.func, "id", "")
+            if name == "auto_lot" and len(node.args) < 3:
+                bad.append(("auto_lot", node.lineno))
+            if name == "promoted_lot" and len(node.args) < 4:
+                bad.append(("promoted_lot", node.lineno))
     # promoted_lot's own body calls auto_lot(equity, dist_usd, symbol, info) -- 4 args, fine.
     assert not bad, f"sizing call without a symbol: {bad}"
 
 
 def test_the_legacy_constants_are_not_on_the_sizing_path():
     """CONTRACT_OZ * FX_EUR may survive as gold's documented fallback and as MIN_LOT_RISK_EUR.
-    It may NOT be how a lot is computed, which is what this asserts by counting call sites."""
-    tree = ast.parse(_SRC)
-    for fn in ("auto_lot", "realised_q", "promoted_lot"):
-        node = next(n for n in ast.walk(tree)
-                    if isinstance(n, ast.FunctionDef) and n.name == fn)
-        # The docstrings quote the old formula DELIBERATELY, as the record of what went wrong,
-        # so strip them via the AST rather than by guessing at quote characters. Only executable
-        # statements are examined.
-        stmts = node.body[1:] if (node.body and isinstance(node.body[0], ast.Expr)
-                                  and isinstance(node.body[0].value, ast.Constant)
-                                  and isinstance(node.body[0].value.value, str)) else node.body
-        names = {n.id for s in stmts for n in ast.walk(s) if isinstance(n, ast.Name)}
-        assert "CONTRACT_OZ" not in names, f"{fn} still sizes from gold's contract constant"
-        assert "FX_EUR" not in names, f"{fn} still sizes from the frozen EUR/USD constant"
+    It may NOT be how a lot is computed, which is what this asserts by counting call sites --
+    in the core, where the laws live, and in the gateway, whose sizing defs are delegates."""
+    for src in (_SRC, _CORE_SRC):
+        tree = ast.parse(src)
+        for fn in ("auto_lot", "realised_q", "promoted_lot"):
+            node = next(n for n in ast.walk(tree)
+                        if isinstance(n, ast.FunctionDef) and n.name == fn)
+            # The docstrings quote the old formula DELIBERATELY, as the record of what went
+            # wrong, so strip them via the AST rather than by guessing at quote characters.
+            # Only executable statements are examined.
+            stmts = node.body[1:] if (node.body and isinstance(node.body[0], ast.Expr)
+                                      and isinstance(node.body[0].value, ast.Constant)
+                                      and isinstance(node.body[0].value.value, str)) \
+                else node.body
+            names = {n.id for s in stmts for n in ast.walk(s) if isinstance(n, ast.Name)}
+            assert "CONTRACT_OZ" not in names, f"{fn} still sizes from gold's contract constant"
+            assert "FX_EUR" not in names, f"{fn} still sizes from the frozen EUR/USD constant"

@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
 from libs.research import recoverability as rec  # noqa: E402
 
 
-def _tape(root: Path, venue: str, symbol: str, hours: list[str]) -> None:
-    d = root / "data/moat" / venue / symbol
+def _tape(root: Path, source: str, symbol: str, hours: list[str]) -> None:
+    d = root / "data/tape" / source / symbol
     d.mkdir(parents=True, exist_ok=True)
     for h in hours:
         (d / f"{h}.jsonl.gz").write_bytes(b"x" * 100)
@@ -39,10 +39,10 @@ def test_absent_tape_is_not_readable_here_and_never_zero(tmp_path: Path) -> None
 
 def test_first_observation_is_unmeasured_not_ok(tmp_path: Path, monkeypatch) -> None:
     """No high-water history means a fall is undetectable -- so it cannot be reported healthy."""
-    _tape(tmp_path, "bybit", "BTCUSDT", ["20260819_01", "20260819_02"])
+    _tape(tmp_path, "eurusd", "EURUSD", ["20260819_01", "20260819_02"])
     monkeypatch.setattr(rec, "HIGH_WATER", tmp_path / "hw.jsonl")
     rep = rec.build_report(tmp_path)
-    stream = next(s for s in rep.streams if s.key == "moat/bybit")
+    stream = next(s for s in rep.streams if s.key == "tape/eurusd")
     assert stream.status == rec.UNMEASURED
     assert stream.status not in rec.PASSING
 
@@ -77,9 +77,9 @@ def test_fall_below_high_water_is_a_loss(tmp_path: Path) -> None:
 
 def test_recoverable_loss_emits_a_fetch(tmp_path: Path) -> None:
     """A loss with a verified path is an ACQUISITION instruction, not just an alarm."""
-    s = rec.Stream(key="moat/bybit", kind="l2_depth_tape", span_now=10, unit="symbol-hours",
+    s = rec.Stream(key="tape/eurusd", kind="l2_depth_tape", span_now=10, unit="symbol-hours",
                    bytes_now=0, symbols=1, earliest=None, latest=None, recovery=rec.RE_BUYABLE)
-    rec.adjudicate(s, {"moat/bybit": (100, "2026-08-17")})
+    rec.adjudicate(s, {"tape/eurusd": (100, "2026-08-17")})
     assert s.status == rec.LOSS_RECOVERABLE
     assert s.fetch_command, "a recoverable loss must name the command that recovers it"
 
@@ -88,7 +88,7 @@ def test_recoverable_loss_emits_a_fetch(tmp_path: Path) -> None:
 
 def test_unprobed_stream_is_unmeasured_never_irreplaceable(tmp_path: Path) -> None:
     """'We have not looked' and 'no source exists' are different claims (L1.28a)."""
-    s = rec.Stream(key="moat/somevenue", kind="l2_depth_tape", span_now=1, unit="symbol-hours",
+    s = rec.Stream(key="tape/somesource", kind="l2_depth_tape", span_now=1, unit="symbol-hours",
                    bytes_now=0, symbols=1, earliest=None, latest=None)
     rec.classify_recovery(s, tmp_path)
     assert s.recovery == rec.UNMEASURED_RECOVERY
@@ -113,15 +113,15 @@ def test_bootstrap_uses_unit_matched_field(tmp_path: Path) -> None:
     """REGRESSION. The first version read `cells_total` (symbol-DAYS) and compared it to a
     symbol-HOURS span -- two questions under one name, the L1.61 defect this module cites in its
     own header. `tape_files` is one file per symbol-hour and is the comparable series."""
-    h = tmp_path / "data/moat_coverage_history.jsonl"
+    h = tmp_path / "data/tape_coverage_history.jsonl"
     h.parent.mkdir(parents=True)
     h.write_text(json.dumps({"cells_total": 23436, "tape_files": 40720}) + "\n")
-    assert rec.bootstrap_marks(tmp_path)["moat/__desk_total__"] == 40720
+    assert rec.bootstrap_marks(tmp_path)["tape/__desk_total__"] == 40720
 
 
 def test_contradiction_is_detected(tmp_path: Path) -> None:
     """Doctrine says irreplaceable; a probe says reachable. Both honest, never compared."""
-    s = rec.Stream(key="moat/bybit", kind="l2_depth_tape", span_now=1, unit="symbol-hours",
+    s = rec.Stream(key="tape/eurusd", kind="l2_depth_tape", span_now=1, unit="symbol-hours",
                    bytes_now=0, symbols=1, earliest=None, latest=None,
                    recovery=rec.RE_BUYABLE, recovery_source="quote-saver.bycsi.com")
     notes = rec.detect_contradictions([s])
@@ -130,15 +130,15 @@ def test_contradiction_is_detected(tmp_path: Path) -> None:
 
 def test_span_is_distinct_hours_not_endpoints(tmp_path: Path) -> None:
     """Endpoint arithmetic is what lets a left-truncation read as perfect continuity."""
-    _tape(tmp_path, "bybit", "BTCUSDT", ["20260101_00", "20260819_00"])   # 8 months apart
+    _tape(tmp_path, "eurusd", "EURUSD", ["20260101_00", "20260819_00"])   # 8 months apart
     streams = rec.measure_tape(tmp_path)
     assert streams[0].span_now == 2, "span must count hours HELD, not the range they span"
 
 
 def test_skips_are_counted_not_invisible(tmp_path: Path) -> None:
     """L1.60: a file dropped from the walk must be visible in the denominator."""
-    _tape(tmp_path, "bybit", "BTCUSDT", ["20260819_01"])
-    (tmp_path / "data/moat/bybit/BTCUSDT/README.txt").write_text("not a tape file")
+    _tape(tmp_path, "eurusd", "EURUSD", ["20260819_01"])
+    (tmp_path / "data/tape/eurusd/EURUSD/README.txt").write_text("not a tape file")
     s = rec.measure_tape(tmp_path)[0]
     assert s.attempted == 2 and s.skipped == 1
 

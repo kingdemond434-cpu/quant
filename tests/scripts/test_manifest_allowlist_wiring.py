@@ -31,8 +31,17 @@ def test_every_allowlisted_token_has_a_manifest_row():
     assert not missing, f"allowlisted but unschedulable: {missing}"
 
 
-def test_every_allowlisted_token_fires_within_a_week():
-    """A cron that never matches is the same silence as no row at all, and it is harder to see."""
+def test_every_allowlisted_token_fires_within_a_month():
+    """A cron that never matches is the same silence as no row at all, and it is harder to see.
+
+    The window is 32 days, not 8: the allowlist carries MONTHLY rows by design (the dispatcher
+    records "exactly 7 allowlisted rows had stale logs, and EVERY ONE was monthly", and
+    build_event_calendar.py fires on the 1st at 04:19). An 8-day window read those as "never
+    fires" on roughly 24 days of every month -- a test whose verdict depends on today's date
+    measures the calendar, not the manifest. 32 days is the shortest window that contains one
+    firing of every legal cron period this manifest uses; a row that misses even that is the
+    silent cron this test exists to name.
+    """
     rows = _manifest_rows()
     now = datetime.now(tz=UTC).replace(second=0, microsecond=0)
     never = []
@@ -41,9 +50,9 @@ def test_every_allowlisted_token_fires_within_a_week():
         if spec is None:
             continue  # covered by the test above
         if not any(cron_matches(spec, now + timedelta(minutes=i))
-                   for i in range(1, 60 * 24 * 8)):
+                   for i in range(1, 60 * 24 * 32)):
             never.append(f"{token} [{spec}]")
-    assert not never, f"allowlisted but never fires within 8 days: {never}"
+    assert not never, f"allowlisted but never fires within 32 days: {never}"
 
 
 def test_every_allowlist_reason_is_a_real_sentence():

@@ -42,16 +42,35 @@ threads to their depth (>=2 levels). The BEST comment can outrank the OP. And mi
 replies as pre-emptive falsification -- "this fails because costs/crowding/look-ahead" is a free
 graveyard entry that saves a test slot. Read the whole discussion, always.
 
-## 10. CRYPTO-NATIVE SOURCE FAMILY (first-class -- the desk is crypto-only)
-Heavily weight crypto-native sources: crypto Twitter/fintwit; crypto media (Rekt News, DL News,
-The Block, Messari, Delphi, Glassnode/CryptoQuant blogs); crypto GitHub frameworks (Hummingbot,
-Freqtrade, Jesse, MEV/searcher bots, perp-DEX + DeFi protocol repos + their Issues/Discussions);
-crypto communities (r/defi, r/ethfinance, r/CryptoCurrency, Discords/Telegrams, TradingView
-crypto ideas); perp-DEX / on-chain mechanism communities (Hyperliquid, GMX, funding-arb,
-liquidation-hunting, airdrop/farming); and NON-ENGLISH crypto (Chinese/Korean/Russian/Arabic/
-Portuguese -- see the frontier packages in the improvement inbox). Crypto-native edges
-(funding, liquidations, basis, unlocks, listings, MEV, governance events) are the center of
-gravity.
+## 10. MT5-NATIVE SOURCE FAMILY (first-class -- this is the desk's book)
+_REPLACED 2026-09-05. This section used to read "CRYPTO-NATIVE SOURCE FAMILY (first-class -- the
+desk is crypto-only)" and carried a channel list of crypto media, perp-DEX and on-chain
+communities. LAWS §1 voided it on 2026-08-18, but a voided clause that still lists channels is
+still a channel list, and the seven regional briefs are told to obey this charter IN FULL -- so it
+was rewritten rather than annotated. No crypto-exchange-native ground appears here any more._
+
+Heavily weight MT5-native sources: the **MQL5 ecosystem** (CodeBase, Articles, Forum, Signals,
+Market vendor pages and their review threads) and the finite **MQL4 CodeBase archive**;
+**TradingView public Pine scripts** on FX, metals and index symbols, with their comment threads;
+**broker and venue primary material** (Fusion and peer-broker specs, swap tables, execution and
+slippage disclosures, CME/ICE/LME contract specs, roll calendars, LBMA benchmark documentation,
+session and holiday calendars); **retail-quant communities** (Forex Factory, futures.io, Wilmott,
+Elite Trader, Nuclear Phynance, r/algotrading, r/Forex); **cTrader/cBots, NinjaTrader and
+MultiCharts** strategy libraries; **official macro and positioning data** (CFTC COT, FRED,
+central-bank calendars and statements, Treasury and rates curves, EIA, USDA/WASDE, BIS, IMF); and
+**NON-ENGLISH practitioner ground** (Chinese, Korean, Japanese, Russian, Arabic, Portuguese --
+each seat's own grounds, lexicon and era targets live in `ops/frontier_<region>_prompt.txt`).
+
+The desk's centre of gravity is the mechanism set its book can actually express: **swap/carry,
+futures-curve basis and roll yield, COT positioning, order flow and DOM imbalance, session and
+calendar flow, cross-pair and cross-asset spread, correlation and flight-to-quality state,
+central-bank and macro-release response, options skew and term structure, and spread/slippage
+execution cost.**
+
+Crypto-exchange-native ground (funding, liquidations, perp basis, unlocks, listings, MEV,
+governance events) is **NOT** hunted, ranked or scored -- see LAWS §1. A crypto reading is
+admissible only where it measurably informs a Fusion-executable MT5 instrument, and then it
+belongs on that instrument's card as a reference input, never as a source family of its own.
 
 ## 11. NEW DATA SOURCES ARE A LOGGED PER-DIG DELIVERABLE
 Every dig also hunts new FREE DATA sources (exchange dumps, free APIs, community data lakes,
@@ -447,7 +466,7 @@ A ~$50k book has exactly ONE structural advantage over every fund on earth: it c
 
 (2) PERMISSION IS NOT PURSUIT. Removing the block is necessary and NOT sufficient: a desk merely allowed to hunt small will still default to fund-shaped ideas, because that is what the literature is written about and what the models have read. So the CAPACITY DISTRIBUTION of screened candidates is measured every sweep (`max_audit.check_capacity_hunt`). If EITHER band — the range this book can exploit, or the larger edges that will succeed them — falls below a quarter of the fillable funnel, that is a DEFECT: one whole class of alpha is going unhunted, and the objective is the maximum NUMBER of simultaneous uncorrelated alphas, not a preferred size of alpha. See (5)(c) below for why the check is symmetric rather than a niche floor.
 
-(3) THE NAMED GROUND. Day-1 perp listing funding spikes (one-sided spec flow, no arb capital yet — the `run_listing_watch` clock already runs for this), thin-pair cross-venue funding divergence, low-OI tails of the perp universe, delisting forced-unwind dislocations. What they share is that they pay BECAUSE they are too small to interest anyone with money, and they decay as the desk grows into them. That decay is DEFINITIONAL, not a risk to be mitigated: the sequence is edge → size → next edge, which is why breadth keeps earning its cost even when depth is what converts.
+(3) THE NAMED GROUND — RETARGETED 2026-09-05 to the MT5 book. _This clause named day-1 perp listing funding spikes, cross-venue funding divergence and low-OI perp tails. Those are crypto-exchange-native and are retired ground (LAWS §1); the DOCTRINE below is what mattered and it is universe-independent._ On this desk the equivalent grounds are: **exotic and minor FX crosses** whose spread is wide enough to deter size but not to kill the edge; **rollover and session-boundary dislocations** (the 22:00 UTC swap point, Sunday reopen gaps, half-sessions and holiday tape); **swap/carry anomalies** on pairs no carry fund bothers to quote; **index roll and expiry** dislocations; **illiquid US share CFDs**; and **macro-release microstructure on second-tier pairs**, where the release moves the pair and nobody is standing there. What they share is that they pay BECAUSE they are too small to interest anyone with money, and they decay as the desk grows into them. That decay is DEFINITIONAL, not a risk to be mitigated: the sequence is edge → size → next edge, which is why breadth keeps earning its cost even when depth is what converts.
 
 (4) THE HONEST TRADE, RECORDED. Triple-digit returns and the current ruin discipline are not simultaneously available. Hunting smaller raises the ceiling for free and touches no rail. Loosening the rails also raises it, and buys the return with ruin probability. The first is doctrine; the second is a principal decision that must be made deliberately, never drifted into.
 
@@ -544,20 +563,27 @@ invisible. A second window is a NEW hypothesis and must raise `VARIANTS_TRIED` s
 with it. A PASS is EVIDENCE and nothing more; Gate-0 and the ordinary promotion path still stand
 between it and any allocation, and real capital is never allocated automatically.
 
-(7) THE NAMED GROUND, BUILT (2026-07-26). §42(3) listed the hunting grounds; two are now running
-rather than described.
+(7) THE NAMED GROUND, BUILT (2026-07-26) — **BOTH ORGANS RETIRED 2026-09-05** with the
+crypto-exchange desk (LAWS §1). `run_listing_watch`, `libs/research/listing_events.py`,
+`libs/research/tail_funding.py` and `scripts/collect_tail_funding_divergence.py` are deleted: they
+screened crypto perp listings and Binance-vs-Bybit funding, which is retired ground. **The two
+methodological rulings below are NOT retired and bind the MT5 replacements**, which is why the
+clause is rewritten rather than removed — a deleted clause takes its lessons with it. Read (a) for
+the pre-registered-exit rule and (b) for the capacity-is-the-thinner-leg rule; both are
+universe-independent and both were paid for.
 
-  (a) DAY-1 LISTING DISLOCATION. `run_listing_watch` collects, `libs/research/listing_events.py`
-  converts, `scripts/run_event_study.py` rules, all on the same daily cadence. TWO pre-registered
+  (a) DAY-1 LISTING DISLOCATION (retired organ; the RULING below is what carries).
+  `run_listing_watch` collected, `libs/research/listing_events.py` converted and
+  `scripts/run_event_study.py` ruled, all on one daily cadence. TWO pre-registered
   exits are run and BOTH are reported: a fixed 48h close-to-close, and a triple barrier
   (profit-take / stop / time, whichever is touched first) which is how the trade would actually be
   run. `VARIANTS_TRIED = 2` because two exit rules are two trials — running both and publishing the
   better one is the garden of forking paths with extra steps, so the Holm bar prices both and both
   verdicts are printed even when they disagree.
 
-  (b) THIN-TAIL CROSS-VENUE FUNDING. `libs/research/tail_funding.py` +
-  `scripts/collect_tail_funding_divergence.py` screen Binance against Bybit on the BOTTOM half of
-  the shared perp universe by open interest. The unit is the ANNUALISED SPREAD, because only the
+  (b) THIN-TAIL CROSS-VENUE SPREAD (retired organ; the RULING below is what carries).
+  `libs/research/tail_funding.py` + `scripts/collect_tail_funding_divergence.py` screened one
+  crypto venue against another on the BOTTOM half of the shared universe by open interest. The unit is the ANNUALISED SPREAD, because only the
   gap is harvestable delta-neutral; capacity is the MINIMUM open interest of the two legs, because
   a pair is only as large as its thinner side — taking the fatter leg would overstate what is
   fillable, which is the §42 error itself. A spread above the credibility ceiling is FLAGGED, never

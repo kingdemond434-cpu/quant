@@ -23,10 +23,14 @@ THE FOUR HEATS of a book h (fractions of equity at stop):
 Between nominal / sqrt(N) (all independent) and nominal (one bet). `effective` reports all four
 and N_eff under each, and `drift` says whether the correlation structure has moved away from its
 long-run shape -- the change-point signal the allocator's crisis overlay should hear.
+`crisis_share_from_drift` is HOW it hears it: the desk-level verdict in `reports/DRIFT.json`
+raises the share of crisis worlds the book is scored against, so a fusing market changes the
+POPULATION the objective solves over rather than a knob somebody turns.
 """
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
@@ -131,6 +135,100 @@ def effective(ev: Sequence[Any], book: Mapping[str, float], *, k: int = 3,
                             for i in np.argsort(-np.abs(fm["loadings"][:, 0]))[:5]},
             "rule": "H_eff = max(covariance, factor, tail) heat; 20% nominal on one latent "
                     "factor is 20% effective, 20% across independent mechanisms is far less"}
+
+
+# --------------------------------------------------------------------------------- crisis share
+#: A DRIFT report older than this describes a market that has since moved on, and a stale
+#: change-point signal is not a reason to reprice the world population. The same 26h the
+#: allocator's proof certificate expires on -- one number for "yesterday's evidence", not two
+#: that drift apart.
+DRIFT_MAX_AGE_S = 26 * 3600
+
+#: The z lines `research/drift_monitor.py` reports its verdicts on, mirrored here so the response
+#: is proportional to the SAME scale the verdict was decided on rather than to a second one.
+WATCH_Z = 1.0
+DRIFT_Z = 2.0
+
+#: The most the crisis-world share may be multiplied by, reached on a structure break and on a
+#: per-instrument hazard of 2x the drift line. Three times the standing share is a large change
+#: in what the book is stressed against; more than that would be modelling a crisis the desk has
+#: only forecast, not observed.
+CRISIS_MULT_MAX = 3.0
+#: And the absolute share it may never pass. Above a third of worlds the population stops being
+#: "the mix of worlds the desk believes it is in" and becomes a permanent crisis assumption,
+#: which prices every edge as if the tail were the base case.
+CRISIS_SHARE_MAX = 0.35
+
+
+def crisis_share_from_drift(drift_doc: Mapping[str, Any] | None, base_share: float, *,
+                            now: float | None = None,
+                            max_age_s: float = DRIFT_MAX_AGE_S) -> tuple[float, str]:
+    """Crisis-world share the drift report argues for, and why. Never lowers it.
+
+    THE CHANGE-POINT SIGNAL WAS WRITTEN AND NOT HEARD. `drift_monitor` measures whether the
+    book's correlation topology has moved (`structure_verdict`) and whether any instrument's
+    next-window hazard has (`hazard_max`), writes `reports/DRIFT.json`, and names the allocator's
+    crisis overlay as a consumer -- and the allocator never opened the file. So the desk knew its
+    sleeves were fusing and still drew the same 6% of crisis worlds it draws on a quiet Tuesday.
+
+    THIS IS A BELIEF, NOT A RAIL. It does not cap, veto or shrink anything: it changes the MIX OF
+    WORLDS the book is scored against, and E[log W] then sizes whatever it wants under that mix.
+    That is where every other uncertainty on this desk enters, and it is why this needs no rail
+    entry -- there is no exposure reduction here to bill, only a population the objective solves
+    over. If the objective still wants 30% under three times the crisis worlds, it gets 30%.
+
+    IT MAY ONLY RAISE. A calm report never licenses drawing FEWER crisis worlds than the standing
+    share: that is how a book discovers its real correlations at the worst possible moment, and it
+    is the same ratchet `conditional_covariance` applies to crisis severity. A missing, unreadable
+    or stale report changes nothing at all -- and says so, because a silent fallback to the
+    standing share is indistinguishable from a report that said "stable" (L1.28a).
+    """
+    base = float(base_share)
+    if base <= 0.0:
+        return base, f"the standing crisis share is {base:.1%}; nothing to raise"
+    if not isinstance(drift_doc, Mapping) or not drift_doc:
+        return base, (f"no readable DRIFT.json: the crisis share stands at {base:.1%} "
+                      "(absence is not calm)")
+    stamp = str(drift_doc.get("generated_utc") or "")
+    try:
+        when = datetime.fromisoformat(stamp)
+        when = when if when.tzinfo else when.replace(tzinfo=UTC)
+        age = (datetime.now(tz=UTC).timestamp() if now is None else float(now)) - when.timestamp()
+    except (TypeError, ValueError):
+        return base, (f"DRIFT.json carries no readable generated_utc ({stamp!r}): the crisis "
+                      f"share stands at {base:.1%}")
+    if age > max_age_s:
+        return base, (f"DRIFT.json is {age / 3600:.1f}h old (max {max_age_s / 3600:.0f}h): the "
+                      f"crisis share stands at {base:.1%}")
+    overall = str(drift_doc.get("verdict") or "UNMEASURED")
+    structure = str(drift_doc.get("structure_verdict") or "UNMEASURED")
+    verdict = "STRUCTURE_SHIFTED" if "STRUCTURE_SHIFTED" in (overall, structure) else overall
+    hazard = drift_doc.get("hazard_max")
+    try:
+        hz = float(hazard) if hazard is not None else None
+    except (TypeError, ValueError):
+        hz = None
+
+    if verdict == "STRUCTURE_SHIFTED":
+        mult, why = CRISIS_MULT_MAX, ("STRUCTURE_SHIFTED: the book's correlation topology moved, "
+                                      "which outranks any single instrument's hazard")
+    elif verdict == "DRIFT_AHEAD":
+        if hz is None:
+            return base, ("DRIFT_AHEAD with no hazard_max to scale by: the crisis share stands "
+                          f"at {base:.1%} rather than moving on an unread number")
+        frac = min(max((hz - WATCH_Z) / (2.0 * DRIFT_Z - WATCH_Z), 0.0), 1.0)
+        mult = 1.0 + (CRISIS_MULT_MAX - 1.0) * frac
+        why = (f"DRIFT_AHEAD at hazard_max {hz:.2f}: proportional between the watch line "
+               f"({WATCH_Z:.0f}) and twice the drift line ({2.0 * DRIFT_Z:.0f})")
+    else:
+        return base, (f"drift verdict {verdict}"
+                      + (f" (hazard_max {hz:.2f})" if hz is not None else "")
+                      + f": the crisis share stands at {base:.1%}")
+
+    share = min(max(base, base * mult), CRISIS_SHARE_MAX)
+    capped = "" if share < CRISIS_SHARE_MAX - 1e-12 else f", capped at {CRISIS_SHARE_MAX:.0%}"
+    return float(share), (f"crisis worlds {base:.1%} -> {share:.1%} (x{mult:.2f}{capped}) -- "
+                          f"{why}; the objective still chooses the heat under that mix")
 
 
 def drift(m: np.ndarray, recent: int = 40, halflife: float = 60.0) -> dict[str, Any]:

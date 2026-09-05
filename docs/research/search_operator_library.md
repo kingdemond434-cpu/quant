@@ -89,7 +89,7 @@ adaptations: universal verbatim — no language dependence (log n/a-with-reason 
 class: source-expansion
 origin: principal addenda B (2026-07-20)   validated-gain: BitMEX decade archive, Bybit, data.binance.vision all fit the pattern
 technique: probe public data buckets on any venue: public.<venue>.com, data.<venue>.com/.vision, <venue> S3 listing.
-adaptations: universal per venue; regional miners probe their region's venues (Upbit/Bithumb/bitFlyer/OKX/Gate).
+adaptations: universal per venue. RETARGETED 2026-09-05 -- this line used to send regional miners at crypto exchange buckets (Upbit/Bithumb/bitFlyer/OKX/Gate), which the 2026-08-18 universe mandate retired; the TECHNIQUE is venue-agnostic and still active. Probe instead: broker and data-vendor public trees (Dukascopy datafeed, HistData, TrueFX, Forexite), exchange public FTP/S3 (CME, ICE, LME product and settlement files), LBMA benchmark archives, and central-bank/statistics-office bulk endpoints. The validated-gain above is the crypto era's record of the pattern working, kept as evidence that it does -- not as a list to re-probe.
 
 ### OP-010 vendor-docs-as-map                                     [active]
 class: source-expansion

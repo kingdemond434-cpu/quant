@@ -24,15 +24,13 @@ core is explicit that sizing beyond demonstrated edge is not aggression but ruin
 therefore applied as a MULTIPLIER outside the clamp, exactly like `authority_ramp`, so both
 rules keep their meaning.
 
-These tests exercise the REAL `promoted_lot` through the same AST harness the rest of this
-directory uses (gateway.py imports MetaTrader5 and cannot be imported on Linux), so they pin
+These tests exercise the REAL `promoted_lot` from `mt5desk.decision_core` -- the module the
+gateway's sizing has lived in since the 2026-09-05 split, importable on Linux -- so they pin
 behaviour on the shipped money path rather than on a copy of it.
 """
 
 from __future__ import annotations
 
-import ast
-import math
 import sys
 from pathlib import Path
 
@@ -40,35 +38,15 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
+from mt5desk import decision_core as _dc  # noqa: E402
 from mt5desk import sizing  # noqa: E402
 
 _SRC = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
 
 
 def _gateway_ns() -> dict:
-    """Exec the pure sizing helpers out of gateway.py -- it imports MetaTrader5."""
-    from mt5desk.gateway_config_fallback import BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT
-
-    tree = ast.parse(_SRC)
-    ns: dict = {
-        "math": math,
-        "Q_OPT": Q_OPT,
-        "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
-        "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
-        "clamp_risk_frac": sizing.clamp_risk_frac,
-        "decay_factor": sizing.decay_factor,
-    }
-    wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "promoted_lot", "_eur_per_price_unit"}
-    wanted_const = {"DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR", "GOLD_SYMBOL"}
-    keep = [
-        n
-        for n in tree.body
-        if (isinstance(n, ast.FunctionDef) and n.name in wanted_fn)
-        or (isinstance(n, ast.Assign)
-            and any(getattr(t, "id", "") in wanted_const for t in n.targets))
-    ]
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), ns)
-    return ns
+    """The sizing laws by name, from the decision core that holds them."""
+    return dict(vars(_dc))
 
 
 class _Info:

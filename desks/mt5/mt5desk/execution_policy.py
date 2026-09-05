@@ -23,12 +23,21 @@ counterfactual ledger can score the road not taken.
 NOTHING HERE SENDS AN ORDER. The gateway's bracket path places pending stops today; this is the
 optimiser that would replace "always MARKET" on the family-market path once the box has enough
 fills for the surface to be fitted. Until then it runs, reports and is scored -- shadow first.
+
+TWO COMPETITIONS, ONE ANSWER EACH. The plans above are ORDER TYPES priced on the surface; the
+schedulers in `execution_registry` (twap, iceberg, sniper, pullback, market) are child-order
+PLANS priced on the same surface in the same R units. `choose` runs the registry's competition
+alongside its own when a surface is supplied and reports it under `registry`, additively, so the
+counterfactual ledger scores both roads without either changing the other's verdict. Without a
+surface there is nothing measured to compete on -- both would be priced on the same spread
+prior -- so the key is absent rather than a duplicate of the policy's own answer.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
 
+from mt5desk import execution_registry
 from mt5desk.fill_surface import FillSurface
 
 POLICIES: tuple[str, ...] = ("MARKET", "PASSIVE_LIMIT", "AGGRESSIVE_LIMIT", "PULLBACK", "STOP",
@@ -113,10 +122,23 @@ def plans(c: Context, surface: FillSurface | None = None) -> list[Plan]:
     return out
 
 
+def intent_of(c: Context) -> execution_registry.Intent:
+    """The context as the registry's parent intent: same quote, same stop, same edge, so the
+    two competitions price the same trade and their utilities are comparable in R."""
+    return execution_registry.Intent(symbol=c.symbol, side=c.side, lots=float(c.lot),
+                                     price=float(c.quote), stop_frac=float(c.stop_frac),
+                                     edge_r=float(c.edge_r), spread_frac=float(c.spread_frac),
+                                     atr_frac=float(c.atr_frac), hour=int(c.hour))
+
+
 def choose(c: Context, surface: FillSurface | None = None) -> dict[str, Any]:
     ps = plans(c, surface)
     best = max(ps, key=lambda p: p.utility)
-    return {"policy": best.policy, "utility": best.utility, "p_fill": best.p_fill,
-            "alternatives": {p.policy: p.utility for p in ps},
-            "would_have_traded": best.policy != "SKIP",
-            "surface": (surface.note if surface else "prior: spread model")}
+    out: dict[str, Any] = {"policy": best.policy, "utility": best.utility, "p_fill": best.p_fill,
+                           "alternatives": {p.policy: p.utility for p in ps},
+                           "would_have_traded": best.policy != "SKIP",
+                           "surface": (surface.note if surface else "prior: spread model")}
+    if surface is not None:
+        out["registry"] = execution_registry.summary(
+            execution_registry.compete(intent_of(c), surface))
+    return out

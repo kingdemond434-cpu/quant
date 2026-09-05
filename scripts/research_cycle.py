@@ -54,29 +54,22 @@ def _register_row_closed(row_id: int) -> bool:
 
 
 def _live_path_wired() -> bool:
-    """Is the live path RUNNING, and is the register row it mirrors actually closed?
+    """RETIRED 2026-09-05 (universe mandate): always False, and that is a measurement.
 
-    The wiring half checks the three things that were all false while the old
-    `binance_live.py.exists()` detector said done: the guard exists, the daily cycle calls it,
-    and the guard drives the stage machine + connector + reconcile.
+    This asked whether the crypto-exchange live path was WIRED -- guard exists, daily cycle calls
+    it, guard drives the stage machine, connector and reconcile. `run_live_guard.py` and the
+    `binance_live` connector it inspected were deleted with the retired book, so the honest answer
+    is that no such path exists in this repo any more.
 
-    The register half is what stops this detector re-arming the same trap. Wiring is necessary,
-    not sufficient -- row 2 still carries the panel fuzz/breaker report, the §7b pre-mortem and
-    the host-death and ladder drills, none of which a source-text check can see. With wiring
-    alone this would have flipped to done the moment the guard shipped and dropped the connector
-    out of the backlog's open list again, exactly as it did on 07-18.
+    It returns False rather than being deleted with its detector row, because the row is what
+    keeps the engineering backlog's item OPEN. This detector's own history is the argument: a
+    file-existence proxy marked it done on 2026-07-18 and went on marking it done for eight days
+    while the connector had no production caller at all. Removing the row would repeat that in the
+    worst way -- silently dropping the live-path question off the backlog entirely. The MT5 money
+    path is under desks/mt5/ with its own gateway and arming state; wiring THIS detector at it is
+    a decision for whoever owns that desk, not something a cleanup should assert.
     """
-    guard = _ROOT / "scripts/run_live_guard.py"
-    cycle = _ROOT / "scripts/daily_research_cycle.py"
-    try:
-        g, c = guard.read_text("utf-8"), cycle.read_text("utf-8")
-    except OSError:
-        return False
-    wired = ("run_live_guard.py" in c
-             and "binance_live" in g
-             and "staging" in g
-             and "protective_stops" in g)
-    return wired and _register_row_closed(2)
+    return False
 
 
 def _detectors() -> dict[str, bool]:
@@ -88,29 +81,29 @@ def _detectors() -> dict[str, bool]:
     ds = {x.get("name", ""): x for x in health.get("datasets", [])}
     arch_ok = all(ds.get(n, {}).get("status") in ("OK", "RECEIVING", "LISTENING")
                   for n in ds if any(k in n.lower() for k in ("interest", "long", "liquid")))
-    exec_txt = (_ROOT / "scripts/run_cashcarry_executor.py").read_text("utf-8")
+    # `exec_txt` was the source of scripts/run_cashcarry_executor.py, read UNGUARDED -- so once
+    # that file was deleted this whole function raised FileNotFoundError and every caller of
+    # `_detectors()` died with it. The six detectors that grepped it (trade_logging,
+    # cashcarry_capacity_sizing, execution_maker_carry, hedge_reconcile,
+    # reconcile_limit_fallback, and the combined perp/carry row that read run_live_combined.py)
+    # all asked "does the retired executor contain this feature?" -- a question with no subject
+    # now. They are removed rather than pinned False, because a False detector keeps its backlog
+    # item OPEN and would put the crypto executor's features back on the desk's build agenda,
+    # which is the one thing the mandate forbids.
     return {
         "honest_deployed_sharpe": "_MIN_SHARPE_DAYS" in lb_txt,
         "single_portfolio_object": (_ROOT / "libs/portfolio/live_book.py").exists(),
-        "trade_logging": "_log_trade" in exec_txt,
         "state_files_infra": True,                      # true whenever this script runs
         "watchdog_enabled": True,                        # enabled last cycle (task scheduler)
         "watchdog_run_logged_off": (_ROOT / "data" / ".watchdog_logged_off").exists(),
         "archive_integrity_ok": bool(ds) and arch_ok,
         "dynamic_leverage": (_ROOT / "libs/risk/dynamic_leverage.py").exists(),
-        "combined_perp_carry": "perp_active" in
-        (_ROOT / "scripts/run_live_combined.py").read_text("utf-8"),
-        "cashcarry_capacity_sizing": "_alloc" in exec_txt,
         "bayesian_roi_calibration":
         (_ROOT / "libs/self_improvement/forecast_calibration.py").exists(),
-        "execution_maker_carry": "_maker_pair" in exec_txt,
-        "hedge_reconcile": "_reconcile" in exec_txt,
         "growth_positive_risk_controls": (_ROOT / "libs/risk/risk_controls.py").exists(),
         "test_suite_ci": (_ROOT / "tests/test_hedge_and_risk.py").exists()
         and (_ROOT / "scripts/run_ci.py").exists(),
         "stress_harness": (_ROOT / "scripts/run_stress.py").exists(),
-        "stablecoin_flows_archiver": (_ROOT / "scripts/run_stablecoin_flows.py").exists()
-        and (_ROOT / "data/stablecoin_flows_archive.json").exists(),
         "alpha_economics_gate": (_ROOT / "libs/research/alpha_economics.py").exists()
         and (_ROOT / "tests/test_alpha_economics.py").exists(),
         "root_cause_engine": (_ROOT / "libs/research/root_cause.py").exists()
@@ -120,7 +113,6 @@ def _detectors() -> dict[str, bool]:
         "executive_kpis": (_ROOT / "data/executive_kpis.json").exists(),
         "black_swan_library": (_ROOT / "data/black_swan_library.json").exists(),
         "institutional_knowledge_base": (_ROOT / "docs/institutional_knowledge.md").exists(),
-        "reconcile_limit_fallback": "_mkt_or_limit" in exec_txt,
         "growth_audit_engine": (_ROOT / "scripts/run_growth_audit.py").exists(),
         "execution_tca_fill_log": (_ROOT / "web/tca.json").exists(),
         "funding_decay_predictor": (_ROOT / "web/funding_decay_backtest.json").exists(),
@@ -130,13 +122,9 @@ def _detectors() -> dict[str, bool]:
         # path). Now it asks whether the rails actually RUN: the guard must exist, be on the
         # daily cycle, and drive the stage machine.
         "live_connector_prebuild": _live_path_wired(),
-        "carry_crowding_monitor": (_ROOT / "web/crowding.json").exists(),
-        "cross_venue_funding_study": (_ROOT / "web/cross_venue_funding.json").exists(),
-        # the #1 tier-convergence build: autodiscovery factory generating/gauntleting CRYPTO
-        # candidates in the daily cycle (needs the crypto MarketSeries adapter) -- done when the
-        # orchestrator emits crypto candidates into the EV gate automatically.
-        "autodiscovery_crypto_throughput":
-        (_ROOT / "libs/autodiscovery/crypto_adapter.py").exists(),
+        # `autodiscovery_crypto_throughput` removed 2026-09-05: it asked whether the
+        # autodiscovery factory emitted CRYPTO candidates into the EV gate, and both the adapter
+        # (libs/autodiscovery/crypto_adapter.py) and the mandate that wanted it are gone.
     }
 
 
