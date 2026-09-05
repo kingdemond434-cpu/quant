@@ -1,6 +1,17 @@
 
 
 # DEEP REVIEW -- libs/execution/staging.py -- 2026-08-05T17:43:16.074843+00:00
+
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Reviews dated before 2026-08-18 examine money-path files of the retired crypto-exchange desk, several of which have since been deleted. The REVIEW METHOD is the desk's and transfers; the files it judged mostly do not.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
 3/4 seats responded on the FREE roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
 
 ## nvidia/nemotron-3-ultra-550b-a55b:free

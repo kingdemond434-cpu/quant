@@ -106,3 +106,67 @@ def test_a_robust_optimum_above_the_measured_ceiling_is_clipped_and_said_so() ->
     assert doc["ceiling_binding"] is True
     assert doc["heat_deployed"] == pytest.approx(doc["heat_ceiling"])
     assert doc["heat_deployed"] < 0.44
+
+
+class TestTheSamplerNoLongerCapsTheCeilingAtThirty:
+    """THE REMOVAL WAS REAL AND COMPLETELY INERT UNTIL 2026-09-05.
+
+    The principal removed the fixed 30% cap and `measured_ceiling` was rewritten to read the bound
+    off the curve, so it CAN return 34, 39 or 45. But `pf_allocator.heat_curve` skipped every grid
+    point above HEAT_HARD_CEILING and solved with `hard_cap=HEAT_HARD_CEILING`, so the curve it
+    reads could never CONTAIN a point above 30% -- and `measured_ceiling` never returns past the
+    last heat anyone sampled. The constant had stopped being the policy and was still the sampler,
+    one layer below where an audit would look.
+    """
+
+    def test_the_grid_samples_past_the_old_constant(self) -> None:
+        pfa = pytest.importorskip("research.pf_allocator")
+        assert max(pfa.CURVE_GRID) > hp.HEAT_HARD_CEILING, (
+            "the growth curve cannot be measured above the old cap, so no evidence could ever "
+            "license a heat above it -- the removal would be inert")
+        assert pfa.CURVE_SAMPLE_MAX >= max(pfa.CURVE_GRID), (
+            "the sampler's own bound must not exclude points the grid declares")
+
+    def test_the_sample_bound_is_a_measurement_not_a_policy(self) -> None:
+        """The two must stay separate constants. Collapsing them would make widening the sampler
+        look like raising the risk bound, and the whole safety argument here is that it is not."""
+        pfa = pytest.importorskip("research.pf_allocator")
+        assert pfa.CURVE_SAMPLE_MAX != hp.HEAT_HARD_CEILING
+
+
+class TestExtendingTheSamplerCannotRaiseTodaysHeat:
+    """The safety argument, pinned rather than asserted in a comment.
+
+    Sampling a heat is not deploying it. Everything that decides deployment is unchanged, so on a
+    book whose growth turns over early the answer is identical whether the grid stops at 30% or
+    runs to 45% -- the extra points simply record that they were worse.
+    """
+
+    def test_a_book_that_turns_negative_at_thirty_is_unaffected_by_the_wider_grid(self) -> None:
+        """The recorded curve behind the old 0.30 constant: robust score already negative at 30%.
+        Measuring 35/40/45 on that book must change nothing at all."""
+        narrow = {0.10: 0.0010, 0.15: 0.0018, 0.20: 0.0022, 0.22: 0.0023,
+                  0.25: 0.0009, 0.30: -0.0004}
+        wide = {**narrow, 0.35: -0.0020, 0.40: -0.0031, 0.45: -0.0044}
+        assert hp.measured_ceiling(narrow)[0] == pytest.approx(hp.measured_ceiling(wide)[0])
+        assert hp.measured_ceiling(wide)[0] < 0.30
+
+    def test_the_floor_still_binds_on_a_curve_that_is_negative_everywhere(self) -> None:
+        """A wider sampler must not become a route around the floor in the other direction."""
+        curve = {h: -0.001 * (i + 1) for i, h in enumerate((0.10, 0.20, 0.30, 0.40, 0.45))}
+        ceiling, why = hp.measured_ceiling(curve)
+        assert ceiling == pytest.approx(hp.HEAT_TARGET)
+        assert "non-positive" in why
+
+    def test_an_unreadable_curve_still_falls_back_to_the_recorded_constant(self) -> None:
+        """Widening the sampler must not turn a monitoring gap into permission for 45%."""
+        ceiling, why = hp.measured_ceiling({})
+        assert ceiling == pytest.approx(hp.HEAT_HARD_CEILING)
+        assert "UNMEASURED" in why and "not permission" in why
+
+    def test_a_genuinely_richer_book_now_earns_what_it_could_not_express(self) -> None:
+        """The point of the change: growth that keeps climbing to 45% is now sayable."""
+        curve = {h: 0.0020 * (h / 0.45) for h in
+                 (0.10, 0.20, 0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45)}
+        ceiling, _ = hp.measured_ceiling(curve)
+        assert ceiling == pytest.approx(0.45)

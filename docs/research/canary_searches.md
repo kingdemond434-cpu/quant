@@ -1,4 +1,15 @@
 # CANARY SEARCHES — ecosystem-change early warning (Charter §21)
+
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Searches seeded before 2026-08-18 canary the retired crypto-exchange ecosystem. A canary that watches a ground the desk no longer hunts reports nothing useful -- re-seed against MT5/Fusion grounds rather than re-running these.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
 _A small representative set of searches re-run each digging session (cheap, minutes). An
 UNEXPECTED shift in results — repo counts, API behaviour, maintainer activity, publication
 rate, doc structure — triggers broader targeted rediscovery BEFORE the normal cadence.

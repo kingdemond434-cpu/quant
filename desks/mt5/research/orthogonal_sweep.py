@@ -1,4 +1,4 @@
-"""ORTHOGONAL SWEEP -- run every non-breakout family across the universe and emit candidates.
+"""ORTHOGONAL SWEEP -- every non-breakout family, on every chart, across the universe.
 
 WHY THIS IS THE N_eff FIX AND NOT A NICE-TO-HAVE (principal 2026-08-26: "why don't u fix it
 then"). Live readiness is blocked on two checks. One of them -- fourteen elapsed days -- nothing
@@ -17,7 +17,7 @@ WIRING THE INPUTS IS THE WORK. Most of these families refuse without their input
 sweep that does not FIND those inputs would report fourteen refusals and look like the families
 were the problem. So this resolves each one from what the desk already records:
 
-    peer / factors     other symbols' H1 in data/universe
+    peer / factors     other symbols, ON THE SAME CHART, in data/universe
     spread series      the tick tape's own bid/ask, resampled to the bar clock
     flow imbalance     tick upticks vs downticks, from the same tape
     macro              data/macro_state.json
@@ -25,11 +25,39 @@ were the problem. So this resolves each one from what the desk already records:
 
 An input that genuinely is not there is reported as an ACQUISITION gap, which is a different and
 more actionable statement than "this family produced nothing".
+
+EVERY CHART, NOT ONE (principal 2026-09-05: "m1 m5 m15 m30 h1 h4 d1 all possible every type of
+mechanism n chart for all always ... this was a serious flaw we had abt the h1 only"). This swept
+`*_H1.parquet` and nothing else, on ~250 instruments. Gold alone had M1/M5/M15, and only because
+`research/fetch_gold_scalp.py` was hand-written for that one symbol. The cost was structural: no
+family could express an intraday mechanism on anything but gold, the scalp lane existed on XAUUSD
+alone because it was the only symbol with fine bars, and every sub-hour question -- including
+"was this event already priced?" -- resolved to UNMEASURABLE for want of bars fine enough to see
+the answer in. The unit of the sweep is now the (SYMBOL, CHART) pair, taken from the registry's
+own `timeframes` list per symbol.
+
+AND THE CHART IS PART OF THE CELL'S IDENTITY, which is the whole reason this is a careful change
+rather than a find-and-replace. The gauntlet's series cache is content-addressed and the
+certificate key is derived from cell identity, so an identity that does not name the chart makes
+`XAUUSD.carry` on M5 and on H1 THE SAME CELL: the cache serves one result for the other and a
+certificate minted on one is claimed by the other, with every number in the record internally
+consistent and no gate able to see it. `timeframe` therefore rides in the candidate's `params`
+(the desk's existing spelling -- `scalp_gauntlet.recipe` has always written it there) and is
+absent only for H1, which keeps every id, certificate and clock this desk already holds
+byte-identical. `frontier_identity.cell_id` renders it as an `@M5` suffix on the cell name.
+
+NO GATE MOVES BECAUSE THE SWEEP GOT WIDER. `policy/gate_spec.yaml` pins `fixed_trial_count` and
+`fixed_variance_of_sharpes` precisely so "a candidate must not face a higher bar for having been
+scheduled into a wider sweep" -- the spec records sr0 running 0.3786 at 597 charged trials and
+1.3593 at 5,963 for the SAME cell. Seven charts is therefore strictly more candidates at an
+unchanged bar. The screens here (MIN_TRADES, MIN_EXP_R, MIN_TRADE_DAYS) are untouched, and
+MIN_TRADE_DAYS counts TRADING DAYS, which is chart-independent by construction.
 """
 from __future__ import annotations
 
 import json
 import sys
+from collections import OrderedDict
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -50,6 +78,12 @@ UNIVERSE = BASE / "data" / "universe"
 TAPE = BASE / "data" / "tape" / "ticks"
 OUT = BASE / "data" / "hypotheses" / "orthogonal_candidates.json"
 
+# THE LADDER COMES FROM THE REGISTRY MODULE, NEVER FROM A LIST HERE. A second spelling of which
+# charts exist is how a sweep quietly stops hunting one of them; `universe_registry` is the same
+# authority `expand_universe` fetches against and `families` reads bar spans from.
+from mt5desk.universe_registry import REFERENCE_TIMEFRAME as _REFERENCE_TF  # noqa: E402
+from mt5desk.universe_registry import TIMEFRAMES as _LADDER  # noqa: E402
+
 #: Screen bar, deliberately LOOSE. This is a screen, not a verdict -- the ten gates are the door,
 #: and a tight screen here would pre-reject candidates the canonical policy never got to judge.
 MIN_TRADES = 30
@@ -65,6 +99,21 @@ MIN_EXP_R = 0.0
 #: quality and rejects nothing for being weak.
 MIN_TRADE_DAYS = 60
 
+#: Bars an HOURLY chart must carry before this sweep will look at it. Unchanged, and deliberately
+#: looser than the universe's own 3,000-bar admission floor: this is a screen, not a door.
+#:
+#: THE SAME NUMBER ON SEVEN CHARTS IS SEVEN DIFFERENT RULES. 2,000 bars is four months of H1 and
+#: EIGHT YEARS of D1, so a flat floor would have silently emptied the daily lane on every symbol
+#: -- the swing lane, which is the one the principal named -- while reading in the source like a
+#: single uniform rule. `min_bars_for` re-expresses this span on each chart and is the identity
+#: at H1, so the hourly sweep sees exactly the universe it saw before.
+SWEEP_MIN_H1_BARS = 2000
+
+
+def _min_bars(timeframe: str) -> int:
+    from mt5desk.universe_registry import min_bars_for
+    return min_bars_for(timeframe, h1_floor=SWEEP_MIN_H1_BARS)
+
 
 def _read(p: Path):
     try:
@@ -76,26 +125,100 @@ def _read(p: Path):
 # MEMORY IS A THROUGHPUT RAIL, NOT A UNIVERSE LIMIT.  ``maxsize=None`` retained every complete
 # H1 dataframe in the 293-symbol sweep.  The process climbed until Windows terminated it after
 # ~23 minutes, before OUT was written, so the gauntlet kept consuming yesterday's artifact.
-# Sixteen holds the current symbol plus the twelve-factor working set; eviction changes only
-# residency and every symbol is still loaded and tested in the same pass.
-@lru_cache(maxsize=16)
-def _bars(symbol: str):
+#
+# A FRAME COUNT IS THE WRONG UNIT ONCE THERE ARE SEVEN CHARTS, and this is the re-derivation the
+# ladder forces. `lru_cache(maxsize=16)` was sized as "the current symbol plus the twelve-factor
+# working set" and that arithmetic was sound while every frame was H1: six years of hourly bars
+# is ~54,000 rows (measured on this tree: EURUSD_H1 is 53,899), so sixteen frames is ~34 MB and
+# the job's measured 1,157 MB peak sat comfortably inside its 1,250 MB admission. The same
+# sixteen frames of M1 would be ~1.4 GB -- more than the whole job is admitted for -- because an
+# M1 frame holds sixty bars per H1 bar. A cache that counts FRAMES therefore stops being a
+# constant and becomes a function of which chart the sweep happens to be on.
+#
+# So the budget is counted in BARS, which is what actually costs memory, and it is derived from
+# the largest legitimate working set rather than picked:
+#
+#     the swept symbol                                    1 frame
+#     its peer (relative_value, correlation_regime)       1 frame
+#     the factor basket (FACTOR_BASKET_MAX)               8 frames
+#                                                        -----------
+#                                                        10 frames
+#
+#     10 frames x ~54,000 H1 rows                    = 540,000 rows
+#     rounded, with room for the next symbol's peer  = 600,000 rows
+#
+# At H1 that is the same residency the sixteen-frame cache had, so nothing about the hourly sweep
+# changes. On M1 a single frame can exceed the whole budget, so the cache holds it ALONE -- which
+# is correct, because the peer and factor families are declared H1-and-slower in
+# `families_orthogonal.FAMILY_TIMEFRAMES` (a bar-for-bar join below the hour measures
+# non-synchronous quoting, not a common factor), so on the fine charts the working set genuinely
+# IS one frame. The most-recently-used entry is never evicted for exceeding the budget on its
+# own: evicting it would re-read the parquet on the very next call, which is precisely the silent
+# thrash an under-sized cache causes.
+BAR_CACHE_ROWS = 600_000
+_BAR_CACHE: OrderedDict[tuple[str, str], object] = OrderedDict()
+
+
+def _cache_rows(frame) -> int:
+    try:
+        return int(len(frame))
+    except TypeError:
+        return 0
+
+
+def _held_rows() -> int:
+    """Rows resident, COUNTED rather than tracked. A running total and the dict it describes are
+    two records of one fact, and this desk has paid for that shape before: a caller that clears
+    the cache without resetting the counter leaves the cache evicting to one entry forever, which
+    presents as a slow box and nothing else. The dict holds a handful of frames, so counting is
+    free."""
+    return sum(_cache_rows(f) for f in _BAR_CACHE.values())
+
+
+def _bars(symbol: str, timeframe: str = "H1"):
+    """`<SYM>_<TF>.parquet`, or None. The CHART IS PART OF THE KEY -- see the essay above.
+
+    `timeframe` defaults to H1 so every existing caller (`family_inputs.resolve`,
+    `external_gauntlet.build_cell`, `edge_search`) keeps its exact behaviour until it passes one.
+    """
     import pandas as pd
-    path = UNIVERSE / f"{symbol}_H1.parquet"
+    key = (str(symbol), str(timeframe).upper())
+    if key in _BAR_CACHE:
+        _BAR_CACHE.move_to_end(key)
+        return _BAR_CACHE[key]
+    path = UNIVERSE / f"{key[0]}_{key[1]}.parquet"
     if not path.exists():
         return None
     try:
-        return pd.read_parquet(path)
+        frame = pd.read_parquet(path)
     except Exception:
         return None
+    _BAR_CACHE[key] = frame
+    while len(_BAR_CACHE) > 1 and _held_rows() > BAR_CACHE_ROWS:
+        _BAR_CACHE.popitem(last=False)
+    return frame
 
 
-def _tape_series(symbol: str, index):
-    """(spread, flow) on the bar clock, from the venue's own ticks. (None, None) if no tape."""
+def _resample_rule(timeframe: str) -> str:
+    """The pandas offset for one bar of `timeframe`. `'60min'` and `'1h'` are the same rule."""
+    from mt5desk.universe_registry import timeframe_minutes
+    return f"{timeframe_minutes(timeframe)}min"
+
+
+@lru_cache(maxsize=1)
+def _ticks(symbol: str):
+    """This symbol's recent tick tape as one indexed frame, or None. ONE symbol resident.
+
+    Read once per SYMBOL rather than once per (symbol, chart). The concat of thirty tick vintages
+    is the expensive half of `_tape_series` and it is chart-independent -- only the resample rule
+    differs -- so a sweep that now visits a symbol on up to seven charts would otherwise re-read
+    and re-parse the same thirty files seven times. `maxsize=1` because the sweep finishes a
+    symbol's charts before moving on and a tick frame is far larger than a bar frame.
+    """
     import pandas as pd
     d = TAPE / symbol
     if not d.exists():
-        return None, None
+        return None
     frames = []
     for f in sorted(d.glob("*.parquet"))[-30:]:
         try:
@@ -103,16 +226,32 @@ def _tape_series(symbol: str, index):
         except Exception:
             continue
     if not frames:
-        return None, None
+        return None
     t = pd.concat(frames, ignore_index=True)
     t["ts"] = pd.to_datetime(t["ts"], utc=True)
-    t = t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
-    spread = (t["ask"] - t["bid"]).resample("1h").mean()
+    return t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
+
+
+def _tape_series(symbol: str, index, timeframe: str = "H1"):
+    """(spread, flow) on the bar clock, from the venue's own ticks. (None, None) if no tape.
+
+    THE TAPE IS RESAMPLED ONTO THE CELL'S OWN CHART. This hardcoded `resample("1h")` and then
+    reindexed onto whatever index it was handed, so an M5 cell would have received an HOURLY mean
+    spread forward-filled across twelve bars -- a flat conditioning variable that cannot fire the
+    family's own z-score, dressed as a measurement of the M5 book. The whole thesis of
+    `liquidity_regime` and `orderflow_imbalance` is that the book moves faster than price does,
+    which is exactly the claim a fine chart exists to test.
+    """
+    t = _ticks(symbol)
+    if t is None:
+        return None, None
+    rule = _resample_rule(timeframe)
+    spread = (t["ask"] - t["bid"]).resample(rule).mean()
     mid = ((t["ask"] + t["bid"]) / 2.0)
     # Flow proxy: net sign of mid changes within the bar. Not true aggressor data -- the tape has
     # no trade side -- so it is labelled a proxy rather than passed off as order flow.
     step = mid.diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
-    flow = step.resample("1h").sum()
+    flow = step.resample(rule).sum()
     return spread.reindex(index).ffill(), flow.reindex(index).ffill()
 
 
@@ -393,36 +532,87 @@ def _event_index():
     return pd.DatetimeIndex(idx.dropna().unique()).sort_values() if len(idx) else None
 
 
-def sweep() -> dict:
-    from mt5desk.engine import Costs, run_backtest
-    from mt5desk.families_orthogonal import FAMILY_INPUTS, ORTHOGONAL_FAMILIES
+def timeframes_of(symbol: str, meta: dict) -> list[str]:
+    """Charts this symbol actually has, ASKED rather than assumed.
 
-    meta = _read(UNIVERSE / "universe.json") or {}
-    symbols = sorted(p.stem.replace("_H1", "") for p in UNIVERSE.glob("*_H1.parquet"))
-    # ALPHABETICAL ORDER STARVES THE GROUND THAT PAYS, and this sweep has no rotation cursor to
-    # correct it: it restarts from the first symbol every run and is killed at a stage timeout,
-    # so the same head is re-swept forever and the tail is never reached at all. Measured
-    # 2026-09-05 (research/conversion_ledger): this sweep's own overnight_gap_decay on fx_exotic
-    # is the desk's single best cell type at 18 certificates from 122 trials (14.8%), against
-    # 0.03% for the equity ground that took 61.5% of the whole docket. Interleaving by measured
-    # certification yield means a run cut short at ANY point has spent itself on the mix the ten
-    # gates have actually rewarded, and the explore floor inside `trial_allocator` keeps every
-    # class present in every prefix so nothing is abandoned. Order only: no family is dropped, no
-    # screen moves, and every cell still faces the identical gauntlet.
+    The registry is the authority: `expand_universe` records `timeframes` (written) and
+    `timeframes_thin` (fetched, too short for the gates, with its bar count) per symbol, so a
+    family that needs M5 asks instead of discovering a missing file at gauntlet time. A row that
+    predates the ladder carries neither field; H1 is the honest answer for it, because H1 is the
+    admission chart and its parquet is the reason the symbol is in the registry at all.
+
+    The FILES still get the last word. A registry that claims a chart whose parquet is absent
+    would send the sweep to read a file that is not there once per family; a parquet present but
+    unclaimed (the hand-written gold M1/M5/M15, which predate the registry field) is real data
+    and is swept.
+    """
+    row = meta.get(symbol) if isinstance(meta, dict) else None
+    claimed = (row or {}).get("timeframes") if isinstance(row, dict) else None
+    have = {tf for tf in _LADDER if (UNIVERSE / f"{symbol}_{tf}.parquet").exists()}
+    if isinstance(claimed, list) and claimed:
+        have |= {str(tf).upper() for tf in claimed
+                 if (UNIVERSE / f"{symbol}_{str(tf).upper()}.parquet").exists()}
+    return [tf for tf in _LADDER if tf in have]
+
+
+def sweep_pairs(meta: dict) -> list[tuple[str, str]]:
+    """Every (symbol, chart) this sweep may visit, ordered so any PREFIX is well spent.
+
+    THE UNIT OF THE SWEEP IS THE PAIR, and the ordering has to distribute over both of its axes.
+    `trial_allocator.order_symbols` already interleaves by measured certification yield so that a
+    run cut short -- and every run here is, at a stage timeout or a memory budget -- has spent
+    itself on the ground the ten gates actually reward. It buckets by a class function, so the
+    class handed to it is `<asset class>|<chart>`: every prefix is then distributed across asset
+    classes AND across charts, and a truncated sweep can no longer finish M1 and never reach D1.
+
+    The desk has no measured per-CHART yield yet, so the timeframe axis interleaves evenly. That
+    is the explore default, and it is the honest one: "never tested" and "tested and dead" are
+    opposite facts (trial_allocator's own rule 4), and pre-weighting charts nobody has measured
+    would freeze this module's first guess into the data that justifies it.
+    """
+    symbols = sorted({p.stem.rsplit("_", 1)[0] for p in UNIVERSE.glob("*_H1.parquet")}
+                     | {s for s in (meta or {}) if (UNIVERSE / f"{s}_H1.parquet").exists()})
+    pairs = [(sym, tf) for sym in symbols for tf in timeframes_of(sym, meta)]
     try:
         import trial_allocator as _ta
-        _w = _ta.class_weights(_ta.observed())
-        if _w:
-            symbols = _ta.order_symbols(symbols, _w)
+        weights = _ta.class_weights(_ta.observed())
+        ordered = _ta.order_symbols(
+            pairs, weights or None,
+            class_of=lambda pair: f"{_ta.asset_class_of(pair[0])}|{pair[1]}")
+        if weights:
             print("  yield-ordered sweep: "
-                  + ", ".join(f"{c}={_w[c]:.0%}" for c in sorted(_w)))
-    except Exception as _exc:                      # a measurement outage must not stop the sweep
-        print(f"  yield ordering unavailable ({type(_exc).__name__}: {_exc}); alphabetical")
+                  + ", ".join(f"{c}={weights[c]:.0%}" for c in sorted(weights)))
+        return list(ordered)
+    except Exception as exc:                       # a measurement outage must not stop the sweep
+        # NAME THE FALLBACK, or nobody reading a log can tell an unordered sweep from an ordered
+        # one -- and the yield ordering is the only thing that decides what a truncated run
+        # reaches. Unordered here is registry order: symbols alphabetical, charts in ladder order.
+        print(f"  yield ordering unavailable ({type(exc).__name__}: {exc}); falling back to "
+              f"registry order -- symbols alphabetical, charts in ladder order")
+        return pairs
+
+
+def sweep() -> dict:
+    from mt5desk.engine import Costs, run_backtest
+    from mt5desk.families_orthogonal import (
+        FAMILY_INPUTS,
+        ORTHOGONAL_FAMILIES,
+        timeframe_overrides,
+        timeframe_refusal,
+    )
+
+    meta = _read(UNIVERSE / "universe.json") or {}
+    pairs = sweep_pairs(meta)
+    symbols = sorted({sym for sym, _ in pairs})
     hypotheses: list[dict] = []
     gaps: dict[str, int] = {}
     errors: dict[str, int] = {}
     ran: dict[str, int] = {}
     untestable: dict[str, int] = {}
+    #: "<family>:not-on-<chart> (reason)" -> count. Declared refusals, never silent skips.
+    off_chart: dict[str, int] = {}
+    #: chart -> (symbol, chart) pairs actually reached, so coverage is reported and not inferred.
+    charts: dict[str, int] = {}
     #: family -> pooled observations from cells individually short of MIN_TRADE_DAYS.
     pooled: dict[str, dict] = {}
 
@@ -430,24 +620,48 @@ def sweep() -> dict:
     # the same parquets 297 times; this loads them once and keeps them resident in `_bars`' cache.
     factor_syms = _factor_symbols(symbols, meta)
 
-    for _sym_i, sym in enumerate(symbols):
+    # WHICH CHARTS EVEN WANT A PEER OR A FACTOR BASKET. Loading them is not free -- the basket is
+    # eight frames -- and on a chart where every family that takes them is declared out of domain
+    # it is eight frames loaded so they can be passed to nobody. That is not a tidiness point: the
+    # residual families are the ones restricted to H1-and-slower, so an unguarded load would put
+    # eight M1 frames (sixty bars per H1 bar each) in a cache budgeted for ten hourly ones, which
+    # is precisely the memory the ladder had to be designed around. Computed once, from the same
+    # declaration the family loop enforces, so the two can never disagree.
+    _PEER_FAMS = ("relative_value", "correlation_regime")
+    _FACTOR_FAMS = ("cross_asset_residual", "pca_residual")
+    peer_charts = {t for t in _LADDER
+                   if any(timeframe_refusal(f, t) is None for f in _PEER_FAMS)}
+    factor_charts = {t for t in _LADDER
+                     if any(timeframe_refusal(f, t) is None for f in _FACTOR_FAMS)}
+
+    for _pair_i, (sym, tf) in enumerate(pairs):
         # CHECKPOINT WHAT IS ALREADY DONE. See _write_report: the stage timeout is shorter than
         # a full sweep, so anything not written by now is written by nobody.
-        if _sym_i:
-            _write_report(_build_report(symbols[:_sym_i], ran, gaps, errors, untestable,
-                                        hypotheses), partial=True)
-        df = _bars(sym)
-        if df is None or len(df) < 2000:
+        if _pair_i:
+            _write_report(_build_report(pairs[:_pair_i], ran, gaps, errors, untestable,
+                                        hypotheses, off_chart, charts), partial=True)
+        df = _bars(sym, tf)
+        # THE SCREEN IS A MARKET-TIME SCREEN, NOT A BAR COUNT. A flat 2,000 bars is four months
+        # of H1 and eight YEARS of D1, so it would have silently emptied the daily lane -- the
+        # swing lane -- on every symbol while reading like one rule. `min_bars_for` re-expresses
+        # this same span on each chart and is the identity at H1.
+        if df is None or len(df) < _min_bars(tf):
             continue
+        charts[tf] = charts.get(tf, 0) + 1
         # THE PEER IS THE RELATED INSTRUMENT, THE FACTORS ARE THE UNIVERSE. Both were
         # alphabetical before (`[s for s in symbols if s != sym][:12]`), which paired XAUUSD with
         # 3M and handed the residual families two arbitrary neighbours; `pca_residual` was handed
         # nothing at all and returned [] on all 297 symbols. See _peer_symbol / _factor_symbols.
-        peer_sym = _peer_symbol(sym, symbols, meta)
-        peer_df = _bars(peer_sym) if peer_sym else None
-        factor_names = [s for s in factor_syms if s != sym]
-        factor_dfs = [f for f in (_bars(s) for s in factor_names) if f is not None]
-        spread, flow = _tape_series(sym, df.index)
+        #
+        # AND THEY ARE LOADED ON THE CELL'S OWN CHART. A peer or factor frame on a different
+        # clock does not raise -- the families join `how="inner"`, so an H1 peer against an M5
+        # instrument silently reduces the cell to its twelve-times-sparser H1 stamps and calls the
+        # result an M5 residual. Same chart both sides, or the join is measuring the mismatch.
+        peer_sym = _peer_symbol(sym, symbols, meta) if tf in peer_charts else None
+        peer_df = _bars(peer_sym, tf) if peer_sym else None
+        factor_names = [s for s in factor_syms if s != sym] if tf in factor_charts else []
+        factor_dfs = [f for f in (_bars(s, tf) for s in factor_names) if f is not None]
+        spread, flow = _tape_series(sym, df.index, tf)
         macro = _macro_series(df.index)
         cot = _cot_frame(sym)
         events = _event_index()
@@ -506,11 +720,26 @@ def sweep() -> dict:
             continue
 
         for fam, fn in sorted(ORTHOGONAL_FAMILIES.items()):
-            kw = kwargs_by_family.get(fam, {})
+            kw = dict(kwargs_by_family.get(fam, {}))
             if fam in NOT_SOURCED_HERE:
                 key = f"{fam}:not-sourced-here ({NOT_SOURCED_HERE[fam]})"
                 gaps[key] = gaps.get(key, 0) + 1
                 continue
+            # A CHART THIS FAMILY CANNOT SPEAK ON IS DECLARED, NOT DISCOVERED. `hedging_demand_close`
+            # gates on a broker stamp-hour, so on D1 it would return [] on every symbol and be
+            # filed under `input_gaps` as though the desk were missing a feed -- absence read as a
+            # clean verdict (WS-005). `FAMILY_TIMEFRAMES` carries the reason and it is counted in
+            # its own bucket, so "this family does not run here" never reads as "no data".
+            if (refusal := timeframe_refusal(fam, tf)):
+                key = f"{fam}:not-on-{tf} ({refusal})"
+                off_chart[key] = off_chart.get(key, 0) + 1
+                continue
+            # WALL-CLOCK DEFAULTS, RE-EXPRESSED ON THIS CHART. Empty at H1 by construction, so no
+            # hourly cell moves by a parameter. Passed explicitly rather than left to the family's
+            # H1-written default, and carried into the candidate's identity below, so the
+            # certificate says exactly what ran and the gauntlet rebuilds THAT.
+            overrides = timeframe_overrides(fam, tf)
+            kw.update(overrides)
             # ASK BEFORE CALLING. A family whose required evidence this sweep has no source for
             # is an acquisition gap, not a crash -- see _unsuppliable.
             if (need_args := _unsuppliable(fn, kw)):
@@ -560,7 +789,7 @@ def sweep() -> dict:
                 _pool = pooled.setdefault(fam, {"days": set(), "rs": [], "members": []})
                 _pool["days"].update(t.entry_time.date() for t in trades)
                 _pool["rs"].extend(t.r_multiple for t in trades)
-                _pool["members"].append(f"{sym}:{_days}d")
+                _pool["members"].append(f"{sym}@{tf}:{_days}d")
                 continue
             rs = [t.r_multiple for t in trades]
             exp = sum(rs) / len(rs)
@@ -571,8 +800,17 @@ def sweep() -> dict:
                 cum += r
                 peak = max(peak, cum)
                 dd = min(dd, cum - peak)
+            # THE CHART TRAVELS IN THE PARAMS, AND ONLY WHEN IT IS NOT H1. `params` is what the
+            # cache key, the cell id, the certificate and the forward clock are all derived from,
+            # so this is the one place the chart has to be recorded for every one of them to be
+            # right at once. H1 stays absent so that every id this desk already holds is
+            # byte-identical -- the same asymmetry `sleeve_key` applies to direction.
+            _params = dict(identity_by_family.get(fam, {}))
+            _params.update(overrides)
+            if tf != _REFERENCE_TF:
+                _params["timeframe"] = tf
             hypotheses.append({
-                "symbol": sym, "family": fam, "params": identity_by_family.get(fam, {}),
+                "symbol": sym, "family": fam, "timeframe": tf, "params": _params,
                 "n": len(trades), "exp_r": round(exp, 4), "max_dd_r": round(dd, 2),
                 "source": f"orthogonal_sweep:{fam}",
                 "mechanism_status": "NAMED",
@@ -604,12 +842,27 @@ def sweep() -> dict:
                     f"already does for forward verdicts."),
         })
 
-    return _build_report(symbols, ran, gaps, errors, untestable, hypotheses)
+    return _build_report(pairs, ran, gaps, errors, untestable, hypotheses, off_chart, charts)
 
 
-def _build_report(symbols, ran, gaps, errors, untestable, hypotheses) -> dict[str, object]:
+def _build_report(pairs, ran, gaps, errors, untestable, hypotheses,
+                  off_chart=None, charts=None) -> dict[str, object]:
     return {"swept_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-            "symbols": len(symbols), "families_ran": ran,
+            "symbols": len({p[0] for p in pairs}),
+            "symbol_chart_pairs": len(pairs),
+            # COVERAGE IS REPORTED, NOT INFERRED. "the sweep ran" is not "the sweep reached D1":
+            # a chart whose parquets are absent, or whose bars are too short for the gates on
+            # every symbol, contributes zero pairs and must say so rather than be read off a
+            # families_ran count that cannot distinguish charts.
+            "charts_swept": dict(sorted((charts or {}).items())),
+            "off_chart_by_family": dict(sorted((off_chart or {}).items())),
+            "off_chart_note": (
+                "families DECLARED inexpressible on a chart (families_orthogonal."
+                "FAMILY_TIMEFRAMES), with the reason. Kept apart from input_gaps on purpose: a "
+                "session-hour family on a daily bar returns [] for a reason that is not a "
+                "missing feed, and folding the two together is how absence reads as a clean "
+                "verdict. Nothing here is a gate -- a cell that runs faces the identical ten."),
+            "families_ran": ran,
             "input_gaps": gaps,
             "family_errors": errors,
             "family_errors_note": (
@@ -627,7 +880,7 @@ def _build_report(symbols, ran, gaps, errors, untestable, hypotheses) -> dict[st
 
 
 def _write_report(report: dict[str, object], *, partial: bool) -> None:
-    """Write the sweep artifact, atomically. Called after every symbol, not only at the end.
+    """Write the sweep artifact, atomically. Called after every (symbol, chart), not at the end.
 
     SAME DEFECT AS edge_search, SAME SHAPE. The sweep built its whole report and wrote it once
     after the symbol loop, while the pipeline allots the search a 20-minute remote stage that
@@ -653,12 +906,19 @@ def main() -> int:
     report = sweep()
     _write_report(report, partial=False)
     hyp = report["hypotheses"]
-    print(f"orthogonal sweep: {report['symbols']} symbol(s), "
+    print(f"orthogonal sweep: {report['symbols']} symbol(s) x "
+          f"{len(report['charts_swept'])} chart(s) = {report['symbol_chart_pairs']} pair(s), "
           f"{len(report['families_ran'])} family(ies) produced signals, "
           f"{len(hyp)} candidate(s) passed the loose screen")
+    print("  charts reached: "
+          + (", ".join(f"{tf}={n}" for tf, n in report["charts_swept"].items()) or "NONE"))
     for fam, n in sorted(report["families_ran"].items()):
         got = sum(1 for h in hyp if h["family"] == fam)
-        print(f"   {fam:24} ran on {n:>3} symbol(s) -> {got} candidate(s)")
+        print(f"   {fam:24} ran on {n:>3} chart-symbol(s) -> {got} candidate(s)")
+    if report["off_chart_by_family"]:
+        print("  declared off-chart (NOT a data gap -- families_orthogonal.FAMILY_TIMEFRAMES):")
+        for k, n in sorted(report["off_chart_by_family"].items())[:6]:
+            print(f"   {k[:150]}  x{n}")
     if report["input_gaps"]:
         print("  input gaps (ACQUISITION tasks, not miner failures):")
         for k, n in sorted(report["input_gaps"].items())[:6]:

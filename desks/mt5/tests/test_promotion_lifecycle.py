@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -70,11 +71,41 @@ def desk(tmp_path, monkeypatch):
         return out
     monkeypatch.setattr(promoter, "authorized_specs", _authority_from_shadow)
 
+    # CAPITAL NOW REQUIRES A MEASURED dE[log W] (principal 2026-09-05), and these tests exercise
+    # the promotion MECHANICS -- the same reason the fixture already grants the certificate
+    # authority above. So the allocator is made to admit exactly the keys each test writes, and
+    # the criterion itself has its own file (test_marginal_admission.py). A test that wants a
+    # refusal, a stale scan or a demotion calls `desk.allocation(...)` explicitly.
+    alloc = tmp_path / "reports" / "pf_allocation.json"
+    alloc.parent.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(promoter, "ALLOCATION", alloc)
+    pinned: dict = {}
+
+    def _write_allocation(keys, *, admit=True, heat=0.03, at=None) -> None:
+        stamp = (at or datetime.now(tz=UTC)).isoformat()
+        alloc.write_text(json.dumps({
+            "generated_utc": stamp, "heat": {"total": 0.20}, "book": {}, "book_zeroed": {},
+            "admission": {
+                "status": "MEASURED", "measured_utc": stamp, "universe": {},
+                "candidates": {k: {"symbol": "", "family": "", "selector": "",
+                                   "delta_elogw_per_day": 0.0004 if admit else -0.0002,
+                                   "heat_earned": heat if admit else 0.0, "admit": bool(admit),
+                                   "why": "fixture: admitted" if admit else "fixture: refused"}
+                               for k in keys}},
+        }), encoding="utf-8")
+
     class Desk:
         root = tmp_path
 
+        def allocation(self, keys, *, admit=True, heat=0.03, at=None) -> None:
+            """Pin what the allocator says; stops the shadow writer from overwriting it."""
+            pinned["on"] = True
+            _write_allocation(keys, admit=admit, heat=heat, at=at)
+
         def shadow(self, blob: dict) -> None:
             (shadow_dir / "shadow_state.json").write_text(json.dumps(blob), encoding="utf-8")
+            if not pinned:
+                _write_allocation(list(blob))
 
         def read_shadow(self) -> dict:
             return json.loads((shadow_dir / "shadow_state.json").read_text(encoding="utf-8"))

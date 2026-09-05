@@ -1,123 +1,163 @@
-"""Cohort assembly for the unlock DiD -- the three designs must differ in the way they claim to.
+"""Cohort assembly for the MACRO-EVENT DiD -- where a causal study is actually won or lost.
 
-`build_cohort` is where a causal study is actually won or lost: the estimator can only be as
-honest as the control leg handed to it. Each design here fixes a named defect in the one before,
-so each gets a test that would fail if that fix silently stopped applying.
+The estimator can only be as honest as the control leg handed to it, so the assembly gets the
+tests rather than the arithmetic. Each property here would, if it silently stopped applying,
+convert a refusable study into one that confirms itself.
+
+REPLACES the token-unlock cohort tests, deleted 2026-09-05 with the crypto desk. Those tested
+`build_cohort` for vesting schedules and circulating supply; that function and its universe are
+gone. The design that replaced it studies dated macro events against the MT5 universe, so the
+properties worth pinning changed with it -- but the reason for pinning them did not.
 """
 
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from scripts.run_natural_experiment import (
-    MIN_CONTROLS_PER_DAY,
-    POST_DAYS,
-    PRE_DAYS,
-    build_cohort,
-)
 
-N_PEERS = MIN_CONTROLS_PER_DAY + 15
+rne = pytest.importorskip("scripts.run_natural_experiment")
 
 
-@pytest.fixture
-def rets():
-    """A daily return panel: one unlocking symbol plus enough peers to clear the control floor."""
-    idx = pd.date_range("2023-01-01", periods=400, freq="D", tz="UTC")
-    rng = np.random.default_rng(0)
-    cols = {"TREATED": rng.normal(0, 0.01, len(idx))}
-    for i in range(N_PEERS):
-        cols[f"PEER{i}"] = rng.normal(0, 0.01, len(idx))
-    return pd.DataFrame(cols, index=idx)
+class _Quote:
+    __slots__ = ("price", "ts")
+
+    def __init__(self, ts: datetime, price: float) -> None:
+        self.ts, self.price = ts, price
 
 
-def _ev(sym: str, date: str, cat: str = "insiders") -> dict:
-    return {"symbol": sym, "date": date, "category": cat, "tokens": 1.0}
+class _Reader:
+    """A tape where every symbol trends gently upward, so any DiD effect is orientation, not drift.
+
+    Deliberately identical across symbols: if treated and control move the same way, a correct
+    control leg differences the move to ~zero. A test tape with a built-in treated/control gap
+    could not tell a working design from a broken one.
+    """
+
+    def __init__(self, start: datetime, n: int = 60) -> None:
+        self._bars = {}
+        self._start, self._n = start, n
+
+    def bars(self, symbol: str, start=None, end=None):
+        out = []
+        px = 100.0
+        for i in range(self._n):
+            ts = self._start + timedelta(days=i)
+            px *= 1.001
+            if (start is None or ts >= start) and (end is None or ts <= end):
+                out.append(_Quote(ts, px))
+        return out
 
 
-def test_only_pre_registered_categories_are_treated(rets):
-    events = [_ev("TREATED", "2023-04-01"), _ev("TREATED", "2023-05-01", cat="Uncategorized")]
-    out = build_cohort(rets, events, control_mode="never-treated")
-    assert len(out["units"]) == 1
-    assert out["dropped"]["category"] == 1
+class _Rec:
+    def __init__(self, category: str, when: datetime, instruments: tuple[str, ...]) -> None:
+        self.category, self.instruments = category, instruments
+        self.happened_at = when.isoformat()
+        self.published_at = when.isoformat()
 
 
-def test_never_treated_controls_exclude_every_unlocking_symbol(rets):
-    """The control pool must be symbols that NEVER appear in the unlock file."""
-    events = [_ev("TREATED", "2023-04-01"), _ev("PEER0", "2023-06-01")]
-    out = build_cohort(rets, events, control_mode="never-treated")
-    assert out["n_control_pool"] == N_PEERS - 1, "PEER0 unlocks, so it is not a never-treated peer"
+_T0 = datetime(2026, 3, 1, tzinfo=UTC)
+_UNIVERSE = {f"SYM{i}": {"tradeable": True} for i in range(40)}
 
 
-def test_not_yet_treated_controls_are_drawn_from_the_unlocking_population(rets):
-    """Same population, timing varies -- the whole point of the second design."""
-    events = [_ev("TREATED", "2023-04-01")] + [
-        _ev(f"PEER{i}", "2023-09-01") for i in range(N_PEERS)]
-    out = build_cohort(rets, events, control_mode="not-yet-treated")
-    # TREATED is excluded from its own control leg, leaving the peers that also unlock.
-    assert out["n_control_pool"] >= N_PEERS - 1
-    assert out["units"], "a treated unit should survive"
+def _events(n: int, category: str = "cpi") -> list[_Rec]:
+    return [_Rec(category, _T0 + timedelta(days=i), ("SYM0",)) for i in range(n)]
 
 
-def test_a_symbol_is_never_its_own_control(rets):
-    """If the treated symbol sat in its own control mean the estimate shrinks toward zero
-    mechanically, and nothing in the output would look wrong."""
-    events = [_ev("TREATED", "2023-04-01")] + [
-        _ev(f"PEER{i}", "2023-09-01") for i in range(N_PEERS)]
-    out = build_cohort(rets, events, control_mode="not-yet-treated")
-    u = out["units"][0]
-    # The control leg must not equal the treated leg on any window.
-    assert u.control_pre != u.treated_pre
-    assert u.control_post != u.treated_post
+class TestOrientationIsAPriorNotADefault:
+    def test_a_unit_with_no_stored_exposure_is_dropped(self) -> None:
+        """THE PROPERTY THAT KEEPS THIS FALSIFIABLE. The estimator underneath is a ONE-SIDED
+        POSITIVE test, so defaulting an unknown sign to +1 would confirm a coin flip half the
+        time. The unit must leave the cohort instead."""
+        reader = _Reader(_T0 - timedelta(days=30))
+        cohorts, drops = rne.build_cohorts(_events(20), reader, {}, _UNIVERSE, min_cohort=1)
+        assert not cohorts, "a cohort was built with no stored exposure to orient it"
+        assert any("no stored exposure sign" in d for d in drops)
+
+    @pytest.mark.parametrize("beta", [0.4, -0.4])
+    def test_either_sign_yields_a_cohort_and_the_sign_is_carried(self, beta: float) -> None:
+        """A negative exposure is a prediction too. Dropping it would silently restrict the study
+        to instruments the desk expects to rise, which is a selected sample."""
+        reader = _Reader(_T0 - timedelta(days=30))
+        cohorts, _ = rne.build_cohorts(_events(20), reader, {"SYM0": {"cpi": beta}}, _UNIVERSE,
+                                       min_cohort=1)
+        units = cohorts.get("cpi") or []
+        assert units, "a stored exposure of either sign must orient a unit"
+        want = 1.0 if beta > 0 else -1.0
+        raw_up = units[0].treated_pre[0] * want
+        assert raw_up > 0, "the series was not oriented by the stored sign"
+
+    def test_control_legs_are_oriented_with_the_treated_leg(self) -> None:
+        """Orienting only the treated leg would put a sign on the EFFECT that came from the
+        orientation rather than from the event -- a difference-in-differences between a flipped
+        series and an unflipped one measures the flip."""
+        reader = _Reader(_T0 - timedelta(days=30))
+        cohorts, _ = rne.build_cohorts(_events(20), reader, {"SYM0": {"cpi": -0.4}}, _UNIVERSE,
+                                       min_cohort=1)
+        u = (cohorts.get("cpi") or [])[0]
+        assert u.control_pre[0] < 0 and u.treated_pre[0] < 0, (
+            "a rising tape oriented by a negative exposure must flip BOTH legs")
+
+    def test_a_zero_exposure_is_no_prior_at_all(self) -> None:
+        """Zero is not a direction. Reading it as +1 (or as -1) invents a hypothesis."""
+        reader = _Reader(_T0 - timedelta(days=30))
+        cohorts, drops = rne.build_cohorts(_events(20), reader, {"SYM0": {"cpi": 0.0}}, _UNIVERSE,
+                                           min_cohort=1)
+        assert not cohorts and any("no stored exposure sign" in d for d in drops)
 
 
-def test_clean_pre_window_drops_events_whose_pre_period_holds_a_prior_unlock(rets):
-    """THE DEFECT THE FIRST TWO DESIGNS DIED OF. Monthly vesting puts a previous unlock inside
-    almost every 30-day pre-window, so the 'before' leg is already under supply pressure."""
-    first = pd.Timestamp("2023-04-01", tz="UTC")
-    second = first + pd.Timedelta(days=PRE_DAYS - 5)      # lands INSIDE the second's pre-window
-    events = [_ev("TREATED", str(first.date())), _ev("TREATED", str(second.date()))]
+class TestTheCohortFloorAndItsReasons:
+    def test_a_cohort_under_the_floor_is_dropped_and_counted(self) -> None:
+        """"n=6" with no story is unreadable, and a cohort that shrank from 200 events to 6 has
+        one. The floor exists because a cross-sectional t on a handful of units reports noise
+        with a label on it."""
+        reader = _Reader(_T0 - timedelta(days=30))
+        cohorts, drops = rne.build_cohorts(_events(3), reader, {"SYM0": {"cpi": 0.4}}, _UNIVERSE,
+                                           min_cohort=8)
+        assert not cohorts
+        assert any("under the 8-unit floor" in d for d in drops)
 
-    dirty = build_cohort(rets, events, control_mode="never-treated", require_clean_pre=False)
-    clean = build_cohort(rets, events, control_mode="never-treated", require_clean_pre=True)
+    def test_an_event_naming_no_tradeable_instrument_is_dropped(self) -> None:
+        reader = _Reader(_T0 - timedelta(days=30))
+        recs = [_Rec("cpi", _T0 + timedelta(days=i), ("NOT_IN_UNIVERSE",)) for i in range(20)]
+        cohorts, drops = rne.build_cohorts(recs, reader, {"SYM0": {"cpi": 0.4}}, _UNIVERSE,
+                                           min_cohort=1)
+        assert not cohorts
+        assert any("named instrument" in d for d in drops)
 
-    assert len(dirty["units"]) == 2
-    assert len(clean["units"]) == 1, "the second event's pre-window holds the first unlock"
-    assert clean["dropped"]["prior-unlock-in-pre-window"] == 1
-    assert clean["units"][0].unit_id.endswith(str(first.date()))
-
-
-def test_a_far_apart_prior_unlock_is_kept(rets):
-    """The filter must cost only what it claims to -- it is a contamination rule, not a cull."""
-    first = pd.Timestamp("2023-04-01", tz="UTC")
-    second = first + pd.Timedelta(days=PRE_DAYS + POST_DAYS + 30)
-    events = [_ev("TREATED", str(first.date())), _ev("TREATED", str(second.date()))]
-    clean = build_cohort(rets, events, control_mode="never-treated", require_clean_pre=True)
-    assert len(clean["units"]) == 2
-    assert "prior-unlock-in-pre-window" not in clean["dropped"]
-
-
-def test_events_outside_the_pre_registered_window_are_dropped(rets):
-    out = build_cohort(rets, [_ev("TREATED", "2019-04-01")], control_mode="never-treated")
-    assert not out["units"]
-    assert out["dropped"]["outside-window"] == 1
+    def test_a_tape_too_short_for_the_windows_drops_the_unit(self) -> None:
+        """An absent bar is a gap, never a zero return. Padding here would put invented
+        observations into the pre-period the parallel-trends test is computed on."""
+        short = _Reader(_T0 - timedelta(days=2), n=3)
+        cohorts, drops = rne.build_cohorts(_events(20), short, {"SYM0": {"cpi": 0.4}}, _UNIVERSE,
+                                           min_cohort=1)
+        assert not cohorts and drops
 
 
-def test_a_symbol_absent_from_the_panel_is_dropped_not_guessed(rets):
-    out = build_cohort(rets, [_ev("NOTLISTED", "2023-04-01")], control_mode="never-treated")
-    assert not out["units"]
-    assert out["dropped"]["symbol-not-in-panel"] == 1
+class TestTheWindowsHonourTheEstimatorsFloors:
+    def test_the_declared_windows_sit_above_the_modules_minimums(self) -> None:
+        """Pre-registered here, but they must also be legal: a PRE_BARS under MIN_PRE_OBS would
+        make every study refuse, and 'we never got a result' is how a fence stops being read."""
+        assert rne.PRE_BARS >= rne.MIN_PRE_OBS
+        assert rne.POST_BARS >= rne.MIN_POST_OBS
+
+    def test_units_carry_the_symbol_as_the_sutva_cohort_key(self) -> None:
+        """SUTVA counts SYMBOLS, not events. A symbol with 30 dated events is ONE member of the
+        cross-section; comparing an event count to a symbol count refuses well-powered studies."""
+        reader = _Reader(_T0 - timedelta(days=30))
+        cohorts, _ = rne.build_cohorts(_events(20), reader, {"SYM0": {"cpi": 0.4}}, _UNIVERSE,
+                                       min_cohort=1)
+        units = cohorts["cpi"]
+        assert {u.cohort_key for u in units} == {"SYM0"}, "the key must be the symbol, not the id"
+        assert len({u.unit_id for u in units}) == len(units), "unit ids must stay distinct"
 
 
-def test_an_unknown_control_mode_raises_rather_than_defaulting(rets):
-    with pytest.raises(ValueError, match="unknown control_mode"):
-        build_cohort(rets, [], control_mode="whatever-is-convenient")
-
-
-def test_a_thin_control_day_is_not_quietly_averaged(rets):
-    """Below MIN_CONTROLS_PER_DAY live peers the control mean is masked, and the unit is dropped
-    for a short window rather than resting on three symbols."""
-    thin = rets[["TREATED"] + [f"PEER{i}" for i in range(MIN_CONTROLS_PER_DAY - 5)]]
-    out = build_cohort(thin, [_ev("TREATED", "2023-04-01")], control_mode="never-treated")
-    assert not out["units"]
-    assert out["dropped"]["short-window"] == 1
+class TestAnEmptyLedgerIsNotAResult:
+    def test_run_reports_unmeasured_rather_than_no_effect(self, monkeypatch) -> None:
+        """L1.28a. "No cohort" and "no effect" are opposite findings: one says the desk has not
+        looked, the other that it looked and found nothing. Reporting the first as the second is
+        how an unbuilt capability reads as a tested one."""
+        rep = rne.run()
+        assert rep["status"] == "UNMEASURED"
+        assert rep["detail"], "an UNMEASURED verdict must say what was missing"
+        assert not rep["cohorts"]

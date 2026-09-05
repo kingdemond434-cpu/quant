@@ -223,10 +223,13 @@ mypy_path = "."
 # All four are restored byte-for-byte from dadac868^ and the three checkable ones are listed
 # again below. Only scripts/run_cashcarry_executor.py stays out: its retirement IS the MT5
 # mandate (2026-08-18), and listing an absent file makes mypy exit before checking anything.
+# 2026-09-05: scripts/reconcile_venue.py is dropped from this list for the same reason
+# run_cashcarry_executor.py never joined it -- the MT5 mandate retired the crypto-exchange venue
+# it reconciled, so the file is gone and mypy exits on the missing path before checking anything.
 files = ["libs", "app", "migrations",
          "scripts/run_deadman_reconciliation.py",
          "scripts/run_deadman_stranded_sweep.py",
-         "scripts/reconcile_venue.py", "scripts/run_trade_forensics.py"]
+         "scripts/run_trade_forensics.py"]
 
 # PYARROW VERSION STRADDLE (2026-08-05). libs/data/lake.py carries two
 # `type: ignore[no-untyped-call]`s that are REQUIRED on the pinned pyarrow (>=24,<25) and read

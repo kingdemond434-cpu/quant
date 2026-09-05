@@ -32,7 +32,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from mt5desk.families import Signal, _atr, _h1
+from mt5desk.families import Signal, _atr, _h1, bars_per_day
 
 #: The catalogue of plumbing moments, in UTC hours by season. DECLARED, because they are facts
 #: about venues rather than anything price can reveal. (summer_utc, winter_utc).
@@ -89,7 +89,10 @@ def family_clock_transition(
     if not (0 <= int(stamp_hour) <= 23):
         return []
     d = _h1(df)
-    if len(d) < 24 * 60:
+    # SIXTY DAYS OF HISTORY, on whatever chart this is. `24 * 60` was an hourly spelling of
+    # "sixty days" and it asks a D1 chart for 1,440 bars (five and a half years) while waving
+    # through an M1 frame an hour long. Identical on H1, where bars_per_day is 24.
+    if len(d) < bars_per_day(d) * 60:
         return []
     hours = d.index.hour
     at = np.flatnonzero(hours == int(stamp_hour))

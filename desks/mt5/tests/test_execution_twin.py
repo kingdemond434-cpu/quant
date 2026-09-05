@@ -49,6 +49,13 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(et, "STATE", data / "execution_twin_state.json")
     monkeypatch.setattr(et, "CASES", data / "execution_twin_cases.jsonl")
     monkeypatch.setattr(et, "REPORT", reports / "EXECUTION_TWIN.json")
+    # THE FILL CORPUS and the four ledgers it joins. Redirected here for the same reason as the
+    # rest: a test that appends to the box's real corpus would corrupt the one asset on this desk
+    # that cannot be rebuilt from anything.
+    monkeypatch.setattr(et, "CORPUS", data / "fill_corpus.jsonl")
+    monkeypatch.setattr(et, "DECISIONS", data / "decision_ledger.jsonl")
+    monkeypatch.setattr(et, "DATASET", data / "decision_dataset.jsonl")
+    monkeypatch.setattr(et, "EXCURSIONS", data / "excursions.jsonl")
     (data / "universe.json").write_text(json.dumps({
         "XAUUSD": {"contract_size": 100.0, "median_spread_pts": 15.0, "digits": 2,
                    "tick_size": 0.01}}), "utf-8")
@@ -203,6 +210,97 @@ def test_rerunning_does_not_double_count_and_growth_appends_only_the_new(desk) -
     assert [r["filled"] for r in after] == [False, True]
     assert after[-1]["join_key"] == "ticket"
     assert after[-1]["actual_slip_frac"] == pytest.approx(2.0 / PX)
+
+
+def test_the_hour_also_assembles_the_fill_corpus_and_reports_its_capture_gaps(desk) -> None:
+    """The corpus is a JOIN on this organ's clock, and its COMPLETENESS is the deliverable: an
+    unrecorded fill cannot be recovered later, so an empty column must name who has to write it."""
+    desk.market(12)
+    tickets = desk.bracket(2)
+    desk.deal(tickets[0], PX + 0.5)
+    d = et.run()
+    corp = d["fill_corpus"]
+    assert corp["n_records"] == 14 and corp["appended_this_pass"] == 14
+    assert et.CORPUS.exists()
+    rows = [json.loads(ln) for ln in et.CORPUS.read_text("utf-8").splitlines()]
+    assert len(rows) == 14 and {r["symbol"] for r in rows} == {"XAUUSD"}
+    # the tape columns are empty on a box with no tape, and the report says exactly who owes them
+    assert "markout_5m_r" in corp["empty_fields"]
+    assert any("tick tape" in g for g in corp["gaps"])
+    assert corp["markouts"]["n"] == 0 and corp["markouts"]["why"]
+    # append-only with the same resolution rule as the case dataset: a re-run appends nothing
+    again = et.run(symbols=["XAUUSD"])
+    assert again["fill_corpus"]["appended_this_pass"] == 0
+    assert len(et.CORPUS.read_text("utf-8").splitlines()) == 14
+
+
+def test_the_two_models_are_harnesses_that_refuse_to_fit_on_this_sample(desk) -> None:
+    """A model that pretends to know is worse than a harness that admits it does not. Both report
+    UNMEASURED with the sample they need, and neither is wired to anything that sends an order."""
+    desk.market(12)
+    d = et.run()
+    ch, meta = d["execution_choice"], d["meta_label"]
+    assert ch["status"] == "UNMEASURED" and "NOT fitted" in ch["why"]
+    assert ch["wired_to"].startswith("NOTHING")
+    assert ch["requirements"]["tiers"]["unconditional"]["by_basis"]["slip_r"]["n_per_arm"] > 0
+    assert meta["status"] == "UNMEASURED"
+    assert "never re-admit" in meta["wired_to"] or "re-admit" in meta["wired_to"]
+    assert meta["requirements"]["n_total_labelled_outcomes"] > 0
+    # and the capture ratio is UNMEASURED rather than zero -- these fills carry no predicted edge
+    assert d["alpha_capture"]["overall"]["status"] == "UNMEASURED"
+    assert d["alpha_capture"]["overall"]["alpha_capture_ratio"] is None
+
+
+def test_the_markouts_come_off_a_real_tape_through_the_recorder_s_own_reader(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The one thing the corpus cannot get from any ledger: what the price did AFTER the fill.
+
+    Exercised against a real `TapeStore` segment rather than a stub, because the contract that
+    matters is the recorder's -- `read_day(symbol, day) -> [time_msc, bid, ask]` in PRICE units --
+    and a stub would keep passing on the day that contract changes. Skipped where the tape's
+    parquet dependency is absent; this organ must run on a container with no tape at all.
+    """
+    np = pytest.importorskip("numpy")
+    pytest.importorskip("pyarrow")
+    from recorders.tape_store import TapeStore
+
+    store = TapeStore(tmp_path / "tape")
+    t0 = datetime(2026, 9, 4, 9, 0, tzinfo=UTC)
+    base, point = int(t0.timestamp() * 1000), 0.01
+    dtype = np.dtype([("time_msc", "i8"), ("bid", "f8"), ("ask", "f8"), ("last", "f8"),
+                      ("volume", "i8"), ("flags", "i8")])
+    ticks = np.zeros(400, dtype=dtype)
+    for i in range(400):                       # +0.01 per second, straight up
+        px = PX + 0.01 * i
+        ticks[i] = (base + i * 1000, round(px - 0.1, 2), round(px + 0.1, 2), round(px, 2), 1, 2)
+    store.write_segment("XAUUSD", "2026-09-04", ticks, point, 2, "test")
+
+    intent = {"time": t0.isoformat(), "sleeve": "gold", "symbol": "XAUUSD", "side": "buy_stop",
+              "lot": 0.1, "intended": PX, "sl": PX * 0.99, "tp": PX * 1.02, "ticket": 77,
+              "retcode": 10008}
+    cases = et.dt.join_cases([intent], [], [], asof=t0 + timedelta(hours=1))
+    deals = [{"order": 77, "deal": 5, "symbol": "XAUUSD", "entry_time": t0.isoformat(),
+              "exit_time": (t0 + timedelta(seconds=300)).isoformat(), "entry_price": PX,
+              "fill_price": PX, "account_kind": "live"}]
+    import recorders.tick_recorder as tr
+    monkeypatch.setattr(tr, "DEFAULT_TAPE_ROOT", store.root)
+
+    marks, why = et._tape_markouts(cases, et._tickets([intent], cases), deals)
+    assert why == "" and len(marks) == 1
+    m = next(iter(marks.values()))
+    # stop distance is 0.01 x 3000 = 30.0, so +3.00 of price at 300s is exactly +0.10R
+    assert m["markout_5m_r"] == pytest.approx(0.10, abs=1e-6)
+    assert m["markout_1s_r"] == pytest.approx(0.01 / 30.0, abs=1e-9)
+    assert m["mfe_r"] == pytest.approx(0.10, abs=1e-6)
+    assert m["mae_r"] == 0.0 and str(m["mae_r"]) == "0.0"      # never the -0.0 a negation gives
+    assert len(m["path_r"]) == 24 and m["path_r"][0] == [0.0, 0.0]
+
+
+def test_no_tape_costs_the_markout_columns_and_never_the_pass(desk) -> None:
+    desk.market(3)
+    cases = et.dt.join_cases(et._rows(et.INTENTS), [], [], asof=T0 + timedelta(hours=1))
+    marks, why = et._tape_markouts(cases, {}, None)
+    assert marks == {} and "no deal ledger" in why
 
 
 def test_a_symbol_filtered_run_is_a_probe_that_moves_no_watermark(desk) -> None:

@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
@@ -303,3 +304,223 @@ def test_a_symbol_whose_point_changes_mid_tape_decodes_both_halves_correctly(
     assert len(df) == 200
     assert np.allclose(df["bid"].to_numpy()[:100], old["bid"], atol=1e-9)
     assert np.allclose(df["bid"].to_numpy()[100:], new["bid"], atol=1e-9)
+
+
+# ------------------------------------------------------------- the compaction --
+def _fill_day(store: ts.TapeStore, symbol: str, n_segments: int = 40,
+              per_segment: int = 60) -> int:
+    """Write a day the way the recorder does: one small segment per cycle."""
+    rows = 0
+    for i in range(n_segments):
+        t = _ticks(per_segment, start=T0 + i * 120_000)
+        rows += store.write_segment(symbol, DAY, t, 1e-5, 5, cycle_id=f"c{i}").rows
+    return rows
+
+
+def test_compaction_is_not_downsampling_and_the_ticks_come_back_byte_for_byte(
+        store: ts.TapeStore) -> None:
+    """THE CLAIM THE WHOLE RETENTION POLICY RESTS ON. `tape_store` argues that a finished day may
+    be folded from ~1,440 containers into one because nothing is lost by it. That is a factual
+    claim about an operation that DELETES FILES, so it is tested by comparing every value on both
+    sides rather than by counting rows."""
+    _fill_day(store, "EURUSD")
+    before = store.read_day("EURUSD", DAY)
+    assert len(store.manifest("EURUSD", DAY)) == 40
+
+    res = store.compact_day("EURUSD", DAY)
+    assert res["status"] == "COMPACTED"
+    assert res["segments_after"] == 1, "a day with one unit compacts to exactly one segment"
+    assert res["superseded"] == 40, "all 40 containers are retired; the survivor is a new one"
+
+    after = store.read_day("EURUSD", DAY)
+    assert len(after) == len(before)
+    for col in ("time_msc", "bid", "ask", "last", "volume", "flags"):
+        assert np.array_equal(after[col].to_numpy(), before[col].to_numpy()), col
+
+
+def test_compaction_actually_reclaims_the_container_cost_it_is_for(
+        store: ts.TapeStore) -> None:
+    """The point of compacting is the parquet footer, which is ~3KB whatever the segment holds.
+    A compaction that did not shrink the day would be pure risk for no return."""
+    _fill_day(store, "EURUSD")
+    res = store.compact_day("EURUSD", DAY)
+    assert res["bytes_after"] < res["bytes_before"] / 4, (
+        f"{res['bytes_before']} -> {res['bytes_after']}: compaction must amortise the per-segment "
+        f"footer, which is the entire reason it exists")
+
+
+def test_a_compacted_day_reports_no_missing_segments_and_seals_clean(
+        store: ts.TapeStore) -> None:
+    """A retired segment and a vanished one must never render the same way. If they did, every
+    compacted day would FAIL the integrity check and the checker would be trained to be ignored."""
+    _fill_day(store, "EURUSD")
+    store.compact_day("EURUSD", DAY)
+    out = store.reconcile("EURUSD", DAY)
+    assert out["missing"] == [] and out["corrupt"] == []
+    seal = store.seal_day("EURUSD", DAY)
+    assert seal.notes == []
+    assert seal.superseded == 40, "the seal records how many containers were folded"
+    assert seal.segments == 1
+
+
+def test_the_duplicate_rate_survives_the_compaction_that_removes_the_duplicates(
+        store: ts.TapeStore) -> None:
+    """Compaction dedupes. If the measurement lived only in the row count, the cost of the
+    overlap re-pull would read as zero on every finished day -- retiring the number on exactly
+    the days worth judging."""
+    _fill_day(store, "EURUSD", n_segments=5)
+    store.write_segment("EURUSD", DAY, _ticks(60, start=T0), 1e-5, 5, cycle_id="overlap")
+    res = store.compact_day("EURUSD", DAY)
+    assert res["duplicates_removed"] == 60
+    rows = store.compactions("EURUSD", DAY)
+    assert len(rows) == 1
+    assert rows[0]["rows_in"] - rows[0]["rows_out"] == 60
+    assert rows[0]["manifest_sha256"], "the chain back to the pre-compaction manifest is kept"
+
+
+def test_a_crash_between_the_compacted_write_and_the_manifest_loses_nothing(
+        store: ts.TapeStore) -> None:
+    """Compaction crash point 1. The new segment landed and nothing else did. The day must read
+    as the compacted segment PLUS its sources -- duplicates, removed on read -- and never short."""
+    rows = _fill_day(store, "EURUSD", n_segments=6)
+    before = store.read_day("EURUSD", DAY)
+    df = store.read_day("EURUSD", DAY)
+    payload, rec = ts.encode_segment(ts._ticks_from_frame(df), "EURUSD", DAY, 1e-5, 5,
+                                     compacted=True)
+    ts._atomic_write_bytes(store.day_dir("EURUSD", DAY) / rec.filename, payload)
+
+    assert len(store.read_day("EURUSD", DAY)) == len(before), (
+        "an unregistered compacted segment contributes nothing yet and removes nothing")
+    store.reconcile("EURUSD", DAY)
+    after = store.read_day("EURUSD", DAY)
+    assert len(after) == rows, "re-registration must dedupe against the sources, not double them"
+    assert np.array_equal(after["time_msc"].to_numpy(), before["time_msc"].to_numpy())
+
+
+def test_a_crash_before_the_victims_are_deleted_self_heals_on_the_next_compaction(
+        store: ts.TapeStore) -> None:
+    """Compaction crash point 4->5. The manifest was replaced, the old files are still on disk.
+
+    They come back as orphans, read as DUPLICATES rather than as a hole, and the next compaction
+    folds them away again. The re-run writes a new digest rather than reproducing the first one --
+    `written_at` sits inside the hashed metadata, so two compactions of the same ticks are
+    content-equal but not byte-equal. That costs one extra file in a rare crash path and buys
+    nothing to chase: what has to hold is that the day converges to one segment with every tick
+    still in it, and that is what is asserted.
+    """
+    _fill_day(store, "EURUSD", n_segments=8)
+    expect = store.read_day("EURUSD", DAY)
+    d = store.day_dir("EURUSD", DAY)
+    payloads = {r.filename: (d / r.filename).read_bytes()
+                for r in store.manifest("EURUSD", DAY)}
+    store.compact_day("EURUSD", DAY)
+    for name, raw in payloads.items():           # resurrect what the delete would have removed
+        (d / name).write_bytes(raw)
+
+    assert len(store.read_day("EURUSD", DAY)) == len(expect), "duplicates, never a hole"
+    again = store.compact_day("EURUSD", DAY)
+    assert again["status"] == "COMPACTED"
+    assert again["segments_after"] == 1, "the day converges back to one segment"
+    after = store.read_day("EURUSD", DAY)
+    assert np.array_equal(after["time_msc"].to_numpy(), expect["time_msc"].to_numpy())
+    assert np.array_equal(after["bid"].to_numpy(), expect["bid"].to_numpy())
+    assert store.reconcile("EURUSD", DAY)["missing"] == []
+
+
+def test_two_units_in_one_day_compact_separately_rather_than_being_re_priced(
+        store: ts.TapeStore) -> None:
+    """A broker re-quote leaves two points in one day. Merging them would have to pick one and
+    silently re-price half the ticks -- the exact failure the per-segment `point` exists to stop."""
+    for i in range(4):
+        store.write_segment("REQUOTED", DAY, _ticks(50, start=T0 + i * 100_000), 1e-5, 5)
+    new_pts = np.arange(50, dtype=np.int64) % 40 + 100
+    for i in range(4):
+        t = _ticks(50, start=T0 + 5_000_000 + i * 100_000)
+        t["bid"] = np.round(new_pts * 1e-3, 3)
+        t["ask"] = np.round((new_pts + 12) * 1e-3, 3)
+        store.write_segment("REQUOTED", DAY, t, 1e-3, 3)
+    before = store.read_day("REQUOTED", DAY)
+
+    res = store.compact_day("REQUOTED", DAY)
+    assert res["segments_after"] == 2, "one compacted segment per unit, never one for both"
+    points = {r.point for r in store.manifest("REQUOTED", DAY)}
+    assert points == {1e-5, 1e-3}
+    after = store.read_day("REQUOTED", DAY)
+    assert np.allclose(after["bid"].to_numpy(), before["bid"].to_numpy(), rtol=0, atol=1e-12)
+
+
+def test_compacting_a_day_with_one_segment_does_nothing_at_all(store: ts.TapeStore) -> None:
+    store.write_segment("EURUSD", DAY, _ticks(100), 1e-5, 5)
+    before = store.day_bytes("EURUSD", DAY)
+    res = store.compact_day("EURUSD", DAY)
+    assert res["status"] == "NOTHING_TO_DO"
+    assert store.day_bytes("EURUSD", DAY) == before
+    assert store.compactions("EURUSD", DAY) == []
+
+
+def test_the_minute_mask_is_cached_on_content_and_a_grown_day_recomputes(
+        store: ts.TapeStore) -> None:
+    """The session model reads 90 days per symbol per pass; without this cache that is a whole-day
+    parquet decode each time and the hourly report stops finishing. A cache that could go stale
+    would be worse than none, so the key is the day's own content."""
+    store.write_segment("EURUSD", DAY, _ticks(120, start=T0), 1e-5, 5)
+    first = store.minute_mask("EURUSD", DAY)
+    assert first.dtype == bool and first.size == 1440
+    assert first.any()
+
+    cache = store.state_dir / "minutes" / "EURUSD" / f"{DAY}.json"
+    assert cache.exists(), "the mask must actually be cached or nothing is saved"
+    token_before = json.loads(cache.read_text("utf-8"))["token"]
+
+    later = T0 + 3 * 3600_000
+    store.write_segment("EURUSD", DAY, _ticks(120, start=later), 1e-5, 5)
+    grown = store.minute_mask("EURUSD", DAY)
+    assert grown.sum() > first.sum(), "a day that GREW must not serve the old mask"
+    assert json.loads(cache.read_text("utf-8"))["token"] != token_before
+
+
+def test_the_minute_mask_matches_the_ticks_it_claims_to_summarise(
+        store: ts.TapeStore) -> None:
+    store.write_segment("EURUSD", DAY, _ticks(400, start=T0 + 7 * 60_000), 1e-5, 5)
+    mask = store.minute_mask("EURUSD", DAY)
+    df = store.read_day("EURUSD", DAY)
+    day_start = int(pd.Timestamp(DAY, tz="UTC").timestamp() * 1000)
+    want = np.zeros(1440, dtype=bool)
+    want[np.unique((df["time_msc"].to_numpy() - day_start) // 60_000)] = True
+    assert np.array_equal(mask, want)
+
+
+def test_compaction_keeps_the_row_of_a_segment_that_vanished(store: ts.TapeStore) -> None:
+    """A COMPACTION MAY REORGANISE CONTAINERS; IT MAY NEVER LAUNDER A LOSS. The manifest is
+    rewritten, so a row whose file is gone would be trivially easy to drop -- and then
+    `reconcile` reports missing=[], the day seals clean, and the only record that a segment was
+    ever lost is gone with it."""
+    _fill_day(store, "EURUSD", n_segments=6)
+    gone = store.manifest("EURUSD", DAY)[2]
+    (store.day_dir("EURUSD", DAY) / gone.filename).unlink()
+
+    res = store.compact_day("EURUSD", DAY)
+    assert res["missing_kept"] == 1
+    assert store.reconcile("EURUSD", DAY)["missing"] == [gone.filename], (
+        "the loss must still be reported after the manifest was rewritten")
+    seal = store.seal_day("EURUSD", DAY)
+    assert any("missing" in n for n in seal.notes)
+
+
+def test_a_corrupt_segment_aborts_its_group_rather_than_being_deleted_with_it(
+        store: ts.TapeStore) -> None:
+    """Compacting the readable segments and deleting the rest would destroy the only copy of
+    ticks that might still be recoverable. A corrupt read can be transient and a bad sector can
+    be partly salvageable; either way that call belongs to a person reading an integrity report,
+    not to a housekeeping pass optimising disk."""
+    _fill_day(store, "EURUSD", n_segments=6)
+    bad = store.manifest("EURUSD", DAY)[3]
+    p = store.day_dir("EURUSD", DAY) / bad.filename
+    p.write_bytes(b"not a parquet file at all")
+
+    res = store.compact_day("EURUSD", DAY)
+    assert res["status"] == "NOTHING_TO_DO"
+    assert res["skipped_unreadable"] == 1
+    assert p.exists(), "the unreadable segment must NOT be deleted by a compaction"
+    assert len(store.manifest("EURUSD", DAY)) == 6, "and no row may be dropped either"
+    assert bad.filename in store.reconcile("EURUSD", DAY)["corrupt"]

@@ -37,6 +37,31 @@ for _p in (str(_DESK), str(_DESK / "research")):
 #: promoter and the health report read it, so a widening is visible the run it happens.
 GATEWAY_FAMILY_POPULATIONS: tuple[str, ...] = ("hunt16",)
 
+#: CHARTS the gateway's family executor runs. THE FAMILY EXECUTOR LEARNED THE LADDER 2026-09-05,
+#: so this is now the full sweep ladder and `executor_gap` no longer fires on a timeframe.
+#:
+#: WHY THIS CONSTANT EXISTED FOR A DAY. When the sweep gained M1..D1, every `family_market` path
+#: in `gateway.py` still called `copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, 400)`
+#: unconditionally. A certificate is enrolment, so a matured M5 candidate would have been promoted
+#: to a `family_market` row and had its signals computed FROM HOURLY BARS -- a live position in a
+#: strategy nobody certified, under the name of one that was, with every artifact agreeing. This
+#: tuple kept those rows out of the book while that was true, which was the honest state and not
+#: the destination.
+#:
+#: WHAT CLOSED IT. `gateway._family_chart` resolves the chart from the certificate's own params
+#: (absent means H1, the desk-wide spelling, so no existing row changes), scales the bar count so
+#: every chart is handed the same MARKET TIME rather than the same bar count, and refuses BY NAME
+#: when a timeframe has no MT5 chart on the box rather than falling back to hourly.
+#: `decision_core.family_bar_due` gained the matching entry rule: the signal bar must START the
+#: signal hour, so a sleeve certified to take one entry a day takes one on M5 and M1 too instead
+#: of twelve or sixty. H1 is byte-identical through both changes.
+#:
+#: The boundary itself is NOT deleted, and that matters: `gateway_can_execute` still refuses a
+#: chart absent from this tuple, so the day someone adds an eighth timeframe to the sweep it is
+#: `executor_gap` -- a named wiring defect on the clock -- until the executor is shown to run it.
+#: The scalp lane keeps its own executor (`scalp_exec`, `exec="scalp_market"`), unaffected.
+GATEWAY_FAMILY_TIMEFRAMES: tuple[str, ...] = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
+
 
 def hunt16_families() -> dict[str, Callable[..., Any]]:
     try:
@@ -85,18 +110,28 @@ def population_of(fam: str) -> str | None:
     return None
 
 
-def gateway_can_execute(fam: str) -> bool:
-    """Can the gateway's family executor trade `fam` today? The boundary the promoter respects."""
-    pop = population_of(fam)
-    return pop is not None and pop in GATEWAY_FAMILY_POPULATIONS
+def gateway_can_execute(fam: str, timeframe: str = "H1") -> bool:
+    """Can the gateway's family executor trade `fam` on `timeframe` today?
+
+    The boundary the promoter respects. `timeframe` defaults to H1 -- the chart every certificate
+    written before the ladder was hunted on -- so no existing caller or row changes.
+    """
+    return executor_gap(fam, timeframe) is None
 
 
-def executor_gap(fam: str) -> str | None:
-    """Why `fam` cannot be traded yet, or None when it can."""
+def executor_gap(fam: str, timeframe: str = "H1") -> str | None:
+    """Why `fam` on `timeframe` cannot be traded yet, or None when it can."""
     pop = population_of(fam)
     if pop is None:
         return f"no constructor for family {fam!r} on this tree"
     if pop not in GATEWAY_FAMILY_POPULATIONS:
         return (f"family {fam!r} lives in the {pop!r} population, which the gateway's family "
                 f"executor does not run yet (populations: {', '.join(GATEWAY_FAMILY_POPULATIONS)})")
+    tf = str(timeframe or "H1").upper()
+    if tf not in GATEWAY_FAMILY_TIMEFRAMES:
+        return (f"certificate is on the {tf} chart and the gateway's family executor runs "
+                f"{'/'.join(GATEWAY_FAMILY_TIMEFRAMES)} "
+                f"(gateway._family_chart resolves the chart from the certificate's own params). "
+                f"Trading it would compute this sleeve's signals from a chart it was never "
+                f"certified on -- a different strategy under a certified name")
     return None

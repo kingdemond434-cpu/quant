@@ -6,7 +6,6 @@ execution logic or parameters itself. Execution is where small mistakes lose mon
 so the layer's entire write surface is one JSON report and (optionally) a page.
 
 WHY A CONSOLIDATION AND NOT A NEW AGENT: the desk already owns the sensors --
-  hedge_integrity.py         -> data/hedge_integrity.json        (the incident-#6 invariant)
   execution_bottleneck.py    -> data/execution_bottleneck.json   (gate-vs-book, cost truth)
   run_trade_forensics.py     -> web/trade_forensics.json         (churn/baseline/leg-thrash classes)
   run_cost_model.py          -> data/cost_model.json             (measured book-walk slippage)
@@ -64,19 +63,18 @@ def _age_h(obj: dict[str, Any] | None, *keys: str) -> float | None:
     return None
 
 
-def _surface_hedge(report: dict[str, Any]) -> None:
-    hi = _read("data/hedge_integrity.json")
-    if hi is None:
-        report["hedge_integrity"] = {"verdict": "NO-DATA",
-                                     "detail": "data/hedge_integrity.json unreadable"}
-        return
-    bad = [s for s, st in (hi.get("legs") or {}).items()
-           if str(st.get("state", "")).upper() in ("INVERTED", "MISSING", "MISMATCHED")]
-    report["hedge_integrity"] = {
-        "verdict": "CRITICAL" if bad else "OK", "bad_legs": bad,
-        "age_h": _age_h(hi, "updated", "ts"),
-        "detail": f"{len(bad)} leg(s) violating the carry invariant" if bad else "all legs hedged",
-    }
+# THE HEDGE SURFACE IS GONE, 2026-09-05 (universe mandate), and it is a RETIREMENT rather than a
+# gap. It read data/hedge_integrity.json and escalated to PAGE+PAUSE-OPENS whenever a tracked
+# carry's futures leg was not SHORT and matching -spot_qty. That invariant is a property of a
+# TWO-LEG spot-perp carry on a crypto exchange; a Fusion/MT5 book holds one net position per
+# symbol, so there is no second leg that can invert and nothing for the rail to assert. The
+# producer (scripts/hedge_integrity.py, which signed a Binance /fapi/v2/positionRisk read) was
+# deleted with it.
+#
+# NOT replaced by a repoint: pointing this surface at the MT5 book would have it grade a hedge
+# relationship that does not exist there, and a rail that can only ever return OK is a rail that
+# teaches the reader to ignore the report. The MT5 equivalent question -- does the book match the
+# venue? -- is already asked by the dead-man reconciliation, which owns that comparison end to end.
 
 
 def _surface_forensics(report: dict[str, Any]) -> None:
@@ -205,17 +203,12 @@ def _recommend(report: dict[str, Any]) -> list[dict[str, Any]]:
                      "why": "realized round-trip cost exceeds model "
                             f"{cd.get('realized_over_modeled')}x -- entry gate must price reality",
                      "auto_apply": False})
-    if report.get("hedge_integrity", {}).get("verdict") == "CRITICAL":
-        recs.append({"knob": None, "action": "PAGE+PAUSE-OPENS",
-                     "why": "hedge invariant violated -- incident-#6 signature",
-                     "auto_apply": False})
     return recs
 
 
 def main() -> int:
     report: dict[str, Any] = {"updated": datetime.now(tz=UTC).isoformat(),
                               "design": "monitor->diagnose->recommend; never self-applies"}
-    _surface_hedge(report)
     _surface_forensics(report)
     _surface_cost_drift(report)
     _surface_fee_attribution(report)

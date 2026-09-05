@@ -304,3 +304,89 @@ def test_thresholds_are_a_ratchet_and_this_test_is_the_ratchet() -> None:
     assert ti.UNEXPLAINED_DEGRADED_MIN <= 1, "ANY unexplained minute must be at least DEGRADED"
     assert ti.UNEXPLAINED_FAIL_MIN <= 30
     assert ti.SESSION_QUORUM >= 0.5 and ti.MIN_WEEKDAY_OBS >= 3
+
+
+# ------------------------------------------------------ the checker after a fold --
+def test_a_compacted_day_is_judged_exactly_as_it_was_before_the_fold(
+        store: ts.TapeStore) -> None:
+    """COMPACTION DELETES FILES. If the checker could not tell a retired container from a lost
+    one, every finished day would come back FAIL and the report would be trained out of the
+    reader's attention -- which is worse than not having it, because it suppresses the real ones.
+    """
+    days = _weeks(4)
+    for d in days:
+        for chunk in (range(0, 720), range(720, 1440)):
+            store.write_segment("EURUSD", d, _synth(d, chunk), POINT, 5)
+    model = ti.observed_session(store, "EURUSD", days)
+    before = ti.judge_day(store, "EURUSD", days[-1], model,
+                          now_ms=_day_ms(days[-1]) + 86_400_000)
+
+    for d in days:
+        store.compact_day("EURUSD", d)
+        store.seal_day("EURUSD", d)
+    model2 = ti.observed_session(store, "EURUSD", days)
+    after = ti.judge_day(store, "EURUSD", days[-1], model2,
+                         now_ms=_day_ms(days[-1]) + 86_400_000)
+
+    assert after.verdict == before.verdict == ti.OK
+    assert after.n_ticks == before.n_ticks
+    assert after.missing_segments == 0 and after.corrupt_segments == 0
+    assert after.n_segments == 1 and after.segments_folded == 2
+    assert after.compactions == 1, "the fold is reported, not hidden"
+
+
+def test_the_duplicate_rate_is_still_reported_after_the_fold_that_removed_them(
+        store: ts.TapeStore) -> None:
+    """The overlap re-pull's cost is measured, not assumed. Compaction physically removes the
+    duplicates, so a rate read off the row count would be zero on every finished day -- retiring
+    the number on exactly the days worth judging."""
+    days = _weeks(4)
+    full = None
+    for d in days:
+        block = _synth(d, range(0, 1440))
+        store.write_segment("EURUSD", d, block, POINT, 5)
+        full = block
+    assert full is not None
+    # A REAL RE-PULL, which is a slice of the SAME ticks. Regenerating the window would produce
+    # different prices at the same stamps -- new rows, not duplicates -- and would test nothing.
+    lo = _day_ms(days[-1]) + 600 * 60_000
+    hi = _day_ms(days[-1]) + 660 * 60_000
+    dupes = full[(full["time_msc"] >= lo) & (full["time_msc"] < hi)]
+    assert dupes.size > 0
+    store.write_segment("EURUSD", days[-1], dupes, POINT, 5, cycle_id="overlap")
+
+    model = ti.observed_session(store, "EURUSD", days)
+    before = ti.judge_day(store, "EURUSD", days[-1], model,
+                          now_ms=_day_ms(days[-1]) + 86_400_000)
+    assert before.dup_rows == dupes.size and before.dup_rate > 0
+
+    store.compact_day("EURUSD", days[-1])
+    after = ti.judge_day(store, "EURUSD", days[-1], model,
+                         now_ms=_day_ms(days[-1]) + 86_400_000)
+    assert after.dup_rows == before.dup_rows, "the measurement must survive its own cleanup"
+    assert after.dup_rate == pytest.approx(before.dup_rate, rel=1e-6)
+
+
+def test_the_session_model_reads_cached_masks_rather_than_decoding_every_day(
+        store: ts.TapeStore) -> None:
+    """The denominator needs 90 days of minute coverage PER SYMBOL. Decoding them is 22,590
+    whole-day parquet reads per pass across this universe, growing with every day recorded, on an
+    hourly job. A report that cannot finish inside its own period is a report that stops running.
+    """
+    days = _weeks(4)
+    _write_days(store, "EURUSD", days)
+    first = ti.observed_session(store, "EURUSD", days)
+
+    reads = 0
+    real = store.read_day
+
+    def counting(sym: str, day: str, **kw: object):
+        nonlocal reads
+        reads += 1
+        return real(sym, day, **kw)          # type: ignore[arg-type]
+
+    store.read_day = counting                # type: ignore[method-assign]
+    second = ti.observed_session(store, "EURUSD", days)
+    assert reads == 0, f"{reads} full-day decodes on a warm cache -- the mask is not being reused"
+    assert np.array_equal(first.per_weekday, second.per_weekday)
+    assert np.array_equal(first.weekday_obs, second.weekday_obs)

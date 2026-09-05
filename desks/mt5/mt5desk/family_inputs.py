@@ -42,15 +42,28 @@ from typing import Any
 _PEER_FAMILIES = frozenset({"relative_value", "correlation_regime"})
 
 
+def timeframe_of(params: dict[str, Any] | None) -> str:
+    """The chart this cell was hunted on. Absent means H1 -- see `frontier_identity`."""
+    return str((params or {}).get("timeframe") or "H1").upper()
+
+
 def resolve(sym: str, family: str, params: dict[str, Any],
             h1: Any) -> tuple[dict[str, Any] | None, str]:
     """Return (extra kwargs, reason). `None` kwargs means this cell cannot be run here.
 
     Mirrors `external_gauntlet.build_cell`'s reconstruction exactly, including its rule that a
     params key naming a peer or factor is REPLACED by the loaded frame rather than passed through.
+
+    EVERY LOADED FRAME COMES BACK ON THE CELL'S OWN CHART (2026-09-05). A peer or factor frame
+    fetched at H1 for an M5 cell does not raise: the families join `how="inner"`, so the join
+    silently keeps only the twelve-times-sparser hourly stamps and the family computes an H1
+    residual while the certificate says M5. `h1` (the argument keeps its historical name because
+    every caller passes bars) is already the cell's own chart -- the caller loaded it -- so this
+    only has to make the OTHER instruments agree with it.
     """
     extra: dict[str, Any] = {}
     call = dict(params or {})
+    tf = timeframe_of(params)
     try:
         from research import orthogonal_sweep as inputs
     except ImportError:
@@ -69,7 +82,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             peer_symbol = call.get("peer_symbol")
             if not peer_symbol:
                 return None, "no peer_symbol on the candidate"
-            peer = inputs._bars(str(peer_symbol))
+            peer = inputs._bars(str(peer_symbol), tf)
             if peer is None:
                 return None, f"peer bars unavailable for {peer_symbol}"
             extra["peer"] = peer
@@ -109,7 +122,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             drivers: dict[str, Any] = {}
             for t in need:
                 for cand in ROLES.get(t.upper(), ()):
-                    b = inputs._bars(str(cand))
+                    b = inputs._bars(str(cand), tf)
                     if b is not None:
                         drivers[t] = b
                         break
@@ -122,7 +135,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             drv = call.get("driver_symbol")
             if not drv:
                 return None, "no driver_symbol on the candidate"
-            b = inputs._bars(str(drv))
+            b = inputs._bars(str(drv), tf)
             if b is None:
                 return None, f"driver bars unavailable for {drv}"
             extra["driver"] = b
@@ -141,7 +154,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             try:
                 from mt5desk.economic_drivers import ROLES
                 for cand in ROLES.get("RISK", ()):
-                    b = inputs._bars(str(cand))
+                    b = inputs._bars(str(cand), tf)
                     if b is not None:
                         extra["risk"] = b
                         break
@@ -155,14 +168,14 @@ def resolve(sym: str, family: str, params: dict[str, Any],
         # parquets were all present. Same input contract, same branch.
         if family in {"cross_asset_residual", "pca_residual"}:
             names = call.get("factor_symbols") or []
-            factors = [d for d in (inputs._bars(str(s)) for s in names) if d is not None]
+            factors = [d for d in (inputs._bars(str(s), tf) for s in names) if d is not None]
             if not factors:
                 return None, f"no factor bars available of {len(names)} named"
             extra["factors"] = factors
             return extra, "ok"
 
         if family in {"liquidity_regime", "orderflow_imbalance"}:
-            spread, flow = inputs._tape_series(sym, h1.index)
+            spread, flow = inputs._tape_series(sym, h1.index, tf)
             series = spread if family == "liquidity_regime" else flow
             if series is None:
                 return None, "tape series unavailable"
@@ -199,6 +212,10 @@ def resolve(sym: str, family: str, params: dict[str, Any],
                 return extra, "ok: price-native discovered feature"
             from research.edge_search import resolve_inputs
 
+            # HOURLY BY CONSTRUCTION, and named as such: `edge_search._close` reads
+            # `<SYM>_H1.parquet` whatever list it is given, so the external primitives are an
+            # HOURLY series reindexed causally onto this cell's own index. Mirrors
+            # `external_gauntlet.build_cell` exactly, which is the point of this module.
             all_symbols = sorted(p.stem.removesuffix("_H1")
                                  for p in inputs.UNIVERSE.glob("*_H1.parquet"))
             extra["extra"] = resolve_inputs(sym, h1.index, all_symbols)
@@ -215,6 +232,11 @@ def strip_identity_keys(family: str, params: dict[str, Any]) -> dict[str, Any]:
     `peer_symbol`, `factor_symbols`, `input_symbol` and `input_source` identify what to load; the
     loaded object is passed instead. Leaving them in raises TypeError on families that do not
     accept them, which the caller would then mistake for a signature mismatch.
+
+    `timeframe` is dropped for the same reason and is the reason this docstring needed a line:
+    it names the CHART TO LOAD, exactly as `peer_symbol` names an instrument to load, and no
+    family takes it as an argument. It stays in the cell's IDENTITY -- callers pass the unstripped
+    params to `resolve` and to the sleeve registry -- because that is the only place it belongs.
     """
-    drop = {"peer_symbol", "factor_symbols", "input_symbol", "input_source"}
+    drop = {"peer_symbol", "factor_symbols", "input_symbol", "input_source", "timeframe"}
     return {k: v for k, v in (params or {}).items() if k not in drop}
