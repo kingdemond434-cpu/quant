@@ -1,7 +1,0 @@
-[Unit]
-Description=Restored organ: cost-hunt (cron manifest line re-homed to a user timer; root cron daemon dead since 2026-08-20)
-
-[Service]
-Type=oneshot
-WorkingDirectory=/home/quant/quant-platform
-ExecStart=/bin/sh -c 'flock -n data/.cron_costhunt.lock .venv/bin/python scripts/run_cost_hunt.py >> data/cro_ai_logs/cost_hunt.log 2>&1'
