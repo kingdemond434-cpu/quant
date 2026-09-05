@@ -34,9 +34,12 @@ goes through. This reader therefore adds no new admission path to the candidate 
 only cause the existing door to open, never bypass it, and every guard the compiler already
 applies still applies. The gauntlet remains the arbiter of profitability.
 
-COSTS ARE BOUNDED BY CONSTRUCTION. `libs.ops.llm_seat` carries the monthly cap and the spend
-ledger; this adds a per-run task limit on top, and an append-only worked-ledger so a task is
-paid for ONCE. Re-running the hour is free for everything already decided.
+WORK IS BOUNDED BY TIME, AND PAID FOR ONCE. `libs.ops.llm_seat` still carries the spend ledger,
+but the desk runs on free tiers so a per-run TASK COUNT no longer protects anything worth
+protecting; the whole queue is worked in value-of-information order until `RUN_BUDGET_SEC` is
+spent. The append-only worked-ledger is what keeps a task from being billed twice, so re-running
+the hour is free for everything already decided and a budget that binds simply defers the least
+informative rows to the next pass.
 """
 from __future__ import annotations
 
@@ -45,6 +48,7 @@ import hashlib
 import json
 import os
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -67,10 +71,9 @@ WORKED = BASE / "data" / "hypotheses" / "deepening_worked.jsonl"
 OUT = BASE / "data" / "hypotheses" / "deepened_candidates.json"
 LOG = BASE / "logs" / "deepening_worker.log"
 
-#: A run's ceiling, and it is a BUDGET decision -- each task is a seat call. The original note
-#: read "the queue is 705 deep and grows hourly; working it all in one pass would spend the
-#: month's cap in an afternoon on the least-certain rows the desk holds", and that reasoning is
-#: unchanged. What changed is the queue and the fact that anything drains it at all.
+#: A run's ceiling. It WAS a budget decision -- the original note read "the queue is 705 deep and
+#: grows hourly; working it all in one pass would spend the month's cap in an afternoon on the
+#: least-certain rows the desk holds" -- and it is not one any more.
 #:
 #: RE-DERIVED 2026-09-05, on two measurements taken the same day. The compiler was reading 60 of
 #: 5,524 discovery files, so the queue it fed was a fraction of what the miners produce; reading
@@ -79,18 +82,30 @@ LOG = BASE / "logs" / "deepening_worker.log"
 #: decision count was zero. A 25/hour ceiling against 6,350 queued is 254 hours of uptime, which
 #: is not an hourly conversion loop; it is a queue with a trickle attached.
 #:
-#: 75/hour is 1,800 a day, which drains the present queue in about three and a half days and then
-#: keeps pace with intake. Chosen as the largest step that is still bounded by the same monthly
-#: cap the original note protected: it is 3x the spend, not the unbounded pass that note refused,
-#: and `voi_order` still spends it highest-value-of-information first, so a cap that binds costs
-#: the LEAST informative rows rather than an arbitrary slice.
+#: THE MONETARY CONSTRAINT IS GONE (principal 2026-09-05: "we r usin all free tiers so its fine
+#: remove budget constraint"), so the COUNT ceiling goes with it: 0 means work the whole queue.
+#: The original note's fear was spending "the month's cap in an afternoon", and on free tiers there
+#: is no month's cap to spend.
 #:
-#: OVERRIDABLE BY ENV because the right number is a property of the seat budget on the day, not of
-#: this file: the box can lower it during a quota squeeze without a commit. And it is worth being
-#: plain that the real throughput ceiling right now is not this constant -- the desk is running
-#: three seats that have produced nothing in seven days and five launches that died in 24 hours.
-#: Raising the ask on a seat layer that is failing spends more quota for the same nothing.
-DEFAULT_LIMIT = int(os.environ.get("DEEPEN_LIMIT", "75"))
+#: WHAT STILL BOUNDS A RUN IS TIME, NOT MONEY, and pretending otherwise would break the thing this
+#: feeds. `hourly_cycle` calls this in-process and then goes on to mine, heal clocks and write its
+#: marker; a run attempting 6,350 seat calls back to back would still be going when the next hour
+#: began, so the cycle would overlap itself and every leg after this one would stop happening.
+#: Free tiers also rate-limit per minute, so wall clock is the real ceiling whatever the budget is.
+#:
+#: RUN_BUDGET_SEC is therefore the live constraint, and it is strictly MORE throughput than any
+#: count: a fast seat drains far more than 75 in an hour, a slow one is never cut off mid-task,
+#: and `voi_order` still spends the time highest-value-of-information first, so a budget that
+#: binds costs the LEAST informative rows rather than an arbitrary slice.
+#:
+#: Worth writing where it will be read: this is not the real ceiling today either. The desk is
+#: running three seats that have produced NOTHING in seven days and five launches that died in 24
+#: hours. Asking more of a failing seat layer produces more of the same nothing.
+DEFAULT_LIMIT = int(os.environ.get("DEEPEN_LIMIT", "0"))          # 0 = the whole queue
+
+#: Wall clock a single run may spend. 40 minutes inside the 60-minute cycle leaves the remaining
+#: legs their time and absorbs an overrun on the last task without colliding with the next hour.
+RUN_BUDGET_SEC = float(os.environ.get("DEEPEN_RUN_BUDGET_SEC", "2400"))
 
 #: GROWTH GOVERNANCE, carried on every prompt surface (principal 2026-09-04, fenced by
 #: scripts/check_growth_governance.py G7): research is anti-timid, capital is evidence-hard.
@@ -562,7 +577,7 @@ def main(argv: list[str] | None = None) -> int:
     dlog(f"queue={len(tasks)} already-decided={len(done)} pending={len(pending)} "
          f"limit={args.limit}")
     if args.dry_run:
-        for t in pending[:args.limit]:
+        for t in (pending if args.limit <= 0 else pending[:args.limit]):
             dlog(f"  would work {task_id(t)} [{t.get('source')}] {str(t.get('title'))[:70]}")
         return 0
     if not pending:
@@ -572,7 +587,15 @@ def main(argv: list[str] | None = None) -> int:
     universe = known_symbols()
     recovered: list[dict] = []
     counts: dict[str, int] = {}
-    for task in pending[:args.limit]:
+    started = time.monotonic()
+    for task in (pending if args.limit <= 0 else pending[:args.limit]):
+        # THE BUDGET IS TIME. Checked BEFORE each task so a run never starts work it cannot finish
+        # inside the cycle hosting it; an in-flight task always completes, because abandoning a
+        # seat call mid-flight bills it and records nothing.
+        if time.monotonic() - started > RUN_BUDGET_SEC:
+            dlog(f"run budget {RUN_BUDGET_SEC:.0f}s spent; the remaining tasks carry to the next "
+                 f"hourly pass in VOI order -- nothing is dropped")
+            break
         tid = task_id(task)
         try:
             candidates, disposition = work_task(task, universe)

@@ -284,14 +284,22 @@ def test_a_daily_decision_family_takes_one_decision_a_day_on_every_chart() -> No
 
 def test_a_certificate_on_a_chart_the_gateway_cannot_read_never_becomes_a_live_row(
         monkeypatch) -> None:
-    """The one place the ladder could have cost real money.
+    """The one place the ladder could have cost real money, and the boundary that still holds.
 
-    `gateway.run_family_sleeves` calls `copy_rates_from_pos(sym, TIMEFRAME_H1, 0, 400)` in every
-    one of its four `family_market` paths. A matured M5 certificate promoted through that path
-    would hold a live position computed from HOURLY bars -- a strategy nobody certified, under
-    the name of one that was, with every artifact agreeing. `executables` is the boundary that
-    already exists for "the family resolves but the executor cannot run it"; the chart is the
-    same question and gets the same answer: a named `executor_gap` on the clock, never a LIVE row.
+    WHEN THIS WAS WRITTEN, hours before the executor was fixed, `gateway.run_family_sleeves`
+    called `copy_rates_from_pos(sym, TIMEFRAME_H1, 0, 400)` unconditionally. A matured M5
+    certificate promoted through that path would have held a live position computed from HOURLY
+    bars -- a strategy nobody certified, under the name of one that was, with every artifact
+    agreeing. So M5 was asserted to be an `executor_gap`, and it was the right assertion for the
+    executor that existed.
+
+    THE EXECUTOR NOW RUNS THE LADDER (`gateway._family_chart` resolves the chart off the
+    certificate's own params, `decision_core.family_bar_due` gives every chart one entry a day),
+    so M5 is no longer a gap and asserting that it is would pin the desk to the defect. What this
+    test protects is the PROPERTY, not the tuple's contents: a certificate on a chart the executor
+    cannot read must never become a LIVE row. W1 is that case now -- nothing sweeps it, nothing
+    executes it -- and the assertion moves there rather than being deleted, because the day an
+    eighth chart joins the sweep this is what catches it arriving unexecutable.
     """
     from mt5desk import executables
 
@@ -299,11 +307,17 @@ def test_a_certificate_on_a_chart_the_gateway_cannot_read_never_becomes_a_live_r
     assert executables.executor_gap("anything") is None
     assert executables.gateway_can_execute("anything") is True
 
-    gap = executables.executor_gap("anything", "M5")
-    assert gap and "M5" in gap and "TIMEFRAME_H1" in gap
-    assert executables.gateway_can_execute("anything", "M5") is False
+    # Every chart the sweep hunts reaches capital by the same path an H1 certificate does.
+    for tf in ("M1", "M5", "M15", "M30", "H1", "H4", "D1"):
+        assert executables.gateway_can_execute("anything", tf) is True, tf
+
+    # A chart the executor cannot read is still refused BY NAME, never traded on a substitute.
+    gap = executables.executor_gap("anything", "W1")
+    assert gap and "W1" in gap and "never certified on" in gap
+    assert executables.gateway_can_execute("anything", "W1") is False
     # The scalp lane is untouched -- it has its own executor and its own timeframe resolution.
-    assert executables.GATEWAY_FAMILY_TIMEFRAMES == ("H1",)
+    assert set(executables.GATEWAY_FAMILY_TIMEFRAMES) == {
+        "M1", "M5", "M15", "M30", "H1", "H4", "D1"}
 
 
 # ------------------------------------------------------ THE FENCE: the sweep may never re-narrow
