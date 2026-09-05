@@ -119,12 +119,26 @@ _OUTPUT_WORDS: dict[str, tuple[str, ...]] = {
 }
 
 #: Capabilities the generic family cannot express. Naming them turns a refusal into a build list.
-_UNSUPPORTED: dict[str, tuple[str, ...]] = {
-    "cross_sectional_rank": ("rank", "cross-section", "universe-wide", "percentile across"),
-    "multi_leg_spread": ("spread between", "pair trade", "leg", "basket", "relative value"),
-    "options_data": ("implied vol", "iv ", "skew", "open interest", "gamma exposure"),
-    "order_flow_data": ("order book", "depth of book", "tick flow", "aggressor"),
-    "sub_hourly": ("1m", "5m", "15m", "minute bar", "30-minute", "final 30"),
+#: MATCHED ON WORD BOUNDARIES, NOT SUBSTRINGS. The plain-substring version refused a proposal
+#: whenever "skew" appeared -- distributional skew is not options skew -- and "iv " matched
+#: inside "relative ", "derivative " and "positive ". "1m" and "5m" matched any text containing
+#: those two characters. 786 capability refusals were recorded on 2026-09-04 and the first three
+#: hypotheses the world crawler ever produced were all refused for options_data it never needed.
+#: A capability refusal is expensive: it is the one refusal that means "never retry until built".
+_UNSUPPORTED_RX: dict[str, tuple[str, ...]] = {
+    "cross_sectional_rank": (r"\brank(s|ed|ing)?\b", r"cross-section", r"universe-wide",
+                             r"percentile across"),
+    "multi_leg_spread": (r"spread between", r"pair trade", r"\blegs?\b", r"\bbaskets?\b",
+                         r"relative value"),
+    "options_data": (r"implied vol", r"\biv\b", r"option[\s-]*skew", r"vol(atility)?[\s-]+skew",
+                     r"open interest", r"gamma exposure", r"\bgamma\b", r"delta[\s-]*hedg"),
+    "order_flow_data": (r"order book", r"depth of book", r"tick flow", r"\baggressor\b"),
+    # A bare "m" after a number is not a timeframe: "$1m", "0.15 m" and "30 ms" all matched it
+    # and sub_hourly jumped 309 -> 780 refusals. A real sub-hourly claim spells the unit out or
+    # names the MT5 frame, so require one of those.
+    "sub_hourly": (r"\b(1|5|15|30)\s*-?\s*min(ute)?s?\b", r"\bm(1|5|15|30)\b",
+                   r"\b(1|5|15|30)m\s+(bar|candle|chart|data|frame)", r"minute bars?",
+                   r"sub-hourly", r"tick data", r"final 30"),
 }
 
 
@@ -328,7 +342,8 @@ def _match(text: str, table: dict[str, tuple[str, ...]]) -> str | None:
 
 def _unsupported(text: str) -> list[str]:
     t = text.lower()
-    return [k for k, words in _UNSUPPORTED.items() if any(w in t for w in words)]
+    return [k for k, pats in _UNSUPPORTED_RX.items()
+            if any(re.search(p, t) for p in pats)]
 
 
 def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> dict[str, Any]:

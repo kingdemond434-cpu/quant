@@ -122,6 +122,7 @@ MODULES = [
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
     "desks/mt5/research/shadow_forward.py",
+    "desks/mt5/scripts/repair_identity_state.py",
     # Imported by edge_search while rebuilding `discovered` runtime inputs. Its absence blocked
     # seven live EURCHF forward clocks even though family_inputs and shadow_forward both matched.
     "desks/mt5/research/carry_state.py",

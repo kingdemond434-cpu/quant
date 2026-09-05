@@ -314,6 +314,44 @@ def check_funnel() -> dict[str, Any]:
                     "and the stage after it is starved" if dead else "every hop passing volume")}
 
 
+def check_unit_log_dirs() -> dict:
+    """A unit whose StandardOutput directory is missing dies BEFORE its process starts.
+
+    systemd reports status=209/STDOUT and the journal says "Failed to set up standard output",
+    which reads like a permissions problem and is nothing of the kind. Measured 2026-09-04: the
+    migration to the 8GB box left /home/quant/logs uncreated and 118 launches died that way in 24
+    hours -- among them hourly-controller, so edge_search_results.json went 15 hours stale while
+    every health check reported the timer as firing on schedule. It was.
+
+    This both CHECKS and REPAIRS, because a missing directory has exactly one correct response.
+    """
+    import re
+    units = Path.home() / ".config" / "systemd" / "user"
+    if not units.is_dir():
+        return {"status": "OK", "why": "no user unit directory"}
+    wanted: set[Path] = set()
+    for unit in units.glob("*.service"):
+        try:
+            text = unit.read_text("utf-8")
+        except OSError:
+            continue
+        for m in re.finditer(r"Standard(?:Output|Error)\s*=\s*[a-z]+:(\S+)", text):
+            wanted.add(Path(m.group(1)).parent)
+    created = []
+    for d in sorted(wanted):
+        if not d.is_dir():
+            try:
+                d.mkdir(parents=True, exist_ok=True)
+                created.append(str(d))
+            except OSError as exc:
+                return {"status": "DEFECT", "missing": str(d),
+                        "why": f"cannot create {d}: {type(exc).__name__}"}
+    # REPAIRED, not merely reported: the directory is created, so the next launch survives.
+    return {"status": "OK", "repaired": created, "checked": len(wanted),
+            "why": (f"created {len(created)} missing unit log dir(s): {created}" if created
+                    else f"all {len(wanted)} unit log dirs present")}
+
+
 def next_growth_lever() -> dict[str, Any]:
     """The next lever for E[log W], ranked by MEASURED deficit rather than by opinion.
 
@@ -519,6 +557,10 @@ def main() -> int:
 
     checks = {
         "dashboard": check_dashboard(),
+        # Runs FIRST among the repairs in spirit: a missing log directory kills units
+        # before their process starts, so every other check downstream reports a healthy
+        # timer firing into a job that never ran.
+        "unit_log_dirs": check_unit_log_dirs(),
         "conversion": check_conversion(),
         "funnel": check_funnel(),
         "box_code_drift": check_box_code_drift(repair=not a.report),
