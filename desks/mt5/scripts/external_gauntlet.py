@@ -39,6 +39,7 @@ from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from research.frontier_identity import cell_id, economic_prior  # noqa: E402
 
+from libs.data.pit import is_stamped  # noqa: E402
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
@@ -72,6 +73,46 @@ COST_SCENARIO = 3.0
 #:
 #: Twenty minutes leaves the hourly cadence intact with room for the gates themselves.
 FRESH_BUILD_BUDGET_SEC = float(os.environ.get("GAUNTLET_FRESH_BUDGET_SEC", "1200"))
+
+#: THE MEMORY THIS SWEEP IS ALLOWED TO HOLD, in MB. It is the SAME number the job declares at
+#: admission (`job_lock.exclusive_job(need_mb=1200)`), and that is the point: a job that asks the
+#: box for 1200MB and then takes 4882MB has not been admitted, it has been let in on a false
+#: statement.
+#:
+#: MEASURED 2026-09-05 on the 8GB research box. This sweep was found holding 4882MB ten minutes
+#: into a legitimate run, leaving 280MB free. `edge_search` needs 2000MB and `orthogonal_sweep`
+#: 1250MB, so neither could start; their artifacts went 28 and 23 hours stale and the canon went
+#: 51 hours without a sweep. Every red line on the dashboard that morning was this one process.
+#:
+#: THE ASYMMETRY DECIDES THE CAP, exactly as it decided the stage order above. A sweep that
+#: judges HALF the docket this hour and the rest next hour costs an hour of latency on some
+#: cells. A sweep that takes the whole box costs every OTHER leg its entire hour, every hour, and
+#: those legs are what feed the docket in the first place -- so the greedy sweep starves its own
+#: input. Deferring is cheap here and only here: the cell cache is cumulative and content-
+#: addressed, so a deferred cell is computed next hour rather than recomputed.
+#:
+#: Raise it only with a measurement showing the box has the room, and never above what
+#: `exclusive_job` was told to admit on.
+MEMORY_BUDGET_MB = float(os.environ.get("GAUNTLET_MEMORY_BUDGET_MB", "1200"))
+
+
+def _rss_mb() -> float:
+    """This process's CURRENT resident size, or 0.0 where the platform will not say.
+
+    Zero means "cannot measure", and the caller treats it as "do not defer" -- an unmeasurable
+    box must not have its gauntlet silently throttled to nothing.
+    """
+    try:
+        for line in Path("/proc/self/status").read_text("utf-8").splitlines():
+            if line.startswith("VmRSS:"):
+                return int(line.split()[1]) / 1024.0
+    except (OSError, ValueError, IndexError):
+        pass
+    try:
+        import psutil
+        return float(psutil.Process().memory_info().rss) / 1048576.0
+    except Exception:
+        return 0.0
 
 
 
@@ -919,6 +960,35 @@ def main():
               "verdicts.")
         return
 
+    # POINT-IN-TIME OR NO CERTIFICATE (2026-09-05), AS A RATCHET AND NOT A CLIFF.
+    #
+    # `proposer_common.donate` now refuses to WRITE an unstamped candidate. This is the same rule
+    # at the JUDGE, so a row that reached the docket by another path -- a hand-edited merge, an
+    # older intelligence file, an organ that does not donate through the proposer contract --
+    # cannot be certified either. A certificate is a claim about what was knowable when, and a
+    # row that cannot say when it became knowable cannot support one.
+    #
+    # WHY IT RATCHETS. Measured 2026-09-05: 0 of 4,768 docket rows carry a stamp, because the
+    # stamp was optional until today. Excluding every unstamped row RIGHT NOW would empty the
+    # docket and halt certification entirely -- turning a data-quality rule into an outage, and
+    # the desk is already short of certificates. So the exclusion switches on the moment ANY
+    # stamped row exists and then only tightens: while the docket is wholly unstamped the rows
+    # are judged and the gap is named loudly, and from the first stamped donation onward every
+    # unstamped row is refused. The rule can only get stricter, never looser, and the desk never
+    # goes dark to enforce it.
+    stamped = [h for h in survivors if isinstance(h, dict) and is_stamped(h)]
+    unstamped = [h for h in survivors if isinstance(h, dict) and not is_stamped(h)]
+    if unstamped and stamped:
+        print(f"REFUSED {len(unstamped)} unstamped candidate(s) of {len(survivors)}: no "
+              f"available_time / ingested_time / source_version / payload_hash. Re-donate "
+              f"through proposer_common.donate. First: "
+              f"{[str(h.get('family') or h.get('title'))[:40] for h in unstamped[:5]]}")
+        survivors = stamped
+    elif unstamped:
+        print(f"PIT GAP: all {len(unstamped)} candidates are unstamped, so the refusal is "
+              f"DEFERRED this pass -- judging them rather than halting certification. The "
+              f"exclusion switches on with the first stamped donation and only tightens after.")
+
     # Group by unique (sym, family, params) combos
     cells = {}
     for h in survivors:
@@ -979,6 +1049,7 @@ def main():
     cache_hits = 0
     built_fresh = 0
     deferred: list[dict] = []
+    _mem_deferred = 0
     blocked_build: list[dict] = []
     _build_t0 = time.time()
     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
@@ -1049,6 +1120,19 @@ def main():
             # cached and starts from here, so the docket converges instead of restarting.
             deferred.append(spec)
             continue
+        _rss = _rss_mb()
+        if _rss and _rss > MEMORY_BUDGET_MB:
+            # Out of MEMORY budget, and the same rule applies: defer, never drop. Building one
+            # more cell here is what took the box to 280MB free and stopped every other leg.
+            if not _mem_deferred:
+                print(f"MEMORY BUDGET reached at {_rss:.0f}MB (cap {MEMORY_BUDGET_MB:.0f}MB) "
+                      f"after {built_fresh} fresh cell(s): the rest of the docket is DEFERRED to "
+                      f"the next sweep. The cache is cumulative, so they are computed next hour "
+                      f"rather than recomputed -- and edge_search and orthogonal_sweep get the "
+                      f"room they need to run at all.")
+            _mem_deferred += 1
+            deferred.append(spec)
+            continue
         _built_syms.add(str(spec["sym"]))
         obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
         if obj:
@@ -1111,6 +1195,11 @@ def main():
         "stages": {}, "downstream_status": s["downstream_status"], "why": s["why"],
     } for s in blocked_build]
     result["n_cells_deferred_build_budget"] = len(deferred)
+    # WHICH budget deferred them, because "deferred" with no reason is how a cap becomes
+    # invisible and a docket quietly stops converging.
+    result["n_cells_deferred_memory_budget"] = _mem_deferred
+    result["memory_budget_mb"] = MEMORY_BUDGET_MB
+    result["peak_rss_mb"] = round(_rss_mb(), 1)
     _save_build_cursor(_cursor, _built_syms)
     result["build_rotation"] = {
         "symbols_built_this_run": len(_built_syms),
@@ -1251,6 +1340,21 @@ def main():
             print(f"  NO-SPEC {key}: params {params} match no known window; certificate "
                   f"written WITHOUT shadow_spec -- it cannot enrol until the selector is wired")
         survivors_all[key] = row
+
+    # THE SCALP LANE'S CERTIFICATES (scripts/scalp_gauntlet.py): same ten gates, same
+    # attestation, judged by run_gauntlet on M5/M15 bars. Merged HERE because this block is the
+    # one pen on UNIVERSAL_SURVIVORS.json -- never-shrink, never-empty, the purge and the ledger
+    # claim apply to these rows exactly as to `external.*`. canon_rows() returns only exact
+    # ten-gate passes under the exact policy; an absent report merges and revokes nothing.
+    try:
+        sys.path.insert(0, str(BASE / "desks" / "mt5" / "scripts"))
+        import scalp_gauntlet as _sg
+        _scalp_rows = _sg.canon_rows(REPORTS / "SCALP_GAUNTLET.json")
+        survivors_all.update(_scalp_rows)
+        if _scalp_rows:
+            print(f"  scalp certificates merged: {len(_scalp_rows)} ({', '.join(_scalp_rows)})")
+    except Exception as _exc:
+        print(f"  scalp certificates NOT merged ({type(_exc).__name__}: {_exc}); canon unchanged")
 
     # ---------------------------------------------------------------- power-cure candidates
     # THE CURE THE POLICY PROMISES NEEDS AN ARTIFACT TO ACT ON. gate_spec marks five gates POWER
