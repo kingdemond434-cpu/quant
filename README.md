@@ -30,6 +30,27 @@ universe through a single broker connection.**
 One codebase, multiple run modes (`research` / `trade` / `ops`), embedded stores
 (SQLite for ACID state, Parquet/DuckDB for analytics). No microservices.
 
+## What the desk is optimising
+
+    max E[log W]   after costs, slippage, uncertainty, correlation, tails, capacity and turnover
+
+That is the whole objective function — not Sharpe, not a smooth equity curve, not "avoid losing
+trades". Drawdown enters only through future geometric wealth and survivability. Two bounds sit
+on it, and they are asymmetric on purpose:
+
+- **A 20% gross-heat floor is a STANDING MANDATE** — capital is at work 24/7, and the floor does
+  not ramp with readiness. Its growth cost is *measured every pass*, never assumed:
+  `heat_policy.heat_accounting` writes what the floor gave up, per day and per year, whenever the
+  floor was the binding constraint.
+- **There is no fixed ceiling.** The old 30% cap was removed on 2026-09-05 by principal order.
+  The bound above the floor is read off the measured growth curve each pass
+  (`desks/mt5/research/heat_policy.measured_ceiling`) and moves both ways — above 30% when new
+  edges support it, below 30% when the opportunity set is thin. It is never set past the last
+  heat actually sampled, never past the point where growth turns over, and an unreadable curve
+  falls back to the recorded constant: absence is never permission.
+
+`docs/GROWTH_GOVERNANCE.md` is the binding statement of all of this.
+
 ## What this actually is
 
 This is a production-grade quantitative desk running on MetaTrader 5 (Fusion Markets) with:
@@ -37,7 +58,7 @@ This is a production-grade quantitative desk running on MetaTrader 5 (Fusion Mar
 - **Autonomous research pipeline**: hypothesis generation → statistical gauntlet (10 gates) → forward shadow → promotion → live trading
 - **Statistical rigor**: DSR, PBO/CSCV, SPA, CPCV, walk-forward, cost stress, genuine lockbox holdout
 - **Forward evidence architecture**: source-provenanced bars, no-data distinction, proxy authority separation
-- **Risk engineering**: per-symbol risk units, floor-aware lot sizing, forward authority ramp (CANARY states), heat budget scaled by measured k_eff
+- **Risk engineering**: per-symbol risk units, floor-aware lot sizing, forward authority ramp (CANARY states), and a heat budget bounded by a ceiling *measured from the growth curve* rather than decreed (see the objective below)
 - **AI governance**: vault memory, law gates, promotion protocol, supervisor, registry, constitutional fences
 - **Multi-brain deployment**: VPS + local development, Git-based state transport (code branch + mt5-state branch)
 
@@ -106,7 +127,26 @@ Layered YAML + environment variables (`QP_` prefix). Secrets via `QP_SECRET_` pr
 
 ## Documentation
 
-- `UNIVERSAL_PROMOTION_PROTOCOL.md` — binding promotion rules
-- `CLAUDE.md` — AI agent orientation & vault search
-- `AGENTS.md` — agent governance
-- `desks/mt5/UNIVERSAL_PROMOTION_PROTOCOL.md` — MT5-specific promotion rules
+**Start here, in this order:**
+
+1. `docs/LAWS.md` — canonical law. Where a doc and a law disagree, the law wins.
+2. `docs/GROWTH_GOVERNANCE.md` — the risk mandate: the objective, the 20% floor, the measured
+   ceiling, and what every rail costs in growth.
+3. `docs/UNIVERSAL_PROMOTION_PROTOCOL.md` — binding promotion rules
+   (`desks/mt5/UNIVERSAL_PROMOTION_PROTOCOL.md` for the MT5-specific ones).
+4. `CLAUDE.md` / `AGENTS.md` — agent orientation and governance.
+
+**The desk's memory — read this before concluding anything is unexplored.** These are the record
+of what was tried and what failed, and they are deliberately preserved rather than tidied away:
+
+- `docs/graveyard.md` — every retired hypothesis and why it died.
+- `docs/institutional_knowledge.md`, `docs/desk_lessons.jsonl` — the lessons, dated.
+- `docs/research/negative_knowledge.md` — measured negatives; the most reusable asset here.
+- `docs/research/blind_rediscovery_log.md` — what the desk re-derived independently.
+- `docs/research/deep_sweep/`, `docs/research/capability_hunt/`, `docs/audit_shards/` — the
+  discovery logs.
+- `docs/research/archive_crypto_era/` — the retired crypto-exchange desk's own specs, kept as a
+  lab notebook from a discontinued programme. Read the protocols and the measured negatives;
+  the venues are out of scope and may not be hunted again.
+
+A reviewer should treat a claim that something is untried as false until checked against these.
