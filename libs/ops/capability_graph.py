@@ -39,6 +39,7 @@ The checker runs in CI and fails on any of the first four. Freshness is checked 
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -66,6 +67,24 @@ class Node:
     freshness_s: dict[str, int] = field(default_factory=dict)
     #: State dimensions this node conditions capital on; each must be admitted.
     conditions_on: tuple[str, ...] = ()
+    #: The MODULE_RENT line(s) that price THIS node, when the ledger bills it under another name.
+    #: Empty means "billed under my own name, or not billable yet" -- and which of those is true is
+    #: reported, never assumed.
+    #:
+    #: WHY THIS FIELD EXISTS, measured 2026-09-05. The rent ledger bills MECHANISMS -- rails,
+    #: proposer arms, execution algorithms, allocator components, data sources, state dimensions --
+    #: while this graph names ORGANS. The two vocabularies are almost disjoint: of 62 rent modules
+    #: and 71 nodes, exactly 6 names matched, so even a FULLY populated ledger on the live host
+    #: could never move more than 7 nodes to MEASURED. The rung was structurally unreachable for
+    #: ~90% of the graph, and no amount of accumulated live evidence would have changed that. It
+    #: read as "we have not measured enough yet" when the real answer was "nothing here can be
+    #: measured by name".
+    #:
+    #: A mapping is a CLAIM that the named rent line prices this node's own output. Getting one
+    #: wrong grants MEASURED falsely, which is the same free pass removed from `stages()` on the
+    #: same day, re-entering through a different door. So an unmapped node stays unmapped and is
+    #: counted as debt rather than guessed at.
+    billed_as: tuple[str, ...] = ()
 
 
 #: THE GRAPH. Every path is relative to ROOT. Adding a component means adding it here, and the
@@ -1035,12 +1054,25 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
     # could not price the module, and crediting that as MEASURED would re-introduce the free pass
     # through the one report that explicitly refuses to fold UNMEASURED into a pass.
     rent_priced: set[str] = set()
+    #: Every name the rent ledger CAN bill, whatever its verdict. This is the BILLABILITY
+    #: vocabulary and is deliberately verdict-blind: a node the ledger names but reads UNMEASURED
+    #: is waiting on evidence, which is a different problem from one it cannot name at all.
+    #:
+    #: Read from the REGISTRY IN CODE first, not from the generated report. `MODULE_RENT.json` is
+    #: written by the daily cycle on the trading host, so a container that has never run it would
+    #: otherwise report every node unbillable -- turning a host's emptiness into a false wiring
+    #: defect, the mirror of the absent-ledger-reads-MEASURED failure removed above.
+    rent_vocabulary: set[str] = set()
+    with contextlib.suppress(ImportError, AttributeError):
+        from libs.ops.module_rent import MODULES as _RENT_MODULES
+        rent_vocabulary |= {str(m.name) for m in _RENT_MODULES}
     try:
         rent = json.loads((DESK / "reports" / "MODULE_RENT.json").read_text("utf-8"))
         rows = rent.get("modules") or {}
         it = rows.items() if isinstance(rows, dict) else (
             (r.get("module"), r) for r in rows if isinstance(r, dict))
         for mod, row in it:
+            rent_vocabulary.add(str(mod))
             if isinstance(row, dict) and str(row.get("verdict", "")).upper() in {"EARNS", "COSTS"}:
                 rent_priced.add(str(mod))
     except (OSError, ValueError, AttributeError):
@@ -1068,7 +1100,17 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
         decision = bool(n.authority) or any(
             (reach.get(w) or {}).get("reaches_authority") for w in n.writes)
         # A LEDGER PRICES THIS MODULE BY NAME. No authority pass, no self-certification.
-        measured = (n.name in measured_names) or any(k.startswith(n.name) for k in measured_names)
+        # `billed_as` is consulted alongside the node's own name, never instead of it: a node the
+        # ledger happens to name directly stays measured whether or not anyone declared a mapping.
+        keys = (n.name, *n.billed_as)
+        measured = any(k in measured_names or any(m.startswith(k) for m in measured_names)
+                       for k in keys)
+        # BILLABLE is the separate question, and it is the one the ledger's emptiness hides: can
+        # this node be priced AT ALL by a name the rent ledger uses? A node that is decision-
+        # affecting and unbillable will read DECISION_AFFECTING forever, however long the desk
+        # runs, and that is a wiring defect rather than a shortage of evidence.
+        billable = bool(n.billed_as) or n.name in rent_vocabulary or any(
+            r.startswith(n.name) for r in rent_vocabulary)
         # LIVE_LEARNING: the loop closes back onto the module. It must read something the market
         # actually did, AND carry that into state it consumes itself -- a module that reads fills
         # and writes a report nobody feeds back has learned nothing, it has only reported.
@@ -1095,10 +1137,24 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
             stage = "LIVE_LEARNING"
         out[n.name] = {"coded": coded, "wired": wired, "running": running,
                        "decision_affecting": decision, "measured": measured,
-                       "live_learning": live_learning,
+                       "live_learning": live_learning, "billable": billable,
+                       "billed_as": list(n.billed_as),
                        "reads_outcome": reads_outcome, "feeds_itself": feeds_itself,
                        "stage": stage}
     return out
+
+
+def unbillable(nodes: tuple[Node, ...] = NODES) -> list[str]:
+    """Decision-affecting nodes no rent line can name -- the debt that time alone never pays.
+
+    Separated from the stage counts because it answers a different question. A DECISION_AFFECTING
+    count falling as evidence accumulates is the desk working; a DECISION_AFFECTING count that
+    CANNOT fall however long the desk runs is a wiring defect, and before `billed_as` existed the
+    two were indistinguishable in every report.
+    """
+    st = stages(nodes)
+    return sorted(name for name, v in st.items()
+                  if v["decision_affecting"] and not v["measured"] and not v["billable"])
 
 
 def generate_status(out_dir: Path = DESK / "reports") -> dict[str, Any]:
