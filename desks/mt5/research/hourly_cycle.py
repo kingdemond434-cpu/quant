@@ -297,6 +297,49 @@ def deepen() -> dict:
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
+def heal_clocks() -> dict:
+    """Revive forward clocks stopped by an identity that can never come back. NOT scheduled before.
+
+    THE HOLE, off the live dashboard 2026-09-05: roughly thirty of ~53 forward clocks read
+    IDENTITY_BROKEN, accruing nothing while their day counters kept running -- what the same-day
+    fence calls the worst combination, a clock maturing on stale data.
+
+    The recovery organ already existed. `desks/mt5/scripts/heal_identity_broken_clocks.py` calls
+    itself a STANDING FIXER in its own first line, and nothing anywhere ran it: no cron row, no
+    cycle call, no scheduled task, and the only mention of it in the tree is a comment in
+    shadow_forward. Second organ found this way today, after the deepening worker -- the desk
+    keeps building recovery machinery and then not scheduling it, which is why the same breaches
+    survive being "fixed".
+
+    RUN WITH --apply, DELIBERATELY, and the flag's own default is not being overruled lightly.
+    That default is right for a human running it ad hoc; it was never a prohibition on scheduling
+    the thing whose docstring asks to be scheduled. What the two repairs actually do is why this
+    is sound rather than a loosening:
+
+      * `reconcile()` clears the break only when the identity is byte-identical again -- a
+        transient sync or an outage. The window is KEPT because nothing was ever different.
+      * `rebase_code()` fires only when reconcile refuses, and it RESETS forward_start. The sleeve
+        re-earns its days against the code actually running, its prior record preserved under
+        `window_before_rebase`. The price of recovery is paid in days, the one currency here that
+        cannot be faked.
+
+    So no clock inherits evidence it did not earn, and the alternative -- leaving them terminal --
+    is not the conservative choice: it is a day counter maturing against a bar on data the sleeve
+    never gathered.
+    """
+    try:
+        import subprocess
+        r = subprocess.run(
+            [sys.executable, str(BASE / "scripts" / "heal_identity_broken_clocks.py"), "--apply"],
+            capture_output=True, text=True, timeout=600, check=False)
+        return {"exit_code": r.returncode, "tail": (r.stdout or "").strip().splitlines()[-3:],
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except Exception as exc:
+        print(f"identity healer FAILED to start: {type(exc).__name__}: {exc}", flush=True)
+        return {"exit_code": None, "error": f"{type(exc).__name__}: {exc}",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
 def main() -> None:
     smoke = smoke_release()
     h = health()
@@ -304,12 +347,13 @@ def main() -> None:
     s = state_vector()
     d = daily()
     dp = deepen()
+    hc = heal_clocks()
     m = mine()
     frontier_report(h)
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
-                    "deepening": dp, "mine": m,
+                    "deepening": dp, "heal_clocks": hc, "mine": m,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
