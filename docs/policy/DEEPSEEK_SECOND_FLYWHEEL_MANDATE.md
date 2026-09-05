@@ -1,5 +1,23 @@
 # MASTER DEEPSEEK SECOND-FLYWHEEL / MAXIMUM RAW-INFORMATION / MAXIMUM ALPHA-RESEARCH / MAXIMUM SURVIVOR-CONVERSION / ROBUST E[log W] AUTONOMOUS IMPLEMENTATION DIRECTIVE
 
+> **UNIVERSE MANDATE OVERRIDE — added 2026-09-05, binding on every section below.** This directive
+> was written on 2026-08-11 for the crypto-exchange desk, which was **RETIRED on 2026-08-18** by
+> standing principal order. Its METHOD is live and canonical — raw-information maximalism, the
+> conversion flywheel, natural-experiment search, orthogonal fusion, robust `E[log W]`, and the
+> no-regression law — and none of that is universe-specific. Its **UNIVERSE is not**: the desk's
+> sole traded and hunted universe is the MT5/Fusion Markets book (FX majors/crosses/exotics,
+> metals, equity indices, energy, softs, US share CFDs and the crypto CFDs Fusion itself lists),
+> and **no crypto-exchange venue may be hunted, screened, scored or expanded into again**
+> (`CLAUDE.md`, `docs/LAWS.md` S1).
+>
+> Sections **LXVI–LXIX** (on-chain, DeFi/protocol state, stablecoin rails, public wallet/entity
+> flow) are therefore **SUSPENDED**: they are entirely crypto-exchange-native research grounds
+> with no Fusion-executable expression, and each carries the suspension in place. They are left in
+> the numbering rather than deleted because rule 0 and the no-regression law make this document's
+> section numbering load-bearing, and because a deleted section reads to a future session as a
+> ground nobody thought of rather than one deliberately closed. Where any other section reaches
+> for a crypto-native example, read the MECHANISM and apply it to this book.
+
 <!--
 CANONICAL PERSISTENCE RECORD
   policy_id:        DEEPSEEK_SECOND_FLYWHEEL_MANDATE
@@ -814,6 +832,8 @@ themselves be signals and natural experiments.
 
 ## LXVI. ON-CHAIN RAW INFORMATION UNIVERSE
 
+> **SUSPENDED 2026-09-05 under the MT5 universe mandate (2026-08-18).** Public-chain state is crypto-exchange-native and has no Fusion-executable expression. No organ may collect, screen, score or hypothesise on this ground. What survives is the SHAPE of the ask -- enumerate a venue's full observable state before deciding what is worth collecting -- which is now aimed at the Fusion tape and the reference markets behind it (`docs/research/MOAT_NODE_SPEC.md`).
+
 For relevant public chains investigate lawful collection of: blocks, transactions, logs,
 contract calls, state transitions, balances, token transfers, mint/burn, staking, unstaking,
 validator activity, bridges, exchange-address flows where publicly attributable, protocol
@@ -827,6 +847,8 @@ behind wallets.
 
 ## LXVII. DEFI / PROTOCOL STATE RECONSTRUCTION
 
+> **SUSPENDED 2026-09-05 under the MT5 universe mandate (2026-08-18).** Protocol state is crypto-exchange-native ground. No organ may collect, screen, score or hypothesise on this ground. The transferable idea is 'reconstruct the economic state that PRECEDES forced flow' -- on this book that is margin, stop and swap mechanics, session liquidity and calendar events, not TVL or health factors.
+
 Reconstruct economic protocol state: TVL, deposits, withdrawals, utilization, borrow demand,
 interest curves, collateral composition, health factors, liquidation thresholds, oracle
 dependence, stablecoin backing, pool imbalance, liquidity concentration, LP economics, protocol
@@ -835,12 +857,16 @@ Search for states preceding forced flow or repricing.
 
 ## LXVIII. STABLECOIN / COLLATERAL / MONEY-RAIL UNIVERSE
 
+> **SUSPENDED 2026-09-05 under the MT5 universe mandate (2026-08-18).** Stablecoin and chain money-rail state is crypto-exchange-native ground. No organ may collect, screen, score or hypothesise on this ground. Its transferable question -- who creates and destroys the liquidity a book depends on -- is answered here by central-bank balance sheets, repo and funding conditions, already covered by section LXX.
+
 Track where useful: supply, issuance, redemption, chain distribution, exchange balances, bridge
 flows, peg deviation, liquidity, pool imbalance, backing disclosures, reserve reports,
 collateral composition, lending utilization, borrow demand, mint/redemption latency, rate
 exposure, protocol dependence. Research crypto-native liquidity creation/destruction.
 
 ## LXIX. PUBLIC WALLET / ENTITY FLOW RESEARCH
+
+> **SUSPENDED 2026-09-05 under the MT5 universe mandate (2026-08-18).** Wallet and on-chain entity attribution is crypto-exchange-native ground. No organ may collect, screen, score or hypothesise on this ground. Positioning research on this book runs on CFTC COT/TFF, exchange OI and ETF/fund flows, which carry the same 'who is positioned and how crowded' question with published identities and no attribution guesswork.
 
 Where publicly and lawfully attributable research: exchanges, protocol treasuries, foundations,
 publicly disclosed funds, miners, validators, stablecoin issuers, bridges, token treasuries,
@@ -1013,10 +1039,17 @@ feasibility, decay. Do not assume transfer across horizons.
 
 ## XCIII. ASSET / MARKET UNIVERSE
 
-Continuously evaluate economically justified expansion into: crypto spot, perpetuals, futures,
-options, lending, staking, DeFi, FX, equity indexes, equities, rates, commodities, volatility
-products, other legitimate markets. Expansion must not dilute stronger existing research unless
-marginal value justifies it.
+RETARGETED 2026-09-05. Continuously evaluate economically justified expansion WITHIN the
+MT5/Fusion book: FX majors, crosses and exotics; gold, silver and the other metals; equity
+indices; energy; soft commodities; US share CFDs; and the crypto CFDs Fusion itself lists --
+across spot-equivalent CFDs, the futures curves behind them, and options/volatility products
+where the broker or a reference venue publishes them. Expansion must not dilute stronger existing
+research unless marginal value justifies it.
+
+**EXPANSION IS BOUNDED BY THE BROKER, NOT BY APPETITE.** An instrument the desk cannot execute
+through the configured MT5/Fusion connection is not an expansion candidate, it is a different
+business. The pre-2026-08-18 version of this section listed crypto spot, perpetuals, lending,
+staking and DeFi; those are the retired desk's venues and are closed permanently.
 
 ## XCIV. NATURAL EXPERIMENT FACTORY
 
@@ -1027,9 +1060,12 @@ difference-in-differences, or other causal tests where assumptions permit.
 
 ## XCV. PROPRIETARY FUSION SEARCH
 
-Systematically explore orthogonal joins such as: ORDER FLOW + FUNDING + EXCHANGE FLOWS; OPTIONS
-SKEW + LIQUIDATION STATE + STABLECOIN LIQUIDITY; MACRO LIQUIDITY + CRYPTO FUNDING + CROSS-VENUE
-DEPTH; NEWS EVENT + WALLET FLOW + EXECUTION MICROSTRUCTURE. Do not restrict to exactly three
+Systematically explore orthogonal joins such as: ORDER FLOW + SWAP/CARRY + COT POSITIONING;
+OPTIONS SKEW + REALIZED-VOL STATE + CENTRAL-BANK LIQUIDITY; FUTURES-CURVE BASIS + SESSION
+LIQUIDITY STATE + BROKER DEPTH; MACRO RELEASE + CROSS-PAIR CORRELATION REGIME + EXECUTION
+MICROSTRUCTURE. (RETARGETED 2026-09-05: the examples named funding, liquidation state, stablecoin
+liquidity and wallet flow, which are grounds of the retired crypto-exchange desk. The joins above
+are the same shapes -- a flow term, a state term and a stress term -- over this book's data.) Do not restrict to exactly three
 inputs. Search low-order combinations first. Escalate complexity only if incremental value
 justifies selection burden.
 

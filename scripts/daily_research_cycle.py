@@ -217,7 +217,10 @@ _STEPS = [
     ("data_vitals",         "scripts/data_vitals.py", 90),  # live collector DQS + provenance
     ("alpha_lifecycle",     "scripts/alpha_lifecycle.py", 90),  # failure patterns + transfer pipeline + novelty + anomalies
     ("research_cio",        "scripts/research_cio.py", 90),  # info advantage + blind spots + north star + scheduler
-    ("hedge_integrity",     "scripts/hedge_integrity.py", 60),  # venue-truth hedge invariant
+    # hedge_integrity REMOVED 2026-09-05 (universe mandate). Its invariant was "every tracked
+    # carry's futures leg is SHORT and matches -spot_qty" -- a spot-perp cash-and-carry property
+    # read from a Binance signed endpoint. There is no MT5 analogue: a Fusion book holds one
+    # position per symbol, so there is no second leg to invert.
     ("feature_library",     "scripts/feature_library.py", 90),  # feature assets + construction coverage
     ("leakage_detector",    "scripts/leakage_detector.py", 60),  # self-validating leakage contract
     ("experiment_registry", "scripts/experiment_registry.py", 90),  # harvest experiments -> permanent objects

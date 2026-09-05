@@ -12,16 +12,26 @@ WHAT IS HERE
 
     tick_source.py     the thin capture interface, its MetaTrader5 implementation and a
                        deterministic fake -- so everything above it is testable off Windows
-    tape_store.py      append-only, content-addressed, crash-safe storage, and the gap ledger
-                       that records what was MISSED as a fact rather than as an absence
+    tape_store.py      append-only, content-addressed, crash-safe storage; the gap ledger that
+                       records what was MISSED as a fact rather than as an absence; and the
+                       compaction that folds a finished day's containers without touching a tick
     tick_recorder.py   the continuous loop: universe from the live symbol list, cursors,
                        terminal restarts, weekend gaps, symbol-list changes, disk floor
     tick_integrity.py  the proof: per symbol per day, does the tape say what it claims to say
     tape_features.py   what the tape buys that public bar data cannot -- executable spread,
-                       quote intensity, microprice, order-flow imbalance, true intrabar path,
-                       and a cost surface measured rather than assumed
+                       quote intensity, microprice, order-flow imbalance, the true intrabar path
+                       and realised/jump variance on the M1..D1 clock, and a cost surface
+                       measured rather than assumed
     vol_archive.py     the second forward-only asset: an implied-vol / term-structure archive
                        on MT5-tradeable ground, accumulated one observation per cycle
+
+THE ONE THING MEASUREMENT CHANGED ABOUT THE DESIGN. Writing a segment per 60-second cycle is what
+makes a crash cost at most one cycle, and it is also 1,440 parquet containers per symbol per day
+at a measured ~3 KB of footer each -- 4.3 MB of container around the ticks, 1.26 GB/day across
+this universe, which no argument about the value of tick data would have survived. The fix was
+not to record less: it was to keep the 60-second beat for safety and fold the containers once a
+day has stopped receiving, which is lossless and 25x smaller. `tape_store`'s retention section
+carries the whole measurement, including the estimate it overturned.
 
 NOTHING HERE DECIDES ANYTHING. No module in this package can move a position, change a size,
 mint a certificate or condition capital. It records, it measures, and it publishes artifacts the

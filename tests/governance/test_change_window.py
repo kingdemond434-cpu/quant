@@ -65,10 +65,14 @@ def test_first_fills_window_blocks(tmp_path):
 
 
 def test_rail_breach_window_blocks(tmp_path):
+    """REPOINTED 2026-09-05: the changed path was `scripts/run_cashcarry_executor.py`, the retired
+    crypto-exchange desk's executor. It was deleted with that desk and dropped out of MONEY_PATH,
+    so the test stopped exercising a money-path change and the window it was written to prove
+    reported ALLOW. The gateway is the money path now; the assertion is otherwise unchanged."""
     _launch(tmp_path, days_ago=30, fills=100)
     (tmp_path / "data/cashcarry_positions.json").write_text(
         '{"last_risk_action": "flatten", "positions": {}}', "utf-8")
-    rep = build_report(tmp_path, NOW, paths=["scripts/run_cashcarry_executor.py"])
+    rep = build_report(tmp_path, NOW, paths=["desks/mt5/mt5desk/gateway.py"])
     assert rep["verdict"] == "BLOCK"
     assert any("RAIL_BREACH" in w for w in rep["windows_active"])
 

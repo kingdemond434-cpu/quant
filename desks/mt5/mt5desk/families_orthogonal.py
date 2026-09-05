@@ -45,6 +45,9 @@ import numpy as np
 import pandas as pd
 from mt5desk.causal_residual import causal_residual
 from mt5desk.families import Signal, _atr, _h1
+from mt5desk.universe_registry import REFERENCE_TIMEFRAME as _REFERENCE_TF
+from mt5desk.universe_registry import TIMEFRAMES as _TIMEFRAMES
+from mt5desk.universe_registry import scale_bars as _scale_bars
 
 BASE = Path(__file__).resolve().parent.parent
 TERMS = BASE / "data" / "tape" / "contract_terms"
@@ -731,9 +734,16 @@ def family_calendar_month(
     signals: list[Signal] = []
     # One decision per UTC day during the specified month. The month and direction are source
     # evidence, not searched parameters; all other defaults are frozen family policy.
+    #
+    # `hour == 0` ALONE IS ONE DECISION PER DAY ONLY ON AN HOURLY CHART (2026-09-05). On M1 the
+    # first hour of a day holds sixty bars that all satisfy it, so the family would take sixty
+    # decisions where its own docstring promises one -- and it enters with `trigger=px,
+    # wait_bars=0`, so those are sixty resting orders at sixty different prices. Requiring the
+    # minute too makes it the day's FIRST bar on every chart. H1, H4 and D1 bars are all stamped
+    # at minute 0, so no existing cell changes by a single signal.
     for i in range(max(atr_n, 1), len(d) - 1):
         ts = d.index[i]
-        if ts.month != active_month or ts.hour != 0:
+        if ts.month != active_month or ts.hour != 0 or ts.minute != 0:
             continue
         a = float(atr.iloc[i])
         if not np.isfinite(a) or a <= 0:
@@ -1144,14 +1154,17 @@ ORTHOGONAL_FAMILIES.update({
 #: terms recorded" is an acquisition task, which is a different defect from "never mined".
 FAMILY_INPUTS = {
     "carry": ("contract/swap terms", "data/tape/contract_terms"),
-    "relative_value": ("a peer instrument's H1", "data/universe/<PEER>_H1.parquet"),
+    "relative_value": ("a peer instrument, on this cell's own chart",
+                       "data/universe/<PEER>_<TF>.parquet"),
     "vol_transition": ("price only", None),
     "vol_mean_reversion": ("price only", None),
     "liquidity_regime": ("spread series from the tick tape", "data/tape/ticks/<SYM>"),
     "orderflow_imbalance": ("tick-derived flow imbalance", "data/tape/ticks/<SYM>"),
     "cot_positioning": ("COT net positioning", "data/cot*"),
-    "cross_asset_residual": ("2+ factor instruments' H1", "data/universe/*_H1.parquet"),
-    "correlation_regime": ("a peer instrument's H1", "data/universe/<PEER>_H1.parquet"),
+    "cross_asset_residual": ("2+ factor instruments, on this cell's own chart",
+                             "data/universe/*_<TF>.parquet"),
+    "correlation_regime": ("a peer instrument, on this cell's own chart",
+                           "data/universe/<PEER>_<TF>.parquet"),
     "macro_conditional": ("a macro state series", "data/macro_state.json"),
     "event_reaction": ("an economic calendar", "data/intelligence/ff_calendar_vintage"),
     "turn_of_month": ("price only", None),
@@ -1370,8 +1383,9 @@ def family_pca_residual(
 
 
 ORTHOGONAL_FAMILIES["pca_residual"] = family_pca_residual
-FAMILY_INPUTS["pca_residual"] = ("4+ factor instruments' H1 (the more of the universe, the "
-                                 "better the latent factors)", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["pca_residual"] = ("4+ factor instruments on this cell's own chart (the more of "
+                                 "the universe, the better the latent factors)",
+                                 "data/universe/*_<TF>.parquet")
 
 
 # THE EDGE QUEUE, REGISTERED THROUGH THE SAME DOOR AS EVERYTHING ELSE (2026-08-29).
@@ -1488,3 +1502,206 @@ from mt5desk.family_style_premia import family_style_premia  # noqa: E402
 ORTHOGONAL_FAMILIES["style_premia"] = family_style_premia
 FAMILY_INPUTS["style_premia"] = ("swap_diff (broker_swaps) for carry; risk-driver bars for "
                                  "defensive", "data/intelligence/broker_swaps + universe")
+
+
+# ==============================================================================================
+# EVERY MECHANISM ON EVERY CHART -- and the two questions that decides (2026-09-05)
+#
+# The principal's order is "m1 m5 m15 m30 h1 h4 d1 all possible every type of mechanism n chart
+# for all always ... this was a serious flaw we had abt the h1 only". Handing every family seven
+# charts is one line. Handing every family seven charts and getting seven MEANINGFUL cells out of
+# it is the work, and it turns on two questions asked once per family and written down here.
+#
+# ------------------------------- QUESTION 1: what does "20 bars" mean? ------------------------
+#
+# Every bar-counted default in this file was written for an hourly bar. There are exactly two
+# honest readings of such a number on another chart, and which one applies is a fact about the
+# MECHANISM, not a preference:
+#
+#   BAR-RELATIVE (the default; nothing is rescaled). A window that defines a STATISTIC over the
+#   chart's own bars -- a z-score lookback, a correlation window, an ATR window, a factor
+#   estimation window, a refit stride, a holding TTL. `lookback=120` is a 120-bar spread z-score
+#   on every chart: five days of it on H1, ten hours of it on M5, six months of it on D1. Those
+#   are three different, well-posed, economically distinct questions, and PRESERVING that
+#   difference is the entire reason to hunt seven charts instead of one. Force them all to a
+#   fixed wall-clock span and the M1 cell and the D1 cell compute the same number -- seven times
+#   the compute for one mechanism, which is exactly the "thousands of meaningless cells" outcome.
+#   It is also what makes the ladder produce the lanes the principal named: the same family is a
+#   scalp on M1, an intraday on M15, a swing on D1, without a second family being written.
+#
+#   WALL-CLOCK (declared in `WALL_CLOCK_PARAMS`, rescaled by `universe_registry.scale_bars`). A
+#   parameter that counts bars only in order to express a duration THE MECHANISM'S OWN CAUSE IS
+#   DATED BY: a financing night, the days around a month turn, a weekly report's shelf life, a
+#   macro print's, the hours either side of a named clock moment. Those causes do not resample.
+#   `family_carry`'s `hold_bars=120` is five days of rollover; left alone on M1 it is two hours
+#   and collects no financing at all, so the family would be measuring something it is not named
+#   for -- a quiet-regime momentum sleeve wearing the word "carry", which is the exact failure
+#   the family's own docstring refuses.
+#
+# The rescale is the IDENTITY at H1 by construction (`scale_bars(n, "H1") == n`), so declaring a
+# parameter wall-clock moves no hourly cell by anything. `test_timeframe_identity` pins that.
+#
+# ------------------------- QUESTION 2: can this family speak on that chart? -------------------
+#
+# `FAMILY_TIMEFRAMES` records, per family, the charts on which its claim is EXPRESSIBLE, with the
+# reason. Only exceptions are listed; everything absent runs on all seven. An exclusion here is
+# not a gate and not a screen -- no cell that runs faces a different bar, and the ten gates are
+# untouched. It is the same statement `NOT_SOURCED_HERE` already makes one layer out: a family
+# that would return [] on every symbol of a chart, and be filed as a data gap, is worse than one
+# that says out loud where it cannot speak (WS-005, absence read as a clean verdict).
+# ==============================================================================================
+
+#: Charts a family may be enumerated on, and WHY it is not all seven. Absent = all seven.
+#: The value is (timeframes, reason); a test asserts every reason is worth reading.
+FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
+    # ---- bounded ABOVE: the claim names ONE HOUR, and a bar that spans four cannot locate it.
+    # These gate on `d.index.hour == <a named hour>`. On H4 the stamp hours are 0/4/8/12/16/20 so
+    # a close_hour of 22 never matches and the family returns [] on every symbol; on D1 there is
+    # one stamp a day. Below the hour the same gate selects every bar inside the named hour,
+    # which is a FINER statement of the same claim and is exactly what the fine charts are for.
+    "hedging_demand_close": (
+        ("M1", "M5", "M15", "M30", "H1"),
+        "fires in the institutional closing HOUR (close_hour, a broker stamp-hour); a chart whose "
+        "bars span four hours or a day cannot carry that hour, so the family would return [] on "
+        "every symbol and be filed as a data gap rather than as an inexpressible claim"),
+    "fx_fixing_reversal": (
+        ("M1", "M5", "M15", "M30", "H1"),
+        "the claim is about the hour containing the 16:00 London fix; a four-hour or daily bar "
+        "cannot locate a fix, and the pre-fix window it measures is minutes to an hour wide"),
+    "session_handoff": (
+        ("M1", "M5", "M15", "M30", "H1"),
+        "reads one session's first bars and trades a later session's named hour; both ends of the "
+        "claim are stamp-hours, which a bar spanning four hours or a day does not resolve"),
+    "generic": (
+        ("M1", "M5", "M15", "M30", "H1"),
+        "its CONTEXT vocabulary is broker-hour session windows (asia/london/new_york/overlap); on "
+        "a four-hour bar those masks resolve to two or three stamps a day and on a daily bar to "
+        "none at all, so a coordinate naming a session would be tested somewhere else entirely. "
+        "The OUTPUT horizons ('1h', '4h', 'daily') are converted to the chart's own bars by "
+        "`family_generic._hold_bars`, so they mean the same market time on every chart here"),
+    "clock_transition": (
+        ("M1", "M5", "M15", "M30", "H1"),
+        "the whole mechanism is ONE named stamp-hour -- a fix, a settlement, a handoff, a rollover "
+        "-- and it already refuses a stamp hour the bars do not carry; declaring the domain says "
+        "so before the sweep spends a pass discovering it on every symbol"),
+    "lvc_asia_london": (
+        ("M5",),
+        "a source-faithful reproduction of a public EA whose defaults are pinned to a named blob "
+        "and whose windows are M5-bar counts (recent_extreme_bars=3 is fifteen minutes). Run on "
+        "another chart it is no longer the thing it reproduces, and the ablation it exists to "
+        "settle would be answered about a different strategy"),
+    "style_premia": (
+        ("H1",),
+        "AQR's six styles are defined on daily-to-annual horizons, and this implementation spells "
+        "them as HOURLY BAR COUNTS INLINE rather than as parameters -- a 48-bar vol, a 252-bar "
+        "momentum, 500/1000-bar value and beta windows. They cannot be re-expressed from outside "
+        "the family, so on M1 '252' would mean four hours and on D1 a year; declared H1 rather "
+        "than run somewhere those numbers are silently a different claim"),
+    # ---- bounded BELOW: the INFORMATION does not arrive that fast.
+    "macro_conditional": (
+        ("H1", "H4", "D1"),
+        "the conditioning variable is a DAILY FRED print, lagged a publication day and forward-"
+        "filled; emitting a decision on every M1 bar asserts 1,440 independent decisions a day "
+        "from a number that moves once. Below the hour this multiplies cells without adding one "
+        "bit of information, which is the definition of a meaningless cell"),
+    "relative_value": (
+        ("H1", "H4", "D1"),
+        "joins this instrument to a peer BAR FOR BAR. Below the hour that join measures "
+        "non-synchronous trading rather than a common factor -- an equity CFD prints only in its "
+        "cash session while an FX cross prints around the clock -- so the inner join collapses and "
+        "the residual is an artifact of quoting hours (the Scholes-Williams problem)"),
+    "correlation_regime": (
+        ("H1", "H4", "D1"),
+        "same bar-for-bar join as relative_value: a correlation BREAKDOWN measured on M1 bars "
+        "across instruments with different quoting hours is a measurement of the quoting hours"),
+    "cross_asset_residual": (
+        ("H1", "H4", "D1"),
+        "projects out several factor instruments bar for bar; below the hour the factor betas are "
+        "biased toward zero by non-synchronous quoting and the 'unexplained' residual is mostly "
+        "the asynchrony. The same reason keeps the eight-frame factor basket off the fine charts"),
+    "pca_residual": (
+        ("H1", "H4", "D1"),
+        "extracts the universe's latent factors from a correlation matrix of factor instruments; "
+        "at sub-hourly sampling that matrix is dominated by asynchronous quoting, and a "
+        "Marchenko-Pastur cut on a noise structure that is not sampling noise keeps the wrong "
+        "eigenvalues"),
+    "lead_lag": (
+        ("H1", "H4", "D1"),
+        "trades the laggard against a DRIVER instrument bar for bar at a measured lag; a lag "
+        "measured across instruments with different quoting hours below the hour is the quoting "
+        "difference, not the information flow"),
+}
+
+#: Parameters whose bar count expresses a WALL-CLOCK duration the mechanism's cause is dated by.
+#: Everything not listed is bar-relative and is left exactly as written. See the essay above.
+WALL_CLOCK_PARAMS: dict[str, tuple[str, ...]] = {
+    # Financing is paid per NIGHT. A hold that does not span nights collects no carry.
+    "carry": ("hold_bars",),
+    # The month-turn flow window is days wide; the hold has to reach across it.
+    "turn_of_month": ("ttl_bars",),
+    # "One decision per UTC day", and the hold is that day.
+    "calendar_month": ("ttl_bars",),
+    # A weekly report's positioning extreme unwinds over days, not over N bars of any chart.
+    "cot_positioning": ("ttl_bars",),
+    # A daily macro regime persists for days; the hold is stated in that clock.
+    "macro_conditional": ("ttl_bars",),
+    # The hours either side of a named clock moment. Each of these is a genuine BAR OFFSET in its
+    # family (`j = i - pre_window_bars`, `j = i - lead_bars`, `ttl_bars=hold_bars`), so rescaling
+    # holds the wall-clock span the mechanism names.
+    "hedging_demand_close": ("hold_bars",),
+    "fx_fixing_reversal": ("pre_window_bars", "hold_bars"),
+    "session_handoff": ("hold_bars",),
+    "clock_transition": ("lead_bars", "hold_bars"),
+    # CONSIDERED AND DELIBERATELY ABSENT, because "bars" in a parameter name is not evidence that
+    # the family counts bars with it:
+    #
+    #   session_handoff.source_bars -- reads as a bar count and is used as an HOUR OFFSET:
+    #       `hours == source_start_hour + source_bars - 1`. Rescaled to 60 on M1 it would ask for
+    #       stamp-hour 62, which no bar carries, and the family would return [] on every symbol
+    #       of every fine chart -- filed as a data gap, the failure mode this whole file is built
+    #       to avoid. Left unscaled, the source window is the chart's own first bar of the
+    #       session, which is a finer statement of the same claim rather than a broken one.
+    #       (The naming is the family's to fix; scaling around it would hide it.)
+}
+
+
+def timeframe_domain(family: str) -> tuple[str, ...]:
+    """The charts `family` may be enumerated on. Every family that does not declare gets all."""
+    declared = FAMILY_TIMEFRAMES.get(family)
+    return declared[0] if declared else tuple(_TIMEFRAMES)
+
+
+def timeframe_refusal(family: str, timeframe: str) -> str | None:
+    """Why `family` is not run on `timeframe`, or None when it is. Never a silent skip."""
+    declared = FAMILY_TIMEFRAMES.get(family)
+    if declared is None or str(timeframe).upper() in declared[0]:
+        return None
+    return f"{family} runs on {'/'.join(declared[0])} only -- {declared[1]}"
+
+
+def timeframe_overrides(family: str, timeframe: str) -> dict[str, int]:
+    """This family's WALL-CLOCK defaults re-expressed on `timeframe`. `{}` at H1, always.
+
+    Read from the function's OWN signature rather than restated here, so a family that changes a
+    default cannot silently keep being scheduled with the old one; and returned as explicit
+    numbers so the candidate's identity carries what actually ran. Nothing downstream has to know
+    this function exists -- the gauntlet and the forward engine rebuild the cell from the params
+    on the certificate, which are already the scaled ones.
+    """
+    names = WALL_CLOCK_PARAMS.get(family)
+    if not names or str(timeframe).upper() == _REFERENCE_TF:
+        return {}
+    fn = ORTHOGONAL_FAMILIES.get(family)
+    if fn is None:
+        return {}
+    import inspect
+    params = inspect.signature(fn).parameters
+    out: dict[str, int] = {}
+    for name in names:
+        p = params.get(name)
+        if p is None or p.default is inspect.Parameter.empty:
+            continue
+        if not isinstance(p.default, int) or isinstance(p.default, bool):
+            continue
+        out[name] = _scale_bars(p.default, timeframe)
+    return out

@@ -1,4 +1,15 @@
 # WEAK SIGNAL REGISTRY — permanent (Charter §23)
+
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Signals logged before 2026-08-18 were observed on the retired crypto-exchange tape. The PROMOTION RULE is unchanged, but a crypto-exchange-native signal can no longer be promoted: it has no instrument to be tested on.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
 _Individually-weak but repeatedly-observed signals, source leads, and sub-threshold hypotheses
 are RETAINED here, never discarded. PROMOTION RULE: >=2 weak signals from INDEPENDENT
 discovery paths converging on the same direction auto-promote to combined hypothesis

@@ -18,7 +18,19 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # RAISED FROM 20, 2026-09-05, because 20 had started FAILING THE MERGE ON THE CLOCK rather
+    # than on anything about the code. Measured on 806c98fa: the job began at 20:14:35, spent
+    # 3m20s on install and the four law/lint/type steps, entered `pytest --cov` at 20:17:55 and
+    # was killed at 20:34:48 -- exactly twenty minutes -- with `Coverage floors` skipped and the
+    # whole run reported `cancelled`. `mt5-money-path` passed on the same commit in 11m04s, so
+    # the tree was green and the merge was blocked by a budget.
+    #
+    # A cap that fires on duration is indistinguishable downstream from a real failure, which is
+    # the worse half of the problem: it reads as a red gate, so the response is to go looking for
+    # a broken test that does not exist. 45 leaves the suite room to keep growing -- it is meant
+    # to -- while still failing loudly if something genuinely hangs, which is what a timeout is
+    # for. The full-repo suite with branch coverage is simply a bigger job than it was.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 

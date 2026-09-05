@@ -110,6 +110,30 @@ def _shadow_rows() -> list[dict[str, Any]]:
     return sorted(output, key=lambda row: row["expectancy_r"], reverse=True)
 
 
+def _norm_status(status) -> str:
+    """A lane's status, with the separator normalised, because the separator is not the meaning.
+
+    THE BUG THIS ENDS, measured 2026-09-05 and it hid an entire lane. Three lanes write a
+    promotion verdict and they do not agree on one character:
+
+        shadow_forward.py    "PROMOTION CANDIDATE"    (space)
+        scalp_shadow.py      "PROMOTION_CANDIDATE"    (underscore)
+        qquant_shadow.py     "PROMOTION_CANDIDATE"    (underscore)
+
+    The promotion counter below tested `status == "PROMOTION CANDIDATE"` -- the space form only --
+    so every candidate the SCALP and QQUANT lanes ever produced was invisible to it. The dashboard
+    reported `promotion_ready: 0` while the promoter, which matches the underscore form correctly,
+    was looking at the same rows and seeing candidates. The principal was told repeatedly that
+    nothing was promotable by a tile that could not see two of the three lanes.
+
+    Same class as `_is_terminal` directly below, whose docstring records the same lesson about
+    exact-string matching one rename later: a verdict that does not propagate is a rename, not a
+    verdict. Normalising on READ is the fix that survives the next lane, because the next lane
+    will also pick its own separator and no reader should have to know which.
+    """
+    return " ".join(str(status or "").upper().replace("_", " ").split())
+
+
 def _is_terminal(status) -> bool:
     """A clock is stopped if its status is terminal -- matched by PREFIX, not exact string.
 
@@ -206,6 +230,7 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
             hyp = len(rows)
             break
     forward, promo_ready, live_rows = [], 0, {}
+    promo_names: list[str] = []
     for path in (DESK / "reports" / "shadow" / "shadow_state.json",
                  DESK / "reports" / "shadow" / "qquant_shadow_state.json",
                  DESK / "reports" / "shadow" / "scalp_shadow_state.json",
@@ -214,7 +239,7 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
         for key, row in list(data.items()) + list((data.get("sleeves") or {}).items() if isinstance(data.get("sleeves"), dict) else []):
             if not isinstance(row, dict) or "status" not in row:
                 continue
-            status = str(row.get("status") or "").upper()
+            status = _norm_status(row.get("status"))
             if _is_terminal(status):
                 continue
             # DAYS ARE DERIVED, NEVER TRUSTED. A lane whose engine went stale keeps writing
@@ -238,8 +263,11 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
                             "t": _number(row.get("forward_t"), row.get("t")),
                             "sleeve_id": row.get("sleeve_id"),
                             "status": status})
+            # NORMALISED, so this counts every lane rather than only the one that writes a
+            # space. See _norm_status: the scalp and qquant lanes were invisible here.
             if status == "PROMOTION CANDIDATE":
                 promo_ready += 1
+                promo_names.append(key)
     sleeves_doc = _read(DESK / "data" / "sleeves.json")
     live_rows = sleeves_doc.get("sleeves") if isinstance(sleeves_doc.get("sleeves"), dict) else (
         sleeves_doc if isinstance(sleeves_doc, dict) else {})
@@ -274,6 +302,10 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
         "certified": universal.get("n"),
         "forward_clocks": len(forward),
         "promotion_ready": promo_ready,
+        # NAMED, not just counted. A bare count told the principal "0 promotable" for days while
+        # two lanes were unreadable to the counter; a NAME is checkable against the lane's own
+        # state file the moment it looks wrong.
+        "promotion_ready_names": sorted(promo_names),
         "live": len(live_rows),
         # NOT [:40] ANY MORE, AND THE CAP WAS NOT A DISPLAY CHOICE. check_research_health
         # reads THIS list to find BLOCKED and stalled clocks, so the cap silently limited the

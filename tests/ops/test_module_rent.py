@@ -82,12 +82,60 @@ def test_the_ai_organs_are_on_the_same_list_as_every_other_component() -> None:
 
 
 def test_a_missing_ledger_is_unmeasured_with_the_path_and_never_a_pass(tree: Path) -> None:
+    """Every LEDGER-PRICED module: no evidence means UNMEASURED, with the path, never a pass.
+
+    SCOPED TO LEDGER-PRICED MODULES, 2026-09-05, when the `organ` kind landed. An organ's rent is
+    read off the capability graph -- organ -> artifact -> the node that reads it -- and that is
+    CODE, not a ledger under `tree`. So "nothing reads this artifact" and "this artifact is
+    declared HUMAN_READ" are knowable on an empty tree, and both are genuine NOT_BINDING verdicts
+    rather than missing measurements: they are wiring facts, not market facts. Asserting
+    UNMEASURED across them would force an organ nothing consumes to claim it might yet earn.
+    """
     out = mr.measure(tree)
     assert out, "an empty tree must still produce a row per module"
     for name, row in out.items():
+        if row["kind"] == "organ":
+            continue
         assert row["verdict"] == mr.UNMEASURED, name
         assert row["why"], f"{name} is UNMEASURED without saying why"
     assert mr.MISSED_GROWTH in out["regime_hibernate"]["why"]
+
+
+def test_every_module_says_why_whatever_its_verdict(tree: Path) -> None:
+    """The rule that survives the scoping above: no row is ever a bare verdict. L1.28a applies to
+    NOT_BINDING as much as to UNMEASURED -- 'this binds nothing' without a reason is the kind of
+    clean-looking line that ends with an organ computing for a year and nobody able to say why."""
+    for name, row in mr.measure(tree).items():
+        assert row["why"], f"{name} carries verdict {row['verdict']} with no reason"
+
+
+def test_every_decision_affecting_organ_carries_a_rent_line(tree: Path) -> None:
+    """THE DEBT THIS CLOSED. Measured 2026-09-05: 27 decision-affecting capability-graph nodes
+    could not be priced by any rent line, so nothing could ever retire them however long they
+    cost. Each is now billed through what its output CHANGES, and the four possible answers are
+    all honest: inherited from a priced consumer, NOT_BINDING because nothing reads it,
+    NOT_BINDING because the graph declares it HUMAN_READ, or UNMEASURED naming exactly the
+    external consumer, money path or research loop the chain runs into."""
+    from libs.ops import capability_graph as cg
+    assert not cg.unbillable(), (
+        f"decision-affecting nodes with no rent line: {sorted(cg.unbillable())}")
+    organs = {n: r for n, r in mr.measure(tree).items() if r["kind"] == "organ"}
+    assert len(organs) >= 27, f"only {len(organs)} organs carry a line"
+    for name, row in organs.items():
+        assert row["verdict"] in (mr.EARNS, mr.COSTS, mr.NOT_BINDING, mr.UNMEASURED), name
+        assert row["why"], name
+
+
+def test_an_organ_nothing_reads_is_not_binding_and_names_its_artifact(tree: Path) -> None:
+    """Zero rent BY CONSTRUCTION is the retire signal the principal asked for -- and it must name
+    the artifact, or the reader cannot tell whether to wire a consumer or delete the organ."""
+    m = mr.Module("ghost_organ", "organ", "capability graph", "rent of what it changes",
+                  "measure_organ", "writes nothing anyone reads",
+                  key="desks/mt5/reports/A_FILE_NOBODY_READS.json")
+    row = mr.measure_organ(m, mr.Ledgers(tree))
+    assert row["verdict"] == mr.NOT_BINDING and row["rent"] == 0.0
+    assert "A_FILE_NOBODY_READS.json" in row["why"]
+    assert "retire it" in row["why"]
 
 
 # --------------------------------------------------------------------------- rails

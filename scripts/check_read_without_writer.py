@@ -101,7 +101,15 @@ _EXTERNAL: dict[str, str] = {
 #: Measured 2026-09-05 on claude/tier1-batch, mid-purge, in a checkout with no data lake. An
 #: earlier reading of 85 came from a line-local scan that could not see the COT defect itself
 #: (see `_classify`); it is not comparable and must not be treated as a regression from it.
-MAX_DANGLING = 175
+#:
+#: 175 -> 167, same day, same checkout, as the scripts/ identity sweep closed eight wires: the
+#: hedge-integrity surface and its producer, the perp-funding-decay research row and its detector
+#: artifact, the two Coin Metrics BTC price reads (the FRED macro screen and the Stage-A executor)
+#: repointed onto the MT5 desk's own BTCUSD bars, the two deleted crypto collectors dropped from
+#: the wiring audit's reachability list, and the Upbit snapshot test dropped from the enforcement
+#: map. Lowered because the fence asked: the count fell, so the floor follows it down and the next
+#: new wire fails immediately.
+MAX_DANGLING = 167
 
 
 def _classify(path: Path) -> tuple[set[str], set[str], set[str]]:

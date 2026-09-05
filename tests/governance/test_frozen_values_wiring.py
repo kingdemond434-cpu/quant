@@ -76,33 +76,62 @@ def test_every_non_clean_status_is_visible_in_the_human_output() -> None:
     assert "SOURCE_DRIFTED" in detail, "SOURCE-DRIFTED must survive the detail-loop filter"
 
 
-def test_bybit_recorder_refreshes_its_universe_in_the_loop() -> None:
+#: REPOINTED 2026-09-05 (MT5 universe mandate, 2026-08-18). The two tests below fenced
+#: `scripts/run_recorder.py`, `run_recorder_spot.py` and `run_recorder_bybit.py` -- the Binance
+#: futures/spot and Bybit collectors of the retired crypto-exchange desk, deleted with it. The
+#: INVARIANT they pinned did not retire with the venue; it is the one `MOAT_NODE_SPEC.md` states
+#: for the MT5 node in as many words ("universe discovered dynamically each cycle --
+#: `symbols_get()`, registry not hardcode"), and `tick_recorder` records why: the broker lists and
+#: delists instruments, so a frozen list means a hunt ran on a stale universe and nothing said so.
+#: So the fence follows the invariant to the recorders that write the tape today.
+_RECORDERS = ("desks/mt5/moat/moat_recorder.py", "desks/mt5/recorders/tick_recorder.py")
+
+
+def test_the_recorders_refresh_their_universe_inside_the_loop() -> None:
     """REGRESSION -- the defect L1.66's first run found, and the reason it is a regression site.
 
-    ``run_recorder_bybit.py`` froze ``_SYMBOLS = _universe()`` at import with no refresh anywhere
-    in its loop, while both sibling recorders re-poll hourly. That is R0220 repeating one layer
-    down on the same file: R0220 made bybit DERIVE the universe instead of hardcoding it, and the
-    REFRESH was closed on Binance and spot and never here.
+    The retired Bybit collector froze ``_SYMBOLS = _universe()`` at import with no refresh anywhere
+    in its loop while both siblings re-polled. Same shape here, and worse consequence: a broker
+    that lists a symbol after the recorder started would never be recorded, and the tape's own gap
+    would be invisible because the recorder believes it covered its whole universe.
 
-    Pinned STRUCTURALLY -- ``_universe`` must be called from inside ``main`` -- because that is
-    exactly the property the fence reads, so this test and the fence cannot disagree.
+    Pinned STRUCTURALLY -- the symbol call must be reachable from the cycle function, not only from
+    module scope -- so a refresh cannot be reduced to an import-time constant again.
     """
-    tree = ast.parse((_ROOT / "scripts/run_recorder_bybit.py").read_text("utf-8"))
-    main = next(n for n in ast.walk(tree)
-                if isinstance(n, ast.FunctionDef) and n.name == "main")
-    calls = {n.func.id for n in ast.walk(main)
-             if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
-    assert "_universe" in calls, "the universe must be re-derived inside main(), not only at import"
-    # and the write loops must consume the refreshed local, never the import-time constant
-    body = ast.get_source_segment((_ROOT / "scripts/run_recorder_bybit.py").read_text("utf-8"),
-                                  main) or ""
-    assert "for sym in symbols:" in body
-    assert "for sym in _SYMBOLS:" not in body, "a loop still reading the frozen tuple is the defect"
-
-
-def test_all_three_recorders_agree_on_the_refresh_cadence() -> None:
-    """The asymmetry R0220 was supposed to end: one recorder silently on a different cadence."""
-    for rel in ("scripts/run_recorder.py", "scripts/run_recorder_spot.py",
-                "scripts/run_recorder_bybit.py"):
+    for rel in _RECORDERS:
         src = (_ROOT / rel).read_text("utf-8")
-        assert "_UNIVERSE_REFRESH_S" in src, f"{rel} has no universe refresh cadence"
+        tree = ast.parse(src)
+        funcs = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+        refreshers = [
+            f for f in funcs
+            if any(
+                (isinstance(n.func, ast.Attribute) and n.func.attr in ("symbols_get", "symbols"))
+                or (isinstance(n.func, ast.Name) and "universe" in n.func.id.lower())
+                or (isinstance(n.func, ast.Attribute) and "universe" in n.func.attr.lower())
+                for n in ast.walk(f) if isinstance(n, ast.Call))]
+        assert refreshers, (
+            f"{rel} never re-derives its symbol universe inside a function -- a universe fixed at "
+            "import is a universe that stops matching the broker the first time it lists anything")
+        module_level = {t.id for n in tree.body if isinstance(n, ast.Assign)
+                        for t in n.targets if isinstance(t, ast.Name)}
+        for n in tree.body:
+            if not (isinstance(n, ast.Assign) and any(
+                    isinstance(c.func, ast.Attribute) and c.func.attr in ("symbols_get", "symbols")
+                    for c in ast.walk(n) if isinstance(c, ast.Call))):
+                continue
+            names = {t.id for t in n.targets if isinstance(t, ast.Name)}
+            assert not names, (
+                f"{rel}: {sorted(names)} is a symbol list frozen at import ({sorted(module_level)} "
+                "are module-level). The universe must be re-derived per cycle.")
+
+
+def test_every_recorder_agrees_on_the_refresh_cadence() -> None:
+    """The asymmetry R0220 was supposed to end: one recorder silently on a different cadence.
+
+    Each recorder must name its own refresh interval as a CONFIGURABLE value, so the cadence is a
+    stated number somebody can compare rather than an accident of whichever loop it sits in.
+    """
+    for rel in _RECORDERS:
+        src = (_ROOT / rel).read_text("utf-8")
+        assert "UNIVERSE_REFRESH_S" in src or "universe_refresh_s" in src, (
+            f"{rel} has no named universe-refresh cadence")

@@ -113,24 +113,42 @@ def test_rollup_of_only_ungraded_partitions_is_unmeasured() -> None:
 
 
 class TestFenceWiring:
-    """The fence must keep grading the axis the live gates actually use."""
+    """The fence must keep grading the axis the live gates actually use.
+
+    REWRITTEN FOR THE MT5 DESK, 2026-09-05. These tests were built against a fence whose axes were
+    `funding_state` and `funding_breadth` -- crypto-exchange concepts -- and they passed a
+    `funding` DataFrame of BTCUSDT rates. That fence was correctly deleted with the crypto desk
+    under the universe mandate, and the LAW it enforced was not: `docs/CONSTITUTION.md` still
+    named the path, `release_identity.json` still listed it, and these four tests had been failing
+    on ModuleNotFoundError ever since. The law is now fenced over the partitions THIS desk
+    certifies on, and these test that.
+    """
 
     def test_roster_includes_the_wired_vol_partition(self) -> None:
         """Fails if someone drops the WIRED axis from the roster -- the one gating live capital."""
         import pandas as pd
         from scripts.check_partition_power import build_partitions
 
-        idx = pd.date_range("2024-01-01", periods=400, freq="D", tz="UTC")
-        carry = pd.Series(_RNG.normal(5e-4, 2e-4, 400), index=idx)
-        close = pd.DataFrame({"BTCUSDT": np.linspace(100, 200, 400)}, index=idx)
-        funding = pd.DataFrame({"BTCUSDT": _RNG.normal(1e-4, 5e-5, 400)}, index=idx)
+        idx = pd.date_range("2024-01-01", periods=400, freq="h", tz="UTC")
+        returns = pd.Series(_RNG.normal(5e-4, 2e-4, 400), index=idx)
 
-        roster = build_partitions(carry, close, funding)
+        roster = build_partitions(returns)
         assert "vol_terciles_WIRED" in roster, (
             "the vol-tercile axis is what regime_robust / min_regimes_positive / two_regimes "
             "actually use; dropping it from the roster blinds the fence to the live gate")
         for name, labels in roster.items():
-            assert len(labels) == len(carry), f"{name} labels must align with the return series"
+            assert len(labels) == len(returns), f"{name} labels must align with the return series"
+
+    def test_the_roster_grades_the_desks_own_sessions(self) -> None:
+        """A session sleeve is selected BY its window, so the session split is the one it is most
+        likely to be silently welded on -- every cell in the window, nothing outside it."""
+        import pandas as pd
+        from scripts.check_partition_power import build_partitions
+
+        idx = pd.date_range("2024-01-01", periods=240, freq="h", tz="UTC")
+        roster = build_partitions(pd.Series(_RNG.normal(0, 1e-3, 240), index=idx))
+        assert "session" in roster
+        assert {"asia", "london_am", "ny_open", "afternoon"} <= set(roster["session"])
 
     def test_welded_status_is_not_a_passing_status(self) -> None:
         """A welded certificate must exit non-zero -- a report nobody fails is not a fence."""
@@ -139,6 +157,19 @@ class TestFenceWiring:
         assert "WELDED" not in _PASSING
         assert "UNMEASURED" not in _PASSING
         assert "OK" in _PASSING
+
+    def test_no_evidence_exits_non_zero_rather_than_reporting_clean(self) -> None:
+        """UNMEASURED is the ABSENCE of what L1.63 requires, not a quiet pass (L1.28a)."""
+        import scripts.check_partition_power as cpp
+
+        original = cpp._series
+        try:
+            cpp._series = lambda: ({}, "no certified series on this host")
+            out = cpp.check()
+        finally:
+            cpp._series = original
+        assert out["status"] == "UNMEASURED"
+        assert "not a pass" in out["note"]
 
 
 @pytest.mark.parametrize("status", ["WELDED", "UNMEASURED"])
