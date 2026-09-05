@@ -188,13 +188,25 @@ def _systemctl(*args: str) -> tuple[int, str]:
         return 1, f"{type(exc).__name__}: {exc}"
 
 
+#: Why the unit scan could not answer, when it could not. Written by `installed_units` and read
+#: by `enforce`, so an unaskable systemd never reads as an all-clear.
+_UNIT_SCAN: dict[str, str] = {"why": ""}
+
+
 def installed_units() -> list[str]:
     """Installed user units whose ExecStart runs a forbidden hunter, so the timer that keeps
     respawning the process is stopped rather than only the process being killed."""
     units: list[str] = []
     rc, out = _systemctl("list-unit-files", "--no-legend", "--no-pager")
     if rc != 0:
+        # A MISSING ANSWER IS NOT AN EMPTY ONE. `systemctl --user` needs a session bus, and over
+        # a bare ssh it fails with "Failed to connect to bus" -- measured on the VPS, 2026-09-05,
+        # where the report then read "0 unit(s) matched" and could not be told apart from "no
+        # forbidden unit is installed". Those are opposite findings. The reason is carried out so
+        # the caller reports UNKNOWN rather than a clean bill of health.
+        _UNIT_SCAN["why"] = f"systemctl --user unavailable (rc={rc}): {out[:120]}"
         return units
+    _UNIT_SCAN["why"] = ""
     names = [ln.split()[0] for ln in out.splitlines() if ln.strip()]
     for name in names:
         if not name.endswith((".service", ".timer")):
@@ -226,6 +238,7 @@ def enforce(*, dry_run: bool = False, top: int = 15) -> dict[str, Any]:
             offenders.append({**p, "script": hit[0], "why": hit[1]})
 
     units = installed_units()
+    unit_scan_why = _UNIT_SCAN.get("why") or ""
     stopped_units: list[dict[str, Any]] = []
     if not dry_run:
         for unit in units:
@@ -281,6 +294,9 @@ def enforce(*, dry_run: bool = False, top: int = 15) -> dict[str, Any]:
                       for o in offenders],
         "units_stopped": stopped_units,
         "units_matched": units,
+        # "" when the scan ran. Non-empty means the timers were NOT checked, so an empty
+        # `units_matched` says nothing about what is installed.
+        "unit_scan_unavailable": unit_scan_why,
         "killed": killed,
         # Retired-venue assets left running on purpose: the principal retires these, not a script.
         "principal_decision": named,
@@ -315,6 +331,11 @@ def main() -> int:
         print(f"  UNIT stopped+disabled {u['unit']}")
     for n in doc["principal_decision"]:
         print(f"  NAMED (not touched) pid={n['pid']} {n['rss_mb']}MB -- {n['why']}")
+    if doc["unit_scan_unavailable"]:
+        print(f"  UNIT SCAN UNAVAILABLE -- {doc['unit_scan_unavailable']}. The timers were NOT "
+              f"checked; run this on the box's own session (systemd --user) or with "
+              f"XDG_RUNTIME_DIR set, or check by hand: "
+              f"systemctl --user list-timers | grep -E 'autodiscovery|perpdex|x-collector'")
     if not doc["offenders"] and not doc["units_matched"]:
         top = doc["census_top"][:3]
         print("  no forbidden organ running; the memory is held by: " +

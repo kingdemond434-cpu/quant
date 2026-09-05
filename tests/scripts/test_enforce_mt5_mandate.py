@@ -130,3 +130,20 @@ def test_it_runs_from_a_copy_outside_the_checkout(tmp_path, monkeypatch) -> None
     # SIGTERM, then the liveness probe, then SIGKILL -- all on the one offending pid
     assert killed and set(killed) == {31}, "the organ is stopped even when the report fails"
     assert "report_unwritten" in doc
+
+
+def test_an_unaskable_systemd_reports_unknown_not_an_all_clear(tmp_path, monkeypatch) -> None:
+    """A MISSING ANSWER IS NOT AN EMPTY ONE. `systemctl --user` needs a session bus and fails
+    over a bare ssh; the report then read "0 unit(s) matched", which is indistinguishable from
+    "no forbidden unit is installed". Those are opposite findings and only one is safe."""
+    monkeypatch.setattr(em, "OUT", tmp_path / "out.json")
+    monkeypatch.setattr(em, "_procs", list)
+    monkeypatch.setattr(em, "_systemctl", lambda *a: (1, "Failed to connect to bus: No medium"))
+    doc = em.enforce(dry_run=True, top=1)
+    assert doc["units_matched"] == []
+    assert "systemctl --user unavailable" in doc["unit_scan_unavailable"]
+    assert "No medium" in doc["unit_scan_unavailable"]
+
+    # and when the scan DOES run, the field is empty -- silence means it was actually asked
+    monkeypatch.setattr(em, "_systemctl", lambda *a: (0, ""))
+    assert em.enforce(dry_run=True, top=1)["unit_scan_unavailable"] == ""
