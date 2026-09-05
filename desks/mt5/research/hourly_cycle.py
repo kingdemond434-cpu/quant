@@ -340,16 +340,44 @@ def heal_clocks() -> dict:
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
+def _costed(name: str, fn):
+    """Run one leg and record what it COST, whatever it returns or raises.
+
+    THE COMPUTE ALLOCATOR'S DENOMINATOR ARRIVES HERE OR NOWHERE. `libs.ops.allocators` reports
+    COMPUTE as the stack's weakest link because nothing decides it -- and it cannot be decided by
+    writing the ranking formula, because that formula divides by hours and this desk had never
+    recorded an hour. This cycle is where most of the desk's compute is actually spent, so costing
+    its legs is the cheapest possible way to get a real denominator: no new schedule, no new
+    process, one append per leg.
+
+    NEVER FAILS THE LEG. A ledger that can take down the work it measures would be removed within
+    a week, correctly. An absent `libs` (this file also runs from the desk root on the box) simply
+    means the leg runs uncosted, which is the state it was in before.
+    """
+    try:
+        from libs.ops.compute_ledger import close_run, open_run
+    except Exception:                                                   # noqa: BLE001
+        return fn()
+    run = open_run(name, kind="hourly_cycle")
+    try:
+        out = fn()
+    except BaseException as exc:
+        close_run(run, outcome=f"{type(exc).__name__}: {exc}"[:200])
+        raise
+    close_run(run, outcome="ok")
+    return out
+
+
 def main() -> None:
-    smoke = smoke_release()
-    h = health()
-    t = record_tape()
-    s = state_vector()
-    d = daily()
-    dp = deepen()
-    hc = heal_clocks()
-    m = mine()
-    frontier_report(h)
+    smoke = _costed("smoke_release", smoke_release)
+    h = _costed("health", health)
+    t = _costed("record_tape", record_tape)
+    s = _costed("state_vector", state_vector)
+    d = _costed("daily", daily)
+    dp = _costed("deepen", deepen)
+    hc = _costed("heal_clocks", heal_clocks)
+    m = _costed("mine", mine)
+    _costed("frontier_report", lambda: frontier_report(h))
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,

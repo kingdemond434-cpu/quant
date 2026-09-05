@@ -98,14 +98,19 @@ ALLOCATORS: tuple[Allocator, ...] = (
         feeds=("compute",)),
     Allocator(
         3, "compute", "Which experiments and models get the machine?",
-        "CPU/GPU hours and the seat's calls",
-        "",
-        ("desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",),
-        gap=("NOTHING DECIDES THIS. Compute is spent first-come-first-served by whatever the "
-             "scheduler fires: the hourly cycle takes what it takes, the deepening worker drains "
-             "in VOI order INSIDE its own queue but never against a competing use, and no run "
-             "records the hours it cost. What is needed first is the denominator -- hours per "
-             "run, recorded -- because a value-per-hour ranking cannot exist without it"),
+        "wall-clock and CPU seconds -- the unit this box actually spends, not GPU hours it has "
+        "none of",
+        "libs/ops/compute_ledger.py",
+        ("desks/mt5/data/compute_ledger.jsonl", "desks/mt5/reports/RESEARCH_PNL.json"),
+        gap=("THE DENOMINATOR NOW EXISTS AND THE NUMERATOR DOES NOT YET. Until 2026-09-05 nothing "
+             "decided this level and nothing could: the ranking divides by hours and no run had "
+             "ever recorded an hour, so shipping the formula would have produced a confident "
+             "ordering of made-up numbers. `compute_ledger` costs every leg of the hourly cycle "
+             "-- where most of the desk\'s compute is actually spent -- so hours per run "
+             "accumulate with no new schedule and no new process. What remains is the join: "
+             "`rank()` takes `run -> expected dElog` from whoever knows (RESEARCH_PNL for a "
+             "research arm, the rent ledger for an organ) and refuses to invent it, listing a "
+             "costed run with no value as UNPRICED rather than ranking it"),
         feeds=("forecast",)),
     Allocator(
         4, "forecast", "Which models are allowed to move a belief?",

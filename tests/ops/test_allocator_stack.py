@@ -37,10 +37,15 @@ def test_the_currency_is_named_once_and_shared() -> None:
 
 def test_a_level_with_no_decider_reads_unwired(tmp_path: Path) -> None:
     """UNWIRED is not a severe WIRED. A wired level makes a decision the desk can grade later; an
-    unwired one makes it anyway, by arrival order, and records nothing."""
+    unwired one makes it anyway, by arrival order, and records nothing.
+
+    FORECAST is that level today, and legitimately so: every predictive object on this desk is
+    itself a sleeve, so `pf_allocator` already weights them and there is no second class of object
+    to weight. COMPUTE held this position until its ledger landed.
+    """
     rows = al.status(tmp_path)
-    assert rows["compute"]["status"] == al.UNWIRED
-    assert rows["compute"]["decides"] is None
+    assert rows["forecast"]["status"] == al.UNWIRED
+    assert rows["forecast"]["decides"] is None
 
 
 def test_a_decider_without_its_ledger_is_wired_not_measured(tmp_path: Path) -> None:
@@ -60,14 +65,14 @@ def test_a_gain_that_cannot_be_banked_is_named(tmp_path: Path) -> None:
     """'A gain at level k is worthless if k+1 cannot carry it' is not a metaphor -- it is every
     large defect this desk has measured. Research feeds compute, and compute is UNWIRED."""
     rows = al.status(tmp_path)
-    assert rows["research"]["downstream_unwired"] == ["compute"]
-    assert "cannot be banked" in rows["research"]["carries"]
+    assert rows["compute"]["downstream_unwired"] == ["forecast"]
+    assert "cannot be banked" in rows["compute"]["carries"]
 
 
 def test_the_report_names_the_weakest_link_by_level() -> None:
     """The earliest unwired level, because a break upstream makes every fix below it unbankable."""
     doc = al.report()
-    assert doc["weakest_link"] == "compute"
+    assert doc["weakest_link"] == "forecast"
     assert sum(doc["counts"].values()) == 6
 
 
