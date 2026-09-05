@@ -89,9 +89,7 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     rows: list[tuple[str, str, dict, str]] = []
     try:
         from shadow_admission import authorized_runs
-        # H1 lane only: a scalp certificate accrues on scalp_shadow, never here.
-        for run in sorted(authorized_runs(BASE, lanes=("h1",)),
-                          key=lambda r: (r["symbol"], r["selector"])):
+        for run in sorted(authorized_runs(BASE), key=lambda r: (r["symbol"], r["selector"])):
             fam = run["family"]
             if fam == "session_range_breakout":
                 if run["selector"] not in WINDOWS:
@@ -549,12 +547,19 @@ def main() -> None:
                 # BLOCKED_INPUTS_UNAVAILABLE says, honestly -- but it is no longer frozen out of
                 # every future pass by a verdict that no longer holds.
                 if str(st.get("status") or "").upper() == "IDENTITY_BROKEN":
+                    # ASK THE REGISTRY FOR A KEY, NOT A SUMMARY. snapshot() returns
+                    # {total, by_status, live, note} -- a dashboard summary with no sleeve keys in
+                    # it at all -- so snapshot().get(key) was None for EVERY sleeve and this
+                    # clearing path could never fire once. Measured 2026-09-04: seven clocks sat
+                    # IDENTITY_BROKEN in shadow_state while the registry read LIVE for all 55
+                    # rows, which is the deadlock this branch exists to break. live_keys() is the
+                    # per-key answer.
                     try:
                         import sleeve_registry as _reg
-                        _live = str((_reg.snapshot().get(key) or {}).get("status") or "").upper()
+                        _is_live = key in _reg.live_keys()
                     except Exception:
-                        _live = ""
-                    if _live == "LIVE":
+                        _is_live = False
+                    if _is_live:
                         slog(f"{key}: stale IDENTITY_BROKEN cleared -- the registry reads LIVE so "
                              f"the identity holds; this pass still cannot evaluate ({why})")
                         st["status"] = ""

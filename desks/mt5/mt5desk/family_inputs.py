@@ -149,7 +149,11 @@ def resolve(sym: str, family: str, params: dict[str, Any],
                 pass
             return extra, "ok"
 
-        if family == "cross_asset_residual":
+        # pca_residual TAKES THE SAME `factors` ARGUMENT and was never listed here, so it was
+        # handed factors=None on every sweep and every one of its 301 cells failed to build with
+        # "parquet missing or build failed" -- a message that names the wrong cause, because the
+        # parquets were all present. Same input contract, same branch.
+        if family in {"cross_asset_residual", "pca_residual"}:
             names = call.get("factor_symbols") or []
             factors = [d for d in (inputs._bars(str(s)) for s in names) if d is not None]
             if not factors:
