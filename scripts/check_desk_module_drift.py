@@ -41,6 +41,20 @@ REMOTE = "contabo-mt5"
 #: run_external_pipeline's REMOTE_MODULES plus the PowerShell the box runs on a schedule; a
 #: module missing from here is one that can silently decay back to the box's own stale branch.
 MODULES = [
+    # THE TICK TAPE runs on the box (it needs the terminal) and none of it was shipped here, so
+    # every module below could decay back to whatever the box happened to have. The tape is the
+    # desk's one unrebuildable asset -- an unrecorded tick cannot be recovered in 2029 -- which
+    # makes silent drift on the recorder more expensive than on anything else in this list.
+    "desks/mt5/recorders/__init__.py",
+    "desks/mt5/recorders/tick_source.py",
+    "desks/mt5/recorders/tape_store.py",
+    "desks/mt5/recorders/tick_recorder.py",
+    "desks/mt5/recorders/tick_integrity.py",
+    "desks/mt5/recorders/tape_features.py",
+    "desks/mt5/recorders/vol_archive.py",
+    "desks/mt5/recorders/install_tape_tasks.ps1",
+    "desks/mt5/mt5desk/microstructure.py",      # tape_features' import closure
+    "desks/mt5/research/free_data.py",          # vol_archive's fallback chain
     "desks/mt5/mt5desk/families.py",
     "desks/mt5/mt5desk/families_orthogonal.py",
     "desks/mt5/mt5desk/engine.py",

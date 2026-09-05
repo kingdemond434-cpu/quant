@@ -380,6 +380,38 @@ def test_a_finished_day_is_compacted_before_it_is_sealed(tmp_path: Path) -> None
     assert folded, "the fold has to be on the record for at least one full day"
 
 
+def test_compaction_cannot_spend_the_cycle_and_an_unfolded_day_stays_unsealed(
+        tmp_path: Path) -> None:
+    """MEASURED: one real-rate symbol-day costs 8.2s (EURUSD) to 10.7s (XAUUSD) to compact. Four
+    of those is the whole default cycle budget spent on housekeeping, on a 60-second beat, at
+    exactly the moment 251 symbols all become eligible together.
+
+    The budget must also leave the day UNSEALED when it runs out. Sealing an unfolded day would
+    strand it at ~25x its necessary size forever, because nothing revisits a sealed day.
+    """
+    _, rec, store = _rig(tmp_path, ["AAA", "BBB", "CCC"])
+    rec.config.cycle_s = 600
+    rec.config.compact_budget_s = -1.0            # the allowance is spent before it starts
+    now = T0
+    for _ in range(2 * 144):
+        now += 600_000
+        rec.run_once(now_ms=now)
+
+    unsealed = [(s, d) for s in store.symbols() for d in store.days(s)
+                if store.seal(s, d) is None]
+    assert unsealed, "with no compaction allowance, finished days must wait rather than be sealed"
+    assert not any(store.compactions(s, d) for s in store.symbols() for d in store.days(s))
+    assert sum(len(store.read_day(s, d)) for s, d in unsealed) > 0, "and nothing is lost meanwhile"
+
+    rec.config.compact_budget_s = 60.0
+    for _ in range(10):
+        now += 600_000
+        rep = rec.run_once(now_ms=now)
+    assert rep.compacted or any(store.compactions(s, d)
+                                for s in store.symbols() for d in store.days(s)), (
+        "once the allowance returns the backlog must actually clear")
+
+
 def test_the_seal_watermark_stops_the_pass_rescanning_the_whole_tape_every_cycle(
         tmp_path: Path) -> None:
     """Without it, every cycle stats and parses the seal of every day the tape has ever held:

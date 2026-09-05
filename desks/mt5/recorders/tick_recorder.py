@@ -159,12 +159,20 @@ QUIET_RECORD_MS = 15 * 60 * 1000
 #: `_note_pause`, where the arithmetic of the per-cycle version is written out.
 PAUSE_RECORD_MS = 15 * 60 * 1000
 
-#: Symbol-days compacted per cycle. Compaction reads and re-encodes a whole day, so an unbounded
-#: pass would spend the cycle budget on housekeeping the day the recorder first meets a backlog --
-#: and capture is the only job here that cannot be caught up later. In steady state one day per
-#: symbol becomes eligible per day, which this absorbs in a few minutes of the 1,440 cycles a day
-#: offers.
+#: Symbol-days compacted per cycle, and the wall-clock allowance they share. BOTH ARE MEASURED
+#: BOUNDS, NOT ROUND NUMBERS. Compacting one real-rate symbol-day costs 8.2s (EURUSD, 82,744
+#: ticks) to 10.7s (XAUUSD, 553,742) in this container -- it reads 1,440 segments, merges,
+#: dedupes and re-encodes. Four of those is 43 seconds, which is the ENTIRE default cycle budget
+#: spent on housekeeping, on a 60-second beat, at exactly the moment 251 symbols all become
+#: eligible together six hours after the day rolls.
+#:
+#: The wall allowance is the real control and the count is the cheap guard behind it. At ~10s
+#: apiece the allowance admits one or two per cycle, so a full universe's daily backlog clears in
+#: ~2.5 hours out of the 1,440 cycles a day offers, and no cycle carries more than ~15s of it.
+#: Nothing is lost by going slowly: an uncompacted day is a COMPLETE day that costs more disk
+#: than it needs to, and disk is the cheap side of every trade in this package.
 MAX_COMPACTIONS_PER_CYCLE = 4
+DEFAULT_COMPACT_BUDGET_S = 15.0
 
 STATE_CURSORS = "cursors"
 STATE_RECORDER = "recorder"
@@ -188,6 +196,10 @@ class RecorderConfig:
     cold_start_days: int = DEFAULT_COLD_START_DAYS
     disk_floor_bytes: int = DEFAULT_DISK_FLOOR_BYTES
     cycle_budget_s: float = DEFAULT_CYCLE_BUDGET_S
+    #: Wall-clock allowance for compaction, spent AFTER capture and separately from it. Separate
+    #: on purpose: sharing the capture budget would starve compaction on a busy box, and a
+    #: recorder that never compacts fills the disk it was compacting to protect.
+    compact_budget_s: float = DEFAULT_COMPACT_BUDGET_S
     max_window_ms: int = MAX_WINDOW_MS
     overlap_ms: int = OVERLAP_MS
     settle_ms: int = SETTLE_MS
@@ -815,6 +827,7 @@ class TickRecorder:
         cutoff_day = broker_day(now_ms - self.config.seal_after_hours * 3600 * 1000)
         sealed: list[str] = []
         budget = MAX_COMPACTIONS_PER_CYCLE
+        t_compact = time.monotonic()
         for sym in sorted(cursors):
             row = cursors.get(sym) or {}
             cursor_day = broker_day(int(row.get("cursor_ms") or 0)) if row.get("cursor_ms") else ""
@@ -825,10 +838,12 @@ class TickRecorder:
                 if day >= today or day >= cutoff_day or (cursor_day and day >= cursor_day):
                     break                          # ascending: nothing after this is eligible
                 if self.store.seal(sym, day) is None:
-                    if budget <= 0:
+                    if budget <= 0 or (time.monotonic() - t_compact
+                                       > self.config.compact_budget_s):
                         # Out of compaction budget: leave the day UNSEALED so the next cycle
-                        # compacts it. Sealing it now would leave a finished day permanently
-                        # uncompacted, since nothing revisits a sealed day.
+                        # compacts it. Sealing it now would leave a finished day PERMANENTLY
+                        # uncompacted, because nothing revisits a sealed day -- ~25x its
+                        # necessary size, forever, for the sake of finishing this cycle sooner.
                         return sealed
                     res = self.store.compact_day(sym, day)
                     budget -= 1

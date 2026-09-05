@@ -77,8 +77,12 @@ same asymmetric direction, and the ORDER is what makes it so:
   3 append the compaction row    -> crash: same; this row is audit, not correctness
   4 replace the manifest         -> crash: the long manifest stands and is still correct
   5 delete the retired files     -> crash: they become orphans, get re-registered, read as
-                                    duplicates, and the next compaction folds them again into a
-                                    byte-identical segment. Idempotent.
+                                    duplicates, and the next compaction folds them away again.
+                                    It converges rather than repeating byte-for-byte: `written_at`
+                                    is inside the hashed metadata, so two compactions of the same
+                                    ticks are content-equal and digest-different. That costs one
+                                    extra file in a rare path; what matters is that the day
+                                    converges to one segment with every tick still in it.
 
 The one order that would be fatal is retiring the sources BEFORE the compacted segment is in the
 manifest: that window reads as an EMPTY day while every byte is intact on disk, which is the worst
@@ -859,7 +863,8 @@ class TapeStore:
         out: dict[str, Any] = {"symbol": symbol, "day": day, "status": "NOTHING_TO_DO",
                                "segments_before": 0, "segments_after": 0, "superseded": 0,
                                "rows_in": 0, "rows_out": 0, "duplicates_removed": 0,
-                               "bytes_before": 0, "bytes_after": 0, "groups": 0}
+                               "bytes_before": 0, "bytes_after": 0, "groups": 0,
+                               "missing_kept": 0, "skipped_unreadable": 0}
         self.reconcile(symbol, day)
         live = self.manifest(symbol, day)
         out["segments_before"] = len(live)
@@ -868,11 +873,19 @@ class TapeStore:
             return out
         d = self.day_dir(symbol, day)
         groups: dict[tuple[float, int, str], list[SegmentRecord]] = {}
+        keep: list[SegmentRecord] = []
         for r in live:
             if (d / r.filename).exists():
                 groups.setdefault((float(r.point), int(r.digits), r.encoding), []).append(r)
+            else:
+                # A ROW WHOSE FILE IS GONE IS KEPT IN THE MANIFEST, DELIBERATELY. The rewrite
+                # below replaces the manifest, and dropping this row would erase the only record
+                # that a segment was ever lost -- `reconcile` would then report missing=[] and a
+                # day with a hole in it would seal clean. A compaction may reorganise containers;
+                # it may never launder a loss into a tidy manifest.
+                keep.append(r)
+                out["missing_kept"] = out.get("missing_kept", 0) + 1
 
-        keep: list[SegmentRecord] = []
         changed = False
         for (point, digits, _enc), recs in sorted(groups.items()):
             if len(recs) < 2:
@@ -882,8 +895,16 @@ class TapeStore:
             for r in recs:
                 with suppress(OSError, ValueError, pa.ArrowInvalid):
                     frames.append(decode_segment(d / r.filename))
-            if len(frames) < 2:
+            if len(frames) != len(recs):
+                # ONE UNREADABLE SEGMENT ABORTS THE WHOLE GROUP. Compacting the readable ones and
+                # deleting the rest would destroy the only copy of ticks that might still be
+                # recoverable -- a corrupt read can be transient, a bad sector can be partially
+                # salvageable, and either way the decision belongs to a person looking at an
+                # integrity report, not to a housekeeping pass optimising disk. The day stays
+                # uncompacted and `reconcile` goes on reporting the segment as corrupt.
                 keep.extend(recs)
+                out["skipped_unreadable"] = out.get("skipped_unreadable", 0) + (
+                    len(recs) - len(frames))
                 continue
             rows_in = sum(len(f) for f in frames)
             df = pd.concat(frames, ignore_index=True).sort_values("time_msc", kind="mergesort")

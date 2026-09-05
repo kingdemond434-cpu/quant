@@ -488,3 +488,39 @@ def test_the_minute_mask_matches_the_ticks_it_claims_to_summarise(
     want = np.zeros(1440, dtype=bool)
     want[np.unique((df["time_msc"].to_numpy() - day_start) // 60_000)] = True
     assert np.array_equal(mask, want)
+
+
+def test_compaction_keeps_the_row_of_a_segment_that_vanished(store: ts.TapeStore) -> None:
+    """A COMPACTION MAY REORGANISE CONTAINERS; IT MAY NEVER LAUNDER A LOSS. The manifest is
+    rewritten, so a row whose file is gone would be trivially easy to drop -- and then
+    `reconcile` reports missing=[], the day seals clean, and the only record that a segment was
+    ever lost is gone with it."""
+    _fill_day(store, "EURUSD", n_segments=6)
+    gone = store.manifest("EURUSD", DAY)[2]
+    (store.day_dir("EURUSD", DAY) / gone.filename).unlink()
+
+    res = store.compact_day("EURUSD", DAY)
+    assert res["missing_kept"] == 1
+    assert store.reconcile("EURUSD", DAY)["missing"] == [gone.filename], (
+        "the loss must still be reported after the manifest was rewritten")
+    seal = store.seal_day("EURUSD", DAY)
+    assert any("missing" in n for n in seal.notes)
+
+
+def test_a_corrupt_segment_aborts_its_group_rather_than_being_deleted_with_it(
+        store: ts.TapeStore) -> None:
+    """Compacting the readable segments and deleting the rest would destroy the only copy of
+    ticks that might still be recoverable. A corrupt read can be transient and a bad sector can
+    be partly salvageable; either way that call belongs to a person reading an integrity report,
+    not to a housekeeping pass optimising disk."""
+    _fill_day(store, "EURUSD", n_segments=6)
+    bad = store.manifest("EURUSD", DAY)[3]
+    p = store.day_dir("EURUSD", DAY) / bad.filename
+    p.write_bytes(b"not a parquet file at all")
+
+    res = store.compact_day("EURUSD", DAY)
+    assert res["status"] == "NOTHING_TO_DO"
+    assert res["skipped_unreadable"] == 1
+    assert p.exists(), "the unreadable segment must NOT be deleted by a compaction"
+    assert len(store.manifest("EURUSD", DAY)) == 6, "and no row may be dropped either"
+    assert bad.filename in store.reconcile("EURUSD", DAY)["corrupt"]
