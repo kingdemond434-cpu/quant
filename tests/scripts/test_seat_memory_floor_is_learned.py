@@ -61,8 +61,9 @@ def test_the_gate_wording_this_parses_still_exists(sly) -> None:
         "floor would silently stop being learned")
 
 
-def test_a_seat_that_died_gets_a_floor_above_the_level_it_died_at(sly, tmp_path, monkeypatch) -> None:
-    """The whole point. gap-wirer admitted at 1600MB and killed must never be admitted at 1600 again."""
+def test_a_seat_that_died_gets_a_floor_above_the_level_it_died_at(
+        sly, tmp_path, monkeypatch) -> None:
+    """The whole point: gap-wirer admitted at 1600MB and killed must never see 1600 again."""
     out = tmp_path / "seat_memory_floor.json"
     monkeypatch.setattr(sly, "MEM_FLOOR", out)
     monkeypatch.setattr(sly, "OUT", tmp_path / "yield.json")
