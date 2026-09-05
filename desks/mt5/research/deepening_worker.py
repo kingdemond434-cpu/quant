@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -66,9 +67,30 @@ WORKED = BASE / "data" / "hypotheses" / "deepening_worked.jsonl"
 OUT = BASE / "data" / "hypotheses" / "deepened_candidates.json"
 LOG = BASE / "logs" / "deepening_worker.log"
 
-#: A run's ceiling. The queue is 705 deep and grows hourly; working it all in one pass would
-#: spend the month's cap in an afternoon on the least-certain rows the desk holds.
-DEFAULT_LIMIT = 25
+#: A run's ceiling, and it is a BUDGET decision -- each task is a seat call. The original note
+#: read "the queue is 705 deep and grows hourly; working it all in one pass would spend the
+#: month's cap in an afternoon on the least-certain rows the desk holds", and that reasoning is
+#: unchanged. What changed is the queue and the fact that anything drains it at all.
+#:
+#: RE-DERIVED 2026-09-05, on two measurements taken the same day. The compiler was reading 60 of
+#: 5,524 discovery files, so the queue it fed was a fraction of what the miners produce; reading
+#: every artifact took the queue from 882 tasks to 6,350. And nothing had ever run this worker --
+#: no cron row, no cycle call -- so `deepening_worked.jsonl` did not exist and the lifetime
+#: decision count was zero. A 25/hour ceiling against 6,350 queued is 254 hours of uptime, which
+#: is not an hourly conversion loop; it is a queue with a trickle attached.
+#:
+#: 75/hour is 1,800 a day, which drains the present queue in about three and a half days and then
+#: keeps pace with intake. Chosen as the largest step that is still bounded by the same monthly
+#: cap the original note protected: it is 3x the spend, not the unbounded pass that note refused,
+#: and `voi_order` still spends it highest-value-of-information first, so a cap that binds costs
+#: the LEAST informative rows rather than an arbitrary slice.
+#:
+#: OVERRIDABLE BY ENV because the right number is a property of the seat budget on the day, not of
+#: this file: the box can lower it during a quota squeeze without a commit. And it is worth being
+#: plain that the real throughput ceiling right now is not this constant -- the desk is running
+#: three seats that have produced nothing in seven days and five launches that died in 24 hours.
+#: Raising the ask on a seat layer that is failing spends more quota for the same nothing.
+DEFAULT_LIMIT = int(os.environ.get("DEEPEN_LIMIT", "75"))
 
 #: GROWTH GOVERNANCE, carried on every prompt surface (principal 2026-09-04, fenced by
 #: scripts/check_growth_governance.py G7): research is anti-timid, capital is evidence-hard.
