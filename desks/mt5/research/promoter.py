@@ -115,9 +115,61 @@ def load_shadow() -> dict:
         return {}
 
 
+def artifact_of(row: dict) -> dict:
+    """The StrategyArtifact behind a sleeve row: its version hash and what the validator says.
+
+    libs/research/strategy_artifact.py was "the only object that may reach the allocator" and
+    had no importer on this tree (found 2026-09-05). It is RECORDED on every LIVE row here, so
+    what trades is named by a hash of its mechanism, recipe, instruments and certificates, and
+    a reader can tell two rows with the same name apart across a code change. It does not add
+    a refusal: the universal rule (promotion is the forward clock's) stands, and a row the
+    validator dislikes carries `artifact.problems` for the health report to show -- a row with
+    no family or no symbol is untradeable by construction and is the one case dropped.
+    """
+    try:
+        from libs.research.strategy_artifact import StrategyArtifact, validate
+        fam = str(row.get("family") or ("session_range_breakout" if row.get("window") else ""))
+        sym = str(row.get("symbol") or "").upper()
+        recipe = {k: row[k] for k in ("selector", "state", "params", "timeframe", "session",
+                                      "stop_atr", "target_atr", "max_hold", "window")
+                  if k in row}
+        a = StrategyArtifact(
+            strategy_id=str(row.get("name") or ""), mechanism=fam,
+            source=str(row.get("certificate") or ""), family=fam, params=dict(recipe),
+            symbols=[sym] if sym else [], timeframes=[str(row.get("timeframe") or "H1")],
+            entry={"family": fam, "selector": row.get("selector"), "side": row.get("side")},
+            exit={"ttl_bars": row.get("max_hold"), "stop_atr": row.get("stop_atr"),
+                  "target_atr": row.get("target_atr")},
+            execution={"policy": str(row.get("exec") or "family_market")},
+            state_conditioning={"state": row.get("state")},
+            data_requirements=[f"bars.{row.get('timeframe') or 'H1'}:{sym}"] if sym else [],
+            feature_ids=[], cost_assumptions={"cost_hash": row.get("cost_hash"),
+                                              "cost_r": row.get("cost_r")},
+            validation_certificate={"status": "PASS" if row.get("certificate") else "",
+                                    "certificate": row.get("certificate")},
+            lockbox_certificate={}, shadow_evidence={"n": row.get("shadow_n"),
+                                                     "exp": row.get("shadow_exp")})
+        v = validate(a)
+        return {"version_hash": v["version_hash"], "ok": bool(v["ok"]),
+                "problems": list(v["problems"])}
+    except Exception as exc:                                        # noqa: BLE001
+        return {"version_hash": None, "ok": False,
+                "problems": [f"artifact unavailable: {type(exc).__name__}: {exc}"]}
+
+
 def save_sleeves(sleeves: list[dict]) -> None:
     SLEEVES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    SLEEVES_FILE.write_text(json.dumps({"sleeves": sleeves}, indent=2),
+    kept: list[dict] = []
+    for row in sleeves:
+        if str(row.get("status") or "").upper() == "LIVE":
+            art = artifact_of(row)
+            row["artifact"] = art
+            if "no family" in art["problems"] or "no symbol" in art["problems"]:
+                plog(f"{row.get('name')}: LIVE row dropped -- untradeable by construction "
+                     f"({', '.join(art['problems'])})")
+                continue
+        kept.append(row)
+    SLEEVES_FILE.write_text(json.dumps({"sleeves": kept}, indent=2),
                             encoding="utf-8")
 
 
@@ -307,10 +359,16 @@ def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
         if not tf:
             plog(f"{name}: scalp candidate refused -- no timeframe on its clock")
             continue
+        # The ten-gate certificate, when scripts/scalp_gauntlet.py has minted one for this
+        # exact cell, is NAMED on the row; it changes nothing about the door (the forward clock
+        # promotes either way), it tells the reader which kind of evidence stands behind it.
+        spec = ("XAUUSD", str(name), None, "gold_scalp", False)
+        cert = (f"ten_gate:scalp.{name}" if spec in (gate_authority or set())
+                else "forward_clock")
         sleeves.append({"name": name, "symbol": "XAUUSD", **recipe,
                         "exec": "scalp_market", "lot": "auto_ramp",
                         "risk_frac": PROMOTED_RISK_FRAC, "status": "LIVE",
-                        "certificate": "forward_clock",
+                        "certificate": cert,
                         "forward_verdict": row.get("forward_verdict"),
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": row.get("expectancy_r", 0.0),
@@ -553,8 +611,18 @@ def main() -> None:
             # strategy under this sleeve's name.
             row.update({"window": win, "vs_armed": vs_armed, "state": cond})
         else:
-            from mt5desk import executables
-            gap = executables.executor_gap(family)
+            # A MISSING MODULE MUST NOT KILL THE PROMOTION PASS. This import is the one thing
+            # standing between a matured candidate and capital, and on 2026-09-05 the healer
+            # shipped this file's caller to the box a minute before the callee was on its list.
+            # An ImportError here would have taken every non-gold promotion with it, silently,
+            # for as long as the two files disagreed. Absent module -> the gap is UNKNOWN and
+            # named on the row, which refuses the row rather than the pass.
+            try:
+                from mt5desk import executables
+                gap = executables.executor_gap(family)
+            except Exception as exc:                                    # noqa: BLE001
+                gap = (f"executor registry unavailable on this box "
+                       f"({type(exc).__name__}: {exc}) -- refusing the row, not the pass")
             if gap:
                 # NAMED, NEVER SILENT, NEVER A ROW THE BOOK CANNOT TRADE. A LIVE row for a family
                 # the gateway cannot execute would be funded by the allocator and held as air.
