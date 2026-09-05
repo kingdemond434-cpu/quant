@@ -1280,8 +1280,12 @@ def _net_routes(symbols: set[str]) -> None:
         except Exception as exc:                                # noqa: BLE001
             log(f"[netting] {symbol} route unmeasured ({type(exc).__name__}: {exc})")
 
-#: Bars an H1 family read has always fetched, and the market time it stands for: 400 hours, about
-#: 16 trading days, which is what the daily-range and day-state helpers need behind them.
+#: Bars an H1 family read has always fetched. DERIVED BY PRESERVATION, not chosen: 400 is the
+#: literal every `family_market` path in this file passed to `copy_rates_from_pos` before the
+#: ladder landed, so an H1 certificate resolves to exactly the read it has always had and no
+#: existing sleeve changes behaviour. The market time it buys is 400 hours, about 16 trading days,
+#: which is what the daily-range and day-state helpers need behind them: `day_range` reads the
+#: last calendar day, `day_states` classifies several, and ATR_N=14 needs its own window on top.
 _FAMILY_H1_BARS = 400
 #: Bars per hour on each chart. The bar COUNT is scaled by this so a family is not handed the same
 #: number of bars on every chart: 400 M1 bars is under seven hours, and a daily-range family
@@ -1298,12 +1302,19 @@ _FAMILY_H1_BARS = 400
 #: `test_gateway_adapter` builds its harness by `ast.literal_eval`-ing the gateway's module-level
 #: constants, and a BinOp there is silently uncarried, so the executor raised NameError inside the
 #: harness and six passing tests failed for a reason none of them was about.
+#: EXTERNAL FACT, not a desk decision: these are MetaTrader 5's own chart definitions, documented
+#: by the terminal itself -- M5 is 5 minutes because the platform says so, D1 is 1440. A hard
+#: limit in the same sense as a venue's fee schedule: nothing here is derivable or arguable, and a
+#: value disagreeing with the terminal would simply be wrong.
 _BAR_MINUTES: dict[str, int] = {"M1": 1, "M5": 5, "M15": 15, "M30": 30,
                                 "H1": 60, "H4": 240, "D1": 1440}
-#: Hard cap on one `copy_rates_from_pos` call. 400 hours of M1 is 24,000 bars; the terminal will
-#: serve it, but the family helpers only need the recent days and the rest is latency on a box
-#: that already runs out of memory. 6,000 M1 bars is a little over four days, which covers every
-#: day-state and daily-range lookback the families use.
+#: Hard cap on one `copy_rates_from_pos` call, DERIVED FROM WHAT THE HELPERS ACTUALLY READ.
+#: Scaling 400 hours onto M1 asks for 24,000 bars; the terminal will serve them, but the family
+#: helpers never look past the recent days and the remainder is pure latency on a box measured at
+#: six resident pythons holding 3.1 GB of 8.4 GB. 6,000 M1 bars is 100 hours -- a little over four
+#: calendar days -- which covers `day_range`'s single day, `day_states`' multi-day classification
+#: and the ATR_N=14 window with several days to spare. Binding on M1 only: M5 asks for 4,800 and
+#: every slower chart less, so no other rung is truncated by it.
 _FAMILY_MAX_BARS = 6000
 #: The full ladder the sweep hunts, mapped to MT5's own constants. `scalp_exec` carries M1..H1 for
 #: its own lane; this one adds H4 and D1 because the family sweep certifies on them and a family
