@@ -481,9 +481,27 @@ def collect(now: datetime) -> tuple[list[str], dict]:
                             if ln.startswith("MemAvailable")).split()[1])
         m["mem_available_mb"] = avail_kb // 1024
         if avail_kb < 300 * 1024:
+            # WHO HOLDS IT, NOT ONLY HOW LITTLE IS LEFT. "238MB available" on an 8 GB box was
+            # read for days as "the box is small" when it meant "7.7 GB is resident in something
+            # nobody named". scripts/enforce_mt5_mandate.py writes the census on every pipeline
+            # cycle; the top three holders ride on the breach so the reader knows where to look
+            # and whether the enforcer already dealt with it.
+            who = ""
+            try:
+                doc = json.loads((ROOT / "data" / "mandate_enforcement.json")
+                                 .read_text(encoding="utf-8"))
+                top = [f"{r['rss_mb']}MB {str(r['cmd']).split()[-1][:44]}"
+                       for r in (doc.get("census_top") or [])[:3]]
+                forb = float(doc.get("held_by_forbidden_mb") or 0.0)
+                who = (" -- held by: " + "; ".join(top)) if top else ""
+                if forb > 0:
+                    who += (f"; {forb}MB of it in mandate-forbidden organs the enforcer is "
+                            f"stopping")
+            except (OSError, ValueError, KeyError, TypeError):
+                who = " -- no census (scripts/enforce_mt5_mandate.py has not run here)"
             breaches.append(f"MEMORY: {avail_kb // 1024}MB available on the research box -- "
                             f"below the 300MB floor at which the kernel OOM killer starts "
-                            f"choosing victims among the organs")
+                            f"choosing victims among the organs{who}")
     except (OSError, StopIteration, ValueError):
         m["mem_available_mb"] = None
 

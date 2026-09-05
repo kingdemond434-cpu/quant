@@ -76,6 +76,26 @@ and one "shipped and hash-verified identical" check compared two files that had 
 If a `.py` edit you just made is missing from disk, this is why. Sibling overrides for the other
 two layers: `QUANT_ALLOW_EVIDENCE_FALL=1`, `ALLOW_PROTECTED_RECORD_LOSS=1`.
 
+## MT5 UNIVERSE MANDATE (2026-08-18, principal's standing order)
+
+The desk's primary market universe is the full MT5/Fusion Markets universe: FX
+majors/crosses/exotics, gold (XAUUSD), silver, metals, equity indices, energy, soft commodities,
+US share CFDs. **No crypto-exchange universe (Binance/Bybit/OKX/Hyperliquid etc.) may EVER be
+hunted again** -- no miner, hunter, query, channel list, scoring vocabulary or research mandate
+may target crypto-exchange-native opportunities. Fusion-executable crypto CFDs are part of the
+MT5 universe; crypto reference data may be used only WHEN it informs an MT5 instrument, never as
+a hunted universe of its own.
+
+## ONE CODE, TWO BOXES (2026-09-05)
+
+The VPS (95.216.191.70, `quant`, `/home/quant/quant-platform`, branch `desk-sync-clean`) runs the
+research pipeline, the fences and the dashboard. The Windows trading box (Contabo, `C:\opt\quant`,
+branch `claude/llm-auto-upgrade-verify-gcjac3`) runs the gateway, the forward clocks and the
+promoter. The two branches were reconciled on 2026-09-05 so they carry the SAME code; the box's
+branch differs only by the state files the box commits. Every merge to `desk-sync-clean` must be
+followed by a merge into the box's branch -- code that lands on one branch only is inert on the
+box that trades, and that is how certificates and forward clocks were lost before.
+
 ## Gates (all four, before any push)
 
 ```

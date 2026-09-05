@@ -477,6 +477,24 @@ def main() -> None:
                 h1_cache[sym] = fetch_h1(sym)
             bars = h1_cache[sym]
             if bars is None:
+                # NO BARS IS A NAMED STATE, NOT A SILENT SKIP (2026-09-05). Four certified
+                # overnight_gap_decay cells (USDZAR, AUDCHF, CADCHF, GBPCHF) read
+                # CERTIFIED-NOT-ENROLLED on the same-day fence for days while this branch
+                # `continue`d past them every pass: the terminal served no H1 history for the
+                # symbol, the refusal went to this box's log, and no other machine could tell
+                # "never enrolled" from "enrolled and starved". The row now exists with the
+                # reason, so the fence can name the cure -- subscribe the symbol in Market
+                # Watch, backfill its bars -- instead of waiting for an enrolment that cannot
+                # happen. Counters are untouched: no bars is no evidence.
+                st["last_attempt_at"] = datetime.now(UTC).isoformat()
+                st["last_error"] = (f"no H1 bars from any source for {sym} covering "
+                                    f"SHADOW_START {SHADOW_START.date()}")
+                if st.get("status") not in _TERMINAL_STATUSES:
+                    st["status"] = "BLOCKED_NO_BARS"
+                st["promotion_authority"] = False
+                st["order_authority"] = False
+                state[key] = st
+                slog(f"{key}: BLOCKED_NO_BARS -- {st['last_error']}")
                 continue
             h1 = bars.df
             fam_fn = _family_fn(fam)
@@ -537,6 +555,7 @@ def main() -> None:
                     # rows, which is the deadlock this branch exists to break. live_keys() is the
                     # per-key answer.
                     try:
+                        import sleeve_registry as _reg
                         _is_live = key in _reg.live_keys()
                     except Exception:
                         _is_live = False

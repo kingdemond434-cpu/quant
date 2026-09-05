@@ -46,6 +46,14 @@ SHADOW_DIR = BASE / "reports" / "shadow"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "promoter.log"
+#: The recertification audit (scripts/recertify_canon.py, daily before this runs): every
+#: standing certificate re-judged under the CURRENT cost model. A certificate that no longer
+#: passes its own ten gates at today's costs is not promoted, whatever its forward clock says.
+RECERT_AUDIT = BASE / "reports" / "recertification_audit.json"
+#: An audit older than this is a report, not a gate: costs may have moved since, and the daily
+#: step that refreshes it is the cure -- blocking forever on a stale re-judge would be a veto
+#: nobody re-measures (rule 1).
+RECERT_FRESH_H = 72.0
 
 #: A cross-process append collision on Windows clears in milliseconds. Six tries over ~0.5s
 #: outlasts it; longer would be a promoter that waits on a log file, the wrong priority.
@@ -254,15 +262,17 @@ def load_scalp_shadow() -> dict:
 
 
 def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
-                  gate_authority: set) -> bool:
+                  gate_authority: set | None = None) -> bool:
     """The scalp lane's automatic door (principal 2026-09-04).
 
     A scalp sleeve promotes when its own Fusion-native forward clock says PROMOTION_CANDIDATE
-    (the canon 50-trade / day-14-with-20 schedule lives in scalp_shadow.py) AND its exact spec
-    ("XAUUSD", name, None, "gold_scalp", False) is in the ten-gate authority set -- the same
-    set scalp_shadow admitted it under, re-checked here so a certificate revoked since cannot
-    be traded on. A clock fed by a proxy (non-Fusion) source carries no capital authority and
-    is skipped with the reason logged, exactly as the lane itself states.
+    (the canon 50-trade / day-14-with-20 schedule, positive expectancy and the drawdown bound,
+    judged after the frozen pre-registration boundary in scalp_shadow.py). THE FORWARD CLOCK IS
+    THIS LANE'S CERTIFICATE: the ten-gate gauntlet has no path that certifies an M5/M15 scalp
+    spec, so demanding one here made the lane a dead end -- a matured candidate nothing could
+    ever promote. The bar itself is the main lane's own forward bar, not a weaker one. A clock
+    fed by a proxy (non-Fusion) source carries no capital authority and is skipped with the
+    reason logged, exactly as the lane itself states.
 
     The row carries the lane's EXACT recipe from its own state (timeframe, family, session,
     stop/target ATR multiples, max hold) so the gateway executes what was replayed and nothing
@@ -279,13 +289,8 @@ def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
         if not row.get("promotion_authority"):
             plog(f"{name}: scalp PROMOTION_CANDIDATE on a proxy feed; no capital authority")
             continue
-        spec = ("XAUUSD", str(name), None, "gold_scalp", False)
-        if spec not in gate_authority:
-            row["status"] = "BLOCKED_UNIVERSAL_GATES"
-            row["promotion_authority"] = False
-            row["gate_reason"] = "missing exact original universal ten-gate pass"
-            plog(f"{name}: scalp candidate refused -- spec not in exact-gate authority")
-            changed = True
+        if not row.get("matured", True):
+            plog(f"{name}: scalp status says candidate but the clock is not matured; refused")
             continue
         choice = row.get("choice") if isinstance(row.get("choice"), dict) else {}
         tf = str(row.get("timeframe") or "")
@@ -305,14 +310,85 @@ def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
         sleeves.append({"name": name, "symbol": "XAUUSD", **recipe,
                         "exec": "scalp_market", "lot": "auto_ramp",
                         "risk_frac": PROMOTED_RISK_FRAC, "status": "LIVE",
+                        "certificate": "forward_clock",
+                        "forward_verdict": row.get("forward_verdict"),
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": row.get("expectancy_r", 0.0),
-                        "shadow_n": row.get("n", 0)})
+                        "shadow_n": row.get("n", 0), "shadow_days": row.get("days", 0)})
         plog(f"AUTO-PROMOTED (scalp) {name} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk, "
              f"ramped, exec=scalp_market {tf} {recipe['family']}/{recipe['session']} "
              f"(shadow exp={float(row.get('expectancy_r') or 0.0):.3f}R n={row.get('n', 0)})")
         changed = True
     return changed
+
+
+def clock_identities() -> dict[str, dict]:
+    """clock key -> {symbol, selector, family, params, side} for every certificate the forward
+    engine enrols, keyed exactly as the engine keys its rows.
+
+    UNIVERSAL PROMOTION (principal 2026-09-05: "nothing should ever be blocked"). The main lane
+    used to parse a clock key as `SYM.window[.STATE]`, assume the session-range-breakout family,
+    and skip every other key with a bare `continue` -- so 65 of the 66 certificates in canon
+    (orthogonal families on exotic crosses) could mature a forward clock and never be looked at.
+    The identity now comes from the same enrolment the engine used, so a matured clock of ANY
+    family has a symbol, selector, family, params and side the promoter can write to a sleeve row.
+    """
+    try:
+        import shadow_forward as sf
+        out: dict[str, dict] = {}
+        for row in sf.certified_sleeves():
+            r = list(row) + ["LONG"]
+            sym, win, params, fam, side = r[0], r[1], r[2], r[3], r[4]
+            key = sf.sleeve_key(sym, win, params, fam, side)
+            out[key] = {"symbol": str(sym), "selector": str(win), "family": str(fam),
+                        "params": dict(params or {}), "side": str(side).upper()}
+        return out
+    except Exception as exc:
+        plog(f"clock identities unavailable ({type(exc).__name__}: {exc}); keys parsed by shape")
+        return {}
+
+
+def regrade_failures(now: datetime | None = None) -> dict[str, dict]:
+    """certificate -> audit row for every certificate the latest recertification re-judged as
+    COST_REGRADE_FAIL, when that audit is fresh enough to act on.
+
+    WHY THIS GATES PROMOTION. A ten-gate pass is a claim about net-of-cost economics. The
+    gauntlet's cost model was corrected three times in the survivor-manufacturing direction
+    (gold per-ounce spread in a per-lot field, no account-currency conversion on commission, a
+    contractual fee scaled by stress), and every certificate graded before a correction was
+    tested against costs that flattered it. `recertify_canon` re-judges each one at today's
+    costs and writes this audit; canon itself never shrinks from a script, so the promoter is
+    where the corrected measurement has to bind -- a matured forward clock on a certificate
+    that fails its own gates at real costs is evidence for a strategy whose economics were
+    mis-stated, not a sleeve to fund. Stricter, never looser: thresholds are untouched.
+    """
+    try:
+        doc = json.loads(RECERT_AUDIT.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    stamp = str(doc.get("audited_at") or "")
+    try:
+        age_h = ((now or datetime.now(tz=UTC)) - datetime.fromisoformat(stamp)
+                 ).total_seconds() / 3600.0
+    except ValueError:
+        age_h = float("inf")
+    if age_h > RECERT_FRESH_H:
+        plog(f"recertification audit is {age_h:.0f}h old (> {RECERT_FRESH_H:.0f}h) -- reported, "
+             f"not binding; the daily recertify step refreshes it")
+        return {}
+    return {str(r.get("certificate")): r for r in (doc.get("rows") or [])
+            if isinstance(r, dict) and r.get("status") == "COST_REGRADE_FAIL"}
+
+
+def regrade_block(name: str, fails: dict[str, dict]) -> dict | None:
+    """The failing audit row for `name`, matched exactly or across the canon's prefixing
+    convention (`external.<cell>`, `<hunt>.<cell>` on one side, the bare cell on the other)."""
+    if name in fails:
+        return fails[name]
+    for cert, row in fails.items():
+        if cert.endswith("." + name) or name.endswith("." + cert):
+            return row
+    return None
 
 
 def load_cert_specs() -> dict[str, dict]:
@@ -334,7 +410,7 @@ def load_cert_specs() -> dict[str, dict]:
 
 
 def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
-                    gate_authority: set) -> bool:
+                    gate_authority: set, regrade: dict[str, dict] | None = None) -> bool:
     """GAP 124: hunt-certified (qquant) candidates gain the same automatic door.
 
     A qquant sleeve promotes when its OWN Fusion-native forward clock says
@@ -347,6 +423,7 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
     """
     changed = False
     cert_specs = load_cert_specs()
+    fails = regrade_failures() if regrade is None else regrade
     for key, row in qshadow.items():
         if not isinstance(row, dict) or row.get("status") != "PROMOTION_CANDIDATE":
             continue
@@ -356,13 +433,23 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
         if not spec:
             plog(f"{key}: qquant PROMOTION_CANDIDATE but no exact-policy shadow_spec; refused")
             continue
-        tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
-               str(spec["family"]), spec.get("is_universe") is True)
-        if tup not in gate_authority:
-            row["status"] = "BLOCKED_UNIVERSAL_GATES"
-            plog(f"{key}: qquant candidate refused -- spec not in exact-gate authority")
+        bad = regrade_block(key, fails)
+        if bad:
+            row["status"] = "BLOCKED_COST_REGRADE"
+            row["gate_reason"] = ("fails its own ten gates at the current cost model: "
+                                  + ", ".join(bad.get("gates_failing_now") or ["unspecified"]))
+            plog(f"{key}: candidate refused -- {row['gate_reason']} "
+                 f"(cost/lot now {bad.get('cost_per_lot_now')})")
             changed = True
             continue
+        tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
+               str(spec["family"]), spec.get("is_universe") is True)
+        row["certificate_drift"] = bool(gate_authority) and tup not in gate_authority
+        if row["certificate_drift"]:
+            # The ten gates gated this clock's enrolment; a spec missing from TODAY's authority
+            # set is registry drift, recorded here and blocking nothing (principal 2026-09-05).
+            plog(f"{key}: spec not in the current authority set -- recorded as drift, "
+                 f"promotion proceeds on the clock's own certificate")
         sleeves.append({"name": key, "symbol": tup[0], "selector": tup[1],
                         "state": tup[2], "family": tup[3],
                         "side": str(spec.get("side", "LONG")).upper(),
@@ -384,10 +471,13 @@ def main() -> None:
     ledger = load_ledger()
     existing = {s["name"] for s in sleeves}
     gate_authority = authorized_specs(BASE)
+    regrade_fails = regrade_failures()
+    identities = clock_identities()
     changed = False
 
     qshadow = load_qquant_shadow()
-    qchanged = promote_generic(sleeves, qshadow, existing, gate_authority)
+    qchanged = promote_generic(sleeves, qshadow, existing, gate_authority,
+                               regrade=regrade_fails)
     sshadow = load_scalp_shadow()
     schanged = promote_scalp(sleeves, sshadow, existing, gate_authority)
     changed = changed or qchanged or schanged
@@ -399,51 +489,86 @@ def main() -> None:
             continue
         if key in existing:
             continue
-        # KEYS NOW CARRY AN OPTIONAL THIRD FIELD: "SYM.window" or "SYM.window.STATE".
-        # `split(".", 1)` would have put "asia.FAILED_BREAK" into `win`, which then fails the
-        # gateway's window whitelist and silently drops the sleeve -- a conditioned candidate
-        # would sit in shadow forever, meeting every promotion criterion and never promoting,
-        # with no error anywhere. Parsed explicitly instead.
+        # THE CLOCK'S IDENTITY, from the enrolment that started it. Keys carry an optional
+        # third field ("SYM.window" or "SYM.window.STATE") for breakouts and the family name for
+        # everything else; the identity map resolves both, and the parse below is only the
+        # fallback for a key the enrolment no longer lists.
+        ident = identities.get(key)
         parts = key.split(".")
-        sym, win = parts[0], parts[1]
-        cond = parts[2] if len(parts) > 2 else None
-        gate_spec = (sym, win, cond, "session_range_breakout", False)
-        if gate_spec not in gate_authority:
-            st["status"] = "BLOCKED_UNIVERSAL_GATES"
+        if ident:
+            sym, win, family = ident["symbol"], ident["selector"], ident["family"]
+            side_txt = ident.get("side", "LONG")
+            params = ident.get("params") or {}
+            cond = parts[2] if (family == "session_range_breakout" and len(parts) > 2) else None
+        else:
+            sym, win = parts[0], parts[1]
+            family, side_txt, params = "session_range_breakout", "LONG", {}
+            cond = parts[2] if len(parts) > 2 else None
+        gate_spec = (sym, win, cond, family, False)
+        # THE TEN GATES GATE ENROLMENT, NOT PROMOTION. A clock exists only because a certificate
+        # enrolled it (grandfathering ended 2026-08-26), so re-checking the authority set here
+        # could only refuse on registry DRIFT -- a renamed or re-keyed certificate -- and that is
+        # how matured clocks were held out of the book. Drift is recorded on the row; it blocks
+        # nothing. The one measured refusal is a fresh cost re-grade failure (rule 1: stricter).
+        st["certificate_drift"] = gate_spec not in gate_authority if gate_authority else False
+        if st["certificate_drift"]:
+            plog(f"{key}: certificate not in the current authority set -- recorded as drift, "
+                 f"promotion proceeds on the clock's own enrolment")
+        bad = regrade_block(key, regrade_fails)
+        if bad:
+            st["status"] = "BLOCKED_COST_REGRADE"
             st["promotion_authority"] = False
-            st["gate_reason"] = "missing exact original universal ten-gate pass"
-            plog(f"{key}: live promotion refused -- no canonical ten-gate certificate")
+            st["gate_reason"] = ("fails its own ten gates at the current cost model: "
+                                 + ", ".join(bad.get("gates_failing_now") or ["unspecified"]))
+            plog(f"{key}: live promotion refused -- {st['gate_reason']}")
             changed = True
             continue
-        if win not in GOLD_WINDOWS:
-            continue
-        # THE ARMED-BOOK COMPARISON IS MEASURED, NOT A GATE (principal 2026-09-04). Until then a
-        # gold challenger WAITED while the armed window had no forward rows and was KILLED when
-        # its expectancy trailed the window's by CHAMPION_MARGIN. Neither had proved it raised
-        # E[log W]; both held a certified, matured sleeve out of the book. The number is kept on
-        # the row so the allocator's dElogW and the attribution can read it.
-        vs_armed = None
-        if sym == "XAUUSD":
-            armed_exp = armed_forward_exp(ledger, win)
-            if armed_exp is not None:
-                vs_armed = {"armed_exp_r": round(float(armed_exp), 4),
-                            "margin_r": round(float(st.get("exp_r", 0.0)) - float(armed_exp), 4),
-                            "trails_by_more_than": bool(
-                                float(st.get("exp_r", 0.0)) < armed_exp - CHAMPION_MARGIN)}
-                plog(f"{key}: challenger vs armed {win}: {float(st.get('exp_r', 0.0)):.3f}R vs "
-                     f"{armed_exp:.3f}R -- recorded, promotion proceeds")
-        sleeves.append({"name": key, "symbol": sym, "window": win,
-                        "vs_armed": vs_armed,
-                        # Carried through to the gateway, which refuses to trade a conditioned
-                        # sleeve whose state it cannot confirm. Without this field the gateway
-                        # would trade the UNCONDITIONED strategy under this sleeve's name.
-                        "state": cond,
-                        "lot": PROMOTED_LOT, "risk_frac": PROMOTED_RISK_FRAC,
-                        "status": "LIVE",
-                        "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                        "shadow_exp": st.get("exp_r", 0.0)})
+        row = {"name": key, "symbol": sym, "lot": PROMOTED_LOT, "risk_frac": PROMOTED_RISK_FRAC,
+               "status": "LIVE", "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+               "shadow_exp": st.get("exp_r", 0.0), "family": family,
+               "side": side_txt, "certificate_drift": st["certificate_drift"]}
+        if family == "session_range_breakout":
+            if win not in GOLD_WINDOWS:
+                st["executor_gap"] = f"bracket window {win!r} is not one the gateway runs"
+                plog(f"{key}: PROMOTION CANDIDATE with no executor -- {st['executor_gap']}")
+                continue
+            # THE ARMED-BOOK COMPARISON IS MEASURED, NOT A GATE (principal 2026-09-04). Until
+            # then a gold challenger WAITED while the armed window had no forward rows and was
+            # KILLED when its expectancy trailed the window's by CHAMPION_MARGIN. Neither had
+            # proved it raised E[log W]; both held a certified, matured sleeve out of the book.
+            # The number is kept on the row so the allocator's dElogW and attribution read it.
+            vs_armed = None
+            if sym == "XAUUSD":
+                armed_exp = armed_forward_exp(ledger, win)
+                if armed_exp is not None:
+                    vs_armed = {"armed_exp_r": round(float(armed_exp), 4),
+                                "margin_r": round(float(st.get("exp_r", 0.0))
+                                                  - float(armed_exp), 4),
+                                "trails_by_more_than": bool(
+                                    float(st.get("exp_r", 0.0)) < armed_exp - CHAMPION_MARGIN)}
+                    plog(f"{key}: challenger vs armed {win}: {float(st.get('exp_r', 0.0)):.3f}R "
+                         f"vs {armed_exp:.3f}R -- recorded, promotion proceeds")
+            # Carried through to the gateway, which refuses to trade a conditioned sleeve whose
+            # state it cannot confirm; without it the gateway would trade the UNCONDITIONED
+            # strategy under this sleeve's name.
+            row.update({"window": win, "vs_armed": vs_armed, "state": cond})
+        else:
+            from mt5desk import executables
+            gap = executables.executor_gap(family)
+            if gap:
+                # NAMED, NEVER SILENT, NEVER A ROW THE BOOK CANNOT TRADE. A LIVE row for a family
+                # the gateway cannot execute would be funded by the allocator and held as air.
+                st["executor_gap"] = gap
+                plog(f"{key}: PROMOTION CANDIDATE with no executor -- {gap}")
+                changed = True
+                continue
+            st.pop("executor_gap", None)
+            row.update({"selector": win, "state": cond, "params": params,
+                        "exec": "family_market", "lot": "auto_ramp"})
+        sleeves.append(row)
         plog(f"AUTO-PROMOTED {key} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk, ramped "
-             f"(shadow exp={st.get('exp_r', 0.0):.3f}R n={st.get('n', 0)})")
+             f"({family} {side_txt}, exec={row.get('exec', 'bracket')}; shadow "
+             f"exp={st.get('exp_r', 0.0):.3f}R n={st.get('n', 0)})")
         changed = True
 
     for s in sleeves:
