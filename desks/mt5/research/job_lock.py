@@ -87,15 +87,54 @@ def measured_need_mb(name: str, declared: int) -> tuple[int, str]:
     observed successful runs, never from another guess" -- and had no mechanism. This is the
     mechanism. It only ever raises: a declaration is a FLOOR, so a job cannot talk its way into
     a box that cannot hold it, and a job that has grown is held to what it grew to.
+
+    CORRECTED 2026-09-05, same day, after the first version took the MAXIMUM and locked the
+    gauntlet out of the box for a day. See the block below for why the statistic is p75.
     """
     peaks = observed_peaks(name)
     if not peaks:
         return declared, f"declared {declared}MB (no run measured yet)"
-    worst = max(peaks)
-    if worst <= declared:
-        return declared, f"declared {declared}MB (worst of {len(peaks)} runs: {worst}MB)"
-    return worst, (f"declared {declared}MB but the worst of {len(peaks)} measured runs was "
-                   f"{worst}MB -- admitting on what it actually uses")
+
+    # A HIGH QUANTILE, NOT THE MAXIMUM, AND THE CHANGE IS WHY THE GAUNTLET CAME BACK.
+    #
+    # `max()` made this ratchet one-way in the wrong direction. `external_gauntlet` touched
+    # 4882MB once -- one pathological run on an unusually large docket -- and was thereafter
+    # admitted on 4882MB. On an 8GB box that also runs the live MT5 terminal, that much free
+    # memory essentially never exists, so the job stood down every single hour, waited its twelve
+    # minutes, stood down again, and exited non-zero. Measured 2026-09-05 from the live desk
+    # state: "FAILING MT5-Gauntlet: last result 1 twice in a row", no new certificates for a day,
+    # and the same for MT5-QQuantGatesCertify. The guard built to stop one job starving the box
+    # had starved that job out of the box permanently, and reported it as a crash.
+    #
+    # A single spike must not be able to do that. The 75th percentile of the recent window keeps
+    # the property the ratchet was for -- a job that CONSISTENTLY grows is held to what it grew
+    # to -- while a one-off ages out. Measured on this tree the same sweep peaks at 1619MB and
+    # 1615MB, which is its real working set.
+    #
+    # p75 RATHER THAN THE MEDIAN, and the difference is the whole safety argument. A median
+    # dismisses any minority, so a job that spikes one run in three -- which is not an outlier,
+    # it is a bimodal job -- would be admitted on its small mode and thrash the box on its large
+    # one. p75 only discards a spike once there is enough record to call it a spike: one heavy
+    # run out of three still sets the bar, one out of eight does not.
+    #
+    # THE SAFETY PROPERTY IS UNCHANGED IN THE DIRECTION THAT MATTERS. `declared` is still a hard
+    # FLOOR, so nothing can talk its way into a box that cannot hold it. And admission is only
+    # the first of two layers: `external_gauntlet.MEMORY_BUDGET_MB` defers cells when the run
+    # exceeds its budget mid-flight, so a job that DOES grow past the admitted figure throttles
+    # itself rather than thrashing. Admitting on the worst case of BOTH layers was belt, braces
+    # and a lock on the door -- and the lock was the one that jammed.
+    #
+    # THE OUTLIER IS REPORTED, NEVER HIDDEN. A max far above the admitted figure is the signal
+    # somebody should see -- it means this job has a tail -- so it is named in the reason string.
+    ordered = sorted(peaks)
+    typical = ordered[min(len(ordered) - 1, int(0.75 * len(ordered)))]
+    worst = ordered[-1]
+    tail = f"; worst was {worst}MB" if worst > typical else ""
+    if typical <= declared:
+        return declared, (f"declared {declared}MB (p75 of {len(peaks)} runs: {typical}MB"
+                          f"{tail})")
+    return typical, (f"declared {declared}MB but the p75 of {len(peaks)} measured runs was "
+                     f"{typical}MB -- admitting on what it typically uses{tail}")
 
 
 def _owner_state(path: Path) -> str:

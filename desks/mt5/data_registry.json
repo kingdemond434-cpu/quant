@@ -26,9 +26,7 @@
       "path": "data/lake/fred_*.parquet",
       "coverage": "1934-2026",
       "ingested": "2026-08-16",
-      "notes": "Current vintage only; ALFRED key = point-in-time upgrade path. "
-               "DTWEXM ends 2019 (discontinued); BAMLH0A0HYM2 starts 2023; "
-               "gold PM fix series 404s on FRED (XAUUSD H1 covers gold pricing)",
+      "notes": "Current vintage only; ALFRED key = point-in-time upgrade path. DTWEXM ends 2019 (discontinued); BAMLH0A0HYM2 starts 2023; gold PM fix series 404s on FRED (XAUUSD H1 covers gold pricing)",
       "provenance": "fred.stlouisfed.org"
     },
     "cot_fx": {
@@ -40,10 +38,7 @@
       "path": "data/cot/*.parquet",
       "coverage": "1986-2026 weekly (aud 1987, nzd 1999, dxy 1992)",
       "ingested": "2026-08-16",
-      "notes": "EUR FX absent from legacy schema (known CFTC quirk; euro lives "
-               "in disaggregated/TFF only - registered as EUR_COT_BLOCKED). "
-               "sp500 broad group ends 2021-09; nasdaq100 market = NASDAQ MINI "
-               "since 2021. JPY crosses all map to the yen contract.",
+      "notes": "EUR FX absent from legacy schema (known CFTC quirk; euro lives in disaggregated/TFF only - registered as EUR_COT_BLOCKED). sp500 broad group ends 2021-09; nasdaq100 market = NASDAQ MINI since 2021. JPY crosses all map to the yen contract.",
       "provenance": "publicreporting.cftc.gov",
       "mapping": "mt5desk/data.py _SYMBOL_SLUG"
     },
@@ -51,8 +46,7 @@
       "lifecycle": "DISCOVERED",
       "source": "BIS stats API",
       "status": "blocked - /api/v2/data 500/501 on all standard paths (2026-08-16)",
-      "notes": "EER need covered pragmatically by FRED DTWEXBGS/DTWEXM; "
-               "retry BIS web bulk download later",
+      "notes": "EER need covered pragmatically by FRED DTWEXBGS/DTWEXM; retry BIS web bulk download later",
       "quarantined": true
     },
     "spdr_gld_holdings": {
@@ -115,8 +109,7 @@
     "eur_cot_blocked": {
       "lifecycle": "DISCOVERED",
       "source": "CFTC",
-      "status": "blocked - EURO FX absent from legacy futures-only schema; "
-               "disaggregated Socrata schema id 72ab-3q3s returns 404",
+      "status": "blocked - EURO FX absent from legacy futures-only schema; disaggregated Socrata schema id 72ab-3q3s returns 404",
       "notes": "EUR positioning via FRED rates differentials + EURUSD H1 for now",
       "quarantined": true
     },

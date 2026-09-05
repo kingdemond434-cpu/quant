@@ -559,7 +559,8 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
 
 
 def book_from_allocation(total: float, book: object, book_fallback: object, *,
-                         certified: bool, why: str) -> tuple[dict[str, float] | None, str]:
+                         certified: bool, why: str,
+                         zeroed: object = None) -> tuple[dict[str, float] | None, str]:
     """The optimiser's PER-SLEEVE target risk fractions, or None with the reason.
 
     THE BOOK WAS SOLVED AND THEN NOT USED. `allocator_heat` takes the optimiser's TOTAL and the
@@ -577,6 +578,23 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
     (`book_fallback`), because the floor is deployed either way (principal, 2026-09-04: 20%
     minimum, 24/7). A stale or failed proof changes WHO allocates the floor, never WHETHER it
     is allocated.
+
+    ZERO IS AN ANSWER, AND IT COULD NOT BE GIVEN (principal, 2026-09-05: "five minutes/hour/
+    session later, it can be 0%"). `pf_allocation.json`'s `book` is filtered to heat > 1e-5, so a
+    sleeve the optimiser ZEROED simply vanished from it -- and a name not in the book reads as
+    `from_book = False` in the gateway, which falls through to `promoted_lot`'s ramp path and
+    `sizing.clamp_risk_frac`, which FLOORS at BASE_RISK_FRAC. The allocator's "hold none of this"
+    therefore reached the venue as 3% of equity times the authority ramp. `zeroed` is the
+    allocator's explicit list of ROSTERED sleeves it gave no heat (`book_zeroed`), and those names
+    are carried into the returned book at 0.0 so the gateway's existing "allocator gave this
+    sleeve no heat; skipped" path -- present at every placement site and until now unreachable --
+    actually fires.
+
+    STRICTLY ADDITIVE AND REDUCE-ONLY. Absent or unreadable `zeroed` leaves the answer exactly as
+    it was; a zero entry can only lower a sleeve's size, never raise one; zeros do not change the
+    book's sum, so the drift check against `total` is unaffected; and the empty-book refusal is
+    decided BEFORE any zero is added, so a book of nothing but zeros still reads as "the allocator
+    declined to allocate" rather than as an instruction to size everything at zero.
 
     Pure over the artifact's parsed pieces: `total` is the certified heat `allocator_heat`
     returned, `book` and `book_fallback` are the artifact's own fields. The gateway reads the
@@ -612,7 +630,18 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
         # one of them was rewritten independently, and sizing on a book that does not sum to the
         # budget the heat cap enforces would over- or under-deploy silently.
         return None, f"book sums to {sum(book_.values()):.4f}, heat says {total:.4f}"
-    return book_, f"allocator book authoritative ({len(book_)} sleeve(s)); {why}"
+    n_zero = 0
+    try:
+        for name in (zeroed or {}):
+            if str(name) not in book_:
+                book_[str(name)] = 0.0
+                n_zero += 1
+    except TypeError:
+        n_zero = 0                      # unreadable list: the book stands exactly as it was
+    if not n_zero:
+        return book_, f"allocator book authoritative ({len(book_)} sleeve(s)); {why}"
+    return book_, (f"allocator book authoritative ({len(book_) - n_zero} sleeve(s), {n_zero} held "
+                   f"at zero by this solve); {why}")
 
 
 def allocator_rank(base: Path, now: float | None = None) -> dict[str, float] | None:
@@ -697,9 +726,27 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     # Per-sleeve q: an explicit scalar override still applies to every sleeve (that is what a
     # caller asking for one means), otherwise each sleeve is priced on ITS OWN instrument.
     qs: list[float] = []
+    #: Parallel to `qs`: this leg was priced at zero by the ALLOCATOR, not by a failed
+    #: measurement. Kept separate so the unmeasurable-leg fallback below cannot overwrite it.
+    zeroed_by_allocator: list[bool] = []
     for s in sleeves:
+        zeroed_by_allocator.append(False)
         if per_sleeve_q is not None:
             qs.append(float(per_sleeve_q))
+            continue
+        # AN EXPLICIT ZERO IS A PRICE, NOT A MISSING ONE. `gateway` sets `q_charge` from the
+        # allocator's own fraction for a sleeve in the solved book, and `book_zeroed` puts a
+        # sleeve the solve gave NO heat into that book at exactly 0.0 -- `promoted_lot` then
+        # returns no lot for it and it places nothing. Billing it at its measured stop cost would
+        # reserve budget nothing will use and could defer a leg the book actually wanted. It stays
+        # in the returned roster either way, because dropping it here would orphan any bracket it
+        # still has open. Before `book_zeroed` existed this value could not BE zero
+        # (`sizing.clamp_risk_frac` floors at the base fraction), so nothing that worked before
+        # reads differently now.
+        _qc = s.get("q_charge")
+        if isinstance(_qc, (int, float)) and not isinstance(_qc, bool) and float(_qc) == 0.0:
+            zeroed_by_allocator[-1] = True
+            qs.append(0.0)
             continue
         # A sleeve annotated with its own effective fraction (risk_frac x ramp, set by the
         # caller) is billed exactly that -- the sizing path and the heat path must price the
@@ -736,8 +783,11 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     known = [q for q in qs if q == q and q > 0]
     fallback = max(known) if known else 0.0
     budget = solved if solved is not None else heat_budget(k_eff)
-    qs = [(q if q == q and q > 0 else fallback) for q in qs]
-    if fallback <= 0:
+    # An allocator-zeroed leg keeps its zero; every OTHER unpriceable leg is still charged at the
+    # most expensive measured one, exactly as before.
+    qs = [(0.0 if z else (q if q == q and q > 0 else fallback))
+          for q, z in zip(qs, zeroed_by_allocator, strict=True)]
+    if fallback <= 0 and not all(zeroed_by_allocator):
         note = ("PORTFOLIO HEAT CAP: no sleeve's risk could be priced in account currency; "
                 "admitting none rather than sizing from another instrument's constants")
         return [], note
@@ -1186,22 +1236,52 @@ def family_signal_hour(window: dict) -> int:
 
 def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
     """The last CLOSED bar when it is the sleeve's signal bar, else None. The in-progress bar
-    is excluded by the caller, exactly as the replay sees it."""
+    is excluded by the caller, exactly as the replay sees it.
+
+    ONE DECISION PER DAY ON EVERY CHART, which `hour == sig_hour` alone only delivered on H1.
+    An hour holds one H1 bar, twelve M5 bars and sixty M1 bars, so the bare hour test would have
+    fired a sleeve certified to take ONE entry a day twelve or sixty times -- the same defect
+    `family_calendar_month` had with its `hour == 0` test when the M1..D1 ladder landed, and the
+    same correction: also require the bar to START the hour.
+
+    H1 IS UNCHANGED BYTE FOR BYTE. Every H1 bar begins on the hour, so `minute == 0` is always
+    true there and this test cannot alter a single existing decision. It is the sub-hourly charts
+    that gain a rule they never had.
+
+    WHY THE FIRST BAR OF THE HOUR AND NOT THE LAST. It preserves the H1 relationship exactly: the
+    H1 bar labelled N closes at N+1:00 and the executor acts on it as the last closed bar, so the
+    sleeve acts on the first bar whose label is the signal hour, as soon as that bar closes. On M5
+    that is the N:00 bar acting at N:05 -- the same "act on the signal bar the moment it is
+    final", one chart down.
+    """
     last_bar = closed.index[-1]
-    return last_bar if last_bar.hour == sig_hour else None
+    if last_bar.hour != sig_hour:
+        return None
+    return last_bar if last_bar.minute == 0 else None
 
 
 def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,
                        want_state: object, side: int, family_fn: Any,
-                       day_states_fn: Any) -> FamilyStep:
+                       day_states_fn: Any, call_params: dict | None = None) -> FamilyStep:
     """The replay-faithful signal decision for one family sleeve at its signal bar.
 
     FAITHFUL TO THE REPLAY OR NOT AT ALL: the signal comes from the SAME family function the
-    forward clock replays (`family_fn`, a `run_hunt16.FAMILIES` entry), filtered to this bar and
-    to the same day-state condition (`day_states_fn`, `run_hunt12.day_states`). A bar already
-    considered is skipped without a mark; a state mismatch is marked and named; a failed signal
-    computation is named and NOT marked, so the next pass tries again; no signal is marked
-    silently.
+    forward clock replays, filtered to this bar and to the same day-state condition
+    (`day_states_fn`, `run_hunt12.day_states`). A bar already considered is skipped without a
+    mark; a state mismatch is marked and named; a failed signal computation is named and NOT
+    marked, so the next pass tries again; no signal is marked silently.
+
+    `call_params` SELECTS WHICH REPLAY, because the desk has two and they are different contracts
+    rather than variants of one:
+
+      None   the hunt16 call, `FAMILIES[fam](df, side)` -- positional, unparameterised, because a
+             hunt16 cell takes its parameterisation from `WINDOWS[selector]` at sweep time. This
+             is what `qquant_shadow` replays and what this function has always done, so passing
+             nothing leaves every existing caller byte-identical.
+      a dict the `mt5desk.families` / `families_orthogonal` call, which takes keyword params and a
+             keyword side. `mt5desk.family_call` owns both shapes so this module and
+             `shadow_forward` cannot drift; an EMPTY dict still selects this shape, and is the
+             correct call for a price-only orthogonal family rather than a missing one.
     """
     if last_signal_bar == str(last_bar):
         return FamilyStep(mark=False)                          # this bar already considered
@@ -1210,7 +1290,10 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
         if got != want_state:
             return FamilyStep(mark=True, note=f"no trade: day state {got} != {want_state}")
     try:
-        sigs = [g for g in family_fn(closed, side) if pd.Timestamp(g.time) == last_bar]
+        from mt5desk.family_call import hunt16_signals, signals
+        raw = (hunt16_signals(family_fn, closed, side) if call_params is None
+               else signals(family_fn, closed, side=side, params=call_params))
+        sigs = [g for g in raw if pd.Timestamp(g.time) == last_bar]
     except Exception as exc:
         return FamilyStep(mark=False,
                           note=f"FAMILY-EXEC signal computation failed ({exc}); skipped")
@@ -1226,9 +1309,22 @@ def family_entry(g: object, side: int, bid: float, ask: float) -> tuple[float, f
     return entry_ref, abs(entry_ref - float(g.stop))
 
 
-def family_ttl_until(last_bar: pd.Timestamp, ttl_bars: int) -> str:
-    """The replay's time exit: `ttl_bars` hours after the entry bar's open, as ISO text."""
-    return (last_bar + pd.Timedelta(hours=int(ttl_bars) + 1)).isoformat()
+def family_ttl_until(last_bar: pd.Timestamp, ttl_bars: int, bar_minutes: int = 60) -> str:
+    """The replay's time exit: `ttl_bars` BARS after the entry bar's open, as ISO text.
+
+    BARS, NOT HOURS, and the distinction became real the day the executor learned M1..D1. This
+    read `pd.Timedelta(hours=ttl_bars + 1)`, which is exactly right on H1 and wrong on every other
+    chart: `engine.py` counts a signal's `ttl_bars` in INDEX POSITIONS (`for j in range(i, i +
+    ttl)`), so twelve bars is twelve hours on H1, one hour on M5, and twelve DAYS on D1. An M5
+    sleeve would have held its position twelve times too long and a D1 sleeve closed it
+    twenty-four times too early -- in both cases a different strategy from the certified one,
+    under the certified one's name, which is the defect class the family executor exists to refuse.
+
+    `bar_minutes` DEFAULTS TO 60 so every existing H1 caller resolves to the identical timestamp
+    it always has, including the `+ 1` -- the entry is at the open of the bar AFTER the signal
+    bar, so the hold begins one bar later than `last_bar` and the offset counts from the signal.
+    """
+    return (last_bar + pd.Timedelta(minutes=(int(ttl_bars) + 1) * int(bar_minutes))).isoformat()
 
 
 def family_order_desc(side: int, lot: float, symbol: str, g: object, ttl_until: str) -> str:

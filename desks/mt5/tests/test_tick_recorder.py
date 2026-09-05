@@ -232,6 +232,214 @@ def test_a_paused_recorder_still_beats(tmp_path: Path) -> None:
     assert hb["state"] == "PAUSED" and hb["paused"]
 
 
+# ---------------------------------------------------- the pause is an episode --
+def test_a_long_pause_is_recorded_as_an_episode_not_once_per_cycle(tmp_path: Path) -> None:
+    """THE ARITHMETIC THAT MAKES THIS A CORRECTNESS TEST AND NOT A TIDINESS ONE.
+
+    A gap row per symbol per cycle is 15,060 rows an hour at 251 symbols on a 60-second beat --
+    about 90 MB a day, appended to the very disk whose exhaustion triggered the DISK_FLOOR pause.
+    The guard that exists to stop the recorder filling the disk would fill it several times
+    faster than capturing would have. So a pause is recorded once when it starts, periodically as
+    insurance, and once in full when it ends.
+    """
+    _, rec, store = _rig(tmp_path)
+    rec.run_once(now_ms=T0)
+    rec.config.disk_floor_bytes = 1 << 62
+    rec.config.cycle_s = 60
+    for i in range(1, 41):                       # 40 minutes of paused cycles
+        rec.run_once(now_ms=T0 + HOUR + i * 60_000)
+    floor = [g for d in store.days("EURUSD") for g in store.gaps("EURUSD", d)
+             if g.reason == ts.GAP_DISK_FLOOR]
+    assert floor, "the pause must still be on the record -- it is a window nobody captured"
+    assert len(floor) <= 5, (
+        f"{len(floor)} DISK_FLOOR rows over 40 paused cycles is per-cycle spam; the pause is one "
+        f"episode and the ledger has to stay legible for the outage rows that matter")
+
+
+def test_a_pause_that_ends_is_written_in_full_and_can_then_be_resolved(
+        tmp_path: Path) -> None:
+    """The final row is what makes the episode's TOTAL extent a fact rather than a series of
+    fragments, and tracking it is what lets a later cycle mark it RESOLVED. Without that,
+    SOURCE_UNAVAILABLE would sit in BACKFILLABLE and never actually be backfilled -- open
+    forever, teaching its reader that open outages are normal."""
+    src, rec, store = _rig(tmp_path)
+    rec.config.cycle_s = 60
+    rec.run_once(now_ms=T0)
+    src.is_alive = False
+    for i in range(1, 6):
+        rec.run_once(now_ms=T0 + HOUR + i * 60_000)
+    src.is_alive = True
+    rec.run_once(now_ms=T0 + HOUR + 6 * 60_000)
+
+    rows = [g for d in store.days("EURUSD") for g in store.gaps("EURUSD", d)]
+    closed = [g for g in rows
+              if g.reason == ts.GAP_SOURCE_UNAVAILABLE and "in full" in g.detail]
+    assert closed, "the episode must be written in full once quotes come back"
+    assert closed[0].to_ms - closed[0].from_ms >= 5 * 60_000, (
+        "the closing row covers the WHOLE outage, not the last cycle of it")
+    tracked = store.read_state("cursors")["EURUSD"].get("open_gaps") or []
+    assert any(t["reason"] == ts.GAP_SOURCE_UNAVAILABLE for t in tracked), (
+        "a backfillable pause must be TRACKED or it can never be marked resolved")
+
+
+def test_contiguous_outage_windows_coalesce_instead_of_flooding_the_tracker(
+        tmp_path: Path) -> None:
+    """MAX_TRACKED_GAPS is a 50-entry ring. A six-hour outage at a 60-second beat produces 360
+    abutting windows, and appending each would evict the START of the very outage being tracked
+    while writing a megabyte of cursor state every cycle across the universe."""
+    _, rec, _store = _rig(tmp_path)
+    row: dict = {}
+    base = T0
+    for i in range(120):
+        rec._track_gap(row, ts.GapRecord(symbol="EURUSD", from_ms=base + i * 60_000,
+                                         to_ms=base + (i + 1) * 60_000,
+                                         reason=ts.GAP_SOURCE_UNAVAILABLE))
+    assert len(row["open_gaps"]) == 1, "one contiguous outage is one tracked window"
+    assert row["open_gaps"][0]["from_ms"] == base, "the START of the outage must survive"
+    assert row["open_gaps"][0]["to_ms"] == base + 120 * 60_000
+
+    rec._track_gap(row, ts.GapRecord(symbol="EURUSD", from_ms=base + 500 * 60_000,
+                                     to_ms=base + 501 * 60_000,
+                                     reason=ts.GAP_SOURCE_UNAVAILABLE))
+    assert len(row["open_gaps"]) == 2, "a window with a hole before it is a SEPARATE outage"
+
+
+# ------------------------------------------------------------- the truncated pull --
+def test_a_truncated_pull_defers_its_tail_and_never_advances_past_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE SILENT LOSS THIS PACKAGE EXISTS TO PREVENT, FOUND INSIDE THE PACKAGE.
+
+    The cap's own comment said the remainder was 'deferred to the next cycle'. Nothing deferred
+    it: the array was trimmed, the survivors were written, and the cursor then advanced to the
+    end of the whole window -- past every tick the trim had discarded. No re-query, no gap row,
+    and GAP_TRUNCATED unused in the ledger's vocabulary. A permanent loss that reads as a
+    successful capture.
+    """
+    import recorders.tick_recorder as tr
+    _, rec, store = _rig(tmp_path, ["EURUSD"])
+    rec.run_once(now_ms=T0)
+    monkeypatch.setattr(tr, "MAX_TICKS_PER_PULL", 500)
+
+    before = store.read_state("cursors")["EURUSD"]["cursor_ms"]
+    rep = rec.run_once(now_ms=T0 + 4 * HOUR)
+    assert rep.truncations == 1
+    row = store.read_state("cursors")["EURUSD"]
+    assert row["cursor_ms"] > before, "the cursor must still make progress"
+    assert row["cursor_ms"] <= row["last_tick_ms"] + 1, (
+        "the query mark may not pass the last tick KEPT -- everything after it was discarded by "
+        "the trim and would never be asked for again")
+    trunc = [g for d in store.days("EURUSD") for g in store.gaps("EURUSD", d)
+             if g.reason == ts.GAP_TRUNCATED]
+    assert trunc, "the deferred window must be on the record in case the next cycle never comes"
+
+
+def test_the_deferred_tail_is_actually_collected_by_the_following_cycles(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A deferral that is never collected is a hole with extra steps. Under a tiny cap the loop
+    must still converge on the whole window, and the TRUNCATED rows must end up RESOLVED."""
+    import recorders.tick_recorder as tr
+    _, rec, store = _rig(tmp_path, ["EURUSD"])
+    monkeypatch.setattr(tr, "MAX_TICKS_PER_PULL", 400)
+    rec.run_once(now_ms=T0)
+    for i in range(1, 30):
+        rec.run_once(now_ms=T0 + i * 600_000)
+
+    day = store.days("EURUSD")[0]
+    rows = store.gaps("EURUSD", day)
+    assert any(g.reason == ts.GAP_RESOLVED for g in rows), (
+        "a deferred tail that arrives must close its own row")
+    still_open = [g for g in store.open_gaps("EURUSD", day)
+                  if g.reason == ts.GAP_TRUNCATED]
+    assert len(still_open) <= 1, (
+        f"{len(still_open)} truncation windows never collected -- the deferral is not converging")
+
+
+# ------------------------------------------------------- compaction in the loop --
+def test_a_finished_day_is_compacted_before_it_is_sealed(tmp_path: Path) -> None:
+    """MEASURED: one segment per cycle costs ~3KB of parquet footer each, so a real symbol-day is
+    ~4.3 MB of container around ~0.7 MB of ticks. The recorder folds a day that has stopped
+    receiving before stamping it complete, and the seal then describes what the day HOLDS."""
+    _, rec, store = _rig(tmp_path, ["EURUSD"])
+    rec.config.cycle_s = 600
+    now = T0
+    for _ in range(3 * 144):
+        now += 600_000
+        rec.run_once(now_ms=now)
+
+    days = store.days("EURUSD")
+    sealed = [d for d in days if store.seal("EURUSD", d) is not None]
+    assert sealed, "days that have stopped receiving must be sealed"
+    folded = 0
+    for d in sealed:
+        assert len(store.manifest("EURUSD", d)) == 1, (
+            f"{d} was sealed with {len(store.manifest('EURUSD', d))} segments -- a finished day "
+            f"must be compacted first or the tape carries its containers forever")
+        assert store.reconcile("EURUSD", d)["missing"] == []
+        assert len(store.read_day("EURUSD", d)) > 0, "compaction must not empty the day"
+        folded += len(store.compactions("EURUSD", d))
+    assert folded, "the fold has to be on the record for at least one full day"
+
+
+def test_compaction_cannot_spend_the_cycle_and_an_unfolded_day_stays_unsealed(
+        tmp_path: Path) -> None:
+    """MEASURED: one real-rate symbol-day costs 8.2s (EURUSD) to 10.7s (XAUUSD) to compact. Four
+    of those is the whole default cycle budget spent on housekeeping, on a 60-second beat, at
+    exactly the moment 251 symbols all become eligible together.
+
+    The budget must also leave the day UNSEALED when it runs out. Sealing an unfolded day would
+    strand it at ~25x its necessary size forever, because nothing revisits a sealed day.
+    """
+    _, rec, store = _rig(tmp_path, ["AAA", "BBB", "CCC"])
+    rec.config.cycle_s = 600
+    rec.config.compact_budget_s = -1.0            # the allowance is spent before it starts
+    now = T0
+    for _ in range(2 * 144):
+        now += 600_000
+        rec.run_once(now_ms=now)
+
+    unsealed = [(s, d) for s in store.symbols() for d in store.days(s)
+                if store.seal(s, d) is None]
+    assert unsealed, "with no compaction allowance, finished days must wait rather than be sealed"
+    assert not any(store.compactions(s, d) for s in store.symbols() for d in store.days(s))
+    assert sum(len(store.read_day(s, d)) for s, d in unsealed) > 0, "and nothing is lost meanwhile"
+
+    rec.config.compact_budget_s = 60.0
+    for _ in range(10):
+        now += 600_000
+        rep = rec.run_once(now_ms=now)
+    assert rep.compacted or any(store.compactions(s, d)
+                                for s in store.symbols() for d in store.days(s)), (
+        "once the allowance returns the backlog must actually clear")
+
+
+def test_the_seal_watermark_stops_the_pass_rescanning_the_whole_tape_every_cycle(
+        tmp_path: Path) -> None:
+    """Without it, every cycle stats and parses the seal of every day the tape has ever held:
+    251 symbols x 365 days is ~91,000 file reads a minute after one year, on a box that is also
+    running the terminal holding live positions."""
+    _, rec, store = _rig(tmp_path, ["EURUSD"])
+    rec.config.cycle_s = 600
+    now = T0
+    for _ in range(3 * 144):
+        now += 600_000
+        rec.run_once(now_ms=now)
+
+    mark = store.read_state("cursors")["EURUSD"].get("sealed_through")
+    assert mark, "the watermark must advance across days the pass has finished with"
+    seals = 0
+    real_seal = store.seal
+
+    def counting(sym: str, day: str):
+        nonlocal seals
+        seals += 1
+        return real_seal(sym, day)
+
+    rec.store.seal = counting                       # type: ignore[method-assign]
+    rec.run_once(now_ms=now + 600_000)
+    assert seals <= 2, (
+        f"{seals} seal reads on a steady-state cycle -- the pass is rescanning sealed history")
+
+
 # --------------------------------------------------------------- the loop itself --
 def test_the_rotation_advances_by_what_was_processed_so_no_symbol_starves(
         tmp_path: Path) -> None:

@@ -256,12 +256,15 @@ def _normalise(df: pd.DataFrame) -> pd.DataFrame:
 
 # ----------------------------------------------------------------- the sources
 
-def from_mt5(sym: str, start: datetime) -> Bars | None:
-    """The broker's own bars. Best evidence, least available."""
+def from_mt5(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
+    """The broker's own bars, on `timeframe`. Best evidence, least available."""
     try:
         import MetaTrader5 as mt5
     except ImportError:
         return None
+    tf_code = getattr(mt5, f"TIMEFRAME_{str(timeframe).upper()}", None)
+    if tf_code is None:
+        return None                    # a terminal without this chart: NO DATA, never a guess
     candidates: list[str | None] = [None] if mt5.terminal_info() is not None else []
     candidates.extend(_terminal_candidates())
     for terminal in candidates:
@@ -272,7 +275,7 @@ def from_mt5(sym: str, start: datetime) -> Bars | None:
                     continue
             account = mt5.account_info()
             server = str(getattr(account, "server", "unknown"))
-            rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, start,
+            rates = mt5.copy_rates_range(sym, tf_code, start,
                                          datetime.now(UTC))
             if rates is None or len(rates) < 100:
                 continue
@@ -298,8 +301,8 @@ def from_mt5(sym: str, start: datetime) -> Bars | None:
     return None
 
 
-def from_cache(sym: str, start: datetime) -> Bars | None:
-    """The parquet cached by `fetch_universe`. Works offline; goes stale.
+def from_cache(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
+    """The parquet cached by `fetch_universe`, on `timeframe`. Works offline; goes stale.
 
     Kept as a real source rather than a fallback of last resort, because a
     strategy replayed on cached history up to the cache's end is valid evidence
@@ -310,7 +313,7 @@ def from_cache(sym: str, start: datetime) -> Bars | None:
     to determine promotion_authority: if the MT5 server is Fusion, the cached
     bars carry the same evidence quality as live broker bars for promotion.
     """
-    p = UNI / f"{sym}_H1.parquet"
+    p = UNI / f"{sym}_{str(timeframe).upper()}.parquet"
     if not p.exists():
         return None
     try:
@@ -439,9 +442,30 @@ def register_source(fn: Callable[[str, datetime], Bars | None]) -> None:
     EXTRA_SOURCES.append(fn)
 
 
+def _accepts_timeframe(fn) -> bool:
+    """Can this source be asked for a chart other than H1? Read from its signature.
+
+    A source registered before the ladder existed takes `(sym, start)` and has never promised
+    anything but hourly bars. Asking it for M5 and labelling the answer M5 evidence would be the
+    silent feed substitution this module refuses elsewhere, so it is skipped for a fine chart --
+    NO DATA, which is a real answer -- and used unchanged for H1.
+    """
+    import inspect
+    try:
+        params = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return False
+    if "timeframe" in params:
+        return True
+    positional = [p for p in params.values()
+                  if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+    return len(positional) >= 3 or any(p.kind is p.VAR_POSITIONAL for p in params.values())
+
+
 def fetch_h1(sym: str, start: datetime,
              prefer: str | None = None,
-             prefer_promotion_authority: bool = False) -> Bars | None:
+             prefer_promotion_authority: bool = False,
+             timeframe: str = "H1") -> Bars | None:
     """First source that returns usable bars, in quality order.
 
     MT5 first because it is the venue actually traded; registered sources next
@@ -450,15 +474,33 @@ def fetch_h1(sym: str, start: datetime,
 
     Returns None only when NOTHING worked, which is a real condition the caller
     must handle as NO DATA rather than as an empty market.
+
+    `timeframe` defaults to H1, so every existing caller is byte-identical. A
+    non-H1 request goes ONLY to the two built-in sources that were told about
+    the ladder: a registered source's contract is `(sym, start)` and it has
+    never promised anything but hourly bars, so silently handing it a fine-chart
+    request and labelling whatever came back as M5 evidence would be the
+    feed-substitution this module's own `from_yfinance` note refuses. A source
+    that cannot answer for a chart is NO DATA, which is a real answer.
     """
+    tf = str(timeframe).upper()
     chain = [("MT5", from_mt5)] + [(f"extra{i}", f) for i, f in enumerate(EXTRA_SOURCES)] \
             + [("CACHE", from_cache)]
     if prefer:
         chain.sort(key=lambda kv: 0 if kv[0].upper().startswith(prefer.upper()) else 1)
     best_proxy: Bars | None = None
     for _, fn in chain:
+        # ASKED OF THE SIGNATURE, never discovered by catching TypeError. A TypeError raised
+        # INSIDE a source would otherwise be retried as though the source had the older
+        # two-argument shape, and the second failure would be reported as a missing feed.
+        ladder = _accepts_timeframe(fn)
+        if tf != "H1" and not ladder:
+            # A source that never promised anything but hourly bars is NO DATA for a fine chart.
+            # Calling it anyway and labelling whatever came back as M5 evidence is precisely the
+            # feed substitution `from_yfinance` refuses to do silently.
+            continue
         try:
-            b = fn(sym, start)
+            b = fn(sym, start, tf) if ladder else fn(sym, start)
         except Exception:
             continue
         if b is not None and b.n > 0:

@@ -34,6 +34,11 @@ def test_qquant_pass_is_atomically_merged_with_shadow_identity(tmp_path: Path) -
             "days": 179,
             "passed": True,
             "stages": _stages(),
+            # THE SWEEP ALWAYS EMITS THIS. `full_pipeline` writes `"params": c["params"]` onto
+            # every verdict row, and this fixture omitted it only because the publisher used to
+            # throw it away -- which is exactly the defect that produced six unrunnable
+            # certificates in the sealed canon.
+            "params": {"lookback": 20, "adx_min": 25},
         }],
     }
     result = publish_qquant_survivors(report, reports)
@@ -43,7 +48,7 @@ def test_qquant_pass_is_atomically_merged_with_shadow_identity(tmp_path: Path) -
     assert row["shadow_spec"] == {
         "symbol": "AUDNZD", "family": "dav_range_filter_adx", "side": "SHORT",
         "selector": "afternoon", "condition": "NORMAL_DAY", "is_universe": True,
-        "hunt": "hunt16.json",
+        "hunt": "hunt16.json", "params": {"lookback": 20, "adx_min": 25},
     }
     ledger = json.loads((reports / "SURVIVORS_LEDGER.json").read_text("utf-8"))
     assert ledger["n"] == 1
@@ -74,3 +79,31 @@ def test_incremental_universal_sweep_retains_only_exact_prior_passes(tmp_path: P
     assert retained_exact_survivors(path) == {
         "qquant.kept": {"gates": _stages(), "shadow_spec": {"symbol": "AUDNZD"}},
     }
+
+
+def test_a_certificate_with_no_parameterization_is_refused_not_sealed(tmp_path: Path) -> None:
+    """A ten-gate pass whose sweep recorded no `params` is a ZOMBIE and must never be sealed.
+
+    It would be counted in every survivor total, inflate the certified library, and reach no
+    capital for ever: enrolment cannot run it without inventing the parameterization that passed,
+    and inventing one runs a different strategy than the one that was certified. Measured
+    2026-09-05: 6 of 66 certificates in the sealed canon are in exactly this state, and
+    `session_range_breakout` -- 15 certificates with parameters and 5 without, same family --
+    proves the missing ones are a lost parameterization rather than a parameterless strategy.
+
+    `{}` IS NOT `None`. A family that genuinely takes no parameters publishes an empty mapping and
+    enrols normally, which is why `overnight_gap_decay` funds while these do not.
+    """
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    base = {"gate_policy": ATTESTATION, "swept_at": "2026-09-05T00:00:00+00:00"}
+    row = {"id": "AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+           "hunt": "hunt16.json", "days": 179, "passed": True, "stages": _stages()}
+
+    refused = publish_qquant_survivors({**base, "verdicts": [dict(row)]}, reports)
+    assert refused["published"] == [], "an unrunnable certificate was sealed into the canon"
+
+    kept = publish_qquant_survivors({**base, "verdicts": [{**row, "params": {}}]}, reports)
+    assert len(kept["published"]) == 1, (
+        "a family that takes NO parameters publishes `{}` and must still be sealed -- refusing it "
+        "too would turn a defect fence into a capability cut")

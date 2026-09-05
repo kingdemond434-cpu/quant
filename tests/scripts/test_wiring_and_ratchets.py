@@ -106,11 +106,16 @@ def test_realised_asymmetry_is_a_ratchet_not_a_gauge(tmp_path, monkeypatch) -> N
 
 # ------------------------------------------------------------------- the callers
 
-@pytest.mark.parametrize("script", ["scripts/resolve_wallets.py", "scripts/run_allocation.py"])
+@pytest.mark.parametrize("script", ["scripts/run_allocation.py"])
 def test_the_new_callers_run_and_report_absent_input_honestly(script: str) -> None:
-    """Both refuse to synthesise: entity labels and allocations are consumed as ground truth, and
-    one derived from a generator would name noise or size real capital against imaginary
-    correlations."""
+    """It refuses to synthesise: allocations are consumed as ground truth, and one derived from a
+    generator would size real capital against imaginary correlations.
+
+    `scripts/resolve_wallets.py` was the other half of this pair and was DELETED 2026-09-05 under
+    the universe mandate -- it resolved on-chain addresses to entities, which is a mechanic with no
+    MT5 instrument behind it. The parametrisation is narrowed rather than the assertion weakened:
+    the surviving caller must still print its own blocker instead of inventing an input.
+    """
     r = subprocess.run([sys.executable, str(ROOT / script)], cwd=ROOT,
                        capture_output=True, text=True, timeout=300, check=False)
     assert r.returncode == 0, r.stderr

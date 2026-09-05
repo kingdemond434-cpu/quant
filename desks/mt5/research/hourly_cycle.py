@@ -261,17 +261,292 @@ def smoke_release() -> dict:
         return {"rc": None, "error": f"{type(exc).__name__}: {exc}"}
 
 
+def deepen() -> dict:
+    """Drain the deepening queue -- THE conversion bottleneck, and it was scheduled nowhere.
+
+    THE HOLE, measured 2026-09-05. `miner_deepening_queue.json` held 908 tasks, and
+    `deepening_worked.jsonl` had never been written: 0 decided, ever. The worker is named in the
+    capability graph, in the rent ledger (`deepening_worker` -> sources deepening/mutation), in
+    the bandit's consumer list and in deep_forest_miner's own docstring -- and NOTHING RAN IT. No
+    cron row, no cycle call, no scheduled task. The graph said so plainly (`running: False`,
+    stage WIRED) and nobody read it.
+
+    That is the whole shape of the funnel's stall. The compiler admits candidates and queues the
+    ones needing a deepening decision; nothing decides them; so `judged` reads 0 cells and the
+    productivity report names `deepening` as the bottleneck every single run -- correctly, for a
+    reason no one had traced to a missing schedule.
+
+    Hourly, not daily, and with the worker's own default limit rather than a bigger one: each task
+    costs a seat call, so the drain rate is a spend decision the worker already owns. 25/hour
+    clears a 908-task backlog in about a day and a half of uptime while leaving the budget the
+    worker's own accounting controls. It self-guards on `worked_ids()`, so a re-run inside the same
+    hour decides nothing twice and costs nothing.
+    """
+    try:
+        import deepening_worker
+        return {"exit_code": deepening_worker.main([]),
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except SystemExit as exc:                       # argparse exits rather than returning
+        return {"exit_code": int(exc.code or 0),
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except Exception as exc:
+        # Same rule as `daily`: the hourly cycle must survive, but a desk whose only conversion
+        # drain failed to start has to say so rather than print "cycle done".
+        print(f"deepening worker FAILED to start: {type(exc).__name__}: {exc}", flush=True)
+        return {"exit_code": None, "error": f"{type(exc).__name__}: {exc}",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
+def heal_clocks() -> dict:
+    """Revive forward clocks stopped by an identity that can never come back. NOT scheduled before.
+
+    THE HOLE, off the live dashboard 2026-09-05: roughly thirty of ~53 forward clocks read
+    IDENTITY_BROKEN, accruing nothing while their day counters kept running -- what the same-day
+    fence calls the worst combination, a clock maturing on stale data.
+
+    The recovery organ already existed. `desks/mt5/scripts/heal_identity_broken_clocks.py` calls
+    itself a STANDING FIXER in its own first line, and nothing anywhere ran it: no cron row, no
+    cycle call, no scheduled task, and the only mention of it in the tree is a comment in
+    shadow_forward. Second organ found this way today, after the deepening worker -- the desk
+    keeps building recovery machinery and then not scheduling it, which is why the same breaches
+    survive being "fixed".
+
+    RUN WITH --apply, DELIBERATELY, and the flag's own default is not being overruled lightly.
+    That default is right for a human running it ad hoc; it was never a prohibition on scheduling
+    the thing whose docstring asks to be scheduled. What the two repairs actually do is why this
+    is sound rather than a loosening:
+
+      * `reconcile()` clears the break only when the identity is byte-identical again -- a
+        transient sync or an outage. The window is KEPT because nothing was ever different.
+      * `rebase_code()` fires only when reconcile refuses, and it RESETS forward_start. The sleeve
+        re-earns its days against the code actually running, its prior record preserved under
+        `window_before_rebase`. The price of recovery is paid in days, the one currency here that
+        cannot be faked.
+
+    So no clock inherits evidence it did not earn, and the alternative -- leaving them terminal --
+    is not the conservative choice: it is a day counter maturing against a bar on data the sleeve
+    never gathered.
+    """
+    try:
+        import subprocess
+        r = subprocess.run(
+            [sys.executable, str(BASE / "scripts" / "heal_identity_broken_clocks.py"), "--apply"],
+            capture_output=True, text=True, timeout=600, check=False)
+        return {"exit_code": r.returncode, "tail": (r.stdout or "").strip().splitlines()[-3:],
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except Exception as exc:
+        print(f"identity healer FAILED to start: {type(exc).__name__}: {exc}", flush=True)
+        return {"exit_code": None, "error": f"{type(exc).__name__}: {exc}",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
+def _costed(name: str, fn):
+    """Run one leg and record what it COST, whatever it returns or raises.
+
+    THE COMPUTE ALLOCATOR'S DENOMINATOR ARRIVES HERE OR NOWHERE. `libs.ops.allocators` reports
+    COMPUTE as the stack's weakest link because nothing decides it -- and it cannot be decided by
+    writing the ranking formula, because that formula divides by hours and this desk had never
+    recorded an hour. This cycle is where most of the desk's compute is actually spent, so costing
+    its legs is the cheapest possible way to get a real denominator: no new schedule, no new
+    process, one append per leg.
+
+    NEVER FAILS THE LEG. A ledger that can take down the work it measures would be removed within
+    a week, correctly. An absent `libs` (this file also runs from the desk root on the box) simply
+    means the leg runs uncosted, which is the state it was in before.
+    """
+    try:
+        from libs.ops.compute_ledger import close_run, open_run
+    except Exception:                                                   # noqa: BLE001
+        return fn()
+    run = open_run(name, kind="hourly_cycle")
+    try:
+        out = fn()
+    except BaseException as exc:
+        close_run(run, outcome=f"{type(exc).__name__}: {exc}"[:200])
+        raise
+    close_run(run, outcome="ok")
+    return out
+
+
+#: Wall clock a search leg may spend inside the cycle. The two searches are the desk's own
+#: hypothesis SOURCES, so starving them starves the docket -- but a search that overran the hour
+#: would push the deepening worker, the miners and the marker out of the pass entirely. Twelve
+#: minutes each leaves the 40-minute deepening budget and the remaining legs their time inside the
+#: hour, and a search that needs longer is one that should be given its own task on the box.
+SEARCH_BUDGET_SEC = 720
+
+
+def _producer(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
+    """Run one hypothesis producer as a subprocess, bounded, and report what happened.
+
+    NOT IN-PROCESS, unlike `deepen`. These are search jobs: they allocate heavily, they can hang
+    on a terminal call, and a crash inside them must not take the cycle's remaining legs with it.
+    A subprocess with a timeout gives all three properties for the cost of an interpreter start.
+    """
+    try:
+        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(BASE / script), *args],
+                           capture_output=True, text=True, cwd=str(BASE),
+                           timeout=SEARCH_BUDGET_SEC, check=False)
+        return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
+                "at": datetime.now(UTC).isoformat()}
+    except subprocess.TimeoutExpired:
+        return {"exit_code": None, "timeout_s": SEARCH_BUDGET_SEC,
+                "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
+                        f"whatever it had already written",
+                "at": datetime.now(UTC).isoformat()}
+    except Exception as exc:                                            # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
+
+
+def execution_twin() -> dict:
+    """`execution_twin`: what the fill WOULD have been, against what it was.
+
+    UNSCHEDULED UNTIL NOW, found by `scripts/check_producer_schedules.py` -- which is the fence
+    written today precisely because five organs had already been found this way by hand. Its
+    artifact is currently HUMAN_READ, so being off the clock cost a stale report rather than a
+    stopped chain; that is a smaller failure than the compiler's and it is the same failure.
+    """
+    return _producer("execution_twin", "research/execution_twin.py")
+
+
+def model_skill() -> dict:
+    """`model_self_improvement`: score every prediction the desk makes against a named baseline.
+
+    SCHEDULED FROM THE HOUR IT WAS WRITTEN, because the alternative is the defect this whole file
+    keeps finding: an organ that exists, is imported, is documented, and runs never. A skill score
+    is also only useful as a SERIES -- one reading says whether the desk forecasts well today, an
+    hourly track says whether it is getting better -- and a series needs a clock.
+
+    Its non-zero exit is a VERDICT, not a cycle failure: it exits 2 while any predictor is
+    unscored or beaten by its baseline, which is true today (the research forecast register scores
+    -0.177 Brier skill against its own base rate over 537 resolved claims). `_producer` records
+    the exit code and the cycle continues, which is the right shape -- a measurement organ must
+    never be able to stop the desk by reporting bad news.
+    """
+    return _producer("model_self_improvement", "research/model_self_improvement.py")
+
+
+def causal_graph() -> dict:
+    """`world_causal_graph`: which driver moves which instrument, and in which regime.
+
+    The heaviest of the three newly-scheduled analysis organs, and the one whose staleness matters
+    most: `beta(rates -> gold)` is state-dependent, so a graph fitted weeks ago describes a world
+    the book is no longer being held in.
+    """
+    return _producer("world_causal_graph", "research/world_causal_graph.py")
+
+
+def compile_candidates() -> dict:
+    """`miner_candidate_compiler`: every crawler row becomes a candidate or a deepening task.
+
+    NOTHING SCHEDULED IT. Measured 2026-09-05 by cross-referencing the capability graph against
+    every scheduler surface on this tree -- `ops/crontab.manifest`, the box task manifest,
+    `research_supervisor.PERIODIC`, this cycle and `daily_cycle` -- the compiler is named by NONE
+    of them. It is the fifth organ found this way today.
+
+    AND IT IS THE ONE THAT MATTERS MOST FOR THE TEXT CHAIN. The compiler is the single step
+    between what the crawlers fetch and what the gauntlet can judge: it reads every intelligence
+    artifact, emits executable candidates for the structured rows and routes everything else to
+    `miner_deepening_queue.json`. `deepening_worker` then drains that queue. So an unscheduled
+    compiler means the deepening worker spends every hour re-reading a queue nobody refreshed,
+    and every row the world crawler fetched after the last manual run sits unread for ever --
+    which is exactly the shape of "the crawlers run and nothing converts".
+
+    ORDER IS LOAD-BEARING and this is why the legs below were reordered. mine -> compile -> deepen:
+    the miners fetch, the compiler turns what they fetched into candidates and tasks, and the
+    worker reverse-engineers the tasks. Running deepen before compile -- which is what the cycle
+    did -- works this hour's worker against last hour's queue, so a row fetched at 10:05 could not
+    reach the gauntlet until 11:xx at the earliest and only if somebody had run the compiler by
+    hand in between.
+    """
+    return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py")
+
+
+def search() -> dict:
+    """`edge_search`: the family-free hypothesis search. NOT SCHEDULED ANYWHERE BEFORE THIS.
+
+    THE DASHBOARD CALLED IT AN HOURLY LEG AND NOTHING MADE IT HOURLY, which is the third instance
+    of this exact pattern found today after the deepening worker and the clock healer. Measured
+    off the live dashboard 2026-09-05:
+
+        SEARCH: edge_search_results.json is 37.7h old (hourly leg) -- the search has stopped
+                producing; the docket is running on miners alone
+
+    `research_supervisor.PERIODIC` lists fragility, the hunts, the macro desks and a dozen others;
+    it does not list `edge_search`, and no cron row or box task installs it either. So the desk
+    reported a stale hourly leg for a leg that had no schedule at all, and the docket had been
+    running on miner rows alone for a day and a half.
+    """
+    return _producer("edge_search", "research/edge_search.py")
+
+
+def sweep() -> dict:
+    """`orthogonal_sweep`: the non-directional family sweep. Same defect, same cure.
+
+        SWEEP: orthogonal_candidates.json is 32.4h old (hourly leg) -- the sweep has stopped
+               producing; the docket is running on miners alone
+
+    This one matters disproportionately for the reason `family_inputs` records: carry and the
+    other orthogonal mechanisms are the desk's only genuinely non-directional edges, and the
+    book's binding constraint is orthogonality. A stalled sweep does not just slow discovery, it
+    slows discovery of exactly the cells that would raise effective breadth.
+    """
+    return _producer("orthogonal_sweep", "research/orthogonal_sweep.py")
+
+
+def frontier() -> dict:
+    """One frontier-miner pass: which external capability is worth replicating next.
+
+    RUN HERE RATHER THAN ON ITS OWN SCHEDULE, and the reason is this desk's most repeated defect
+    rather than convenience: an organ with its own task is an organ whose task can be missing from
+    the box, and `check_box_tasks` measured fourteen tasks whose cadence this repo cannot even
+    verify. A leg of the cycle that already runs hourly and now records its own cost is the one
+    place a new organ is certain to actually run.
+
+    NEVER IDLE (mandate section 70): the pass works the standing capability gaps when no new
+    external finding appears, so a quiet hour still advances the queue.
+    """
+    try:
+        sys.path.insert(0, str(BASE))
+        from frontier_intel import frontier_supervisor
+        doc = frontier_supervisor.one_pass()
+        return {"scouted": doc.get("rows_scouted"), "new": doc.get("new_candidates"),
+                "queued": (doc.get("ranked") or {}).get("n_queued"),
+                "missing_capabilities": doc.get("capability_matrix_missing"),
+                "at": datetime.now(UTC).isoformat()}
+    except Exception as exc:                                            # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
+
+
 def main() -> None:
-    smoke = smoke_release()
-    h = health()
-    t = record_tape()
-    s = state_vector()
-    d = daily()
-    m = mine()
-    frontier_report(h)
+    smoke = _costed("smoke_release", smoke_release)
+    h = _costed("health", health)
+    t = _costed("record_tape", record_tape)
+    s = _costed("state_vector", state_vector)
+    d = _costed("daily", daily)
+    hc = _costed("heal_clocks", heal_clocks)
+    # THE CONVERSION CHAIN, IN THE ORDER IT CONVERTS. mine fetches, compile turns what was fetched
+    # into candidates and deepening tasks, deepen reverse-engineers the tasks that are not yet
+    # rules. The cycle previously ran deepen BEFORE mine and never ran compile at all, so the
+    # worker spent every hour on a queue nobody had refreshed and anything the crawlers fetched
+    # after the last manual compile was unread for ever.
+    m = _costed("mine", mine)
+    se = _costed("search", search)
+    sw = _costed("sweep", sweep)
+    cc = _costed("compile_candidates", compile_candidates)
+    dp = _costed("deepen", deepen)
+    et = _costed("execution_twin", execution_twin)
+    cg = _costed("causal_graph", causal_graph)
+    ms = _costed("model_skill", model_skill)
+    fr = _costed("frontier", frontier)
+    _costed("frontier_report", lambda: frontier_report(h))
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
-                    "health": h, "tape": t, "state_vector": s, "daily": d, "mine": m,
+                    "health": h, "tape": t, "state_vector": s, "daily": d,
+                    "deepening": dp, "heal_clocks": hc, "mine": m,
+                    "search": se, "sweep": sw, "compile": cc,
+                    "execution_twin": et, "causal_graph": cg, "model_skill": ms,
+                    "frontier": fr,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)

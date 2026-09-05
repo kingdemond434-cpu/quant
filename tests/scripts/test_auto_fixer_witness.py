@@ -12,6 +12,7 @@ every five minutes.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -86,3 +87,83 @@ def test_the_real_sweep_witness_is_the_artifact_the_breach_names():
     """The mapping is only useful if it names the file check_research_health actually watches."""
     assert auto_fixers.WITNESS["SWEEP"].name == "orthogonal_candidates.json"
     assert "hypotheses" in str(auto_fixers.WITNESS["SWEEP"])
+
+
+#: Fixer classes whose repair is provable by an artifact. A RATCHET: it may rise, never fall.
+#: Measured 2026-09-05 at 14 of 21, up from 1. It was 15 for a moment, until
+#: `test_every_witness_is_the_artifact_its_own_breach_names` rejected a QUEUES entry:
+#: check_research_health raises no QUEUES breach at all, so there was no
+#: complaint for that witness to correspond to. The gap was costing exactly what the WITNESS
+#: docstring predicted: SEARCH sat 35.2h stale and GAUNTLET 58.3h on the live dashboard, both with
+#: a fixer wired and running on the 30-minute health timer, neither repairing anything, and
+#: nothing in the desk able to tell that from a repair that worked.
+MIN_WITNESSED = 14
+
+
+def test_witness_coverage_only_ever_improves() -> None:
+    """A fixer with no witness can report ATTEMPTED forever. That is honest -- UNWITNESSED is a
+    real answer -- but it is not a state to drift back into: every class that CAN be proved should
+    be, and the six that remain (BREADTH, FAMILIES, FORWARD, ROI, SEATS, STALL-WATCH) are analyses
+    with no single producing artifact rather than gaps anyone chose to leave."""
+    assert len(auto_fixers.WITNESS) >= MIN_WITNESSED, (
+        f"witness coverage fell to {len(auto_fixers.WITNESS)} of {len(auto_fixers.FIXERS)}; a "
+        f"repair that stops being provable is a repair that can silently stop working"
+    )
+
+
+def test_no_witness_names_a_class_that_has_no_fixer() -> None:
+    """Dead config in the other direction: a witness for a class nothing repairs would never be
+    consulted, and would read as coverage the desk does not have."""
+    orphan = sorted(set(auto_fixers.WITNESS) - set(auto_fixers.FIXERS))
+    assert not orphan, f"witness entries with no fixer: {orphan}"
+
+
+def test_every_witness_is_the_artifact_its_own_breach_names() -> None:
+    """The witness and the complaint must not drift apart. `check_research_health` is the only
+    thing that raises these classes, so if it does not mention the file, proving that file moved
+    proves nothing about the breach that was raised."""
+    health = (Path(auto_fixers.__file__).parent / "check_research_health.py").read_text("utf-8")
+    for cls, path in sorted(auto_fixers.WITNESS.items()):
+        assert path.name in health, (
+            f"WITNESS[{cls!r}] points at {path.name}, which check_research_health never reads -- "
+            f"so a fix could be 'proved' by a file unrelated to the breach it answered"
+        )
+
+
+class TestATaskThatIsFailingIsNotReportedAsStarted:
+    """`schtasks /Run` succeeds when the SCHEDULER accepts the request, never when the task works.
+
+    MEASURED on the live dashboard 2026-09-05: the desk journalled "healed: FAILING MT5-Gauntlet:
+    last result 1 twice in a row -- re-run" while the canon went 58.3 hours without a sweep. The
+    task was failing, the repair was to start it again, and the answer to a task returning 1 is
+    never another trigger. `_desk_task` now reads the task's own LastTaskResult back.
+    """
+
+    def _stub(self, monkeypatch, output: str, rc: int = 0):
+        monkeypatch.setattr(auto_fixers, "_ssh", lambda cmd: (rc, output))
+
+    def test_a_nonzero_last_result_is_a_failed_fix_and_says_so(self, monkeypatch) -> None:
+        self._stub(monkeypatch, "SUCCESS: Attempted to run the scheduled task.\n1")
+        ok, detail = auto_fixers._desk_task("MT5-Gauntlet")
+        assert ok is False
+        assert "LAST RESULT is 1" in detail and "another trigger will not fix it" in detail
+
+    @pytest.mark.parametrize("code", ["0", "267009"])
+    def test_zero_and_currently_running_are_both_healthy(self, monkeypatch, code) -> None:
+        """267009 is 'task is currently running', which is the expected state moments after a
+        trigger -- reading it as a failure would make every successful start look broken."""
+        self._stub(monkeypatch, f"SUCCESS: Attempted to run the scheduled task.\n{code}")
+        ok, detail = auto_fixers._desk_task("MT5-Gauntlet")
+        assert ok is True and f"LastTaskResult={code}" in detail
+
+    def test_an_unreadable_result_is_unmeasured_not_success(self, monkeypatch) -> None:
+        """The trigger landed and the box said nothing about the outcome. That is a third fact,
+        and folding it into success is the defect the WITNESS map exists to prevent."""
+        self._stub(monkeypatch, "SUCCESS: Attempted to run the scheduled task.")
+        ok, detail = auto_fixers._desk_task("MT5-Gauntlet")
+        assert ok is True and "UNREADABLE" in detail
+
+    def test_a_trigger_that_could_not_be_sent_is_never_a_start(self, monkeypatch) -> None:
+        self._stub(monkeypatch, "ssh: connect to host ... Connection refused", rc=255)
+        ok, detail = auto_fixers._desk_task("MT5-Gauntlet")
+        assert ok is False and "trigger failed rc=255" in detail

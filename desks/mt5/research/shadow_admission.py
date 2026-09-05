@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -442,6 +443,79 @@ def power_cure_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
     return out
 
 
+#: Certificates that passed all ten gates and were still dropped before enrolment, with the
+#: reason. Reset at the start of every `authorized_runs` call so it always describes the LAST
+#: pass rather than accumulating across a long-lived process.
+#:
+#: Exposed as module state, not just printed, because the two readers need different things: the
+#: shadow log needs a line a human greps at 3am, and `same_day_enrolment` needs to be able to say
+#: WHY a certificate it is flagging has no clock instead of only that it has none.
+DROPPED_CERTIFICATES: list[dict[str, str]] = []
+
+
+def _drop(name: object, why: str) -> None:
+    """Record and announce a ten-gate certificate that will not reach the forward engine.
+
+    Printed to stderr rather than through a logging framework because this module is imported by
+    the forward engine, the promoter and three scripts, and it has never carried a logger; stderr
+    is what the VPS's own cron redirection already captures for all of them. The prefix matches
+    `shadow_forward`'s ENROL-GAP lines on purpose, so both halves of the same failure grep
+    together.
+    """
+    line = f"ENROL-GAP: certified {name} dropped before enrolment -- {why}"
+    DROPPED_CERTIFICATES.append({"certificate": str(name), "why": why})
+    print(line, file=sys.stderr, flush=True)
+
+
+#: The canon, in the order it is trusted. THE GAUNTLET'S FRESH REPORT FIRST, THE SEALED CANON
+#: SECOND -- and the second entry is the whole point of this tuple.
+#:
+#: MEASURED 2026-09-05, and it is the largest silent stop on the desk. `authorized_runs` read
+#: `reports/UNIVERSAL_SURVIVORS.json` and nothing else. That file is the external gauntlet's
+#: OUTPUT, so when the gauntlet fails the file is stale or absent -- and an absent file reads as
+#: `gate_policy = None`, which trips the whole-canon policy refusal and returns ZERO authorized
+#: runs. Not "the newest certificates cannot enrol": NOTHING can enrol, including certificates
+#: that passed all ten gates days earlier and are sitting in the sealed canon with a valid
+#: attestation.
+#:
+#: The dashboard was showing exactly that shape and it read as four unrelated faults:
+#:     GAUNTLET: canon last swept 60.8h ago ... the desk gauntlet or the cert pull stopped
+#:     healed: FAILING MT5-Gauntlet: last result 1
+#:     CERTIFIED-NOT-ENROLLED: external.USDZAR.overnight_gap_decay ... 91 hours ago, no clock
+#:     CERTIFIED-NOT-ENROLLED: external.AUDCHF / CADCHF / GBPCHF ... 117-142 hours, no clock
+#: One cause: the gauntlet crashes, its report goes missing, and enrolment silently drops to zero
+#: for every certificate the desk has ever earned.
+#:
+#: THIS IS NOT A LOOSENING, and the distinction is exact. `is_exact_policy` still runs on whatever
+#: file is used, and `all_ten_pass` still runs per row -- a canon without the exact ten-gate
+#: attestation is still refused whole. What changes is WHICH ARTIFACT carries the attestation: the
+#: sealed `data/UNIVERSAL_SURVIVORS.canon.json` is the same certificates under the same policy,
+#: dated, and it is already what the promoter, the allocator and `alpha_genome` read as the canon.
+#: Enrolling on the last sealed canon while the gauntlet is down is strictly better than enrolling
+#: nothing, and it is the same evidence either way.
+CANON_SOURCES: tuple[tuple[str, str], ...] = (
+    ("reports/UNIVERSAL_SURVIVORS.json", "the gauntlet's latest sweep"),
+    ("data/UNIVERSAL_SURVIVORS.canon.json", "the last SEALED canon"),
+)
+
+
+def _canon(base: Path) -> tuple[dict, str]:
+    """(canon document, where it came from). Prefers the fresh sweep, falls back to the seal.
+
+    A source is used only if it carries the exact ten-gate attestation, so the fallback cannot
+    admit anything the primary would have refused -- it can only find the same certificates in
+    the artifact that still has them.
+    """
+    first: dict = {}
+    for rel, what in CANON_SOURCES:
+        doc = _read(base / rel)
+        if not first:
+            first = doc
+        if is_exact_policy(doc.get("gate_policy")):
+            return doc, f"{rel} ({what})"
+    return first, CANON_SOURCES[0][0]
+
+
 def authorized_runs(base: Path = BASE,
                     lanes: tuple[str, ...] = ("h1", "scalp")) -> list[dict]:
     """Exactly-specified RUNNABLE certificates: symbol, selector, family AND certified params.
@@ -465,8 +539,28 @@ def authorized_runs(base: Path = BASE,
     parameters from a display name is forbidden. Those rows are re-certified with params by the
     next daily gauntlet pass rather than run on a guess.
     """
-    universal = _read(base / "reports" / "UNIVERSAL_SURVIVORS.json")
+    # Cleared BEFORE the policy early-return, not after: a pass that refuses the whole canon on a
+    # policy mismatch must not leave the previous pass's drops standing as if they were this
+    # pass's findings. This list always describes the run that just happened, never a backlog.
+    DROPPED_CERTIFICATES.clear()
+    universal, canon_from = _canon(base)
     if not is_exact_policy(universal.get("gate_policy")):
+        # THE LARGEST SILENT DROP OF ALL, and this desk has already paid for it once.
+        # `is_exact_policy`'s own docstring records 2026-09-02: "this is the whole reason the desk
+        # had no new forward clocks. Sixty-three certificates passed all ten gates and carried a
+        # valid shadow_spec, and `authorized_specs` returned ZERO." A policy mismatch refuses the
+        # ENTIRE canon in one line, and it did it without saying anything -- so the symptom was
+        # "no new clocks" and the cause was invisible in every log and artifact.
+        #
+        # Reported by name now, with the count of what was refused, so the same outage announces
+        # itself instead of being re-diagnosed from first principles a second time.
+        n = len(universal.get("survivors") or {})
+        _drop(f"<entire canon: {n} survivor row(s)>",
+              f"NO canon on this tree carries the exact ten-gate attestation. Tried, in order: "
+              f"{', '.join(rel for rel, _ in CANON_SOURCES)}. The last read carried "
+              f"{universal.get('gate_policy')!r}; every certificate is refused together, so "
+              f"NOTHING can enrol until one of those artifacts is re-minted under the exact "
+              f"policy. If the gauntlet is failing, the SEALED canon is the one to check first")
         return []
     runs: list[dict] = []
     for name, row in (universal.get("survivors") or {}).items():
@@ -475,13 +569,37 @@ def authorized_runs(base: Path = BASE,
         if "h1" not in lanes:
             continue
         if not isinstance(row, dict) or not all_ten_pass(row.get("gates")):
-            continue
+            continue                       # not certified: no clock is owed, nothing to report
+        # PAST THIS LINE EVERY ROW HAS PASSED ALL TEN GATES, so every remaining `continue` drops a
+        # CERTIFICATE -- and until 2026-09-05 all of them dropped it SILENTLY.
+        #
+        # THE DEFECT, off the live dashboard. Four certificates (USDZAR, AUDCHF, CADCHF and
+        # GBPCHF on overnight_gap_decay) sat CERTIFIED-NOT-ENROLLED for 89, 115, 139 and 139
+        # hours. `shadow_forward.certified_sleeves` logs an ENROL-GAP line for every refusal it
+        # makes -- but it can only refuse what it is HANDED, and a certificate dropped here never
+        # reaches it. So the same-day fence reported the breach correctly and the reason for it
+        # existed nowhere: not in the shadow log, not in an artifact, not on the dashboard. The
+        # operator sees "certified 139 hours ago, no clock" and has nothing to act on.
+        #
+        # This is the exact failure `certified_sleeves` names in its own comment -- "a silent skip
+        # is indistinguishable from enrolment that works" -- committed one function upstream of
+        # the place that took care to avoid it. Certification and enrolment are one act
+        # (RESEARCH §6d); a door that closes without saying so breaks that law quietly.
         spec = row.get("shadow_spec")
         if not isinstance(spec, dict):
+            _drop(name, "carries no `shadow_spec`, so there is nothing to enrol from -- the "
+                        "publisher wrote a certificate without the specification that makes it "
+                        "runnable")
             continue
         params = spec.get("params")
         if not isinstance(params, dict):
-            continue                       # ABSENT params -- unrunnable without guessing
+            # `{}` is NOT this case: an empty dict is the complete parameterization "family
+            # defaults", byte-exactly what the gauntlet executed, and excluding it once already
+            # held two overnight_gap_decay certificates un-enrolled (2026-08-27). Only a params
+            # that is absent or not a mapping lands here.
+            _drop(name, f"`shadow_spec.params` is {type(params).__name__}, not a mapping -- "
+                        f"unrunnable without guessing the parameterization that passed")
+            continue
         # {} is NOT "lost parameters": it is the complete parameterization "family defaults",
         # byte-exactly what the gauntlet executed (build_cell with params={}) and what the
         # p=<hash-of-empty> cell identity certifies. Excluding it kept both overnight_gap_decay

@@ -65,7 +65,17 @@ from pydantic import BaseModel, ConfigDict
 #: Deliberately NOT bold bullets: source cards carry ``- **Provenance**:`` / ``- **Queries used**:``
 #: metadata fields, and treating those as finds made the check fire 92/92 on its first real run.
 #: A check that flags everything is ignored, so the id-numbered card is the one unambiguous unit.
-_ITEM_RE = re.compile(r"^### (?P<cid>\d+)\.\s+(?P<card>.+?)\s*$", re.MULTILINE)
+#: A card heading, INCLUDING a merged one. `### 13-14.` (with any dash a writer may type) is one
+#: card covering a range, and requiring a bare `(\d+)\.` matched it against nothing: the heading
+#: produced no row, so the card was never IN the population any fence iterates, and its absence was
+#: byte-identical to its non-existence for every reader (L1.60). That is the silent-attrition shape
+#: arriving through a regex rather than through an `except: continue`.
+#:
+#: THE ID IS THE FIRST NUMBER IN THE RANGE. A merged card is one entry with one identity, and the
+#: range is part of its heading rather than part of its name -- so the trailing `-14` is consumed
+#: here and the card's name starts where the writer thought it did.
+_ITEM_RE = re.compile(
+    r"^### (?P<cid>\d+)(?:[-\u2013\u2014]\d+)?\.\s+(?P<card>.+?)\s*$", re.MULTILINE)
 #: The inline disposition tag. Tolerant of "S33"/"section 33" so an ASCII-only writer still counts.
 _DISP_RE = re.compile(
     r"\[(?:§|S|section\s*)33:\s*(?P<verb>[a-z-]+)\s*"

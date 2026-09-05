@@ -28,7 +28,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from mt5desk.families import Signal, _atr, _h1
+from mt5desk.families import Signal, _atr, _h1, bars_per_day
 
 DEFAULT_SPEEDS = (10, 21, 63, 126, 252)
 
@@ -50,7 +50,9 @@ def family_multi_speed_trend(
     if not speeds or not (0.0 < min_agreement <= 1.0):
         return []
     d = _h1(df)
-    if len(d) < 24 * (max(speeds) + 60):
+    # `speeds` and `hold_days` are DAYS already (the votes are computed on a daily series), so
+    # this guard is days-of-history and must be counted in the chart's own bars per day.
+    if len(d) < bars_per_day(d) * (max(speeds) + 60):
         return []
     close = d["close"].astype(float)
     daily = close.groupby(close.index.date).last()
@@ -106,7 +108,7 @@ def family_multi_speed_trend(
         px = float(close.reindex([entry]).iloc[0])
         signals.append(Signal(time=entry, side=side, stop=px - side * stop_atr * at,
                               target=px + side * stop_atr * at * rr,
-                              ttl_bars=int(hold_days) * 24,
+                              ttl_bars=int(hold_days) * bars_per_day(d),
                               tag=f"multi_speed_trend:{'crisis' if crisis_only else 'all'}",
                               trigger=None, wait_bars=1))
         last_entry_day = i

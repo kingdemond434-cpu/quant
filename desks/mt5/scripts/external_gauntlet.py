@@ -36,6 +36,7 @@ sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "desks" / "mt5"))
 
 from mt5desk import families  # noqa: E402
+from mt5desk.universe_registry import TIMEFRAME_MINUTES as _TF_MINUTES  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from research.frontier_identity import cell_id, economic_prior  # noqa: E402
 
@@ -134,12 +135,21 @@ def _surface() -> dict | None:
     return _COST_SURFACE
 
 
-def _modal_fill_hour(sigs) -> int | None:
+def _modal_fill_hour(sigs, timeframe: str = "H1") -> int | None:
     """The broker hour this cell actually fills in, or None when it cannot be established.
 
     A cell is charged the spread of the hour it TRADES, not the median of hours it does not. The
-    signal time plus `wait_bars` is the fill bar, and on H1 that is an hour offset.
+    signal time plus `wait_bars` is the fill bar, and `wait_bars` is counted in bars of the
+    CELL'S OWN CHART: on H1 one bar is the hour this used to add, on M5 it is five minutes, and
+    on D1 a whole day. Adding 1 to the hour for an M5 cell would charge it the spread of an hour
+    it never trades in -- and the fill-hour surface exists precisely because that difference is
+    worth thousands of points on the exotic crosses.
     """
+    from mt5desk.universe_registry import timeframe_minutes
+    try:
+        minutes = timeframe_minutes(timeframe)
+    except KeyError:
+        minutes = 60
     hours: dict[int, int] = {}
     for s in sigs or ():
         ts = getattr(s, "time", None)
@@ -148,7 +158,9 @@ def _modal_fill_hour(sigs) -> int | None:
         h = int(getattr(ts, "hour", -1))
         if h < 0:
             continue
-        h = (h + int(getattr(s, "wait_bars", 0) or 0)) % 24
+        offset_minutes = int(getattr(ts, "minute", 0) or 0) + \
+            int(getattr(s, "wait_bars", 0) or 0) * minutes
+        h = (h + offset_minutes // 60) % 24
         hours[h] = hours.get(h, 0) + 1
     if not hours:
         return None
@@ -219,51 +231,83 @@ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
 #: 0.3GB free, the sweep alive 87 minutes at a trickle of CPU having produced nothing, because a
 #: thrashing process still breathes.
 #: An LRU keeps the entire benefit (cells on one symbol arrive together, so the hit rate is
-#: unchanged) while making peak memory a constant instead of a function of universe size. M5
-#: frames hold twelve bars per H1 bar and get a proportionally smaller budget.
-_H1_MAX = 24
-_M5_MAX = 3
-_H1_CACHE: OrderedDict[str, object] = OrderedDict()
-_NATIVE_CACHE: OrderedDict[tuple[str, str], object] = OrderedDict()
+#: unchanged) while making peak memory a constant instead of a function of universe size.
+#:
+#: BUDGETED IN BARS, NOT IN FRAMES (2026-09-05, when the docket gained the M1..D1 ladder). Two
+#: caches with two hand-set frame counts -- `_H1_MAX = 24`, `_M5_MAX = 3` -- encoded the same
+#: guess twice, and neither survives seven charts: a frame count is a memory budget only while
+#: every frame is the same size, and an M1 frame holds SIXTY bars per H1 bar. Twenty-four M1
+#: frames would be ~1.4 GB against a 1,200 MB cap this sweep already defers cells rather than
+#: exceed. So there is one cache, keyed by (symbol, CHART), bounded by the rows it holds:
+#:
+#:     24 frames x ~54,000 hourly rows (measured on this tree: EURUSD_H1 = 53,899)
+#:                                                            = ~1,300,000 rows
+#:
+#: which is exactly the residency `_H1_MAX = 24` bought, so the hourly docket sees no change at
+#: all. The most-recently-used frame is never evicted for exceeding the budget on its own: on a
+#: fine chart one frame can, and evicting it would re-read the parquet for the very next cell on
+#: the same symbol -- an under-sized cache here is silent, it only ever looks like a slow box.
+FRAME_CACHE_ROWS = 1_300_000
+_FRAME_CACHE: OrderedDict[tuple[str, str], object] = OrderedDict()
+
+#: Families PINNED to one chart whatever a candidate's params say. `lvc_asia_london` reproduces a
+#: public EA on native M5 bars with defaults pinned to a named blob, so a params `timeframe` must
+#: not be able to move it -- that would be a different strategy under the same certificate.
+_PINNED_TIMEFRAME = {"lvc_asia_london": "M5"}
+
+
+def timeframe_of(params: dict | None, family: str = "") -> str:
+    """The chart a cell runs on: its family's pin, else its params, else H1.
+
+    H1 BY ABSENCE is the desk-wide spelling (`research/frontier_identity`): every cell, cache
+    entry, certificate and clock written before the ladder is an H1 one, and naming H1 explicitly
+    would rename all of them at once.
+    """
+    if family in _PINNED_TIMEFRAME:
+        return _PINNED_TIMEFRAME[family]
+    return str((params or {}).get("timeframe") or "H1").upper()
+
+
+def _frame_rows(frame) -> int:
+    try:
+        return int(len(frame))
+    except TypeError:
+        return 0
+
+
+def _bars_for(sym: str, timeframe: str = "H1"):
+    """`<SYM>_<TF>.parquet` normalised to ITS OWN bar clock, or None when the chart is absent."""
+    key = (str(sym), str(timeframe).upper())
+    if key in _FRAME_CACHE:
+        _FRAME_CACHE.move_to_end(key)
+        return _FRAME_CACHE[key]
+    pq = UNI / f"{key[0]}_{key[1]}.parquet"
+    if not pq.exists():
+        return None
+    # `families._h1` no longer FORCES an hourly clock: it normalises a frame that already is a
+    # chart and hands it back on that chart (it used to resample an M15 parquet of 100,000 bars
+    # into 25,001 H1 bars, silently). Same call, byte-identical H1 result, M5 stays M5.
+    frame = families._h1(pd.read_parquet(pq))
+    if not isinstance(frame.index, pd.DatetimeIndex) or len(frame) == 0:
+        return None
+    _FRAME_CACHE[key] = frame
+    # COUNTED, NOT TRACKED. A running total beside the dict it describes is a second record of one
+    # fact: a caller that clears the cache without resetting the total leaves it evicting to a
+    # single entry forever, which presents as a slow box and nothing else. Two dozen frames.
+    while len(_FRAME_CACHE) > 1 and sum(
+            _frame_rows(f) for f in _FRAME_CACHE.values()) > FRAME_CACHE_ROWS:
+        _FRAME_CACHE.popitem(last=False)
+    return frame
 
 
 def _h1_for(sym: str):
-    frame = _H1_CACHE.get(sym)
-    if frame is None:
-        pq = UNI / f"{sym}_H1.parquet"
-        if not pq.exists():
-            return None
-        frame = families._h1(pd.read_parquet(pq))
-        _H1_CACHE[sym] = frame
-        while len(_H1_CACHE) > _H1_MAX:
-            _H1_CACHE.popitem(last=False)
-    else:
-        _H1_CACHE.move_to_end(sym)
-    return frame
+    """The symbol's HOURLY bars. Kept by name: callers outside this module ask for H1 by name."""
+    return _bars_for(sym, "H1")
 
 
-def _frame_for(sym: str, family: str):
-    """Load the family-authorized clock; never silently resample an M5 hypothesis to H1."""
-    if family != "lvc_asia_london":
-        return _h1_for(sym)
-    key = (sym, "M5")
-    frame = _NATIVE_CACHE.get(key)
-    if frame is None:
-        pq = UNI / f"{sym}_M5.parquet"
-        if not pq.exists():
-            return None
-        frame = pd.read_parquet(pq).sort_index()
-        if not isinstance(frame.index, pd.DatetimeIndex):
-            return None
-        frame.index = (frame.index.tz_localize("UTC") if frame.index.tz is None
-                       else frame.index.tz_convert("UTC"))
-        frame = frame[~frame.index.duplicated(keep="last")]
-        _NATIVE_CACHE[key] = frame
-        while len(_NATIVE_CACHE) > _M5_MAX:
-            _NATIVE_CACHE.popitem(last=False)
-    else:
-        _NATIVE_CACHE.move_to_end(key)
-    return frame
+def _frame_for(sym: str, family: str, params: dict | None = None):
+    """Load the cell's authorized clock; never silently resample an M5 hypothesis to H1."""
+    return _bars_for(sym, timeframe_of(params, family))
 
 
 def build_cell(sym: str, family: str, params: dict, meta: dict,
@@ -282,15 +326,26 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     family -- the desk's only certificates outside session_range_breakout, against a
     largest_family_share of 0.87 -- never started a forward clock at all.
     """
+    timeframe = timeframe_of(params, family)
     if h1_override is not None:
         # NEVER silently resample: `_frame_for` exists to keep an M5-native hypothesis off an H1
         # clock, and an override must not become the hole in that rule. A caller handing H1 bars
-        # for an M5 family is a wiring error, and returning None reports it as one.
-        if family == "lvc_asia_london":
+        # for a cell hunted on another chart is a wiring error, and returning None reports it as
+        # one. The check used to name `lvc_asia_london` alone because that was the only non-H1
+        # cell that existed; it is now the rule for every chart on the ladder, asked of the
+        # OVERRIDE ITSELF rather than of a family list, so a caller cannot open the hole by
+        # inventing a new family.
+        # `.get`, NOT `[...]`: a candidate can carry any string in `timeframe` (a miner spelling
+        # it "1h", a hand-edited row), and a KeyError raised HERE is outside every try in this
+        # function -- it would take the whole hourly sweep down over one malformed row. An
+        # unknown chart cannot be matched, so the override is refused and the cell is
+        # unbuildable, which is what it is.
+        want = _TF_MINUTES.get(timeframe)
+        if timeframe != "H1" and families.bar_minutes(h1_override) != want:
             return None
         h1 = families._h1(h1_override)
     else:
-        h1 = _frame_for(sym, family)
+        h1 = _frame_for(sym, family, params)
     if h1 is None:
         return None
     # THE GAUNTLET MUST REACH EVERY FAMILY, not just the breakout module. Looking only in
@@ -319,14 +374,21 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
             call_params["symbol"] = sym
         elif family in {"relative_value", "correlation_regime"}:
             peer_symbol = call_params.pop("peer_symbol", None)
-            call_params["peer"] = inputs._bars(str(peer_symbol)) if peer_symbol else None
-        elif family == "cross_asset_residual":
+            call_params["peer"] = (inputs._bars(str(peer_symbol), timeframe)
+                                   if peer_symbol else None)
+        # `pca_residual` TAKES THE SAME `factors` ARGUMENT and was absent from this branch, so
+        # every one of its cells rebuilt here with factors=None and hit its own four-factor
+        # refusal -- the identical defect `family_inputs` records having fixed on ITS side of the
+        # same mapping ("301 cells failed to build with 'parquet missing or build failed', a
+        # message that names the wrong cause"). Two implementations of one rule, and only one of
+        # them was repaired.
+        elif family in {"cross_asset_residual", "pca_residual"}:
             factor_symbols = call_params.pop("factor_symbols", [])
-            call_params["factors"] = [d for d in (inputs._bars(str(s)) for s in factor_symbols)
-                                      if d is not None]
+            call_params["factors"] = [d for d in (inputs._bars(str(s), timeframe)
+                                                  for s in factor_symbols) if d is not None]
         elif family in {"liquidity_regime", "orderflow_imbalance"}:
             call_params.pop("input_source", None)
-            spread, flow = inputs._tape_series(sym, h1.index)
+            spread, flow = inputs._tape_series(sym, h1.index, timeframe)
             call_params["spread_series" if family == "liquidity_regime" else "flow"] = (
                 spread if family == "liquidity_regime" else flow
             )
@@ -346,6 +408,14 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
             if "ext_" in feature:
                 from research.edge_search import resolve_inputs
 
+                # THE EXTERNAL UNIVERSE IS HOURLY, AND SAYING SO IS THE HONEST OPTION.
+                # `edge_search._close` reads `<SYM>_H1.parquet` for every peer it builds a
+                # primitive from, so listing the cell's own chart here would name a set of
+                # symbols and then quietly load their H1 closes anyway. The primitives are
+                # reindexed causally onto this cell's finer index by `_match_clock`, so a
+                # sub-hourly `discovered` cell is conditioned on an HOURLY external series --
+                # true, coarser than the cell, and now written down instead of implied. Wiring
+                # edge_search to the ladder is its own change; nothing here pretends it is done.
                 all_symbols = sorted(p.stem.removesuffix("_H1")
                                      for p in UNI.glob("*_H1.parquet"))
                 call_params["extra"] = resolve_inputs(sym, h1.index, all_symbols)
@@ -353,6 +423,12 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
         print(f"  INPUT-FAIL {sym}.{family}: {type(exc).__name__}: {exc}")
         return None
 
+    # `timeframe` NAMES THE CHART TO LOAD, it is not a family argument -- the same rule
+    # `family_inputs.strip_identity_keys` applies to `peer_symbol` and `factor_symbols`. Leaving
+    # it in raises TypeError on every family, which the fallback below would then mistake for
+    # "this family takes no side" and retry, and the second failure returns None: an entire
+    # chart's worth of cells would read as unbuildable.
+    call_params.pop("timeframe", None)
     side = 1  # both sides tested externally; use LONG default
     try:
         sigs = fn(h1, side=side, **call_params)
@@ -369,7 +445,7 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     # 3x "stress" on the pooled number is still cheaper than the real fill.
     # The surface is OPTIONAL: without it the pooled median still applies and the basis is
     # recorded, so an undercharge stays visible instead of becoming the silent default.
-    hour = _modal_fill_hour(sigs)
+    hour = _modal_fill_hour(sigs, timeframe)
     surf = _surface()
     spread_at_hour = None
     cost_basis = "pooled_median_spread"
@@ -403,7 +479,11 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     # direction, on the one call site that decides who gets a certificate.
     costs = (Costs.from_symbol(meta.get(sym, {}), spread_pts=spread_at_hour)
              if spread_at_hour is not None else costs_for(sym, meta))
-    return {"sym": sym, "family": family, "params": params, "df": h1, "sigs": sigs,
+    # `timeframe` ON THE CELL, not only inside params. `cell_id` reads it from either, and a
+    # caller that builds a cell without params (the recertification audit rebuilds from
+    # `authorized_runs`) would otherwise lose the chart between here and its own verdict lookup.
+    return {"sym": sym, "family": family, "params": params, "timeframe": timeframe,
+            "df": h1, "sigs": sigs,
             "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour}
 
 
@@ -473,6 +553,16 @@ def partition_at_economic_prior(specs: list[dict],
             if canon != spec.get("sym"):
                 spec["sym"] = canon
             ok, why = symbol_is_tradeable(canon, meta)
+            if ok:
+                # AND THE CELL'S OWN CHART HAS TO EXIST. Registry membership says the broker
+                # quotes it and the H1 parquet says a clock can replay it; neither says this
+                # desk holds the M5 bars an M5 cell was hunted on. Without this limb such a cell
+                # spends the other nine gates and then fails to build with "parquet missing" --
+                # a message about the wrong file, at the wrong stage, after the compute is spent.
+                _tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
+                if _tf != "H1" and not (UNI / f"{canon}_{_tf}.parquet").exists():
+                    ok, why = False, (f"symbol {canon!r} has no {canon}_{_tf}.parquet; the chart "
+                                      f"this cell was hunted on is not on this box")
             if not ok:
                 rejected.append({
                     "cell": cell_id(spec),
@@ -552,10 +642,27 @@ def _save_build_cursor(cursor: dict[str, str], built: set[str]) -> None:
         print(f"  build cursor NOT saved ({exc}); the next sweep repeats this rotation")
 
 
-def _cache_key(sym: str, family: str, params: dict, last_day: str) -> str:
+def _cache_key(sym: str, family: str, params: dict, last_day: str,
+               timeframe: str | None = None) -> str:
+    """The content address of one cell's daily series.
+
+    THE CHART IS ITS OWN FIELD, not merely a member of `params` (2026-09-05). It does normally
+    ride in params and so would already change this digest -- but this cache is the exact place
+    where a lost timeframe becomes an UNDETECTABLE corruption rather than a bug: two cells that
+    hash the same SERVE EACH OTHER'S RETURNS, and every number downstream stays internally
+    consistent, so no gate, no census and no report can see it. A family pinned to a chart
+    (`lvc_asia_london`) carries no `timeframe` in params at all and would collide with an H1 cell
+    of the same name on exactly this path. Naming the field costs one key and removes the class.
+
+    `timeframe=None` resolves through `timeframe_of`, so the H1 digest is byte-identical to what
+    it has always been and yesterday's cache stays warm.
+    """
     import hashlib
-    blob = json.dumps({"s": sym, "f": family, "p": params, "d": last_day},
-                      sort_keys=True, default=str)
+    tf = timeframe_of(params, family) if timeframe is None else str(timeframe).upper()
+    payload = {"s": sym, "f": family, "p": params, "d": last_day}
+    if tf != "H1":
+        payload["tf"] = tf
+    blob = json.dumps(payload, sort_keys=True, default=str)
     return hashlib.sha1(blob.encode()).hexdigest()
 
 
@@ -989,20 +1096,27 @@ def main():
               f"DEFERRED this pass -- judging them rather than halting certification. The "
               f"exclusion switches on with the first stamped donation and only tightens after.")
 
-    # Group by unique (sym, family, params) combos
+    # Group by unique (sym, CHART, family, params) combos. A proposer that carries the chart on
+    # the ROW rather than in params (the orthogonal sweep writes both) must not have it dropped
+    # here: two rows differing only by chart are two cells, and folding them would hand one
+    # verdict to both.
     cells = {}
     for h in survivors:
         sym = h.get("symbol")
         fam = h.get("family")
-        params = h.get("params", {})
+        params = dict(h.get("params") or {})
         if not sym or not fam:
             continue
+        row_tf = str(h.get("timeframe") or "").upper()
+        if row_tf and row_tf != "H1" and "timeframe" not in params:
+            params["timeframe"] = row_tf
         key = f"{sym}.{fam}.{json.dumps(params, sort_keys=True)}"
         if key not in cells:
             cells[key] = {
                 "sym": sym,
                 "family": fam,
                 "params": params,
+                "timeframe": timeframe_of(params, str(fam)),
                 "mechanism_status": h.get("mechanism_status"),
                 "mechanism_note": h.get("mechanism_note"),
             }
@@ -1088,26 +1202,37 @@ def main():
     # reason. Verdicts are unaffected -- cells are independent and judged by the same matrix.
     _cursor = _build_cursor()
     _built_syms: set[str] = set()
+    # CHART GROUPS STAY CONTIGUOUS INSIDE SYMBOL GROUPS, for the same reason symbol groups stay
+    # contiguous at all: the frame cache is what makes the build cheap, and one symbol's M5 and
+    # H1 frames are two different entries in it.
     eligible_specs = sorted(
         eligible_specs,
         key=lambda sp: (_cursor.get(str(sp.get("sym") or ""), ""),
                         str(sp.get("sym") or ""),
+                        timeframe_of(sp.get("params"), str(sp.get("family") or "")),
                         str(sp.get("family") or "")))
     for spec in eligible_specs:
         key = f"{spec['sym']}.{spec['family']}.{json.dumps(spec['params'], sort_keys=True)}"
-        frame = _h1_for(spec["sym"])
+        spec_tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
+        # THE CELL'S OWN CHART DECIDES ITS DATA-DAY. `last_day` is both the cache key's rollover
+        # and the boundary `_series_trim_partial` drops the partial day at; taking it from H1 for
+        # an M5 cell would key the cell to a day its own tape may not have reached and trim its
+        # series at a boundary from a different feed.
+        frame = _bars_for(spec["sym"], spec_tf)
         if frame is None or len(frame) == 0:
-            print(f"  SKIP {key}: parquet missing")
+            print(f"  SKIP {key}: {spec_tf} parquet missing")
             blocked_build.append({**spec, "downstream_status": "NOT_RUN_DATA_MISSING",
-                                  "why": "point-in-time H1 parquet is missing or empty"})
+                                  "why": f"point-in-time {spec_tf} parquet is missing or empty"})
             continue
         last_day = frame.index[-1].normalize()
-        ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()))
+        ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()),
+                          spec_tf)
         cached = cache_load(ckey)
         if cached is not None:
             ds1, ds3 = cached
             cell_objs.append({
                 "sym": spec["sym"], "family": spec["family"], "params": spec["params"],
+                "timeframe": spec_tf,
                 "df": None, "sigs": None, "costs": None,
                 "_cached_ds": ds1, "_cached_ds3": ds3, "_ckey": ckey, "_last_day": last_day,
                 "mechanism_status": spec.get("mechanism_status"),

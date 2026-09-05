@@ -291,10 +291,18 @@ _SECONDARY: dict[str, str] = {"hunt_coverage": "kimi_hunter"}
 #: organ -> the script that re-fires it. Only organs the ER can actually invoke appear; a missing
 #: runner is reported as NO-RUNNER rather than silently skipped, because an untreatable patient
 #: nobody names is the failure this organ exists to end.
+#
+# THE TWO BLINDSPOT PATHS WERE WRONG FROM THE DAY THEY WERE WRITTEN, 2026-09-05. They read
+# `scripts/run_blindspot_max.py` and `scripts/run_blindspot_prober.py`; neither name has ever
+# existed in this repository's history -- the organs are `scripts/blindspot_max.py` and
+# `scripts/blindspot_prober.py`, which is how daily_research_cycle.py and build_enforcement_matrix
+# both spell them. The ER therefore reported NO-RUNNER for exactly the two organs it COULD have
+# treated, and a triage that files its two treatable patients as untreatable is worse than one
+# that admits it has no ward: the miss reads as a fact about the desk rather than a typo.
 _RUNNERS: dict[str, str] = {
     "capability_hunt": "ops/run_capability_hunt.sh",
-    "blindspot_max": "scripts/run_blindspot_max.py",
-    "blindspot_prober": "scripts/run_blindspot_prober.py",
+    "blindspot_max": "scripts/blindspot_max.py",
+    "blindspot_prober": "scripts/blindspot_prober.py",
     "kimi_hunter": "scripts/kimi_hunter.py",
     "deep_sweep_meta": "ops/run_deep_sweep.sh",
 }

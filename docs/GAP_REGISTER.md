@@ -1,5 +1,16 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Rows opened before 2026-08-18 name organs, venues and capabilities of the retired crypto-exchange desk, and many of those organs have since been deleted. Read an old row as a dated statement of what was missing THEN; a gap whose subject no longer exists is closed by the retirement, not outstanding.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
+
 _MERGE 2026-08-04 (two account lines united; nothing dropped): the governance line's newest
 re-rank is 2026-08-01T17:35Z (directly below); the execution line's 2026-08-02T13:20Z re-rank —
 the newest overall, and the owner of the current RANK list — sits below the principal-override

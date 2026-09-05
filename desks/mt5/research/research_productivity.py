@@ -49,7 +49,19 @@ def _rows(path: Path) -> list:
         return []
     if isinstance(d, list):
         return d
-    for k in ("discoveries", "candidates", "verdicts", "tasks", "rows"):
+    # `hypotheses` added 2026-09-05, and its absence was reporting the desk's headline conversion
+    # number as ZERO. `miner_candidate_compiler` writes its admitted candidates under
+    # `hypotheses`, not `candidates` -- the only top-level `candidates` in that file is a per-source
+    # COUNT inside `per_source`, not a list -- so this helper fell through every key and returned
+    # []. Measured on the 2026-09-04 artifact: the compiler had written `executable_candidates:
+    # 372` with 372 rows in `hypotheses`, and RESEARCH_PRODUCTIVITY published `compiled: 0` and
+    # `intake_to_compiled: 0.0` beside it. A funnel whose second stage always reads zero cannot
+    # locate a bottleneck, and it names the wrong one: `deepening` is chosen whenever its backlog
+    # exceeds 100, which it does trivially when nothing is ever counted as compiled.
+    #
+    # Ordered AFTER `candidates` so a file that genuinely uses that key is unaffected; the two
+    # never co-occur as lists in the same artifact.
+    for k in ("discoveries", "candidates", "hypotheses", "verdicts", "tasks", "rows"):
         if isinstance(d.get(k), list):
             return d[k]
     return []

@@ -3253,6 +3253,7 @@ SYSTEMD unit="quant-perishability.timer" on="*-*-* 05:40:00" exec="scripts/check
 SYSTEMD unit="quant-prompt-prefix.timer" on="*-*-* 04,16:50:00 UTC" exec="scripts/check_prompt_prefix.py"
 SYSTEMD unit="quant-queue-guard.timer" on="*:4/10" exec="scripts/check_research_queue.py"
 SYSTEMD unit="quant-quota-resume.timer" on="boot+180 then every 300" exec="scripts/check_quota_resume.py"
+SYSTEMD unit="quant-recertify-canon.timer" on="*-*-* 06:20:00" exec="desks/mt5/scripts/recertify_canon.py"
 SYSTEMD unit="quant-regime-monitor.timer" on="*-*-* *:08/30:00" exec="desks/mt5/research/regime_monitor.py"
 SYSTEMD unit="quant-research-health-weekly.timer" on="Sun 06:15" exec="scripts/check_research_health.py"
 SYSTEMD unit="quant-research-health.timer" on="*:03,33" exec="scripts/check_research_health.py"
@@ -3330,3 +3331,12 @@ SYSTEMD unit="shadow-forward.timer" on="*-*-* 05:00:00" exec="desks/mt5/research
 # full-budget runs. EVIDENCE: desks/mt5/reports/HOURLY_DISCOVERY.json (per-organ status),
 # desks/mt5/data/hourly_discovery_state.json (ordering by staleness).
 SYSTEMD unit="quant-hourly-discovery.timer" on="*:35" exec="ops/run_hourly_discovery.sh"
+
+# scripts/check_absolute_ceiling.py -- THE COMPLETION AUDITOR for the principal's ceiling mandate
+# (2026-09-05). 94 capabilities; every stage DERIVED from the tree, never declared, so "is the
+# desk finished?" stops being answered from memory. Daily rather than hourly: the answer changes
+# when code lands, not when a clock ticks, and a daily row makes the burn-down readable.
+# It also re-checks the one FIXED policy every run -- that nothing has started scaling the 20%
+# nominal heat floor -- which is the check that must never be skipped because it is cheap.
+# EVIDENCE: desks/mt5/reports/ABSOLUTE_CEILING_STATUS.json
+15 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_absolute_ceiling.py >> data/cro_ai_logs/absolute_ceiling.log 2>&1

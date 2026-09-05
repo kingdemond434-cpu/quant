@@ -241,7 +241,10 @@ def test_a_job_is_admitted_on_its_measured_peak_not_its_declaration(tmp_path, mo
     assert jl.measured_need_mb("gauntlet", 1200)[0] == 1200        # nothing measured yet
     jl.record_peak("gauntlet", 4882)
     need, why = jl.measured_need_mb("gauntlet", 1200)
-    assert need == 4882 and "actually uses" in why
+    # Matched on the NUMBER, not the prose. The statistic behind this figure changed from max to
+    # p75 on 2026-09-05 (one 4882MB outlier had locked the gauntlet out of the box for a day), and
+    # pinning the wording made a correct fix look like a regression.
+    assert need == 4882 and "4882MB" in why
 
 
 def test_the_declaration_is_a_floor_and_a_light_run_never_lowers_it(tmp_path, monkeypatch):

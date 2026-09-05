@@ -66,6 +66,13 @@ def desk(tmp_path, monkeypatch):
     authority: set = set()
     monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set(authority))
 
+    # CAPITAL NOW REQUIRES A MEASURED dE[log W] (principal 2026-09-05). These tests exercise the
+    # scalp lane's MECHANICS, so the allocator is made to admit exactly the keys each test writes,
+    # exactly as the fixture already grants gate authority. The criterion has its own file.
+    alloc = tmp_path / "reports" / "pf_allocation.json"
+    alloc.parent.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(promoter, "ALLOCATION", alloc)
+
     class Desk:
         def certify(self, *names: str) -> None:
             for n in names:
@@ -74,6 +81,15 @@ def desk(tmp_path, monkeypatch):
         def scalp(self, rows: dict) -> None:
             (shadow_dir / "scalp_shadow_state.json").write_text(
                 json.dumps({"sleeves": rows}), encoding="utf-8")
+            stamp = datetime.now(tz=UTC).isoformat()
+            alloc.write_text(json.dumps({
+                "generated_utc": stamp, "heat": {"total": 0.20}, "book": {}, "book_zeroed": {},
+                "admission": {"status": "MEASURED", "measured_utc": stamp, "universe": {},
+                              "candidates": {k: {"symbol": "", "family": "", "selector": "",
+                                                 "delta_elogw_per_day": 0.0004,
+                                                 "heat_earned": promoter.PROMOTED_RISK_FRAC,
+                                                 "admit": True, "why": "fixture: admitted"}
+                                             for k in rows}}}), encoding="utf-8")
 
         def read_scalp(self) -> dict:
             return json.loads((shadow_dir / "scalp_shadow_state.json").read_text("utf-8"))

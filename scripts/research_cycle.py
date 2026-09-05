@@ -115,7 +115,12 @@ def _detectors() -> dict[str, bool]:
         "institutional_knowledge_base": (_ROOT / "docs/institutional_knowledge.md").exists(),
         "growth_audit_engine": (_ROOT / "scripts/run_growth_audit.py").exists(),
         "execution_tca_fill_log": (_ROOT / "web/tca.json").exists(),
-        "funding_decay_predictor": (_ROOT / "web/funding_decay_backtest.json").exists(),
+        # `funding_decay_predictor` removed 2026-09-05 (universe mandate): the row it detected
+        # asked whether the desk could predict the NEXT 8h PERP FUNDING print and exit the carry
+        # on it. Funding prints are a crypto-exchange mechanic; an MT5/Fusion book pays a broker
+        # swap on a daily rollover instead, and that financing leg has its own organ
+        # (desks/mt5/research/carry_state.py, fenced by scripts/check_carry_state.py). Its
+        # detector artifact web/funding_decay_backtest.json had no writer left either.
         # A FILE-EXISTENCE detector marked this done on 2026-07-18 and kept marking it done for
         # 8 days while the connector and the stage machine had no production caller at all --
         # measuring the proxy (a file on disk) instead of the thing the row names (a wired live
@@ -240,17 +245,13 @@ _ENG: list[dict[str, Any]] = [
             "cycle calls it, and it drives the connector + stage machine + naked-position "
             "reconcile. (Was 'binance_live.py exists', which read done for 8 days while nothing "
             "called either module.)"},
-    {"id": "funding_decay_predictor",
-     "title": "Funding-decay predictor: rank/exit carry on PREDICTED next-window funding",
-     "impact": 0.50, "p": 0.30, "effort_h": 4.0,
-     "why": "2026-07-12 external review, the one new alpha idea that survived triage (EV gate "
-            "QUEUE, funding-family x2.0 prior; logged in data/ev_gate_audit.json). Mechanism: "
-            "premium/OI/taker-flow predict the NEXT 8h funding print; exit the moment marginal "
-            "expected funding < execution cost instead of waiting for the realized negative "
-            "print -> harvests more per cycle AND defends the lone validated edge's decay "
-            "margin. PRE-REGISTERED before test: predicted-funding ranking vs realized-funding "
-            "ranking (current executor baseline), full gauntlet, net of ADV costs; verdict to "
-            "graveyard or shadow like everything else. Detector: web/funding_decay_backtest.json."},
+    # THE funding_decay_predictor ROW IS RETIRED, 2026-09-05 (universe mandate). It proposed
+    # predicting the next 8h PERP FUNDING print from premium/OI/taker-flow and exiting the carry
+    # when marginal expected funding fell below execution cost. Every input is crypto-exchange
+    # native and the sleeve it defended is deleted. Retired rather than repointed: the MT5
+    # financing question ("is the swap leg priced on the live book?") is a different question with
+    # its own organ, and dressing a funding-print predictor in swap vocabulary would put a
+    # pre-registration on a quantity this desk does not observe.
     {"id": "execution_tca_fill_log",
      "title": "Per-fill TCA log + funding-deadline-aware maker patience (execution edge P0)",
      "impact": 0.45, "p": 0.85, "effort_h": 3.0,

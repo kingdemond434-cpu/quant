@@ -9,7 +9,6 @@ which is a different H4/D1-only executor.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import tempfile
@@ -35,11 +34,18 @@ def _write_atomic(path: Path, value: Any) -> None:
 
 
 def _cell_id(symbol: str, family: str, params: dict[str, Any]) -> str:
-    """The canonical executable identity used by the external gauntlet."""
-    if "rr" in params or "wait_bars" in params:
-        return f"{symbol}.{family}.rr={params.get('rr', '?')}_wb={params.get('wait_bars', '?')}"
-    payload = json.dumps(params, sort_keys=True, separators=(",", ":"), default=str)
-    return f"{symbol}.{family}.p={hashlib.sha256(payload.encode()).hexdigest()[:16]}"
+    """The canonical executable identity used by the external gauntlet.
+
+    IMPORTED, NEVER RESTATED (2026-09-05). This was a second implementation of `cell_id` and it
+    had already drifted from the first in the way that costs the most: its legacy short-form
+    predicate was `"rr" in params or "wait_bars" in params`, the exact bug `frontier_identity`
+    fixed on 2026-08-29, where 24 distinct trials printed as 8 ids with opposite-signed Sharpes
+    under one name. So this reconciler was matching docket rows to verdicts by a DIFFERENT rule
+    than the judge used, and it would have missed every non-H1 cell for the same reason -- a
+    second spelling of an identity is a silent mismatch waiting for the first divergence.
+    """
+    from desks.mt5.research.frontier_identity import cell_id as _canonical
+    return _canonical({"sym": symbol, "family": family, "params": params})
 
 
 def reconcile(root: Path, *, write: bool = True) -> dict[str, Any]:
