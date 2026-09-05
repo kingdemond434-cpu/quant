@@ -113,7 +113,34 @@ EVIDENCE_MAX_AGE_S = 3600
 #: RAISING THE TOP IS THE ONE EDIT THAT MATTERS: the principal removed the fixed 30% cap on
 #: 2026-09-05, and until this tuple extends past 0.30 no measurement can license a heat above it
 #: -- not because a rule forbids it, but because nothing sampled it.
-CURVE_GRID = (0.02, 0.04, 0.06, 0.08, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225, 0.25, 0.275, 0.30)
+CURVE_GRID = (0.02, 0.04, 0.06, 0.08, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225, 0.25, 0.275,
+              0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45)
+
+#: The highest heat the growth curve is MEASURED at. A MEASUREMENT bound, not a policy bound, and
+#: the distinction is the whole point of this constant existing separately from HEAT_HARD_CEILING.
+#:
+#: THE 30% CAP WAS STILL OPERATIVE, ONE LAYER BELOW WHERE ANYONE WAS LOOKING. The principal
+#: removed the fixed ceiling on 2026-09-05 and `heat_policy.measured_ceiling` was rewritten to read
+#: the bound off the curve, so it CAN return 34%, 39%, 45%. But `heat_curve` skipped every grid
+#: point above HEAT_HARD_CEILING and solved with `hard_cap=HEAT_HARD_CEILING`, so the curve it
+#: reads could never CONTAIN a point above 30% -- and `measured_ceiling` never returns past the
+#: last heat anyone sampled. The removal was real and completely inert: the constant had stopped
+#: being the policy and was still the sampler.
+#:
+#: THIS CANNOT RAISE TODAY'S HEAT, and that is what makes it safe. It changes what is MEASURED,
+#: never what is DEPLOYED. `measured_ceiling` still returns the peak where growth turns over,
+#: still refuses to run past the last sampled point, still falls back to HEAT_HARD_CEILING on an
+#: unreadable curve, and still clamps to HEAT_TARGET when growth is non-positive anywhere. On the
+#: book that produced the recorded curve -- robust score already negative at 30% -- it will keep
+#: returning ~22%, and the four new grid points will simply record negative growth. What changes
+#: is that a FUTURE book with genuine breadth can earn 45%, instead of being silently unable to
+#: express it.
+#:
+#: 0.45 because that is the number the principal named as the top of the range worth measuring
+#: ("20, 21, 23, 25, 27, 30, 34, 39, 45"). Raising it further is a decision about how far the desk
+#: is willing to SIMULATE, which costs solver time and nothing else -- it is not a decision about
+#: how much risk to take, because no heat is deployed that the curve did not first justify.
+CURVE_SAMPLE_MAX = 0.45
 
 #: Round-trip execution cost charged against a unit of heat moved, in account fraction. Turnover
 #: below the growth it buys is not an improvement, and this is the price that decides.
@@ -713,13 +740,16 @@ def growth_curve(ev: list[SleeveEvidence], worlds: Worlds, bounds: dict[str, flo
     """
     curve: dict[float, float] = {}
     for h in CURVE_GRID:
-        if h > HEAT_HARD_CEILING:
+        # Bounded by the MEASUREMENT ceiling, not by the policy one. Sampling a heat is not
+        # deploying it: `heat_policy.measured_ceiling` reads this curve and still refuses every
+        # heat past its turnover point, so measuring 45% is how the desk learns 45% is bad.
+        if h > CURVE_SAMPLE_MAX:
             continue
         ub = {k: min(v, h) for k, v in bounds.items()}
         if sum(ub.values()) < h:
             continue                     # bounds cannot fund this heat; not a growth finding
         try:
-            r = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=h, cfg=cfg, worlds=worlds,
+            r = optimise(ev, hard_cap=CURVE_SAMPLE_MAX, target=h, cfg=cfg, worlds=worlds,
                          max_per_sleeve=ub)
         except ValueError:
             continue
@@ -906,15 +936,21 @@ def fill_floor(book: AllocationResult, ev: list[SleeveEvidence], target: float,
     g_before = book.mean_log_growth
     for level, bnd, keep_family in levels:
         try:
-            cand = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=target, cfg=cfg,
+            # `max(..., target)` because the SOLVER's bound must never sit below the heat the
+            # POLICY licensed. `target` arrives from heat_policy, which is itself bounded by the
+            # measured curve, so this can only ever admit a heat the curve already justified --
+            # and with HEAT_HARD_CEILING as the floor of the bound, nothing below 30% changes.
+            # Before this, a policy that measured 38% solved against a 30% cap and quietly
+            # delivered 30%, which reads on every report as "the optimum was 30".
+            cand = optimise(ev, hard_cap=max(HEAT_HARD_CEILING, target), target=target, cfg=cfg,
                             worlds=worlds, max_per_sleeve=bnd, warm_start=book.heat or None)
             if keep_family:
                 capped = enforce_family_cap(cand.heat, family_of, cand.total_heat)
                 if not all(math.isinf(v) for v in capped.values()):
                     tight = {k: min(bnd.get(k, math.inf), capped.get(k, math.inf))
                              for k in bnd}
-                    cand = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=target, cfg=cfg,
-                                    worlds=worlds, max_per_sleeve=tight,
+                    cand = optimise(ev, hard_cap=max(HEAT_HARD_CEILING, target), target=target,
+                                    cfg=cfg, worlds=worlds, max_per_sleeve=tight,
                                     warm_start=cand.heat or None)
         except ValueError:
             continue                                  # these bounds cannot fund it; next level
