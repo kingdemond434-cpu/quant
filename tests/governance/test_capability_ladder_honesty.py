@@ -182,8 +182,11 @@ class TestTheLadderIsOrdered:
 
 #: Decision-affecting nodes that no MODULE_RENT line can name. A RATCHET: it may fall and may
 #: never rise. Measured 2026-09-05 at 51 of 71 nodes, from a rent registry of 62 modules whose
-#: names overlap the graph's by exactly 6.
-MAX_UNBILLABLE = 51
+#: names overlapped the graph's by exactly 6. Lowered to 42 the same day by adding rent lines
+#: for the nine discovery organs whose RESEARCH_PNL source string was CONFIRMED in the
+#: producers rather than guessed; the rest stamp no source, and inventing one would make a node
+#: read billable while nothing could ever price it.
+MAX_UNBILLABLE = 42
 
 
 def test_no_new_organ_lands_that_the_rent_ledger_cannot_price() -> None:

@@ -254,6 +254,43 @@ MODULES: tuple[Module, ...] = (
            "measure_research_source", "desks/mt5/recorders/vol_archive.py",
            key="vol_archive", sources=("vol_archive", "vol_term", "variance_premium",
                                        "implied_vol")),
+    # ------------------------------------------------------------------------------------------
+    # NINE DISCOVERY ORGANS THE RENT LEDGER COULD NOT NAME (2026-09-05).
+    #
+    # Measured that day: of 62 rent modules and 71 capability-graph nodes, exactly SIX names
+    # coincided. The ledger bills MECHANISMS; the graph names ORGANS. So 51 decision-affecting
+    # organs were unpriceable BY CONSTRUCTION -- the MEASURED rung was unreachable for them however
+    # long the desk ran, and that read in every report as "not enough evidence yet" rather than as
+    # the wiring defect it was.
+    #
+    # These nine are added because each one's source string was CONFIRMED in the producers rather
+    # than guessed: a grep for `source[:=]"<name>"` finds 5 sites for excursions, 8 for
+    # regime_coverage, 5 for opportunity_curve, 3 for alpha_evolution, and 2 each for the rest, so
+    # RESEARCH_PNL will key on exactly these names when the hypotheses land. The remaining organs
+    # (alpha_genome, anomaly_factory, microstructure_miner, tail_alpha_search, transition_alpha,
+    # style_premia_sweep, cross_asset_graph, weak_signal_compiler, survivor_distiller,
+    # world_causal_graph, macro_intel, mutation_yield, factor_model_coevolution) stamp NO source
+    # string, so a line here would name a row that never appears. That is worse than the honest
+    # gap: it would make the node read `billable` while nothing could ever price it, which is the
+    # measurement theatre this whole ledger exists to prevent. Their fix is a change to each
+    # PRODUCER -- stamp a source -- and it is tracked as the remaining ratchet, not faked here.
+    *(Module(name, "proposer", RESEARCH_PNL,
+             "expected log-wealth per day carried in the funded book by certificates whose "
+             "hypotheses this organ sourced, against the declared cost of running it; the "
+             "allocator's own claim, never recomputed here",
+             "measure_research_source", where, key=key, sources=(key,))
+      for name, key, where in (
+          ("excursions", "excursions", "desks/mt5/research/excursions.py"),
+          ("exit_accounts", "exit_accounts", "desks/mt5/research/exit_accounts.py"),
+          ("factor_residual_engine", "factor_residual",
+           "desks/mt5/research/factor_residual_engine.py"),
+          ("missed_growth", "missed_growth", "desks/mt5/research/missed_growth.py"),
+          ("opportunity_curve", "opportunity_curve", "desks/mt5/research/opportunity_curve.py"),
+          ("regime_coverage", "regime_coverage", "desks/mt5/research/regime_coverage.py"),
+          ("revival_engine", "revival_engine", "desks/mt5/research/revival_engine.py"),
+          ("plumbing_miner", "plumbing_miner", "desks/mt5/research/plumbing_miner.py"),
+          ("alpha_evolution", "alpha_evolution", "desks/mt5/research/alpha_evolution.py"),
+      )),
     # THE EXECUTION-LEARNING LINES (2026-09-05, the principal's order). One billable quantity --
     # R per filled trade recovered from execution leakage -- and three claimants. The corpus
     # bills the leakage trend because it is what made leakage decomposable at all; the two models
