@@ -217,7 +217,12 @@ NODES: tuple[Node, ...] = (
     Node("state_admission_run", "desks/mt5/research/state_admission_run.py",
          writes=("desks/mt5/reports/STATE_ADMISSION.json",),
          reads=("backups/moat/shadow_ledgers/", "desks/mt5/data/live_ledger.jsonl"),
-         authority=("conditioning",)),
+         authority=("conditioning",),
+         # The admission run acts ONLY through the dimensions it admits, and MODULE_RENT prices
+         # each dimension by its out-of-sample gain. Without this run no dimension is admitted, so
+         # the dimensions' rent IS this organ's rent -- the same counterfactual, not a proxy for it.
+         billed_as=("state_dimension:session", "state_dimension:event",
+                    "state_dimension:weekday")),
     Node("pf_allocator", "desks/mt5/research/pf_allocator.py",
          writes=("desks/mt5/reports/ALLOCATOR_PROOF.json", "desks/mt5/data/pf_forecast_log.jsonl",
                  "desks/mt5/reports/pf_allocator.json", "desks/mt5/reports/pf_allocation.json",
@@ -258,7 +263,12 @@ NODES: tuple[Node, ...] = (
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
     Node("capital_modifier_score", "desks/mt5/research/capital_modifier_score.py",
          reads=("desks/mt5/data/capital_modifier_ledger.jsonl", "backups/moat/shadow_ledgers/"),
-         writes=("desks/mt5/reports/CAPITAL_MODIFIERS.json",)),
+         writes=("desks/mt5/reports/CAPITAL_MODIFIERS.json",),
+         # This organ IS the AI capital modifier the rent ledger bills: `measure_conditioning`
+         # prices the heat the modifier moved against what that heat then earned, which is the
+         # with/without of this node exactly. "This includes AI" -- the principal, on the day the
+         # rent ledger was written.
+         billed_as=("ai_capital_modifier",)),
     # EXECUTION INTELLIGENCE AND THE RELEASE: the learned fill/slip surface every cost consumer
     # shares, the netting measurement, and the one live SHA every decision is stamped with.
     Node("fill_surface", "desks/mt5/mt5desk/fill_surface.py",
@@ -399,7 +409,12 @@ NODES: tuple[Node, ...] = (
     Node("regime_monitor", "desks/mt5/research/regime_monitor.py",
          reads=("desks/mt5/data/live_ledger.jsonl", "desks/mt5/reports/shadow/",
                 "desks/mt5/reports/FILTER_VALUE.json"),
-         writes=("desks/mt5/data/regime_state.json",), authority=("hibernate",)),
+         writes=("desks/mt5/data/regime_state.json",), authority=("hibernate",),
+         # The monitor's only authority is hibernation, and the hibernate RAIL is already billed
+         # daily by missed_growth as E[log W without the rail] - E[log W with it]. The rail cannot
+         # fire without this monitor's regime_state, so "without the rail" and "without the
+         # monitor" are the same world and the rail's ledger line prices this organ directly.
+         billed_as=("regime_hibernate",)),
     Node("regime_coverage", "desks/mt5/research/regime_coverage.py",
          reads=("backups/moat/shadow_ledgers/", "desks/mt5/reports/STATE_ADMISSION.json",
                 "desks/mt5/reports/ALPHA_GENOME.json"),

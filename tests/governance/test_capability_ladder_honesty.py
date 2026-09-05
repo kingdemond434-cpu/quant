@@ -191,7 +191,11 @@ class TestTheLadderIsOrdered:
 #: write, four of them under a name that is not the node's. The remaining 30 are not discovery
 #: organs -- gateway, promoter, universal_gate, regime_monitor, execution_twin, fill_surface --
 #: so no RESEARCH_PNL source will ever price them and each needs its own measurement scheme.
-MAX_UNBILLABLE = 30
+#: 27 after mapping three organs that act ONLY through a mechanism the ledger already prices:
+#: regime_monitor through the hibernate rail, state_admission_run through the dimensions it
+#: admits, capital_modifier_score through the AI capital modifier. In each the rail's
+#: counterfactual and the organ's are the same world, so the line prices it directly.
+MAX_UNBILLABLE = 27
 
 
 def test_no_new_organ_lands_that_the_rent_ledger_cannot_price() -> None:
