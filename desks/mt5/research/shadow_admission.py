@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -442,6 +443,30 @@ def power_cure_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
     return out
 
 
+#: Certificates that passed all ten gates and were still dropped before enrolment, with the
+#: reason. Reset at the start of every `authorized_runs` call so it always describes the LAST
+#: pass rather than accumulating across a long-lived process.
+#:
+#: Exposed as module state, not just printed, because the two readers need different things: the
+#: shadow log needs a line a human greps at 3am, and `same_day_enrolment` needs to be able to say
+#: WHY a certificate it is flagging has no clock instead of only that it has none.
+DROPPED_CERTIFICATES: list[dict[str, str]] = []
+
+
+def _drop(name: object, why: str) -> None:
+    """Record and announce a ten-gate certificate that will not reach the forward engine.
+
+    Printed to stderr rather than through a logging framework because this module is imported by
+    the forward engine, the promoter and three scripts, and it has never carried a logger; stderr
+    is what the VPS's own cron redirection already captures for all of them. The prefix matches
+    `shadow_forward`'s ENROL-GAP lines on purpose, so both halves of the same failure grep
+    together.
+    """
+    line = f"ENROL-GAP: certified {name} dropped before enrolment -- {why}"
+    DROPPED_CERTIFICATES.append({"certificate": str(name), "why": why})
+    print(line, file=sys.stderr, flush=True)
+
+
 def authorized_runs(base: Path = BASE,
                     lanes: tuple[str, ...] = ("h1", "scalp")) -> list[dict]:
     """Exactly-specified RUNNABLE certificates: symbol, selector, family AND certified params.
@@ -465,8 +490,27 @@ def authorized_runs(base: Path = BASE,
     parameters from a display name is forbidden. Those rows are re-certified with params by the
     next daily gauntlet pass rather than run on a guess.
     """
+    # Cleared BEFORE the policy early-return, not after: a pass that refuses the whole canon on a
+    # policy mismatch must not leave the previous pass's drops standing as if they were this
+    # pass's findings. This list always describes the run that just happened, never a backlog.
+    DROPPED_CERTIFICATES.clear()
     universal = _read(base / "reports" / "UNIVERSAL_SURVIVORS.json")
     if not is_exact_policy(universal.get("gate_policy")):
+        # THE LARGEST SILENT DROP OF ALL, and this desk has already paid for it once.
+        # `is_exact_policy`'s own docstring records 2026-09-02: "this is the whole reason the desk
+        # had no new forward clocks. Sixty-three certificates passed all ten gates and carried a
+        # valid shadow_spec, and `authorized_specs` returned ZERO." A policy mismatch refuses the
+        # ENTIRE canon in one line, and it did it without saying anything -- so the symptom was
+        # "no new clocks" and the cause was invisible in every log and artifact.
+        #
+        # Reported by name now, with the count of what was refused, so the same outage announces
+        # itself instead of being re-diagnosed from first principles a second time.
+        n = len(universal.get("survivors") or {})
+        _drop(f"<entire canon: {n} survivor row(s)>",
+              f"gate_policy on UNIVERSAL_SURVIVORS.json is not the exact ten-gate attestation "
+              f"({universal.get('gate_policy')!r}); every certificate in the canon is refused "
+              f"together, so NO certificate can enrol until the canon is re-minted under the "
+              f"exact policy")
         return []
     runs: list[dict] = []
     for name, row in (universal.get("survivors") or {}).items():
@@ -475,13 +519,37 @@ def authorized_runs(base: Path = BASE,
         if "h1" not in lanes:
             continue
         if not isinstance(row, dict) or not all_ten_pass(row.get("gates")):
-            continue
+            continue                       # not certified: no clock is owed, nothing to report
+        # PAST THIS LINE EVERY ROW HAS PASSED ALL TEN GATES, so every remaining `continue` drops a
+        # CERTIFICATE -- and until 2026-09-05 all of them dropped it SILENTLY.
+        #
+        # THE DEFECT, off the live dashboard. Four certificates (USDZAR, AUDCHF, CADCHF and
+        # GBPCHF on overnight_gap_decay) sat CERTIFIED-NOT-ENROLLED for 89, 115, 139 and 139
+        # hours. `shadow_forward.certified_sleeves` logs an ENROL-GAP line for every refusal it
+        # makes -- but it can only refuse what it is HANDED, and a certificate dropped here never
+        # reaches it. So the same-day fence reported the breach correctly and the reason for it
+        # existed nowhere: not in the shadow log, not in an artifact, not on the dashboard. The
+        # operator sees "certified 139 hours ago, no clock" and has nothing to act on.
+        #
+        # This is the exact failure `certified_sleeves` names in its own comment -- "a silent skip
+        # is indistinguishable from enrolment that works" -- committed one function upstream of
+        # the place that took care to avoid it. Certification and enrolment are one act
+        # (RESEARCH §6d); a door that closes without saying so breaks that law quietly.
         spec = row.get("shadow_spec")
         if not isinstance(spec, dict):
+            _drop(name, "carries no `shadow_spec`, so there is nothing to enrol from -- the "
+                        "publisher wrote a certificate without the specification that makes it "
+                        "runnable")
             continue
         params = spec.get("params")
         if not isinstance(params, dict):
-            continue                       # ABSENT params -- unrunnable without guessing
+            # `{}` is NOT this case: an empty dict is the complete parameterization "family
+            # defaults", byte-exactly what the gauntlet executed, and excluding it once already
+            # held two overnight_gap_decay certificates un-enrolled (2026-08-27). Only a params
+            # that is absent or not a mapping lands here.
+            _drop(name, f"`shadow_spec.params` is {type(params).__name__}, not a mapping -- "
+                        f"unrunnable without guessing the parameterization that passed")
+            continue
         # {} is NOT "lost parameters": it is the complete parameterization "family defaults",
         # byte-exactly what the gauntlet executed (build_cell with params={}) and what the
         # p=<hash-of-empty> cell identity certifies. Excluding it kept both overnight_gap_decay
