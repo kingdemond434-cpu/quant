@@ -104,7 +104,8 @@ def _shadow_rows() -> list[dict[str, Any]]:
         output.append({
             "name": key, "status": row.get("status"), "trades": n,
             "expectancy_r": exp, "cum_r": cum_r, "max_dd_r": _number(row.get("max_dd_r")),
-            "days": int(_number(row.get("days_active")) or 0), "source": row.get("bar_source"),
+            "days": int(_number(row.get("days_active"), row.get("days")) or 0),
+            "source": row.get("bar_source"),
             "decay_ratio": decay, "promotion_authority": row.get("promotion_authority") is True,
         })
     return sorted(output, key=lambda row: row["expectancy_r"], reverse=True)
@@ -247,7 +248,13 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
             # 1 -- a promote lane reading the stored field would clear a window never served).
             # forward_start is the frozen clock; the wall clock is the other operand. Stored is
             # the fallback only when no forward_start exists.
-            days = int(_number(row.get("days_active")) or 0)
+            # BOTH SPELLINGS, because the lanes do not agree and the reader must not care.
+            # shadow_forward and qquant_shadow write `days_active`; scalp_shadow writes `days`.
+            # Reading only the first showed every scalp sleeve as "day 0/14" -- three gold scalp
+            # sleeves that had been on their forward clock since 2026-08-22 displayed as if they
+            # had started today, for a fortnight. Exactly the defect `_norm_status` fixes one
+            # field over: this tile knew one lane's vocabulary and silently zeroed the others.
+            days = int(_number(row.get("days_active"), row.get("days")) or 0)
             fs = _timestamp(row.get("forward_start"))
             if fs is not None:
                 days = max(0, (datetime.now(UTC) - fs).days)
