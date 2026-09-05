@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "session": "BRAIN_HUNTER_s38",
+  "date": "2026-08-30",
+  "authority": "research evidence only; zero promotion, capital, gate-change or execution authority",
+  "corpora_first": {
+    "artifact": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "usable_executable_evidence": 0,
+    "note": "The Great Goat WorldQuant rows remained transcript-unavailable; no readable mechanism or executable artifact was present."
+  },
+  "screens": [
+    {
+      "repository": "https://github.com/sanqiushu/worldquant-alpha-research-playbook",
+      "queue_origin": "data/brain_hunter_s31_repo_triage.json",
+      "license": null,
+      "verdict": "LICENSE_WALLED",
+      "scope_read": "public GitHub repository metadata and root tree names only",
+      "root_tree": [
+        ".gitignore",
+        "README.md",
+        "SKILL.md",
+        "agents/",
+        "docs/",
+        "examples/",
+        "package.json",
+        "scripts/",
+        "templates/",
+        "tests/"
+      ],
+      "mechanism_extraction": "NOT_PERMITTED_WITHOUT_LICENSE",
+      "reopen_condition": "an explicit license grant compatible with commercial derivative research",
+      "exhaustion": "NOT_EXHAUSTED"
+    },
+    {
+      "repository": "https://github.com/Frank880-star/ai-worldquant-research-os",
+      "commit": "8745f7a3f6f732c3a48296f78dd51e6c5e4576e0",
+      "queue_origin": "data/brain_hunter_s31_repo_triage.json",
+      "license": "MIT",
+      "access": "public GitHub API/raw files read as text only; nothing installed or executed",
+      "root_tree": [
+        ".gitignore",
+        "LICENSE",
+        "README.md",
+        "docs/"
+      ],
+      "measured_content": {
+        "repository_size_kb": 5,
+        "substantive_source_files": 0,
+        "operator_definitions": 0,
+        "strategy_formulas": 0,
+        "data_fields_or_feeds": 0,
+        "methodology_specs": 0,
+        "readme_claim": "AI-powered quantitative research platform for WorldQuant Brain"
+      },
+      "verdict": "EMPTY_SCAFFOLD_NEGATIVE_SCREEN",
+      "economic_disposition": "No import, hypothesis, data-axis card or implementation work. The repository title overstates the committed content; treating it as capability would create false inventory.",
+      "reopen_condition": "a commit adding substantive licensed source, data, operator semantics or research methodology",
+      "exhaustion": "EXHAUSTED_AT_COMMIT_ON_CONTENT_AND_CAPABILITY_AXES"
+    }
+  ],
+  "mt5_translation": {
+    "translate_to_mt5_queries": {
+      "hypothesis-first controlled falsification": [],
+      "WorldQuant research operating system": []
+    },
+    "disposition": "These are legitimacy and artifact-content screens, not market mechanisms. No instrument, timeframe or data-field mapping is fabricated from an empty translation result.",
+    "fusion_scope": "No Fusion symbol or target-horizon cell was proposed or tested; executable spread, commission, slippage/partial-fill markout and swap are therefore not applicable to this screen. Any future substantive mechanism must be translated over the terminal-enumerated Fusion universe with point-in-time inputs and native costs before it can enter the gauntlet."
+  },
+  "venue_discovery": {
+    "routes": [
+      "GitHub owner metadata",
+      "repository root metadata",
+      "GitHub WorldQuant-BRAIN topic surface"
+    ],
+    "new_venues_found": 0,
+    "note": "Both owners expose no external blog, company or social handle. This is a negative venue screen, not a ground verdict."
+  },
+  "trial_accounting": {
+    "desk_constructions_run": 0,
+    "desk_target_horizon_cells_run": 0,
+    "external_result_cells_audited": 0,
+    "alpha_survivors": 0,
+    "new_tradeable_cards": 0
+  },
+  "video": {
+    "fetched": 0,
+    "newly_locked": 0,
+    "note": "No video route was attempted; already-failed corpus routes were not relabelled as newly locked."
+  },
+  "economic_disposition": "Validated negative information with unmeasured positive expected-log-wealth value: one access-poisoning risk was stopped at the license boundary and one advertised capability was prevented from entering inventory despite having zero substantive implementation. Confidence is high on repository state at the recorded commit and zero on any future content."
+}

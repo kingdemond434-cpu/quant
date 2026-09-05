@@ -52,6 +52,32 @@ def resolve_local(name: str, known: set[str]) -> str | None:
     return None
 
 
+DISPOSITIONS_FILE = "docs/research/mt5_capability_dispositions.json"
+_VALID_VERDICTS = frozenset({"SUPERSEDED", "BLOCKED"})
+_MIN_REASON = 40  # a disposition with no substantive reason is a queue-shrink, not a decision
+
+
+def load_dispositions(root: Path) -> tuple[dict[str, dict], list[str]]:
+    """Recorded block/archive verdicts (2026-08-26). The audit demanded 'an explicit
+    block/archive disposition' and provided nowhere to record one, so every weekly seat
+    re-inspected the same modules. Invalid rows are returned separately and REPORTED --
+    a malformed disposition must never silently shrink the queue."""
+    try:
+        raw = json.loads((root / DISPOSITIONS_FILE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}, []
+    good: dict[str, dict] = {}
+    invalid: list[str] = []
+    for module, row in (raw.get("dispositions") or {}).items():
+        verdict = str(row.get("verdict", ""))
+        reason = str(row.get("reason", ""))
+        if verdict in _VALID_VERDICTS and len(reason) >= _MIN_REASON:
+            good[module] = row
+        else:
+            invalid.append(module)
+    return good, invalid
+
+
 def audit(root: Path, *, now: datetime | None = None) -> dict:
     libs = sorted((root / "libs").rglob("*.py"))
     desk_files = sorted((root / "desks" / "mt5").rglob("*.py"))
@@ -89,26 +115,37 @@ def audit(root: Path, *, now: datetime | None = None) -> dict:
     reportable = {
         name for name, path in by_module.items() if path.name != "__init__.py"
     }
+    dispositions, invalid_dispositions = load_dispositions(root)
     for name in sorted(reportable):
         path = by_module[name].relative_to(root).as_posix()
         venue_specific = any(token in name.lower() for token in VENUE_TOKENS)
+        disposed = dispositions.get(name)
         if name in reachable:
+            # Reachability outranks any verdict: a disposed module that gained a real
+            # consumer reports REACHABLE, with the now-stale disposition flagged.
             status = "REACHABLE_MT5_STATIC"
+        elif disposed:
+            status = f"DISPOSED_{disposed['verdict']}"
         elif venue_specific:
             status = "VENUE_SPECIFIC_REVIEW"
         else:
             status = "UNWIRED_REVIEW"
-        rows.append({
+        row = {
             "module": name,
             "path": path,
             "status": status,
             "direct_mt5_consumers": sorted(consumers.get(name, [])),
             "proof_level": "STATIC_REACHABILITY_ONLY",
-        })
+        }
+        if disposed:
+            row["disposition"] = {**disposed, "stale": name in reachable}
+        rows.append(row)
 
     counts: dict[str, int] = defaultdict(int)
     for row in rows:
         counts[row["status"]] += 1
+    if invalid_dispositions:
+        counts["DISPOSITION_INVALID"] = len(invalid_dispositions)
     return {
         "schema_version": 1,
         "generated_at": (now or datetime.now(tz=UTC)).astimezone(UTC).isoformat(),
@@ -119,7 +156,9 @@ def audit(root: Path, *, now: datetime | None = None) -> dict:
         "interpretation": (
             "REACHABLE_MT5_STATIC proves a code path only, never runtime or economic value. "
             "UNWIRED_REVIEW is the nightly positive-EV triage queue. VENUE_SPECIFIC_REVIEW "
-            "requires an MT5-equivalence proof or an explicit block/archive disposition."
+            "requires an MT5-equivalence proof or an explicit block/archive disposition. "
+            f"DISPOSED_* rows carry recorded verdicts from {DISPOSITIONS_FILE} (reachability "
+            "outranks a verdict; DISPOSITION_INVALID counts malformed rows that were refused)."
         ),
     }
 

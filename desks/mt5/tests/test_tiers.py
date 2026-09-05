@@ -16,16 +16,34 @@ if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
 from mt5desk.tiers import (  # noqa: E402
-    ACCELERATION_THRESHOLD, MIN_RANK_AGREEMENT, Equivalence, Funnel, Profile,
+    ACCELERATION_THRESHOLD, MIN_RANK_AGREEMENT, Equivalence, Funnel, Profile, Stage,
     check_equivalence, rank_agreement)
 
 
 def _profile(shares: dict, unit: float = 0.002) -> Profile:
+    """Build a profile with EXACT stage durations -- no sleeping, no scheduler.
+
+    WHY (gap-fixer 2026-08-29). This helper used to `time.sleep(unit)` inside `p.stage(name)`
+    and every test below asserts on the resulting SHARES. A 2ms sleep is a lower bound, not a
+    duration: under load the OS returns whenever it returns, so on this box -- 3.8GB, no swap,
+    dozens of timers, a concurrent suite -- four "equal" 2ms stages routinely came back
+    unequal enough to flip a verdict. The tests were measuring the machine's contention, not
+    the arithmetic in tiers.py.
+
+    MEASURED COST: `quant-mt5-suite.service` recorded 75 exit-code failures in 24h against
+    ~144 runs, and consecutive runs on the SAME commit reported 1 failed, then 2, then 0. A
+    money-path suite that fails a third of the time is worse than one that is red: it trains
+    every reader to disregard it, which is precisely what a suite guarding the order path must
+    never do.
+
+    `Stage.add(dt)` is public and takes a duration directly, so the shares can be exact. The
+    context manager's own timing is still covered -- by the one test below that uses a real
+    clock with a ratio far too large for jitter to reach.
+    """
     p = Profile()
     for name, n in shares.items():
         for _ in range(n):
-            with p.stage(name):
-                time.sleep(unit)
+            p.stages.setdefault(name, Stage(name)).add(unit)
     return p
 
 

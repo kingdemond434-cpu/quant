@@ -494,6 +494,77 @@ def drain(d: dict[str, Any], window_h: float = 72.0) -> dict[str, float]:
             "ratio": (disposed / arrived) if arrived else float("inf")}
 
 
+#: How long a claim holds a row out of the next batch. Sized just past the owed-worker's own
+#: `timeout 3000` so a run that dies at its ceiling cannot have its rows re-handed while its final
+#: commits are still landing. L1.48 requires every new time constant to name its exemption: this
+#: is the PHYSICAL-REALITY clock -- it measures how long another OS process may still be running,
+#: which no quantity of evidence about the row itself can answer.
+CLAIM_TTL_H = 1.0
+
+
+def claim_state(row: dict[str, Any], ttl_h: float = CLAIM_TTL_H) -> str:
+    """FREE | HELD | EXPIRED -- is another live session working this row?
+
+    THE FAILURE DIRECTION IS THE WHOLE DESIGN (R0553). A claim exists to stop two sessions doing
+    one row twice, which costs duplicated effort. A claim that LEAKS -- session dies, is
+    compacted, is killed mid-run -- costs something strictly worse: the row becomes invisible to
+    the queue and stops being offered at all, which is the disappearance the ledger exists to
+    prevent. So this degrades toward VISIBILITY, never toward silence: past the TTL a claim is
+    EXPIRED, the row is offered again, and the expiry is REPORTED rather than quietly forgotten
+    (L1.60 -- a skip that nobody counts is indistinguishable from a row that was never there).
+
+    A CLAIM IS NOT A DISPOSITION AND HIDES NOTHING FROM ANY FENCE. `status` is untouched, so the
+    row still counts as open in check_conversion, in `owed()`, and in the repair-mode backlog. The
+    only consumer is the batch BUILDER, which is R0553's stated design constraint: the control has
+    to fire without anyone remembering it, so it attaches to the unit of assignment and is read by
+    the thing that hands work out.
+
+    WHY NOT A PID FILE (R0403's own argument, restated): a file is something `rm` defeats, and a
+    pid is something the kernel reuses. A short TTL needs neither -- it cannot outlive the process
+    it is guarding by more than the TTL, and it needs no cleanup path that could itself fail.
+    """
+    if row.get("status") != "open" or not row.get("claimed_at"):
+        return "FREE"
+    # PARSED HERE RATHER THAN THROUGH `_age_h`, AND THE TEST THAT FOUND THIS IS THE POINT.
+    # `_age_h` swallows a bad stamp and returns 0.0, i.e. "claimed one instant ago" -- so a
+    # corrupt `claimed_at` read as maximally FRESH and would have held the row FOREVER, which is
+    # the one outcome this whole design exists to make impossible. A shared helper whose default
+    # points the loosening way is exactly R0551's shape; here the loosening way is silence.
+    try:
+        age = (datetime.now(tz=UTC)
+               - datetime.fromisoformat(str(row["claimed_at"]))).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        return "EXPIRED"           # an unparseable stamp must not hold a row forever
+    return "HELD" if 0.0 <= age <= ttl_h else "EXPIRED"
+
+
+def claim(a: argparse.Namespace) -> None:
+    """Mark rows as being worked, so the next batch offers different ones."""
+    # Runs under main()'s outer lock, like every other mutator -- taking a second flock here
+    # would block against our own held one (R0623: the lock wraps the read-modify-write).
+    d = _load()
+    by = str(a.by).strip()
+    if not by:
+        raise SystemExit("REFUSING: --by must name the session holding the row")
+    wanted, seen = set(a.ids), []
+    for r in d["recommendations"]:
+        if r["id"] not in wanted:
+            continue
+        seen.append(r["id"])
+        if claim_state(r) == "HELD" and r.get("claimed_by") != by:
+            print(f"{r['id']} already HELD by {r.get('claimed_by')} "
+                  f"({_age_h(str(r['claimed_at'])):.2f}h) -- not taken")
+            continue
+        r["claimed_by"], r["claimed_at"] = by, datetime.now(tz=UTC).isoformat()
+        print(f"{r['id']} claimed by {by}")
+    _save(d)
+    missing = sorted(wanted - set(seen))
+    if missing:
+        # Counted, never swallowed: a typo'd id that silently claims nothing would leave the
+        # caller believing it holds a row it does not.
+        raise SystemExit(f"REFUSING: no such row(s): {', '.join(missing)}")
+
+
 def owed(d: dict[str, Any]) -> tuple[list[Any], list[Any]]:
     """(undisposed past grace, scheduled past due OR chronically deferred) -- how a row goes stale.
 
@@ -634,6 +705,12 @@ def main() -> None:
     p.add_argument("--reason", required=True)
     p.add_argument("--expect", help="substring the target summary must contain")
     p.set_defaults(func=repoint)
+    p = sub.add_parser("claim", help="R0553: mark rows as being worked so the next owed-work "
+                                     "batch offers different ones; expires after "
+                                     f"{CLAIM_TTL_H:g}h and never hides a row from a fence")
+    p.add_argument("--by", required=True, help="who holds it (session/branch name)")
+    p.add_argument("ids", nargs="+", help="row ids, e.g. R0551 R0552")
+    p.set_defaults(func=claim)
     p = sub.add_parser("report", help="orphans and overdue -- both are defects, not backlog")
     p.set_defaults(func=report)
     p = sub.add_parser("verify", help="R0478: re-verify every commit citation resolves; "
@@ -642,7 +719,7 @@ def main() -> None:
     a = ap.parse_args()
     # THE LOCK WRAPS THE WHOLE READ-MODIFY-WRITE (R0623): acquiring it after _load() would
     # serialize nothing -- the stale read is the race. Read-only commands skip it.
-    if a.cmd in ("add", "dispose", "correct", "repoint"):
+    if a.cmd in ("add", "dispose", "correct", "repoint", "claim"):
         fh = _locked()
         try:
             _settle_forecasts(_load()["recommendations"])

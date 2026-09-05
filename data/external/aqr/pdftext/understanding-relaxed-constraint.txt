@@ -1,0 +1,469 @@
+February 2017Understanding 
+Relaxed Constraint 
+Equity Strategies 
+Ing-Chea Ang
+Vice President,  
+Portfolio Solutions Group
+Alex Michalka
+Vice President,  
+Global Stock Selection
+Adrienne Ross
+Vice President,  
+Global Stock Selection
+
+02
+ 
+Understanding Relaxed Constraint Equity StrategiesContentsTable of Contents 02Introduction 03How Relaxed Constraint Works 04Different Approaches to Active Equity Investing 05Benefits of a Relaxed Constraint Portfolio  06Relaxed Constraint vs. Long/Short Equity 08Why the 30% in the 130/30? 09Considerations in Evaluating a RC Manager 10Conclusion 11References 
+12Disclosures 13In a prospectively low-return environment, equity investors seeking potential 
+outperformance over benchmark returns should consider Relaxed Constraint (RC) 
+strategies (also popularly known as 130/30 strategies). RC portfolios are benchmark-
+relative strategies that allow a pre-determined fraction of shorts. There are two key 
+benefits of RC over comparable long-only portfolios: 1) more flexibility for active 
+stock selection, which creates the potential for higher returns; and 2) the potential for 
+greater tax efficiency. From a portfolio perspective, RC strategies typically have net 
+exposures of around one  that is, they move with equity markets, exhibit similar 
+volatility, and therefore could be used in an equity allocation.
+We thank Michele Aghassi, Marco Hanig, Antti Ilmanen, Bryan Johnson, Nick McQuinn, 
+Maston ONeil, Dan Villalon for helpful comments and suggestions.Table of Contents
+
+ 
+Understanding Relaxed Constraint Equity Strategies
+ 
+03IntroductionHistorically low global yields and generally elevated asset valuations have led many investors to expect 
+lower returns going forward. As such, the ability to generate active, above benchmark returns, has become 
+even more important to meet performance hurdles. RC equity strategies  also known as equity extension, 
+active extension, 130/30 (or 140/40, 150/50) strategies  are one solution that may interest investors.
+RC strategies are benchmark-relative solutions that incorporate, in small doses, techniques from alternative 
+investments such as the use of shorting and leverage. The goal of these strategies is to outperform their 
+benchmarks through active risk-taking  and to do so in a way that allows for greater exposure to a 
+managers views, relative to a traditional long-only setting.
+
+04
+ 
+Understanding Relaxed Constraint Equity StrategiesHow Relaxed Constraint Works
+from shorting (i.e., than if the 100% long building block were the only positions she held).For an active equity manager seeking to outperform 
+a benchmark, the term Relaxed Constraint means 
+relaxing the limitation of only being able to go 
+long stocks, by allowing a pre-determined fraction 
+130/30 RC strategy, the portfolio has aggregate long 
+exposure of 130% and total short exposure of 30% 
+(as a percent of Net Asset Value). One can think of 
+this as a combination of a long-only portfolio that 
+is 100% invested plus an additional component, 
+which is 30% long and 30% short (see Exhibit 1). 
+The resulting portfolio has gross exposure of 160% 
+(sum of longs and shorts) implying some gross 
+leverage. However, we stress the portfolio is not net 
+leveraged
+ (i.e., not economically leveraged), given 
+the total net market exposure is 100%.Exhibit 1Relaxed Constraint Allows Managers Greater Flexibility1  
+Long-Only
+Relaxed ConstraintGross Leverage
+100%
+160%
+Net Leverage
+100%
+100%Source: AQR. For illustrative purposes only.
+100% 
+Long
+100% 
+Long
++
+30%
+Long
+-
+30% 
+Short
+Long-Only
+Portfolio
+Relaxed 
+Constraint +=
++30%
+Long
+-
+30% 
+Short
+Gr
+ea
+te
+r 
+ove
+rw
+eights
+Deeper
+ 
+unde
+rw
+eights
+Market Exposure
+
+ 
+Understanding Relaxed Constraint Equity Strategies
+ 
+05
+ 
+Active Equity Investing
+outperform a benchmark. Ultimately, the goal is to 
+generate excess returns through active risk taking, 
+but the way in which a manager does so can be 
+managers underlying investment philosophy (i.e., 
+what they look for when picking stocks) and/or how 
+they construct portfolios (i.e., whether they build 
+Concentrated managers typically select a small 
+number of companies that can generate returns 
+contrast, many RC strategies, particularly 
+quantitative ones, seek to diversify away 
+idiosyncratic risks and generate returns through 
+hundreds of small bets comprising tilts based 
+on certain characteristics (e.g., companies that 
+are cheap and/or have strong price momentum). 
+active risk or tracking error levels (a measure of the 
+and benchmark returns), and may also be able to 
+explicitly control and target industry over- and 
+underweights.
+Exhibit 2
+ summarizes a few of these options 
+available to investors looking for active returns, 
+ranging from passive investments (with zero 
+tracking error) to concentrated stock-pickers and 
+RC strategies (with higher tracking error). Both the 
+potential for higher returns through higher active 
+risk, and, as mentioned, the way they do so can be 
+managers of both types, these two approaches may 
+in fact be complementary, especially if their excess 
+returns are lowly correlated.Exhibit 2Investors Face Many Choices in the Pursuit of Active ReturnsSource: AQR. For illustrative purposes only.
+Passive
+Diversified Long-Only 
+Active Strategies
+Concentrated Stock
+Picking Strategies
+-
+Relaxed Constraint
+Higher Tracking Error
+
+06
+ 
+Understanding Relaxed Constraint Equity Strategies 
+Constraint Portfolio 
+2 
+Source: FTSE Russell. As of November 30, 2016.
+Active Management. This information does not constitute legal, tax or accounting advice or investment advice and is 
+solely based on the opinion of AQR of which no expectation of compensation will be derived. The recipient should conduct 
+his or her own analysis and consult with professional advisors prior to making any investment decisions. Any investment 
+made will be in the sole discretion of the reader.Better Expression of Active Views 
+a manager to better express her views. To the extent 
+the manager can identify both winners (stocks to 
+overweight) and losers (stocks to underweight or 
+short), this approach can lead to better expected 
+outcomes. This is especially important when a 
+manager highly dislikes a stock which represents 
+only a small weight in the index. In a long-only 
+portfolio, the most bearish position the manager 
+can take is to simply not hold the stock. Consider 
+have a weight of less than 0.1%.2 In a long-only 
+portfolio, such stocks can be underweighted by at 
+most 10 basis points, no matter how bearish the 
+manager's view  a potentially severe constraint 
+if the manager has strong negative opinions about 
+these stocks.
+The long-only constraint also goes beyond 
+limiting a managers expression of negative views 
+on unattractive stocks. Because all overweights 
+must be balanced by underweights (to maintain a 
+fully invested portfolio without net leverage), the 
+inability to meaningfully underweight unattractive 
+stocks also restricts the ability to overweight 
+attractive ones. By allowing some shorting, the 
+manager has more freedom to express her active 
+views  both positive and negative ones. This 
+allows the manager to target greater tracking error 
+relative to the benchmark  potentially increasing 
+in the portfolio.
+Exhibit 
+4
+, both long-only and RC strategies may have 
+opportunities to realize losses in a falling market. 
+However, markets generally rise over time. And in 
+a rising market, a long-only portfolio may have only 
+unrealized gains. In contrast, the short positions of a 
+RC portfolio would likely have embedded losses that 
+could be realized if desired. Thus RC strategies may 
+both
+ rising 
+and falling markets than long-only strategies.3
+
+ 
+Understanding Relaxed Constraint Equity Strategies
+ 
+07Exhibit 3Relaxing the Long-Only Constraint Provides Better Capture of Positive and 
+Negative Stock ViewsSource: AQR. For illustrative purposes only. Not to be construed as a recommendation or investment advice.
+Long-Only
+Relaxed Constraint 
+St
+oc
+k A 
+St
+oc
+k BS
+to
+ck
+ CS
+to
+ck
+ DS
+to
+ck
+ E
+St
+oc
+k A 
+St
+oc
+k BS
+to
+ck
+ CS
+to
+ck
+ DS
+to
+ck
+ E
+Long
+Short
+Long-Onl
+y Weights
+Less
+ At
+tracti
+ve
+Mo
+re 
+At
+tr
+acti
+ve
+Less
+ At
+tracti
+ve
+Mo
+re 
+At
+tr
+acti
+ve
+Rela
+xe
+d Const
+raint 
+We
+ig
+hts
+Exhibit 4
+ 
+Falling MarketsSource: AQR. For illustrative purposes only. Not to be construed as a recommendation or investment advice.
+Long-Only
+Falling Market
+Relaxed 
+Constraint
++30%
+Long
+-
+30% 
+Short
+Market Exposure
+Relaxed 
+Constraint
++30%
+Long
+-
+30% 
+Short
+Rising Market
+Long-Only
+Opportunities to Realize Capital Losses
+
+08
+ 
+Understanding Relaxed Constraint Equity StrategiesRelaxed Constraint vs.
+ 
+Long/Short Equity
+volatility less than the S&P 500 Index over two full years ending 12/31/2016. Source: Morningstar data, AQR analysis.
+6 
+Alternative Thinking, Second Quarter 2016, Relaxed Constraint Portfolios: Ignored but Not Forgotten, AQR quarterly 
+whitepaper. RC strategies are often compared to Long/Short 
+Equity strategies as both use some degree of 
+shorting and gross leverage. However, there are key 
+highlight in Exhibit 5
+.
+RC strategies are benchmark-oriented portfolios 
+(typically to indices such as the MSCI World or the 
+Russell 1000) that generally target net exposures of 
+one. Like most active equity strategies, they derive 
+their returns from market exposure (beta), but seek 
+to generate outperformance (alpha) relative to their 
+benchmarks. Because they have the same objective 
+and similar equity market sensitivity as their long-
+only equity counterparts, RC strategies tend to fall 
+into the long-only equity category.4In contrast, Long/Short Equity strategies belong 
+in the alternatives category because they have 
+absolute return objectives, generally lower (and 
+varying) equity betas and lower volatility than 
+traditional equity funds.5 
+On a related note, there is often a misconception 
+that shorts in a RC portfolio are designed to protect 
+the portfolio from market drawdowns, which 
+we believe contributed to disappointment in the 
+strategy during the Global Financial Crisis in 
+2008-09.6  Recall that the shorts in RC strategies 
+exposure to the market is still 100%. The short 
+positions are not intended to provide protection in 
+market downturns, but rather to provide greater 
+Exhibit 5Relaxed Constraint Strategies Belong to the Long-Only Equity Category 
+ 
+Long-Only
+Relaxed Constraint
+Long/Short Equity
+Return ObjectiveBenchmark-relative
+Benchmark-relative
+Absolute return; capital appreciation 
+with reduced equity exposureVolatilitySimilar to benchmark
+Similar to benchmark
+Varies, but generally lower than 
+equitiesMarket Beta0.9 - 1.1
+0.9 - 1.1
+0.2 - 0.8ShortingNo
+Yes
+YesSource: AQR. For illustrative purposes only.
+
+ 
+Understanding Relaxed Constraint Equity Strategies
+ 
+09Why the 30% in the 130/30?
+For a RC portfolio, an important parameter that 
+allowed in a portfolio. To illustrate, we construct 
+two hypothetical portfolios  long-only and RC  
+using well-known styles of value and momentum 
+(as in Asness et al. 2015), over the MSCI Global 
+error of 3.5%, we can see how excess returns vary 
+with increasing amounts of shorts. Our results 
+in Exhibit 6
+ indicate that the largest marginal 
+improvements in excess returns come with small 
+amounts of shorting, up until around 30%. Beyond 
+30% shorting, the associated costs from shorting 
+between improved returns before and after costs.Exhibit 6Hypothetical  RC Strategies can Potentially Deliver Higher Excess Returns over 
+Comparable Long-Only Strategies Source: Xpressfeed, AQR. Returns shown are in excess of the MSCI World Index, net of estimated transaction costs but gross of  
+management fees. Please see the disclosures for an explanation of the construction of this dataset. Hypothetical performance 
+results have certain inherent limitations, some of which are disclosed in the back.
+Ex
+cess R
+eturns Improvement 
+Ov
+er
+ L
+ong-OnlyShorts (as a % of
+ NA
+V)0%
+10%
+20%
+30%
+40%
+50%
+0%
+10%
+20%
+30%
+40%
+50%
+60%
+
+10
+ 
+Understanding Relaxed Constraint Equity StrategiesConsiderations in Evaluating
+ 
+a RC ManagerOn a theoretical basis, the promise of higher returns 
+in RC appears quite compelling. However, we believe 
+a strategys success is also highly dependent on good 
+implementation. There are a few key points investors 
+should pay attention to in evaluating RC strategies.
+First, we think a RC manager should have expertise 
+in generating a diverse set of short ideas, in 
+addition to long ones. Long-only managers may 
+addition, the costs and availability of shorting a 
+stock may vary over time, and a manager needs 
+experience to dynamically handle such changing 
+conditions.
+Second, the use of gross leverage adds another 
+dimension of complexity to the portfolio 
+construction and risk management process. A 
+good RC manager needs to balance the competing 
+demands of generating alpha, while potentially 
+adhering to risk limits (e.g., tracking error, sizing, 
+beta, concentration) and managing the challenges 
+of leverage and shorting.
+Finally, if a RC strategy takes greater tracking error 
+than a long-only one, it may require higher turnover 
+(as a percentage of NAV). Therefore, the ability to 
+impact on a strategys returns, as transaction costs 
+can erode excess returns.
+
+ 
+Understanding Relaxed Constraint Equity Strategies
+ 
+11ConclusionWe believe RC strategies represent an attractive 
+solution to investors seeking greater active 
+returns, particularly in a prospectively low-return 
+environment. RC strategies allow managers to 
+potentially generating higher returns, and in some 
+From a portfolio strategy perspective, we reiterate 
+that RC strategies generally target net exposures 
+of one and should not be expected to perform like 
+long/short equity strategies. However, with the 
+right expectations and manager to implement the 
+strategy, we believe RC strategies can be highly 
+additive to a traditional equity portfolio.
+
+12
+ 
+Understanding Relaxed Constraint Equity StrategiesReferencesAlternative Thinking, Second Quarter 2016, Relaxed Constraint Portfolios: Ignored but Not Forgotten, 
+AQR quarterly whitepaper
+Aghassi, M., Feghali G., McQuinn N., Villalon D., 2016, Ugly Duckling No Longer: A Decade of Relaxed 
+Asness, C., Ilmanen A., Israel R., Moskowitz T., 2015, Investing With Style, Journal of Investment 
+Management
+, 13:1
+Asness, C., Moskowitz, T., Pedersen, L., 2012, Value and Momentum Everywhere, Journal of Finance
+, 
+June 2013, Vol. 68, 929-985
+
+Unde
+rstanding Relaxed Constraint Equity Strategies
+ 
+13
+Disclosures
+
+www.aqr.comAQR Capital Management, LLC      Two Greenwich Plaza, Greenwich, CT 06830      P  +1.203.742.3600      F  +1.203.742.3100
+
+ &56W>"  7ÿöS* : ?@<	 #"J    _ KK _ L   : :+%'*+3>7'7733>323267#"&54>54&#"7M!!ES^2@1K-!%	49<6/=ve$1hÀ§3;pII'moa,&:B#!;HPK@&C[kv;  ÿöJð  5 =@:.-J   g _ K _ L 42
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents

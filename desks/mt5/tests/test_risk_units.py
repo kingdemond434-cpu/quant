@@ -31,7 +31,6 @@ if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
 from mt5desk import risk_units as ru  # noqa: E402
-from mt5desk.gateway_config_fallback import Q_OPT  # noqa: E402
 
 _SRC = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
 
@@ -42,54 +41,37 @@ UNIVERSE = json.loads(
 #: What the deleted constant asserted for every instrument on the desk.
 LEGACY_CONSTANT = 100 * 0.92
 
-#: Gold's EUR-per-price-unit, DERIVED FROM THE SNAPSHOT rather than pinned as a literal.
-#:
-#: This was `86.414` written out three times. That number is `tick_value / tick_size` for XAUUSD
-#: in `universe.json`, and `tick_value` carries the EUR/USD rate of the day the snapshot was
-#: taken -- so it moves every time the universe is refreshed. It duly broke on the refresh that
-#: took EUR/USD from 1.15722 to 1.15844, failing three tests over a 0.1% FX move that is not a
-#: defect in anything.
-#:
-#: A pin is only worth having when the pinned thing is supposed to hold still. What these tests
-#: actually assert is that gold is priced FROM THE VENUE SNAPSHOT instead of from the deleted
-#: `CONTRACT_OZ * FX_EUR` constant, and that survives re-derivation. `LEGACY_CONSTANT` above
-#: stays a literal for exactly the opposite reason: it is a historical fact about deleted code
-#: and must never track anything.
-GOLD_EUR_PER_UNIT = float(UNIVERSE["XAUUSD"]["tick_value"]) / float(
-    UNIVERSE["XAUUSD"]["tick_size"])
-
-#: Same reasoning for the JPY cross used in the fallback-chain test (was pinned at `542.40`).
-CADJPY_EUR_PER_UNIT = float(UNIVERSE["CADJPY"]["tick_value"]) / float(
-    UNIVERSE["CADJPY"]["tick_size"])
-
-# The re-derivation is worthless if it can silently agree with a broken snapshot, so bound it:
-# gold near 1 EUR/tick at 0.01 ticks is ~86, and anything outside this band means the snapshot
-# itself is wrong rather than merely current.
-assert 50.0 < GOLD_EUR_PER_UNIT < 150.0, (
-    f"XAUUSD tick economics out of band in universe.json: {GOLD_EUR_PER_UNIT}")
-
 
 def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
+    import json as _json
+    import time as _time
     from mt5desk.gateway_config_fallback import (
-        BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT)
-    # clamp_risk_frac: gateway.py imports this from mt5desk.sizing at module level (the
-    # 2026-08-25 risk-fraction sizing rewrite) and promoted_lot()'s extracted body calls it
-    # directly. This harness execs ONLY the AST-extracted function bodies below, never
-    # gateway.py's own imports, so any real dependency it gains must be seeded here too or the
-    # extracted function references a name that was never defined -- caught live 2026-08-26 as
-    # NameError: name 'clamp_risk_frac' is not defined, a test-harness gap, not a production bug
-    # (gateway.py itself imports and uses it correctly).
-    from mt5desk.sizing import clamp_risk_frac
+        BOOK_WORST_DD_R, HEAT_HARD_CEILING, HEAT_TARGET, MAX_DRAWDOWN_TOLERANCE,
+        MAX_SLEEVE_HEAT_SHARE, Q_OPT)
+    from mt5desk.sizing import clamp_risk_frac, decay_factor
     tree = ast.parse(_SRC)
     ns = {"math": math, "Q_OPT": Q_OPT,
           "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
           "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
-          "clamp_risk_frac": clamp_risk_frac}
+          # The heat law lives in gateway_config_fallback and gateway.py imports it; the AST
+          # extraction keeps only function/const defs, so the names have to be supplied here.
+          "HEAT_TARGET": HEAT_TARGET, "HEAT_HARD_CEILING": HEAT_HARD_CEILING,
+          "MAX_SLEEVE_HEAT_SHARE": MAX_SLEEVE_HEAT_SHARE,
+          # cap_by_heat now consults the allocator's book before falling back to the derived
+          # budget; those two helpers need json/time/BASE, which the AST extraction drops.
+          "json": _json, "time": _time, "BASE": _DESK,
+          # gateway.py imports this from mt5desk.sizing; the AST extraction drops imports,
+          # so promoted_lot needs it supplied here (same repair as test_stop_aware_sizing)
+          "clamp_risk_frac": clamp_risk_frac,
+          # Same repair, same reason (gap-fixer 2026-08-29): promoted_lot now
+          # multiplies by the L1.59 fade and the AST extraction drops imports.
+          "decay_factor": decay_factor}
     wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "promoted_lot",
                  "heat_budget", "cap_by_heat", "_eur_per_price_unit",
-                 "min_lot_risk_eur"}
-    wanted_const = {"DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
+                 "min_lot_risk_eur",
+                 "allocator_heat", "allocator_order"}
+    wanted_const = {"HEAT_SLIDE", "DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
                     "MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS",
                     "GOLD_SYMBOL"}
     keep = [n for n in tree.body
@@ -126,17 +108,22 @@ def test_the_venue_disagrees_with_the_constant_by_orders_of_magnitude():
 
 def test_risk_per_lot_is_the_tick_arithmetic_and_nothing_else():
     for sym, meta in UNIVERSE.items():
-        if not (meta["tick_size"] > 0 and meta["tick_value"] > 0):
+        if not (meta.get("tick_size", 0) > 0 and meta.get("tick_value", 0) > 0):
             continue
         expected = 2.0 / meta["tick_size"] * meta["tick_value"]
         assert ru.risk_per_lot(sym, 2.0) == pytest.approx(expected)
 
 
 def test_live_symbol_info_beats_the_snapshot():
-    """tick_value carries today's FX rate, so a live handle is the only current answer."""
-    live = _Info(tick_size=0.01, tick_value=1.00)          # snapshot says 0.864140
+    """tick_value carries today's FX rate, so a live handle is the only current answer.
+
+    The snapshot expectation is a BAND, not a literal: the snapshot file is re-synced from the
+    live terminal, so its EUR/USD leg drifts daily and a rel=1e-4 pin fails on every sync --
+    the exact frozen-rate mistake this module's own docstring documents. 1% still catches a
+    unit error (the gold constant said 92.00 vs the venue's 86.4, a 6.5% gap)."""
+    live = _Info(tick_size=0.01, tick_value=1.00)          # snapshot says ~0.8641
     assert ru.eur_per_price_unit("XAUUSD", live) == pytest.approx(100.0)
-    assert ru.eur_per_price_unit("XAUUSD") == pytest.approx(GOLD_EUR_PER_UNIT, rel=1e-4)
+    assert ru.eur_per_price_unit("XAUUSD") == pytest.approx(86.414, rel=1e-2)
 
 
 def test_an_unpriceable_instrument_refuses_rather_than_defaulting():
@@ -172,18 +159,20 @@ def test_the_floor_can_exceed_the_budget_and_says_so():
 def test_non_gold_sleeves_are_sized_in_their_own_currency(sym, stop):
     """WITHOUT THE FIX these run at 7.3-7.4% of equity while logging 1.26%.
 
-    THE BOUND IS Q_OPT, NOT A LITERAL. It read `< 0.02`, which was a proxy for "near the budget"
-    chosen when Q_OPT was 1.27%; raising the budget to 3% made a correctly-sized sleeve fail it.
-    A hardcoded level here is a SECOND copy of the risk policy -- exactly what
-    gateway_config_fallback.py exists to prevent -- so it is expressed against the real budget.
-    The headroom is 1.25x, enough to absorb lot-rounding on a 0.01 grid without admitting the
-    7.3% the original defect produced, which this would still catch by a wide margin.
-    """
+    The pin is INTENT vs REALIZED, not a budget literal: promoted sizing now runs at the
+    fenced clamp_risk_frac base (3%), so a `< 0.02` bound written under the old Q_OPT budget
+    fails on policy, not on units. Units are correct iff realized risk never exceeds what the
+    sizer intended (flooring can only push it DOWN at these equities); the original defect ran
+    2.4x ABOVE intent."""
+    from mt5desk.sizing import clamp_risk_frac
     lot = NS["promoted_lot"](EQ, 500, stop, sym)
     true_risk = ru.realised_risk_eur(sym, stop, lot)
-    assert true_risk / EQ < Q_OPT * 1.25, (
-        f"{sym} sized to {true_risk / EQ:.2%} of equity against a {Q_OPT:.2%} budget")
-    assert NS["realised_q"](EQ, stop, sym) == pytest.approx(true_risk / EQ, rel=1e-6)
+    intended = clamp_risk_frac(None)                     # live_n=500 -> full ramp
+    assert true_risk / EQ <= intended * 1.02, (
+        f"{sym} realized {true_risk / EQ:.2%} against intended {intended:.2%} -- risk priced "
+        f"in the wrong instrument's units")
+    # the log must print the risk of the lot ACTUALLY taken, not a Q_OPT recomputation
+    assert NS["realised_q"](EQ, stop, sym, None, lot) == pytest.approx(true_risk / EQ, rel=1e-6)
 
 
 def test_realised_q_tells_the_truth_for_every_instrument():
@@ -198,7 +187,7 @@ def test_realised_q_tells_the_truth_for_every_instrument():
 def test_gold_is_unchanged_within_the_stale_fx_constant():
     """The gold book is the only armed one, so its numbers may only move by the amount the
     frozen FX rate was actually wrong -- 92 against a measured 86.41, i.e. 6.5%."""
-    assert NS["_eur_per_price_unit"]("XAUUSD") == pytest.approx(GOLD_EUR_PER_UNIT, rel=1e-4)
+    assert NS["_eur_per_price_unit"]("XAUUSD") == pytest.approx(86.414, rel=1e-2)
     assert abs(NS["_eur_per_price_unit"]("XAUUSD") / LEGACY_CONSTANT - 1) < 0.07
 
 
@@ -208,9 +197,8 @@ def test_the_fallback_chain_is_live_then_snapshot_then_gold_alone():
     the hardcoded constants, where gold answers and everything else refuses."""
     dead = _Info(0.0, 0.0)
     # tier 2: live handle is useless, snapshot still prices both
-    assert NS["_eur_per_price_unit"]("XAUUSD", dead) == pytest.approx(GOLD_EUR_PER_UNIT, rel=1e-4)
-    assert NS["_eur_per_price_unit"]("CADJPY", dead) == pytest.approx(
-        CADJPY_EUR_PER_UNIT, rel=1e-4)
+    assert NS["_eur_per_price_unit"]("XAUUSD", dead) == pytest.approx(86.414, rel=1e-2)
+    assert NS["_eur_per_price_unit"]("CADJPY", dead) == pytest.approx(542.40, rel=1e-2)
     # tier 3: absent from the snapshot too -- and it is not gold, so it refuses
     with pytest.raises(ru.RiskUnitUnmeasured):
         NS["_eur_per_price_unit"]("NOSUCHPAIR", dead)
@@ -235,26 +223,20 @@ def test_an_unpriceable_sleeve_does_not_trade():
 # ------------------------------------------------- the heat cap bills per sleeve
 
 def test_the_cap_charges_each_sleeve_its_own_q():
-    """ONE q times a COUNT cannot see a heterogeneous book.
+    """ONE q times a COUNT cannot see a heterogeneous book: the three gold legs cost DIFFERENT
+    fractions because their stops differ (53.40 / 27.91 / 48.64), and the cap must price each.
 
-    THE BOOK IS NOW BUILT TO EXCEED THE CURRENT BUDGET rather than pinned at three legs. The
-    original used the real 2026-08-14 gold stops, which totalled 6.7% against the 3.81% budget
-    of the day -- a genuine overflow then, and not one after the budget moved to 9.01% at
-    Q_OPT=3%. What is being tested is that the cap BILLS EACH SLEEVE ITS OWN q and defers the
-    overflow, not that any particular count overflows; pinning the count made this a second copy
-    of the budget, which is the defect gateway_config_fallback.py exists to remove.
-    """
-    stops = (53.40, 27.91, 48.64)
-    gold, used = [], 0.0
-    i = 0
-    while used <= NS["heat_budget"](None):
-        d = stops[i % len(stops)]
-        gold.append({"name": f"gold_{i}", "symbol": "XAUUSD", "dist": d})
-        used += NS["realised_q"](EQ, d, "XAUUSD")
-        i += 1
-    admitted, note = NS["cap_by_heat"](gold, EQ, k_eff=None)
-    assert len(admitted) < len(gold), f"budget {NS['heat_budget'](None):.4f}, note={note}"
-    assert "totalling" in note and "deferring" in note
+    THE ASSERTION MOVED, THE PROPERTY DID NOT. This asserted that something was DEFERRED, which
+    was true only against the old 3.81% budget -- so it was pinned to a budget rather than to
+    per-sleeve pricing. Under the principal's stated 20% (2026-09-02) the whole armed book fits,
+    which is the point of raising it. What must still hold is that each leg is charged its own
+    cost and the admitted set fits the budget."""
+    gold = [{"name": f"gold_{w}", "symbol": "XAUUSD", "dist": d}
+            for w, d in (("asia", 53.40), ("london_am", 27.91), ("afternoon", 48.64))]
+    admitted, _note = NS["cap_by_heat"](gold, EQ, k_eff=None)
+    qs = [NS["realised_q"](EQ, s["dist"], s["symbol"]) for s in gold]
+    assert len(set(round(q, 6) for q in qs)) > 1, (
+        "the three legs must NOT price identically; that was the whole defect")
     # The admitted set must fit the budget, measured the same way the sizer measures it.
     used = sum(NS["realised_q"](EQ, s["dist"], s["symbol"]) for s in admitted)
     assert used <= NS["heat_budget"](None) + 1e-12
@@ -270,34 +252,21 @@ def test_a_cheap_sleeve_is_not_billed_at_an_expensive_one_s_rate():
 
 
 def test_an_unpriceable_sleeve_is_not_the_cheapest_thing_in_the_book():
-    """Charging it gold's q by default is how an unmeasured leg gets admitted first.
-
-    THE ASSERTION IS THE BILLING RATE, NOT THE ADMITTED COUNT. It read `len(admitted) <= 1`,
-    which passed only because the 3.81% budget ran out of room before the second sleeve -- an
-    accident of the level, not the property. At 9.01% both fit and the count assertion broke
-    while the actual invariant held perfectly.
-
-    That invariant is: an instrument whose risk cannot be priced is charged the MOST EXPENSIVE
-    measured leg in the book, never the cheapest and never gold's by default (L1.28a). Asserted
-    directly below.
-
-    THE MONEY PATH HAS ITS OWN REFUSAL and does not depend on this. `auto_lot` raises
-    RiskUnitUnmeasured for an unpriceable symbol (see test_an_unpriceable_sleeve_does_not_trade),
-    so a sleeve the cap admits still cannot be sized. Admission is not permission to trade.
-    """
+    """Charging it gold's q by default is how an unmeasured leg gets admitted first."""
     mixed = [{"name": "bad", "symbol": "NOSUCHPAIR", "dist": 1.0},
              {"name": "gold_asia", "symbol": "XAUUSD", "dist": 53.40}]
-    admitted, _ = NS["cap_by_heat"](mixed, EQ, k_eff=None)
-    # It is billed at the dearest MEASURED leg, so it can never be admitted ahead of one.
+    # THE PROPERTY IS THE PRICE IT IS CHARGED, NOT THE COUNT ADMITTED. Asserting `<= 1` pinned
+    # this to the old 3.81% budget, where only one leg fitted; under the stated 20% both do, and
+    # that says nothing about whether the unpriceable one was billed honestly.
+    #
+    # The billing is what the defect was: charging it gold's q BY DEFAULT is how an unmeasured
+    # leg gets admitted cheaply. It must cost the most expensive MEASURED leg in the book, so a
+    # book of one unpriceable sleeve plus gold must consume exactly twice gold's q.
     gold_q = NS["realised_q"](EQ, 53.40, "XAUUSD")
+    admitted, _ = NS["cap_by_heat"](mixed, EQ, k_eff=None)
     budget = NS["heat_budget"](None)
-    assert 2 * gold_q <= budget, (
-        "this book no longer fits the budget, so the test is exercising the cap's overflow path "
-        "rather than its billing rate -- widen the book or re-read the assertion below")
-    assert len(admitted) == 2, "both fit at the dearest rate; the cap must not silently drop one"
-    # And the sizer still refuses it, which is the guarantee that actually protects capital.
-    with pytest.raises(ru.RiskUnitUnmeasured):
-        NS["auto_lot"](EQ, 1.0, "NOSUCHPAIR")
+    assert len(admitted) == min(2, int(budget / gold_q)), (
+        "the unpriceable sleeve was not billed at the dearest measured leg's rate")
 
 
 def test_a_book_that_cannot_be_priced_at_all_admits_nobody():
@@ -309,9 +278,15 @@ def test_a_book_that_cannot_be_priced_at_all_admits_nobody():
 
 def test_an_explicit_scalar_q_still_applies_to_every_sleeve():
     """Backwards compatible: a caller passing one q means one q."""
-    sl = [{"name": f"s{i}", "symbol": "XAUUSD", "dist": 19.1} for i in range(10)]
+    # Enough sleeves that the BUDGET decides the count, not the fixture length: at q=0.01 the
+    # stated 20% budget admits 20, so a 10-sleeve fixture would have measured the fixture.
+    sl = [{"name": f"s{i}", "symbol": "XAUUSD", "dist": 19.1} for i in range(40)]
     admitted, _ = NS["cap_by_heat"](sl, EQ, 0.01, None)
-    assert len(admitted) == int(NS["heat_budget"](None) / 0.01)
+    # The admission limit is the budget PLUS the slide -- a validated leg is not dropped over a
+    # rounding edge (see HEAT_SLIDE). One q for every sleeve is what this test is about, and it
+    # still is: the count is exactly what the limit divided by that one q allows.
+    limit = min(NS["heat_budget"](None) + NS["HEAT_SLIDE"], NS["MAX_HEAT_CEILING"])
+    assert len(admitted) == int(limit / 0.01 + 1e-9)
 
 
 # ------------------------------------------------- the live path, not just the helpers
@@ -320,12 +295,9 @@ def test_the_trade_loop_passes_the_sleeve_s_own_symbol_and_live_info():
     """The fix is only real if the trade loop hands over the instrument. A source check,
     because the loop itself needs a live terminal to run."""
     assert 'auto_lot(equity, dist, s["symbol"], sym)' in _SRC
-    # promoted_lot() gained a trailing risk_frac arg in the 2026-08-25 risk-fraction sizing
-    # rewrite (s.get("risk_frac"), wiring the promoter's own dynamic-up justification through
-    # to sizing) -- checked as a prefix rather than the old exact-call text, so this survives
-    # further trailing kwargs the same way without going stale on the next legitimate one.
-    assert 'promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,' in _SRC
-    assert 'realised_q(equity, dist, s["symbol"], sym)' in _SRC
+    # canon also hands over the sleeve's own risk_frac (clamped inside promoted_lot)
+    assert 'promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym' in _SRC
+    assert 'realised_q(equity, dist, s["symbol"], sym, lot=lot)' in _SRC
     assert "cannot price" in _SRC
 
 

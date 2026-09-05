@@ -1,0 +1,447 @@
+Not Risk Parity Funds Michael A. Mendelson
+February 7, 2018After an extended period of extreme calm, the worlds stock markets have gotten fairly messy. The source of such 
+
+reading, as most people prefer an actual answer to a this
+-
+isnt
+-
+the-
+answer answer. But, given how many wrong 
+answers have been put forward, we think its pretty important.
+ 
+In a February 5 Bloomberg story1 on the market rout, the very first sentence, in its entirety, was Risk parity 
+funds. We infer the phrase full stop was implied. A more accurate start would have been Not risk parity funds, 
+
+days or weeks, risk parity funds were to trade more than they have so far, perhaps because of persistently high 
+volatility, their trading volumes would have little impact on stock market prices. Why? Because they are just not 
+that big and dont trade as much as many seem to think. 
+ 
+We believe that risk parity strategies in a
+ggregate hold about $70 billion of global equities,2 maybe even less, 
+mostly in the form of index futures. We think it is very unlikely that more than a small fraction of that would be 
+
+of one days global market volume,3 
+it would be difficult to imagine risk parity managers ever selling more than a 
+low single
+-
+digit percentage of a days volume even if they went mad; they just dont hold enough stock.
+ 
+The reason you hear about potential selling from risk parity and have to read a rebuttal
+ 
+from
+ 
+us every time 
+market volatility rises is because a few years ago some bank analysts made a series of estimation errors that 
+
+responsiveness of risk parity positioning (how much they have to trade) to changes in market volatility. The 
+combination of these three errors, all in the same direction, led to an exaggerated prediction of likely trading 
+volume in a big downturn. Once a bad story gets out there, particularly one appealing to peoples fears of the 
+machines and other nasty things, its very hard to stamp it out. Theres a fascinating case study here on how a 
+demonstrably false story became nearly ubiquitous - 
+retold by pundits, politicians, investment managers, and the 
+
+be of nearly as much interest.
+ 
+If risk parity isnt to blame, what about trend-
+following strategies? Thats a little more interesting, but not a lot more 
+interesting. Their AUM is somewhat smaller than it was a decade ago and is probably now about the same as risk 
+parity AUM.4 
+Over time, the equity holdings of a trend-
+following strategy can vary a lot, potentially going from 
+1 
+
+February 6, 2018.
+ 2 
+Based on AQR estimates of total risk parity industry assets and that risk parity managers hold about 40% notional exposure in 
+equities. Risk 
+parity assets under management are calculated by AQR and include all managers in the HFR Risk Parity Indices sourced from eVestment, 
+Public Plan IQ, BarclayHedge, HFR, and AQR (for our assets only) and are as of 12/31/2017.
+ 3 
+Trading volumes are estimated by averaging the daily trading volume, sourced from Bloomberg, for countries in the MSCI World Index in 
+
+both cash and futures markets.
+ 4 
+Trend following AUM is sourced from eVestments estimate of Managed Futures assets as of 12/31/2017.
+ 
+
+N
+ot Risk Parity Funds
+  
+| 
+February 7, 2018
+ 2
+ 
+meaningfully long to meaningfully s
+hort, with positioning changes dr
+iven by c
+hanging risk es
+timates and changing 
+market t
+rends. T
+he recent s
+ell-
+off s
+hould certainly affect t
+he strength an
+d possibly t
+he sign of s
+om
+e managers 
+equity s
+ignals (
+more so the ones of t
+he m
+anagers w
+ho focus on t
+he now negativ
+e shorter
+-
+term t
+rends t
+han the still 
+positive longer t
+erm t
+rends) and so will generate s
+ome trades. G
+iven reasonabl
+e estimates of t
+otal eq
+uity 
+exposur
+e in these strategies and with some good understanding of t
+he signal s
+peed and trading approac
+h of 
+participants i
+n this m
+arket, our ex
+pectati
+on is t
+hat t
+hese trades als
+o will be small i
+n the c
+ontext of equ
+ity m
+arkets. 
+While very likely t
+o be larger t
+han risk par
+ity t
+rades, we bel
+iev
+e that t
+rend-
+following t
+rade
+s ar
+e al
+so s
+imply n
+ot 
+going to be l
+arge enough to r
+epresent m
+ore than a single-
+digit per
+centage of an
+y d
+ays m
+arket v
+olume. A
+dding 
+them t
+o risk par
+ity t
+rading demand, i
+ts s
+till j
+ust not t
+hat m
+uch. 
+Going be
+yond risk par
+ity a
+nd trend-
+following, w
+e also s
+ee fingers poi
+nted at volatility
+-
+targeting strategies i
+n 
+general,
+5
+ which i
+nclude volatility
+-
+targeting long-
+only e
+quities and qu
+antitative market
+-
+neutral e
+quities. O
+n the 
+latter, t
+hese s
+trategies ar
+e, as t
+he name implies, m
+arket
+-
+neutral a
+nd any s
+elli
+ng is m
+atched by b
+uying, s
+o they 
+shouldnt ha
+ve br
+oad market i
+mpact. I
+n fact, dur
+ing t
+he infamous mass s
+ale of t
+hese portfolios i
+n early August of 
+2007, when their levera
+ge was m
+uch higher t
+han it is t
+oday, q
+uantitativ
+e equity s
+trategies were broadly unwound 
+but t
+he stock market w
+as f
+lat o
+ver t
+he period. T
+he market s
+imply di
+d not n
+otice t
+he quants pain. T
+hat isnt 
+surprising for m
+arket
+-
+neutral s
+trategies, but s
+ometimes pr
+ess r
+eports t
+hrow t
+hem on the list of s
+uspects, t
+oo, 
+probably j
+ust bec
+ause quantitative equity m
+anagers al
+so use a l
+ot of c
+omputers. We, adm
+ittedly, k
+now l
+ess a
+bout 
+the scale of v
+olatility
+-
+targeting long-
+only equity s
+trategies and we understand there may h
+ave been s
+ome recent 
+selli
+ng i
+n them, as t
+hats what v
+olatility
+-
+targeting managers do wh
+en volatility go
+es up, b
+ut a
+pparently it was, 
+again, not m
+eaningful in the context of t
+he overall m
+arket. 
+T
+he media and the analysts gener
+ally get t
+he idea right, t
+hat r
+isk par
+ity an
+d trend
+-
+following strategies t
+end to s
+ell 
+w
+hen volatility r
+ises. But when it r
+ises quickly, t
+hey ar
+e really s
+elling after t
+hat s
+pike, a distinction to per
+haps 
+explor
+e another day. T
+he issue is a
+lways on
+e of m
+agnit
+ude and t
+iming a
+nd people c
+onsistently ge
+t t
+his par
+t very 
+wrong, usually b
+y om
+itting the topic e
+ntirely. I
+t takes an a
+wful l
+ot t
+o move big global s
+tock markets and the sizes 
+and trading sp
+eed of r
+isk p
+arity and trend-
+following strategies j
+ust do
+nt get you there. Yes, i
+f t
+hey were 10x b
+igger 
+we might j
+oin i
+n t
+he c
+oncern. B
+ut t
+hey arent. So, no, we dont k
+now what has c
+aused the market s
+ell
+-
+off, but w
+e 
+do know t
+hat, o
+nce again, i
+t w
+asnt 
+the machines.
+
+6
+ Instead, we are i
+ncli
+ned to blame those fickle humans w
+ho 
+actually s
+ometimes just c
+hange their m
+ind about t
+he right pr
+ic
+e to pay f
+or s
+tocks and, i
+n th
+e words of a famous 
+fund manager, bec
+ome t
+he real 
+hammer on the downside
+. 
+5
+ Its a subject for anot
+her day
+, but som
+e managers target v
+olatility be
+cause its an important r
+isk management tool. I
+magine the al
+ternative, 
+wher
+e funds, including those that em
+ploy m
+odest l
+everage, dont t
+arget volatility, dont m
+anage their risk as the market env
+ironment becomes 
+hostile. M
+any feel i
+ts better to manage exposures bef
+ore portfolio r
+isks r
+ise t
+o an inappropriate level. 
+6
+ Occams r
+azor would favor the simple explanati
+on that i
+nflati
+on fears hi
+t t
+he stock and bond markets a
+t t
+he s
+am
+e time af
+ter a big r
+un-
+up in 
+stocks at h
+igh valuations combined with t
+he simple fact t
+hat stocks are usually v
+olatile with the l
+ast f
+ew y
+ears bei
+ng uncomm
+only c
+alm. B
+ut, we 
+never f
+eel t
+oo confident abou
+t what dr
+ives s
+hort
+-
+term market movements. A
+ll w
+e really k
+now i
+s that John Pierpont Morgan was r
+ight, markets 
+will fluctuate. 
+
+Not Risk Parity Funds
+  
+| 
+February 7, 2018
+ 
+ 
+Disclos
+ures
+ 
+ 

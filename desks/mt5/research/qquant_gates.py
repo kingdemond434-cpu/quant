@@ -93,7 +93,12 @@ def _init_worker() -> None:
         # fix makes real costs higher, not lower. Costs.from_symbol() derives every symbol,
         # gold included, from the same universe.json metadata formula -- no special case.
         m = _worker_ctx["meta"].get(sym, {})
-        return Costs.from_symbol(m, mult=mult)
+        # `mult` STILL SCALES THE COMMISSION, which `from_symbol`'s docstring argues against (a
+        # contractual fee does not widen). Changing it here would LOWER a stressed cost, which is
+        # the one direction that can manufacture a survivor; the hand-roll this replaced charged
+        # 3.50 x mult, so every component of this cost stays >= what it was (desk-sync-clean,
+        # 2026-08-29). The commission-stress question is a separate decision with its own evidence.
+        return Costs.from_symbol(m, mult=mult, commission_per_lot=3.50 * mult)
 
     _worker_ctx["costs_for"] = costs_for
 
@@ -302,8 +307,7 @@ def main() -> int:
 
             arr = np.asarray(list(s.values()))          # dates discarded
             ...
-            min_len = min(len(a) for a in cols)
-            np.column_stack([a[-min_len:] for a in cols])
+            np.column_stack([a[-shortest:] for a in cols])   # clipped to the shortest cell
 
         which stacked the last N values of each column POSITIONALLY. Cells trade on different
         days, so row 5 of column A and row 5 of column B were different dates. Every number
@@ -311,7 +315,7 @@ def main() -> int:
         implied across trials -- was measured on a cross-section that never existed. Those are
         precisely the gates that decide whether a survivor is a curve fit.
 
-        The truncation was the second defect: `min_len` clipped every column to the shortest,
+        The truncation was the second defect: clipping every column to the shortest cell,
         so one sparse cell with 60 observations reduced a matrix whose other cells had thousands
         to a 167-day window. Both defects have the same root -- the date index was thrown away --
         and both are fixed by joining on it.

@@ -1,0 +1,2377 @@
+{
+ "measured_at": "2026-08-29",
+ "seat": "brain_hunter_s19",
+ "per_repo": {
+  "0xceb1_brain-learn": {
+   "py_files": 13,
+   "eval_files": 10,
+   "eval_fns_ge25nodes": 72,
+   "local_compute_hits": 35,
+   "platform_read_hits": 25
+  },
+  "Miasyster_QuantGPT": {
+   "py_files": 100,
+   "eval_files": 83,
+   "eval_fns_ge25nodes": 717,
+   "local_compute_hits": 435,
+   "platform_read_hits": 49
+  },
+  "NewAmorend_AlphaGen-Agent": {
+   "py_files": 91,
+   "eval_files": 75,
+   "eval_fns_ge25nodes": 545,
+   "local_compute_hits": 16,
+   "platform_read_hits": 50
+  },
+  "aircrushin_wq-alpha-agent": {
+   "py_files": 18,
+   "eval_files": 16,
+   "eval_fns_ge25nodes": 90,
+   "local_compute_hits": 4,
+   "platform_read_hits": 56
+  },
+  "angel4angelov-glitch_wq-alpha-pipeline": {
+   "py_files": 15,
+   "eval_files": 13,
+   "eval_fns_ge25nodes": 76,
+   "local_compute_hits": 40,
+   "platform_read_hits": 33
+  },
+  "aznikline_alpha-mining-system": {
+   "py_files": 19,
+   "eval_files": 16,
+   "eval_fns_ge25nodes": 92,
+   "local_compute_hits": 131,
+   "platform_read_hits": 0
+  },
+  "gyx09212214-prog_worldquant-harness": {
+   "py_files": 333,
+   "eval_files": 301,
+   "eval_fns_ge25nodes": 3121,
+   "local_compute_hits": 406,
+   "platform_read_hits": 746
+  },
+  "mohitprashant_Quant-Alpha-Hypotheses": {
+   "py_files": 0,
+   "eval_files": 0,
+   "eval_fns_ge25nodes": 0,
+   "local_compute_hits": 0,
+   "platform_read_hits": 0
+  },
+  "nutdnuy_brain-paper-to-alpha-plugin": {
+   "py_files": 2,
+   "eval_files": 1,
+   "eval_fns_ge25nodes": 13,
+   "local_compute_hits": 0,
+   "platform_read_hits": 1
+  },
+  "seuzxh_quant-factor-skill": {
+   "py_files": 0,
+   "eval_files": 0,
+   "eval_fns_ge25nodes": 0,
+   "local_compute_hits": 0,
+   "platform_read_hits": 0
+  },
+  "slydg_Lightweight-Alpha-Miner": {
+   "py_files": 6,
+   "eval_files": 4,
+   "eval_fns_ge25nodes": 15,
+   "local_compute_hits": 1,
+   "platform_read_hits": 15
+  },
+  "xiao634zhang_wq-factor-miner": {
+   "py_files": 21,
+   "eval_files": 18,
+   "eval_fns_ge25nodes": 101,
+   "local_compute_hits": 4,
+   "platform_read_hits": 17
+  },
+  "zeron-G_worldquant-alpha-research-agent": {
+   "py_files": 15,
+   "eval_files": 12,
+   "eval_fns_ge25nodes": 212,
+   "local_compute_hits": 0,
+   "platform_read_hits": 24
+  },
+  "zhutoutoutousan_worldquant-miner": {
+   "py_files": 1631,
+   "eval_files": 911,
+   "eval_fns_ge25nodes": 6255,
+   "local_compute_hits": 266,
+   "platform_read_hits": 1677
+  }
+ },
+ "shared_fn_count": 570,
+ "shared_fns": {
+  "__init__": [
+   "angel4angelov-glitch_wq-alpha-pipeline",
+   "zhutoutoutousan_worldquant-miner"
+  ],
+  "_make_work_df": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_basic_output_keys": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_is_tests_structure": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_submittable_flag": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_dollar_neutral_weights": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_empty_data": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_too_few_rebalance_dates": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_turnover_nonnegative": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_basic_structure": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_too_few_stocks": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_deterministic": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_all_pass": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_all_fail": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_sub_universe_included": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_not_configured_when_empty": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_not_configured_when_missing": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_configured_when_both_set": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_configured_specific_account": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_configured_alt_account": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_configured_accounts": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_get_client_primary": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_init_from_params": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_init_from_env": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_authenticate_success": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_authenticate_failure": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_authenticate_biometric": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_status_returns_config": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_empty_input": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_single_iteration": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_improving_trajectory": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_declining_trajectory": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_stable_trajectory": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_diverse_trajectory": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_best_expression_found": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_none_scores_treated_as_zero": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_metrics_in_range": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "market_df": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_series": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_simple_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_complex_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_preserves_index": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_empty_dict_without_rust": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_ok": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "factor_df": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "short_df": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_rolling_result": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_score_in_range": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_windows_generated": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_window_results_have_correct_fields": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_summary_contains_keys": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_decay_analysis": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_short_data_returns_zero_score": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_custom_window_params": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_with_anti_overfit": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_convenience_function_returns_dict": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_windows_serializable": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_empty_df_returns_zeros": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_constant_factor_returns_zero_ic": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_empty_windows_returns_zero": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_perfect_windows_give_high_score": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_single_window_gets_stability_default": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_make_factor_df": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_mean_per_industry_is_zero": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_preserves_length": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_single_industry_zeroes_out_relative_to_mean": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_residuals_uncorrelated_with_cap": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_too_few_stocks_returns_original": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_no_neutralization_returns_original": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_make_engine": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_very_low_score_regenerates": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_zero_ic_mutates_operator": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_negative_ic_mutates_signal": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_deep_nesting_simplifies": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_medium_score_no_nonlinear_adds_nonlinear": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_low_ir_no_norm_adds_normalization": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_single_signal_adds_interaction": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_default_mutates_window": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_two_strings": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_user_prompt_has_expression_and_score": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_each_strategy_produces_prompt": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_count_nesting": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_has_normalization": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_has_nonlinear": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_suggest_replacements": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_roundtrip": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_reversed_dot_format": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_case_insensitive": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_no_dot_prefix": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_small_scale_static": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_known_benchmarks": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_cache_path_format": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_different_codes_different_paths": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_load_empty_returns_none": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_save_and_load": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_save_empty_is_noop": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_single_stock": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_multiple_stocks_independent": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_cached_data": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_vwap_computed": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_required_keys": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_weak_factor_gets_low_score": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_negative_cagr_caps_grade": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_negative_sharpe_caps_grade": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_anti_overfit_none_defaults_to_50": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_anti_overfit_clamped": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_zero_inputs": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_close_column": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_integer": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_float": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_addition": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_subtraction": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_multiplication": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_division_zero_produces_nan": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_unary_negation": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_log_clamps_negative": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_abs": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_sign": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_sqrt_clamps_negative": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_sigmoid_range": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_rank_per_date": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_zscore_per_date": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_ts_mean": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_ts_delta": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_ts_std": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_decay_linear": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_ts_corr_dual_column": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_rsi_range": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_ema": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_boll_upper_gt_lower": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_where": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_clip": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_vwap": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_delta_alias": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_delay_alias": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_nested_functions": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_arithmetic_with_functions": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_max_depth_exceeded": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_max_length_exceeded": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_no_cross_stock_contamination": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_values_match_manual": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_adv20_no_cross_stock_contamination": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_adv5_first_row_equals_own_volume": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_wq_remote_stub_raises_on_execution": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_wq_extended_field_stub_raises_on_execution": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_wq_unknown_operator_passthrough": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_wq_unknown_field_passthrough": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_wq_still_rejects_local_only_operators": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_basic": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_nested": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_filters_by_score_ratio": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_max_five": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_sorted_by_score_descending": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_excludes_missing_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_system_prompt_contains_strategy": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_user_prompt_contains_segments": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_operators_doc_included": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_make_market_df": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_series_of_correct_length": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_single_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_equal_weight_method": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_weighted_zscore_method": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_zero_weights_handled": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_diagonal_is_one": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_labels_returned": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_symmetric_matrix": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_primitives_unchanged": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_nan_becomes_none": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_inf_becomes_none": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_numpy_int": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_numpy_float": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_numpy_array": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_set_becomes_list": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_nested_dict": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_dataframe_creates_parquet": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_series_creates_parquet": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_dataframe_roundtrip": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_series_roundtrip": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_nested_dict_with_dataframes": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_args_list_roundtrip": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_parquet_files_cleaned_up": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_rejects_path_outside_data_dir": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_rejects_relative_traversal": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_basic_run": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_group_count": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_ic_bounded": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_ic_win_rate_bounded": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_turnover_bounded": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_cost_adjusted": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_precomputed_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_no_expression_no_factor_raises": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_direction_flip": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_stock_factor_data": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_zero_drawdown": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_known_drawdown": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_perfect_monotonic": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_inverse_monotonic": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_flat": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_perfect_correlation": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_no_correlation": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_all_nan": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_uses_stock_code_column": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_returns_empty_for_single_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_contribution_structure": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_sorted_by_absolute_marginal_ic": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "alpha_engine": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_identical_expressions": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_similar_expressions": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_different_operators_same_fields": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_same_operators_different_fields": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_create_and_read": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "engine": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "db_session": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_override_get_db": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_call_deepseek": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_handle_request": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "main": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "check_health": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "wq_simulate": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_wq_rating": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_sub_universe_sharpe": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_run_is_tests": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "safe_float": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "fitness_to_grade": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "parse_is_metrics": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_build_wq_result_block": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "run_list_alphas": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_aggregate_batch_result": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_track_alpha": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "is_configured": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "configured_accounts": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_client": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_get_session": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_setup_chinese_font": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_extract_factor_rankings": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_extract_top_factor_metrics": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_parse_metrics_rows": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_img_tag": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_style_chart": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "generate_score_bar_chart": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "generate_category_pie_chart": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "generate_top_factors_radar": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "generate_metrics_comparison_chart": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "generate_grade_summary_card": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_md_to_email_html": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_escape": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_inline_format": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "render_weekly_report_email": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_latest_report_path": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_latest_report_content": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "send_weekly_report_to": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "send_weekly_report": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "normalize": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_flush_table": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_flush_code": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_flush_blockquote": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "analyze_trajectory": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "check_rate_limit": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "active_task_count": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "check_cancelled": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "cleanup_tasks": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "cleanup_reports": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "sanitize_task_response": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_persist_task_impl": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "persist_task_to_db_async": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "persist_task_to_db": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "create_sse_ticket": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_sse_ticket": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "persist_report_to_db": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_do": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_run": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_executor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "submit_cpu_work": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "result": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_date_format": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_universe_value": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_benchmark_value": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "fetch_market_data": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "register_job": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "record_job_run": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_jobs_info": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "eval_factor_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "compute_metrics_rust": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "run_rolling_validation": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "run": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_generate_windows": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_evaluate_window": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_ic_ir": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_compute_composite_score": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_analyze_decay": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_spearman": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "generate_report": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_patch_report_css": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "industry_neutralize": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "cap_neutralize": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "neutralize_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_industry_data": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_neutralize_date": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "diagnose_failure": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "build_mutation_prompt": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_count_nesting": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_has_normalization": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_has_nonlinear": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_is_single_signal": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_extract_windows": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_suggest_replacements": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "select_strategy": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "start_mcp_task": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "complete_mcp_task": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_enrich_with_fundamentals": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_data_for_market": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "list_universes": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "diagnose_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "run_anti_overfit": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "derive_market_regime": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_to_rq_code": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_from_rq_code": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_rqdatac_init": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_baostock_login": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_universe": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_index_constituents_bs": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_derive_csi1000": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_derive_csi2000": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_all_stock_codes": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_transform_rq_to_schema": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_akshare": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_refresh_all_cached_stocks_impl": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "refresh_all_stocks_full": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "refresh_all_stocks_rqdatac_incremental": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_normalize_stock_code": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_cache_path": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_save_cache": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_remote_rq": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_remote_bs": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_remote": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "calculate_forward_returns": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "clean_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_parentheses": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_get_client": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "call_deepseek": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "call_fix_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "call_interpret_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "looks_like_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_build_explore_prompt": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "is_duplicate_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_call_llm": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_validate_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "generate_iteration_candidates": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "compute_industry_signals": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "detect_fundamental_vars": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_needed_apis": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_quarter_range": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_factor_cache_path": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_load_factor_cache": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_save_factor_cache": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_factors_rq": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "prewarm_factors_rq": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "enrich_with_fundamentals_rq": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "enrich_market_data": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_load_cache": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_single_api": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_stock": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "align_to_daily": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_dividend_cache_dir": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_dividend_cache_path": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_load_dividend_cache": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_save_dividend_cache": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_stock_dividends": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "align_dividends_to_daily": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "json_default": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "sanitize_for_json": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "safe_apply_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "strip_outer_rank": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "compute_factor_signals": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "parse_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "normalize_expression": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "extract_components": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_rsi": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_macd": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_atr": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_apply_ts_op_per_stock": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "parse": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_match_function_call": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_sub_parse": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_validate_window": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_find_keyword": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_find_operator": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_convert_ternary_operators": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_ts_dual": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_trade_when": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_atr": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "replace_ternary": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_cs_rank": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_cs_zscore": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_group_rank": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_group_zscore": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_wq_field_stub": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_wq_unknown_field_stub": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_get_smtp_config": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_send_email": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "send_verification_email": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_truncate": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "send_feedback_received_email": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "send_feedback_resolved_email": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_get_session_factory": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_db": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "init_db": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_migrate_add_columns": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_add_column_if_missing": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_load_factor_templates": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_get_today_index_changes": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_build_llm_prompt": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fix_markdown_spacing": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "generate_daily_summary": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "extract_top_segments": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "build_crossover_prompt": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "combine_factors": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "compute_factor_correlation": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "run_composite_backtest": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_combine_date": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "to_json_transport": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "from_json_transport": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_load_df": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "run_cpu_work": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "run_factor_backtest": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_safe_apply_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_max_drawdown": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_turnover": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_monotonicity": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_per_group_turnover": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_assign_group": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_pearson": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "compute_factor_attribution": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_compute_marginal_contributions": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_rank_ic": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_mount_spa": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_mcp_path_rewrite": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_market_data_refresh_job": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_weekly_report_job": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_daily_summary_job": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "spa_fallback": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_prepare_forward_returns": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_calc_daily_ic": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "run_all": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_ic_stability": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_subsample_stress": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_placebo": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "test_half_life": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_spearman_p": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_safe_float": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "record_submitted_alpha_sync": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "update_submitted_alpha_status_sync": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "check_self_correlation": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "prefetch": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_run_batch_task": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "wq_brain_batch_submit": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "wq_brain_batch_submit_by_id": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "wq_brain_batch_alpha_status": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "wq_brain_batch_finalize": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "on_progress": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "on_each_done": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_run_wq_brain_task": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "wq_brain_status": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "wq_brain_user_info": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "list_platform_alphas": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "wq_brain_submit": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "submit_alpha_from_task": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "check_alpha_platform_status": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "submit_alpha_by_id": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "delete_alpha": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "unhide_alpha": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "create_session": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "list_sessions": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "rename_session": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "delete_session": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "iterate_task": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "select_candidate": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_report": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_fetch_parent": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_feishu_sign": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_send_webhook": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_save_screenshot_to_disk": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "submit_feedback": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_feedback_screenshot": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_safe_send": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_factor_to_dict": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "save_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "list_factors": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "update_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "delete_factor": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "list_summaries": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_summary": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "trigger_generate": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "composite_backtest": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_run_composite_task": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "factor_correlation": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "factor_attribution": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_method": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "compare_factors": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_ensure_utc": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "cancel_task": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "auto_backtest": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "task_stats": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "list_tasks": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "get_task": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_prompt": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "_sort_key": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "event_generator": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "send_code": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "verify_code": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "login": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "set_password": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "reset_password": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "refresh": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "me": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "update_subscription": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_email": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_code": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "validate_password": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_overview": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_users": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_tasks": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_feedbacks": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "resolve_feedback": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_send_test_report": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_send_all_reports": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_scheduled_jobs": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_trigger_job": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_full_refresh": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_rqdatac_incremental": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_list_api_keys": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "admin_revoke_api_key": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "upgrade": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ],
+  "downgrade": [
+   "Miasyster_QuantGPT",
+   "gyx09212214-prog_worldquant-harness"
+  ]
+ },
+ "pairwise_overlap": [
+  {
+   "jaccard": 0.186,
+   "shared": 567,
+   "a": "Miasyster_QuantGPT",
+   "b": "gyx09212214-prog_worldquant-harness"
+  },
+  {
+   "jaccard": 0.0,
+   "shared": 1,
+   "a": "angel4angelov-glitch_wq-alpha-pipeline",
+   "b": "zhutoutoutousan_worldquant-miner"
+  },
+  {
+   "jaccard": 0.0,
+   "shared": 1,
+   "a": "NewAmorend_AlphaGen-Agent",
+   "b": "zhutoutoutousan_worldquant-miner"
+  },
+  {
+   "jaccard": 0.0,
+   "shared": 1,
+   "a": "0xceb1_brain-learn",
+   "b": "zhutoutoutousan_worldquant-miner"
+  }
+ ],
+ "local_metric_computation": {
+  "method": "AST: any def whose NAME matches a metric (sharpe|ic|fitness|turnover|drawdown|pnl|ret) AND whose body computes one (.corr/.mean()/.std()/sqrt(252)/annualiz/cumprod). Zeros re-verified by grep for .corr(|spearman|pearson|sqrt(252)|annualiz|cumprod outside tests.",
+  "per_repo": {
+   "0xceb1_brain-learn": {
+    "n": 0,
+    "fns": []
+   },
+   "Miasyster_QuantGPT": {
+    "n": 3,
+    "fns": [
+     "quantgpt/wq_simulate.py::_sub_universe_sharpe",
+     "quantgpt/backtest.py::_calc_max_drawdown",
+     "quantgpt/backtest.py::_calc_turnover"
+    ]
+   },
+   "NewAmorend_AlphaGen-Agent": {
+    "n": 0,
+    "fns": []
+   },
+   "aircrushin_wq-alpha-agent": {
+    "n": 0,
+    "fns": []
+   },
+   "angel4angelov-glitch_wq-alpha-pipeline": {
+    "n": 0,
+    "fns": []
+   },
+   "aznikline_alpha-mining-system": {
+    "n": 1,
+    "fns": [
+     "alpha_mining/evaluator.py::_calculate_group_returns"
+    ]
+   },
+   "gyx09212214-prog_worldquant-harness": {
+    "n": 4,
+    "fns": [
+     "worldquant_harness/wq_simulate.py::_sub_universe_sharpe",
+     "worldquant_harness/wq_pnl_analysis.py::aligned_daily_return_correlation",
+     "worldquant_harness/backtest.py::_calc_max_drawdown",
+     "worldquant_harness/backtest.py::_calc_turnover"
+    ]
+   },
+   "mohitprashant_Quant-Alpha-Hypotheses": {
+    "n": 0,
+    "fns": []
+   },
+   "nutdnuy_brain-paper-to-alpha-plugin": {
+    "n": 0,
+    "fns": []
+   },
+   "seuzxh_quant-factor-skill": {
+    "n": 0,
+    "fns": []
+   },
+   "slydg_Lightweight-Alpha-Miner": {
+    "n": 0,
+    "fns": []
+   },
+   "xiao634zhang_wq-factor-miner": {
+    "n": 0,
+    "fns": []
+   },
+   "zeron-G_worldquant-alpha-research-agent": {
+    "n": 0,
+    "fns": []
+   },
+   "zhutoutoutousan_worldquant-miner": {
+    "n": 4,
+    "fns": [
+     "mini-quant/alpha_backtesting_system.py::calculate_sharpe",
+     "mini-quant/alpha_backtesting_system.py::calculate_max_drawdown",
+     "stone_age/python/gui/alpha_mining.py::_calculate_sharpe_ratio",
+     "stone_age/python/gui/alpha_mining.py::_calculate_turnover"
+    ]
+   }
+  },
+  "repos_with_local_metric": [
+   "Miasyster_QuantGPT",
+   "aznikline_alpha-mining-system",
+   "gyx09212214-prog_worldquant-harness",
+   "zhutoutoutousan_worldquant-miner"
+  ],
+  "repos_with_none": [
+   "0xceb1_brain-learn",
+   "NewAmorend_AlphaGen-Agent",
+   "aircrushin_wq-alpha-agent",
+   "angel4angelov-glitch_wq-alpha-pipeline",
+   "mohitprashant_Quant-Alpha-Hypotheses",
+   "nutdnuy_brain-paper-to-alpha-plugin",
+   "seuzxh_quant-factor-skill",
+   "slydg_Lightweight-Alpha-Miner",
+   "xiao634zhang_wq-factor-miner",
+   "zeron-G_worldquant-alpha-research-agent"
+  ]
+ },
+ "verdicts": {
+  "s19_item1_answer": "NOT one copied harness. Exactly ONE duplicate pair (Miasyster/QuantGPT ~ gyx09212214-prog/worldquant-harness, jaccard 0.186 over AST-normalised eval functions, 567 shared) -- the pair s17 already corrected for. Every other pair shares <=1 function of >=25 AST nodes. The 13 authorships are independent on the evaluation axis.",
+  "s16_prior_correction": "But the 13 zeros are largely VACUOUS. 10 of 13 authorships compute NO factor metric locally at all -- every \"sharpe\" in them is .get() off the platform simulation response or a hardcoded literal. A repo with no evaluation stage cannot carry a multiplicity control, so its zero is not evidence of an oversight. The non-vacuous statement is: of the 3 authorships that compute a factor score themselves, 0 carry any multiplicity control. n=3, not 13.",
+  "where_the_exposure_actually_lives": "The class outsources statistics AND out-of-sample to WorldQuant own simulator. Its multiplicity exposure is therefore not in its code vocabulary at all -- it is the COUNT OF SIMULATIONS FIRED, which s16 already measured as gen_scale_hits and did not connect. Any future measurement of this class multiplicity must be a generation-scale measurement, not a grep."
+ }
+}

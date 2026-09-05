@@ -1,0 +1,9 @@
+[Unit]
+Description=Early-window seat: launch-yield (manifest slot re-homed; root timer fires into the exhausted quota window)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+TimeoutStartSec=3h
+SuccessExitStatus=0 2
+ExecStart=/bin/bash -c '.venv/bin/python scripts/check_seat_launch_yield.py >> data/cro_ai_logs/seat_launch_yield.log 2>&1'

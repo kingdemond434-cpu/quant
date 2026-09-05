@@ -1,0 +1,328 @@
+{
+  "aqr_article_links_available_on_the_fetched_landing_page": 11,
+  "aqr_article_rows_in_corpus": 0,
+  "corpus": "data/intelligence/gpt_practitioner_corpus.jsonl",
+  "distinct_urls": 306,
+  "landing_page_only_rows": 303,
+  "landing_page_only_share": 0.4385,
+  "landing_page_only_sources": [
+    "AQR Research",
+    "Bilibili Quant Search",
+    "Ethereum Research Latest",
+    "Flashbots Research Collective",
+    "Flashbots Writings",
+    "Forven public source",
+    "Habr Algorithmic Trading",
+    "Hugging Face Finance Datasets",
+    "Jump Crypto Research",
+    "Kaggle Trading Datasets",
+    "L1vsun",
+    "Man Institute",
+    "Paradigm Research",
+    "Qiita Algorithmic Trading",
+    "QuantConnect Community Research",
+    "Wintermute Research",
+    "antpalkin",
+    "shmidtqq"
+  ],
+  "man_landing_page_is_js_hub_articles_need_second_hop": true,
+  "measured_at": "2026-09-03",
+  "per_source": {
+    "AI Pathways": {
+      "distinct_bodies": 11,
+      "distinct_urls": 11,
+      "kind": "youtube",
+      "rows": 21,
+      "rows_per_url": 1.91,
+      "url": null
+    },
+    "AQR Research": {
+      "distinct_bodies": 5,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://www.aqr.com/Insights/Research"
+    },
+    "Algo Trading Space": {
+      "distinct_bodies": 11,
+      "distinct_urls": 11,
+      "kind": "youtube",
+      "rows": 13,
+      "rows_per_url": 1.18,
+      "url": null
+    },
+    "Bilibili Quant Search": {
+      "distinct_bodies": 20,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93"
+    },
+    "Critical Trading": {
+      "distinct_bodies": 10,
+      "distinct_urls": 10,
+      "kind": "youtube",
+      "rows": 10,
+      "rows_per_url": 1.0,
+      "url": null
+    },
+    "DaviddTech": {
+      "distinct_bodies": 14,
+      "distinct_urls": 14,
+      "kind": "youtube",
+      "rows": 22,
+      "rows_per_url": 1.57,
+      "url": null
+    },
+    "Desire To Trade": {
+      "distinct_bodies": 1,
+      "distinct_urls": 10,
+      "kind": "youtube",
+      "rows": 20,
+      "rows_per_url": 2.0,
+      "url": null
+    },
+    "Ethereum Research Latest": {
+      "distinct_bodies": 20,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://ethresear.ch/latest.json"
+    },
+    "Flashbots Research Collective": {
+      "distinct_bodies": 6,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://collective.flashbots.net/"
+    },
+    "Flashbots Writings": {
+      "distinct_bodies": 1,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 1,
+      "rows_per_url": 1.0,
+      "url": "https://writings.flashbots.net/"
+    },
+    "Forven public source": {
+      "distinct_bodies": 2,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 15,
+      "rows_per_url": 15.0,
+      "url": "https://github.com/judder659/Forven"
+    },
+    "Great Goat": {
+      "distinct_bodies": 4,
+      "distinct_urls": 4,
+      "kind": "youtube",
+      "rows": 8,
+      "rows_per_url": 2.0,
+      "url": null
+    },
+    "Habr Algorithmic Trading": {
+      "distinct_bodies": 8,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://habr.com/ru/search/?q=%D0%B0%D0%BB%D0%B3%D0%BE%D1%82%D1%80%D0%B5%D0%B9%D0%B4%D0%B8%D0%BD%D0%B3"
+    },
+    "Hugging Face Finance Datasets": {
+      "distinct_bodies": 16,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://huggingface.co/datasets?search=market+microstructure"
+    },
+    "IQ Capital": {
+      "distinct_bodies": 25,
+      "distinct_urls": 31,
+      "kind": "youtube",
+      "rows": 31,
+      "rows_per_url": 1.0,
+      "url": null
+    },
+    "Jump Crypto Research": {
+      "distinct_bodies": 1,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 1,
+      "rows_per_url": 1.0,
+      "url": "https://jumpcrypto.com/writing/"
+    },
+    "Kaggle Trading Datasets": {
+      "distinct_bodies": 8,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://www.kaggle.com/datasets?search=algorithmic+trading"
+    },
+    "Kevin Davey": {
+      "distinct_bodies": 4,
+      "distinct_urls": 4,
+      "kind": "youtube",
+      "rows": 8,
+      "rows_per_url": 2.0,
+      "url": null
+    },
+    "L1vsun": {
+      "distinct_bodies": 20,
+      "distinct_urls": 1,
+      "kind": "x",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://x.com/L1vsun"
+    },
+    "Lewis Jackson": {
+      "distinct_bodies": 7,
+      "distinct_urls": 10,
+      "kind": "youtube",
+      "rows": 32,
+      "rows_per_url": 3.2,
+      "url": null
+    },
+    "Man Institute": {
+      "distinct_bodies": 9,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://www.man.com/maninstitute"
+    },
+    "Neuro Trader": {
+      "distinct_bodies": 10,
+      "distinct_urls": 10,
+      "kind": "youtube",
+      "rows": 10,
+      "rows_per_url": 1.0,
+      "url": null
+    },
+    "Paradigm Research": {
+      "distinct_bodies": 8,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 12,
+      "rows_per_url": 12.0,
+      "url": "https://www.paradigm.xyz/writing"
+    },
+    "Qiita Algorithmic Trading": {
+      "distinct_bodies": 8,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://qiita.com/tags/%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0%E5%8F%96%E5%BC%95"
+    },
+    "QuantConnect Community Research": {
+      "distinct_bodies": 15,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://www.quantconnect.com/forum/discussions/1/research/"
+    },
+    "Quantified Strategies": {
+      "distinct_bodies": 19,
+      "distinct_urls": 19,
+      "kind": "youtube",
+      "rows": 33,
+      "rows_per_url": 1.74,
+      "url": null
+    },
+    "Saleh": {
+      "distinct_bodies": 11,
+      "distinct_urls": 11,
+      "kind": "youtube",
+      "rows": 21,
+      "rows_per_url": 1.91,
+      "url": null
+    },
+    "StrategyQuant": {
+      "distinct_bodies": 14,
+      "distinct_urls": 18,
+      "kind": "youtube",
+      "rows": 24,
+      "rows_per_url": 1.33,
+      "url": null
+    },
+    "Top Traders Unplugged": {
+      "distinct_bodies": 17,
+      "distinct_urls": 26,
+      "kind": "youtube",
+      "rows": 27,
+      "rows_per_url": 1.04,
+      "url": null
+    },
+    "Unbiased Trading Goshawk": {
+      "distinct_bodies": 15,
+      "distinct_urls": 15,
+      "kind": "youtube",
+      "rows": 24,
+      "rows_per_url": 1.6,
+      "url": null
+    },
+    "Wintermute Research": {
+      "distinct_bodies": 10,
+      "distinct_urls": 1,
+      "kind": "site",
+      "rows": 14,
+      "rows_per_url": 14.0,
+      "url": "https://www.wintermute.com/research"
+    },
+    "antpalkin": {
+      "distinct_bodies": 20,
+      "distinct_urls": 1,
+      "kind": "x",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://x.com/antpalkin"
+    },
+    "arXiv Market Microstructure": {
+      "distinct_bodies": 32,
+      "distinct_urls": 32,
+      "kind": "atom",
+      "rows": 32,
+      "rows_per_url": 1.0,
+      "url": null
+    },
+    "arXiv Portfolio Management": {
+      "distinct_bodies": 26,
+      "distinct_urls": 27,
+      "kind": "atom",
+      "rows": 27,
+      "rows_per_url": 1.0,
+      "url": null
+    },
+    "arXiv q-fin Trading": {
+      "distinct_bodies": 24,
+      "distinct_urls": 25,
+      "kind": "atom",
+      "rows": 25,
+      "rows_per_url": 1.0,
+      "url": null
+    },
+    "shmidtqq": {
+      "distinct_bodies": 20,
+      "distinct_urls": 1,
+      "kind": "x",
+      "rows": 20,
+      "rows_per_url": 20.0,
+      "url": "https://x.com/shmidtqq"
+    }
+  },
+  "session": "BRAIN HUNTER s51",
+  "total_rows": 691,
+  "x_login_wall_rows": 60,
+  "x_login_wall_sources": [
+    "L1vsun",
+    "antpalkin",
+    "shmidtqq"
+  ]
+}

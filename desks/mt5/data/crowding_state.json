@@ -1,16 +1,18 @@
 {
- "updated": "2026-08-23T03:40:15.401532+00:00",
+ "updated": "2026-08-21T22:55:02.997860+00:00",
  "latest": {
-  "ts": "2026-08-23T03:40:15.397288+00:00",
-  "query": "cross asset momentum lead lag",
-  "mechanism": "cross_asset",
+  "ts": "2026-08-21T22:55:02.993856+00:00",
+  "query": "TTM squeeze trading",
+  "mechanism": "squeeze",
   "github": {
-   "count": 1,
+   "count": 2,
    "top_stars": [
+    6,
     0
    ],
    "top_names": [
-    "EzioAuditore027/High-Frequency-Limit-Order-Book-Predictive-Model"
+    "GiustiRo/squeezem-adx-ttm",
+    "CrazyHasNoIdeaWhatToDo/TTM-squeeze-dots-tradingview"
    ]
   },
   "reddit": {
@@ -18,12 +20,12 @@
    "avg_score": 0.0,
    "comments": 0
   },
-  "github_stars_delta": null,
+  "github_stars_delta": 0,
   "news_topics": {
-   "fed": 21,
+   "fed": 24,
    "cpi": 1,
    "nonfarm": 0,
-   "rates": 1,
+   "rates": 0,
    "oil": 0,
    "gold": 0,
    "bonds": 0,
@@ -33,5 +35,5 @@
   "edge_publicity": "LOW",
   "expected_decay": "NORMAL"
  },
- "history_len": 7
+ "history_len": 23
 }

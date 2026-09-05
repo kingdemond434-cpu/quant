@@ -29,6 +29,8 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.execution import gate0_evidence  # noqa: E402  (needs the sys.path insert above)
+
 _OUT = _ROOT / "data/gate0_readiness.json"
 
 #: The executor's published book state (run_cashcarry_executor.py:43). NOT cashcarry_state.json,
@@ -122,17 +124,24 @@ def _symbol_count() -> dict[str, Any]:
     if cfg is None:
         return _row("symbol_count_4_5", None, "config unreadable",
                     DESK, "data/cashcarry_config.json", "restore data/cashcarry_config.json")
-    n = int(cfg.get("top", 0))
+    # ONE reader, shared with run_live_guard (L1.61 / R0537). Both organs feed the same
+    # `s1_entry_met`, so a second encoding of this reading here is how the two boards drifted.
+    n = gate0_evidence.symbol_count(_ROOT)
+    if n is None:
+        return _row("symbol_count_4_5", None, "config unreadable",
+                    DESK, gate0_evidence.CONFIG_REL, "restore data/cashcarry_config.json")
     return _row("symbol_count_4_5", 4 <= n <= 5, f"top={n} concurrent carries configured",
-                PRINCIPAL, "data/cashcarry_config.json",
+                PRINCIPAL, gate0_evidence.CONFIG_REL,
                 "" if 4 <= n <= 5 else f"Gate 0 admits 4-5 concurrent names; top is {n}")
 
 
 def _principal_signoff() -> dict[str, Any]:
-    f = _ROOT / "data/gate0_signoff.json"
-    return _row("principal_signoff", f.exists(),
-                "signoff recorded" if f.exists() else "no signoff on file",
-                PRINCIPAL, "data/gate0_signoff.json",
+    # Same shared reader the executor-side guard now uses (L1.61 / R0536): consent was encoded
+    # two incompatible ways for one human act, and only this one is ever written.
+    signed = gate0_evidence.principal_signoff(_ROOT)
+    return _row("principal_signoff", signed,
+                "signoff recorded" if signed else "no signoff on file",
+                PRINCIPAL, gate0_evidence.SIGNOFF_REL,
                 "record the go/no-go decision once the rows above are green")
 
 

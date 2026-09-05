@@ -37,8 +37,27 @@ def _characterise(states: np.ndarray, raw_ret: np.ndarray, k: int) -> dict[int, 
     for rank, j in enumerate(vol_order):
         tier[j] = "low_vol" if rank == 0 else ("high_vol" if rank == k - 1 else "mid_vol")
     out: dict[int, dict[str, object]] = {}
+    # TREND IS RELATIVE TO THE OTHER STATES, NOT TO ZERO -- and this is the difference between a
+    # regime label that carries information and one that restates the asset's drift.
+    #
+    # MEASURED 2026-09-02 on XAUUSD, 2,181 daily closes: gold rose over the window, so EVERY HMM
+    # state had a positive mean return and every one was labelled "bull". The GMM, clustering the
+    # same features differently, produced bear/low_vol, bull/mid_vol and bear/high_vol. The two
+    # models therefore disagreed on the trend axis for two states out of three, `hmm_gmm_agree`
+    # went False, and `current()` returned confidence 0.000 -- on every single call.
+    #
+    # Downstream that made the entire regime layer inert: the allocator's world sampler mixes
+    # over regime probabilities weighted by this confidence, so it fell back to empirical
+    # frequency on every pass and the regime axis cost compute while contributing nothing.
+    #
+    # A state is bullish RELATIVE to the regime set it belongs to. Splitting at the cross-state
+    # median mean makes the label informative for an asset with any drift, up or down, and makes
+    # the two models comparable -- they are then both answering "which of these states is the
+    # strong one", rather than one answering "did the price rise" and the other "did this cluster
+    # rise". The vol axis was already relative (ranked low/mid/high) and always worked.
+    _pivot = float(np.median([stats[j]["mean_ret"] for j in range(k)])) if k else 0.0
     for j in range(k):
-        trend = "bull" if stats[j]["mean_ret"] >= 0 else "bear"
+        trend = "bull" if stats[j]["mean_ret"] >= _pivot else "bear"
         vt = tier[j]
         lev = max(0.2, min(1.0, _VOL_FACTOR[vt] * _TREND_FACTOR[trend]))
         out[j] = {"label": f"{trend}/{vt}", "trend": trend, "vol_tier": vt,
@@ -98,9 +117,30 @@ class RegimeEngine:
             # Scale the HMM posterior by the GMM's own posterior mass on the HMM's label; on
             # disagreement the winning GMM component carries a different label, so this factor
             # is strictly < 1 and a confident contradiction drives conf towards 0.
+            # AGREEMENT IS PER AXIS, NOT ON THE CONCATENATED STRING. This required an exact
+            # match on "trend/vol_tier", so if the GMM's state set simply did not CONTAIN the
+            # HMM's label the factor was exactly 0 -- however much the two models actually
+            # agreed. MEASURED 2026-09-02 on XAUUSD: the HMM's current state was bull/high_vol
+            # and the GMM's high-vol state was bear/high_vol, so `same` was empty, the factor was
+            # 0, and confidence came back 0.000 on every call. Two models clustering continuous
+            # features into three states will rarely produce identical label SETS, so an exact
+            # string match makes confidence zero almost always -- and a confidence that is always
+            # zero is not a measurement, it is a switch stuck off.
+            #
+            # The vol tier and the trend are separate claims and are scored separately: the GMM's
+            # posterior mass on states sharing the HMM's vol tier, and on states sharing its
+            # trend. Agreeing on volatility while differing on direction is partial agreement and
+            # is dampened, not annihilated. Total contradiction still drives the factor to 0,
+            # which is the conservative property the original was reaching for, and this branch
+            # can still only ever LOWER confidence.
             gp = gmm_posteriors(self.gmm, self.x[-1:])[0]
-            same = [m for m in range(self.k) if str(self.gmm_char[m]["label"]) == ch["label"]]
-            conf *= float(gp[same].sum())
+            same_vol = [m for m in range(self.k)
+                        if str(self.gmm_char[m]["vol_tier"]) == str(ch["vol_tier"])]
+            same_trend = [m for m in range(self.k)
+                          if str(self.gmm_char[m]["trend"]) == str(ch["trend"])]
+            agree_vol = float(gp[same_vol].sum()) if same_vol else 0.0
+            agree_trend = float(gp[same_trend].sum()) if same_trend else 0.0
+            conf *= 0.5 * (agree_vol + agree_trend)
         return {
             "regime": ch["label"], "trend": ch["trend"], "vol_tier": ch["vol_tier"],
             "confidence": round(conf, 3),

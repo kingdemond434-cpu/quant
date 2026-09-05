@@ -1,0 +1,122 @@
+{
+ "note": "measured frontier coverage per locale -- never a completion claim; open_frontier cells keep canary priority forever",
+ "locales": {
+  "zh": {
+   "region": "China",
+   "open_frontier": false,
+   "queries_exercised": 39,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-04T12:22:00+00:00",
+   "native_terms_available": 19
+  },
+  "ja": {
+   "region": "Japan",
+   "open_frontier": false,
+   "queries_exercised": 36,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-03T20:22:06+00:00",
+   "native_terms_available": 17
+  },
+  "ru": {
+   "region": "CIS",
+   "open_frontier": false,
+   "queries_exercised": 36,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-03T20:30:56+00:00",
+   "native_terms_available": 18
+  },
+  "ar": {
+   "region": "MENA",
+   "open_frontier": false,
+   "queries_exercised": 36,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-03T21:22:06+00:00",
+   "native_terms_available": 15
+  },
+  "es": {
+   "region": "LATAM/Spain",
+   "open_frontier": false,
+   "queries_exercised": 36,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-03T22:22:11+00:00",
+   "native_terms_available": 15
+  },
+  "pt": {
+   "region": "Brazil/Portugal",
+   "open_frontier": false,
+   "queries_exercised": 33,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-03T23:22:08+00:00",
+   "native_terms_available": 11
+  },
+  "vi": {
+   "region": "Vietnam",
+   "open_frontier": false,
+   "queries_exercised": 30,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-04T00:22:05+00:00",
+   "native_terms_available": 10
+  },
+  "id": {
+   "region": "Indonesia",
+   "open_frontier": true,
+   "queries_exercised": 27,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-04T07:22:27+00:00",
+   "native_terms_available": 9
+  },
+  "ko": {
+   "region": "Korea",
+   "open_frontier": true,
+   "queries_exercised": 30,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-04T08:22:12+00:00",
+   "native_terms_available": 10
+  },
+  "tr": {
+   "region": "Turkey",
+   "open_frontier": true,
+   "queries_exercised": 33,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-04T09:22:34+00:00",
+   "native_terms_available": 11
+  },
+  "de": {
+   "region": "DACH",
+   "open_frontier": true,
+   "queries_exercised": 30,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-04T10:22:00+00:00",
+   "native_terms_available": 10
+  },
+  "fr": {
+   "region": "France/Africa francophone",
+   "open_frontier": true,
+   "queries_exercised": 30,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-04T11:22:12+00:00",
+   "native_terms_available": 10
+  },
+  "en": {
+   "region": "global",
+   "open_frontier": false,
+   "queries_exercised": 36,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-09-04T06:22:42+00:00",
+   "native_terms_available": 20
+  }
+ }
+}

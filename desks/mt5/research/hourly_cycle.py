@@ -24,15 +24,29 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-# WAS a hardcoded C:\Users\dell\... path -- the retired laptop's interpreter, which does not
-# exist on Contabo. Caught live 2026-08-26 while checking whether the hourly restart of dead
-# hunt12/hunt16 processes actually works: it does not, on this box, because the launch command
-# points at a file that is not there. Derived portably instead, from whichever interpreter is
-# actually running this script -- pythonw.exe sits beside python.exe in every standard CPython
-# Windows install, so this works on any box without a hardcoded path.
-_exe_dir = Path(sys.executable).parent
-_pythonw = _exe_dir / "pythonw.exe"
-PY = str(_pythonw) if _pythonw.exists() else sys.executable
+# BASE ON THE PATH, AT MODULE LEVEL. `record_tape()` runs BEFORE `daily()`, and `daily_cycle` is
+# the module that happened to insert BASE -- so every hourly run reached `from mt5desk import
+# tape` with BASE still absent and died on ModuleNotFoundError. MEASURED 2026-08-27: 66
+# consecutive "tick tape FAILED" lines since the log was created on 08-22, i.e. five days of
+# broker-native ticks never recorded. That tape is the desk's own moat data and it CANNOT be
+# backfilled -- a tick nobody recorded is gone, unlike a bar you can re-download. Depending on
+# another module's import side effect for your own path is the bug; this makes it explicit.
+for _p in (str(BASE), str(BASE / "research")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+# THE INTERPRETER THAT IS ACTUALLY RUNNING, never a path typed once and left behind. These were
+# hardcoded to C:\Users\dell\...\Python312, which is the OLD box: this desk runs as
+# Administrator on Python314, so the path did not exist and `start()` could never launch
+# anything. Verified 2026-08-28 -- dell pythonw.exe: False, Administrator pythonw.exe: True.
+# The failure was perfectly silent. `health()` read a hunt as dead, called `start()`,
+# Start-Process failed against a nonexistent binary in a detached hidden window, and the cycle
+# recorded "restarted": True. So the one repair this cycle performs has never once worked here,
+# and it reported success every time.
+# Deriving from sys.executable means a box move, a Python upgrade or a different user cannot
+# break it again -- the interpreter running this file is by definition the one that exists.
+PYE = sys.executable or "python.exe"
+_pyw = Path(PYE).with_name("pythonw.exe")
+PY = str(_pyw) if _pyw.exists() else PYE
 
 EXPECTED = {
     "hunt12": ("pythonw.exe", "run_hunt12.py"),
@@ -40,12 +54,30 @@ EXPECTED = {
 }
 
 
-def procs() -> list[str]:
-    out = subprocess.run(
-        ["powershell", "-NoProfile", "-Command",
-         "Get-CimInstance Win32_Process -Filter \"Name='pythonw.exe' OR Name='python.exe'\" "
-         "| ForEach-Object { $_.CommandLine }"],
-        capture_output=True, text=True, timeout=60)
+def procs() -> str | None:
+    """The running python command lines, or None when they COULD NOT BE READ.
+
+    None is not an empty list, and the difference decides whether this cycle launches processes.
+    Measured 2026-08-28: on a loaded box the PowerShell CIM query exceeded 60 seconds, the
+    TimeoutExpired propagated, and the ENTIRE hourly cycle died -- a health check killing the
+    thing it was checking, and doing it precisely when the box was busy, which is exactly when
+    the cycle matters most. MT5-Hourly had failed twice in a row on this before the stall
+    watchdog surfaced it.
+
+    Returning "" instead would be worse than crashing: every `script in blob` test would read
+    False, `health()` would conclude both hunts were dead, and it would launch duplicates onto
+    the box that was already too loaded to answer the query. Absence never resolves to a clean
+    verdict (L1.28a) -- and here the wrong verdict is actively harmful.
+    """
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_Process -Filter \"Name='pythonw.exe' OR Name='python.exe'\" "
+             "| ForEach-Object { $_.CommandLine }"],
+            capture_output=True, text=True, timeout=180)
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        print(f"  procs(): UNMEASURED ({type(exc).__name__}) -- launching nothing this pass")
+        return None
     return (out.stdout or "") + (out.stderr or "")
 
 
@@ -65,9 +97,29 @@ def start(script: str) -> bool:
     return result.returncode == 0
 
 
+def _cmd_lines() -> str | None:
+    """cmd.exe command lines, or None when unreadable. Same rule as procs()."""
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_Process -Filter \"Name='cmd.exe'\" "
+             "| ForEach-Object { $_.CommandLine }"],
+            capture_output=True, text=True, timeout=180)
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    return out.stdout or ""
+
+
 def health() -> dict:
     blob = procs()
-    res = {}
+    res: dict = {}
+    if blob is None:
+        # UNMEASURED, so nothing is declared dead and nothing is launched. A pass that cannot
+        # see the process table has no business starting processes.
+        for name in EXPECTED:
+            res[name] = {"alive": None, "note": "process table unreadable; no launch attempted"}
+        res["gateway_cmd"] = {"alive": None, "note": "process table unreadable"}
+        return res
     for name, (_, script) in EXPECTED.items():
         alive = script in blob
         res[name] = {"alive": alive}
@@ -81,11 +133,17 @@ def health() -> dict:
             res[name]["restarted"] = bool(launch_ok and script in procs())
             if not res[name]["restarted"]:
                 res[name]["restart_failed"] = True
-    res["gateway_cmd"] = {"alive": "MT5Gateway.cmd" in blob or bool(
-        subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "Get-CimInstance Win32_Process -Filter \"Name='cmd.exe'\" "
-                        "| ForEach-Object { $_.CommandLine }"],
-                       capture_output=True, text=True, timeout=60).stdout.find("MT5Gateway"))}
+    # `str.find` RETURNS -1 WHEN NOT FOUND, AND bool(-1) IS TRUE -- so this read "alive" exactly
+    # when MT5Gateway.cmd was absent, and False only in the one case where it sat at position 0.
+    # An inverted health check is worse than none: it reports green for the failure it exists to
+    # catch. Membership testing says what was meant.
+    cmds = _cmd_lines()
+    if "MT5Gateway.cmd" in blob:
+        res["gateway_cmd"] = {"alive": True}
+    elif cmds is None:
+        res["gateway_cmd"] = {"alive": None, "note": "cmd table unreadable"}
+    else:
+        res["gateway_cmd"] = {"alive": "MT5Gateway" in cmds}
     return res
 
 
@@ -183,15 +241,39 @@ def record_tape() -> dict:
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
+def state_vector() -> dict:
+    """Rebuild the desk's description of the world, once, for every consumer to read.
+
+    RUNS AFTER THE TAPE AND BEFORE THE ALLOCATOR'S NEXT PASS. A `RegimeEngine` fit costs ~8.5ms
+    per observation -- 17s for 2,000 daily bars -- and the allocator's fast clock is five minutes,
+    so the state vector cannot be assembled inline without eating the clock it informs. Every fit
+    is cached against the bar it saw, so an hour whose daily bars have not turned over re-reads
+    rather than refits and this step costs seconds.
+
+    NEVER FAILS THE CYCLE. A state vector that cannot be built is a recorded gap, and the
+    allocator degrades to the unconditioned solve it ran before this existed.
+    """
+    try:
+        import state_vector_build
+
+        rc = state_vector_build.main()
+        return {"exit_code": int(rc), "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except Exception as exc:                                          # noqa: BLE001
+        return {"exit_code": 1, "error": f"{type(exc).__name__}: {exc}",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
 def main() -> None:
     h = health()
     t = record_tape()
+    s = state_vector()
     d = daily()
     m = mine()
     frontier_report(h)
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
-                    "health": h, "tape": t, "daily": d, "mine": m}, indent=1), encoding="utf-8")
+                    "health": h, "tape": t, "state_vector": s, "daily": d, "mine": m},
+                   indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 
 

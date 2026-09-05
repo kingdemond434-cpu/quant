@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Quant Master Aggregator 5 min after autodiscovery
+
+[Timer]
+OnCalendar=*:0/30:05
+Persistent=true
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

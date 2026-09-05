@@ -1,6 +1,6 @@
 {
- "updated": "2026-08-19T03:22:34.851817+00:00",
- "n_closes": 4,
+ "updated": "2026-09-03T03:13:11.363194+00:00",
+ "n_closes": 0,
  "hold_buckets": {
   "<2h": {
    "n": 0,
@@ -9,10 +9,10 @@
    "bps": 0.0
   },
   "2-8h": {
-   "n": 4,
-   "notional": 25.85,
-   "net": -0.03,
-   "bps": -11.61
+   "n": 0,
+   "notional": 0,
+   "net": 0,
+   "bps": 0.0
   },
   "8-24h": {
    "n": 0,
@@ -36,11 +36,11 @@
    "bps": 0.0
   },
   "2-8h": {
-   "n": 4,
-   "notional": 25.85,
-   "fee": 0.02,
-   "net": -0.05,
-   "bps": -17.66
+   "n": 0,
+   "notional": 0,
+   "fee": 0,
+   "net": 0,
+   "bps": 0.0
   },
   "8-24h": {
    "n": 0,
@@ -58,21 +58,21 @@
   }
  },
  "fee_attribution": {
-  "venue_commission": 0.03,
-  "attributed": 0.02,
-  "unattributed": 0.01,
-  "unattributed_share": 0.399,
-  "n_events": 16,
-  "fee_bps_of_logged_notional": 10.08,
+  "venue_commission": 0.0,
+  "attributed": 0.0,
+  "unattributed": 0.0,
+  "unattributed_share": null,
+  "n_events": 0,
+  "fee_bps_of_logged_notional": null,
   "scope": "futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND"
  },
  "baseline_funding_class": {
-  "n": 3,
-  "net": -0.03,
-  "bps": -15.21
+  "n": 0,
+  "net": 0,
+  "bps": 0.0
  },
- "post_gate_baseline_opens": 1,
- "post_gate_opens_examined": 4,
+ "post_gate_baseline_opens": 0,
+ "post_gate_opens_examined": 0,
  "maker_fill": {
   "n_legs": 42,
   "maker_share": 0.571,
@@ -142,9 +142,8 @@
   "note": "the executor's structural-bleed denylist reads THIS key; worst_symbols is 14d-rolling and is for alerts only"
  },
  "flags": [
-  "ENTRY-GATE REGRESSION: 1 open(s) whose funding could not beat the symbol's modelled round-trip over the minimum hold (R0057 per-symbol contract) -- gate is not filtering",
   "maker fill-rate 57.1% below the 60% target over 42 legs -- patient-maker opens are not converting; fees are the dominant carry cost, so this is the primary unit-economics lever"
  ],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-19T03:22:34.852695+00:00"
+ "written": "2026-09-03T03:13:11.392471+00:00"
 }

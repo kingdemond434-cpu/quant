@@ -1,0 +1,1040 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Analysis | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/category/data-analysis/",
+  "published": "2026-09-03T19:13:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "817b173f27584ca42041",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Product Status/Developers - Trading System Lab",
+  "url": "https://tradingsystemlab.com/developers/",
+  "published": "2026-09-03T19:13:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://tradingsystemlab.com/wp-content/plugins/download-after-email/css/download.css?ver=1773913844",
+   "https://tradingsystemlab.com/wp-content/plugins/download-after-email/css/all.css?ver=6.7.7"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "91e53116b82fc656e7ef",
+  "host": "tradingsystemlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Library",
+  "url": "https://www.quantrocket.com/data/",
+  "published": "2026-09-03T19:13:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantrocket.com/favicons/manifest.json",
+   "https://www.quantrocket.com/docs/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1ed61292514fc1a218d4",
+  "host": "www.quantrocket.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "API Reference",
+  "url": "https://www.quantrocket.com/docs/api/",
+  "published": "2026-09-03T19:13:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "15M",
+   "1H",
+   "1M",
+   "30M",
+   "4H",
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantrocket.com/favicons/manifest.json",
+   "https://www.quantrocket.com/docs/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5ac25e853f47dd1bb35b",
+  "host": "www.quantrocket.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How do I access World Development Indicators (WDI) online tables? \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/191128-how-do-i-access-world-development-indicators-wdi",
+  "published": "2026-09-03T19:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a01965d5bcca69bea646",
+  "host": "datahelpdesk.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators (WDI) \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/topics/19286-world-development-indicators-wdi",
+  "published": "2026-09-03T19:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4a29b7f2ea8be985edae",
+  "host": "datahelpdesk.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How does the World Bank code its indicators? \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/201175-how-does-the-world-bank-code-its-indicators",
+  "published": "2026-09-03T19:13:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/site-content/WDI_CETS.xls"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1edd7721e97560b4b22f",
+  "host": "datahelpdesk.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47(waihui)\u80a1\u5427_\u5916\u6c47\u600e\u4e48\u6837_\u5206\u6790\u8ba8\u8bba\u793e\u533a\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://guba.eastmoney.com/list,waihui.html",
+  "published": "2026-09-03T19:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ac08418f9660e8541793",
+  "host": "guba.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "_\u5916\u6c47(waihui)\u80a1\u5427_\u4e1c\u65b9\u8d22\u5bcc\u7f51\u80a1\u5427",
+  "url": "http://guba.eastmoney.com/news,waihui,1768527825.html",
+  "published": "2026-09-03T19:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0c4e92045cd1bcdf50a6",
+  "host": "guba.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Mining: Theories, Algorithms, and Examples - 1st Edition - Nong Y",
+  "url": "https://www.crcpress.com/Data-Mining-Theories-Algorithms-and-Examples/Ye/p/book/9781439808382",
+  "published": "2026-09-03T19:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3fc17cfbca33b8857dc1",
+  "host": "www.crcpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LBMA Precious Metal Prices | LBMA",
+  "url": "https://www.lbma.org.uk/prices-and-data",
+  "published": "2026-09-03T19:13:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.lbma.org.uk/humans.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2c78d5e89d92d0f1e1ed",
+  "host": "www.lbma.org.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "TrueFX Downloads &#8211; TrueFX",
+  "url": "https://www.truefx.com/truefx-historical-downloads/",
+  "published": "2026-09-03T19:13:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "44f6192b0e0a83c1d9ba",
+  "host": "www.truefx.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u8d22\u7ecf\u5feb\u8baf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://kuaixun.eastmoney.com/wh.html",
+  "published": "2026-09-03T19:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f48583239ada2fbdfc43",
+  "host": "kuaixun.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://eu-live.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-03T19:13:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://eu-live.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e603785c68be7bbb6c2e",
+  "host": "eu-live.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://live-login.dukascopy.com/cabinet/trader/?lang=en",
+  "published": "2026-09-03T19:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://live-login.dukascopy.com/cabinet/trader/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "65373de0cb9b87ed3218",
+  "host": "live-login.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://live-login.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-03T19:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://live-login.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8a5035ff50078c7e2ab5",
+  "host": "live-login.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5927\u5b97\u4ea4\u6613\u9996\u9875 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51_ \u6570\u636e\u9891\u9053",
+  "url": "https://acttg.eastmoney.com/pub/web_dfcfsy_wzl_dhl_03_01_14_0",
+  "published": "2026-09-03T19:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5cb0fa4c4f581840544e",
+  "host": "acttg.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Country Engagement",
+  "url": "http://www.worldbank.org/en/projects-operations/country-strategies",
+  "published": "2026-09-03T19:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a89d9a765ddb8e4c5be5",
+  "host": "www.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://acttg.eastmoney.com/pub/web_dfcfsy_wzl_dhl_02_01_19_0",
+  "published": "2026-09-03T19:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "01c14194cecf3ff53fc3",
+  "host": "acttg.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic Trading Articles \u2014 Guides &amp; Examples | MetaTrader",
+  "url": "https://www.metatrader.com/en/algotrading",
+  "published": "2026-09-03T19:14:04+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDCAD",
+   "USDCHF"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H4"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "0677577802cc40f6eeeb",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Copy Trading Signals \u2014 Forex, Stocks &amp; Crypto | MetaTrader",
+  "url": "https://www.metatrader.com/en/signals",
+  "published": "2026-09-03T19:14:05+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "25251cdc11a17cff3754",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FAQ: Ideas \u2014 MetaTrader Help Center",
+  "url": "https://www.metatrader.com/en/help/ideas",
+  "published": "2026-09-03T19:14:09+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://www.metatrader.com/en/help/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "8c3fec942d0bfa48ac7f",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GBPUSD H4 ANALYSIS - Trading Idea by Abdul Qayoom | MetaTrader",
+  "url": "https://www.metatrader.com/en/ideas/currencies/4vj84r",
+  "published": "2026-09-03T19:14:11+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "372178e9ad02ff7da0b1",
+  "host": "www.metatrader.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/about/",
+  "published": "2026-09-03T19:14:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4cf7567c45ee4bf4857e",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantStrat TradeR | Trading, QuantStrat, R, and more.",
+  "url": "https://quantstrattrader.wordpress.com",
+  "published": "2026-09-03T19:14:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "da62681c635f0ce4f46a",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Services - Quant For Hire",
+  "url": "https://quantforhire.com/services/",
+  "published": "2026-09-03T19:14:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "36f0ea32e52fae8554b0",
+  "host": "quantforhire.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Services - Quant For Hire",
+  "url": "http://quantforhire.com/services/",
+  "published": "2026-09-03T19:14:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "36f0ea32e52fae8554b0",
+  "host": "quantforhire.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Two Strategies you can start trading tomorrow - Time of Day effects in FX continued",
+  "url": "https://quantsjourney.blogspot.com/2017/09/two-strategies-you-can-start-trading.html",
+  "published": "2026-09-03T19:14:30+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURGBP",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "M15"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d73151f40b411f9368dd",
+  "host": "quantsjourney.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Time of Day effects in FX",
+  "url": "https://quantsjourney.blogspot.com/2017/09/time-of-day-effects-in-fx.html",
+  "published": "2026-09-03T19:14:31+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDCAD"
+  ],
+  "timeframes": [
+   "M15"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b4c41fa71c74e4f6a751",
+  "host": "quantsjourney.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Trader&#39;s Journey",
+  "url": "https://quantsjourney.blogspot.com/2017/",
+  "published": "2026-09-03T19:14:35+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "M15"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68cf5aac5e52e53f7a5b",
+  "host": "quantsjourney.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Trader&#39;s Journey",
+  "url": "https://quantsjourney.blogspot.com/2017/09/",
+  "published": "2026-09-03T19:14:37+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "M15"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "69ec0c5a3d69886c9b0b",
+  "host": "quantsjourney.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/",
+  "published": "2026-09-03T19:14:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "54d8cb4b60a45b85e2c5",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About Rob - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/about-rob/",
+  "published": "2026-09-03T19:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "81c7b844815ce6f2bb33",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Contact - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/contact/",
+  "published": "2026-09-03T19:14:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dde5b8232ea97db9d340",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Terms and Conditions - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/terms-and-conditions/",
+  "published": "2026-09-03T19:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5fb4d94cb77ac8147181",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Privacy Policy - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/privacy-policy/",
+  "published": "2026-09-03T19:14:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0226338a19dc84216e6c",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "One Backtest Might Just Be Lucky (Video) - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/one-backtest-might-just-be-lucky/",
+  "published": "2026-09-03T19:14:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c03ef0af400f90f41eee",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Rob Hanna - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/author/wpnight/",
+  "published": "2026-09-03T19:14:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c0d6516e3901f7d0fcc",
+  "host": "quantifiableedges.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Refining The 0DTE SPX Breakout Strategy with Evidence-Based Exclusions (2.2 Sharpe) - Quantish",
+  "url": "https://blog.quantish.io/2025/09/24/refining-the-0dte-spx-breakout-strategy/",
+  "published": "2026-09-03T19:14:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89206cc3e6bf4cd6fc14",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "quantish - Quantish",
+  "url": "https://blog.quantish.io/author/blog_1r0y42/",
+  "published": "2026-09-03T19:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a27f77dc9da105b26009",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Profitably Trading the SPX Opening Range. Code Included. - Quantish",
+  "url": "https://blog.quantish.io/2025/09/09/0dte-spx-opening-range-breakouts/",
+  "published": "2026-09-03T19:14:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "76dc58ad7a19976f89cd",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Reweighted Price Relative Tracking for Portfolio Optimization - Quantish",
+  "url": "https://blog.quantish.io/2025/05/07/reweighted-price-portfolio-optimization/",
+  "published": "2026-09-03T19:15:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a884f7c990de0bd67915",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KER and FCF Yield Factor Optimization - Quantish",
+  "url": "https://blog.quantish.io/2024/08/02/ker-fcf-yield-factor-optimization/",
+  "published": "2026-09-03T19:15:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1162120a871e45b6d5e",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "On ML: For \u2018Feature\u2019 Consideration - Quantish",
+  "url": "https://blog.quantish.io/2022/12/15/smart-friends-with-options-2/",
+  "published": "2026-09-03T19:15:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8dfc3f7165249d54fe90",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Earnings Volatility With Options - Quantish",
+  "url": "https://blog.quantish.io/2022/08/22/trading-earnings-volatility/",
+  "published": "2026-09-03T19:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "53d1040107ffc43cdca7",
+  "host": "blog.quantish.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Disclaimer | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/disclaimer/",
+  "published": "2026-09-03T19:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "628f45052948141062e2",
+  "host": "quantstrattrader.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Volatility Strategy | QuantStrat TradeR",
+  "url": "https://quantstrattrader.wordpress.com/volatility-trading-strategy-subscription/",
+  "published": "2026-09-03T19:15:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "481ce1454d8d7932ff08",
+  "host": "quantstrattrader.wordpress.com"
+ }
+]

@@ -3,11 +3,24 @@
 Maximizes mean log growth over the 2018-2026 daily-R matrix with per-sleeve
 weights (positive, sum=1), total risk q_total fixed. Reports:
   - optimal weights vs equal weight
-  - net Sharpe + CAGR of the weighted book at q_total = 5.5%/day-R
+  - net Sharpe + CAGR of the weighted book at q_total = Q_OPT, IMPORTED from the gateway
+    (gateway_config_fallback.risk_per_trade(), 1.27% at the time of writing). The header
+    used to say 5.5%/day-R, which was the abandoned near-Kelly setting -- the code has
+    always imported Q_OPT, so only this line was stale, but a stale number in the header
+    of an ALLOCATOR is the kind of thing a reader trusts without checking.
   - concentration (HHI) and marginal contribution ranking
 
 Forward evidence (live ledger) overrides any backtest allocation; this is the
 prior the forward ledger will update.
+
+THAT UPDATE HAS NEVER HAPPENED, and the reason was not this module. Measured
+2026-09-01: desks/mt5/data/live_ledger.jsonl did not exist on either box, because
+gateway.record_trades required each closed deal's comment to start with 'DW' ON TOP OF
+the magic filter that had already selected this desk's own trades -- and brokers rewrite
+comments. So the ledger that is supposed to override this prior was empty from the day
+it was designed, and every allocation this module has ever produced has been pure
+backtest with nothing to update it. Fixed in the gateway the same day; this note stays
+so the next reader knows which allocations predate any forward evidence at all.
 """
 
 from __future__ import annotations
@@ -15,18 +28,23 @@ from __future__ import annotations
 import json
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for libs.*
 
-from research.portfolio_projection import build_daily, build_sleeves
+# QUALIFIED on purpose: a bare `portfolio_projection` resolves to whichever copy sys.path
+# order favours, and the DESK-level SUPERSEDED stub shadows the live research/ module under
+# pytest (the exact two-copy trap the stub's own docstring warns about). `research.` cannot
+# be shadowed by the stub.
+from research.portfolio_projection import build_daily, build_sleeves  # noqa: E402
+from research.portfolio_projection import h18_survivor_sleeves, load_universal_survivors  # noqa: E402
 
-from libs.portfolio.portfolio_monte_carlo import StrategyPath, summarise
+from libs.portfolio.portfolio_monte_carlo import StrategyPath, summarise  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 
@@ -36,8 +54,10 @@ BASE = Path(__file__).resolve().parent.parent
 # runs. Two files disagreeing about the risk budget is how a superseded number gets quoted back
 # as evidence. Imported rather than copied, so it can never drift again.
 #
-# RESTORED 2026-08-20 after the VPS sync reverted it to a literal for the second time. If this
-# line is ever a bare number again, that is the same regression, not a new decision.
+# RESTORED 2026-08-20 after the VPS sync reverted it to a literal for the second time, and
+# AGAIN 2026-08-26 after the branch unification reverted it a THIRD time (now also a moneypath
+# fence marker). If this line is ever a bare number again, that is the same regression, not a
+# new decision.
 try:
     from mt5desk.gateway import Q_OPT as Q_TOTAL
 except Exception:                                          # MetaTrader5 absent (research boxes)
@@ -73,7 +93,23 @@ def main() -> None:
               flush=True)
         while not sv.exists():
             time.sleep(60)
+    survivors = [r for r in load_universal_survivors()
+                 if r.get("hunt", "").startswith("hunt18_")]
+    required = sorted({Path(r["hunt"]).stem for r in survivors})
+    for stem in required:
+        sg = BASE / "reports" / f"signal_gate_{stem}.json"
+        waited = 0
+        while not sg.exists() and waited < 1800:
+            print(f"waiting for signal gate {stem} ...", flush=True)
+            time.sleep(60)
+            waited += 60
     sleeves = build_sleeves()
+    h18, excluded = h18_survivor_sleeves()
+    sleeves += h18
+    if excluded:
+        print(f"EXCLUDED survivors (fail-closed): {len(excluded)}", flush=True)
+        for e in excluded:
+            print(f"  {e.get('hunt')} {e.get('cell')}: {e.get('why')}", flush=True)
     daily = build_daily(sleeves)
     R = np.nan_to_num(daily.to_numpy(dtype=float), nan=0.0)
     names = list(daily.columns)
@@ -81,7 +117,7 @@ def main() -> None:
     w = np.full(len(names), 1.0 / len(names))
     best_w, best_g = w.copy(), -np.inf
     g = []
-    for _i in range(ITERS):
+    for i in range(ITERS):
         rets = (1.0 + Q_TOTAL * (R @ w))
         if (rets <= 0).any():
             break
@@ -119,23 +155,17 @@ def main() -> None:
     print(f"weights HHI = {hhi:.3f} (1/N = {1/len(names):.3f})")
     print(f"mean log-growth gain vs equal: {best_g - g[0]:+.4f}/day")
 
-    mc = portfolio_mc_report(daily, best_w)
-    out = {
-        "weights": {names[i]: float(best_w[i]) for i in order},
-        "sharpe_equal": sh_eq,
-        "sharpe_optimal": sh_opt,
-        "cagr_equal": cagr(port_eq, Q_TOTAL),
-        "cagr_optimal": cagr(port_opt, Q_TOTAL),
-        "hhi": hhi,
-        "q_total": Q_TOTAL,
-        "advisory": True,
-        "dependence_preserving_monte_carlo": mc,
-        "note": "backtest basis only; forward ledger overrides",
-    }
+    out = dict(weights={names[i]: float(best_w[i]) for i in order},
+               sharpe_equal=sh_eq, sharpe_optimal=sh_opt,
+               cagr_equal=cagr(port_eq, Q_TOTAL), cagr_optimal=cagr(port_opt, Q_TOTAL),
+               hhi=hhi, q_total=Q_TOTAL, advisory=True,
+               excluded=excluded,
+               note="backtest basis only; forward ledger overrides; "
+                    "h18 survivors only if signal gate INFORMED")
     (BASE / "reports" / "allocation.json").write_text(
         json.dumps(out, indent=2, default=str), encoding="utf-8")
     (BASE / "reports" / "DONE_allocation").write_text(
-        datetime.now(UTC).isoformat(), encoding="utf-8")
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
     print("\n-> reports/allocation.json (ADVISORY) + DONE_allocation")
 
 

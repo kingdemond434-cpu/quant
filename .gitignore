@@ -12,6 +12,15 @@ data/*
 !data/nav_attestation.jsonl
 !data/decision_ledger.json
 !data/cashcarry_config.json
+# DEEPSEEK'S OWN OUTPUT, allowlisted 2026-09-03. The flywheel's donate step is
+# `git add -- data/ docs/research/`, and `git add` on an ignored path is a SILENT NO-OP -- so the
+# second brain ran daily, committed, pushed, and published none of its own findings, while the
+# commits it made ("independent cold-phase findings") carried other organs' files swept up by the
+# same blanket add. Findings now also go to data/intelligence/deepseek/ (already allowlisted, and
+# the tree the candidate compiler globs); these two are the AUDIT trail behind them -- what was
+# claimed, and the seal proving it was written before any other agent's conclusion was read.
+!data/deepseek_evidence.jsonl
+!data/deepseek_seals/
 # The universe map is the documented routing target for EVERY digger's data-source finds
 # (R0311): box-local it is invisible to review and dies on reclone, which silently discards
 # every seat's universe-map contribution. It is institutional memory, same class as the
@@ -115,6 +124,7 @@ data/*
 !data/delisted_rosters/*.json
 web/*
 !web/index.html
+!web/zentech.html
 # shadow_health.json is the ONE reports/ artifact allowlisted through, at any depth (so this
 # covers desks/mt5/reports/shadow/ too, where the live file actually is): Hetzner (the prior
 # cross-brain sync destination) was fully decommissioned 2026-08-23, so this file now reaches
@@ -211,16 +221,6 @@ reports/principal_drop.json
 /show_*.py
 /test_*.py
 
-# one-off operator scripts; scratch/ is ruff-excluded in pyproject
-/check_*.py
-/chk_*.py
-/dbg_*.py
-/debug_*.py
-/fix_*.py
-/patch_*.py
-/show_*.py
-/test_*.py
-
 # Per-box daily-cycle stamp. MUST NOT be shared between machines: it records "the operating chain
 # already ran for this UTC day", and only the Windows box with a live MT5 terminal can actually run
 # the shadow step. Committing a stamp written on a research box would make the execution box pull
@@ -235,6 +235,42 @@ secrets/
 # Generated research artifacts under the desk data dirs. The code that produces
 # them is committed and they are reproducible from it; an 18 MB parquet cache in
 # git history is a mistake that cannot be taken back.
-desks/*/data/*.parquet
+desks/*/data/**/*.parquet
 desks/*/data/hunt_candidates.json
 desks/*/data/recover_candidates.json
+
+# Runtime state files (mt5-state branch only)
+**/shadow_health.json
+**/gateway_state.json
+**/sleeves.json
+**/regime_state.json
+**/sync_marker.jsonbackups/
+
+# BIS speech corpus: a 123MB source archive GitHub rejects; the DERIVED
+# cb_tone_series.jsonl is the committed artifact, the zip is re-downloadable
+# from https://www.bis.org/speeches/speeches.zip in one request.
+desks/mt5/data/intelligence/central_banks/bis_speeches/
+
+# FX Blue RAW harvest waves: ~14MB per 350-account wave and re-harvestable in ~40min
+# from a public keyless route. The committed artifact is mechanism_digest.jsonl.gz.
+desks/mt5/data/intelligence/fxblue/track_records*.jsonl
+
+# Regime-fit memo. Purely a cache: every entry is keyed on the bar it was fitted on and is
+# reproducible by refitting, so committing it would push an hourly-churning blob through the
+# box's sync for no recoverable information. The STATE VECTOR itself (state_vector.json) is a
+# record of what the desk believed at a moment and stays tracked.
+desks/mt5/data/state_fits.json
+
+# `reports/` above is ignored because reports are measurements. STATE_ADMISSION.json is not a
+# measurement, it is a DECISION: `pf_allocator._live_state` reads it and withdraws a state
+# dimension's access to the posterior when that dimension is in the graveyard. A `!` negation
+# cannot reach inside an excluded directory, so the file is force-added once and tracked
+# thereafter -- git reports changes to a tracked file regardless of these rules, which is exactly
+# the behaviour wanted: the box's re-judged verdicts travel back with its hourly sync.
+
+# Discovery-loop caches (2026-09-04): fetched public READMEs, content-addressed feature blocks
+# and the typed research memory are rebuilt by their engines; none is a decision record.
+desks/mt5/data/repo_cache/
+desks/mt5/data/features/
+desks/mt5/data/memory/
+desks/mt5/data/deep_forest_seen.json

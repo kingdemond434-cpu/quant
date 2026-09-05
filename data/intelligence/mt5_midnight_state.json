@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-03T22:58:44.067685+00:00",
+  "scope": "MT5_FUSION_ONLY",
+  "execution_authority": false,
+  "universe": {
+    "metadata_entities": 251,
+    "h1_bar_files": 251,
+    "metadata_mtime": "2026-09-03T22:55:53.498371+00:00",
+    "newest_h1_mtime": "2026-09-03T12:00:40.367164+00:00"
+  },
+  "conversion": {
+    "research_queue": {
+      "BLOCKED_CANONICAL_DOCKET_MISSING": 287,
+      "DONE": 10,
+      "GAUNTLET_PASSED": 49,
+      "GAUNTLET_REJECTED": 46774,
+      "PENDING": 17
+    },
+    "universal_survivors": 59,
+    "shadow_sleeves": 86,
+    "shadow_observations": 351,
+    "shadow_last_run": "2026-09-03"
+  },
+  "freshness": {
+    "research_loop": "2026-09-03T12:01:02.669869+00:00",
+    "research_pipeline": "2026-09-03T22:45:10+00:00",
+    "external_gauntlet": "2026-09-03T22:41:53+00:00",
+    "universal_gate": "2026-09-03T22:45:10+00:00",
+    "allocation": "2026-09-03T12:00:45.862584+00:00",
+    "markout": "2026-08-30T08:35:16+00:00",
+    "markout_usable": false,
+    "markout_matched_fills": 0
+  },
+  "capability_reuse": {
+    "artifact": "data/intelligence/mt5_capability_reuse.json",
+    "generated_at": "2026-09-03T22:58:42.618629+00:00",
+    "counts": {
+      "DISPOSED_BLOCKED": 7,
+      "DISPOSED_SUPERSEDED": 10,
+      "REACHABLE_MT5_STATIC": 77,
+      "UNWIRED_REVIEW": 563,
+      "VENUE_SPECIFIC_REVIEW": 11
+    },
+    "proof_level": "STATIC_REACHABILITY_ONLY"
+  },
+  "defects": [
+    "execution markout stale; current costs remain unmeasured"
+  ]
+}

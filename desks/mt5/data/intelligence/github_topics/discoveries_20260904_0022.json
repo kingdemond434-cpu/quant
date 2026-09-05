@@ -1,0 +1,12 @@
+[
+ {
+  "source": "github_topics",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='api.github.com', port=443): Max retries exceeded with url: /search/repositories?q=topic:mql5&sort=updated&per_page=15 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-04T00:25:23+00:00",
+  "needs_selector_work": true
+ }
+]

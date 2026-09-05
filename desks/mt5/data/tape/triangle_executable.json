@@ -1,0 +1,17 @@
+{
+  "at": "2026-08-23T13:04:03+00:00",
+  "max_quote_skew_ms": 250,
+  "rows": [
+    {
+      "triangle": "EURGBP",
+      "status": "UNMEASURED",
+      "why": "one or more synchronized Fusion tick legs are absent"
+    },
+    {
+      "triangle": "AUDNZD",
+      "status": "UNMEASURED",
+      "why": "one or more synchronized Fusion tick legs are absent"
+    }
+  ],
+  "next_gate": "prospective atomicity/latency/fill shadow before any strategy test"
+}

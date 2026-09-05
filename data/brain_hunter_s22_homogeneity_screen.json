@@ -1,0 +1,210 @@
+{
+  "probe": "brain_hunter_s22_homogeneity_screen",
+  "date": "2026-08-29",
+  "arms": {
+    "control_brain_zhutoutoutousan": {
+      "k": [
+        0.001,
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ],
+      "score": [
+        -0.031275673620653914,
+        -0.032615918098490515,
+        -0.04601836287685675,
+        -0.18004281066051886,
+        -1.5202872884971395,
+        -14.922732066863352
+      ],
+      "verdict": "MONOTONE-DECREASING (optimum at zero exposure)",
+      "expected": "MONOTONE-DECREASING",
+      "role": "positive control -- the probe must reproduce s21"
+    },
+    "libs.alpha_factory.wq_operators.fitness": {
+      "k": [
+        0.001,
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ],
+      "score": [
+        0.05878775382679627,
+        0.185903200617956,
+        0.46475800154489,
+        0.46475800154489,
+        0.46475800154489,
+        0.46475800154489
+      ],
+      "verdict": "SCALE-DEPENDENT (non-monotone)",
+      "adjudicated": "MOSTLY CLEAN, WITH A NAMED FLOOR CORNER. annual_return and turnover both scale with position so their ratio is degree 0 -- invariant for k >= 1 here. BELOW the floor (floor=0.125, hit at k <= 0.1 in this arm) max(turnover, floor) stops tracking the position and the score becomes MONOTONE INCREASING in exposure: the floor that bounds the trade-nothing corner opens the opposite one, rewarding size until turnover clears 0.125. Harmless today -- the function has zero callers outside tests (III.16) -- but it is the mirror image of the control's defect and must be known before anything wires it.",
+      "floor": 0.125
+    },
+    "libs.validation.screen_admission.rank_score": {
+      "k": [
+        0.001,
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ],
+      "score": [
+        1.22975,
+        1.2293,
+        1.2248,
+        1.1798,
+        0.7298,
+        -3.7702
+      ],
+      "verdict": "MONOTONE-DECREASING (optimum at zero exposure)",
+      "penalty_constant": 1.0,
+      "note": "oos_sharpe is degree 0; the turnover penalty is degree 1 in whatever unit the caller chose. Mixed degrees -> the same defect class as the control.",
+      "unit_convention_sensitivity": {
+        "fraction_of_book_per_day_0.05": 1.1798,
+        "trades_per_day_5": -3.7702,
+        "annualised_turnover_252x_12.6": -11.3702,
+        "notional_traded_usd_50000": -49998.7702,
+        "no_turnover_field_at_all_None": 1.2298
+      }
+    },
+    "libs.portfolio.capital_competition.score": {
+      "k": [
+        0.001,
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ],
+      "score": [
+        0.12240000000000001,
+        0.12239999999999998,
+        0.12240000000000001,
+        0.12240000000000001,
+        0.12240000000000001,
+        0.12240000000000001
+      ],
+      "verdict": "SCALE-INVARIANT"
+    },
+    "libs.signal_engine.alpha_competition_engine._score": {
+      "k": [
+        0.001,
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ],
+      "score": [
+        0.0003960000000000001,
+        0.003960000000000001,
+        0.03960000000000001,
+        0.3960000000000001,
+        0.7920000000000001,
+        0.7920000000000001
+      ],
+      "verdict": "SCALE-DEPENDENT (non-monotone)",
+      "adjudicated": "CLEAN -- the raw verdict is a probe artifact, not a defect. strength is Field(ge=0,le=1) conviction, so scaling it is scaling a bounded degree-0 input and the curve shown is the clamp saturating. No exposure enters this score and it cannot be gamed by sizing."
+    },
+    "libs.self_improvement.weight_optimizer._score": {
+      "k": [
+        0.001,
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ],
+      "score": [
+        0.00028800000000000006,
+        0.0028800000000000006,
+        0.028800000000000006,
+        0.28800000000000003,
+        0.5760000000000001,
+        0.5760000000000001
+      ],
+      "verdict": "SCALE-DEPENDENT (non-monotone)",
+      "adjudicated": "CLEAN -- same probe artifact as alpha_competition_engine: all four factors are bounded 0..1, the curve is health_score saturating at its cap, and no exposure enters."
+    },
+    "libs.stage14.score.institutional_portfolio_score": {
+      "k": [
+        0.001,
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ],
+      "score": [
+        58.43333333333332,
+        58.43333333333332,
+        58.43333333333332,
+        58.43333333333332,
+        58.43333333333332,
+        58.43333333333332
+      ],
+      "verdict": "SCALE-INVARIANT",
+      "note": "every input is _clip01'd -- degree 0 by construction"
+    },
+    "ORDERING_INVERSION__screen_admission.admit": {
+      "question": "admit() sorts forward-slot candidates by rank_score. Does the caller's choice of turnover unit -- which no signature, docstring or schema declares -- change WHO gets the scarce forward clock?",
+      "candidates": {
+        "A": {
+          "oos_sharpe": 1.4,
+          "dsr": 0.6,
+          "reality_p": 0.01
+        },
+        "B": {
+          "oos_sharpe": 1.1,
+          "dsr": 0.55,
+          "reality_p": 0.02
+        },
+        "turnover_fraction_per_day": {
+          "A": 0.08,
+          "B": 0.02
+        }
+      },
+      "by_convention": {
+        "fraction_per_day (0.08 vs 0.02)": {
+          "A": 1.3518,
+          "B": 1.1106,
+          "winner": "A",
+          "gap": 0.24119999999999986
+        },
+        "trades_per_day (20 vs 5)": {
+          "A": -18.5682,
+          "B": -3.8693999999999997,
+          "winner": "B",
+          "gap": -14.698800000000002
+        },
+        "annualised (20.2 vs 5.0)": {
+          "A": -18.7282,
+          "B": -3.9093999999999998,
+          "winner": "B",
+          "gap": -14.818800000000001
+        },
+        "notional_usd (80k vs 20k)": {
+          "A": -79998.5682,
+          "B": -19998.8694,
+          "winner": "B",
+          "gap": -59999.6988
+        },
+        "field absent (None)": {
+          "A": 1.4318,
+          "B": 1.1306,
+          "winner": "A",
+          "gap": 0.3011999999999999
+        }
+      },
+      "distinct_winners": [
+        "A",
+        "B"
+      ]
+    }
+  }
+}

@@ -1,0 +1,335 @@
+{
+ "generated_utc": "2026-08-28",
+ "question": "Does ANY member of the official-sector-flow family survive its own normalisation control?",
+ "design": "RAW arm = the naive surface construction the previous three sessions each caught as plumbing-contaminated. NORMALISED arm = the excess/true-stock construction. Both arms run identically on the same pairs, lags and horizons. Publication lag applied from each source's own measured lag; the signal is z-scored on a trailing 60-obs window (causal).",
+ "members": {
+  "CNB_sterilisation": {
+   "raw_construction": "z60( d/dt daily sterilisation stock, CZK bln )",
+   "normalised_construction": "z60( 5-day log-change of reconstructed OUTSTANDING stock ) \u2014 the 5-day span spans the dominant 7d repo tenor so rollover frequency cancels",
+   "publication_lag_days": 1,
+   "pairs": {
+    "EURCZK": {
+     "raw": {
+      "n": 10428,
+      "mean": -3.160297880046312e-05,
+      "t": -2.2938830046367404,
+      "mde_mean": 3.857578632494805e-05,
+      "passes_mde": false,
+      "corr": -0.023122062401890704
+     },
+     "normalised": {
+      "n": 10424,
+      "mean": -1.7677469638183676e-05,
+      "t": -1.0095735650068842,
+      "mde_mean": 4.902754658257793e-05,
+      "passes_mde": false,
+      "corr": -0.010152384234638358
+     }
+    },
+    "USDCZK": {
+     "raw": {
+      "n": 10414,
+      "mean": -3.4794649380509014e-05,
+      "t": -1.185626639674083,
+      "mde_mean": 8.217175205527297e-05,
+      "passes_mde": false,
+      "corr": -0.016034252443495007
+     },
+     "normalised": {
+      "n": 10410,
+      "mean": -1.0560888727987877e-05,
+      "t": -0.318121462009106,
+      "mde_mean": 9.295345322384948e-05,
+      "passes_mde": false,
+      "corr": -0.009603097942146392
+     }
+    }
+   }
+  },
+  "MNB_liquidity": {
+   "raw_construction": "z60( d/dt reserve account balances, HUF bln )",
+   "normalised_construction": "z60( balances / rolling-250d median \u2212 1 ) \u2014 EXCESS over the slow requirement level, so a reserve-ratio regime change cancels",
+   "publication_lag_days": 2,
+   "pairs": {
+    "AUDHUF": {
+     "raw": {
+      "n": 6996,
+      "mean": -9.319421288603052e-05,
+      "t": -1.6284711387887412,
+      "mde_mean": 0.00016023851443567843,
+      "passes_mde": false,
+      "corr": -0.02127090982200558
+     },
+     "normalised": {
+      "n": 6748,
+      "mean": 9.584449394865104e-05,
+      "t": 1.3682953621485119,
+      "mde_mean": 0.00019613059466549234,
+      "passes_mde": false,
+      "corr": 0.025937464397715864
+     }
+    },
+    "CHFHUF": {
+     "raw": {
+      "n": 6929,
+      "mean": -5.100340449973721e-05,
+      "t": -1.067936401871893,
+      "mde_mean": 0.00013372475397312587,
+      "passes_mde": false,
+      "corr": -0.011194134897149755
+     },
+     "normalised": {
+      "n": 6681,
+      "mean": 1.0370751652248141e-05,
+      "t": 0.1639653200279867,
+      "mde_mean": 0.0001770990635174461,
+      "passes_mde": false,
+      "corr": 0.007935268045117327
+     }
+    },
+    "EURHUF": {
+     "raw": {
+      "n": 6929,
+      "mean": -3.000984263052489e-05,
+      "t": -0.8215885245327084,
+      "mde_mean": 0.00010227450464119091,
+      "passes_mde": false,
+      "corr": -0.008807467066476166
+     },
+     "normalised": {
+      "n": 6681,
+      "mean": 7.26139737862987e-05,
+      "t": 1.5115600644386105,
+      "mde_mean": 0.00013450945905821383,
+      "passes_mde": false,
+      "corr": 0.025546881489662897
+     }
+    },
+    "GBPHUF": {
+     "raw": {
+      "n": 6929,
+      "mean": -5.969531280069314e-05,
+      "t": -1.2713696969736947,
+      "mde_mean": 0.00013146992274537368,
+      "passes_mde": false,
+      "corr": -0.01640262263407017
+     },
+     "normalised": {
+      "n": 6681,
+      "mean": 2.368056884700262e-06,
+      "t": 0.03822171322349155,
+      "mde_mean": 0.00017347624473006376,
+      "passes_mde": false,
+      "corr": 0.0003026064938804193
+     }
+    },
+    "NZDHUF": {
+     "raw": {
+      "n": 6996,
+      "mean": -4.4038286536456835e-05,
+      "t": -0.870033777760523,
+      "mde_mean": 0.0001417269138900254,
+      "passes_mde": false,
+      "corr": -0.01181831727595466
+     },
+     "normalised": {
+      "n": 6748,
+      "mean": 5.710301855216871e-05,
+      "t": 0.8476634275657587,
+      "mde_mean": 0.0001886225673381064,
+      "passes_mde": false,
+      "corr": 0.0062177048946119645
+     }
+    },
+    "USDHUF": {
+     "raw": {
+      "n": 6915,
+      "mean": -5.385221558411791e-05,
+      "t": -0.7660793924681241,
+      "mde_mean": 0.0001968284294265287,
+      "passes_mde": false,
+      "corr": -0.0063780190188813405
+     },
+     "normalised": {
+      "n": 6667,
+      "mean": 8.165572829998106e-05,
+      "t": 0.9307788629904276,
+      "mde_mean": 0.0002456394835883788,
+      "passes_mde": false,
+      "corr": 0.026976436788674417
+     }
+    }
+   }
+  },
+  "SNB_sight_deposits": {
+   "raw_construction": "z26( d/dt TOTAL sight deposits, CHF mn ) \u2014 weekly",
+   "normalised_construction": "z26( log-change of DOMESTIC-BANK leg GI only ) \u2014 the Credit Suisse rescue ran through the non-bank residual, so GI is the plumbing-stripped arm",
+   "publication_lag_days": 3,
+   "pairs": {
+    "EURCHF": {
+     "raw": {
+      "n": 757,
+      "mean": -7.972887976858834e-05,
+      "t": -0.4060816458382514,
+      "mde_mean": 0.0005497437907867612,
+      "passes_mde": false,
+      "corr": -0.011680313214454176
+     },
+     "normalised": {
+      "n": 893,
+      "mean": -5.3558742596573444e-05,
+      "t": -0.31833898070669553,
+      "mde_mean": 0.0004710842477961464,
+      "passes_mde": false,
+      "corr": -0.006877583560891551
+     }
+    },
+    "USDCHF": {
+     "raw": {
+      "n": 757,
+      "mean": 7.636237797512006e-05,
+      "t": 0.1629377034380331,
+      "mde_mean": 0.001312247894862788,
+      "passes_mde": false,
+      "corr": 0.009517627978564187
+     },
+     "normalised": {
+      "n": 893,
+      "mean": -4.613941036491143e-05,
+      "t": -0.12441518536685874,
+      "mde_mean": 0.0010383808748169517,
+      "passes_mde": false,
+      "corr": 0.0019348094944853643
+     }
+    },
+    "GBPCHF": {
+     "raw": {
+      "n": 748,
+      "mean": -0.00014236768473526804,
+      "t": -0.25167339842513664,
+      "mde_mean": 0.0015839159790156678,
+      "passes_mde": false,
+      "corr": -0.005245149770694828
+     },
+     "normalised": {
+      "n": 884,
+      "mean": 0.00013669304120386976,
+      "t": 0.31732904143393903,
+      "mde_mean": 0.001206131382243858,
+      "passes_mde": false,
+      "corr": 0.014699871133006389
+     }
+    },
+    "CHFJPY": {
+     "raw": {
+      "n": 757,
+      "mean": 0.00022550215137358444,
+      "t": 0.6398050930808392,
+      "mde_mean": 0.000986872456431444,
+      "passes_mde": false,
+      "corr": 0.019226179532024597
+     },
+     "normalised": {
+      "n": 893,
+      "mean": 1.1183876887678258e-05,
+      "t": 0.03785448338868845,
+      "mde_mean": 0.0008272429705078612,
+      "passes_mde": false,
+      "corr": -0.005459552324956226
+     }
+    }
+   }
+  },
+  "MoF_intervention": {
+   "raw_construction": "signed intervention size, JPY bln, on the event day",
+   "normalised_construction": "NOT APPLICABLE \u2014 discrete events, n=7. No normalisation exists; the control is the event count itself.",
+   "n_events": 7,
+   "verdict": "UNTESTABLE-AS-A-SIGNAL: 7 events is below any usable n. Recorded as an event MASK (a conditioning variable for other studies), never as a standalone predictor.",
+   "event_dates": [
+    "2024-04-29",
+    "2024-05-01",
+    "2024-07-11",
+    "2024-07-12",
+    "2026-04-30",
+    "2026-05-04",
+    "2026-05-06"
+   ]
+  }
+ },
+ "positive_control": {
+  "EURCZK|momentum_250_20": {
+   "n": 2269,
+   "t": -0.34,
+   "passes": false
+  },
+  "EURCZK|LEAK_control": {
+   "n": 2519,
+   "t": 43.12,
+   "passes": true
+  },
+  "EURHUF|momentum_250_20": {
+   "n": 2186,
+   "t": -0.38,
+   "passes": false
+  },
+  "EURHUF|LEAK_control": {
+   "n": 2436,
+   "t": 48.45,
+   "passes": true
+  },
+  "EURCHF|momentum_250_20": {
+   "n": 1995,
+   "t": 0.84,
+   "passes": false
+  },
+  "EURCHF|LEAK_control": {
+   "n": 2245,
+   "t": 52.78,
+   "passes": true
+  },
+  "USDCHF|momentum_250_20": {
+   "n": 1995,
+   "t": -0.0,
+   "passes": false
+  },
+  "USDCHF|LEAK_control": {
+   "n": 2245,
+   "t": 52.28,
+   "passes": true
+  },
+  "USDHUF|momentum_250_20": {
+   "n": 2176,
+   "t": 0.03,
+   "passes": false
+  },
+  "USDHUF|LEAK_control": {
+   "n": 2426,
+   "t": 55.11,
+   "passes": true
+  },
+  "CHFJPY|momentum_250_20": {
+   "n": 1996,
+   "t": 1.49,
+   "passes": false
+  },
+  "CHFJPY|LEAK_control": {
+   "n": 2246,
+   "t": 50.64,
+   "passes": true
+  }
+ },
+ "positive_control_note": "MANDATORY control (institutional lesson: a gauntlet never shown to PASS a known-good alpha has only had its rejections observed). LEAK arm = sign(next-day return) fed back as the signal: t=+43..+55 on all 6 pairs, so the harness DOES detect a real effect at this n. The null below is therefore a null, not a dead pipe. A 250/20 momentum arm is also null on these crosses.",
+ "verdict": {
+  "family": "official-sector-flow (central-bank balance-sheet / intervention / sterilisation)",
+  "grade": "REFUTED at daily and weekly horizon on the desk's own MT5 pairs",
+  "cells": "16 pair-arm cells across 4 members, both arms, all reported (no selective reporting)",
+  "max_abs_t": 2.29,
+  "max_abs_t_cell": "CNB raw / EURCZK",
+  "multiplicity": "24 tests counted this run; |t|=2.29 survives no correction at 24 trials",
+  "effective_n_caveat": "the 6 HUF pairs are ~ONE bit, not six: they share the HUF leg and move as one factor, so the uniform raw-negative / normalised-positive split across all 6 is ONE observation twice, not twelve. Same for the 4 CHF pairs.",
+  "the_diagnostic_finding": "the RAW arm outscores the NORMALISED arm on CNB (t -2.29 vs -1.01) and SIGN-FLIPS on MNB (uniformly negative raw -> uniformly positive normalised). That is the contamination signature itself: the naive construction's apparent signal is the rollover-frequency artifact (CNB) and the reserve-requirement level drift (MNB), and it does not survive its own control. This is now the FOURTH consecutive member of this class caught the same way, and the first time it was caught by a controlled measurement rather than by inspection.",
+  "action": "SEARCH SPACE RETIRED. The family is not a sleeve and is not pre-registered. The two follow-on grounds the previous session ranked #2 (Banxico and TCMB free registration tokens, for 7 more in-universe pairs) are DEMOTED: obtaining them buys more members of a class whose first four members all died to the same control. Re-open only on L1.16a terms \u2014 a NAMED enabling change addressing the mechanism of death, e.g. an intraday-horizon reconstruction or a genuine surprise-vs-expectation series, not another country.",
+  "residual_value": "the four sources remain verified-clean/needs-monitoring as DATA and stay in the universe map as CONDITIONING variables (regime masks, event masks), which is what the MoF intervention series was always worth: 7 events, untestable as a predictor, usable as a mask."
+ },
+ "known_harness_caveat": "price legs read from desks/mt5/data/universe/*_H1.parquet, which is TZ-MIXED (24 aware / 173 naive) and FRESHNESS-SPLIT (aware 0-3h stale, naive 54-55h). Normalised to naive-UTC here. Immaterial at daily horizon over 2000+ obs; recorded because a consumer that does NOT normalise raises TypeError (this sweep did, first run) or silently misaligns."
+}

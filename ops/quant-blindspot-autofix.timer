@@ -1,0 +1,8 @@
+[Unit]
+Description=Run Quant Blind Spot Auto-Fix every 6 hours
+[Timer]
+OnCalendar=*:0/6
+Persistent=true
+RandomizedDelaySec=60
+[Install]
+WantedBy=timers.target

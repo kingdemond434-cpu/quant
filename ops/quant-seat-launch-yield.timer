@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer for early-window seat: launch-yield
+
+[Timer]
+OnCalendar=*-*-* 10:00:00 UTC
+RandomizedDelaySec=180
+Persistent=true
+Unit=quant-seat-launch-yield.service
+
+[Install]
+WantedBy=timers.target

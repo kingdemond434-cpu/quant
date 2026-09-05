@@ -130,6 +130,21 @@ def _norm_ppf(p: float) -> float:
 
 
 def _bar(m: int) -> float:
+    """Two-sided Sidak/Bonferroni t-bar for m trials. An EMPTY family has no bar (L1.57).
+
+    Crashed with ZeroDivisionError on m=0 until 2026-08-29, and it reached m=0 for real: an axis
+    whose report holds trials but none with both a `verdict` and a non-zero `n` screens to an
+    empty list, and the exception killed the whole organ mid-loop, so every axis ORDERED AFTER
+    the empty one was silently never finalized. Live repro: etf_flows and
+    liquidation_reversion_BTCUSDT printed, then the process died at line 310.
+
+    The bar returned here must be one NOTHING can clear. Returning 0 -- the other obvious way to
+    make the arithmetic not raise -- would admit every trial in a family the desk never measured,
+    and "a verdict over an empty population is vacuous, never a pass" is the law this would break
+    in the one direction no downstream gate re-checks.
+    """
+    if m < 1:
+        return math.inf
     return round(abs(_norm_ppf(0.05 / (2 * m))), 2)
 
 
@@ -269,6 +284,7 @@ def main() -> None:
     summary = []
     missing: list[str] = []
     incompatible: list[str] = []
+    vacuous: list[str] = []
     unreadable: list[str] = []
     for axis in _axes_on_disk():
         p = OUT / f"{axis}.json"
@@ -308,6 +324,12 @@ def main() -> None:
             continue
         screened = [t for t in rep["trials"] if "verdict" in t and t.get("n")]
         axis_bar = _bar(len(screened))
+        if not screened:
+            # VACUOUS, not corrected and not missing: the axis produced a report, and nothing in
+            # it is judgeable. Recorded by name so an empty family is a work item rather than a
+            # zero that reads like a clean sweep.
+            vacuous.append(axis)
+            continue
         for t in screened:
             k = _step(t["name"])
             best = max(abs(t.get("sharpe_momentum", 0)), abs(t.get("sharpe_reversal", 0)))
@@ -405,6 +427,10 @@ def main() -> None:
               f"(axis bar t>{axis_bar}, campaign t>{CAMPAIGN_BAR}) ===")
         for t in sorted(screened, key=lambda x: -abs(x.get("ic", 0)))[:5]:
             print(_trial_line(t))
+    if vacuous:
+        print(f"\n  VACUOUS -- report present, ZERO judgeable trials ({len(vacuous)}): "
+              f"{', '.join(vacuous)}. No multiplicity bar exists over an empty family (L1.57); "
+              "this is an unmeasured axis, never a clean one.")
     if incompatible:
         print(f"\n  PRESENT BUT NOT CORRECTABLE BY THIS LAYER ({len(incompatible)}): "
               f"{', '.join(incompatible)}")

@@ -939,6 +939,19 @@ SYSTEMD unit="quant-blindrediscovery.timer" on="*-*-01 20:00:00" exec="ops/run_b
 #   ops/quant-dataaxis.service:12
 # CONFIDENCE: committed-unit
 SYSTEMD unit="quant-dataaxis.timer" on="*-*-* 14:00:00" exec="ops/run_dataaxis_dig.sh"
+# EARLY-WINDOW SEAT TIMERS (gap-fixer 2026-08-26). The four rows above/below at 14:00-19:00 are
+# ROOT timers firing into the measured-exhausted quota window (0-14% of launches produce). These
+# user-scope twins fire the SAME scripts in the measured-productive window (05:00-09:00, 80-100%),
+# installed by ops/install_early_seat_timers.sh. Registered here so the scheduler manifest sees
+# them; they are user units, so they are not ops/*.timer files.
+SYSTEMD unit="quant-seat-dataaxis.timer" on="*-*-* 05:00:00" exec="ops/run_dataaxis_dig.sh"
+SYSTEMD unit="quant-seat-prospector.timer" on="*-*-* 06:00:00" exec="ops/run_prospector_dig.sh"
+SYSTEMD unit="quant-seat-litminer.timer" on="*-*-* 07:00:00" exec="ops/run_litminer_dig.sh"
+SYSTEMD unit="quant-seat-frontier.timer" on="*-*-* 08:00:00" exec="ops/run_frontier_rotation.sh"
+SYSTEMD unit="quant-seat-frontier2.timer" on="*-*-* 03:00:00" exec="ops/run_frontier_rotation.sh"
+SYSTEMD unit="quant-seat-launch-yield.timer" on="*-*-* 10:00:00" exec="scripts/check_seat_launch_yield.py"
+# The ONLY producer of coverage.json, and therefore the L1.50 ratchet's only input.
+SYSTEMD unit="quant-coverage-ratchet.timer" on="Sun *-*-* 01:00:00" exec="ops/gates.sh"
 
 # EVIDENCE: ops/quant-frontier.timer:4 (daily 15:00); ops/quant-frontier.service:9. The
 #   rotation runs ALL 7 regions, resumable, via ops/run_frontier_miner.sh per region
@@ -1039,8 +1052,6 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 52 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_decline_detection.py >> data/cro_ai_logs/run_decline_detection.log 2>&1
 # scripts/screen_breadth_supply_axes.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 2 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_breadth_supply_axes.py >> data/cro_ai_logs/screen_breadth_supply_axes.log 2>&1
-# scripts/vault_search.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-8 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/vault_search.py >> data/cro_ai_logs/vault_search.log 2>&1
 # scripts/make_probe_worktree.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 37 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/make_probe_worktree.py >> data/cro_ai_logs/make_probe_worktree.log 2>&1
 # scripts/retire_unfillable_candidates.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
@@ -1075,8 +1086,15 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 55 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_harvest.py >> data/cro_ai_logs/run_carry_harvest.log 2>&1
 # scripts/compute_performance.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 34 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/compute_performance.py >> data/cro_ai_logs/compute_performance.log 2>&1
-# scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-10 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/certify_gauntlet.py >> data/cro_ai_logs/certify_gauntlet.log 2>&1
+# scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- HOURLY
+# WAS DAILY (10 5 * * *). The gauntlet is what MINTS certificates, so a daily row capped the
+# certificate count at one move per day against a 16,899-row docket while the desk was asked
+# to grow every hour. Measured over three runs: 2m19s-6m49s wall, 346M peak, so 24 passes/day
+# costs ~1.2h CPU on a 4-core box -- affordable, and the docket is the binding constraint.
+# EDIT HERE, NOT IN THE .timer: check_scheduler_manifest.py rewrites units from this manifest,
+# so a hand-edited timer silently reverts. Measured 2026-09-04: an uncommitted edit to both
+# was restored within the hour, and the gauntlet went 16.8h without a sweep.
+10 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/certify_gauntlet.py >> data/cro_ai_logs/certify_gauntlet.log 2>&1
 # scripts/research_alpha_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 24 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/research_alpha_optimizer.py >> data/cro_ai_logs/research_alpha_optimizer.log 2>&1
 # scripts/run_carry_crowding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
@@ -1379,6 +1397,26 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_promotion_gate.py -> data/promotion_gate.json
 # CONFIDENCE: committed-script (new this cycle)
 55 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_promotion.lock .venv/bin/python scripts/check_promotion_gate.py >> data/cro_ai_logs/promotion.log 2>&1
+
+# THE EIGHT-GATE BARRIER HAD JUDGED ZERO CANDIDATES FOR ITS ENTIRE EXISTENCE (gap-fixer
+# 2026-08-26). scripts/promotion_gate.py reads data/gauntlet_survivors.json and NOTHING in this
+# repository had ever written it, so the barrier published NO-PRODUCER and returned 0 -- which
+# the cadence scored as a duty fired. Its producer, build_gauntlet_survivors.py, existed and was
+# an ORPHAN SCRIPT referenced by nothing (max_audit orphan-scripts). Wiring it turns a decoration
+# into a real screen-side record: first run wrote 21 candidates from real MT5 evidence, 3
+# clearing all eight gates, 18 carrying at least one UNMEASURED gate -- which this barrier counts
+# as FAILED, never as passed-by-default.
+# NOT A NEW BAR (RESEARCH s6d / L1.60): the gate says so in its own output -- it is a screen-side
+# prerequisite made auditable, and promotion authority remains with pre-registered FORWARD
+# evidence under the Two-Stage Discovery Law. Two gates it applies, CAPACITY and FRAGILITY, are
+# not covered by the canonical ten, and those are exactly where a certified-but-unfillable sleeve
+# dies -- which is why it is fed rather than deleted.
+# Producer then gate, five minutes apart, inside the measured-productive quota window.
+# EVIDENCE: scripts/build_gauntlet_survivors.py -> data/gauntlet_survivors.json
+# CONFIDENCE: hand-run 2026-08-26, rc=0, artifact verified
+40 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_gauntlet_survivors.lock .venv/bin/python scripts/build_gauntlet_survivors.py >> data/cro_ai_logs/gauntlet_survivors.log 2>&1
+# EVIDENCE: scripts/promotion_gate.py -> data/promotion_gate_verdicts.json
+45 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_gauntlet_survivors.lock .venv/bin/python scripts/promotion_gate.py >> data/cro_ai_logs/gauntlet_survivors.log 2>&1
 
 # DISCRETIONARY MAX (R0151): the ceiling-pusher for the discretionary desk -- L1.28c and L1.25a
 # applied to this section like every other. TARGET: a 38pct hit rate. That number is LEGAL where a
@@ -2757,3 +2795,70 @@ SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_cryp
 # with an empty denominator is absence read as a clean verdict. It tests the denominator, not the
 # file count; the first version tested the file count and printed a vacuous all-clear.
 5 7 * * * cd "$QUANT_ROOT/desks/mt5" && "$QUANT_ROOT/.venv/bin/python" research/shadow_gap.py >> "$QUANT_ROOT/data/cro_ai_logs/shadow_gap.log" 2>&1
+
+# --------------------------------------------------------------------------------------------
+# BAR SPAN FENCE (adopted 2026-08-26 in the branch unification; principal: canon carries all)
+# EVIDENCE: scripts/check_bar_span.py -> data/bar_span_report.json
+# A "D1" label claims a full day of market time; short-covering bars poison every gate that
+# consumes the series. Daily, after the fetchers and before the research day starts.
+53 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_bar_span.py >> data/cro_ai_logs/bar_span.log 2>&1
+
+# --------------------------------------------------------------------------------------------
+# COST-BASIS FENCE + COST SURFACE (added 2026-08-29, capability hunt s0)
+# EVIDENCE: desks/mt5/research/cost_surface.py -> desks/mt5/data/cost_surface.json
+#           scripts/check_cost_surface.py      -> data/cost_surface_report.json
+# WHAT WAS MISSING: `universe.json:median_spread_pts` is ONE scalar per symbol for all 24 hours,
+# collapsed at ingest, and it is the number every gate, certificate, stress scenario and forward
+# clock divides by. Nothing anywhere compared a cell's CHARGED cost against the spread its own
+# fill bars recorded. First run (2026-08-29) found both LIVE ZAR forward clocks undercharged --
+# USDZAR 2.51x, EURZAR 2.10x on their own fill bars -- and both go NEGATIVE when re-priced at the
+# desk's own declared honest baseline. 920 of 3,424 measured symbol-hour cells are material,
+# 244 of them OVERCHARGED, which is the false-null direction that raises no alert anywhere else.
+# CADENCE: surface first (it is a re-aggregation of the parquets the fetchers just wrote), fence
+# immediately after it, both before the research day and before shadow_forward's pass at 07:58.
+# CONFIDENCE: inferred slot; the ORDER is the load-bearing part, not the minute. The fence exits 2
+# on COST-BASIS-MISMATCH, SURFACE-MISSING, STALE and UNMEASURED, and never renders an unmeasured
+# cell as OK (L1.28a). NOT-READABLE-HERE is its own status so a box without the parquets cannot
+# report a clean verdict about the desk.
+20 6 * * * cd "$QUANT_ROOT" && .venv/bin/python desks/mt5/research/cost_surface.py >> data/cro_ai_logs/cost_surface.log 2>&1
+35 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_cost_surface.py >> data/cro_ai_logs/cost_surface_fence.log 2>&1
+
+# --------------------------------------------------------------------------------------------
+# CARRY STATE + CARRY-STATE FENCE (added 2026-08-29, capability hunt s0)
+# EVIDENCE: desks/mt5/research/carry_state.py -> desks/mt5/data/carry_state.json
+#           scripts/check_carry_state.py      -> data/carry_state_report.json
+# WHAT WAS MISSING: `grep -i swap desks/mt5/mt5desk/engine.py` returns ZERO hits -- every
+# backtest, gate, certificate and forward clock on this desk charges overnight financing at
+# exactly 0.00. `mt5desk/financing.py` built the entire verdict API for it and returned
+# UNMEASURED forever because "the broker's actual swap table is not in this repo"; it HAS been
+# since 2026-08-26 (82 hourly panels x 248 symbols in intelligence/broker_swaps, plus the
+# swap_mode units in tape/contract_terms) and nothing read either store. First run (2026-08-29):
+# 404 of 496 sides priced, 14 of 17 LIVE sleeves carrying a material uncharged leg -- XAUUSD
+# long -57.58/lot/night, which is 48.6% of that sleeve's expectancy and 2.88x the 20.00 rate the
+# published null assumed. 132 sides are CARRY-PAID (XAUUSD short +28.12/lot/night, booked at
+# zero) -- the false-null direction, which kills real edges with no alert anywhere.
+# CADENCE: daily, after the overnight rollover has repriced the panel and after cost_surface, so
+# the whole cost basis (spread surface + financing leg) refreshes as one before shadow_forward's
+# 07:58 pass. The ORDER is the load-bearing part, not the minute.
+# CONFIDENCE: inferred slot. The fence exits 2 on CARRY-UNCHARGED, CARRY-FLIP, STALE,
+# STATE-MISSING, UNMEASURED and NO-LIVE-SLEEVES, and never renders an unmeasured side as OK
+# (L1.28a). NO-LIVE-SLEEVES is its own status so an empty population cannot report a vacuous
+# pass (L1.57), and UNCLASSIFIED (rate known, spread basis absent) is kept distinct from
+# UNMEASURED (rate unknown) so a consumer cannot refuse a rate the desk actually holds.
+40 6 * * * cd "$QUANT_ROOT" && .venv/bin/python desks/mt5/research/carry_state.py >> data/cro_ai_logs/carry_state.log 2>&1
+50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_carry_state.py >> data/cro_ai_logs/carry_state_fence.log 2>&1
+
+# --- ORPHANABLE WRITERS (added 2026-08-29, frontier_unified) -------------------------------
+# WHY THIS EXISTS. On 2026-08-28 both FX Blue harvesters reported row 50 while their output
+# held 28 rows: `desks/mt5/data/` is git-TRACKED, this box checks it out every ten minutes
+# (auto_push) and hourly (the cycle), and a long-running writer that holds an append handle
+# open keeps writing into the inode AFTER the name has been unlinked. Nothing errors, nothing
+# warns, a reader sees a clean short file, and ~500 harvested records were lost.
+# The defect is a SHAPE, not a path -- an append handle held open across a loop that waits on
+# network, sleep or a subprocess -- so it recurs in whatever directory is written next. The
+# fence looks for the shape, restricted to targets git actually tracks (a gitignored artifact
+# has no checkout to eat it), and prints the repair with each hit.
+# EVIDENCE: scripts/check_orphanable_writers.py; exit 1 = at least one unrepaired writer.
+# A writer that stages outside the tree and publishes in one pass declares ORPHAN-SAFE and
+# stops reporting; today that is fxblue_track_record_miner and cohort_and_identity.
+41 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_orphanable_writers.py >> data/cro_ai_logs/orphanable_writers_fence.log 2>&1

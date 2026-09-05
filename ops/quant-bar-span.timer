@@ -1,0 +1,9 @@
+[Unit]
+Description=Per-symbol bar-span ratchet (GAP #148) schedule
+
+[Timer]
+OnCalendar=*-*-* 06:53
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,16 @@
+[Unit]
+Description=Seed miner suite hourly: frontier + regional + S9-S24 + cohorts + ALWAYS-PUSH
+
+[Service]
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 600M, so nothing that fits today is newly constrained.
+MemoryHigh=480M
+MemoryMax=600M
+MemorySwapMax=0
+CPUWeight=50
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_seed_miners_hourly.sh
+TimeoutStartSec=45m

@@ -1,0 +1,402 @@
+{
+ "3M": {
+  "exchange": "NYSE",
+  "ticker": "MMM"
+ },
+ "ADP": {
+  "exchange": "NASDAQ",
+  "ticker": "ADP"
+ },
+ "AMD": {
+  "exchange": "NYSE",
+  "ticker": "AMD"
+ },
+ "Accenture": {
+  "exchange": "NASDAQ",
+  "ticker": "ACN"
+ },
+ "Adobe": {
+  "exchange": "NASDAQ",
+  "ticker": "ADBE"
+ },
+ "Airbnb": {
+  "exchange": "NASDAQ",
+  "ticker": "ABNB"
+ },
+ "AlibabaGroup": {
+  "exchange": "NASDAQ",
+  "ticker": "BABA"
+ },
+ "Alphabet-A": {
+  "exchange": "NASDAQ",
+  "ticker": "GOOGL"
+ },
+ "Alphabet-C": {
+  "exchange": "NASDAQ",
+  "ticker": "GOOG"
+ },
+ "Amazon": {
+  "exchange": "NASDAQ",
+  "ticker": "AMZN"
+ },
+ "AmericanExpress": {
+  "exchange": "NASDAQ",
+  "ticker": "AXP"
+ },
+ "Amgen": {
+  "exchange": "NASDAQ",
+  "ticker": "AMGN"
+ },
+ "Apple": {
+  "exchange": "NASDAQ",
+  "ticker": "AAPL"
+ },
+ "AppliedMaterials": {
+  "exchange": "NASDAQ",
+  "ticker": "AMAT"
+ },
+ "Atlassian": {
+  "exchange": "NASDAQ",
+  "ticker": "TEAM"
+ },
+ "Baidu": {
+  "exchange": "NASDAQ",
+  "ticker": "BIDU"
+ },
+ "BankofAmericaCorp": {
+  "exchange": "NASDAQ",
+  "ticker": "BAC"
+ },
+ "Berkshire": {
+  "exchange": "NASDAQ",
+  "ticker": "BRK.B"
+ },
+ "BeyondMeat": {
+  "exchange": "NASDAQ",
+  "ticker": "BYND"
+ },
+ "BlackRock": {
+  "exchange": "NASDAQ",
+  "ticker": "BLK"
+ },
+ "BlockInc": {
+  "exchange": "NASDAQ",
+  "ticker": "SQ2"
+ },
+ "Boeing": {
+  "exchange": "NYSE",
+  "ticker": "BA"
+ },
+ "Booking": {
+  "exchange": "NASDAQ",
+  "ticker": "BKNG"
+ },
+ "Broadcom": {
+  "exchange": "NASDAQ",
+  "ticker": "AVGO"
+ },
+ "CVSHealth": {
+  "exchange": "NASDAQ",
+  "ticker": "CVS"
+ },
+ "Caterpillar": {
+  "exchange": "NYSE",
+  "ticker": "CAT"
+ },
+ "CharlesSchwab": {
+  "exchange": "NASDAQ",
+  "ticker": "SCHW"
+ },
+ "Charter": {
+  "exchange": "NASDAQ",
+  "ticker": "CHTR"
+ },
+ "Chevron": {
+  "exchange": "NYSE",
+  "ticker": "CVX"
+ },
+ "Cisco": {
+  "exchange": "NASDAQ",
+  "ticker": "CSCO"
+ },
+ "Citigroup": {
+  "exchange": "NASDAQ",
+  "ticker": "C"
+ },
+ "Coca-Cola": {
+  "exchange": "NYSE",
+  "ticker": "KO"
+ },
+ "Coinbase": {
+  "exchange": "NASDAQ",
+  "ticker": "COIN"
+ },
+ "Comcast": {
+  "exchange": "NASDAQ",
+  "ticker": "CMCSA"
+ },
+ "CostcoWholesale": {
+  "exchange": "NASDAQ",
+  "ticker": "COST"
+ },
+ "DocuSign": {
+  "exchange": "NASDAQ",
+  "ticker": "DOCU"
+ },
+ "Doordash": {
+  "exchange": "NASDAQ",
+  "ticker": "DASH"
+ },
+ "Dow": {
+  "exchange": "NYSE",
+  "ticker": "DJI"
+ },
+ "ElectronicArts": {
+  "exchange": "NASDAQ",
+  "ticker": "EA"
+ },
+ "ExxonMobil": {
+  "exchange": "NASDAQ",
+  "ticker": "XOM"
+ },
+ "Ford": {
+  "exchange": "NASDAQ",
+  "ticker": "F"
+ },
+ "GeneralElectric": {
+  "exchange": "NASDAQ",
+  "ticker": "GE"
+ },
+ "GeneralMotors": {
+  "exchange": "NASDAQ",
+  "ticker": "GM"
+ },
+ "GileadSciences": {
+  "exchange": "NASDAQ",
+  "ticker": "GILD"
+ },
+ "GoldmanSachs": {
+  "exchange": "NYSE",
+  "ticker": "GS"
+ },
+ "HomeDepot": {
+  "exchange": "NYSE",
+  "ticker": "HD"
+ },
+ "Honeywell": {
+  "exchange": "NYSE",
+  "ticker": "HON"
+ },
+ "IBM": {
+  "exchange": "NYSE",
+  "ticker": "IBM"
+ },
+ "Intel": {
+  "exchange": "NASDAQ",
+  "ticker": "INTC"
+ },
+ "Intuit": {
+  "exchange": "NASDAQ",
+  "ticker": "INTU"
+ },
+ "IntuitiveSurgical": {
+  "exchange": "NASDAQ",
+  "ticker": "ISRG"
+ },
+ "LucidGroup": {
+  "exchange": "NASDAQ",
+  "ticker": "LCID"
+ },
+ "Lyft": {
+  "exchange": "NASDAQ",
+  "ticker": "LYFT"
+ },
+ "Mastercard": {
+  "exchange": "NASDAQ",
+  "ticker": "MA"
+ },
+ "McDonalds": {
+  "exchange": "NYSE",
+  "ticker": "MCD"
+ },
+ "Medtronic": {
+  "exchange": "NASDAQ",
+  "ticker": "MDT"
+ },
+ "Merck": {
+  "exchange": "NYSE",
+  "ticker": "MRK"
+ },
+ "Meta": {
+  "exchange": "NASDAQ",
+  "ticker": "META"
+ },
+ "MicronTechnology": {
+  "exchange": "NASDAQ",
+  "ticker": "MU"
+ },
+ "Microsoft": {
+  "exchange": "NASDAQ",
+  "ticker": "MSFT"
+ },
+ "MorganStanley": {
+  "exchange": "NASDAQ",
+  "ticker": "MS"
+ },
+ "NIO": {
+  "exchange": "NASDAQ",
+  "ticker": "NIO"
+ },
+ "NVIDIA": {
+  "exchange": "NASDAQ",
+  "ticker": "NVDA"
+ },
+ "Nike": {
+  "exchange": "NYSE",
+  "ticker": "NKE"
+ },
+ "Oracle": {
+  "exchange": "NASDAQ",
+  "ticker": "ORCL"
+ },
+ "PayPal": {
+  "exchange": "NASDAQ",
+  "ticker": "PYPL"
+ },
+ "Pepsi": {
+  "exchange": "NASDAQ",
+  "ticker": "PEP"
+ },
+ "Pfizer": {
+  "exchange": "NASDAQ",
+  "ticker": "PFE"
+ },
+ "PhilipMorrisInternational": {
+  "exchange": "NASDAQ",
+  "ticker": "PM"
+ },
+ "Pinterest": {
+  "exchange": "NASDAQ",
+  "ticker": "PINS"
+ },
+ "Qualcomm": {
+  "exchange": "NASDAQ",
+  "ticker": "QCOM"
+ },
+ "RobinhoodMarkets": {
+  "exchange": "NASDAQ",
+  "ticker": "HOOD"
+ },
+ "Roku": {
+  "exchange": "NASDAQ",
+  "ticker": "ROKU"
+ },
+ "Salesforce": {
+  "exchange": "NYSE",
+  "ticker": "CRM"
+ },
+ "ServiceNow": {
+  "exchange": "NASDAQ",
+  "ticker": "NOW"
+ },
+ "Shopify": {
+  "exchange": "NASDAQ",
+  "ticker": "SHOP"
+ },
+ "Snapchat": {
+  "exchange": "NASDAQ",
+  "ticker": "SNAP"
+ },
+ "Snowflake": {
+  "exchange": "NASDAQ",
+  "ticker": "SNOW"
+ },
+ "Spotify": {
+  "exchange": "NASDAQ",
+  "ticker": "SPOT"
+ },
+ "Starbucks": {
+  "exchange": "NASDAQ",
+  "ticker": "SBUX"
+ },
+ "TMEGroup": {
+  "exchange": "NASDAQ",
+  "ticker": "TME"
+ },
+ "TSMC": {
+  "exchange": "NASDAQ",
+  "ticker": "TSM"
+ },
+ "Target": {
+  "exchange": "NASDAQ",
+  "ticker": "TGT"
+ },
+ "Tesla": {
+  "exchange": "NASDAQ",
+  "ticker": "TSLA"
+ },
+ "TexasInstruments": {
+  "exchange": "NASDAQ",
+  "ticker": "TXN"
+ },
+ "ThermoFisherScientific": {
+  "exchange": "NASDAQ",
+  "ticker": "TMO"
+ },
+ "Toyota": {
+  "exchange": "NASDAQ",
+  "ticker": "TM"
+ },
+ "Travelers": {
+  "exchange": "NYSE",
+  "ticker": "TRV"
+ },
+ "Twilio": {
+  "exchange": "NASDAQ",
+  "ticker": "TWLO"
+ },
+ "Uber": {
+  "exchange": "NASDAQ",
+  "ticker": "UBER"
+ },
+ "UnionPacific": {
+  "exchange": "NASDAQ",
+  "ticker": "UNP"
+ },
+ "UnitedHealth": {
+  "exchange": "NYSE",
+  "ticker": "UNH"
+ },
+ "UnitedParcelService": {
+  "exchange": "NASDAQ",
+  "ticker": "UPS"
+ },
+ "Verizon": {
+  "exchange": "NYSE",
+  "ticker": "VZ"
+ },
+ "Visa": {
+  "exchange": "NYSE",
+  "ticker": "V"
+ },
+ "Walgreens": {
+  "exchange": "NYSE",
+  "ticker": "WBA"
+ },
+ "Walmart": {
+  "exchange": "NYSE",
+  "ticker": "WMT"
+ },
+ "WaltDisney": {
+  "exchange": "NYSE",
+  "ticker": "DIS"
+ },
+ "WellsFargo": {
+  "exchange": "NASDAQ",
+  "ticker": "WFC"
+ },
+ "eBay": {
+  "exchange": "NASDAQ",
+  "ticker": "EBAY"
+ }
+}

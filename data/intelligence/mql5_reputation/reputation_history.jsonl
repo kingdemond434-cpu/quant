@@ -1,0 +1,4 @@
+{"timestamp": "2026-08-24T00:07:27.735926+00:00", "source_id": "test_author", "event": "cost_recorded", "details": {"llm_tokens": 1000, "llm_cost_usd": 0.01, "cpu_hours": 0.1}}
+{"timestamp": "2026-08-24T00:07:49.042802+00:00", "source_id": "test_author", "event": "cost_recorded", "details": {"llm_tokens": 1000, "llm_cost_usd": 0.01, "cpu_hours": 0.1}}
+{"timestamp": "2026-08-24T00:08:17.861246+00:00", "source_id": "test_author", "event": "cost_recorded", "details": {"llm_tokens": 1000, "llm_cost_usd": 0.01, "cpu_hours": 0.1}}
+{"timestamp": "2026-08-24T00:08:17.861385+00:00", "source_id": "test_author", "event": "output_recorded", "details": {"hypotheses": 10, "unique": 5, "cheap_passes": 3, "heavy_passes": 1, "shadow": 0, "live": 1, "elogw": 0.001}}

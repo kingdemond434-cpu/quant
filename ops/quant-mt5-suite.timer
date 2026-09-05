@@ -1,0 +1,13 @@
+[Unit]
+Description=MT5 desk suite ratchet, 4x daily
+# desks/mt5 is excluded from ruff, mypy and pytest testpaths, and a repo-wide grep for
+# "desks/mt5/tests" returned NOTHING -- no script, no hook, no unit. 551 tests on the money path
+# had never been run by any automated process. Not in the pre-push hook: the suite takes minutes
+# and blocking every push desk-wide is a cost this desk has already paid (R0688).
+
+[Timer]
+OnCalendar=*-*-* 01,07,13,19:47:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

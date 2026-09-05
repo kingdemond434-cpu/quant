@@ -17,6 +17,7 @@
                   },
     "pipeline":  [
                      "ops/run_midnight_frontier.sh",
+                     "scripts/run_midnight_completion.py",
                      "scripts/build_mt5_midnight_state.py",
                      "ops/run_midnight_codex_controller.sh"
                  ],
@@ -24,6 +25,9 @@
                                "docs/MASTER_QUANT_CONSTITUTION.md",
                                "data/constitution_core.lock",
                                "data/intelligence/mt5_midnight_state.json",
+                               "data/intelligence/midnight_completion.json",
+                               "data/intelligence/midnight_completion_checkpoint.json",
+                               "data/intelligence/midnight_morning_report.json",
                                "desks/mt5/data/universe/universe.json",
                                "desks/mt5/data/research_queue.json",
                                "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
@@ -112,6 +116,14 @@
                                   ],
     "controller_mandate":  "docs/MASTER_QUANT_CONSTITUTION.md",
     "implementation_mandate":  "docs/research/TIER1_CONTROLLER_MANDATE.md",
+    "nightly_repair_invariants":  [
+                                      "no stale or silently missing candidate, gauntlet, certificate, forward clock, bar source, queue, watchdog or fixer",
+                                      "run every canonical watchdog and fixer; prove the repair from its consumer artifact rather than process exit",
+                                      "resume every unfinished screen from its cell checkpoint and disposition it as tested, queued, rejected or explicitly blocked",
+                                      "certify only universal-gate passes and enroll every runnable certificate into zero-capital universal shadow",
+                                      "compare missing capabilities by function against tier-one institutions and implement the highest marginal expected-log-wealth gap",
+                                      "preserve every obligation in the master constitution and historical mandate coverage; compact prompts may index but never delete them"
+                                  ],
     "controller_continuity":  {
                                   "lease":  "data/controller_lease.json",
                                   "checkpoint":  "data/controller_checkpoint.json",

@@ -1,0 +1,18 @@
+[Unit]
+Description=External panel review (free seats)
+
+[Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/run_external_panel.py
+MemoryAccounting=yes
+# 2026-09-01: MemoryHigh sat BELOW this unit's measured 24h peak (540M against a 500M
+# throttle), so every run was in permanent reclaim and still died -- 5 oom-kills in 2h.
+# A throttle under the true working set is not a safety margin, it is a slow kill.
+MemoryHigh=700M
+MemoryMax=800M
+TimeoutStartSec=2700

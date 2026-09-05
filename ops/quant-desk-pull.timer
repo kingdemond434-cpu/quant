@@ -1,0 +1,10 @@
+[Unit]
+Description=Desk state pull every 2 minutes
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=120
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

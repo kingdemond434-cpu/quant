@@ -253,3 +253,198 @@ recursion rule), so the desk needs him to supply an angle exactly once.
     append-only store (graveyard, ledgers, tapes, jsonl corpora); and the mirror case this cycle
     also raised -- a WRITE with no intended reader, which is R0074's phantom-path census walked in
     the opposite direction.
+
+### Is a decision-grade number PERSISTED, or re-derived by every caller from scratch?
+    (added 2026-08-26 by the daily cycle, under the recursion rule -- this angle found a live
+    defect the first time it was asked, which is the bar for landing here permanently.)
+    Ask it of any value a subsystem COMPUTES in order to DECIDE something, where more than one
+    caller faces the same decision. The failure is not a wrong number; it is a correct number
+    that is thrown away, so every later caller pays the full discovery cost again and the desk
+    ends up with no artifact recording a fact it has measured dozens of times.
+    Proving instance: `ops/brain_env.sh:brain_reset_wait_s` parses the model CLI's rate-limit
+    message into an exact reset timestamp, sleeps once on it, and discards it. Ten organ
+    launchers call `brain_auth_check`; each walked the full `_BRAIN_MODEL_CHAIN` probe-by-probe
+    into a wall a previous organ had already measured to the minute.
+    `scripts/check_seat_launch_yield.py --days 7` (2026-08-26T07:20Z) priced it: 93 billable
+    launches, 25 real digs, 26.9% yield, `AUTH_UNAVAILABLE` 55 of the 93. The desk therefore had
+    no answer at all to "when is the brain reachable" -- UNMEASURED, which under L1.28a is a real
+    answer and a defect, and which is why the dead windows (14, 18 UTC) could only ever be found
+    by reading logs by eye.
+    THE TELL, and it is cheap to check: a function computes a value, uses it inside its own
+    frame, and there is no write anywhere in the call graph. `grep` the computing function's name
+    -- if every hit is a caller and none is a store, ask what the NEXT caller has to redo.
+    THE FIX SHAPE: persist it as a MEMO, never a rail. It must expire by wall clock, be capped so
+    a bad parse cannot silence the desk, clear on the first contradicting observation, carry a
+    human override, and have a NAMED CONSUMER in the same change (III.16) -- otherwise the memo
+    is one more unread artifact and the angle has bought nothing.
+    GENERALISES TO: quota/reset stamps, rate-limit backoffs, discovered capability probes
+    ("does this endpoint support pagination?"), measured venue costs, and any "we tried and it
+    was closed" observation that currently lives only in a log line.
+
+---
+
+### ANGLE (added 2026-08-26, cro cycle): does this equality check hash WHAT a thing is, or HOW it reached us?
+
+Ask of every identity, fingerprint, dedup key, cache key and drift check: if the SAME thing
+arrives by a DIFFERENT route tomorrow, does this compare equal? And if a DIFFERENT thing arrives
+by the SAME route, does it compare unequal? A field that answers "no" to either is not an
+identity — it is a transport log, and it fails in both directions at once.
+
+PROVING INSTANCE. `desks/mt5/research/shadow_forward.py` froze `data_venue = str(bars.source)`
+into every sleeve identity. `Bars.source` names the ROUTE — `MT5:FusionMarkets-Live` from a live
+terminal, `CACHE:USDJPY_H1.parquet` from the parquet cache of those same broker bars.
+`MetaTrader5` is not importable on the Linux VPS, so every run drifted; an identity break is
+TERMINAL and nothing clears it. Measured: 195 `IDENTITY BROKEN` lines in
+`desks/mt5/logs/shadow.log`, `data_venue` named in 195/195. The 14-day forward window (L1.58)
+therefore never survived a single day and **no sleeve could ever reach promotion** — the binding
+constraint on the entire objective, invisible because each individual break looked like the gate
+correctly doing its job.
+
+THE SECOND HALF IS THE ONE THAT MAKES THIS AN ANGLE AND NOT AN ANECDOTE. The same field was
+BLIND to the change it existed to catch: a demo feed and a live feed arriving by the same route
+both read `CACHE:<file>`. `broker_info.json` recorded `FusionMarkets-Demo` while every frozen row
+recorded `-Live`. So the wrong quantity was simultaneously over-sensitive (fires on outages) and
+under-sensitive (cannot see a venue swap) — which is the general signature of a check measuring a
+proxy instead of its subject, and why fixing it is a TIGHTENING, never a loosening.
+
+THE TELL, cheap to check: read the identity/key field list and, for each field, name the physical
+thing it describes. Any field whose value contains a filename, a hostname, a directory, a
+connection string, a process id or a retrieval verb is describing the pipe, not the water.
+
+THE FIX SHAPE: split the two facts — a `venue`/subject field that the producer sets from what it
+KNOWS, and a `source`/route field kept for provenance (L1.46) but excluded from identity. Fail
+the subject CLOSED (`UNKNOWN-VENUE` matches nothing) so an unmeasurable subject breaks the check
+rather than passing it (L1.28a). Then VERSION the schema: a field can change MEANING without
+changing shape, which is invisible to every comparison in the file, so rows frozen under the old
+meaning must be archived and re-windowed rather than silently re-blessed.
+
+GENERALISES TO: cache keys, content hashes, dedup keys, `code_hash`/`cost_hash`-style fingerprints
+(note `cost_hash` hashes a CONTINUOUSLY RE-MEASURED market observable — same family, still open as
+R0664), model/seat identity, dataset fingerprints, and any "has this changed?" gate anywhere.
+
+---
+
+## ANGLE (2026-08-26, self-found, mechanised same day): "is the check REGISTERED, or is it actually CALLABLE?"
+
+The desk already has `check_registry_complete`, which fires when a `check_*` is authored and never
+added to `CHECKS` — the 2026-07-26 class where four consecutive charters shipped with zero
+enforcement. That guard was GREEN the whole time `check_route_shaped_identity` was dead.
+
+WHAT HAPPENED: the check (written the previous cycle, the angle immediately above this one) shipped
+as `def check_route_shaped_identity() -> list[str]`, returning its verdicts, while the runner calls
+`fn(defects)`. It was correctly registered. It raised `TypeError` on **every single sweep**, so the
+dimension it enforces produced zero verdicts and read exactly like a clean one.
+
+WHY NOTHING CAUGHT IT: `_fenced` does rescue the crash — it emits `sweep-broken-<label>` — but that
+verdict names the CHECK, never the LAW that went dark. In a 40-defect sweep it reads as one more
+housekeeping row, not as "an entire class of defect is currently unenforced". Meanwhile the guard
+that exists precisely to stop inert laws was measuring the wrong half of the condition:
+**registration is not enforcement.**
+
+THE TELL, cheap to check: for every registered callable, does its signature match what the
+dispatcher actually passes? And does it RETURN its findings where the caller expects it to MUTATE
+(or vice versa)? A return value the caller discards is silence that looks like a clean verdict —
+the same shape as WS-005 and L1.28a, one level further in.
+
+GENERALISES TO: every registry-of-callables in the desk — checks, gates, collectors, screens,
+fences, cadence duties, panel missions, `_STEPS` chains. Anywhere a list of functions is dispatched
+by a loop, the loop's calling convention is an unwritten contract that nothing type-checks, because
+the registry is a list of heterogeneous callables and `mypy` has nothing to compare them against.
+
+MECHANISED: `check_registry_complete` now verifies SHAPE as well as registration
+(`check-wrong-signature`), and `tests/ops/test_max_audit_check_signatures.py` carries the positive
+control — it was verified to FAIL against pre-fix HEAD before being committed.
+
+## ANGLE (2026-08-26, self-found, mechanised same day): "what is spending RAM that isn't a process?"
+
+CI was RED on committed code: `KILLED sig9, MemAvailable 827MB, 495MB of RAM held by files under
+/tmp (tmpfs)`. Every liveness probe, every code review and every gate was blind to this, because
+the failure was **a file that is secretly memory**. `/tmp` is tmpfs on this box; a 322MB git
+worktree parked there (`/tmp/lit10-wt`, abandoned ~24h) was charging a 4GB no-swap box a tenth of
+its RAM to hold files nobody was reading. Reclaiming it took MemAvailable 1131MB → 1348MB and the
+desk-wide safety gate came back up.
+
+THE SECOND HAZARD IS THE WORSE ONE. That worktree's HEAD (`16a68718`, a complete litminer run 10)
+was reachable from **no branch at all**. tmpfs does not survive a reboot, so a full session of work
+was one power cycle — or one reflexive `worktree remove` — from being permanently gone. The
+reclaim was only safe because reachability was checked first and the commit was tagged
+(`rescued/litminer-run10-20260825`) before anything was removed.
+
+THE TELL: ask what is consuming a resource that has no process to attribute it to. `free -m`
+blames "shared"/"buff/cache"; `ps` shows nothing; the OOM killer names the victim, never the cause.
+`df -h /tmp` plus `du -sh /tmp/*` answers it in two seconds and almost nobody runs it during an
+incident because the incident presents as a test failure.
+
+THE ORDER OF OPERATIONS IS THE LESSON: tag → verify reachable → then reclaim. If the worktree holds
+uncommitted work, RELOCATE it to real disk instead of deleting — that fixes the RAM cost with zero
+data loss, and R0423 forbids destroying a sibling session's tree either way.
+
+GENERALISES TO: any tmpfs/`/dev/shm` path, container overlay upper-dirs, unreaped `/tmp` build
+caches, and the general class of **resource failures that look like code failures** — where the
+honest verdict is UNMEASURED/environmental and a re-run on a quiet box is the diagnostic (L0071:
+a negative exit code is a verdict about the BOX, never the code).
+
+MECHANISED: `check_worktree_on_tmpfs` in `scripts/max_audit.py` — flags any worktree under `/tmp`
+or `/dev/shm` with its RAM cost, and shouts separately when its HEAD is on no branch.
+
+## 2026-08-28 — three angles from a CI red that hid three reverted fixes (cro-cycle)
+
+Added under the RECURSION RULE: each of these found a real defect this cycle and none of them was
+being asked. The first is mechanically checkable and is now `max_audit.check_sync_launder`.
+
+**"Was this guard built AFTER the damage — and did anyone sweep the residue?"**
+Every guard is future-tense by construction. `moneypath_precommit_guard.py` landed 2026-08-26 and
+works (measured: no mt5 sync commit has carried a `.py` change since). Nobody ever swept the 22
+sync commits that predated it, so `regime_monitor.py` ran for two days without the GAP 130 shadow
+wake — hibernation as a one-way door on the gateway path — and the only reason it was invisible is
+that the healing fence restores a HAND-MAINTAINED list and nobody had added it. Ask of every
+guard: what does it NOT retroactively cover, and what swept that?
+→ mechanised: `scripts/check_sync_launder.py` derives its scope from history, not a registry.
+
+**"Does this test read state it does not control?"**
+Sixteen `test_short_order_path` tests were refused by the live `data/CASHCARRY_KILL`, latched
+since 08-01; five governance fences read `ops/principal_doctrine.txt` after the law moved next
+door. A suite whose verdict flips with an operational latch or a file relocation is measuring the
+BOX, not the code. Corollary worth its own check: when you add the isolating fixture, ASSERT it
+took effect — `short_order_path` imports `frozen` at module scope while its spot sibling imports
+it inside the function, so the same fixture text works on one and is a silent no-op on the other.
+
+**"Is this red gate hiding a TRUE finding among false ones?"**
+The prompt ratchet correctly named seven load-bearing rules that had stopped reaching any organ,
+and the alarm was invisible for three days because eighteen other failures in the same red were
+false. `max_audit.check_ci_gate` already carries this lesson in its own body — a red nobody can
+act on recurs, gets skimmed, and buries a real one — and nothing had applied it to the SUITE.
+A false red is not a nuisance, it is a hiding place. Triage a bulk red by CAUSE before believing
+any of it, and read the "reads state the test does not control" partition FIRST.
+
+## 2026-08-28 — three angles from an eight-day scheduler outage (cro-cycle, later run)
+
+Added under the RECURSION RULE. All three found real defects this cycle; two are now enforced by
+`tests/ops/test_no_cron_only_scheduling.py` and one by
+`tests/ops/test_ci_gate_superseded_head.py`.
+
+**"Does the SCHEDULER exist, or only the schedule?"**
+`cron.service` reads `Active: failed (Result: oom-kill) since 2026-08-20 20:48:44`, peak 3.1G on
+a 4GB box, and needs root to restart. Every crontab line has been inert for eight days. Six
+organs had no executor at all — including the auto-pusher added by principal order the day
+before, which has therefore never run once. The desk kept looking healthy because the OTHER 75
+timers are systemd user units and those are fine. A dead scheduler and an unwired script are
+indistinguishable from the artifact side, and only one of them is fixed by wiring: `max_audit`
+called `check_governance_pulse` "referenced by NOTHING" and was right about the symptom and wrong
+about the cause. Ask the daemon (`systemctl is-active`), never the config file.
+
+**"What would have reported this — and where does THAT run?"**
+`check_unit_health.py` carries the only "CRON IS NOT RUNNING" alarm on this box, and it was
+itself a crontab line. Cron's death silenced the one guard written to announce it, so the outage
+suppressed its own alarm for eight days. Whenever a monitor is scheduled BY the thing it watches,
+its silence is the failure mode and not evidence of health. The general form: trace every alarm
+to its executor and check the two are not the same fate.
+
+**"Which TREE is this stored verdict about?"**
+`data/.ci_last_run.json` named 25 committed-code failures at 08:54; all were fixed by 09:39 and
+re-running the exact 25 at 10:00 gave 127 passed — while `max_audit` still printed "RED on
+COMMITTED code" and listed them. Nothing recorded which commit the verdict measured, so no
+consumer could separate "still broken" from "already fixed, never re-run", and those demand
+opposite work. Third instance of one class in that single function after `tracked_ok` and
+`killed`. Any stored pass/fail is a statement about a tree, and the tree moves: stamp the commit,
+and treat a missing stamp as fail-closed rather than as unchanged.

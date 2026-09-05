@@ -104,15 +104,6 @@ def _refresh_scalp_bars() -> None:
     raise RuntimeError("no MT5 history source: " + " | ".join(failures))
 
 
-def _legacy_keys(shadow_forward) -> set[str]:  # type: ignore[no-untyped-def]
-    keys = {
-        f"{sym}.{window}" + (f".{state}" if state else "")
-        for sym, window, state in shadow_forward.SLEEVES
-    }
-    keys.update(f"{sym}.{family}" for sym, family in shadow_forward.UNIVERSE_SLEEVES)
-    return keys
-
-
 def _read(path: Path) -> dict:
     try:
         row = json.loads(path.read_text("utf-8"))
@@ -121,8 +112,17 @@ def _read(path: Path) -> dict:
         return {}
 
 
+def _terminal_status(value: object) -> bool:
+    status = str(value or "").upper()
+    return any(status == prefix or status.startswith(prefix + "_") for prefix in (
+        "KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARANTINED",
+    ))
+
+
 def run() -> tuple[dict, int]:
+    import external_shadow
     import promoter
+    import qquant_shadow
     import scalp_shadow
     import shadow_forward
 
@@ -130,31 +130,72 @@ def run() -> tuple[dict, int]:
     errors: dict[str, str] = {}
     for name, fn in (
         ("scalp_bar_refresh", _refresh_scalp_bars),
+        # Compatibility migration only: retires the old private external ledger. External
+        # certificates themselves run below in shadow_forward, so there is one evidence clock
+        # per identity rather than two competing ledgers with different freshness.
+        ("external_state_reconcile", external_shadow.main),
         ("legacy_shadow", shadow_forward.main),
         ("scalp_shadow", scalp_shadow.main),
+        ("qquant_shadow", qquant_shadow.main),
         ("promoter", promoter.main),
     ):
         try:
-            fn()
+            result = fn()
+            if isinstance(result, int) and not isinstance(result, bool) and result != 0:
+                raise RuntimeError(f"returned non-zero status {result}")
         except Exception as exc:
             errors[name] = f"{type(exc).__name__}: {exc}"
             traceback.print_exc()
 
+    # PRE-REGISTRATION STAMP, CENTRALIZED (RESEARCH §6d). Every live forward row must carry
+    # `forward_start` from the moment it exists; a clock counted from the first trade ever taken
+    # was letting selection-era evidence pose as forward evidence (36 rows measured 2026-08-26).
+    # The stamp is applied HERE -- by the orchestrator that owns these files -- so every engine,
+    # present and future, is covered by one code path instead of each reimplementing it (the
+    # one-pipeline law). First-seen-now is the only defensible stamp; backdating is fabrication.
+    for _sf in ("shadow_state.json", "scalp_shadow_state.json", "qquant_shadow_state.json"):
+        _p = BASE / "reports" / "shadow" / _sf
+        _d = _read(_p)
+        _stamped = 0
+        for _row in list(_d.values()) + list((_d.get("sleeves") or {}).values()):
+            if (isinstance(_row, dict) and ("status" in _row or "n" in _row)
+                    and not _terminal_status(_row.get("status"))
+                    and not _row.get("forward_start")):
+                _row["forward_start"] = datetime.now(UTC).isoformat()
+                _stamped += 1
+        if _stamped:
+            _p.write_text(json.dumps(_d, indent=2), "utf-8")
+            print(f"stamped forward_start on {_stamped} row(s) in {_sf}")
+
     legacy = _read(BASE / "reports" / "shadow" / "shadow_state.json")
     scalp = _read(BASE / "reports" / "shadow" / "scalp_shadow_state.json")
-    expected_legacy = _legacy_keys(shadow_forward)
-    represented_legacy = {key for key in expected_legacy if isinstance(legacy.get(key), dict)}
-    expected_scalp = set(scalp_shadow.CANDIDATES)
-    represented_scalp = {
-        key for key in expected_scalp
-        if isinstance((scalp.get("sleeves") or {}).get(key), dict)
+    qquant = _read(BASE / "reports" / "shadow" / "qquant_shadow_state.json")
+    represented_legacy = {
+        key for key, row in legacy.items()
+        if isinstance(row, dict) and row.get("gate_admission") == "ORIGINAL_UNIVERSAL_10_PASS"
+    }
+    represented_scalp = set((scalp.get("sleeves") or {}).keys())
+    represented_qquant = {
+        key for key, row in qquant.items()
+        if key.startswith("qquant.") and isinstance(row, dict)
     }
     rows = [legacy[key] for key in represented_legacy]
     rows += [(scalp.get("sleeves") or {})[key] for key in represented_scalp]
-    missing = sorted((expected_legacy - represented_legacy) | (expected_scalp - represented_scalp))
+    rows += [qquant[key] for key in represented_qquant]
+    active_rows = [row for row in rows if not _terminal_status(row.get("status"))]
+    terminal_rows = [row for row in rows if _terminal_status(row.get("status"))]
+    certified = (int(legacy.get("configured_sleeves", 0) or 0)
+                 + int(scalp.get("configured_sleeves", 0) or 0)
+                 + int(qquant.get("certified_qquant_sleeves", 0) or 0))
+    recorded = len(rows)
+    missing = [] if recorded >= certified else [f"{certified - recorded} certified sleeve(s)"]
+    # `BLOCKED_SLEEVE_ERROR` is the per-sleeve isolation status shadow_forward writes when one
+    # row cannot be evaluated (gap-wirer 2026-08-27). It MUST be counted here: the whole point of
+    # isolating a failure is that the other rows keep accruing, and a failure that stops halting
+    # the book while also stopping being VISIBLE is a worse trade than the crash it replaced.
     blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE",
-                                         "BLOCKED_UNIVERSAL_GATES"}
-                  for row in rows)
+                                         "BLOCKED_UNIVERSAL_GATES", "BLOCKED_SLEEVE_ERROR"}
+                  for row in active_rows)
     # LIVE-ARM STATE, SURFACED HERE ON PURPOSE. `armed` lives in data/gateway_state.json,
     # box-local and gitignored -- no other brain (Hetzner, a future session, anyone without
     # a shell on this exact machine) can see it any other way. This file is the one artifact
@@ -168,9 +209,17 @@ def run() -> tuple[dict, int]:
                     if isinstance(s, dict) and s.get("status") == "LIVE"]
     health = {
         "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "configured_sleeves": len(expected_legacy) + len(expected_scalp),
-        "represented_sleeves": len(represented_legacy) + len(represented_scalp),
-        "sleeves_with_forward_trades": sum(int(row.get("n", 0) or 0) > 0 for row in rows),
+        "configured_sleeves": len(active_rows),
+        "represented_sleeves": len(active_rows),
+        "certified_sleeves_total": certified,
+        "retired_shadow_sleeves": len(terminal_rows),
+        "quarantined_uncertified_candidates": (
+            int(legacy.get("gate_blocked_sleeves", 0) or 0)
+            + int(scalp.get("gate_blocked_sleeves", 0) or 0)
+        ),
+        "sleeves_with_forward_trades": sum(
+            int(row.get("n", 0) or 0) > 0 for row in active_rows
+        ),
         "evidence_blocked_sleeves": blocked,
         "missing_sleeves": missing,
         "errors": errors,
@@ -178,11 +227,16 @@ def run() -> tuple[dict, int]:
         "gateway_armed": bool(gw.get("armed", False)),
         "promoted_live_sleeves": live_sleeves,
     }
-    health["status"] = "OPERATING" if not missing and not errors else "FAILED"
+    if missing or errors:
+        health["status"] = "FAILED"
+    elif blocked:
+        health["status"] = "EVIDENCE_BLOCKED"
+    else:
+        health["status"] = "OPERATING"
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(health, indent=2), "utf-8")
     print(json.dumps(health, indent=2))
-    return health, 0 if health["status"] == "OPERATING" else 1
+    return health, {"OPERATING": 0, "EVIDENCE_BLOCKED": 2}.get(health["status"], 1)
 
 
 def main() -> int:

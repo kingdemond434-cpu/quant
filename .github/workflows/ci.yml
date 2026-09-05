@@ -63,3 +63,42 @@ jobs:
       # Floors only ever rise.
       - name: Coverage floors (ratcheted)
         run: python scripts/check_coverage_floors.py --report coverage.json
+
+  # THE MT5 MONEY PATH HAS ITS OWN GATE. The job above measures `libs`; the code that actually
+  # places, sizes and vetoes orders lives under desks/mt5 and was outside every number CI
+  # reported. This job runs the desk's suite with branch coverage on that path, holds it to its
+  # own ratcheted floor, and then checks the two integration invariants the audit named: every
+  # producer on the desk reaches a decision (capability graph) and ingested rows carry
+  # point-in-time provenance (PIT census, ratcheted). Any of the four failing blocks the merge.
+  mt5-money-path:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install (pinned dev extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # The gateway cannot be imported off Windows (MetaTrader5); its tests exec functions from
+      # the source. Files absent from the report are reported by the floor, never scored zero.
+      - name: MT5 desk suite (branch coverage on the money path)
+        run: >-
+          pytest desks/mt5/tests -q -p no:randomly --timeout=600
+          --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch
+          --cov-report=term:skip-covered --cov-report=json:mt5cov.json
+
+      - name: Money-path coverage floor (ratcheted)
+        run: python scripts/check_mt5_coverage_floor.py --report mt5cov.json
+
+      - name: Capability graph (every producer reaches a decision)
+        run: python scripts/check_reachability.py
+
+      - name: Point-in-time provenance census (ratcheted)
+        run: python scripts/check_pit.py

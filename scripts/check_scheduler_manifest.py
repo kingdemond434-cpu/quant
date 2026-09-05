@@ -400,6 +400,136 @@ def diff_live(root: Path, man: Manifest, live: str) -> tuple[list[str], list[str
     return missing_in_live, extra_in_live, duplicated
 
 
+# ---------------------------------------------------------------------------------------------
+# THE SECOND AND THIRD SCHEDULER PLANES (added 2026-08-29)
+#
+# This fence compared the manifest against `crontab -l` ALONE. That was true when it was written
+# and stopped being true on 2026-08-20, when root `cron.service` OOM-died and the desk migrated
+# its live jobs onto systemd USER timers plus scripts/run_manifest_dispatch.py. From that day the
+# fence printed 232 identical `DRIFT manifest-only (box does not run it)` lines -- including one
+# for every row that WAS running perfectly well under a timer -- and a fence whose every line is
+# noise cannot signal the one line that matters. The 08-20 death itself hid inside this output
+# for six days.
+#
+# A row is COVERED when some executor demonstrably runs it, and the three planes are asked in
+# order of evidence strength: the dispatcher's state file records that a row ACTUALLY FIRED and
+# when; a unit's ExecStart records that something is CONFIGURED to run it. Neither is a claim
+# from the manifest about itself, which is the only kind of evidence this fence must not accept.
+# ---------------------------------------------------------------------------------------------
+
+_UNIT_DIRS = (Path.home() / ".config/systemd/user", Path("/etc/systemd/system"))
+_SCRIPT_TOKEN = re.compile(r"[\w/.\-]+\.(?:py|sh)")
+_DISPATCH_STATE_REL = "data/manifest_dispatch_state.json"
+#: A dispatcher row counts as covering the manifest only if it fired inside this window. A row
+#: that fired once a fortnight ago is a dead row with a memory, not a live executor.
+_DISPATCH_FRESH_H = 26.0 * 7
+
+
+def _unit_scripts() -> set[str]:
+    """Every script basename named by an installed unit's ExecStart, both planes.
+
+    Basename and not full path on purpose: units invoke scripts through wrappers, `flock`,
+    `/bin/bash -c '...'` and quoted forms, and a path-exact match would report a running organ as
+    dead. The failure direction of a basename match is a false COVERED, which this fence reports
+    as a count rather than silence so the looseness stays visible.
+    """
+    found: set[str] = set()
+    for d in _UNIT_DIRS:
+        try:
+            units = list(d.glob("*.service"))
+        except OSError:
+            continue
+        for u in units:
+            try:
+                txt = u.read_text("utf-8", errors="replace")
+            except OSError:
+                continue
+            for line in txt.splitlines():
+                if line.strip().startswith("ExecStart"):
+                    for m in _SCRIPT_TOKEN.finditer(line):
+                        found.add(m.group(0).strip("'\"").split("/")[-1])
+    return found
+
+
+def _dispatched_scripts(root: Path, now: datetime | None = None) -> set[str]:
+    """Script basenames the manifest dispatcher has actually fired inside the freshness window."""
+    now = now or datetime.now(UTC)
+    try:
+        state = json.loads((root / _DISPATCH_STATE_REL).read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    live: set[str] = set()
+    for token, row in (state.get("rows") or {}).items():
+        try:
+            fired = datetime.fromisoformat(str(row.get("last_fired", "")))
+        except ValueError:
+            continue
+        if (now - fired).total_seconds() / 3600.0 <= _DISPATCH_FRESH_H:
+            live.add(str(token).split("/")[-1])
+    return live
+
+
+def split_by_plane(root: Path, drift_missing: list[str]) -> tuple[list[str], dict[str, int]]:
+    """Rows the crontab does not run, split into GENUINELY uncovered and covered-elsewhere.
+
+    Returns the uncovered rows (the real drift) and a per-plane count of what was absorbed, so
+    the coverage claim carries its own denominator instead of quietly shrinking the number.
+    """
+    units, dispatched = _unit_scripts(), _dispatched_scripts(root)
+    uncovered: list[str] = []
+    absorbed = {"systemd_unit": 0, "manifest_dispatcher": 0}
+    for row in drift_missing:
+        names = {m.group(0).split("/")[-1] for m in _SCRIPT_TOKEN.finditer(row)}
+        if names & dispatched:
+            absorbed["manifest_dispatcher"] += 1
+        elif names & units:
+            absorbed["systemd_unit"] += 1
+        else:
+            uncovered.append(row)
+    return uncovered, absorbed
+
+
+def repair_schedules(root: Path, man: object) -> list[str]:
+    """Rewrite a committed timer's OnCalendar to the manifest's, and say so.
+
+    WHY REPAIR AND NOT ONLY REPORT (2026-09-04). The schedule is declared TWICE -- once in
+    `ops/crontab.manifest` and once in a committed `ops/*.timer` -- and two sources of truth drift.
+    Measured today: the manifest was corrected to run certify_gauntlet HOURLY and committed, while
+    `ops/quant-certify-gauntlet.timer` still said `05:10:00`. An installer copies the ops/ timer
+    over the live unit, so every hand-edit to ~/.config was silently undone within the hour, three
+    times, and the gauntlet -- the job that MINTS certificates -- kept falling back to daily while
+    the desk was asked to grow hourly.
+
+    THE MANIFEST WINS, because it is the file the desk already calls its single source of truth and
+    the one a reviewer reads. This only ever rewrites the timer TO the manifest, never the reverse:
+    a schedule change is a manifest edit, reviewed and committed, and this closes the gap that let
+    an unreviewed copy override it.
+    """
+    out: list[str] = []
+    for timer in sorted((root / "ops").glob("*.timer")):
+        try:
+            text = timer.read_text("utf-8")
+        except OSError:
+            continue
+        cals = [ln.strip().removeprefix("OnCalendar=").strip()
+                for ln in text.splitlines()
+                if ln.strip().startswith("OnCalendar=")]
+        if len(cals) != 1:
+            continue
+        entries = [e for e in getattr(man, "systemd_entries", []) or []
+                   if getattr(e, "timer", "") == timer.name]
+        if len(entries) != 1:
+            continue
+        declared = getattr(entries[0], "on", "")
+        if not declared or declared == cals[0]:
+            continue
+        timer.write_text(text.replace(f"OnCalendar={cals[0]}", f"OnCalendar={declared}", 1),
+                         "utf-8")
+        out.append(f"  REPAIRED {timer.name}: OnCalendar {cals[0]!r} -> {declared!r} "
+                   f"(manifest is the source of truth)")
+    return out or ["  schedules: every committed timer already matches the manifest"]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--json", action="store_true",
@@ -409,11 +539,16 @@ def main(argv: list[str] | None = None) -> int:
                          "(missing scripts / rotted timers still exit 2)")
     ap.add_argument("--root", type=Path, default=_ROOT,
                     help="repo root (tests point this at fixture trees)")
+    ap.add_argument("--fix-schedules", action="store_true",
+                    help="repair a committed timer whose OnCalendar disagrees with the manifest")
     args = ap.parse_args(argv)
     root: Path = args.root.resolve()
 
     man = parse_manifest(root / _MANIFEST_REL)
     missing = check_scripts_exist(root, man)
+    if args.fix_schedules:
+        for line in repair_schedules(root, man):
+            print(line)
     timer_problems = check_committed_timers(root, man)
     lock_problems = check_lock_coherence(man)
     import_problems, n_import_checks, n_thirdparty = check_imports_resolve(root, man)
@@ -446,13 +581,19 @@ def main(argv: list[str] | None = None) -> int:
         print("  live crontab: no live crontab readable (sandbox/fresh restore) -- "
               "repo-only checks (a)+(b) still ran")
     else:
-        for d in drift_missing:
-            print(f"  DRIFT   manifest-only (box does not run it): {d}")
+        uncovered, absorbed = split_by_plane(root, drift_missing)
+        for d in uncovered:
+            print(f"  DRIFT   run by NOTHING on any plane: {d}")
+        if absorbed["systemd_unit"] or absorbed["manifest_dispatcher"]:
+            print(f"  PLANE   {absorbed['manifest_dispatcher']} manifest row(s) covered by the "
+                  f"dispatcher (fired within {_DISPATCH_FRESH_H / 24:.0f}d), "
+                  f"{absorbed['systemd_unit']} by an installed systemd unit -- "
+                  "not cron drift, and not counted as such")
         for d in drift_extra:
             print(f"  DRIFT   live-only (repo cannot reconstitute it): {d}")
         for d in drift_dupes:
             print(f"  DUPE    scheduled more often than declared: {d}")
-        if not (drift_missing or drift_extra or drift_dupes):
+        if not (uncovered or drift_extra or drift_dupes):
             print("  live crontab: matches manifest (normalized, multiset)")
 
     exit_code = 0

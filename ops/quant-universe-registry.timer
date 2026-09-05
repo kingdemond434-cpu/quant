@@ -1,0 +1,13 @@
+[Unit]
+Description=Universe registry repair every 20 minutes
+# The three producers that clobber desks/mt5/data/universe/universe.json run on Windows boxes
+# with no code-sync path from here, so a patched producer is inert until someone re-deploys it.
+# This is the durable protection: whatever a partial writer deletes is re-merged within 20
+# minutes, and the run leaves desks/mt5/reports/universe_registry_repair.json as its artifact.
+
+[Timer]
+OnCalendar=*:3/20
+Persistent=true
+
+[Install]
+WantedBy=timers.target

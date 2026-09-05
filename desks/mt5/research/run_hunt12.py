@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+
 # main() has called these since the E_MAX correction and never imported them, so
 # the script has been dead at line 174 -- a NameError two statements into main(),
 # AFTER the module imports cleanly. A collection gate cannot see that and neither
@@ -32,7 +33,6 @@ from mt5desk.multiplicity import deflation, sweep_size  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
-
 # MULTIPLICITY, SIZED TO THE SWEEP THAT IS ACTUALLY RUN. This was `E_MAX = 1.5`, a constant
 # copied from hunt11's "E[max of 9 iid normals]" -- but this sweep tests symbols x 4 windows x 4
 # states, which was 352 cells on the 22-symbol universe and grows with every symbol added. The
@@ -52,54 +52,61 @@ STATES = ["TREND_DAY", "NORMAL_DAY", "RANGE_DAY", "FAILED_BREAK"]
 
 
 def day_states(h1: pd.DataFrame) -> dict:
-    """Each trading day labelled by the PRIOR day's NY session. The tradeable form.
+    """Each calendar day labelled from the most recent COMPLETED prior NY session.
 
-    THIS FUNCTION USED TO RETURN `_day_states_same_day`, AND THAT WAS A LOOKAHEAD.
+    CAUSALITY: the label for day D derives only from sessions strictly before D (the original
+    same-day join gated an 07:00 asia signal with data through 22:00 the same day -- gold asia
+    TREND_DAY t=11.34 fell to 2.79 corrected; `_day_states_same_day` below reproduces that
+    artifact and must never gate a trade).
 
-    The label for day D was computed from D's OWN 13:00-22:00 UTC session and then used to filter
-    D's own signals. The asia window fires at 07:00 UTC, so every asia trade was gated by data
-    from 15 hours in its own future; london_am (13:00), ny_open (14:00) and afternoon (17:00) all
-    sit inside the 13:00-22:00 block that labels them, so all four windows were affected. Every
-    docstring on this desk already said "prior NY ... of the PREVIOUS day" -- the intent was right
-    from the start and only the join was wrong.
+    AVAILABILITY: iterate the BAR CALENDAR, not the labelled days -- this distinction is
+    load-bearing. Keying the result on days that have their OWN completed NY session is fine on
+    a finished history and WRONG the moment this runs live: at 07:00 UTC today's 13:00-22:00
+    block does not exist yet, so today would carry no label and `gateway.state_allows` /
+    `run_family_sleeves` would refuse every state-conditioned sleeve forever -- a silent live
+    suppressor that replay cannot see. The state a morning signal needs was fully observable at
+    22:00 yesterday and is available from then on.
 
-    WHAT IT COST, measured by re-running the affected cells both ways:
+    LEVELS: prior-day breakout levels come from NY-session days only -- a 2-bar Sunday stub is
+    not a level (L1.68); using it as "yesterday's high" manufactured FAILED_BREAKs on Mondays.
 
-      gold asia TREND_DAY     +0.908R t=11.34  ->  +0.191R t= 2.79
-      gold asia FAILED_BREAK  -0.257R t=-6.80  ->  +0.158R t=+3.65   (the sign inverts)
-      AUDCAD -- all five hunt12 survivors: PASS -> FAIL, two of them outright negative
-
-    Corrected, the four states pay +0.191 / +0.256 / +0.210 / +0.158 R against an unconditional
-    base of +0.212R. That is a flat line: prior-NY displacement does not discriminate, and the
-    "state" it names is not a mechanism. Anything conditioned on it has to be re-derived rather
-    than re-labelled -- which is why the fix lands in this shared function instead of at each call
-    site, so all eleven importers (hunts 12/13/15/16, qquant_gates, validate_fusion, exit_study,
-    fragility, portfolio_projection) pick up the corrected join without having to opt in.
-
-    `_day_states_same_day` is kept, and kept private, solely so the historical claims can be
-    reproduced and shown to be artifacts. It must never gate a trade.
+    A day with no completed prior session is OMITTED: "no observation" is not a state and must
+    never be tradeable as one (consumers treat absence as refusal).
     """
-    same = _day_states_same_day(h1)
-    labelled = sorted(same)
-    if not labelled:
+    ny = h1.between_time("13:00", "22:00")
+    if ny.empty:
         return {}
-    # ITERATE THE BAR CALENDAR, NOT THE LABELLED DAYS, and this distinction is load-bearing.
-    #
-    # The obvious shift -- zip the labelled days against themselves offset by one -- keys the
-    # result on days that have their OWN completed NY session. That is fine on a finished history
-    # and WRONG the moment this runs live: at 07:00 UTC today's 13:00-22:00 block does not exist
-    # yet, so today would carry no label and the asia window could never trade. The state a
-    # morning signal needs was fully observable at 22:00 yesterday and must be available from
-    # then on, so every calendar day in the index takes the most recent COMPLETED prior label.
-    #
-    # A day with no completed prior session at all is omitted: "no observation" is not a state
-    # and must never be tradeable as one.
+    by = ny.assign(date=ny.index.date).groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
+    by["rng"] = by["hi"] - by["lo"]
+    by["rng_med"] = by["rng"].rolling(20, min_periods=10).median()
+    day = h1.assign(date=h1.index.date).groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
+    day = day.reindex(by.index)                # NY-session days only: stubs are not levels
+    day["prev_hi"] = day["hi"].shift(1)
+    day["prev_lo"] = day["lo"].shift(1)
+    ny_close = ny.assign(date=ny.index.date).groupby("date")["close"].last()
+    labels: dict = {}
+    for y, r in by.iterrows():
+        med = r["rng_med"]
+        if not med or pd.isna(med):
+            continue
+        st = "TREND_DAY" if r["rng"] > 1.5 * med else (
+            "RANGE_DAY" if r["rng"] < 0.75 * med else "NORMAL_DAY")
+        ph, pl = day.at[y, "prev_hi"], day.at[y, "prev_lo"]
+        yc = ny_close.get(y)
+        if (yc is not None and ph and pl and not pd.isna(ph) and not pd.isna(pl)
+                and ((day.at[y, "hi"] > ph and yc < ph)
+                     or (day.at[y, "lo"] < pl and yc > pl))):
+            st = "FAILED_BREAK"
+        labels[y] = st
+    if not labels:
+        return {}
+    labelled = sorted(labels)
     out: dict = {}
     prev_label = None
     li = 0
     for d in sorted({ts.date() for ts in h1.index}):
         while li < len(labelled) and labelled[li] < d:
-            prev_label = same[labelled[li]]
+            prev_label = labels[labelled[li]]
             li += 1
         if prev_label is not None:
             out[d] = prev_label
@@ -107,7 +114,16 @@ def day_states(h1: pd.DataFrame) -> dict:
 
 
 def _day_states_same_day(h1: pd.DataFrame) -> dict:
-    """The original same-day labelling. LOOKAHEAD -- for reproducing artifacts only."""
+    """The original same-day labelling. LOOKAHEAD -- for reproducing artifacts only.
+
+    Day D's label was computed from D's OWN 13:00-22:00 UTC session and then used to filter D's
+    own earlier signals (asia fires 07:00). It produced the desk's headline artifact (gold asia
+    TREND_DAY +0.908R t=11.34, falling to +0.191R t=2.79 when corrected) and hunt12's AUDCAD
+    survivor cluster (all five fail their own gate corrected). Kept, and kept private, solely so
+    those historical claims can be reproduced and shown to be artifacts. It must never gate a
+    trade; `day_states` above is the causal join (labels from D-1/D-2 aggregates only), pinned
+    by tests/test_day_states_lookahead.py.
+    """
     ny = h1.between_time("13:00", "22:00")
     if ny.empty:
         return {}
@@ -156,9 +172,10 @@ def wf_oos(h1: pd.DataFrame, sigs: list, costs: Costs) -> list[float]:
 
 def battery(h1: pd.DataFrame, sigs: list, costs: Costs) -> dict:
     r = run_backtest(h1, sigs, costs).stats()
-    r2 = run_backtest(h1, sigs, Costs(costs.spread_per_lot * 2,
-                                      costs.commission_per_lot * 2,
-                                      costs.contract_oz)).stats()
+    # DERIVE, NEVER REBUILD: a positional rebuild drops `quote_per_account` back to 1.0 and
+    # un-does the account-currency conversion, so the 2x stress landed BELOW the baseline on
+    # every JPY cross (measured 2026-08-27). Commission is contractual and does not widen.
+    r2 = run_backtest(h1, sigs, costs.stressed(2.0)).stats()
     wf = wf_oos(h1, sigs, costs)
     defl = r["t_stat"] - E_MAX
     gate = (r["n"] > 60 and defl > 2 and r["profit_factor"] > 1.05

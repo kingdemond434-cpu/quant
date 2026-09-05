@@ -1,0 +1,12 @@
+id: H000001
+family: session_range_breakout
+symbols:
+  - XAUUSD
+sessions:
+  - asia
+side: LONG
+parameters:
+  rr: [1.5, 2.0, 2.5]
+mechanism: "Gold asia session breakout exploits the overlap between Asian liquidity consolidation and London open momentum. The 7-10 UTC range defines a volatility compression that systematically resolves directionally when London participants enter."
+falsifier: "No positive expectancy in asia session for XAUUSD after 100 forward trades on Fusion-native bars with canonical costs"
+status: DISCOVERED

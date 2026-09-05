@@ -84,6 +84,10 @@ PROTECTED: dict[str, str] = {
     "docs/research/recommendation_ledger.json": (
         "what external panels recommended and what the desk did about it. Rewritten, it loses "
         "the open items, which is the only half that costs anything"),
+    "desks/mt5/data/universe/universe.json": (
+        "the traded universe and its per-symbol cost fields. A dropped column is invisible -- "
+        "every symbol is still there -- and prices the whole desk off a denomination it guessed. "
+        "`currency_profit` was lost from all 251 rows on 2026-08-29 and `tick_value` before it"),
     "docs/GAP_REGISTER.md": (
         "the ranked open-defect list every session reads to choose work. Regenerated from a "
         "partial cycle it drops rows -- and a gap that vanishes reads exactly like a gap closed"),

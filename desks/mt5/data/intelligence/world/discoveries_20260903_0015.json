@@ -1,0 +1,877 @@
+[
+ {
+  "source": "world_crawler",
+  "title": "Cotizaci\u00f3n de divisas Forex en tiempo real | Rankia",
+  "url": "https://www.rankia.com/cotizaciones/forex?dir=desc&sort=cierre",
+  "published": "2026-09-03T00:13:30+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "59e2ae52c14a61039594",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cotizaci\u00f3n de divisas Forex en tiempo real | Rankia",
+  "url": "https://www.rankia.com/cotizaciones/forex?dir=asc&sort=volumen",
+  "published": "2026-09-03T00:13:32+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "58458687750b45fd5e24",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio Euro Libra hoy en tiempo real | Cotizaci\u00f3n EUR/GBP",
+  "url": "https://www.rankia.com/forex/eur-gbp",
+  "published": "2026-09-03T00:13:34+00:00",
+  "symbols": [
+   "BREXIT",
+   "EURGBP",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "d301198213b285fedb21",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio Euro Yen hoy en tiempo real | Cotizaci\u00f3n EUR/JPY",
+  "url": "https://www.rankia.com/forex/eur-jpy",
+  "published": "2026-09-03T00:13:36+00:00",
+  "symbols": [
+   "EURJPY",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "ddcf67b9b4d6c624b25e",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio Libra Yen hoy en tiempo real | Cotizaci\u00f3n GBP/JPY",
+  "url": "https://www.rankia.com/forex/gbp-jpy",
+  "published": "2026-09-03T00:13:38+00:00",
+  "symbols": [
+   "GBPJPY",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "1ac1d8c61a49a05bfed9",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio Libra D\u00f3lar hoy en tiempo real | Cotizaci\u00f3n GBP/USD",
+  "url": "https://www.rankia.com/forex/gbp-usd",
+  "published": "2026-09-03T00:13:40+00:00",
+  "symbols": [
+   "GBPUSD",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "f1cf4bbdbae79967f32d",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio D\u00f3lar Yen hoy en tiempo real | Cotizaci\u00f3n USD/JPY",
+  "url": "https://www.rankia.com/forex/usd-jpy",
+  "published": "2026-09-03T00:13:42+00:00",
+  "symbols": [
+   "NIKKEI",
+   "ONLINE",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "2db7e35ae49ee74824f1",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Webinars, Events &amp; Collaborations - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/webinars",
+  "published": "2026-09-03T00:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "69d4ac6c3c544afea59c",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Blog Contribution Guidelines",
+  "url": "https://blog.quantinsti.com/blog-contribution-guidelines",
+  "published": "2026-09-03T00:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "91a5b56a69140a7f3235",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QuantInsti in 2026: Events, Collaborations and Updates",
+  "url": "https://blog.quantinsti.com/algo-trading-webinars-2026/",
+  "published": "2026-09-03T00:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "e4bc5e603b8134095abe",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Gold Price Prediction: Step By Step Guide Using Python Machine Learning",
+  "url": "https://blog.quantinsti.com/gold-price-prediction-using-machine-learning-python/",
+  "published": "2026-09-03T00:13:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "3ad69657a5cc27be59e0",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "RSI Indicator Formula and Calculation: Trading Strategies and Python Implementation",
+  "url": "https://blog.quantinsti.com/rsi-indicator/",
+  "published": "2026-09-03T00:13:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "51ca88ddacd0f0a1fedd",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Free Resources to Learn Algorithmic Trading | A Compiled List",
+  "url": "https://blog.quantinsti.com/free-resources-list-compilation-learn-algorithmic-trading/",
+  "published": "2026-09-03T00:13:53+00:00",
+  "symbols": [
+   "ACCESS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "270092ba77411106f88d",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Ask Me Anything with Nitesh Khandelwal: Algo Trading AMA",
+  "url": "https://blog.quantinsti.com/featured-1/",
+  "published": "2026-09-03T00:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "017d058fa1d998fd480a",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "2.27 How to Think About Indicator Lag Before Backtesting",
+  "url": "https://aligrithm.com/how-to-think-about-indicator-lag-before-backtesting/",
+  "published": "2026-09-03T00:13:56+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "180a2823b8c98ba3787c",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "2.29 Automatic Gain Control for Trading Indicators",
+  "url": "https://aligrithm.com/automatic-gain-control-for-trading-indicators/",
+  "published": "2026-09-03T00:13:58+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "3870d6282f5fd05dd47d",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "2.32 The Transfer Function View: Characterizing Any Indicator with the Z-Transform",
+  "url": "https://aligrithm.com/the-transfer-function-view-characterizing-any-indicator-with-the-z-transform/",
+  "published": "2026-09-03T00:14:00+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "e1812ed143cd7d31ada9",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "2.42 Designing an Indicator by Specifying Its Phase First",
+  "url": "https://aligrithm.com/designing-an-indicator-by-specifying-its-phase-first/",
+  "published": "2026-09-03T00:14:02+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "eb28004785c3e1d2622b",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "2.43 Recursive vs Non-Recursive: The Two Families of Every Indicator",
+  "url": "https://aligrithm.com/recursive-vs-non-recursive-the-two-families-of-every-indicator/",
+  "published": "2026-09-03T00:14:04+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "81364336ae286fb75bc9",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "2.53 The Roofing Filter: Band-Limit Before You Build Any Indicator",
+  "url": "https://aligrithm.com/the-roofing-filter-band-limit-before-you-build-any-indicator/",
+  "published": "2026-09-03T00:14:06+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "353d4d4e7a4cc1820d5d",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "2.57 Adaptive Indicators: Tuning RSI to the Measured Cycle",
+  "url": "https://aligrithm.com/adaptive-indicators-tuning-rsi-to-the-measured-cycle/",
+  "published": "2026-09-03T00:14:08+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "fc35fc627b2168c014e5",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Python For Algorithmic Trading Cookbook, 2nd Edition \u2014 Review",
+  "url": "https://www.drkrzysztofozimek.com/python-algorithmic-trading-cookbook-2nd-edition-review/",
+  "published": "2026-09-03T00:14:10+00:00",
+  "symbols": [
+   "RAPIDS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "6ad73cef2a3655cc57f3",
+  "host": "www.drkrzysztofozimek.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantpedia Public Strategy API",
+  "url": "https://quantpedia.com/api/v1/docs",
+  "published": "2026-09-03T00:14:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "a5aa8f0e17dc8a737aa4",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "A Comprehensive List of Tools for Quantitative Traders | QuantPedia",
+  "url": "https://quantpedia.com/links-tools/?category=algo-trading-discounts",
+  "published": "2026-09-03T00:14:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "ddd07d2d4c8d72a9168f",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Why Average Strategy Performance Can Mislead Portfolio Research | QuantPedia",
+  "url": "https://quantpedia.com/why-average-strategy-performance-can-mislead-portfolio-research/",
+  "published": "2026-09-03T00:14:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "deeb5b20234f38e263eb",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantpedia Premium Update &#8211; August 29th | QuantPedia",
+  "url": "https://quantpedia.com/quantpedia-premium-update-august-29th/",
+  "published": "2026-09-03T00:14:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "51039547c03290c7cf71",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Boundaries of Time Series Momentum | QuantPedia",
+  "url": "https://quantpedia.com/boundaries-of-time-series-momentum/",
+  "published": "2026-09-03T00:14:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "a174048acad2047c9b1f",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantpedia API for Peer Group Strategy Analysis | QuantPedia",
+  "url": "https://quantpedia.com/quantpedia-api-for-peer-group-strategy-analysis/",
+  "published": "2026-09-03T00:14:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "fee2cd32a77a376e95f2",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "\u0418\u043d\u0442\u0435\u0440\u043d\u0435\u0442 \u0442\u0440\u0435\u0439\u0434\u0438\u043d\u0433 \u043d\u0430 \u0424\u043e\u0440\u0435\u043a\u0441\u0435 \u0438 \u0444\u043e\u043d\u0434\u043e\u0432\u044b\u0445 \u0440\u044b\u043d\u043a\u0430\u0445 \u0441 MetaTrader 5",
+  "url": "https://www.metatrader5.com/ru/trading-platform",
+  "published": "2026-09-03T00:14:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "vault_sha": "963ceb0c26508c61baee",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Download the MetaTrader 5 trading platform for free",
+  "url": "https://www.metatrader5.com/en/download",
+  "published": "2026-09-03T00:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "617b0f8d7eadbe1bc095",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 5 para f\u00f3rex, bolsas de valores y futuros",
+  "url": "https://www.metatrader5.com/es/trading-platform/forex-stock-markets",
+  "published": "2026-09-03T00:14:32+00:00",
+  "symbols": [
+   "GLOBEX",
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es",
+  "vault_sha": "939fe613cc6e36a3976f",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 5 pour le Forex, les actions et les futures",
+  "url": "https://www.metatrader5.com/fr/trading-platform/forex-stock-markets",
+  "published": "2026-09-03T00:14:34+00:00",
+  "symbols": [
+   "GLOBEX",
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "fr",
+  "vault_sha": "c602443c9337d7adf69f",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "\u5916\u56fd\u70ba\u66ff\u3001\u682a\u3001\u5148\u7269\u3001\u306e\u305f\u3081\u306eMetaTrader 5",
+  "url": "https://www.metatrader5.com/ja/trading-platform/forex-stock-markets",
+  "published": "2026-09-03T00:14:36+00:00",
+  "symbols": [
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "vault_sha": "76d094eaac612f3a3977",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Building a Raspberry Pi Cluster for QSTrader Using SLURM - Part 4 | QuantStart",
+  "url": "https://www.quantstart.com/articles/building-a-raspberry-pi-cluster-for-qstrader-using-slurm-part-4/",
+  "published": "2026-09-03T00:14:36+00:00",
+  "symbols": [
+   "MEMORY",
+   "REASON",
+   "SBATCH",
+   "STATUS",
+   "WEIGHT"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "f6675d9cd8ba5b5ff114",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Geometric Brownian Motion Simulation with Python | QuantStart",
+  "url": "https://www.quantstart.com/articles/geometric-brownian-motion-simulation-with-python/",
+  "published": "2026-09-03T00:14:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "02783104ad933e4d9edc",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Building a Raspberry Pi Cluster for QSTrader using SLURM - Part 3 | QuantStart",
+  "url": "https://www.quantstart.com/articles/building-a-raspberry-pi-cluster-for-qstrader-using-slurm-part-3/",
+  "published": "2026-09-03T00:14:40+00:00",
+  "symbols": [
+   "CIPHER",
+   "LENGTH",
+   "STATUS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "c1d3294a61f188187ddf",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Evaluating Data Coverage with Tiingo | QuantStart",
+  "url": "https://www.quantstart.com/articles/evaluating-data-coverage-with-tiingo/",
+  "published": "2026-09-03T00:14:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "28495c9662e9b40ade2e",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Building a Raspberry Pi Cluster for QSTrader using SLURM - Part 2 | QuantStart",
+  "url": "https://www.quantstart.com/articles/building-a-raspberry-pi-cluster-for-qstrader-using-slurm-part-2/",
+  "published": "2026-09-03T00:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "3399c33ca1ca39d98902",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "An Introduction to Stooq Pricing Data | QuantStart",
+  "url": "https://www.quantstart.com/articles/an-introduction-to-stooq-pricing-data/",
+  "published": "2026-09-03T00:14:48+00:00",
+  "symbols": [
+   "UK100"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "91f159fc98eeff12c1c9",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QuantStart (@quantstart) / X",
+  "url": "https://twitter.com/quantstart",
+  "published": "2026-09-03T00:14:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "843debdeb0138a88c498",
+  "host": "twitter.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Radovan Vojtko - CEO of Quantpedia.com (@quantpedia) / X",
+  "url": "https://twitter.com/quantpedia",
+  "published": "2026-09-03T00:14:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "6eae6df45f3930bd0d2b",
+  "host": "twitter.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantitativo weekly #4 - by Quantitativo",
+  "url": "https://www.quantitativo.com/p/quantitativo-weekly-4?utm_source=substack&utm_medium=email&utm_content=share&action=share",
+  "published": "2026-09-03T00:15:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "3ce0f8f1e5530c702a53",
+  "host": "www.quantitativo.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Blog &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/",
+  "published": "2026-09-03T00:15:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "7b357b8cb09597b10564",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "AmiBroker &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/amibroker/",
+  "published": "2026-09-03T00:15:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "ccea8ea1a64f36f548c6",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "AmiBroker Consulting &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/amibroker-coder/",
+  "published": "2026-09-03T00:15:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "bff88c4ac8630fecab01",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "AmiBroker Courses &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/amibroker-courses/",
+  "published": "2026-09-03T00:15:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "286a1fc7c88ce832692c",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "AmiBroker Sample Code &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/amibroker-sample-code/",
+  "published": "2026-09-03T00:15:30+00:00",
+  "symbols": [
+   "EQUITY",
+   "LOCKED"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "88780c609ff2460a738e",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Services &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/services/",
+  "published": "2026-09-03T00:15:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "999331ee9a536e544968",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quant Consulting &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/quant-for-hire/",
+  "published": "2026-09-03T00:15:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "c7394bba462961d7922d",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "About",
+  "url": "https://asmquantmacro.com/about/",
+  "published": "2026-09-03T00:15:35+00:00",
+  "symbols": [
+   "EURMXN"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "43e90f5f8ca8f37512a1",
+  "host": "asmquantmacro.com"
+ }
+]

@@ -589,7 +589,7 @@ not a sleeve, so it takes an axis row rather than a card slot — carding it wou
 slot with something that can never be promoted on its own.
 
 **THE ONE LEAD HELD RATHER THAN DISCARDED — `option_flow_informedness`, flagged per the extraction
-mandate as mapping to NO entry in `CRYPTO_MECHANISMS`.** From `perp-screener.com/posts/btc-bot`
+mandate as mapping to NO entry in `OFF_BOOK_MECHANISMS`.** From `perp-screener.com/posts/btc-bot`
 (2025-12-04), stated as the author's reason for choosing options at all: *"「意志のある取引」が多いの
 では？"* — **option order flow carries more intent per unit notional than perp flow, because
 selecting a strike AND an expiry encodes direction, timing and magnitude simultaneously, whereas
@@ -804,3 +804,528 @@ these latency bots create; (3) the announcement-latency RACE itself is DOA for t
 selection) — the drift/unwind horizons the desk pre-registered are the uncontested part.
 Measurement caveats routed to improvement_inbox (announcement-endpoint event clock; symbol-regex
 variants). [§33: screened]
+
+## SESSION 2026-08-25 (PROSPECTOR standing daily) — STEP 0 WATCHLIST REVIEW under the MT5 mandate
+
+All five active entries were crypto-shaped; the 2026-08-18 universe order re-grades them
+(litminer-r9 class: the mandate voids crypto next-ground lists; one line each, trigger checked):
+- **POC retest — RE-SHAPED, HELD.** The mechanism (volume-profile point-of-control retest with
+  reaction-confirm/invalidation FSM) is universe-independent LEVEL-REACTION (THIN family). Crypto
+  application void. NEW TRIGGER: MT5 tick-volume-profile validity check on the desk's own
+  recorded tape (FX tick volume ≈ real volume in majors is a CLAIM to verify, never assume) OR a
+  free delayed CME futures-volume route; until one exists this holds.
+- **SFD cadence probe — DROPPED.** BitMEX SFD is crypto-exchange-native. No MT5 analogue (no
+  funding-settlement clock on CFDs; swap/rollover is the analogue and is already a first-class
+  MT5 axis). Trigger deleted; no residual.
+- **coinm_usdtm_basis_convexity_rv — DROPPED.** Binance COIN-M/USDT-M ground, banned. NOTE FOR
+  OWNER: R0462 (COIN-M backfill, scheduled, due 2026-08-27) has a banned subject — flagged in
+  the ledger sweep row raised this session; do not burn the fetch.
+- **kr_rail_state_transition_global_leg — DROPPED with door.** Same L1.16a door as graveyard
+  `kr_venue_state_layer` (KRW-linked MT5 instrument + stated mechanism). R0634's enumeration
+  result stays banked where it landed.
+- **listing_comparables_repricing — SPLIT (the R0637 precedent).** Crypto-listing application
+  VOID (it rides the killed card-26 archive; R0616 disposed this session so alpha-screening does
+  not burn a screen on banned ground on 09-01). The universe-independent mechanism — new issues
+  reprice the EXISTING comparable curve — survives as memory with NEW TRIGGER: US share CFD or
+  index-constituent data ingested on the MT5 desk (the 08-19b breadth memo names that ingestion
+  the top breadth action) → re-design on IPO/index-inclusion comparables, preregistered fresh.
+
+**WATCHLIST (max 5 — active entries after STEP 0): POC retest (held, re-shaped MT5),
+listing_comparables_repricing (held, MT5 re-entry trigger). 2/5 slots used; 3 open for this
+session's digging.**
+
+**NEW ENTRY (slot 3) — wctc_repeat_winner_mechanism_watch.** Seat memory, zero gauntlet cost.
+SINGLE TRIGGER: a WCTC multi-title winner's PUBLISHED mechanism falling OUTSIDE the desk-dead
+families {price-only breakout/trend, TA stacks, retail calendar rules, COT direction,
+options premium-selling} → card it with provenance + the wctc_leader_follower_replication
+selection-bias frame applied. Named unmined residual (routes known): Ivan Scherman 2023 futures
+(491.4%, public ML-systematic claims — interviews unread), Serghey Magala 2023+2024 consecutive
+forex (mechanism unpublished?), Stefan Seibert 2020+2022. Return NUMBERS are marketing artifacts
+(mirrors disagree, measured this run) — only mechanism text counts.
+**WATCHLIST after this session: POC retest (held, MT5 re-shape trigger), listing_comparables_
+repricing (held, MT5 data trigger), wctc_repeat_winner_mechanism_watch (NEW). 3/5 slots.**
+
+---
+
+## [prospector s7, 2026-08-28] Prop-firm daily-loss-limit reset at 00:00 CE(S)T — forced flattening on a fixed wall clock
+
+**Family:** EVENT-AND-CALENDAR × ORDER-FLOW (both graded THIN). **Direction-agnostic.**
+**Provenance: VERIFIED (first-party, primary source, quoted verbatim).**
+- `https://ftmo.com/robots.txt` — single `User-agent: *` group, `Disallow:` **empty** = allow all. §13 clean.
+- `https://ftmo.com/en/trading-objectives/` (200, 279,326 B) — the rulebook itself.
+- `https://ftmo.com/en/how-it-works/` (200, 337,524 B) — the objective figures.
+
+**The rule, in the firm's own words:** *"The Maximum Daily Loss Limit is recalculated daily at
+00:00 CE(S)T as the difference between: the account balance recorded at 00:00 CE(S)T of the
+current day and the Maximum Daily Loss Amount... This calculated limit remains in effect until
+the next recalculation at 00:00 CE(S)T of the following day."* The limit is on **equity**, so
+floating PnL counts; a "Trading Day" is defined as **00:00:00–23:59:59 CE(S)T**. The Maximum
+*Loss* Limit re-bases on the same clock off the highest 00:00 CE(S)T balance.
+
+**THE MECHANISM — who is forced, and why they cannot stop.** A large and growing pool of retail
+leverage sits behind a **hard equity floor that steps discontinuously at a fixed wall clock**.
+Two forced behaviours follow, neither of which is a choice:
+1. **Intraday, approaching the floor:** the firm auto-flattens the account (or the trader closes
+   to avoid a breach that destroys the account outright). This is price-insensitive liquidation,
+   concentrated in whatever the cohort crowds — which for this cohort is **XAUUSD and the
+   majors**, squarely in the desk's universe.
+2. **Immediately after 00:00 CE(S)T:** the limit re-bases to the new balance, so risk capacity is
+   restored **discontinuously**. That is a re-entry impulse on the same fixed clock.
+The participant is forced by a *contract*, not by a view, and cannot opt out without forfeiting
+the account. That is the strongest form of the "who is forced" test.
+
+**THE CONFOUND, NAMED UP FRONT — and it is also the falsifier that makes this testable.**
+00:00 is *also* the swap/rollover boundary and a session boundary, and the desk has already
+measured a **00:00 spike that GREW** in the FX Blue performance corpus (frontier 2026-08-28). A
+naive "midnight effect" would be unattributable. **But the two clocks are not the same clock:**
+prop-firm resets are **CE(S)T** (UTC+1/+2) while MT5 broker server time — which is what sets swap
+rollover — is conventionally **EET** (UTC+2/+3). They are **one hour apart, all year**, because
+both observe DST on the EU calendar. So the pre-registration writes itself:
+
+> **Falsifier:** measure the effect at the CE(S)T boundary and at the EET boundary separately.
+> If the anomaly sits on the **EET** hour it is swap/rollover and this card is REFUTED. If it
+> sits on the **CE(S)T** hour it cannot be swap. If it sits on both, decompose or kill.
+> A single hourly bar grid resolves it; no new data purchase is required.
+
+**Why it survives the graveyard.** Nothing in `docs/graveyard.md` or `research_agenda.json`'s
+`do_not_repeat` touches prop-firm constraints, midnight resets or session-boundary forced flow —
+both lists are **entirely crypto-universe** (which is itself the subject of R0690).
+
+**EV gate** (`libs/research/alpha_economics`, est_sharpe 0.45 honest / breadth 250 symbols /
+capacity $400k / orthogonality 0.85): **ev 0.0199, p_survive 0.15, verdict QUEUE (top-EV → research)**.
+
+**Residual, stated not hidden:** this run verified the RULE, not the FLOW. The size of the
+affected pool is unmeasured, and the card claims no return. The next step is the two-clock
+decomposition above, which is a screen against the desk's own MT5 tape and needs nothing bought.
+This is ONE firm's rulebook; the 00:00-server-time convention appears near-universal in the
+sector but that is a CLAIM until a second and third rulebook are read.
+
+### AMENDMENT — [prospector s8, 2026-08-28] the "near-universal 00:00 CE(S)T" claim is REFUTED; the pool sits on TWO clocks, and only one of them is identifiable
+
+The s7 card closed on a stated residual: *"the 00:00-server-time convention appears near-universal
+in the sector but that is a CLAIM until a second and third rulebook are read."* Two more rulebooks
+read, primary-source and verbatim. **The claim was wrong, and the way it is wrong changes the
+falsifier rather than killing the card.**
+
+| Firm | Reset instant | Basis of the daily limit | Provenance |
+|---|---|---|---|
+| **FTMO** | **00:00 CE(S)T** (UTC+1/+2); "Trading Day" defined 00:00:00–23:59:59 CE(S)T | **equity** at the 00:00 balance snapshot | s7, verbatim from FTMO T&C |
+| **FundedNext** | **00:00 server time**, and server time is **GMT+3 summer / GMT+2 winter** = **EET/EEST** | **initial balance × fixed %**; intraday profit ADDS to the day's buffer, and the buffer resets to the fixed figure at 00:00 | VERIFIED — `help.fundednext.com/en/articles/8019672-what-is-fundednext-s-server-time` (dateModified 2026-03-09) + `.../8019811-how-can-i-calculate-the-daily-loss-limit` (April 8, 2026) |
+| **Alpha Capital Group** (UK) | **"the start of the daily candle (00:00 GMT+3)"** — stated as the MT5 daily candle boundary itself | **mixed by product**: Alpha One / Three / Pro 6% use *the higher of the day's starting balance or equity*; Pro 8%, Pro 10%, Swing are balance-based. Breach judged on live equity either way | VERIFIED — `alphacapitalgroup.uk/posts/alpha-capital-rules-explained-drawdown-profit-targets-daily-loss-and-evaluation-rules-2026` |
+
+**What this does to the mechanism.** Two of the three firms reset on **EET**, which is exactly the
+MT5 broker server midnight — the same instant as swap/rollover AND as the daily-candle open. The
+s7 falsifier assumed the prop clock (CE(S)T) and the swap clock (EET) were *always one hour apart*,
+so an hourly grid would decompose them. That is true **only for the FTMO-class pool**. For the
+EET-class pool the prop reset, the swap charge and the daily-candle boundary are **perfectly
+coincident and cannot be separated by any clock**, at any time of year, with any amount of data.
+
+**So the falsifier inverts, and it gets CLEANER, not dirtier:**
+
+> **REVISED FALSIFIER.** The **00:00 CE(S)T** hour is now the *clean instrument*, not one of two
+> arms: any effect there is attributable to the CE(S)T-reset pool alone, because no swap charge,
+> no candle boundary and no EET-firm reset lands on that hour. The **00:00 EET** hour is
+> **structurally unidentifiable** and must NOT be read as evidence for this mechanism in either
+> direction — a null there refutes nothing and a spike there confirms nothing. The desk's already-
+> measured *"00:00 spike that GREW"* (frontier 2026-08-28, FX Blue corpus) is on the **EET**
+> boundary and is therefore **not admissible as support for this card**; s7 cited it as
+> corroboration and that citation is withdrawn.
+> Test = CE(S)T arm vs. a same-hour control on days when CE(S)T and EET coincide... which never
+> happens (CET is UTC+1/+2, EET is UTC+2/+3 — DST transitions are aligned in the EU, so the gap is
+> exactly one hour year-round). The one-hour separation that makes the CE(S)T arm clean is
+> therefore *structural*, not seasonal. Good.
+
+**Second finding, unasked for and arguably larger than the clock.** The three firms do not share a
+**basis**, and the basis determines *when in the day* the forced-exit threshold moves:
+- **Equity-basis re-basing at the boundary (FTMO)** → the threshold is a step function: fixed all
+  day, jumps at 00:00.
+- **Balance-basis with intraday profit accrual (FundedNext)** → the threshold **drifts intraday
+  with the trader's own P&L** and *snaps back* to a fixed figure at 00:00. A profitable morning
+  mechanically widens that pool's tolerance for an afternoon reversal, and the snap-back at
+  midnight is therefore **larger after a profitable day** — a P&L-conditional forced-flow term the
+  s7 card did not contain.
+- **"Higher of starting balance or equity" (Alpha One/Three/Pro 6%)** → a one-sided ratchet:
+  tightens on losses, does not loosen on gains.
+
+That heterogeneity means the pool is **not one forced participant, it is three**, with different
+trigger dynamics. A single indicator built on "midnight reset" would average them and is the wrong
+construction. Any screen must condition on the previous day's return sign, not just the hour.
+
+**Status:** card stays **QUEUE** at the same EV (nothing here changes the est_sharpe input; it
+changes the *test design*, which is upstream of the number). The residual is now narrower and
+named: the CE(S)T arm is testable today on the desk's own tape; the EET arm is dead ground for
+this question and should not be spent on.
+
+**§13:** FTMO robots `Disallow:` (empty, open). `fundednext.com` + `help.fundednext.com` robots read
+in full, single `*` group, target paths unlisted; FundedNext publishes an `/llms.txt` that *names*
+the two articles used. `alphacapitalgroup.uk` robots `Allow: /`. All public marketing/help pages,
+no authenticated surface.
+**§38 EXCLUSION → REPLACEMENT (executed in-run):** **The5%ers is WALLED.** `the5ers.com/robots.txt`
+is `Allow: /`, but its own sitemap serves every content URL from **`wp.the5ers.com`, whose robots is
+`User-agent: * / Disallow: /`**. The allowed apex delegates its content to a disallowed host — the
+apex's grant does **not** extend, robots being host-scoped. Content fetched before that robots read
+was **discarded unparsed and unused**. Replacement found in the same run: **Alpha Capital Group**,
+which is what the third row above is; the count of rulebooks read is unreduced by the exclusion.
+
+---
+
+## PROSPECTOR s9 — 2026-08-28 — prop-firm news-blackout forced flow
+
+**Provenance: VERIFIED** (primary source, quoted verbatim, read this run)
+`alphacapitalgroup.uk/posts/alpha-capital-news-trading-and-overnight-rules-explained-2026`
+(host robots `User-agent: * / Allow: /`; the content-signal preamble present in that robots file
+**defines** the signal vocabulary but **sets no signal**, which under its own clause (c) "neither
+grants nor restricts" — recorded because a future run will re-read this file and must not mistake
+the boilerplate for a restriction).
+
+### The mechanism, and who is forced
+
+On **Qualified Analyst** accounts (the *funded* stage — i.e. where the size actually is), Pro /
+One / Three / Direct traders **may not open or close a position on a targeted instrument from 5
+minutes before until 5 minutes after** a listed high-impact release — a **10-minute two-sided
+blackout**. The clause that makes it a forced flow rather than a preference is verbatim:
+
+> "...closing, whether by market execution or by pending order, **including stop-loss and
+> take-profit**."
+
+A stop filling inside the window is a violation. So every funded trader carrying risk into a
+scheduled release has exactly three options and no fourth: **flatten before T−5min**, **hold
+through with stops effectively disarmed**, or **size down in advance**. This is a dated,
+clock-precise, obligation-bearing constraint on a known pool — the same structural class as the
+s7/s8 prop-firm clock and drawdown-basis findings, and it is the **third** axis on that pool.
+
+### The sharpest part: the restriction table is asymmetric across instruments
+
+- **Indices** — restricted around **three** US events only (CPI, Fed funds decision + presser, NFP).
+- **Metals (XAUUSD/XAGUSD)** — "a much broader list": *all* USD, AUD and CAD high-impact news and
+  speeches, *all* EUR and GBP high-impact speeches, plus rate decisions, CPI, GDP, PCE, PMI and
+  employment figures **across all currencies**.
+- **FX pairs and oil** — restricted per constituent currency.
+
+**Gold is therefore the most heavily blackout-constrained instrument in the prop universe, and
+indices the least.** That asymmetry is the falsifier's gift: it supplies a **built-in control
+group**. Around a high-impact *non-US* release (e.g. an AUD or CAD print), the funded pool is
+blacked out in gold and **not** in indices, on the same clock, in the same session.
+
+### Pre-registration-ready cells
+
+- **H1 (primary, difference-in-differences):** in the (T−10min, T−5min) window before a release that
+  is restricted for metals but not for indices, XAUUSD shows elevated flattening flow relative to
+  US500/US30 versus a matched non-event control. Direction-agnostic; test on volume/absolute return
+  and quoted spread, not on signed direction.
+- **H2:** the (T+5min, T+10min) window shows the re-entry mirror of H1.
+- **Falsifier:** no metals-vs-index differential at the same event → the pool is too small to move
+  the tape, and the whole family dies with it. **State this as the expected outcome**; the pool's
+  share of gold volume is unmeasured and may well be negligible.
+
+**EV gate** (`libs/research/alpha_economics`, honest inputs, one sleeve):
+`propfirm_blackout_metals_vs_index_differential` **ev 0.0036**, p_survive 0.24, `new_orthogonal_data`
+→ **QUEUE**. Sibling framing `propfirm_news_blackout_forced_flow` **ev 0.0033** → QUEUE. Both sit
+~1.8x the 0.002 threshold and *below* the carry-class reference (0.009) — this is a modest
+candidate, not a headline, and is logged at that weight.
+
+**Graveyard cross-check:** no match. The nearest rows are the *calendar-dummy* family
+(`hijri_ramadan_calendar_axis`, `lit_retail_signal_families` calendar rules); this is neither — the
+unit is an intraday blackout window with a named contractual forcing clause and a within-event
+control group, not a seasonal dummy.
+
+**Honest limits:** ONE firm's rulebook. Whether other firms' tables share the metals-vs-index
+asymmetry is **unverified** and is the cheapest next check (s7/s8 already hold open routes into
+FundedNext and The5%ers-replacement ground). Pool size is unmeasured. Provenance of the *mechanism*
+is VERIFIED; provenance of the *market impact* is **CLAIM** until H1 runs.
+
+---
+
+### AMENDMENT — PROSPECTOR s10, 2026-08-28: H1's control group is REFUTED; the mechanism SURVIVES
+
+The s9 card named the cross-firm replication as "the cheapest next check". It was run. **Two
+independent firms, and the metals-vs-index asymmetry does not replicate at either.**
+
+| Firm | News rule structure | Metals vs indices? | Provenance |
+|---|---|---|---|
+| **Alpha Capital** (s9) | separate restriction tables per product class | **ASYMMETRIC** — metals blacked out on all-currency rate/CPI/GDP/PMI/employment; indices on 3 US events only | VERIFIED (s9) |
+| **FTMO** | ONE unified table, grouped by *related currency* | **SYMMETRIC** — `USD pairs, Gold (XAUUSD), US Indices, DXY` sit in the **same bucket**, restricted on the same US announcements | VERIFIED — `ftmo.com/en/faq/can-i-trade-news/` |
+| **The5ers** | single relatedness clause | **SYMMETRIC** — "high-impact news in the **related currency or index**" | VERIFIED — `help.the5ers.com/can-i-trade-during-news/` |
+
+**⇒ H1 as pre-registered is dead.** Its difference-in-differences rests on the funded pool being
+blacked out in gold and *not* in indices on the same clock. At 2 of 3 firms gold and US indices are
+in the **same** bucket, so on a US release both are restricted and the "control" is restricted too;
+on a non-US release neither is. The asymmetry is **one firm's legal drafting**, not a property of
+the trapped-capital pool. Do not run H1.
+
+**What survived, and it is the more valuable half.** The *forcing clause* replicates verbatim
+across firms — FTMO: "if a Stop Loss or Take Profit is triggered within the restricted time window,
+this will also be considered a breach"; The5ers: "any pending order that triggers inside a
+restricted news window will be treated as a news trading violation." A trader who cannot control
+whether their SL fills inside the window **must flatten before it**. That is a genuine forced flow
+with a contractual mechanism, and it is now VERIFIED at **3 of 3** firms rather than 1.
+
+Two firm-independent facts also converged: the window is **2 minutes either side** at both FTMO and
+The5ers (Alpha Capital's differs), and the restriction binds the **relatedness relation**, not an
+instrument list.
+
+**REBUILT TEST DESIGN (supersedes H1/H2) — better, because it is now universal rather than
+firm-specific.** The correct control is the *relatedness rule both firms state explicitly*: at a
+given release, related instruments are restricted and **unrelated ones are not, on the same clock,
+in the same session**.
+
+- **H1′:** in (T−10min, T−5min) before a high-impact release, instruments **related** to the event
+  currency show elevated flattening flow (volume, |return|, quoted spread — direction-agnostic)
+  relative to **unrelated** instruments, versus a matched non-event control. Example cell: an AUD
+  print restricts AUD pairs and leaves EURUSD/US500 unrestricted.
+- **H2′:** the (T+2min, T+10min) re-entry mirror. The 2-minute boundary is now a **sharp, shared
+  discontinuity** at two firms — a regression-discontinuity cell H1 never had.
+- **Falsifier (unchanged in spirit, stronger now):** no related-vs-unrelated differential ⇒ the
+  pool is too small to move the tape and the family dies. **This remains the expected outcome.**
+
+**EV: unchanged, and deliberately not re-scored upward.** The mechanism's provenance improved
+(1 firm → 3) but pool share is still **unmeasured**, which is the term the EV is actually sensitive
+to. Re-scoring on better provenance alone would be marking up the estimate for evidence that does
+not bear on the binding unknown. Stays **QUEUE at ev ≈ 0.0036**, below the carry-class reference.
+
+**Status:** H1/H2 **RETIRED (design refuted, logged so no run re-derives it)**. H1′/H2′ carried
+forward at the same weight. Next check remains **pool share of gold/index volume** — the one
+measurement that decides this family, and still the cheapest thing that could kill it.
+
+---
+
+## CARD — `mt5_broker_swap_markup_asymmetry` (prospector s13, 2026-08-28) — **KILLED 2026-08-28 (s14)**
+
+> **STATUS: KILLED by its own pre-committed first test, one day after carding.** s14 ran step 1
+> (the crowdedness decomposition). On the 29 Forex majors/crosses the administered swap regresses
+> on the BIS policy-rate differential with **slope 1.002, R² 0.978, residual sd 0.258 pp/yr** — a
+> pass-through, not a residual. `crowded_known` **applies** → EV **0.0013** → REJECT, exactly the
+> branch this card pre-registered as killing. The exotics' apparent residual is the broker's
+> both-sides **markup** (corr(|resid|, markup) = 0.943 overall, −0.005 within the low-markup
+> subsample), which is a **cost paid on either side** and cannot be earned.
+> Two card claims were also false: the lake does **not** hold `fred_ECBDFR`, and `swap_long` is in
+> **POINTS, not currency-per-lot** (held-out test on 7 JPY pairs: RMSE 0.232 vs 207.5 pp/yr).
+> Evidence: `data/research/s14_swap_decomposition.json`; write-up in `prospector_coverage.md` s14.
+> **Do not re-open** without a named enabling change (L1.16a) — the pass-through is the mechanism
+> of death and it is a property of how the broker sets the rate, not of the sample.
+
+
+**Family:** CARRY-FUNDING, on **MT5 ground** — where it has **never been tested** (see the coverage-map
+finding below; the family's 6/6 "tested" candidates and all 3 `do_not_repeat` carry tokens
+(`funding_carry`, `basis_carry`, `single_venue_carry`) are crypto-perp-funding, none applicable here).
+
+**MECHANISM (who is forced, and why they cannot stop).** An MT5 broker's swap is an *administered*
+financing rate: it is set per symbol, per side, and re-published on a slow (observed: daily) clock,
+while the true interbank rate differential it proxies moves continuously. A leveraged retail holder
+accrues that administered rate every night and cannot opt out while the position is open, and the
+broker prices the popular side to its own book. **The claim is NOT the classic carry/UIP premium —
+it is the RESIDUAL between the administered swap and the fair rate differential**, which is a
+broker-specific, staleness-and-markup quantity that only a desk holding this broker's own table can
+observe.
+
+**FIRST-PARTY EVIDENCE ALREADY ON DISK (measured this run, nothing new fetched).**
+- `universe.json`: **248/251 symbols carry `swap_long`/`swap_short`**; all 248 non-zero; **200 have a
+  payable side**; **44/248 are negative on BOTH sides** — that both-negative block is the broker's
+  markup made visible and is the cleanest first look at the residual.
+- `desks/mt5/data/intelligence/broker_swaps/` — an **hourly terminal-native panel** (`mt5://symbol_info`,
+  `broker: fusionmarkets`), **73 snapshots since 2026-08-25**, ~248 symbols each. Nobody outside this
+  desk holds it. **Nothing reads it** — idle proprietary data, L1.8/L1.11.
+- Measured on that panel: **81/248 symbols changed `(long, short)` within 3 days, max 3 distinct
+  states** — i.e. the table updates on roughly a **daily** clock and 167 symbols were static.
+  Confirms the staleness premise *and* prices the panel: this needs **months**, not hours, so the
+  hourly cadence is ~24× oversampled for the signal (harmless, but say so rather than assume).
+- Carry spread `(swap_long − swap_short)/2` is dominated by high-rate crosses — USDTRY −5682,
+  CHFHUF −5600, GBPTRY −5227, EURTRY −4414 — i.e. the panel's variance lives exactly where the
+  administered/true gap should be widest.
+
+**EV GATE — RUN HONESTLY, AND IT SPLITS. This is reported, not resolved by tag-picking.**
+`est_sharpe 0.4, breadth 15, capacity $150k, orthogonality 0.8, effort 30h, maintenance 1.2`:
+
+| tags | p_survive | EV | verdict |
+|---|---|---|---|
+| `funding_family` + `new_orthogonal_data` | 0.48 | **0.0037** | QUEUE |
+| `funding_family` | 0.30 | 0.0023 | QUEUE |
+| + `crowded_known` | 0.168 | 0.0013 | **REJECT** |
+| `crowded_known` alone | 0.053 | 0.0004 | REJECT |
+
+The verdict turns **entirely** on whether `crowded_known` applies — and that is an empirical
+question, not a matter of judgement, so it becomes the card's **first pre-committed test**.
+
+**PRE-REGISTRATION (in this order; the gate decides, never the screen — L1.60).**
+1. **THE CROWDEDNESS DECOMPOSITION, RUN FIRST AND ALLOWED TO KILL THE CARD.** Regress observed
+   `swap_diff` on the true policy-rate differential (buildable today for USD-legs from the lake's
+   `fred_DFF` / `fred_ECBDFR` / `fred_DGS*`; the BoK ECOS door opened by this run's item 2 is the
+   class of free source that extends it to the rest). **If the residual is small or transient, the
+   card is the published FX carry premium wearing a broker's clothes → `crowded_known` applies, EV
+   0.0013, KILL.** Only a large, persistent, symbol-specific residual keeps it alive.
+2. **UNITS BEFORE RETURNS — hard precondition.** `swap_long = -10264.91` on USDTRY is points, not
+   account currency, and the desk has already been bitten twice here (`tick_value` deleted →
+   0/197 costable; a 184× JPY commission undercharge). No return may be computed until each swap is
+   converted to account-currency-per-lot-per-night against `broker_tick_values.json`, and the
+   conversion is verified on **one symbol against an actual account statement line**.
+   `swap_rollover3days` (the Wednesday triple) must be honoured or the accrual is understated ~40%.
+3. Net of the full cost stack (spread at the hold's own session, commission, and the swap itself on
+   the paying leg) and beating T-bills net (L1.5). A carry sleeve that loses the spread it earns is
+   the desk's oldest failure shape.
+4. Panel needs ≥ 3 months of the swap recorder before any forward clock; **do not start a clock on
+   73 hourly snapshots** — that is 3 days wearing an n of 73 (the count-is-not-a-frequency error
+   this desk ledgered on 2026-08-28).
+
+**GRAVEYARD CROSS-CHECK — PASSED, explicitly.** `docs/graveyard.md` + `research_agenda.json
+do_not_repeat` (50 entries) read: every carry/funding kill is **crypto perp funding or spot-futures
+basis on a crypto venue** (`funding_carry`, `basis_carry`, `single_venue_carry`,
+`carry_entry_shorts_widening_basis`, `dollar_strength_funding_dislocation`,
+`basis_momentum_carry_timing`, `macro_carry_regime_gate`, `bill_yield_carry_hurdle_passthrough`,
+`cme_roll_window_spread_pressure`). **None is an MT5 broker swap table, and none of the killed
+overlays is this object.** It is *not* an overlay on an existing carry book — the desk has no carry
+book on this universe.
+
+**PROVENANCE: VERIFIED (first-party).** All figures measured this run from
+`desks/mt5/data/universe/universe.json` and `desks/mt5/data/intelligence/broker_swaps/*.json`.
+No external fetch, no claim taken on trust.
+
+**KNOWN DEFECT IN THE FEEDING RECORDER (report, do not patch — research freeze):** 37 rows across
+the 73 snapshots carry an **empty `symbols` list** and are therefore unattributable to any
+instrument. Small (~0.5/run) but silent.
+
+---
+
+## CARD — `fx_carry_gated_by_intermediary_capital` (prospector s15, 2026-08-28)
+
+**Grade: SEMI-VERIFIED** (mechanism read in full from an archived primary post + its named
+academic source; the desk's own tape not yet touched). **EV-gate: QUEUE, ev 0.0080, p 0.480**
+(`funding_family` + `new_orthogonal_data`, est_sharpe 0.6, breadth 25, orth 0.6, 20h, maint 1.2).
+
+**MECHANISM (who is forced, and why they cannot stop).** FX carry excess return is, in part,
+*compensation for dealer balance-sheet risk*. Excess FX positions of the whole market end up
+warehoused on the balance sheets of a small group of international dealer banks. Those banks are
+capital-constrained by **regulation**, not by choice — so when their capital ratios fall they must
+shed warehoused risk regardless of their view. High-forward-discount (carry) currencies therefore
+pay off poorly exactly when intermediary capital contracts. The forced participant is the
+regulated dealer; the thing it cannot stop doing is delevering into a capital shock.
+Source read in full: `sr-sv.com/dealer-capital-ratios-and-fx-carry-returns/` (2019-11-09) via
+`https://web.archive.org/web/2024id_/https://www.sr-sv.com/dealer-capital-ratios-and-fx-carry-returns/`,
+summarising **Reitz & Umlandt (2019), "Foreign exchange dealer asset pricing", Bundesbank
+Discussion Paper 39/2019.**
+
+**WHY IT IS TESTABLE HERE, SPECIFICALLY.** Carry is the desk's *only* repeat-survivor family, and
+s13/s14 established that the MT5 administered swap **is** the policy-rate differential
+(slope 1.002, R² 0.978 vs BIS `WS_CBPOL` on 29 majors) on 248/251 symbols. So the desk already
+holds a clean, proprietary, hourly carry panel over the mandated universe — the signal leg needs
+no new data at all. Only the *conditioning* leg is new.
+
+**DATA DEPENDENCY — VERIFIED LIVE THIS RUN, and it changed the design (do not skip this).**
+- `BOGZ1FL664090005Q` / `BOGZ1FL664190005Q` (Z.1 broker-dealer assets/liabilities, the literal
+  He-Kelly-Manela-style capital ratio): **QUARTERLY, n=322, latest observation 2026-01-01** —
+  i.e. ~7 months stale when read in August. **This series CANNOT be a live gate**; used that way
+  it is a look-ahead wearing a release lag. It is admissible ONLY as in-sample mechanism
+  validation, and only with a point-in-time vintage.
+- `ANFCI` / `NFCI` (Chicago Fed adjusted National Financial Conditions Index): **WEEKLY, n=2903,
+  latest 2026-08-21** — current, and its leverage sub-index is the tradeable proxy for the same
+  constraint. **This is the live gate leg.**
+- `TEDRATE`: **DEAD at 2022-01-21** (LIBOR retirement). Recorded so no future run builds on it.
+- All three confirmed against `api.stlouisfed.org` with the desk's existing key.
+
+**THE PRE-COMMITTED FIRST AND KILLING TEST — it is the EV gate's own split.** The card scores
+**0.0080 QUEUE** without `crowded_known` and **0.0013 REJECT** with it. The mechanism was
+published in 2019 on a sample ending ~2018. So the single test that decides this card is:
+**does the ANFCI-gated carry sleeve retain its edge strictly out-of-sample post-2019-11 (the
+publication date) on the desk's own MT5 tape?** If the effect lives only pre-publication, the
+card is `crowded_known`, scores below threshold, and **dies by its own pre-registered arithmetic**
+— no discretion, no re-argument.
+
+**MANDATORY CONTROLS (each one is a way this dies, named in advance).**
+1. **Unconditional carry control.** The gated arm must beat the ungated carry arm. If the gate
+   adds nothing, the finding is "carry works", which the desk already knows.
+2. **Lag-0 / tradability control.** ANFCI is published with a ~1-week lag; the signal must use
+   only the vintage available at decision time. Per the 2026-08-28q lesson, run the contemporaneous
+   arm *as a control* — if all the significance sits in the untradable lag-0 bar, the card is dead.
+3. **Sign-of-next-day-return leak control** (2026-08-28d) — mandatory, non-negotiable.
+4. **Multiplicity.** Every (gate threshold × horizon) cell tried is a counted trial reported in
+   full, judged inside `deflated_sharpe` on the sealed policy constants. No private bar (L1.60).
+
+**GRAVEYARD CROSS-CHECK — done, and the adjacency is declared rather than hidden.** `docs/graveyard.md`
+holds no FX-carry, no terms-of-trade and no intermediary-capital entry (it is entirely crypto-era
+ground). `research_agenda.json:do_not_repeat` contains **`macro_carry_regime_gate`** (REJECTED
+2026-07-17, ev 0.0039) — adjacent, and I flag it rather than let it pass: that row gated *crypto*
+funding carry on **FRED T10Y2Y/DTWEXBGS**, both of which are *price-derived* series on a now-banned
+universe. This card gates *MT5 FX* carry on a **balance-sheet/financial-conditions** quantity.
+Different universe, different conditioning class. It is the gauntlet's call, not mine.
+
+**REJECTED IN THE SAME PASS (logged so it is not re-mined):** `commodity_inventory_score_metal_futures_curve`
+(SR SV, "Inventory scores and metal futures returns", 2024-05-05) — **EV 0.00040, REJECT**,
+killed by `narrow_breadth`: the desk's metals ground is ~8 instruments and breadth starves the IR
+before the mechanism gets a chance.
+
+---
+
+## SESSION SUMMARY — 2026-08-29 (s19)
+
+**Zero new cards raised. One three-session-old card RESOLVED on measurement, one ground EXHAUSTED,
+two measured nulls, one handed escalation refuted.** Full evidence in `prospector_coverage.md`.
+
+- **CARD 87 (CBOE vol term structure) — RESOLVED, and split.** Adopted twice before on a
+  correlation that never named a target. Measured this run over 3,881–4,202 daily obs (2011→2026,
+  8 MT5 FX majors via FRED fixings, spanning 2011/2015/2018/2020):
+  - **DIRECTIONAL alpha: REFUTED.** 0/16 tradable `t+1` cells past the Šidák bar, 0/16 in the
+    high-VIX subsample — while **9/16 contemporaneous controls fire up to |t|=6.06.** The
+    information is real and arrives *with* the bar, not before it. Pre-registered failure mode,
+    landed exactly as written. **→ graveyard, with a number behind it.**
+  - **VOLATILITY / SIZING axis: ADOPTED, narrow.** `log(VIX30/VIX9D)` predicts next-day |return|
+    incrementally over both `log(VIX)` **and the pair's own trailing 20d realized vol**:
+    **8/8 negative sign, 6/8 past Newey–West(21)** — USDJPY −4.59, USDCHF −4.42, NZDUSD −3.78,
+    EURUSD −3.67, AUDUSD −3.62, GBPUSD −3.43, USDCAD −2.87, USDCNH −1.69. **The long end
+    (`VIX3M/VIX30`) carries almost nothing: 2/8.** The edge is in the *short* end only.
+  - **PROMOTION TRIGGER:** this is a sizing input, not a signal — it does not enter the alpha
+    gauntlet. It is promoted when a **named consumer on the vol-target/position-sizing path reads
+    it and leaves an artifact.** Until then it is ADOPTED-BUT-UNWIRED, which under III.16 is a
+    defect, not a status.
+
+- **`macrosynergy/macrosynergy` — EXHAUSTED (all three layers closed).** 2,363 PRs enumerated
+  (the "694" carried by s16/s17/s18 was low by 3.4x); 72% have empty bodies; ~12 substantive.
+  Three sessions deferred this as expensive. **It cost 25 API calls.** One find (#2708
+  frequency-aware annualization) screened to a **measured zero-population null** on the desk's 35
+  lake series and recorded instead as a pre-registered condition on the queued SDMX ingest.
+
+- **s18's escalation trigger DID NOT FIRE** — three of the four rows were <1 day old. Checking the
+  timestamps instead of trusting the sentence surfaced the better finding: the zero-spread defect
+  on 24/251 symbols (incl. EURUSD) was **re-written by a scheduled producer the same day**, so it
+  is a live daily recurrence, not a stale row.
+
+**HONEST VERDICT:** a conversion run, not a discovery run. It closed the backlog to zero pending
+verifications and paid down three sessions of deferred work — but it opened **no new source class**,
+so the ≥25% search-space-expansion reserve went unpaid and s20 owes it first.
+
+## BRAIN HUNTER s30 (2026-08-29) — `GaomingOrion/qweave` and the GTJA191 corpus (NEXT GROUND, not a card)
+
+`GaomingOrion/qweave` (MIT, 4★, pushed 2026-07-17, Rust + Polars). A **factor-computation
+engine**, which is a different and better source class than every BRAIN artifact mined to date:
+`AshSwing/FastPlus` is a *parser* (signatures, no semantics) and
+`efJerryYang/worldquant-brain-simulator` proved a simulator can silently not implement what it
+declares. qweave ships **450 built-in factors — WorldQuant Alpha101 + Qlib Alpha158 + 国泰君安
+(Guotai Junan) Alpha191 — with GOLDEN-FIXTURE PARITY TESTS**
+(`crates/qweave-factors/tests/fixtures/golden_gtja_alpha191.parquet`, `golden_qlib_alpha158.parquet`,
+`golden_alphas.parquet`) plus operator implementations in `crates/qweave-core/src/alpha_eval.rs`.
+A golden fixture is the **cheapest refutation tier there is** (L1: executable > spec > mechanism >
+claim): a desk port can be checked against a fixed expected output rather than against a claim.
+
+**GTJA191 is un-mined ground on this desk.** `vault_search` returns **zero hits** for
+`alpha191 / gtja / guotai`; the corpus is named exactly twice in `docs/` — in
+`cn_oss_extraction_20260731.md` (which grades it *"bare price-pattern families — the 420/0-refuted
+class"*) and in an `improvement_inbox.md` "Alpha Zoo" listing. **Named, graded by analogy, never
+looked at.**
+
+**The honest prior is bad and is stated up front:** alpha101 died on independent audit (median
+Sharpe 0.518 vs the paper's 2.224, ledgered in `docs/graveyard.md` by s28), and GTJA191 is the
+same construction class on the same kind of data. **This is a next ground, NOT an EV-gate
+pre-registration** — a corpus does not earn a pre-registration because it is large, and
+pre-registering a family whose nearest neighbour has already been killed would be exactly the
+padding this seat is told not to produce.
+
+**What would make it worth a card, stated in advance so a future session cannot move the post:**
+GTJA191 is a **Chinese A-share** factor library, so its distinguishing content is the operators
+and conditioning structures that alpha101 does not contain (CN-market microstructure conventions,
+different volume/turnover treatments). If a census of `gtja_alpha191.rs` finds **operators or
+conditioning shapes absent from both alpha101 and the 108-operator BRAIN registry**, those are the
+find — and the 191 formulas themselves remain ore, exactly as s28 ruled for alpha101.
+
+Population context: `data/brain_hunter_s30_repo_census.json` — **139 repos** in the keyless GitHub
+repo-search population for `worldquant+brain` ∪ `worldquant+alpha`, of which **40 are named
+anywhere in `prospector_coverage.md`**. **99 unnamed.** Caveat recorded in the artifact: GitHub
+**code** search is 401 keyless, so any repo whose README never says "worldquant" is invisible to
+this census — 139 is a floor on the ground, not its size.

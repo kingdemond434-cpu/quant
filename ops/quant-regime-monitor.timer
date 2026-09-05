@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for regime monitor (GAP 130)
+
+[Timer]
+OnCalendar=*-*-* *:08/30:00
+RandomizedDelaySec=30
+Unit=quant-regime-monitor.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,41 @@
+{
+ "generated": "2026-08-27T00:30:00+00:00",
+ "source_thread": "6a86cd6f-06f8-83eb-8381-68eabfc8a430",
+ "source_turn": "50e81907-fb8c-492e-8eff-98d563239608",
+ "authority": "PUBLIC_SOURCE_CHALLENGERS_ONLY; original universal gates retain sole certification authority",
+ "discoveries": [
+  {
+   "source": "scheduled_chatgpt",
+   "kind": "exact_recipe",
+   "symbol": "XAUUSD",
+   "family": "lvc_asia_london",
+   "params": {"bias_mode": "off", "ttl_bars": 288},
+   "title": "London Volatility Capture bias-off ablation",
+   "url": "https://github.com/yannis-montreer/MT5-EA-London-Volatility-Capture-LVC-EA",
+   "source_blob_sha": "2868957900aa9a06e8d9eb6523f938947210f6e9",
+   "mechanism": "Asia-range breakout, retest or sweep reversal during the London open; bias filter disabled as the required ablation"
+  },
+  {
+   "source": "scheduled_chatgpt",
+   "kind": "exact_recipe",
+   "symbol": "XAUUSD",
+   "family": "lvc_asia_london",
+   "params": {"bias_mode": "source_shift", "ttl_bars": 288},
+   "title": "London Volatility Capture public source behavior",
+   "url": "https://github.com/yannis-montreer/MT5-EA-London-Volatility-Capture-LVC-EA",
+   "source_blob_sha": "2868957900aa9a06e8d9eb6523f938947210f6e9",
+   "mechanism": "Reproduce the public EA exactly, including its globally measured recent-extreme age, so the defect has a measured control"
+  },
+  {
+   "source": "scheduled_chatgpt",
+   "kind": "exact_recipe",
+   "symbol": "XAUUSD",
+   "family": "lvc_asia_london",
+   "params": {"bias_mode": "session_relative", "ttl_bars": 288},
+   "title": "London Volatility Capture session-relative recent-extreme repair",
+   "url": "https://github.com/yannis-montreer/MT5-EA-London-Volatility-Capture-LVC-EA",
+   "source_blob_sha": "2868957900aa9a06e8d9eb6523f938947210f6e9",
+   "mechanism": "Treat an extreme as recent when it formed in the final three bars of the Asia session, then prefer same-side sweep reversal and block the opposite break for three London bars"
+  }
+ ]
+}

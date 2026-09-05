@@ -1,0 +1,3276 @@
+{
+ "source": "https://www.lbma.org.uk/forecast-survey-<YEAR>/analysts-forecasts/<slug>",
+ "collected": "2026-08-29 (free-data run w)",
+ "n_pages": 121,
+ "errors": 0,
+ "encoding_warning": "average/low/high == 0 means THE ANALYST DID NOT FORECAST THAT METAL. It is NOT a forecast of zero. Filter average>0 before any statistic.",
+ "records": [
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/robin-bhar",
+   "year": 2023,
+   "slug": "robin-bhar",
+   "analyst_line": "Robin Bhar Robin Bhar Metals Consulting",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1600.0,
+    "high": 2000.0,
+    "average": 1890.0
+   },
+   "Silver": {
+    "low": 17.0,
+    "high": 26.0,
+    "average": 23.0
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1200.0,
+    "average": 1038.0
+   },
+   "Palladium": {
+    "low": 1700.0,
+    "high": 2300.0,
+    "average": 1775.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/jonathan-butler",
+   "year": 2023,
+   "slug": "jonathan-butler",
+   "analyst_line": "Jonathan Butler Mitsubishi Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1500.0,
+    "high": 2000.0,
+    "average": 1860.0
+   },
+   "Silver": {
+    "low": 19.0,
+    "high": 27.0,
+    "average": 23.0
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1300.0,
+    "average": 1050.0
+   },
+   "Palladium": {
+    "low": 1300.0,
+    "high": 2300.0,
+    "average": 1600.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/suki-cooper",
+   "year": 2023,
+   "slug": "suki-cooper",
+   "analyst_line": "Suki Cooper Standard Chartered",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1610.0,
+    "high": 2050.0,
+    "average": 1823.0
+   },
+   "Silver": {
+    "low": 18.0,
+    "high": 27.0,
+    "average": 22.8
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1225.0,
+    "average": 1060.0
+   },
+   "Palladium": {
+    "low": 1550.0,
+    "high": 2300.0,
+    "average": 1798.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/julia-du",
+   "year": 2023,
+   "slug": "julia-du",
+   "analyst_line": "Julia Du ICBC Standard Bank",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1740.0,
+    "high": 2000.0,
+    "average": 1850.0
+   },
+   "Silver": {
+    "low": 21.0,
+    "high": 29.5,
+    "average": 25.0
+   },
+   "Platinum": {
+    "low": 920.0,
+    "high": 1200.0,
+    "average": 1075.0
+   },
+   "Palladium": {
+    "low": 1550.0,
+    "high": 2150.0,
+    "average": 1700.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/peter-fertig",
+   "year": 2023,
+   "slug": "peter-fertig",
+   "analyst_line": "Peter Fertig QCR Quantitative Commodity Research Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1800.0,
+    "high": 2125.0,
+    "average": 2025.0
+   },
+   "Silver": {
+    "low": 23.25,
+    "high": 28.0,
+    "average": 26.6
+   },
+   "Platinum": {
+    "low": 950.0,
+    "high": 1200.0,
+    "average": 1095.0
+   },
+   "Palladium": {
+    "low": 1650.0,
+    "high": 2075.0,
+    "average": 1910.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/nicholas-frappell",
+   "year": 2023,
+   "slug": "nicholas-frappell",
+   "analyst_line": "Nicholas Frappell ABC Refinery Pty Limited",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1560.0,
+    "high": 2102.0,
+    "average": 1777.0
+   },
+   "Silver": {
+    "low": 14.7,
+    "high": 28.1,
+    "average": 22.3
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/srivatsava-ganapathy",
+   "year": 2023,
+   "slug": "srivatsava-ganapathy",
+   "analyst_line": "Srivatsava Ganapathy Eventell Global Advisory P Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1700.0,
+    "high": 2100.0,
+    "average": 1895.0
+   },
+   "Silver": {
+    "low": 20.3,
+    "high": 28.5,
+    "average": 24.4
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/edward-gardner",
+   "year": 2023,
+   "slug": "edward-gardner",
+   "analyst_line": "Edward Gardner Capital Economics",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 830.0,
+    "high": 1170.0,
+    "average": 1000.0
+   },
+   "Palladium": {
+    "low": 1450.0,
+    "high": 2600.0,
+    "average": 1960.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/marcus-garvey",
+   "year": 2023,
+   "slug": "marcus-garvey",
+   "analyst_line": "Marcus Garvey Macquarie Bank Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1445.0,
+    "high": 1834.0,
+    "average": 1594.0
+   },
+   "Silver": {
+    "low": 16.0,
+    "high": 24.5,
+    "average": 18.63
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1150.0,
+    "average": 988.0
+   },
+   "Palladium": {
+    "low": 1600.0,
+    "high": 2200.0,
+    "average": 2000.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/andy-habluetzel",
+   "year": 2023,
+   "slug": "andy-habluetzel",
+   "analyst_line": "Andy Habluetzel Sharps Pixley",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1680.0,
+    "high": 1980.0,
+    "average": 1870.0
+   },
+   "Silver": {
+    "low": 21.0,
+    "high": 27.0,
+    "average": 25.0
+   },
+   "Platinum": {
+    "low": 960.0,
+    "high": 1130.0,
+    "average": 1030.0
+   },
+   "Palladium": {
+    "low": 1640.0,
+    "high": 1840.0,
+    "average": 1690.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/rene-hochreiter",
+   "year": 2023,
+   "slug": "rene-hochreiter",
+   "analyst_line": "René Hochreiter NOAH Capital Markets and Sieberana Research",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1850.0,
+    "high": 1930.0,
+    "average": 1880.0
+   },
+   "Silver": {
+    "low": 23.0,
+    "high": 25.0,
+    "average": 24.0
+   },
+   "Platinum": {
+    "low": 950.0,
+    "high": 1120.0,
+    "average": 1082.0
+   },
+   "Palladium": {
+    "low": 1650.0,
+    "high": 1750.0,
+    "average": 1700.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/bruce-ikemizu",
+   "year": 2023,
+   "slug": "bruce-ikemizu",
+   "analyst_line": "Bruce Ikemizu Japan Bullion Market Association",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1700.0,
+    "high": 2050.0,
+    "average": 1950.0
+   },
+   "Silver": {
+    "low": 20.0,
+    "high": 35.0,
+    "average": 27.0
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1200.0,
+    "average": 1100.0
+   },
+   "Palladium": {
+    "low": 1500.0,
+    "high": 2300.0,
+    "average": 1700.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/nikos-kavalis",
+   "year": 2023,
+   "slug": "nikos-kavalis",
+   "analyst_line": "Nikos Kavalis Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1560.0,
+    "high": 1940.0,
+    "average": 1760.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/saida-litosh",
+   "year": 2023,
+   "slug": "saida-litosh",
+   "analyst_line": "Saida Litosh Metals Research, Refinitiv, an LSEG Business",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1655.0,
+    "high": 2015.0,
+    "average": 1820.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/bart-melek",
+   "year": 2023,
+   "slug": "bart-melek",
+   "analyst_line": "Bart Melek TD Securities",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1730.0,
+    "high": 2075.0,
+    "average": 1875.0
+   },
+   "Silver": {
+    "low": 20.28,
+    "high": 28.28,
+    "average": 24.06
+   },
+   "Platinum": {
+    "low": 908.0,
+    "high": 1297.0,
+    "average": 1081.0
+   },
+   "Palladium": {
+    "low": 1675.0,
+    "high": 2270.0,
+    "average": 1831.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/emmanuel-munjeri",
+   "year": 2023,
+   "slug": "emmanuel-munjeri",
+   "analyst_line": "Emmanuel Munjeri Bloomberg Intelligence",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 940.0,
+    "high": 1170.0,
+    "average": 1065.0
+   },
+   "Palladium": {
+    "low": 1610.0,
+    "high": 1840.0,
+    "average": 1720.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/philip-newman",
+   "year": 2023,
+   "slug": "philip-newman",
+   "analyst_line": "Philip Newman Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 18.4,
+    "high": 24.8,
+    "average": 22.7
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/ross-norman",
+   "year": 2023,
+   "slug": "ross-norman",
+   "analyst_line": "Ross Norman CEO Metals Daily Ltd",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1834.0,
+    "high": 2070.0,
+    "average": 1959.0
+   },
+   "Silver": {
+    "low": 23.41,
+    "high": 30.15,
+    "average": 25.18
+   },
+   "Platinum": {
+    "low": 840.0,
+    "high": 1278.0,
+    "average": 1138.0
+   },
+   "Palladium": {
+    "low": 1615.0,
+    "high": 2470.0,
+    "average": 2165.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/keisuke-okui",
+   "year": 2023,
+   "slug": "keisuke-okui",
+   "analyst_line": "Keisuke Okui Sumitomo Corp",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1700.0,
+    "high": 2150.0,
+    "average": 1905.0
+   },
+   "Silver": {
+    "low": 20.0,
+    "high": 30.0,
+    "average": 25.1
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1350.0,
+    "average": 1155.0
+   },
+   "Palladium": {
+    "low": 1400.0,
+    "high": 2800.0,
+    "average": 2055.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/thorsten-polleit",
+   "year": 2023,
+   "slug": "thorsten-polleit",
+   "analyst_line": "Thorsten Polleit Degussa Goldhandel",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1850.0,
+    "high": 2200.0,
+    "average": 2000.0
+   },
+   "Silver": {
+    "low": 23.0,
+    "high": 29.0,
+    "average": 26.0
+   },
+   "Platinum": {
+    "low": 950.0,
+    "high": 1250.0,
+    "average": 1150.0
+   },
+   "Palladium": {
+    "low": 1300.0,
+    "high": 1450.0,
+    "average": 1550.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/debajit-saha",
+   "year": 2023,
+   "slug": "debajit-saha",
+   "analyst_line": "Debajit Saha Metals Research, Refinitiv, an LSEG Business",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 17.5,
+    "high": 25.5,
+    "average": 17.5
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/rohit-savant",
+   "year": 2023,
+   "slug": "rohit-savant",
+   "analyst_line": "Rohit Savant CPM Group LLC",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1740.0,
+    "high": 1980.0,
+    "average": 1862.0
+   },
+   "Silver": {
+    "low": 21.0,
+    "high": 25.8,
+    "average": 24.22
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1145.0,
+    "average": 1095.0
+   },
+   "Palladium": {
+    "low": 1500.0,
+    "high": 2060.0,
+    "average": 1712.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/nicky-shiels",
+   "year": 2023,
+   "slug": "nicky-shiels",
+   "analyst_line": "Nicky Shiels MKS PAMP SA",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1600.0,
+    "high": 2100.0,
+    "average": 1880.0
+   },
+   "Silver": {
+    "low": 18.0,
+    "high": 28.0,
+    "average": 22.5
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1350.0,
+    "average": 1100.0
+   },
+   "Palladium": {
+    "low": 1500.0,
+    "high": 2500.0,
+    "average": 1800.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/jacob-smith",
+   "year": 2023,
+   "slug": "jacob-smith",
+   "analyst_line": "Jacob Smith Mitsubishi Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1150.0,
+    "average": 1020.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/grant-sporre",
+   "year": 2023,
+   "slug": "grant-sporre",
+   "analyst_line": "Grant Sporre Bloomberg Intelligence",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1620.0,
+    "high": 1900.0,
+    "average": 1720.0
+   },
+   "Silver": {
+    "low": 18.7,
+    "high": 24.3,
+    "average": 22.14
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/james-steel",
+   "year": 2023,
+   "slug": "james-steel",
+   "analyst_line": "James Steel HSBC Securities",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1675.0,
+    "high": 2005.0,
+    "average": 1843.0
+   },
+   "Silver": {
+    "low": 22.0,
+    "high": 29.1,
+    "average": 25.1
+   },
+   "Platinum": {
+    "low": 950.0,
+    "high": 1425.0,
+    "average": 1241.0
+   },
+   "Palladium": {
+    "low": 1650.0,
+    "high": 2350.0,
+    "average": 2180.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/wilma-swarts",
+   "year": 2023,
+   "slug": "wilma-swarts",
+   "analyst_line": "Wilma Swarts Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 1450.0,
+    "high": 2250.0,
+    "average": 1810.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/joni-teves",
+   "year": 2023,
+   "slug": "joni-teves",
+   "analyst_line": "Joni Teves UBS",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1700.0,
+    "high": 2050.0,
+    "average": 1850.0
+   },
+   "Silver": {
+    "low": 20.0,
+    "high": 27.0,
+    "average": 23.3
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1250.0,
+    "average": 1050.0
+   },
+   "Palladium": {
+    "low": 1500.0,
+    "high": 2000.0,
+    "average": 1800.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/kieran-tompkins",
+   "year": 2023,
+   "slug": "kieran-tompkins",
+   "analyst_line": "Kieran Tompkins Capital Economics",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1650.0,
+    "high": 2125.0,
+    "average": 1870.0
+   },
+   "Silver": {
+    "low": 19.0,
+    "high": 29.0,
+    "average": 23.6
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2023/analysts-forecasts/alexander-zumpfe",
+   "year": 2023,
+   "slug": "alexander-zumpfe",
+   "analyst_line": "Alexander Zumpfe Heraeus Metals Germany GmbH &amp; Co. KG",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1750.0,
+    "high": 2050.0,
+    "average": 1880.0
+   },
+   "Silver": {
+    "low": 21.0,
+    "high": 28.0,
+    "average": 24.5
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1250.0,
+    "average": 1075.0
+   },
+   "Palladium": {
+    "low": 1300.0,
+    "high": 2100.0,
+    "average": 1550.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/debajit-saha",
+   "year": 2024,
+   "slug": "debajit-saha",
+   "analyst_line": "Debajit Saha Metals Research, Refinitiv, an LSEG Business",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1781.0,
+    "high": 2235.0,
+    "average": 1975.0
+   },
+   "Silver": {
+    "low": 20.5,
+    "high": 26.76,
+    "average": 22.5
+   },
+   "Platinum": {
+    "low": 880.0,
+    "high": 1206.0,
+    "average": 1020.0
+   },
+   "Palladium": {
+    "low": 930.0,
+    "high": 1379.0,
+    "average": 1120.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/philip-newman",
+   "year": 2024,
+   "slug": "philip-newman",
+   "analyst_line": "Philip Newman Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 20.5,
+    "high": 25.5,
+    "average": 22.9
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/andy-habluetzel",
+   "year": 2024,
+   "slug": "andy-habluetzel",
+   "analyst_line": "Andy Habluetzel Sharps Pixley",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1850.0,
+    "high": 2150.0,
+    "average": 1980.0
+   },
+   "Silver": {
+    "low": 21.0,
+    "high": 25.0,
+    "average": 23.0
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1050.0,
+    "average": 980.0
+   },
+   "Palladium": {
+    "low": 950.0,
+    "high": 1150.0,
+    "average": 1020.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/emmanuel-munjeri2",
+   "year": 2024,
+   "slug": "emmanuel-munjeri2",
+   "analyst_line": "Emmanuel Munjeri Bloomberg Intelligence",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 22.0,
+    "high": 26.25,
+    "average": 23.41
+   },
+   "Platinum": {
+    "low": 880.0,
+    "high": 1150.0,
+    "average": 1030.0
+   },
+   "Palladium": {
+    "low": 875.0,
+    "high": 1125.0,
+    "average": 1010.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/rohit-savant",
+   "year": 2024,
+   "slug": "rohit-savant",
+   "analyst_line": "Rohit Savant CPM Group LLC",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1830.0,
+    "high": 2200.0,
+    "average": 2050.0
+   },
+   "Silver": {
+    "low": 20.8,
+    "high": 26.5,
+    "average": 23.7
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1145.0,
+    "average": 962.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1350.0,
+    "average": 992.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/rene-hochreiter",
+   "year": 2024,
+   "slug": "rene-hochreiter",
+   "analyst_line": "René Hochreiter NOAH Capital Markets and Sieberana Research",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1950.0,
+    "high": 2150.0,
+    "average": 2050.0
+   },
+   "Silver": {
+    "low": 21.5,
+    "high": 27.0,
+    "average": 24.0
+   },
+   "Platinum": {
+    "low": 880.0,
+    "high": 1100.0,
+    "average": 970.0
+   },
+   "Palladium": {
+    "low": 820.0,
+    "high": 1100.0,
+    "average": 970.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/suki-cooper",
+   "year": 2024,
+   "slug": "suki-cooper",
+   "analyst_line": "Suki Cooper Standard Chartered",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1875.0,
+    "high": 2200.0,
+    "average": 2039.0
+   },
+   "Silver": {
+    "low": 20.0,
+    "high": 27.5,
+    "average": 24.3
+   },
+   "Platinum": {
+    "low": 825.0,
+    "high": 1190.0,
+    "average": 1005.0
+   },
+   "Palladium": {
+    "low": 750.0,
+    "high": 1350.0,
+    "average": 1025.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/robin-bhar",
+   "year": 2024,
+   "slug": "robin-bhar",
+   "analyst_line": "Robin Bhar Robin Bhar Metals Consulting",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1900.0,
+    "high": 2300.0,
+    "average": 2025.0
+   },
+   "Silver": {
+    "low": 18.0,
+    "high": 27.0,
+    "average": 24.3
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1200.0,
+    "average": 1010.0
+   },
+   "Palladium": {
+    "low": 700.0,
+    "high": 1600.0,
+    "average": 1200.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/james-steel",
+   "year": 2024,
+   "slug": "james-steel",
+   "analyst_line": "James Steel HSBC",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1825.0,
+    "high": 2200.0,
+    "average": 1947.0
+   },
+   "Silver": {
+    "low": 20.5,
+    "high": 27.1,
+    "average": 24.33
+   },
+   "Platinum": {
+    "low": 875.0,
+    "high": 1329.0,
+    "average": 1105.0
+   },
+   "Palladium": {
+    "low": 900.0,
+    "high": 1250.0,
+    "average": 1138.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/keisuke-okui",
+   "year": 2024,
+   "slug": "keisuke-okui",
+   "analyst_line": "Keisuke (Bill) Okui Sumitomo Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1800.0,
+    "high": 2260.0,
+    "average": 2140.0
+   },
+   "Silver": {
+    "low": 22.0,
+    "high": 29.0,
+    "average": 24.4
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1250.0,
+    "average": 1080.0
+   },
+   "Palladium": {
+    "low": 850.0,
+    "high": 1630.0,
+    "average": 1210.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/rhona-oconnell",
+   "year": 2024,
+   "slug": "rhona-oconnell",
+   "analyst_line": null,
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1970.0,
+    "high": 2245.0,
+    "average": 2127.0
+   },
+   "Silver": {
+    "low": 22.2,
+    "high": 27.05,
+    "average": 24.7
+   },
+   "Platinum": {
+    "low": 843.0,
+    "high": 1180.0,
+    "average": 1024.0
+   },
+   "Palladium": {
+    "low": 875.0,
+    "high": 1200.0,
+    "average": 1010.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/jonathan-butler",
+   "year": 2024,
+   "slug": "jonathan-butler",
+   "analyst_line": "Jonathan Butler Mitsubishi Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1800.0,
+    "high": 2200.0,
+    "average": 1975.0
+   },
+   "Silver": {
+    "low": 21.0,
+    "high": 28.0,
+    "average": 24.75
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1200.0,
+    "average": 1050.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1300.0,
+    "average": 1025.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/alexander-zumpfe",
+   "year": 2024,
+   "slug": "alexander-zumpfe",
+   "analyst_line": "Alexander Zumpfe Heraeus Metals Germany GmbH &amp; Co. KG",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1880.0,
+    "high": 2250.0,
+    "average": 2095.0
+   },
+   "Silver": {
+    "low": 22.0,
+    "high": 29.0,
+    "average": 25.8
+   },
+   "Platinum": {
+    "low": 800.0,
+    "high": 1100.0,
+    "average": 950.0
+   },
+   "Palladium": {
+    "low": 700.0,
+    "high": 1300.0,
+    "average": 925.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/ross-norman",
+   "year": 2024,
+   "slug": "ross-norman",
+   "analyst_line": "Ross Norman CEO Metals Daily Ltd",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2000.0,
+    "high": 2300.0,
+    "average": 2166.0
+   },
+   "Silver": {
+    "low": 22.0,
+    "high": 28.0,
+    "average": 24.88
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1060.0,
+    "average": 955.0
+   },
+   "Palladium": {
+    "low": 550.0,
+    "high": 1095.0,
+    "average": 724.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/kieran-tompkins",
+   "year": 2024,
+   "slug": "kieran-tompkins",
+   "analyst_line": "Kieran Tompkins Capital Economics",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1900.0,
+    "high": 2250.0,
+    "average": 2080.0
+   },
+   "Silver": {
+    "low": 20.5,
+    "high": 28.0,
+    "average": 25.0
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1150.0,
+    "average": 975.0
+   },
+   "Palladium": {
+    "low": 850.0,
+    "high": 1600.0,
+    "average": 1140.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/nicky-shiels",
+   "year": 2024,
+   "slug": "nicky-shiels",
+   "analyst_line": "Nicky Shiels MKS PAMP SA",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1900.0,
+    "high": 2200.0,
+    "average": 2050.0
+   },
+   "Silver": {
+    "low": 21.5,
+    "high": 30.0,
+    "average": 25.0
+   },
+   "Platinum": {
+    "low": 800.0,
+    "high": 1200.0,
+    "average": 1050.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1350.0,
+    "average": 1000.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/srivatsava-ganapathy",
+   "year": 2024,
+   "slug": "srivatsava-ganapathy",
+   "analyst_line": "Srivatsava Ganapathy Eventell Global Advisory P Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1930.0,
+    "high": 2280.0,
+    "average": 2089.0
+   },
+   "Silver": {
+    "low": 21.45,
+    "high": 29.4,
+    "average": 25.3
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/marcus-garvey",
+   "year": 2024,
+   "slug": "marcus-garvey",
+   "analyst_line": "Marcus Garvey Macquarie Bank Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1925.0,
+    "high": 2300.0,
+    "average": 2044.0
+   },
+   "Silver": {
+    "low": 22.5,
+    "high": 27.5,
+    "average": 25.38
+   },
+   "Platinum": {
+    "low": 925.0,
+    "high": 1250.0,
+    "average": 1069.0
+   },
+   "Palladium": {
+    "low": 1050.0,
+    "high": 1400.0,
+    "average": 1188.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/bart-melek",
+   "year": 2024,
+   "slug": "bart-melek",
+   "analyst_line": "Bart Melek TD Securities",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1928.0,
+    "high": 2324.0,
+    "average": 2081.0
+   },
+   "Silver": {
+    "low": 21.72,
+    "high": 28.47,
+    "average": 25.44
+   },
+   "Platinum": {
+    "low": 877.0,
+    "high": 1182.0,
+    "average": 1025.0
+   },
+   "Palladium": {
+    "low": 930.0,
+    "high": 1247.0,
+    "average": 1056.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/chantelle-schieven",
+   "year": 2024,
+   "slug": "chantelle-schieven",
+   "analyst_line": "Chantelle Schieven Head of Research, Capitalight Research",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1935.0,
+    "high": 2405.0,
+    "average": 2170.0
+   },
+   "Silver": {
+    "low": 20.7,
+    "high": 29.5,
+    "average": 25.5
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/peter-fertig",
+   "year": 2024,
+   "slug": "peter-fertig",
+   "analyst_line": "Peter Fertig QCR Quantitative Commodity Research Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1875.0,
+    "high": 2200.0,
+    "average": 2065.0
+   },
+   "Silver": {
+    "low": 23.25,
+    "high": 28.0,
+    "average": 26.0
+   },
+   "Platinum": {
+    "low": 825.0,
+    "high": 1075.0,
+    "average": 975.0
+   },
+   "Palladium": {
+    "low": 900.0,
+    "high": 1650.0,
+    "average": 1250.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/bruce-ikemizu",
+   "year": 2024,
+   "slug": "bruce-ikemizu",
+   "analyst_line": "Bruce Ikemizu Japan Bullion Market Association",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1900.0,
+    "high": 2300.0,
+    "average": 2100.0
+   },
+   "Silver": {
+    "low": 20.0,
+    "high": 32.0,
+    "average": 26.0
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1120.0,
+    "average": 1000.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1300.0,
+    "average": 950.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/joni-teves",
+   "year": 2024,
+   "slug": "joni-teves",
+   "analyst_line": "Joni Teves UBS",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1850.0,
+    "high": 2200.0,
+    "average": 2085.0
+   },
+   "Silver": {
+    "low": 22.0,
+    "high": 29.0,
+    "average": 26.7
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1150.0,
+    "average": 1045.0
+   },
+   "Palladium": {
+    "low": 900.0,
+    "high": 1250.0,
+    "average": 1120.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/julia-du",
+   "year": 2024,
+   "slug": "julia-du",
+   "analyst_line": "Julia Du ICBC Standard Bank",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1800.0,
+    "high": 2300.0,
+    "average": 2125.0
+   },
+   "Silver": {
+    "low": 20.0,
+    "high": 30.0,
+    "average": 27.0
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1200.0,
+    "average": 1050.0
+   },
+   "Palladium": {
+    "low": 900.0,
+    "high": 1400.0,
+    "average": 1150.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/jacob-smith",
+   "year": 2024,
+   "slug": "jacob-smith",
+   "analyst_line": "Jacob Smith Mitsubishi Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 870.0,
+    "high": 1150.0,
+    "average": 1000.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/wilma-swarts",
+   "year": 2024,
+   "slug": "wilma-swarts",
+   "analyst_line": "Wilma Swarts Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 850.0,
+    "high": 1300.0,
+    "average": 1100.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/nikos-kavalis",
+   "year": 2024,
+   "slug": "nikos-kavalis",
+   "analyst_line": "Nikos Kavalis Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1850.0,
+    "high": 2100.0,
+    "average": 1980.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/grant-sporre",
+   "year": 2024,
+   "slug": "grant-sporre",
+   "analyst_line": "Grant Sporre Bloomberg Intelligence",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1875.0,
+    "high": 2100.0,
+    "average": 1980.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2024/analysts-forecasts/christopher-louney",
+   "year": 2024,
+   "slug": "christopher-louney",
+   "analyst_line": "Christopher Louney Commodity Strategist, RBC Capital Markets",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 1933.0,
+    "high": 2286.0,
+    "average": 2056.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/robin-bhar",
+   "year": 2025,
+   "slug": "robin-bhar",
+   "analyst_line": "Robin Bhar Robin Bhar Metals Consulting",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2400.0,
+    "high": 2900.0,
+    "average": 2500.0
+   },
+   "Silver": {
+    "low": 29.0,
+    "high": 36.0,
+    "average": 34.0
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1200.0,
+    "average": 1010.0
+   },
+   "Palladium": {
+    "low": 900.0,
+    "high": 1300.0,
+    "average": 1000.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/nicholas-frappell",
+   "year": 2025,
+   "slug": "nicholas-frappell",
+   "analyst_line": "Nicholas Frappell ABC Refinery Pty Limited",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2391.0,
+    "high": 3086.0,
+    "average": 2515.0
+   },
+   "Silver": {
+    "low": 24.25,
+    "high": 40.1,
+    "average": 28.25
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/kirill-kirilenko",
+   "year": 2025,
+   "slug": "kirill-kirilenko",
+   "analyst_line": "Kirill Kirilenko CRU International",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2450.0,
+    "high": 2900.0,
+    "average": 2580.0
+   },
+   "Silver": {
+    "low": 26.5,
+    "high": 35.0,
+    "average": 31.35
+   },
+   "Platinum": {
+    "low": 870.0,
+    "high": 1080.0,
+    "average": 983.0
+   },
+   "Palladium": {
+    "low": 850.0,
+    "high": 1100.0,
+    "average": 950.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/srivatsava-ganapathy",
+   "year": 2025,
+   "slug": "srivatsava-ganapathy",
+   "analyst_line": "Srivatsava Ganapathy Eventell Global Advisory P Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2350.0,
+    "high": 3100.0,
+    "average": 2590.0
+   },
+   "Silver": {
+    "low": 25.0,
+    "high": 37.5,
+    "average": 30.2
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/nikos-kavalis",
+   "year": 2025,
+   "slug": "nikos-kavalis",
+   "analyst_line": "Nikos Kavalis Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2300.0,
+    "high": 3000.0,
+    "average": 2600.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/marcus-garvey",
+   "year": 2025,
+   "slug": "marcus-garvey",
+   "analyst_line": "Marcus Garvey Macquarie Bank Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2350.0,
+    "high": 3050.0,
+    "average": 2650.0
+   },
+   "Silver": {
+    "low": 27.0,
+    "high": 36.0,
+    "average": 30.69
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1175.0,
+    "average": 1069.0
+   },
+   "Palladium": {
+    "low": 850.0,
+    "high": 1100.0,
+    "average": 969.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/james-steel",
+   "year": 2025,
+   "slug": "james-steel",
+   "analyst_line": "James Steel HSBC",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2400.0,
+    "high": 2975.0,
+    "average": 2687.0
+   },
+   "Silver": {
+    "low": 28.5,
+    "high": 34.75,
+    "average": 30.28
+   },
+   "Platinum": {
+    "low": 875.0,
+    "high": 1175.0,
+    "average": 1098.0
+   },
+   "Palladium": {
+    "low": 880.0,
+    "high": 1125.0,
+    "average": 1002.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/rohit-savant",
+   "year": 2025,
+   "slug": "rohit-savant",
+   "analyst_line": "Rohit Savant CPM Group LLC",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2350.0,
+    "high": 3150.0,
+    "average": 2700.0
+   },
+   "Silver": {
+    "low": 26.5,
+    "high": 40.5,
+    "average": 33.58
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/kieran-tompkins",
+   "year": 2025,
+   "slug": "kieran-tompkins",
+   "analyst_line": "Kieran Tompkins Capital Economics",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2500.0,
+    "high": 2900.0,
+    "average": 2700.0
+   },
+   "Silver": {
+    "low": 27.5,
+    "high": 34.0,
+    "average": 31.0
+   },
+   "Platinum": {
+    "low": 800.0,
+    "high": 1040.0,
+    "average": 920.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1200.0,
+    "average": 990.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/michael-hsueh",
+   "year": 2025,
+   "slug": "michael-hsueh",
+   "analyst_line": "Michael Hsueh Deutsch Bank",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2550.0,
+    "high": 3000.0,
+    "average": 2725.0
+   },
+   "Silver": {
+    "low": 29.6,
+    "high": 35.0,
+    "average": 32.4
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/bernard-dahdah",
+   "year": 2025,
+   "slug": "bernard-dahdah",
+   "analyst_line": "Bernard Dahdah Natixis",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2550.0,
+    "high": 3200.0,
+    "average": 2725.0
+   },
+   "Silver": {
+    "low": 24.0,
+    "high": 39.0,
+    "average": 33.3
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/grant-sporre",
+   "year": 2025,
+   "slug": "grant-sporre",
+   "analyst_line": "Grant Sporre Bloomberg Intelligence",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2350.0,
+    "high": 3000.0,
+    "average": 2727.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/jonathan-butler",
+   "year": 2025,
+   "slug": "jonathan-butler",
+   "analyst_line": "Jonathan Butler Mitsubishi Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2250.0,
+    "high": 3100.0,
+    "average": 2730.0
+   },
+   "Silver": {
+    "low": 28.0,
+    "high": 40.0,
+    "average": 34.5
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1150.0,
+    "average": 1050.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1200.0,
+    "average": 1025.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/peter-fertig",
+   "year": 2025,
+   "slug": "peter-fertig",
+   "analyst_line": "Peter Fertig QCR Quantitative Commodity Research Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2475.0,
+    "high": 2945.0,
+    "average": 2735.0
+   },
+   "Silver": {
+    "low": 26.0,
+    "high": 36.25,
+    "average": 29.25
+   },
+   "Platinum": {
+    "low": 825.0,
+    "high": 1075.0,
+    "average": 935.0
+   },
+   "Palladium": {
+    "low": 840.0,
+    "high": 1125.0,
+    "average": 945.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/nicky-shiels",
+   "year": 2025,
+   "slug": "nicky-shiels",
+   "analyst_line": "Nicky Shiels MKS PAMP SA",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2500.0,
+    "high": 3200.0,
+    "average": 2750.0
+   },
+   "Silver": {
+    "low": 28.0,
+    "high": 42.0,
+    "average": 36.5
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1200.0,
+    "average": 1050.0
+   },
+   "Palladium": {
+    "low": 850.0,
+    "high": 1300.0,
+    "average": 1050.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/christopher-louney",
+   "year": 2025,
+   "slug": "christopher-louney",
+   "analyst_line": "Christopher Louney Commodity Strategist, RBC Capital Markets",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2383.0,
+    "high": 2885.0,
+    "average": 2771.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/rhona-oconnell",
+   "year": 2025,
+   "slug": "rhona-oconnell",
+   "analyst_line": "Rhona O'Connell StoneX Financial Ltd",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2590.0,
+    "high": 3040.0,
+    "average": 2780.0
+   },
+   "Silver": {
+    "low": 27.7,
+    "high": 38.2,
+    "average": 32.5
+   },
+   "Platinum": {
+    "low": 870.0,
+    "high": 1050.0,
+    "average": 1015.0
+   },
+   "Palladium": {
+    "low": 870.0,
+    "high": 1115.0,
+    "average": 906.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/suki-cooper",
+   "year": 2025,
+   "slug": "suki-cooper",
+   "analyst_line": "Suki Cooper Standard Chartered",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2400.0,
+    "high": 3000.0,
+    "average": 2781.0
+   },
+   "Silver": {
+    "low": 26.5,
+    "high": 40.0,
+    "average": 34.63
+   },
+   "Platinum": {
+    "low": 835.0,
+    "high": 1200.0,
+    "average": 1006.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1275.0,
+    "average": 999.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/joni-teves",
+   "year": 2025,
+   "slug": "joni-teves",
+   "analyst_line": "Joni Teves UBS",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2450.0,
+    "high": 3100.0,
+    "average": 2800.0
+   },
+   "Silver": {
+    "low": 26.2,
+    "high": 40.8,
+    "average": 35.4
+   },
+   "Platinum": {
+    "low": 880.0,
+    "high": 1350.0,
+    "average": 1100.0
+   },
+   "Palladium": {
+    "low": 850.0,
+    "high": 1300.0,
+    "average": 1090.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/rene-hochreiter",
+   "year": 2025,
+   "slug": "rene-hochreiter",
+   "analyst_line": "René Hochreiter NOAH Capital Markets and Sieberana Research",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2633.0,
+    "high": 3050.0,
+    "average": 2850.0
+   },
+   "Silver": {
+    "low": 29.4,
+    "high": 37.0,
+    "average": 33.0
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1080.0,
+    "average": 980.0
+   },
+   "Palladium": {
+    "low": 900.0,
+    "high": 1050.0,
+    "average": 950.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/debajit-saha",
+   "year": 2025,
+   "slug": "debajit-saha",
+   "analyst_line": "Debajit Saha Metals Research, Refinitiv, an LSEG Business",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2570.0,
+    "high": 3175.0,
+    "average": 2850.0
+   },
+   "Silver": {
+    "low": 28.0,
+    "high": 43.5,
+    "average": 35.1
+   },
+   "Platinum": {
+    "low": 910.0,
+    "high": 1150.0,
+    "average": 1025.0
+   },
+   "Palladium": {
+    "low": 825.0,
+    "high": 1251.0,
+    "average": 995.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/julia-du",
+   "year": 2025,
+   "slug": "julia-du",
+   "analyst_line": "Julia Du ICBC Standard Bank",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2550.0,
+    "high": 3100.0,
+    "average": 2850.0
+   },
+   "Silver": {
+    "low": 28.5,
+    "high": 36.0,
+    "average": 32.0
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1300.0,
+    "average": 1100.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1200.0,
+    "average": 1000.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/bruce-ikemizu",
+   "year": 2025,
+   "slug": "bruce-ikemizu",
+   "analyst_line": "Bruce Ikemizu Japan Bullion Market Association",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2500.0,
+    "high": 3100.0,
+    "average": 2870.0
+   },
+   "Silver": {
+    "low": 27.0,
+    "high": 40.0,
+    "average": 35.0
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1200.0,
+    "average": 980.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1200.0,
+    "average": 950.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/chantelle-schieven",
+   "year": 2025,
+   "slug": "chantelle-schieven",
+   "analyst_line": "Chantelle Schieven Capitalight Research",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2510.0,
+    "high": 3290.0,
+    "average": 2875.0
+   },
+   "Silver": {
+    "low": 26.3,
+    "high": 40.8,
+    "average": 35.6
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/ross-norman",
+   "year": 2025,
+   "slug": "ross-norman",
+   "analyst_line": "Ross Norman CEO Metals Daily Ltd",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2630.0,
+    "high": 3175.0,
+    "average": 2888.0
+   },
+   "Silver": {
+    "low": 29.1,
+    "high": 38.46,
+    "average": 34.16
+   },
+   "Platinum": {
+    "low": 900.0,
+    "high": 1175.0,
+    "average": 1046.0
+   },
+   "Palladium": {
+    "low": 920.0,
+    "high": 995.0,
+    "average": 968.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/keisuke-bill-okui",
+   "year": 2025,
+   "slug": "keisuke-bill-okui",
+   "analyst_line": "Keisuke (Bill) Okui Sumitomo Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2550.0,
+    "high": 3200.0,
+    "average": 2925.0
+   },
+   "Silver": {
+    "low": 28.0,
+    "high": 38.5,
+    "average": 34.9
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1250.0,
+    "average": 1040.0
+   },
+   "Palladium": {
+    "low": 850.0,
+    "high": 1350.0,
+    "average": 1060.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/emmanual-munjeri",
+   "year": 2025,
+   "slug": "emmanual-munjeri",
+   "analyst_line": "Emmanuel Munjeri Bloomberg Intelligence",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 29.37,
+    "high": 36.58,
+    "average": 33.19
+   },
+   "Platinum": {
+    "low": 930.0,
+    "high": 1130.0,
+    "average": 1034.0
+   },
+   "Palladium": {
+    "low": 900.0,
+    "high": 1050.0,
+    "average": 970.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/wilma-swarts",
+   "year": 2025,
+   "slug": "wilma-swarts",
+   "analyst_line": "Wilma Swarts Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1200.0,
+    "average": 1010.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/philip-newman",
+   "year": 2025,
+   "slug": "philip-newman",
+   "analyst_line": "Philip Newman Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 25.5,
+    "high": 36.0,
+    "average": 30.6
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/jacob-smith",
+   "year": 2025,
+   "slug": "jacob-smith",
+   "analyst_line": "Jacob Smith Mitsubishi Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 870.0,
+    "high": 1120.0,
+    "average": 970.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2025/analysts-forecasts/alexander-zumpfe",
+   "year": 2025,
+   "slug": "alexander-zumpfe",
+   "analyst_line": "Alexander Zumpfe Heraeus Metals Germany GmbH &amp; Co. KG",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 2450.0,
+    "high": 2950.0,
+    "average": 2700.0
+   },
+   "Silver": {
+    "low": 27.0,
+    "high": 39.0,
+    "average": 33.0
+   },
+   "Platinum": {
+    "low": 850.0,
+    "high": 1220.0,
+    "average": 1035.0
+   },
+   "Palladium": {
+    "low": 800.0,
+    "high": 1200.0,
+    "average": 1000.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/robin-bhar",
+   "year": 2026,
+   "slug": "robin-bhar",
+   "analyst_line": "Robin Bhar Robin Bhar Metals Consulting",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3500.0,
+    "high": 5000.0,
+    "average": 4000.0
+   },
+   "Silver": {
+    "low": 50.0,
+    "high": 100.0,
+    "average": 80.0
+   },
+   "Platinum": {
+    "low": 1500.0,
+    "high": 2500.0,
+    "average": 1800.0
+   },
+   "Palladium": {
+    "low": 1300.0,
+    "high": 2200.0,
+    "average": 1600.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/kirill-kirilenko",
+   "year": 2026,
+   "slug": "kirill-kirilenko",
+   "analyst_line": "Kirill Kirilenko CRU International",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4200.0,
+    "high": 5100.0,
+    "average": 4650.0
+   },
+   "Silver": {
+    "low": 70.0,
+    "high": 110.0,
+    "average": 83.0
+   },
+   "Platinum": {
+    "low": 1900.0,
+    "high": 2600.0,
+    "average": 2150.0
+   },
+   "Palladium": {
+    "low": 1600.0,
+    "high": 2200.0,
+    "average": 1850.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/srivatsava-ganapathy",
+   "year": 2026,
+   "slug": "srivatsava-ganapathy",
+   "analyst_line": "Srivatsava Ganapathy Eventell Global Advisory P Ltd.",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3600.0,
+    "high": 5250.0,
+    "average": 4420.0
+   },
+   "Silver": {
+    "low": 51.0,
+    "high": 105.0,
+    "average": 64.5
+   },
+   "Platinum": {
+    "low": 1600.0,
+    "high": 2650.0,
+    "average": 1740.0
+   },
+   "Palladium": {
+    "low": 1200.0,
+    "high": 2600.0,
+    "average": 1550.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/nikos-kavalis",
+   "year": 2026,
+   "slug": "nikos-kavalis",
+   "analyst_line": "Nikos Kavalis Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4300.0,
+    "high": 5500.0,
+    "average": 4850.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/james-steel",
+   "year": 2026,
+   "slug": "james-steel",
+   "analyst_line": "James Steel HSBC",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3950.0,
+    "high": 5050.0,
+    "average": 4586.0
+   },
+   "Silver": {
+    "low": 58.0,
+    "high": 88.0,
+    "average": 68.25
+   },
+   "Platinum": {
+    "low": 1925.0,
+    "high": 2725.0,
+    "average": 2513.0
+   },
+   "Palladium": {
+    "low": 1150.0,
+    "high": 1925.0,
+    "average": 1719.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/kieran-tompkins",
+   "year": 2026,
+   "slug": "kieran-tompkins",
+   "analyst_line": "Kieran Tompkins Capital Economics",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4100.0,
+    "high": 5100.0,
+    "average": 4800.0
+   },
+   "Silver": {
+    "low": 50.0,
+    "high": 100.0,
+    "average": 67.5
+   },
+   "Platinum": {
+    "low": 1500.0,
+    "high": 2500.0,
+    "average": 1850.0
+   },
+   "Palladium": {
+    "low": 1350.0,
+    "high": 2000.0,
+    "average": 1700.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/michael-hsueh",
+   "year": 2026,
+   "slug": "michael-hsueh",
+   "analyst_line": "Michael Hsueh Deutsch Bank",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3950.0,
+    "high": 4950.0,
+    "average": 4450.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/bernard-dahdah",
+   "year": 2026,
+   "slug": "bernard-dahdah",
+   "analyst_line": "Bernard Dahdah Natixis",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3700.0,
+    "high": 4950.0,
+    "average": 4250.0
+   },
+   "Silver": {
+    "low": 45.0,
+    "high": 90.0,
+    "average": 52.0
+   },
+   "Platinum": {
+    "low": 2100.0,
+    "high": 2800.0,
+    "average": 2450.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/grant-sporre",
+   "year": 2026,
+   "slug": "grant-sporre",
+   "analyst_line": "Grant Sporre Bloomberg Intelligence",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4025.0,
+    "high": 5280.0,
+    "average": 4820.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/nicky-shiels",
+   "year": 2026,
+   "slug": "nicky-shiels",
+   "analyst_line": "Nicky Shiels MKS PAMP SA",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3750.0,
+    "high": 5400.0,
+    "average": 4500.0
+   },
+   "Silver": {
+    "low": 60.0,
+    "high": 90.0,
+    "average": 65.0
+   },
+   "Platinum": {
+    "low": 1700.0,
+    "high": 2800.0,
+    "average": 2000.0
+   },
+   "Palladium": {
+    "low": 1600.0,
+    "high": 2500.0,
+    "average": 1900.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/christopher-louney",
+   "year": 2026,
+   "slug": "christopher-louney",
+   "analyst_line": "Christopher Louney Commodity Strategist, RBC Capital Markets",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3704.0,
+    "high": 5108.0,
+    "average": 4427.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/rhona-oconnell",
+   "year": 2026,
+   "slug": "rhona-oconnell",
+   "analyst_line": "Rhona O'Connell StoneX Financial Ltd",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3650.0,
+    "high": 4950.0,
+    "average": 4380.0
+   },
+   "Silver": {
+    "low": 53.68,
+    "high": 95.19,
+    "average": 70.65
+   },
+   "Platinum": {
+    "low": 1650.0,
+    "high": 2600.0,
+    "average": 2050.0
+   },
+   "Palladium": {
+    "low": 1350.0,
+    "high": 1900.0,
+    "average": 1583.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/suki-cooper",
+   "year": 2026,
+   "slug": "suki-cooper",
+   "analyst_line": "Suki Cooper Standard Chartered",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3700.0,
+    "high": 5500.0,
+    "average": 4788.0
+   },
+   "Silver": {
+    "low": 50.0,
+    "high": 105.0,
+    "average": 79.0
+   },
+   "Platinum": {
+    "low": 1600.0,
+    "high": 2900.0,
+    "average": 2350.0
+   },
+   "Palladium": {
+    "low": 1400.0,
+    "high": 2300.0,
+    "average": 1850.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/joni-teves",
+   "year": 2026,
+   "slug": "joni-teves",
+   "analyst_line": "Joni Teves UBS",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4150.0,
+    "high": 5000.0,
+    "average": 4675.0
+   },
+   "Silver": {
+    "low": 55.0,
+    "high": 100.0,
+    "average": 78.8
+   },
+   "Platinum": {
+    "low": 1675.0,
+    "high": 2400.0,
+    "average": 1925.0
+   },
+   "Palladium": {
+    "low": 1435.0,
+    "high": 2000.0,
+    "average": 1670.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/rene-hochreiter",
+   "year": 2026,
+   "slug": "rene-hochreiter",
+   "analyst_line": "René Hochreiter NOAH Capital Markets and Sieberana Research",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4352.0,
+    "high": 6300.0,
+    "average": 5750.0
+   },
+   "Silver": {
+    "low": 74.0,
+    "high": 120.0,
+    "average": 107.0
+   },
+   "Platinum": {
+    "low": 2132.0,
+    "high": 3200.0,
+    "average": 2870.0
+   },
+   "Palladium": {
+    "low": 1641.0,
+    "high": 2500.0,
+    "average": 2270.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/debajit-saha",
+   "year": 2026,
+   "slug": "debajit-saha",
+   "analyst_line": "Debajit Saha Metals Research, Refinitiv, an LSEG Business",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3700.0,
+    "high": 5175.0,
+    "average": 4269.0
+   },
+   "Silver": {
+    "low": 54.0,
+    "high": 108.0,
+    "average": 69.0
+   },
+   "Platinum": {
+    "low": 1800.0,
+    "high": 2800.0,
+    "average": 2237.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/julia-du",
+   "year": 2026,
+   "slug": "julia-du",
+   "analyst_line": "Julia Du ICBC Standard Bank",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4100.0,
+    "high": 7150.0,
+    "average": 6050.0
+   },
+   "Silver": {
+    "low": 62.0,
+    "high": 150.0,
+    "average": 125.0
+   },
+   "Platinum": {
+    "low": 1900.0,
+    "high": 3100.0,
+    "average": 2752.0
+   },
+   "Palladium": {
+    "low": 1600.0,
+    "high": 2400.0,
+    "average": 2087.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/bruce-ikemizu",
+   "year": 2026,
+   "slug": "bruce-ikemizu",
+   "analyst_line": "Bruce Ikemizu Japan Bullion Market Association",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4200.0,
+    "high": 6200.0,
+    "average": 5450.0
+   },
+   "Silver": {
+    "low": 65.0,
+    "high": 160.0,
+    "average": 120.0
+   },
+   "Platinum": {
+    "low": 2100.0,
+    "high": 3600.0,
+    "average": 3100.0
+   },
+   "Palladium": {
+    "low": 1600.0,
+    "high": 2300.0,
+    "average": 2000.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/chantelle-schieven",
+   "year": 2026,
+   "slug": "chantelle-schieven",
+   "analyst_line": "Chantelle Schieven Capitalight Research",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4240.0,
+    "high": 5830.0,
+    "average": 5072.0
+   },
+   "Silver": {
+    "low": 65.8,
+    "high": 145.3,
+    "average": 101.5
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/ross-norman",
+   "year": 2026,
+   "slug": "ross-norman",
+   "analyst_line": "Ross Norman CEO Metals Daily Ltd",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 4350.0,
+    "high": 6400.0,
+    "average": 5375.0
+   },
+   "Silver": {
+    "low": 72.0,
+    "high": 165.0,
+    "average": 122.0
+   },
+   "Platinum": {
+    "low": 2150.0,
+    "high": 3250.0,
+    "average": 2676.0
+   },
+   "Palladium": {
+    "low": 1600.0,
+    "high": 2650.0,
+    "average": 2132.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/keisuke-bill-okui",
+   "year": 2026,
+   "slug": "keisuke-bill-okui",
+   "analyst_line": "Keisuke (Bill) Okui Sumitomo Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3500.0,
+    "high": 6000.0,
+    "average": 5300.0
+   },
+   "Silver": {
+    "low": 50.0,
+    "high": 120.0,
+    "average": 90.0
+   },
+   "Platinum": {
+    "low": 1600.0,
+    "high": 3400.0,
+    "average": 2800.0
+   },
+   "Palladium": {
+    "low": 1100.0,
+    "high": 2900.0,
+    "average": 2300.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/emmanual-munjeri",
+   "year": 2026,
+   "slug": "emmanual-munjeri",
+   "analyst_line": "Emmanuel Munjeri Bloomberg Intelligence",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 67.08,
+    "high": 95.3,
+    "average": 83.3
+   },
+   "Platinum": {
+    "low": 1750.0,
+    "high": 2650.0,
+    "average": 2088.0
+   },
+   "Palladium": {
+    "low": 1200.0,
+    "high": 2000.0,
+    "average": 1500.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/wilma-swarts",
+   "year": 2026,
+   "slug": "wilma-swarts",
+   "analyst_line": "Wilma Swarts Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Platinum": {
+    "low": 1900.0,
+    "high": 2900.0,
+    "average": 2330.0
+   },
+   "Palladium": {
+    "low": 1090.0,
+    "high": 2000.0,
+    "average": 1490.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/philip-newman",
+   "year": 2026,
+   "slug": "philip-newman",
+   "analyst_line": "Philip Newman Metals Focus",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Silver": {
+    "low": 60.0,
+    "high": 100.0,
+    "average": 83.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/jacob-smith",
+   "year": 2026,
+   "slug": "jacob-smith",
+   "analyst_line": "Jacob Smith Mitsubishi Corporation",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3900.0,
+    "high": 5800.0,
+    "average": 5100.0
+   },
+   "Silver": {
+    "low": 46.0,
+    "high": 103.0,
+    "average": 61.0
+   },
+   "Platinum": {
+    "low": 1300.0,
+    "high": 2600.0,
+    "average": 1700.0
+   },
+   "Palladium": {
+    "low": 1100.0,
+    "high": 2100.0,
+    "average": 1400.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/alexander-zumpfe",
+   "year": 2026,
+   "slug": "alexander-zumpfe",
+   "analyst_line": "Alexander Zumpfe Heraeus Metals Germany GmbH &amp; Co. KG",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3450.0,
+    "high": 5200.0,
+    "average": 4620.0
+   },
+   "Silver": {
+    "low": 55.0,
+    "high": 105.0,
+    "average": 75.0
+   },
+   "Platinum": {
+    "low": 1750.0,
+    "high": 2875.0,
+    "average": 2152.0
+   },
+   "Palladium": {
+    "low": 1225.0,
+    "high": 2200.0,
+    "average": 1630.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/bart-melek",
+   "year": 2026,
+   "slug": "bart-melek",
+   "analyst_line": "Bart Melek TD Securities",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3920.0,
+    "high": 4775.0,
+    "average": 4213.0
+   },
+   "Silver": {
+    "low": 42.0,
+    "high": 86.0,
+    "average": 44.25
+   },
+   "Platinum": {
+    "low": 1520.0,
+    "high": 2525.0,
+    "average": 1725.0
+   },
+   "Palladium": {
+    "low": 1195.0,
+    "high": 2025.0,
+    "average": 1413.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/caroline-bain",
+   "year": 2026,
+   "slug": "caroline-bain",
+   "analyst_line": "Caroline Bain Bain Commodities",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3500.0,
+    "high": 4800.0,
+    "average": 4299.0
+   },
+   "Silver": {
+    "low": 45.0,
+    "high": 85.0,
+    "average": 63.5
+   },
+   "Platinum": {
+    "low": 1600.0,
+    "high": 2350.0,
+    "average": 2002.0
+   },
+   "Palladium": {
+    "low": 1250.0,
+    "high": 1850.0,
+    "average": 1446.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/frank-schallenberger",
+   "year": 2026,
+   "slug": "frank-schallenberger",
+   "analyst_line": "Frank Schallenberger LBBW",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3809.0,
+    "high": 4872.0,
+    "average": 4621.0
+   },
+   "Silver": {
+    "low": 47.77,
+    "high": 91.93,
+    "average": 63.2
+   },
+   "Platinum": {
+    "low": 1677.0,
+    "high": 2452.0,
+    "average": 2117.0
+   },
+   "Palladium": {
+    "low": 1305.0,
+    "high": 1952.0,
+    "average": 1488.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/renisha-chainani",
+   "year": 2026,
+   "slug": "renisha-chainani",
+   "analyst_line": "Renisha Chainani Augmont",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3900.0,
+    "high": 5800.0,
+    "average": 4600.0
+   },
+   "Silver": {
+    "low": 69.0,
+    "high": 101.0,
+    "average": 85.0
+   },
+   "Platinum": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   },
+   "Palladium": {
+    "low": 0.0,
+    "high": 0.0,
+    "average": 0.0
+   }
+  },
+  {
+   "url": "https://www.lbma.org.uk/forecast-survey-2026/analysts-forecasts/rohit-savant",
+   "year": 2026,
+   "slug": "rohit-savant",
+   "analyst_line": "Rohit Savant CPM Group LLC",
+   "n_blocks": 4,
+   "Gold": {
+    "low": 3975.0,
+    "high": 5000.0,
+    "average": 4460.0
+   },
+   "Silver": {
+    "low": 53.0,
+    "high": 95.5,
+    "average": 67.25
+   },
+   "Platinum": {
+    "low": 1400.0,
+    "high": 2800.0,
+    "average": 1954.0
+   },
+   "Palladium": {
+    "low": 1300.0,
+    "high": 2250.0,
+    "average": 1707.0
+   }
+  }
+ ]
+}

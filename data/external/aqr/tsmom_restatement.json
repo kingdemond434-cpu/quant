@@ -1,0 +1,52 @@
+{
+  "TSMOM": {
+    "n": 300,
+    "first": "1985-01-31",
+    "last": "2009-12-31",
+    "corr": 0.9744,
+    "mean_abs_diff_monthly": 0.00495,
+    "sharpe_original": 1.385,
+    "sharpe_restated": 1.411,
+    "sharpe_delta": 0.027
+  },
+  "TSMOM^CM": {
+    "n": 300,
+    "first": "1985-01-31",
+    "last": "2009-12-31",
+    "corr": 0.9312,
+    "mean_abs_diff_monthly": 0.00902,
+    "sharpe_original": 1.063,
+    "sharpe_restated": 1.012,
+    "sharpe_delta": -0.051
+  },
+  "TSMOM^EQ": {
+    "n": 300,
+    "first": "1985-01-31",
+    "last": "2009-12-31",
+    "corr": 0.9989,
+    "mean_abs_diff_monthly": 0.00103,
+    "sharpe_original": 0.827,
+    "sharpe_restated": 0.83,
+    "sharpe_delta": 0.003
+  },
+  "TSMOM^FI": {
+    "n": 300,
+    "first": "1985-01-31",
+    "last": "2009-12-31",
+    "corr": 0.9746,
+    "mean_abs_diff_monthly": 0.00959,
+    "sharpe_original": 0.743,
+    "sharpe_restated": 0.705,
+    "sharpe_delta": -0.038
+  },
+  "TSMOM^FX": {
+    "n": 300,
+    "first": "1985-01-31",
+    "last": "2009-12-31",
+    "corr": 0.9925,
+    "mean_abs_diff_monthly": 0.00317,
+    "sharpe_original": 0.743,
+    "sharpe_restated": 0.784,
+    "sharpe_delta": 0.041
+  }
+}

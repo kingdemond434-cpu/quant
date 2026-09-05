@@ -1,0 +1,16 @@
+{
+ "generated_utc": "2026-09-04T22:15:25.881911+00:00",
+ "shares": {
+  "new_mechanism": 0.0581,
+  "mutate_survivor": 0.1307,
+  "combine_survivors": 0.1357,
+  "conditional_state_edge": 0.0905,
+  "execution_improvement": 0.1216,
+  "exit_improvement": 0.1327,
+  "cross_asset_signal": 0.0714,
+  "alt_data_hypothesis": 0.0581,
+  "failure_derived": 0.1267,
+  "model_architecture": 0.0561,
+  "external_screen": 0.0186
+ }
+}

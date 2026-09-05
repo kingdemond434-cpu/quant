@@ -10,7 +10,7 @@ ever since -- losing days of bars that no later run can re-evaluate.
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -22,7 +22,6 @@ if str(_DESK) not in sys.path:
 
 from research import h1_source as H  # noqa: E402
 
-UTC = timezone.utc
 NOW = datetime.now(UTC)
 
 
@@ -58,9 +57,37 @@ def test_the_module_does_not_import_MetaTrader5_at_module_level():
 
 
 def test_shadow_forward_no_longer_imports_MetaTrader5_directly():
+    """THE COUPLING IS AT MODULE SCOPE, AND SO IS THE ASSERTION.
+
+    This read the WHOLE file for the substring, so it went red when
+    `broker_utc_offset_hours` gained an optional, fully-guarded call-site import
+    (`try: import MetaTrader5 ... except Exception: <fall back to 0.0>`). That import cannot
+    reproduce the outage this test exists to prevent -- shadow keeps running without a terminal,
+    it just records no offset -- so the red was a false positive measuring the wrong quantity,
+    and a fence that is red for a reason nobody will fix is a fence people learn to ignore.
+    Scoped to the module head like its sibling above, and the guard on the call-site import is
+    asserted explicitly so the optional form cannot silently become a hard one.
+    """
     src = (_DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
-    assert "import MetaTrader5" not in src
+    head = src.split("def ")[0]
+    assert "import MetaTrader5" not in head, "module-level import re-welds shadow to a terminal"
     assert "from research.h1_source import fetch_h1" in src
+    # every occurrence must sit inside a try, i.e. be optional
+    for chunk in src.split("import MetaTrader5")[:-1]:
+        assert chunk.rstrip().endswith("try:"), "MetaTrader5 must stay an optional import"
+
+
+def test_mt5_tick_age_cannot_become_a_broker_timezone_offset() -> None:
+    """A weekend quote is old information, never a -29h clock conversion."""
+    class StaleTick:
+        time = 0
+
+    class MT5:
+        @staticmethod
+        def symbol_info_tick(_symbol):
+            return StaleTick()
+
+    assert H.broker_utc_offset_hours(MT5()) == 0.0
 
 
 def test_the_cache_alone_can_serve_shadow(monkeypatch, tmp_path):
@@ -99,6 +126,26 @@ def test_a_registered_source_beats_the_cache(monkeypatch, tmp_path):
     frame().to_parquet(tmp_path / "XAUUSD_H1.parquet")
     monkeypatch.setattr(H, "UNI", tmp_path)
     assert H.fetch_h1("XAUUSD", NOW - timedelta(days=5)).source == "HTTP:test"
+
+
+def test_authoritative_fusion_cache_beats_registered_proxy_when_requested(
+    monkeypatch, tmp_path,
+):
+    monkeypatch.setattr(H, "from_mt5", lambda s, t: None)
+    monkeypatch.setattr(H, "EXTRA_SOURCES", [lambda s, t: bars(source="HTTP:test")])
+    frame().to_parquet(tmp_path / "XAUUSD_H1.parquet")
+    (tmp_path / "broker_info.json").write_text(
+        '{"is_fusion": true}', encoding="utf-8",
+    )
+    monkeypatch.setattr(H, "UNI", tmp_path)
+
+    chosen = H.fetch_h1(
+        "XAUUSD", NOW - timedelta(days=5), prefer_promotion_authority=True,
+    )
+
+    assert chosen is not None
+    assert chosen.source.startswith("CACHE")
+    assert chosen.promotion_authority is True
 
 
 def test_a_raising_source_does_not_take_the_chain_with_it(monkeypatch, tmp_path):

@@ -1,0 +1,140 @@
+id: H-20260828-005
+version: 1
+parent_id: null
+origin:
+  region: global
+  language: en
+  source_type: track_record_corpus
+  source_id: fxblue_population_2026
+  source_url: https://www.fxblue.com/
+  evidence_tier: observed_population_behaviour
+  collected_at: '2026-08-28T06:33:04.593192+00:00'
+  collector_version: fxblue_track_record_miner/2026-08-28
+  metadata:
+    population_enumerated: 5077
+    accounts_harvested: 293
+    accounts_mineable: 111
+    enumerator: wayback CDX (OP-098)
+    bias_note: the population is survivorship-selected; ACTIVITY (when/what it trades) is used, PERFORMANCE
+      (where it made money) is NOT the basis of this card
+mechanism:
+  mechanism_class: flow_absorption
+  participant: retail
+  constraint: dealer_inventory
+  information_source: retail_flow_structure
+  why_edge_should_exist: Retail MT5 participation is not uniform across the clock. Measured on 111 mineable
+    FX Blue accounts (per-account normalised so no whale sets the clock), trade share peaks at 15:00-17:00
+    UTC (7.45/7.23/6.96% of an account's trades per hour vs a 4.17% uniform baseline) -- a ~1.8x concentration
+    into the NY/London overlap. The forced counterparty is the dealer absorbing a concentrated, same-direction
+    retail flow it must inventory; inventory it cannot lay off is unwound, which is a short-horizon reversal.
+  information_propagation: immediate -- the flow and its absorption are contemporaneous
+  persistence: unknown; retail clock habits are slow-moving
+  kill_conditions:
+  - retail participation clock flattens (re-measure the corpus quarterly)
+  - the overlap hour stops being the dealer-inventory peak
+market:
+  symbols:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  primary_symbol: EURUSD
+  timeframe: M15
+  session: ny_london_overlap
+  regime_required: []
+  regime_excluded: []
+rule:
+  inputs:
+  - EURUSD_M15
+  trigger: short_horizon_reversal_against_overlap_hour_extension
+  direction: 0
+  holding_horizon: 2h
+  exit: revert_to_vwap_or_time_stop
+  stop: atr_1.5
+  trail: null
+  re_entry: null
+  position_scaling: null
+  max_positions: 1
+  filters:
+    hours_utc:
+    - 15
+    - 16
+    require_prior_extension: '>=1.0 ATR move into the hour'
+economics:
+  expected_edge_bps_per_trade: 3.0
+  expected_trades_per_month: 22
+  expected_capacity_lots: 10
+  expected_capacity_category: small
+  correlation_with_existing: {}
+  orthogonality_score: 1.0
+  execution_risk: normal
+  leakage_risk: low
+falsifier:
+  condition: exp_r < 0.05R over 100 forward trades
+  horizon: 100_trades
+  threshold: 0.05
+  data_source: shadow_forward
+novelty:
+  nearest_existing_family: session_range_breakout
+  similarity: 0.5
+  translation_gap: false
+  translation_gap_details: null
+  unknown_unknown: false
+costs:
+  research_cost_usd: 0.0
+  research_cost_hours: 1.0
+  data_cost_usd_monthly: 0.0
+  execution_cost_bps_per_trade: 0.0
+status: discovered
+created_at: '2026-08-28T06:33:04.593192+00:00'
+updated_at: '2026-08-28T06:33:04.593192+00:00'
+source_attribution: {}
+miner_attribution:
+  dig: frontier_unified_20260828
+validation_history: []
+tags:
+- fxblue
+- retail_flow
+- mt5
+notes: 'ACTIVITY-half card. The clock is the deliverable and it is NOT survivorship-manufactured: survival
+  selects which accounts stay visible, it does not invent the hour at which they trade. The PERFORMANCE
+  half of the same corpus shows 61.3% of accounts profitable at 15:00 (z~2.4 on 24 hourly tests, i.e.
+  NOT significant under Holm, and the accounts are not independent) -- that number is recorded as a pointer
+  and is deliberately NOT the basis of this rule.'
+
+# ---------------------------------------------------------------------------
+# GAUNTLET VERDICT 2026-08-29 (frontier_unified) -- the L1.58 same-day debt owed
+# by the 08-28 run, paid. Canonical ten gates via external_gauntlet.run_gauntlet
+# (no inserted threshold, either direction). Report:
+#   desks/mt5/reports/gauntlet_H-20260828-005.json
+# Driver: desks/mt5/scripts/gauntlet_h20260828_005.py
+# Family: mt5desk.families.family_retail_overlap_reversal (registered, so the
+#         canonical hourly sweep reaches it from now on -- III.16).
+#
+# 24 preregistered cells, ALL REPORTED: 3 symbols x rr{1.0,1.5} x ttl{2,4} x
+# BOTH directions. The card set `direction: 0` and said direction "is the
+# gauntlet's question", so running the fade alone would have been the producer
+# answering a question it had deferred. Charged trial census: 31.
+#
+#   survivors passing all ten: 0 / 24
+#   program level: PBO 0.3295 (pass), Hansen SPA p = 0.827 (fail)
+#   best cell of 24: USDJPY follow rr=1.5 ttl=4, Sharpe 0.0297, EV 0.0249R
+#   deflated_sharpe fails 24/24 (DSR ~ 0 against sr0 0.1142)
+#   fade arm alone (first run, 12 cells): every Sharpe negative, -0.006..-0.164
+#
+# The direction question is answered and the answer is NEITHER: the follow arm
+# is not the fade arm's mirror (stops, targets and costs break the symmetry),
+# and it is indistinguishable from zero rather than positive.
+#
+# WHAT SURVIVES. The CLOCK finding survives and is the run's asset: the corpus
+# hour axis and the desk's tape share one broker-EET convention (see the family
+# docstring for the week-boundary proof). The concentration is real; it is the
+# tradable consequence that is refuted.
+#
+# UNMEASURED, NOT FAILED (L1.28a): the M15 arm the card prescribes. This box
+# holds 203 *_H1 parquets and no M15 for these symbols, so the H1 arm is a
+# coarser test of the same mechanism, not the card's own resolution. A 2h hold
+# on an H1 clock is 2 bars; on M15 it is 8, and the entry is a quarter-hour
+# rather than an hour late. That residual is real and is carded, not waved.
+status: refuted_h1_arm
+refuted_on: '2026-08-29'
+refuted_by: frontier_unified_20260829/canonical_ten_gates

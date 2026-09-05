@@ -1,0 +1,24 @@
+[Unit]
+Description=Full pipeline: discover backtest gates certify
+After=network.target
+
+[Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
+# 2026-08-31: was unbounded, and an unbounded unit on a swapless 3.7GB box does not
+# fail alone -- it drives the box to global OOM and the kernel kills a NEIGHBOUR that
+# fit perfectly well. Measured 24h peak here: 1.1G.
+# MemoryHigh THROTTLES (reclaim + slow down), it does not kill; MemoryMax is only the
+# far backstop for a genuine runaway. So a heavy run gets slower, never SIGKILLed, and
+# it can no longer take out the units around it.
+MemoryHigh=1400M
+MemoryMax=2000M
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/quant-platform/.venv/bin:/usr/bin
+EnvironmentFile=/home/quant/quant-platform/data/secrets/youtube.env
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/side_channels/full_pipeline.py
+StandardOutput=append:/home/quant/quant-platform/desks/mt5/logs/full_pipeline.log
+StandardError=append:/home/quant/quant-platform/desks/mt5/logs/full_pipeline.log

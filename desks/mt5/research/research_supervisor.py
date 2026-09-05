@@ -46,7 +46,6 @@ TARGETS = [
     dict(name="fragility", args=["-u", "-W", "ignore", "research/fragility.py"],
          marker="reports/DONE_fragility", match="fragility.py"),
     dict(name="qquant_gates",
-         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
          args=["-u", "-W", "ignore", "research/qquant_gates.py", "--workers", "8"],
          marker="reports/DONE_qquant_gates_original10_v2", match="qquant_gates.py"),
     dict(name="regime_oos", args=["-u", "-W", "ignore", "research/regime_discovery.py"],
@@ -77,15 +76,12 @@ TARGETS = [
                                    "research/signal_gate.py", "run_hunt18"],
          marker="reports/DONE_signal_gate_never", match="signal_gate.py"),
     dict(name="universal",
-         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
          args=["-u", "-W", "ignore", "research/universal_gate.py"],
          marker="reports/DONE_universal_curve_compendium", match="universal_gate.py"),
     dict(name="meta_desk",
-python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
           args=["-u", "-W", "ignore", "research/meta_desk.py"],
           marker="reports/DONE_meta", match="meta_desk.py"),
     dict(name="allocation",
-          python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
           args=["-u", "-W", "ignore", "research/allocation.py"],
           marker="reports/DONE_allocation", match="allocation.py"),
 ]
@@ -114,9 +110,15 @@ def is_running(match: str) -> bool:
 
 def already_supervised() -> bool:
     me = psutil.Process().pid
+    parent = psutil.Process(me).ppid()
     for p in psutil.process_iter(["name", "cmdline"]):
         try:
             if p.pid == me:
+                continue
+            # Windows venv launchers may leave a short-lived parent/child Python pair with the
+            # identical command line. They are one invocation, not a second supervisor. Treating
+            # the launcher as a peer made every scheduled start exit immediately.
+            if p.pid == parent or p.ppid() == me:
                 continue
             if not (p.info["name"] or "").lower().startswith("python"):
                 continue

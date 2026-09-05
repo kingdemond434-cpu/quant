@@ -1,127 +1,148 @@
 # quant — orientation for a fresh context
 
 This repo is an **Obsidian vault** (`.obsidian/`, content in `docs/`) as well as a codebase. The
-vault is ACTIVE institutional memory, not archive. **Nothing loads it for you.** A new session — or
-a session after compaction — starts blind to every standing law below unless it reads them. This
-file exists because that was the gap: the vault was declared active and nothing pointed here.
+vault is ACTIVE institutional memory. **Nothing loads it for you** — a fresh or compacted session
+starts blind to every standing law unless it reads them. Keep this file SHORT: it sits in every
+context window, so it is an INDEX, never a copy.
 
-Keep this file SHORT. It sits in every context window, so it is an INDEX, never a copy.
+## THE TWO GOVERNING DOCUMENTS (consolidation of 2026-08-25 — read these, they are short)
 
-## Read before acting
-
-| When | Read |
+| Document | Governs |
 |---|---|
-| proposing, validating, shadowing or promoting ANY edge | `docs/UNIVERSAL_PROMOTION_PROTOCOL.md` — **binding on every brain**, Claude and Codex alike. One door to capital; the nine defects this desk has actually shipped; and the habit behind seven of them — absence read as permission |
-| any non-trivial change | `docs/MASTER_QUANT_CONSTITUTION.md` first; then `docs/CONSTITUTION.md`, its machine-enforced companion |
-| deciding what to work on | `docs/GAP_REGISTER.md` — ranked open defects; **row 91 is the current top item** |
-| touching research/studies | `docs/research/*PREREGISTRATION.md` — kill criteria bind BEFORE a run |
-| adding a doc under `docs/` | `docs/research/ARTIFACT_GOVERNANCE.md` — every artifact must be claimed by a law, on arrival |
-| data sources | `docs/research/data_axis_watchlist.md`, `scripts/source_backlog_next.py` |
-| frontier / competitor / outlier hunting | `docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md` — standing principal law, all three seats |
-| mining any EXTERNAL source (Discord/Telegram/GitHub/CN communities) | same file, **PART III** — external intelligence mining, EN + CN. Access boundary is hard; social proof is never evidence; a source earns its budget by measured downstream conversion |
+| `docs/LAWS.md` | **Everyone and everything.** Universe (MT5/Fusion ONLY — crypto-exchange ground is never hunted again), objective, the full law compendium, survival rails, Tier-3 never-touch, promotion firewall, operating laws, enforcement wiring |
+| `docs/RESEARCH.md` | **The whole research system** — every miner, hunter, digger, generator, screen, test: hunt space, sources and search discipline, track-record/leaderboard/championship mining, §33 conversion, validation gauntlet, survivor factory, cadence |
 
-## Search the vault before deciding — 208k lines, one hop
+Everything else governance-shaped is a bannered ANNEX (unabridged detail, never standing orders);
+`docs/MANDATE_COVERAGE.md` maps every document's disposition. The sealed immutable core lives in
+`ops/principal_doctrine.txt` and is verified by `scripts/check_constitution_core.py` on every
+law-gate run; per-study preregistrations under `docs/research/` still bind their studies.
 
-Do not grep blind, and do not decide something the desk already decided.
+## Search the vault before deciding — one hop
 
 ```
 python scripts/vault_search.py "reduce_only close leg"          # humans + sessions
 python scripts/vault_search.py --json --limit 20 "liquidation"  # cycles / audits / sweeps
 ```
 
-Claude also has it as the `vault_search` MCP tool (`.mcp.json` -> `scripts/vault_mcp_server.py`).
-Same index (`libs/research/vault_index.py`), so an organ and a session can never disagree about
-what the vault says.
+Also the `vault_search` MCP tool. **LEXICAL (BM25), not semantic** — an empty result means THESE
+TOKENS are absent, not that the question was never settled; re-query with the document's own
+vocabulary. Do not decide something the desk already decided.
 
-**LEXICAL (BM25), not semantic** — no embedding model is reachable from a network-denied clone. An
-empty result means THESE TOKENS are absent, **not** that the question was never settled. Re-query
-with the vocabulary the document itself would use.
+## Standing facts (box + branches)
 
-## Standing orders that bind the UNIVERSE, not the method
+- **VPS: `ubuntu-4gb-hel1-5`, Hetzner Helsinki, 95.216.191.70**, user `quant`, NO sudo by
+  design. Non-root controls: `data/RECORDERS_OFF` idles all crypto recorders/listeners (set
+  2026-08-25, permanent under the MT5 mandate); `~/.cloudflared/config.yml` ingress (emptied —
+  the old crypto dashboard is retired). Root-owned crypto units (recorders, liquidations,
+  cashcarry, deadman, tunnel, dashboard) idle harmlessly; final removal needs the console.
+- **Tier-3 deadman rail** (`scripts/run_deadman_switch.py`): never modified autonomously.
+  STANDING DEFECT: it watches retired crypto-testnet endpoints and protects no live MT5 risk —
+  repointing is queued principal-gated work (LAWS §4).
+- The MT5 desk lives in `desks/mt5/`; universe registry `desks/mt5/data/universe/universe.json`.
+  Branch pointers rot — trust `git branch --show-current` and recent `git log`, not this file.
 
-- **95.216.191.70 (Hetzner, `dash.quanttt.xyz`) was FULLY DECOMMISSIONED 2026-08-23** (principal's
-  standing order) — it was still running the retired native-crypto desk's own cron/systemd
-  alongside serving as the MT5 desk's shadow-sync destination and dashboard host, so both went
-  together, not just the crypto half. It is no longer a production box, a sync target, or
-  reachable for anything — do not point new work at it. Cross-brain MT5 visibility now travels
-  through git (`desks/mt5/reports/shadow/shadow_health.json` etc., committed every 15 min by
-  `desks/mt5/scripts/sync_shadow_to_git.ps1` — see `desks/mt5/AGENTS.md`). A fresh MT5 dashboard
-  UI is planned but not yet built; there is no dashboard host today.
-- **MT5 UNIVERSE MANDATE (2026-08-18, principal's standing order)** — the desk's primary market
-  universe is the full MT5/Fusion Markets universe: FX majors/crosses/exotics, gold (XAUUSD),
-  silver, metals, equity indices, energy, soft commodities, US share CFDs. **No crypto-exchange
-  universe (Binance/Bybit/OKX/Hyperliquid etc.) may EVER be hunted again** — no miner, hunter,
-  query, channel list, scoring vocabulary, or research mandate may target crypto-exchange-native
-  opportunities. Fusion-executable crypto CFDs are part of the MT5 universe; crypto reference data
-  may be used only WHEN it informs an MT5 instrument, never as a hunted universe of its own.
-  The live MT5 desk works on branch `claude/llm-auto-upgrade-verify-gcjac3` (VPS pushes hourly
-  "mt5 desk hourly sync" commits there) — reconcile with it, never blindly overwrite it.
+## Laws a fresh session most often violates (full set: LAWS §6)
 
-## Laws most often violated by a fresh session
+- **UNWIRED OR IDLE IS A DEFECT (III.16)** — done means RUNS on a schedule and leaves an
+  artifact; never report "built" as a status.
+- **UNMEASURED is a real answer (L1.28a)** — absence never resolves to a clean verdict (WS-005).
+- **Coverage floors ratchet UP only (L1.50); a gate that never ran is a claim the desk cannot
+  cash (L1.49); "exhausted" requires per-axis evidence (L1.51).**
+- **Never share a worktree with another live session (R0423)** — stage EXPLICIT PATHS, never
+  `git commit -a`, never `git stash`.
+- `data/secrets/**` never leaves the box; no tool ever prints a key.
+- **COMMIT BEFORE YOU RUN PYTEST (R0748, measured 2026-09-03)** — a test writes to a
+  tracked file, and the suite's integrity guard repairs it by restoring *git HEAD*, which
+  silently reverts YOUR uncommitted edits in the same sweep. Its message reads identically
+  whether the tree was clean or your work was just discarded. Gate, commit, then test.
 
-- **Coverage floors ratchet UP only** (`docs/research/COVERAGE_RATCHET.json`, L1.50). A floor edited
-  to fit a measurement is not a floor. Repo and money path are tracked SEPARATELY.
-- **UNMEASURED is a real answer** (L1.28a). Absence must never resolve to a clean verdict — that is
-  WS-005, the desk's most-repeated defect class.
-- **A gate that never ran is a claim the desk cannot cash** (L1.49).
-- **"Exhausted" requires per-axis evidence** (L1.51) — for hypotheses as well as sources.
-- **Never share a worktree with another live session** (R0423). Cron starts several: if session
-  start printed `SHARED TREE`, either stage EXPLICIT PATHS on every commit (never `git commit -a`)
-  or take your own — `git worktree add -b <branch> ../qp-<branch>` — and merge back. **Never
-  `git stash`**: it restores to the index and a sibling can check the tree out from under you.
-  Three recorded instances of a sibling's broad commit sweeping another session's staged files
-  into an unrelated commit; the code survived every time, the rationale did not.
-- **UNWIRED OR IDLE IS A DEFECT** (III.16). A capability is done when something RUNS it on a
-  schedule or a live path and the run leaves an artifact -- not when it is written, tested and
-  correct. Four instances found in one day, including `auto_promotion.decide()` with ZERO callers
-  on the day capital was deposited. An unwired capability and a working one are byte-identical in
-  every report that counts modules or passes tests; the only question that separates them is WHAT
-  RAN IT, and it is never asked by accident. Never report "built" as a status.
-- **Tier-3 ruin rail** (`scripts/run_deadman_switch.py`) is never modified autonomously. Arming live
-  trading is the principal's act. It is deliberately absent from mypy's `files`.
-- `data/secrets/**` never leaves the box, and no tool ever prints a key.
+## COMMITTING CODE FROM THIS BOX (read this before your first commit)
+
+`ops/githooks/pre-commit` runs `moneypath_precommit_guard.py`, whose FIRST layer fires whenever
+`SSH_CONNECTION` is set -- which it is for every Claude session here. It **unstages your staged
+`desks/mt5/**/*.py` change and `git checkout HEAD` over your working copy**, then lets the commit
+succeed with the file silently absent. It is not a bug: an hourly Dell-side sync (`Codex mt5 desk
+hourly sync`, still running) once scp'd stale code over `desks/mt5` and committed it, removing
+1,078 lines from `gateway.py`. The guard is what stops that.
+
+It cannot tell your session from that sync, so YOUR code edits are reverted too:
+
+```bash
+QUANT_ALLOW_SSH_PY=1 git commit -m "..."
+```
+
+Measured 2026-09-04: four attempts at one `shadow_forward.py` fix were silently reverted this way,
+and one "shipped and hash-verified identical" check compared two files that had BOTH been reverted.
+If a `.py` edit you just made is missing from disk, this is why. Sibling overrides for the other
+two layers: `QUANT_ALLOW_EVIDENCE_FALL=1`, `ALLOW_PROTECTED_RECORD_LOSS=1`.
+
+## MT5 UNIVERSE MANDATE (2026-08-18, principal's standing order)
+
+The desk's primary market universe is the full MT5/Fusion Markets universe: FX
+majors/crosses/exotics, gold (XAUUSD), silver, metals, equity indices, energy, soft commodities,
+US share CFDs. **No crypto-exchange universe (Binance/Bybit/OKX/Hyperliquid etc.) may EVER be
+hunted again** -- no miner, hunter, query, channel list, scoring vocabulary or research mandate
+may target crypto-exchange-native opportunities. Fusion-executable crypto CFDs are part of the
+MT5 universe; crypto reference data may be used only WHEN it informs an MT5 instrument, never as
+a hunted universe of its own.
+
+## ONE CODE, TWO BOXES (2026-09-05)
+
+The VPS (95.216.191.70, `quant`, `/home/quant/quant-platform`, branch `desk-sync-clean`) runs the
+research pipeline, the fences and the dashboard. The Windows trading box (Contabo, `C:\opt\quant`,
+branch `claude/llm-auto-upgrade-verify-gcjac3`) runs the gateway, the forward clocks and the
+promoter. The two branches were reconciled on 2026-09-05 so they carry the SAME code; the box's
+branch differs only by the state files the box commits. Every merge to `desk-sync-clean` must be
+followed by a merge into the box's branch -- code that lands on one branch only is inert on the
+box that trades, and that is how certificates and forward clocks were lost before.
 
 ## Gates (all four, before any push)
 
 ```
 ./ops/gates.sh          # the three fast gates, ~1 min — RUN THIS
 ./ops/gates.sh --full   # adds the suite + coverage floors (~60-80 min)
-git config core.hooksPath ops/githooks   # once per clone: pre-push runs the fast gates
+git config core.hooksPath ops/githooks   # once per clone
 ```
 
-Equivalent by hand, if you need one step in isolation:
-
-```
-ruff check .          # NOT `ruff | tail` — tail exits 0 whatever ruff found
-python -m pytest --co -q      # 8s. RUN THIS FIRST — see below
-python -m mypy        # bare mypy; uses files=[] from pyproject, not --strict .
-python -m pytest --cov=libs --cov-branch --cov-report=json:coverage.json
-python scripts/check_coverage_floors.py --report coverage.json
-```
-
-**COLLECTION IS A SEPARATE GATE AND RUFF+MYPY DO NOT COVER IT.** An uncollectable module is not
-a failing test — it is a test that does not run, and the suite reports it as an error count next
-to a green pass count. mypy's `files` excludes `tests/`, and ruff does not resolve names, so a
-dropped function or a changed return type passes both while the suite cannot start. That is how
-the 08-09 merge shipped with the L1.6 Holm-bar fence reading `m=0 [REFUSED]` for four days, and
-how three later batches landed with a test that raises `TypeError` on import of its own subject.
-It costs **8 seconds**. There is no run too small for it.
-
-(mypy over `tests/` was measured as the alternative and rejected on evidence: 6345 errors, ~550
-with every style check off, and the `attr-defined` signal is drowned by `ast.AST` false positives
-and legitimate monkeypatch access. Silencing that is not a gate.)
-
-`filterwarnings = error` is set: a RuntimeWarning is a test failure.
-
-Use `python -m mypy`, not `mypy` — the PATH binary is a uv tool install that cannot see project deps.
+**COLLECTION IS A SEPARATE GATE:** `python -m pytest --co -q` costs 8 seconds and catches what
+ruff+mypy cannot; there is no run too small for it. Use `python -m mypy` (never bare `mypy`).
+`filterwarnings = error`: a RuntimeWarning is a test failure.
 
 ## Current state
 
-**Not written here on purpose.** `.claude/desk-state.sh` runs at session start and prints coverage
-vs floors, the OI/LS 40-day clock, study execution state and the top open gap rows -- READ LIVE from
-the artifacts. A number typed into this file is correct the day it is typed and quietly wrong
-afterwards, and a stale number in an always-loaded file is worse than none: it is confidently
-misleading in every future session. This file holds the map; the hook holds the odometer.
+**Not written here on purpose.** `.claude/desk-state.sh` prints coverage vs floors, study state
+and top gap rows at session start, read LIVE from artifacts. If you did not see a
+`=== DESK STATE ===` block, the hook did not run — treat every number you think you know as
+UNKNOWN and read the artifacts directly.
 
-If you did not see a `=== DESK STATE ===` block at session start, the hook did not run -- treat
-every number you think you know as UNKNOWN and read the artifacts directly.
+## GROWTH GOVERNANCE (principal's standing order, 2026-09-04 — binding on every session)
+
+Two rules, applied everywhere, now and in future, fenced by `scripts/check_growth_governance.py`
+at every law-gate boundary and `scripts/check_heat_floor_wiring.py` on the box. Full text:
+`docs/GROWTH_GOVERNANCE.md`.
+
+- **Rule 1.** Every risk reduction mechanism must prove that it increases robust forward E[log W].
+- **Rule 2.** Every strong opportunity must be allowed to increase capital above normal when the evidence supports it.
+
+Timid is not risk-aware. Never read restraint language (minimise, only, never, bounded) as a
+licence to do less; never add a veto, cap, shrinkage or gate without its missed-growth ledger
+line (`libs/portfolio/rails.py`, `research/missed_growth.py`); every capital modifier must be
+two-sided (`libs/portfolio/capital_modifiers.py`). The heat law: **20% floor, flat, 24/7;
+growth free above it to the 30% ceiling; the resolved heat is filled, never reported short; the
+gateway deploys the allocator's fractions un-re-shrunk and falls back to the best baseline at
+the floor when the proof is stale.** Research is anti-timid (weak public claims are hypotheses,
+never privileged); capital is evidence-hard (nothing gets authority for sounding institutional).
+- **DEEP-FOREST MINING (2026-09-04, principal standing order)** — the deep Chinese web is worth
+  mining to exhaustion: competition records (期货日报实盘大赛, 蓝海密剑), 七禾网/私募排排网 trader
+  interviews, 聚宽/优矿/米筐/BigQuant communities, 知乎/CSDN/雪球, Gitee, Bilibili transcripts,
+  微信 via 搜狗, the futures forums — because even a dubious trader story names a testable
+  mechanism. The world crawler and `desks/mt5/research/deep_forest_miner.py` mine these (and the
+  JP/KR/RU sibling forests) for verbatim claims, map instruments to MT5 analogues, and push every
+  claim to the gauntlet through the deepening worker (`story_mechanism`). Grounds live in
+  `desks/mt5/data/deep_forest_sources.json`; new grounds are added there, never hard-coded.
+- **AUTOMATIC PROMOTION (2026-09-04, principal standing order)** — "all promotion candidates get
+  into the live account immediately, no waiting, no permission, fully automatically, always."
+  Every forward lane (main shadow, qquant, scalp) feeds `research/promoter.py`; a candidate whose
+  exact spec holds a ten-gate certificate is written LIVE on the same cycle its clock matures,
+  the gateway trades it on its next pass, and capital is the allocator's decision by ΔE[log W].
+  No champion wait, no kill-by-comparison, no human act. Retirement stays automatic too.

@@ -1,0 +1,13 @@
+[Unit]
+Description=Sleeve-level shadow forward evaluation (hunt6 survivors)
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform/desks/mt5
+ExecStart=/home/quant/quant-platform/.venv/bin/python -c "import sys; sys.path.insert(0,'.'); sys.path.insert(0,'research'); sys.path.insert(0,'../..'); from research.shadow_forward import main; main()"
+StandardOutput=append:/home/quant/logs/shadow_forward_user.log
+StandardError=append:/home/quant/logs/shadow_forward_user.log
+MemoryMax=400M
+CPUQuota=50%
+TimeoutStartSec=600

@@ -119,6 +119,41 @@ def _writes_outside_data(src: str, safe_names: set[str] | None = None) -> bool:
     return False
 
 
+def _required_positionals(tree: ast.AST) -> list[str]:
+    """argparse positionals with no default and no optional nargs -- args the row must supply.
+
+    THE DEFECT THIS ENDS (measured 2026-08-29). Every other check here proves the script is SAFE
+    to schedule; none asked whether it can RUN with the command line the agent writes, which is
+    always argument-free. `scripts/vault_search.py` takes a required positional query, was
+    auto-wired as `.venv/bin/python scripts/vault_search.py >> ...`, and every scheduled run
+    since has exited 2 on an argparse usage message. A row that can only ever fail is worse than
+    an unwired script: it burns a slot, writes a log nobody can act on, and counts as coverage.
+
+    Static, not executed: running an unknown script to find out is the cost this check exists to
+    avoid. It reads add_argument calls, so it inherits argparse's own vocabulary rather than
+    guessing at one. `nargs` of "?" or "*" and any `default=` make a positional optional, which
+    is exactly when an argument-free invocation is fine.
+    """
+    required: list[str] = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "add_argument" and node.args):
+            continue
+        first = node.args[0]
+        if not (isinstance(first, ast.Constant) and isinstance(first.value, str)):
+            continue
+        if first.value.startswith("-"):
+            continue                       # a flag; absent is a valid state
+        kw = {k.arg: k.value for k in node.keywords}
+        if "default" in kw:
+            continue
+        nargs = kw.get("nargs")
+        if isinstance(nargs, ast.Constant) and nargs.value in ("?", "*"):
+            continue
+        required.append(first.value)
+    return required
+
+
 def classify(rel: str) -> tuple[str, str, str]:
     """(decision, reason, cadence). decision in AUTO-WIRE | PROPOSE | NEVER."""
     name = Path(rel).name
@@ -144,6 +179,15 @@ def classify(rel: str) -> tuple[str, str, str]:
         return "PROPOSE", "long-running server -- needs a supervisor (systemd), not a cron stack", ""
     if _writes_outside_data(src, _safe_path_constants(tree)):
         return "PROPOSE", "writes outside data/ + web/ -- unattended scheduling needs review", ""
+    needed = _required_positionals(tree)
+    if needed:
+        # The agent only ever writes an argument-free command, so this script would fail on
+        # every single run. Proven on vault_search.py, auto-wired and exiting 2 on an argparse
+        # usage message every day since (L1.49: a gate that never ran is a claim the desk cannot
+        # cash -- and a row that only ever fails is the same claim with a log file).
+        return ("PROPOSE", f"requires positional argument(s) {', '.join(needed)} -- the agent "
+                "writes an argument-free command, so scheduling it creates a row that can only "
+                "ever fail", "")
     # Cadence from what it touches: network readers slower, local-only readers daily. Slot is a
     # deterministic hash of the name -- a fixed "21 8" herded every wired organ onto one minute
     # of a 2-core box (R0070 stagger); hashing keeps re-runs idempotent, daily slots land in the

@@ -1,0 +1,474 @@
+{
+ "measured_at": "2026-08-29",
+ "seat": "brain_hunter_s15",
+ "what": "The generator/agent SUBCLASS of the BRAIN repo population -- alpha MINERS, LLM agents and search harnesses, as opposed to the alpha101 formula transcriptions s10-s14 mined. 39 of the 97 measured repos. Never mined before this session.",
+ "method": "regex over name+desc of data/brain_repo_population.json (miner|agent|crew|gpt|generat|harness|mining|llm|autom), then unauthenticated api.github.com/repos for licence+size.",
+ "caveat": "The parent population is itself a FLOOR not a census (its own caveat); this subclass inherits that. 39 is a lower bound on the class.",
+ "licence_split": {
+  "permissive_named": [
+   "0xceb1/brain-learn",
+   "Miasyster/QuantGPT",
+   "NewAmorend/AlphaGen-Agent",
+   "aircrushin/wq-alpha-agent",
+   "angel4angelov-glitch/wq-alpha-pipeline",
+   "aznikline/alpha-mining-system",
+   "gyx09212214-prog/worldquant-harness",
+   "mohitprashant/Quant-Alpha-Hypotheses",
+   "nutdnuy/brain-paper-to-alpha-plugin",
+   "seuzxh/quant-factor-skill",
+   "slydg/Lightweight-Alpha-Miner",
+   "xiao634zhang/wq-factor-miner",
+   "zeron-G/worldquant-alpha-research-agent",
+   "zhutoutoutousan/worldquant-miner"
+  ],
+  "no_licence_file_all_rights_reserved": [
+   "Animesh-Parashar/WolfAlpha",
+   "BRV-2728/WorldQuantBrain-auto-tool",
+   "Cgodking/Alpha-agent",
+   "ChenNachuan/WorldQuant",
+   "KIRANBADAKURAVA/Alpha-Automation",
+   "KIRANBADAKURAVA/fastmcp-alpha-tools",
+   "MiracleInvoker/AlphaGen",
+   "MiracleInvoker/AlphaTune",
+   "MiracleInvoker/WolfAlpha",
+   "OddMiss/WorldQuantBrain-Agent",
+   "RussellDash332/WQ-Brain",
+   "Stemmaker/worldquant-autocommit-alpha",
+   "YuGu0358/QuantBrain",
+   "guoshiqi0830/worldquant-alpha-miner",
+   "hitendras510/OpenAlpha-Brain",
+   "hsrxr/wq-brain-mcp",
+   "justinhuang0208/brain_viewer",
+   "lavender1203/worldquant-alpha-aiac",
+   "neelabh2710/An-Evolutionary-Algorithmic-Approach-for-Auto-Alpha-generation-",
+   "nutdnuy/wq-alpha-agent",
+   "shu476891497-hash/worldquant-miner",
+   "singlebridge/WorldQuant-miner",
+   "song1357/wq-alpha-miner",
+   "xiao634zhang/worldquant-alpha-crew",
+   "yyl-ayit/WQB-agent"
+  ]
+ },
+ "repos": {
+  "zhutoutoutousan/worldquant-miner": {
+   "stars": 728,
+   "lic": "Apache-2.0",
+   "push": "2026-02-22T15:20:59Z",
+   "desc": "Leverage WorldQuant API to generate alpha signals, and mine promising alpha expressions.",
+   "size": 22020,
+   "forks": 192,
+   "default_branch": "master",
+   "archived": false
+  },
+  "Miasyster/QuantGPT": {
+   "stars": 457,
+   "lic": "MIT",
+   "push": "2026-05-20T10:14:08Z",
+   "desc": "Agent-driven alpha factory \u2014 LLM autonomously designs, backtests, and submits factors to WorldQuant BRAIN",
+   "size": 7668,
+   "forks": 119,
+   "default_branch": "main",
+   "archived": false
+  },
+  "RussellDash332/WQ-Brain": {
+   "stars": 230,
+   "lic": null,
+   "push": "2023-07-13T01:54:10Z",
+   "desc": "Simple API automation for submitting WorldQuant BRAIN alphas",
+   "size": 53,
+   "forks": 66,
+   "default_branch": "main",
+   "archived": false
+  },
+  "lavender1203/worldquant-alpha-aiac": {
+   "stars": 124,
+   "lic": null,
+   "push": "2026-06-01T08:55:58Z",
+   "desc": "worldquant brain alpha\u56e0\u5b50\u6316\u6398\uff0c\u5168\u7a0b\u4f7f\u7528AI\u6316\u6398\u7684\u65b9\u5f0f",
+   "size": 9874,
+   "forks": 22,
+   "default_branch": "master",
+   "archived": false
+  },
+  "gyx09212214-prog/worldquant-harness": {
+   "stars": 108,
+   "lic": "MIT",
+   "push": "2026-08-05T13:54:29Z",
+   "desc": "Agent research harness for WorldQuant-oriented alpha workflows",
+   "size": 8949,
+   "forks": 6,
+   "default_branch": "main",
+   "archived": false
+  },
+  "singlebridge/WorldQuant-miner": {
+   "stars": 88,
+   "lic": null,
+   "push": "2025-08-25T14:27:51Z",
+   "desc": "\u4e00\u4e2a\u57fa\u4e8e\u672c\u5730Ollama\u5927\u8bed\u8a00\u6a21\u578b\u7684\u667a\u80fdAlpha\u56e0\u5b50\u751f\u6210\u7cfb\u7edf\uff0c\u80fd\u591f\u81ea\u52a8\u751f\u6210\u3001\u6d4b\u8bd5\u5e76\u63d0\u4ea4Alpha\u56e0\u5b50\u5230WorldQuant Brain\u5e73\u53f0\u3002\u8be5\u7cfb\u7edf\u5b8c\u5168\u57fa\u4e8e\u672c\u5730\u90e8\u7f72\uff0c\u65e0\u9700\u4f9d\u8d56\u4e91\u670d\u52a1\uff0c\u63d0\u4f9b\u66f4\u597d\u7684\u6027\u80fd\u548c\u9690\u79c1\u4fdd\u62a4\u3002",
+   "size": 68,
+   "forks": 18,
+   "default_branch": "main",
+   "archived": false
+  },
+  "MiracleInvoker/AlphaGen": {
+   "stars": 43,
+   "lic": null,
+   "push": "2026-01-10T04:52:53Z",
+   "desc": "Feedback Driven Alpha Generation Pipeline combining Gemini API with the WorldQuant BRAIN API to automatically generate, backtest and iteratively refine trading signals. \"Automate the Routine, Preserve the Creative.\"",
+   "size": 85,
+   "forks": 13,
+   "default_branch": "main",
+   "archived": false
+  },
+  "shu476891497-hash/worldquant-miner": {
+   "stars": 41,
+   "lic": null,
+   "push": "2026-07-13T04:06:35Z",
+   "desc": "WorldQuant Brain IQC factor mining engine - D0/D1/BlueOcean 3-leg async pipeline",
+   "size": 23212,
+   "forks": 16,
+   "default_branch": "master",
+   "archived": false
+  },
+  "yyl-ayit/WQB-agent": {
+   "stars": 30,
+   "lic": null,
+   "push": "2025-10-15T12:17:28Z",
+   "desc": "\u4e00\u4e2a\u57fa\u4e8eworldquantbrain\u5e73\u53f0\u7684\u91cf\u5316\u5206\u6790\u4ee5\u53ca\u901a\u8fc7\u667a\u80fd\u4f53\u81ea\u52a8\u7684\u5206\u6790\u548c\u63d0\u4ea4\u7cfb\u7edf\u3002\u6b22\u8fce\u5927\u5bb6\u7684\u4f7f\u7528\u548c\u4e8c\u6b21\u5f00\u53d1\uff0c\u652f\u6301\u7528\u6237\u6743\u9650\uff0c\u987e\u95ee\u6743\u9650\u4e5f\u9002\u7528,\u540c\u65f6\u4e5f\u53ef\u4ee5\u4f5c\u4e3a\u5176\u4ed6\u7f51\u7ad9\u7684\u5f00\u53d1\u6a21\u677f\u3002\u8fd8\u5728\u5f00\u53d1\u4e2d\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7",
+   "size": 2466,
+   "forks": 4,
+   "default_branch": "main",
+   "archived": false
+  },
+  "xiao634zhang/worldquant-alpha-crew": {
+   "stars": 19,
+   "lic": null,
+   "push": "2026-01-31T06:41:41Z",
+   "desc": "\u57fa\u4e8e CrewAI \u7684 WorldQuant Alpha \u56e0\u5b50\u81ea\u52a8\u7814\u7a76\u4e0e\u56de\u6d4b\u7cfb\u7edf 6\u4e2a\u4e13\u4e1a AI \u667a\u80fd\u4f53\u534f\u4f5c \u4ece\u7814\u62a5\u5230\u53ef\u9a8c\u8bc1\u516c\u5f0f\u7684\u5168\u81ea\u52a8\u6d41\u6c34\u7ebf \u652f\u6301\u7f51\u683c\u641c\u7d22\u548c\u667a\u80fd\u4f18\u5316",
+   "size": 503,
+   "forks": 6,
+   "default_branch": "master",
+   "archived": false
+  },
+  "justinhuang0208/brain_viewer": {
+   "stars": 16,
+   "lic": null,
+   "push": "2026-05-13T01:26:42Z",
+   "desc": "Desktop GUI and CLI toolkit for WorldQuant Brain API workflows, including datasets, operators, alpha generation, simulations, backtests, evolution, and Telegram worker automation.",
+   "size": 2364,
+   "forks": 4,
+   "default_branch": "main",
+   "archived": false
+  },
+  "MiracleInvoker/WolfAlpha": {
+   "stars": 15,
+   "lic": null,
+   "push": "2025-06-14T15:00:14Z",
+   "desc": "An autonomous agent that generates and refines quantitative trading strategies using Google's Gemini API and the WorldQuant BRAIN platform.",
+   "size": 589,
+   "forks": 5,
+   "default_branch": "main",
+   "archived": false
+  },
+  "ChenNachuan/WorldQuant": {
+   "stars": 15,
+   "lic": null,
+   "push": "2026-06-26T16:43:15Z",
+   "desc": "WorldQuant Alpha Mining Framework - LLM-driven factor discovery and backtesting",
+   "size": 742,
+   "forks": 2,
+   "default_branch": "main",
+   "archived": false
+  },
+  "aznikline/alpha-mining-system": {
+   "stars": 15,
+   "lic": "MIT",
+   "push": "2026-06-25T12:08:40Z",
+   "desc": "Alpha \u56e0\u5b50\u6316\u6398\u7cfb\u7edf v3.0 \u2014 \u6a21\u5757\u5316\u81ea\u52a8\u5316\u56e0\u5b50\u6316\u6398\u5e73\u53f0 (\u8868\u8fbe\u5f0f/\u9057\u4f20\u7f16\u7a0b/\u6df1\u5ea6\u5b66\u4e60\u4e09\u6a21\u5f0f, A\u80a1+\u7f8e\u80a1, CLI+Streamlit+Notebook)",
+   "size": 105,
+   "forks": 1,
+   "default_branch": "main",
+   "archived": false
+  },
+  "neelabh2710/An-Evolutionary-Algorithmic-Approach-for-Auto-Alpha-generation-": {
+   "stars": 14,
+   "lic": null,
+   "push": "2025-02-03T13:51:29Z",
+   "desc": "Developed a genetic algorithm framework for Automated Alpha generation using the WorldQuant platform API.",
+   "size": 4857,
+   "forks": 3,
+   "default_branch": "main",
+   "archived": false
+  },
+  "Stemmaker/worldquant-autocommit-alpha": {
+   "stars": 13,
+   "lic": null,
+   "push": "2025-12-14T08:12:39Z",
+   "desc": "WorldQuant Brain Alpha auto-submit system - Automatically filter and submit qualified alphas",
+   "size": 81,
+   "forks": 2,
+   "default_branch": "master",
+   "archived": false
+  },
+  "MiracleInvoker/AlphaTune": {
+   "stars": 12,
+   "lic": null,
+   "push": "2026-01-04T20:13:12Z",
+   "desc": "Automated Hyperparameter Optimization framework for WorldQuant BRAIN Alphas using Optuna.",
+   "size": 22,
+   "forks": 1,
+   "default_branch": "main",
+   "archived": false
+  },
+  "aircrushin/wq-alpha-agent": {
+   "stars": 12,
+   "lic": "MIT",
+   "push": "2026-08-03T03:46:37Z",
+   "desc": "Automated WorldQuant BRAIN alpha factor research agent \u2014 generate, simulate, diversity-check, submit, and evolve alpha expressions with LLM-driven automation.",
+   "size": 53,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  },
+  "KIRANBADAKURAVA/fastmcp-alpha-tools": {
+   "stars": 9,
+   "lic": null,
+   "push": "2025-05-05T17:58:49Z",
+   "desc": "A streamlined toolkit built with FastMCP for automating alpha simulation, dataset retrieval, and performance analysis using the WorldQuant BRAIN API.",
+   "size": 2941,
+   "forks": 4,
+   "default_branch": "main",
+   "archived": false
+  },
+  "seuzxh/quant-factor-skill": {
+   "stars": 9,
+   "lic": "MIT",
+   "push": "2026-05-10T01:59:29Z",
+   "desc": "\u91cf\u5316\u56e0\u5b50Agent Skill - \u6574\u5408Qlib Alpha158/360 + WorldQuant Alpha101\u5171619\u4e2a\u56e0\u5b50",
+   "size": 32,
+   "forks": 6,
+   "default_branch": "main",
+   "archived": false
+  },
+  "KIRANBADAKURAVA/Alpha-Automation": {
+   "stars": 8,
+   "lic": null,
+   "push": "2025-01-31T11:39:03Z",
+   "desc": "This project uses python to automate the process of alpha simulation in WorldQuant Brain platform.",
+   "size": 1211,
+   "forks": 2,
+   "default_branch": "main",
+   "archived": false
+  },
+  "slydg/Lightweight-Alpha-Miner": {
+   "stars": 8,
+   "lic": "MIT",
+   "push": "2026-04-15T10:47:52Z",
+   "desc": "\u8fd9\u662f\u4e00\u4e2a\u57fa\u4e8e\u5927\u8bed\u8a00\u6a21\u578b\uff08LLM\uff09\u548c WorldQuant Brain API \u7684\u8f7b\u91cf\u7ea7\u91cf\u5316\u56e0\u5b50\u81ea\u52a8\u6316\u6398\u5de5\u5177\u3002\u901a\u8fc7\u96c6\u6210 Ollama \u672c\u5730\u6a21\u578b\uff0c\u5b9e\u73b0\u56e0\u5b50\u751f\u6210\u3001\u56de\u6d4b\u3001\u903b\u8f91\u53cd\u9988\u53ca\u81ea\u52a8\u4f18\u5316\u7684\u95ed\u73af\u6d41\u7a0b\u3002",
+   "size": 20,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  },
+  "angel4angelov-glitch/wq-alpha-pipeline": {
+   "stars": 7,
+   "lic": "MIT",
+   "push": "2026-05-10T19:51:31Z",
+   "desc": "Automated alpha research pipeline for WorldQuant BRAIN \u2014 built for the IQC 2026",
+   "size": 34,
+   "forks": 3,
+   "default_branch": "main",
+   "archived": false
+  },
+  "guoshiqi0830/worldquant-alpha-miner": {
+   "stars": 7,
+   "lic": null,
+   "push": "2025-08-28T13:41:06Z",
+   "desc": "world quant alpha miner",
+   "size": 137,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  },
+  "zeron-G/worldquant-alpha-research-agent": {
+   "stars": 6,
+   "lic": "MIT",
+   "push": "2026-05-11T20:16:12Z",
+   "desc": "WorldQuant BRAIN alpha research, simulation, and submission pipeline in pure Python.",
+   "size": 227,
+   "forks": 2,
+   "default_branch": "main",
+   "archived": false
+  },
+  "0xceb1/brain-learn": {
+   "stars": 6,
+   "lic": "MIT",
+   "push": "2026-03-29T06:13:17Z",
+   "desc": "GP learn framework for automatic alpha mining on WorldQuant BRAIN platform",
+   "size": 310,
+   "forks": 2,
+   "default_branch": "main",
+   "archived": false
+  },
+  "OddMiss/WorldQuantBrain-Agent": {
+   "stars": 6,
+   "lic": null,
+   "push": "2026-06-04T08:30:05Z",
+   "desc": "A local multi-agent research pipeline for generating WorldQuant Brain alpha ideas from consultant forum PDFs.",
+   "size": 1840,
+   "forks": 1,
+   "default_branch": "main",
+   "archived": false
+  },
+  "NewAmorend/AlphaGen-Agent": {
+   "stars": 6,
+   "lic": "MIT",
+   "push": "2026-07-23T07:53:49Z",
+   "desc": "AlphaGen Agent \u2014 WorldQuant alpha generation and backtesting harness",
+   "size": 689,
+   "forks": 3,
+   "default_branch": "main",
+   "archived": false
+  },
+  "YuGu0358/QuantBrain": {
+   "stars": 4,
+   "lic": null,
+   "push": "2026-04-22T07:03:04Z",
+   "desc": "WorldQuant BRAIN automated alpha mining with multi-LLM routing",
+   "size": 853,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  },
+  "hitendras510/OpenAlpha-Brain": {
+   "stars": 3,
+   "lic": null,
+   "push": "2026-05-16T15:05:21Z",
+   "desc": "An autonomous, closed-loop alpha mining platform for the **WorldQuant BRAIN IQC 2026** competition.",
+   "size": 113,
+   "forks": 2,
+   "default_branch": "main",
+   "archived": false
+  },
+  "nutdnuy/wq-alpha-agent": {
+   "stars": 3,
+   "lic": null,
+   "push": "2026-04-15T15:51:32Z",
+   "desc": "WorldQuant BRAIN Alpha expression generator \u2014 Streamlit + LangChain + OpenAI \u2192 autobrain-sim simulation",
+   "size": 21,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  },
+  "hsrxr/wq-brain-mcp": {
+   "stars": 3,
+   "lic": null,
+   "push": "2026-05-19T15:55:28Z",
+   "desc": "MCP Server for WorldQuant Brain alpha factor mining \u2014 \u4e16\u5764 Brain \u56de\u6d4b\u56e0\u5b50 MCP \u670d\u52a1",
+   "size": 104,
+   "forks": 1,
+   "default_branch": "main",
+   "archived": false
+  },
+  "Animesh-Parashar/WolfAlpha": {
+   "stars": 3,
+   "lic": null,
+   "push": "2025-06-14T08:04:43Z",
+   "desc": "An autonomous agent that generates and refines quantitative trading strategies using Google's Gemini API and the WorldQuant BRAIN platform.",
+   "size": 589,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  },
+  "xiao634zhang/wq-factor-miner": {
+   "stars": 2,
+   "lic": "MIT",
+   "push": "2026-03-15T08:42:18Z",
+   "desc": "WorldQuant Brain Factor Mining System",
+   "size": 46,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  },
+  "nutdnuy/brain-paper-to-alpha-plugin": {
+   "stars": 2,
+   "lic": "MIT",
+   "push": "2026-06-26T15:37:55Z",
+   "desc": "Claude Code/Codex Agent-native plugin for WorldQuant BRAIN paper-to-alpha research workflows.",
+   "size": 29,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  },
+  "song1357/wq-alpha-miner": {
+   "stars": 2,
+   "lic": null,
+   "push": "2026-04-07T19:05:38Z",
+   "desc": "Automated alpha discovery engine for WorldQuant BRAIN platform with signal light navigation system",
+   "size": 53,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  },
+  "Cgodking/Alpha-agent": {
+   "stars": 2,
+   "lic": null,
+   "push": "2026-07-21T22:23:44Z",
+   "desc": "WorldQuant BRAIN Alpha \u81ea\u52a8\u63a2\u7d22\u3001\u56de\u6d4b\u3001\u7b5b\u9009\u4e0e\u63d0\u4ea4\u4ee3\u7406",
+   "size": 763,
+   "forks": 1,
+   "default_branch": "main",
+   "archived": false
+  },
+  "BRV-2728/WorldQuantBrain-auto-tool": {
+   "stars": 1,
+   "lic": null,
+   "push": "2026-03-27T08:19:14Z",
+   "desc": "A Python script for batch automatic backtesting and automatic submission of alphas",
+   "size": 834,
+   "forks": 0,
+   "default_branch": "master",
+   "archived": false
+  },
+  "mohitprashant/Quant-Alpha-Hypotheses": {
+   "stars": 1,
+   "lic": "GPL-3.0",
+   "push": "2025-03-22T18:41:00Z",
+   "desc": "Repository of quantitative research alpha generation ideas for use in the international quant competition. Implemented using Fast Expression for the WorldQuant simulation environment.",
+   "size": 14,
+   "forks": 0,
+   "default_branch": "main",
+   "archived": false
+  }
+ },
+ "flagship_mined_this_session": {
+  "repo": "zhutoutoutousan/worldquant-miner",
+  "licence": "Apache-2.0",
+  "stars": 728,
+  "python_files": 1631,
+  "syntax_broken_files": 2,
+  "syntax_broken_detail": [
+   [
+    "./generation_one/consultant-multi-arm-bandit-ollama/web_dashboard.py",
+    383,
+    "unexpected indent "
+   ],
+   [
+    "./generation_one/consultant-multi-arm-bandit-ollama/adaptive_alpha_miner.py",
+    491,
+    "expected an indented block after 'for' statement on line 490 "
+   ]
+  ],
+  "multiplicity_control_files": 0,
+  "multiplicity_grep": "bonferroni|deflated|family.?wise|holm|fdr_|benjamini|multiple.?compar over all 1631 .py -- ZERO files",
+  "arm_key_collapse": {
+   "intended_arms": 56,
+   "distinct_keys": 28,
+   "unreachable_axes": [
+    "delay",
+    "maxTrade"
+   ],
+   "mechanism": "_settings_to_key() hashes region+universe+instrumentType+neutralization+truncation only; add_arm() is if-key-not-in-arms, so the second delay value is silently dropped and only the FIRST-enumerated delay/maxTrade is ever simulated."
+  }
+ }
+}

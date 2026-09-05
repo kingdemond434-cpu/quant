@@ -94,28 +94,52 @@ NITTER_INSTANCES = [
     "https://nitter.42l.fr",
 ]
 
-# Crypto-relevant accounts to track (high-signal, not shills)
-CRYPTO_ACCOUNTS = [
-    "whale_alert", "lookonchain", "arkhamintel", "spotonthechain",
-    "thedefiedge", "cryptohayes", "cz_binance", "vitalikbuterin",
-    "aeyakovenko", "gcr_classic", "pentosh1", "cryptokaleo",
-    "rovercrc", "crypto_birb", "crediblecrypto", "jacks_",
+# Accounts tracked for the MT5/Fusion universe (FX, metals, indices, energy, rates).
+#
+# REDIRECTED 2026-08-25 under the MT5 UNIVERSE MANDATE (CLAUDE.md, principal's standing order
+# of 2026-08-18): "no miner, hunter, query, CHANNEL LIST, SCORING VOCABULARY, or research
+# mandate may target crypto-exchange-native opportunities." The previous CRYPTO_ACCOUNTS list
+# (whale_alert, lookonchain, cz_binance, ...) hunted a crypto-exchange universe of its own and
+# is retired, not merely disabled -- III.16 makes an idle organ a defect, so this collector
+# keeps running against the mandated universe instead.
+#
+# The three research accounts at the tail are venue-agnostic quant-research diggers, retained
+# from the prior list and shared with deep_mine_x.PRIORITY_ACCOUNTS.
+MT5_ACCOUNTS = [
+    # headline/squawk feeds -- rates, FX and metals tape
+    "DeItaone", "LiveSquawk", "FirstSquawk", "ReutersBiz", "business",
+    # central banks: the dominant driver of the FX/metals universe
+    "federalreserve", "ecb", "bankofengland",
+    # metals
+    "KitcoNewsNOW",
+    # venue-agnostic quant research diggers (carried over)
     "l1vsun", "shmidtqq", "antpalkin",
 ]
 
-# Narrative keywords + cashtag pattern
+#: Back-compat alias. Older callers imported CRYPTO_ACCOUNTS by name; keeping the alias means the
+#: rename cannot silently half-land, while the CONTENT is now mandate-compliant.
+CRYPTO_ACCOUNTS = MT5_ACCOUNTS
+
+# Narrative keywords + cashtag pattern.
+#
+# Scoring vocabulary is named explicitly in the mandate, so these buckets are the MT5 universe's
+# drivers, not crypto narratives. "macro" survives the redirect unchanged -- it was already the
+# one venue-agnostic bucket in the crypto vocabulary and it is the primary axis here.
 NARRATIVE_KEYWORDS = {
-    "ai": ["ai agent", "ai16z", "virtuals", "aixbt", "eliza", "deai", "decentralized ai"],
-    "memecoin": ["memecoin", "pump.fun", "raydium", "moonshot", "bonding curve"],
-    "defi": ["defi", "yield", "points", "airdrop", "liquidity mining", "restaking"],
-    "l2": ["arbitrum", "optimism", "base", "blast", "linea", "scroll", "zksync", "starknet"],
-    "solana": ["solana", "jito", "kamino", "marginfi", "drift", "tensor", "magic eden"],
-    "btc": ["bitcoin", "btc", "etf", "microstrategy", "hodl", "halving"],
-    "eth": ["ethereum", "eth", "eigenlayer", "restaking", "blob", "dencun"],
-    "regulation": ["sec", "etf approval", "regulation", "lawsuit", "wells notice"],
     "macro": ["fed", "cpi", "rates", "inflation", "dxy", "liquidity", "qt", "qe"],
-    "exchange": ["binance", "coinbase", "bybit", "okx", "kraken", "delisting", "listing"],
-    "hack": ["hack", "exploit", "drained", "vulnerability", "audit", "reentrancy"],
+    "centralbank": ["fomc", "ecb", "boj", "boe", "snb", "rba", "rbnz", "boc",
+                    "rate decision", "dot plot", "hawkish", "dovish", "intervention"],
+    "gold": ["gold", "xauusd", "bullion", "lbma", "comex", "sge", "central bank buying"],
+    "silver": ["silver", "xagusd", "platinum", "palladium", "metals"],
+    "fx_usd": ["dollar", "dxy", "usd", "greenback", "safe haven"],
+    "fx_jpy": ["yen", "jpy", "usdjpy", "carry trade", "boj intervention"],
+    "fx_eur": ["euro", "eur", "eurusd", "bund", "periphery spread"],
+    "fx_gbp": ["sterling", "gbp", "cable", "gilt"],
+    "fx_commodity": ["aussie", "aud", "kiwi", "nzd", "loonie", "cad", "terms of trade"],
+    "indices": ["s&p", "spx", "nasdaq", "dax", "ftse", "nikkei", "index futures", "earnings"],
+    "energy": ["oil", "wti", "brent", "opec", "crude", "natgas", "inventories"],
+    "softs": ["wheat", "corn", "soybean", "sugar", "coffee", "cocoa", "harvest"],
+    "risk": ["risk off", "risk on", "vix", "volatility", "flight to quality", "geopolitical"],
 }
 
 CASTAG_RE = re.compile(r"\$([A-Z]{2,10})\b")

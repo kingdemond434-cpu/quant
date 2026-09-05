@@ -1,0 +1,9 @@
+[Unit]
+Description=Timer for restored organ: cost-ident
+
+[Timer]
+OnCalendar=*-*-* *:20:00
+Unit=quant-cost-ident.service
+
+[Install]
+WantedBy=timers.target

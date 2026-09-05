@@ -8,6 +8,7 @@ the reaper safe to run unattended -- it takes the dead, it leaves the living, an
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 import time
 from pathlib import Path
@@ -76,3 +77,50 @@ def test_unreadable_tmp_is_never_the_gates_verdict(fake_tmp, monkeypatch):
 
     monkeypatch.setattr(law_gate.Path, "glob", boom)
     assert law_gate._reap_stale_checkouts(_ROOT) == 0
+
+
+# ---------------------------------------------------------------------------------------------
+# THE CHECKOUT BELONGS ON DISK (gap-fixer 2026-08-29). The reaper above treats the symptom: it
+# knows the checkout lands on a tmpfs and answers by deleting it after two hours. Measured this
+# cycle the checkout is 297MB -- DOUBLE the 150MB its docstring cites -- on a 3815MB box with
+# zero swap, so one law gate on a dirty tree claims ~50% of typical free RAM for its whole run,
+# and no reaper can help while that run is legitimately alive.
+# ---------------------------------------------------------------------------------------------
+
+
+def test_checkout_base_is_not_ram_on_this_box():
+    """The property, measured against the real host: wherever the checkout lands, not a tmpfs."""
+    base = law_gate._checkout_base()
+    assert not law_gate._is_tmpfs(base), f"{base} is RAM -- the 297MB checkout goes back in RAM"
+
+
+def test_unknown_filesystem_never_reads_as_tmpfs(monkeypatch):
+    """Unknown must not read as tmpfs: a wrong True relocates onto a path a host may not have,
+    and this gate's verdict must never depend on where its scratch landed."""
+    monkeypatch.setattr(law_gate.Path, "read_text",
+                        lambda *a, **k: (_ for _ in ()).throw(OSError("no /proc")))
+    assert law_gate._is_tmpfs(Path("/anything")) is False
+
+
+def test_a_tmpfs_cache_dir_falls_back_to_tempdir(monkeypatch, tmp_path):
+    """If ~/.cache is ITSELF in RAM there is no disk to prefer, and the fallback is exactly
+    today's behaviour -- so this change can only improve, never regress."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    monkeypatch.setattr(law_gate, "_is_tmpfs", lambda p: True)
+    assert law_gate._checkout_base() == Path(law_gate.tempfile.gettempdir())
+
+
+def test_reaper_still_sweeps_the_old_tmp_base(monkeypatch, tmp_path):
+    """THE STRANDING BUG THIS AVOIDS. The gate re-execs HEAD's copy of itself, so an older HEAD
+    still allocates under gettempdir(), and every orphan predating the move lives there. A
+    reaper that swept only the new base would strand the exact pile the move exists to stop."""
+    old_base, new_base = tmp_path / "tmp", tmp_path / "cache"
+    old_base.mkdir()
+    new_base.mkdir()
+    stale = old_base / "lawgate-head-stranded"
+    stale.mkdir()
+    os.utime(stale, (0, 0))
+    monkeypatch.setattr(law_gate.tempfile, "gettempdir", lambda: str(old_base))
+    monkeypatch.setattr(law_gate, "_checkout_base", lambda: new_base)
+    assert law_gate._reap_stale_checkouts(tmp_path) == 1
+    assert not stale.exists(), "an orphan in the OLD base was stranded by the relocation"

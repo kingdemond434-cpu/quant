@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for restored organ: moat-backup
+
+[Timer]
+OnCalendar=*-*-* 03:55:00
+Persistent=true
+Unit=quant-moat-backup.service
+
+[Install]
+WantedBy=timers.target

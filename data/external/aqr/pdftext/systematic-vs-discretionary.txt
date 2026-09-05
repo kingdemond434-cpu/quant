@@ -1,0 +1,728 @@
+Alternative Thinking  |  3Q17Systematic versus 
+Discretionary 
+
+02
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17ContentsTable of Contents 02Executive Summary  03Introduction 04Systematic Fundamental  A Perceived Oxymoron 06Concentration vs. Diversification 08Empirical Evidence  The Best of Both Worlds Includes Both 10Conclusion 13References 14Appendix 
+15Disclosures 18Table of Contents
+
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17 
+03Executive Summary  
+The terms quantitative, systematic and rules-based are often used interchangeably; they represent 
+an investment approach that is often perceived to be in direct opposition to what a fundamental, 
+discretionary or stock-picking approach may be. 
+ 
+While it is fair to contrast systematic and discretionary approaches, we stress that they are not 
+opposites. Indeed, both systematic and discretionary managers pursue the same objective and both 
+and achieve the singular goal of improving investment performance.
+ 
+Neither systematic nor discretionary managers are inherently superior. Each has the ability to deliver 
+good investment outcomes and, as we show in the data, there is little evidence that one approach is 
+better than the other. 
+ 
+The historical correlations between excess returns from systematic and discretionary managers 
+allocations.
+ 
+Importantly, historical correlations among systematic investors are also low, as low as they are among 
+discretionary investors, suggesting that the notion that all quants trade on the same signals  
+is misplaced.
+
+04
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17Introduction
+1 
+Throughout this report we use the term discretionary as the opposite of systematic, but we stress that also systematic investing 
+requires discretion or judgment. However, that judgment is mainly used for designing investment strategies and risk control rules, not 
+for second-guessing and overruling them on a case-by-case basis.
+2 
+Two studies, both aptly titled Man Versus Machine, classify active equity mutual funds (Abis (2017)) and hedge funds (Harvey et al. 
+(2016)) into these two groups using algorithmic textual analysis of prospectuses and other fund documents. Another way to classify 
+managers relies on self-reporting (for example, in the eVestment database of institutional managers which we use below). A third way 
+could be to use simple portfolio statistics to classify managers; as we will show below, systematic managers tend to have a larger 
+distinct groups of systematic and discretionary managers with the help of such statistics.
+3 
+Israel, Palhares and Richardson (2016)
+4 
+Asness et al. (2015) discusses some of these myths in the context of value investing. Another misconception beyond this report is 
+the notion that systematic equals passive. Systematic strategies may involve high turnover, limited capacity, tactical timing, and 
+proprietary signals  all characteristics that are hard to reconcile with passive investing. Only market-cap weighted indices are truly 
+passive in that they are almost buy and hold and they can be held by all investors while markets clear. We intend to cover the broad 
+Active vs Passive topic in a future Alternative Thinking
+.Over the years, two main approaches have 
+evolved in active management: systematic and 
+discretionary investing. To put it simply: systematic 
+(commonly associated with the term quant) 
+generally applies a more repeatable and data-
+driven approach, relying on computers to identify 
+investment opportunities across many securities; in 
+contrast, a discretionary approach involves in-depth 
+analysis across a smaller number of securities and 
+relies more on information that is not always easily 
+1To date, assets under active management tend to 
+be dominated by discretionary managers, with 
+systematic approaches remaining a minority 
+ albeit a growing one.2 Among mutual funds, 
+the assets under management (AUM) share of 
+systematic managers has grown to 14% from 9% 
+in 1999 (Abis (2017)), while among hedge funds 
+it has reached 26% (Harvey et al. (2016)). Among 
+institutional equity funds, about a quarter of assets 
+are managed by systematic investors (according to 
+eVestment U.S. Large Cap Core universe, based on 
+funds self-reported investment approach). Finally, 
+analysis reveals that very few are systematic.3In spite of the growing popularity of systematic 
+managers, there are still a number of myths and 
+misconceptions about them. These misconceptions 
+broadly relate to the notions that systematic 
+managers supposedly use black box processes 
+created by machines without any human insights; 
+good stories; and they all do the same thing. 
+Exhibit 1
+ provides a summary of these myths and 
+contrasts them with reality (acknowledging that we 
+are not unbiased on this matter).4In the rest of this report, we will clear up some 
+terminology issues related to systematic and 
+discretionary investing, emphasizing the possibility 
+that an asset manager can be both systematic 
+and
+between systematic and discretionary managers 
+and present some relevant empirical evidence. We 
+conclude that while neither approach seems to 
+consistently outpace the other in raw returns, the 
+give them an edge in risk-adjusted returns. We also 
+observe equally low correlations among both groups 
+of managers (cf. the last myth in Exhibit 1), as well 
+as between
+ the two groups, indicating that they can 
+be excellent complements in investor portfolios. 
+
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17 
+05Exhibit 1Myths/Misconceptions on Systematic Managers
+Myth/Misconception
+RealityBlack boxes-   Hard to understand -   No grounding in fundamentals- 
+   Investment inputs, processes and resulting holdings can be 
+transparent- 
+   Many systematic managers use fundamental inputs 
+Machine rules humans-   No human judgment, overreliance on numbers-   Backward-looking, too history-dependent- 
+   Human judgment is used to design, revise and, in many cases, 
+implement strategies- 
+   Models can include forward-looking signals (e.g. to forecast earnings, 
+calculate implied volatilities etc.) - 
+   Both discretionary and systematic managers use (some) historical 
+the past  
+Lack of conviction-  -  Benchmark-hugging - 
+   
+dimensions - 
+   Diversifying across well-rewarded factors and diversifying away 
+idiosyncratic risks can improve risk-adjusted returns - 
+   Concentration can easily raise active risk but may or may not raise 
+active return 
+Lack of stories, magic-  Use less information on single companies- 
+   Boring can be virtuous- 
+   Systematic managers rely on their processes; discretionary managers 
+rely on single-stock stories or themes
+All systematic managers do the same thing-   Crowding and deleveraging concerns- 
+   Heterogeneous designs lead to heterogeneous portfolios and returns- 
+   Systematic managers are no more correlated than discretionary 
+managersSource: AQR. The above may not encompass all myths/misconceptions.
+
+06
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17Systematic Fundamental  
+A Perceived Oxymoron
+5 
+While both systematic and discretionary approaches can be applied across a variety of asset classes, in this report, we focus on 
+stock selection for illustrative purposes.
+6 
+Systematic strategies may be based on publicly-known factors or on more proprietary signals. We do not focus on this distinction in 
+this report.
+Steven Greiner mapped these themes to systematic factors in his book Ben Graham Was a Quant
+.
+8 
+Our colleagues earlier studies demystify discretionary managers by linking their long-run return sources to some systematic factors. 
+Buffetts Alpha (2013) and Superstar Investors
+ (2016) analyze the return history of Buffett (and those of other 
+star managers, such as Lynch and Soros) with the help of factor regressions. Buffett loaded heavily on value and quality or defensive 
+factors, while Soros loaded mainly on momentum factors. It was much harder to link Lynchs track record to consistent factor tilts.We have noted the division of active managers 
+into two categories: systematic and discretionary. 
+the two approaches, there are also similarities, 
+with potential overlap between the two. In 
+particular, there may be similarities in the kinds 
+of characteristics a manager may look for when 
+selecting securities. 
+Take, for example, active equities:5 a typical 
+approach for discretionary managers is to try 
+to understand the underlying fundamentals of 
+a company, perhaps by looking at accounting 
+statements (for example, income statements, 
+general, fundamental discretionary managers, 
+from Benjamin Graham to Peter Lynch and 
+their modern-day followers, tend to look for 
+companies that trade for less than what they are 
+worth; companies with a potential future event 
+or catalyst that could change their prospects; or 
+those with resilient business models, to name a 
+few examples. But these are also characteristics 
+(or factors) a systematic model can screen for: 
+cheap companies (systematic managers call that 
+value), showing signs of improvement (systematic 
+managers call that defensive or quality). There 
+are even ways to quantify management intent or 
+what management may be signaling about their 
+particular company (e.g., using textual analysis of 
+management commentary, analyzing changes to 
+corporate policies, corporate insiders trades in their 
+companys stock, etc.). The key here is really just 
+lexicon. What a discretionary manager may call a 
+thematic approach, a systematic process calls a 
+factor-based approach.6 Exhibit 2
+ highlights some 
+of the similarities between the two approaches, 
+ 
+each camp. 
+Of course, every discretionary manager does not 
+care equally much about all the fundamental themes 
+listed in Exhibit 2, just as every systematic manager 
+does not give the same weight to each listed factor.7 
+Let us consider the worlds most famous investor, 
+8 In his early years, he focused 
+on value but once paired with Charlie Munger 
+in Berkshire Hathaway, he gives as much weight 
+to quality and safety of the business as to value. 
+Given their pride in a very long investment horizon, 
+they also emphasize the quality of management, 
+while caring less about shorter-term themes like 
+catalysts or sentiment. In contrast, such pro-cyclical 
+considerations were central to another legendary 
+investor George Soros in both his macro investing 
+and stock selection. Activist investors like Carl Icahn 
+and Daniel Loeb are famed for creating their own 
+
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17 
+07Overall, the commonalities in Exhibit 2 underscore 
+how many systematic managers, AQR included, can 
+actually build trading rules based on fundamental 
+inputs.9 Such a systematic fundamental approach 
+hardly deserves to be called a black box. 10 
+A systematic approach that is grounded in 
+economic intuition requires human oversight 
+(machines do not run the show). More generally, 
+discretion is involved in the design of models 
+and their revisions over time. While historical 
+experience is an important input, models are 
+not naively backward-looking. Good systematic 
+9 
+Some observers consider price-based strategies such as momentum and trend following to be inherently anti-fundamental. We 
+disagree because a large part of momentum effects can be traced back to common investor underreaction to fundamental news. 
+Indirect momentum is even more obviously fundamental in nature, as it relies on relations between economically-linked companies; 
+for example between customers and their suppliers.
+10
+ 
+The black box label may be more appropriate for systematic strategies which identify attractive investments in complex ways, such 
+be so complex that economic intuition is lost. The reality, however, is that these boundaries can be fuzzy, and a given systematic 
+manager may use both fundamental and more black-box approaches in different strategies.managers are vigilant against hindsight and 
+and they strive to keep improving their models 
+based on new data and additional research.
+By now, hopefully we have convinced you that 
+economic intuition is important and that a 
+systematic process can rely on the same drivers 
+of returns as a discretionary one. In fact, both 
+systematic and discretionary managers can rely 
+on fundamental inputs. Ultimately, the term 
+systematic fundamental may not be an oxymoron 
+after all.
+Exhibit 2Commonalities Between ApproachesFundamental  
+Themes
+Systematic  
+FactorsCheap
+Companies that trade for less than what they are worth
+Value
+With a Catalyst
+With a potential event that could change their earnings or 
+price potential
+Momentum
+Strong Customer Base
+Companies with customers that have good prospects
+Indirect Momentum
+Safe
+Those with resilient business models that can hold up 
+across market environments
+Stability
+Sound Accounting Practices
+Companies with conservative accounting practices
+Earnings Quality
+Not Fighting the Sentiment
+Favored by informed investors
+Investor Sentiment
+Trustworthy Management
+Where Management is acting in shareholders best interests
+Management SignalingSource: See Appendix.
+
+08
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17
+11
+ 
+Grinolds (1989) Fundamental Law of Active Management says that if you have a small edge, you can magnify that edge by applying it 
+across a larger number of securities: investment success is a function of both skill (hit rate) and breadth (number of stocks picked).
+12
+13
+ 
+Calculated using the hypothetical probability of outperformance for each type of manager, assuming a binomial distribution  further 
+more than half the stocks outperform increases (i.e., gets closer to 1, assuming a per-stock hit rate of 53%).
+notably in portfolio implementation and 
+construction. Discretionary managers tend to 
+spend considerable time learning about a handful 
+of companies that they know really well; they 
+typically follow a best ideas investment approach 
+among this subset and tend to build concentrated 
+portfolios in which the average number of holdings 
+may be less than 100. In contrast, a systematic 
+manager typically evaluates every stock in the 
+investment universe, sometimes over thousands 
+of companies. A repeatable process enables 
+much greater breadth: applying similar ideas 
+across many stocks and even other asset classes. 
+This is an advantage if the ideas are repeatable 
+investment opportunities can improve outcomes.11 
+So, systematic investors are able to take small 
+control. 
+portfolios, a more pertinent question is how 
+skilled a particular manager may be. To examine 
+this question, we can turn to an illustrative 
+example. Suppose were evaluating an above-
+average manager who picks individual stocks 
+with 53% directional accuracy or hit rate (i.e., 
+the likelihood an individual stock outperforms is 
+slightly better than a random coin toss). Theory 
+says that if you have a small edge, you can magnify 
+that edge by applying it across a larger number 
+of securities: investment success is a function 
+of both skill (hit rate) and breadth (number of 
+stocks picked). This means that the more stocks 
+the above-average manager picks, the greater the 
+with a stylized example which evaluates portfolio 
+success rate as the probability that more than half 
+the stocks in the portfolio outperform.12  By this 
+metric, the overall portfolio success rate  that 
+is, the likelihood that the majority of stock picks 
+outperform  increases from 56% of the time 
+when the manager picks 30 stocks to 90% of the 
+stocks.13
+stocks with a higher level of skill, perhaps by 
+studying fewer companies in greater detail? How 
+good would that manager have to be to match the 
+we discussed above. Exhibit 3
+ shows the breakeven 
+level of skill required for a concentrated manager 
+who picks only 30 stocks to match the overall 
+who picks a larger number of stocks with 53% 
+accuracy. The concentrated manager must be 
+much more skillful, requiring a 59% per-stock hit 
+rate to match the overall portfolio success of the 
+per-stock hit rate to match the portfolio success of 
+
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17 
+09
+and this is an advantage for systematic managers 
+rather than a handicap (cf. the third myth in 
+Exhibit 1). But discretionary managers have 
+their own edges over systematic peers, including 
+perhaps the ability to also use some non-
+Exhibit 3A manager picking only 30 stocks must achieve these per-stock hit rates to match the portfolio 
+Skill in Picking Stocks 
+ (per-stock hit rate) 
+50% 
+55% 
+60% 
+65% 
+70% 30 stocks 
+200 stocks 
+500 stocks Number of Stocks Held By Diversified Manager 
+Diversified Manager 
+Concentrated Manager (Picking 30 Stocks) 
+As the diversified manager picks more stocks, the 
+concentrated manager must achieve a higher 
+per-stock hit rate to match its overall success
+Source: AQR. For illustrative purposes only. AQR analysis calculates the hypothetical probability of outperformance for each type of 
+manager, assuming a binomial distribution. In this example, the number of observations are the stocks in each portfolio (Concentrated 
+those shown herein.  In fact, there are frequently sharp differences between hypothetical results and the actual results subsequently 
+of investment loss.
+
+10
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17Empirical Evidence  The Best 
+of Both Worlds Includes Both
+14
+Quantitative (i.e., systematic) or Fundamental (i.e., discretionary). For consistency, we will utilize the latter terms.
+15
+ 
+See, for example, Israel, Jiang and Ross (2017).
+16
+ 
+The average pairwise correlation between individual systematic and discretionary managers over the past decade ranges 
+whole, diversifying away idiosyncratic differences between individual managers, the correlation between the systematic and the 
+Do discretionary managers outperform systematic 
+managers, or vice versa? A number of studies have 
+relied on eVestment data on institutional asset 
+managers to attempt to answer this question.14 
+The general consensus is that the two approaches 
+have similar investment outcomes in terms of 
+returns, but that systematic managers tend to have 
+lower risk. One of the earliest studies, Lakonishok 
+and Swaminathan (2010), shows that systematic 
+and discretionary approaches have had similar 
+performance in some universes (e.g., U.S. Large Cap 
+Value), but that the systematic approach has had 
+that the average pairwise correlations between 
+systematic managers are just as low as those 
+between discretionary managers. Our estimates 
+During the past decade, pairwise correlations 
+of excess returns among systematic managers 
+compared to 0.12 among discretionary investors. 
+This result contradicts the last myth in Exhibit 
+1 which alleged that all systematic managers 
+do the same thing. In fact, there is a surprising 
+heterogeneity among systematic managers design 
+decisions when constructing portfolios, which 
+translates to quite varied portfolios and returns.15Perhaps less surprisingly, the pairwise correlations 
+between systematic and discretionary managers are 
+even lower in both the Lakonishok-Swaminathan 
+study and our more recent analysis, highlighting 
+useful complementarity.16 
+There have been a few other studies since 
+Lakonishok and Swaminathan (2010). McQuiston 
+discretionary managers in the U.S. Large Cap 
+universe earn higher returns on average, but at the 
+managers active returns are less sensitive to 
+market conditions. Abis (2017) analyzes the CRSP 
+mutual fund database to detect what investment 
+systematic funds have slightly lower alphas (by up 
+to about 0.2%) than discretionary funds. Harvey 
+et al. (2016) analyze systematic and discretionary 
+hedge funds. In the equity hedge fund space, the 
+two approaches earn similar risk-adjusted returns; 
+among macro hedge funds, systematic managers 
+have outperformed their discretionary peers.
+To complement the prior literature, we examine the 
+equity investment universes. We focus on 10-year 
+between using a longer estimation period on one 
+hand and limiting our attention to only 10+ year 
+old strategies on the other. Exhibit 4
+ presents 
+average performance statistics for discretionary 
+and systematic managers across various investment 
+universes, as of 3/31/2017. 
+
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17 
+11Exhibit 4Performance Characteristics for Discretionary and Systematic Groups of 
+ 
+Active Institutional Equity Managers in the eVestment Database, 
+ 
+April 2007 to March 2017
+Ex
+cess R
+eturnsU.S.
+International
+(EAFE)
+Global
+Emer
+ging
+International
+(A
+CWI ex U.S.)
+U.S.
+International
+(EAFE)
+Global
+Emer
+ging
+International
+(A
+CWI ex U.S.)
+U.S.
+International
+(EAFE)
+Global
+Emer
+ging
+International
+(A
+CWI ex U.S.)
+A
+ctiv
+e Risk
+(T
+r
+acking Err
+or)
+In
+formation R
+atio0.0
+0.2
+0.4
+0.6
+0.8
+Discretionary
+Systematic0%
+1%
+2%
+3%
+0%
+2%
+4%
+6%
+8%
+Source: AQR analysis based on eVestment data. Note that eVestment categorization relates to quantitative versus fundamental, 
+which we refer to as systematic and discretionary, respectively. The average annualized excess returns (gross of fees), tracking error, 
+and information ratio, computed separately for discretionary and systematic managers, and separately for the large cap universes of 
+as of 3/31/2017. Only funds with Active product status are included in the analysis, eVestment database, accessed on 7/5/2017. 
+The number of strategies in each universe for systematic and discretionary managers (in this order) are as follows: U.S.  140, 511; 
+
+12
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17
+returns shows that its close to a tie between the two 
+approaches: choosing a discretionary or systematic 
+returns investors are earning. The second graph 
+systematic funds exhibit, on average, a lower level 
+of tracking error (e.g., 3.5% vs 4.5% in U.S. markets; 
+4.5% vs 5.0% in Emerging, etc.). Only in ACWI ex 
+U.S. mandates, across 11 managers with 10+ years 
+of history, do we see that systematic managers 
+have slightly higher active risk, on average, than 
+of having similar returns and lower tracking error 
+is a higher information ratio, as shown in the last 
+graph in Exhibit 4.17Overall, the evidence suggests that the two 
+approaches yield similar performance, with 
+somewhat lower active risk in systematic strategies. 
+If anything, the risk-adjusted returns (information 
+17
+ 
+The results here are shown gross of fees. Systematic managers tend to have about 10bp lower fees than discretionary managers, 
+providing a small advantage in net returns.ratios) appear mildly higher for systematic, but 
+we do not think that this is the main point here. 
+The key takeaway is that both approaches have 
+their merit and can be valuable in the context of 
+an investors overall portfolio. We are big believers 
+two skilled and lowly correlated managers, they 
+should pursue both and diversify across investment 
+processes. Ultimately, the relative weights to 
+systematic and discretionary approaches depend 
+on each investors underlying beliefs. Investors who 
+may choose a discretionary manager who may 
+be more concentrated than a systematic one.  In 
+contrast, investors who are more sensitive to risk, 
+particularly risk relative to the benchmark, may 
+elect to put a higher weight on systematic products. 
+dimensions of risk: industry, country or currency 
+exposures.
+
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17 
+13ConclusionThe primary goal for active managers is to generate 
+excess returns through active risk taking  
+however, the way in which various managers do 
+how they utilize information when constructing 
+portfolios, whether systematically across a broad set 
+of securities or discretionarily on a narrow subset.
+A concentrated discretionary manager creates 
+the opportunity for outsized excess returns (either 
+manager creates the potential for more consistent 
+performance. Ultimately, investors should focus 
+on identifying managers that can outperform  
+whether they happen to follow a discretionary 
+or systematic process. While we believe that 
+a long-run edge, diversifying across high-quality 
+managers using both systematic and discretionary 
+approaches is arguably the most reliable road to 
+long-run investment success.
+
+14
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17ReferencesAbis, Simona (2017), Man vs. Machine: Quantitative and Discretionary Equity Management, INSEAD.
+AQR Alternative Thinking, Fourth Quarter 2016, Superstar Investors. 
+The 
+Journal of Portfolio Management, Vol. 42, No. 1.   
+Edwards, Tim, and C. Lazzara (2016), Fooled by Conviction, S&P Global Research.
+Research working paper, No. 19681.
+Greiner, Steven (2011), Ben Graham Was a Quant, Wiley. 
+Grinold, Richard (1989), The Fundamental Law of Active Management, The Journal of Portfolio 
+Management
+, Vol. 15, No. 3
+Harvey, Campbell, S. Rattray, A. Sinclair and O. Van Hemert (2016), Man vs Machine: Comparing 
+Discretionary and Systematic Hedge Fund Performance, Man AHL.
+Israel, Ronen, S. Jiang and A. Ross (2017), Craftsmanship Alpha, AQR White Paper.
+Israel, Ronen, D. Palhares and S. Richardson (2016), Common Factors in Corporate Bond and Bond Fund 
+Returns, forthcoming in the Journal of Investment Management
+Lakonishok, Josef and B. Swaminathan (2010), Quantitative vs. Fundamental, Canadian Investment 
+Review.
+McQuiston, Karen, H. Parikh and S. Zhi (2017), The Impact of Market Conditions on Active Equity 
+Management, PGIM Institutional Advisory & Solutions.
+
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17 
+15AppendixResearch supporting investment themes in Exhibit 2: selected articles from independent and  
+Value
+Fama, Eugene, K. French (1992), The Cross-Section of Expected Stock Returns, Journal of Finance
+, 47, 
+427-465 
+Fama, Eugene, K. French (1996), Multifactor Explanations of Asset Pricing Anomalies, Journal of Finance
+, 
+51, 55-84 
+Journal of Finance
+, 
+68, 929-985
+Journal of Portfolio Management, 39, 49-68
+*Ellahie, Atif, M. Katz, S. Richardson (2015), Risky Value, working paper
+Momentum
+Jegadeesh, Narasimhan, S. Titman (1993), Returns to Buying Winners and Selling Losers: Implications for 
+Journal of Finance
+, 48, 65-91 
+Jegadeesh, Narasimhan, S. Titman (2002), Cross-Sectional and Time-Series Determinants of Momentum 
+Returns,
+ Review of Financial Studies
+, 15, 143-157 
+*Cohen, Lauren, A. Frazzini (2008), Economic Links and Predictable Returns, Journal of Finance
+, 63, 
+1977-2011 
+Journal of Finance
+, 
+68, 929-985
+and Stock Returns,
+ Journal of Accounting and Economics
+, 58(1), 1-20
+ 
+
+16
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17Earnings Quality
+Earnings?
+ The Accounting Review
+, 71 (3), 289-315
+Hirshleifer, David, K. Hou, S.H. Teoh (2012), The Accrual Anomaly: Risk or Mispricing? Management 
+Science
+, 58 (2), 320-335
+*Richardson, Scott, R. Sloan, M. Soliman, (2005), Accrual Reliability, Earnings Persistence and Stock 
+Prices, Journal of Accounting and Economics
+, 39
+*Bradshaw, Mark, S. Richardson, R. Sloan (2001), Do Analysts and Auditors Use Information in 
+Accruals?, Journal of Accounting Research 39(1), 45-74
+*Richardson, Scott (2003), Earnings Quality and Short Sellers, Accounting Horizons Supplement 69-81
+*Momente, Francesco, F. Reggiani, S. Richardson (2015), Accruals and Future Performance: Can It Be 
+Attributed to Risk?, Review of Accounting Studies 20(4), 1297-1333
+Stability
+Jensen, Michael, F. Black, M. Scholes (1972), The Capital Asset Pricing Model: Some Empirical Tests, 
+Praeger Publishers
+Portfolios,
+ Journal of Portfolio Management, 17 (1), 3540 
+Clarke, Roger, H. de Silva, S. Thorley, (2006), Minimum-Variance Portfolios in the U.S. Equity Market, 
+Journal of Portfolio Management, 33 (1), 1024
+Journal of Financial 
+Economics
+, 108 (1), 1-28
+*Frazzini, Andrea, L. Pedersen (2010), Betting Against Beta
+for Leverage, Journal of Accounting Research 45(2), 427-467
+
+ 
+Alternative Thinking: Systematic vs Discretionary  |  3Q17 
+17Investor Sentiment
+Desai, Hemang, K. Ramesh, S. Thiagarajan, B. Balachandran (2002), An Investigation of the 
+Informational Role of Short Interest in the Nasdaq Market, Journal of Finance
+, 57, 2263-2287 
+Asquith, Paul,  P. Pathak, J. Ritter, (2005), Short Interest, Institutional Ownership, and Stock Returns,  
+Journal of Financial Economics
+, 78 (2), 243-276 
+Xing Yuhang, X. Zhang, R. Zhao (2010), What Does the Individual Option Volatility Smirk Tell Us About 
+Future Equity Returns? Journal of Financial and Quantitative Analysis
+, 45 (3), 641-662
+Journal of 
+Financial Economics
+, 66, 307-33
+*Bradshaw, Mark, S. Richardson, R. Sloan (2006), The Relation Between Corporate Financing Activities, 
+Analysts Forecasts and Stock Returns, Journal of Accounting and Economics 42(1-2), 53-85
+Management Signaling
+Michaely, Roni, R. Thaler, K. Womack (1995), Price Reactions to Dividend Initiations and Omissions: 
+Overreaction or Drift? Journal of Finance,
+ 50 (2), 573-608  
+Baker, Malcolm, J. Wurgler (2002), Market Timing and Capital Structure, Journal of Finance
+, 2002, 57 (1) 
+Journal of Finance
+, 63 
+(2), 921-945 
+
+18
+ 
+A
+lternative Thinking: Systematic vs Discretionary  |  3Q17
+
+A
+lternative Thinking: Systematic vs Discretionary  |  3Q17
+ 
+19
+ 
+
+>Q!ê,FZ.*,/$þBOe[@~c>01+A6/
+*:$?2  7ÿöS* : F@C	 #"B   j h S CC S D   : :+%'$+3>7'7733>323267#"&54>54&#"7M!!ES^2@1K-!%	49<6/=ve$1hÀ§3;pII'moa,&:B#!;HPK@&C[kv;   ÿöJð  5 <@9.-B   [ S C S D 42
+www.aqr.com
+AQR Capital Management, LLC       Greenwich Plaza, Greenwich, CT 06830      P  +1.203.742.3600      F  +1.203.742.3100
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+ &56W>"     7ÿöS* : F@C	 #"B   j h S CC S D   : :+%'$+3>7'7733>323267#"&54>54&#"7M!!ES^2@1K-!%	49<6/=ve$1hÀ§3;pII'moa,&:B#!;HPK@&C[kv;   ÿöJð  5 <@9.-B   [ S C S D 42
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents

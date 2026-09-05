@@ -1,0 +1,179 @@
+{
+ "n_symbols": 251,
+ "n_costable": 251,
+ "n_zero_spread": 24,
+ "zero_spread_symbols": [
+  "AUDCAD",
+  "AUDCHF",
+  "AUDJPY",
+  "AUDSGD",
+  "AUDUSD",
+  "Broadcom",
+  "CADCHF",
+  "EURAUD",
+  "EURCAD",
+  "EURCHF",
+  "EURGBP",
+  "EURUSD",
+  "GBPCAD",
+  "GBPCHF",
+  "GBPUSD",
+  "HKDJPY",
+  "NVIDIA",
+  "NZDCAD",
+  "NZDUSD",
+  "USDCAD",
+  "USDCHF",
+  "USDHKD",
+  "USDJPY",
+  "Walmart"
+ ],
+ "n_no_bars": 0,
+ "n_no_spread": 0,
+ "n_no_asset_class": 3,
+ "cost_bps": {
+  "min": 0.03926675116717531,
+  "p25": 0.6628354776061034,
+  "median": 1.725848901928636,
+  "p75": 4.405674508767293,
+  "p90": 15.690125360899566,
+  "max": 578.7037037037036,
+  "ratio_max_over_median": 335.3153935185185
+ },
+ "tiers": {
+  "T1": {
+   "n": 56,
+   "cost_bps_range": [
+    0.03926675116717531,
+    0.6609166914510426
+   ],
+   "asset_class_mix": {
+    "Commodities": 5,
+    "Equities": 23,
+    "Forex": 9,
+    "Forex Exotics": 13,
+    "Indices": 6
+   },
+   "examples": [
+    "EURRUB",
+    "EURHKD",
+    "GBPJPY",
+    "EURNZD",
+    "CHFJPY",
+    "XAUEUR"
+   ]
+  },
+  "T2": {
+   "n": 56,
+   "cost_bps_range": [
+    0.6628354776061034,
+    1.7132630941030262
+   ],
+   "asset_class_mix": {
+    "Energy": 1,
+    "Equities": 37,
+    "Forex Exotics": 11,
+    "Indices": 7
+   },
+   "examples": [
+    "US2000",
+    "Oracle",
+    "Procter&Gamble",
+    "Pepsi",
+    "McDonalds",
+    "Citigroup"
+   ]
+  },
+  "T3": {
+   "n": 56,
+   "cost_bps_range": [
+    1.7239893112662703,
+    4.29000429000429
+   ],
+   "asset_class_mix": {
+    "Bonds": 3,
+    "Commodities": 1,
+    "Crypto": 1,
+    "Energy": 1,
+    "Equities": 28,
+    "Forex Exotics": 19,
+    "Indices": 3
+   },
+   "examples": [
+    "BankofAmericaCorp",
+    "XTIUSD",
+    "IntuitiveSurgical",
+    "UnionPacific",
+    "GBPSEK",
+    "EUSTX50"
+   ]
+  },
+  "T4": {
+   "n": 59,
+   "cost_bps_range": [
+    4.3161109937930915,
+    578.7037037037036
+   ],
+   "asset_class_mix": {
+    "Commodities": 6,
+    "Crypto": 13,
+    "Energy": 1,
+    "Equities": 12,
+    "Forex": 1,
+    "Forex Exotics": 12,
+    "Soft Commodity": 11,
+    "UNCLASSIFIED": 3
+   },
+   "examples": [
+    "GBPHUF",
+    "EURILS",
+    "Baidu",
+    "USDILS",
+    "Toyota",
+    "Pinterest"
+   ]
+  }
+ },
+ "by_asset_class": {
+  "Bonds": {
+   "n": 3,
+   "median_cost_bps": 3.4662353129388346
+  },
+  "Commodities": {
+   "n": 12,
+   "median_cost_bps": 4.371087008360521
+  },
+  "Crypto": {
+   "n": 14,
+   "median_cost_bps": 57.80041651850928
+  },
+  "Energy": {
+   "n": 3,
+   "median_cost_bps": 1.725848901928636
+  },
+  "Equities": {
+   "n": 100,
+   "median_cost_bps": 1.1541029130891798
+  },
+  "Forex": {
+   "n": 10,
+   "median_cost_bps": 0.15257302686219598
+  },
+  "Forex Exotics": {
+   "n": 55,
+   "median_cost_bps": 2.1757437132719177
+  },
+  "Indices": {
+   "n": 16,
+   "median_cost_bps": 0.8955503283087536
+  },
+  "Soft Commodity": {
+   "n": 11,
+   "median_cost_bps": 9.392269826494587
+  },
+  "UNCLASSIFIED": {
+   "n": 3,
+   "median_cost_bps": 268.4563758389262
+  }
+ }
+}

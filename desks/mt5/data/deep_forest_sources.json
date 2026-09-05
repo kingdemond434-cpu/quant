@@ -1,0 +1,287 @@
+{
+ "note": "The Chinese deep-forest grounds the story miner works (principal 2026-09-04): competition records, trader interviews, quant-platform communities, Q&A/blog/social, code hosts, video, forums. Every ground carries a ROUTE (how it is reached from a datacenter box), and every run re-measures reachability rather than trusting this file. Concepts are reimplemented; nothing is copied. Crypto-exchange grounds are forbidden and fenced in code (libs.research.mechanism_claims.FORBIDDEN_VENUES). Sibling forests (JP/KR/RU) ride the same routes and grammar.",
+ "grounds": [
+  {
+   "name": "七禾网 期货人物专访",
+   "route": "http",
+   "kind": "interview",
+   "url": "https://www.7hcn.com/article/list-1.html",
+   "alt": [
+    "https://www.7hcn.com/"
+   ],
+   "site": "7hcn.com",
+   "why": "long-form interviews with futures traders; mechanisms stated in their own words"
+  },
+  {
+   "name": "期货日报 全国期货实盘交易大赛",
+   "route": "http",
+   "kind": "competition",
+   "url": "https://www.qhrb.com.cn/",
+   "alt": [
+    "https://qhrb.com.cn/dasai/"
+   ],
+   "site": "qhrb.com.cn",
+   "why": "competition records and winner write-ups: numbers plus a stated method"
+  },
+  {
+   "name": "蓝海密剑 期货实盘大赛",
+   "route": "search",
+   "kind": "competition",
+   "site": "qhrb.com.cn",
+   "queries": [
+    "蓝海密剑 冠军 策略",
+    "实盘大赛 冠军 交易方法"
+   ],
+   "why": "another public futures competition; winner interviews are mechanism-dense"
+  },
+  {
+   "name": "私募排排网",
+   "route": "search",
+   "kind": "interview",
+   "site": "simuwang.com",
+   "queries": [
+    "量化 私募 策略 访谈 CTA",
+    "量化 基金经理 策略 逻辑"
+   ],
+   "why": "manager interviews and strategy descriptions"
+  },
+  {
+   "name": "聚宽 JoinQuant 社区",
+   "route": "render",
+   "kind": "community",
+   "url": "https://www.joinquant.com/view/community/list?listType=1",
+   "site": "joinquant.com",
+   "why": "strategy posts with code; JS shell needs a rendered fetch"
+  },
+  {
+   "name": "优矿 Uqer 社区",
+   "route": "render",
+   "kind": "community",
+   "url": "https://uqer.datayes.com/community/list",
+   "site": "uqer.datayes.com",
+   "why": "factor and strategy write-ups"
+  },
+  {
+   "name": "米筐 RiceQuant 社区",
+   "route": "render",
+   "kind": "community",
+   "url": "https://www.ricequant.com/community",
+   "site": "ricequant.com",
+   "why": "strategy posts; JS shell"
+  },
+  {
+   "name": "掘金量化 myquant 论坛",
+   "route": "http",
+   "kind": "community",
+   "url": "https://bbs.myquant.cn/",
+   "site": "myquant.cn",
+   "why": "futures/stock strategy forum with code"
+  },
+  {
+   "name": "BigQuant 社区",
+   "route": "render",
+   "kind": "community",
+   "url": "https://bigquant.com/wiki/",
+   "site": "bigquant.com",
+   "why": "factor and ML strategy write-ups"
+  },
+  {
+   "name": "知乎",
+   "route": "search",
+   "kind": "qa",
+   "site": "zhihu.com",
+   "queries": [
+    "黄金 日内 交易 策略 实盘 经验",
+    "期货 高手 交易系统 完整 规则",
+    "股指期货 日内 策略 复盘",
+    "外汇 套息 实盘 经验",
+    "沪金 跨市 套利 逻辑",
+    "夜盘 开盘 策略 期货",
+    "期货 隔夜 跳空 策略",
+    "量化 因子 挖掘 期货 分钟"
+   ],
+   "why": "HTTP 403 direct; reached through a search engine's index"
+  },
+  {
+   "name": "CSDN",
+   "route": "search",
+   "kind": "blog",
+   "site": "blog.csdn.net",
+   "queries": [
+    "期货 量化 策略 回测 源码 黄金",
+    "外汇 量化 策略 python 回测 实盘",
+    "股指期货 日内 策略 回测 代码",
+    "遗传规划 因子 挖掘 期货"
+   ],
+   "why": "read timeout direct; reached through search"
+  },
+  {
+   "name": "雪球",
+   "route": "search",
+   "kind": "social",
+   "site": "xueqiu.com",
+   "queries": [
+    "黄金 期货 交易 策略 复盘",
+    "期货 实盘 策略 总结 回撤",
+    "商品期货 CTA 策略 逻辑"
+   ],
+   "why": "WAF direct; reached through search"
+  },
+  {
+   "name": "淘股吧",
+   "route": "search",
+   "kind": "forum",
+   "site": "taoguba.com.cn",
+   "queries": [
+    "期货 日内 交易 方法 分享",
+    "黄金 期货 实盘 记录"
+   ],
+   "why": "retail practitioner threads; mechanism lore"
+  },
+  {
+   "name": "集思录",
+   "route": "http",
+   "kind": "forum",
+   "url": "https://www.jisilu.cn/explore/",
+   "site": "jisilu.cn",
+   "why": "arbitrage community; convergence mechanisms transfer to metals/index basis"
+  },
+  {
+   "name": "经管之家 量化投资",
+   "route": "search",
+   "kind": "forum",
+   "site": "bbs.pinggu.org",
+   "queries": [
+    "量化投资 策略 回测 期货 论坛",
+    "因子 有效性 检验 期货"
+   ],
+   "why": "academic-practitioner forum"
+  },
+  {
+   "name": "和讯期货论坛",
+   "route": "search",
+   "kind": "forum",
+   "site": "bbs.hexun.com",
+   "queries": [
+    "期货 交易 系统 规则 分享",
+    "黄金 期货 日内 策略"
+   ],
+   "why": "older futures forum; era archaeology"
+  },
+  {
+   "name": "东方财富 期货吧",
+   "route": "search",
+   "kind": "forum",
+   "site": "guba.eastmoney.com",
+   "queries": [
+    "黄金 期货 吧 策略",
+    "原油 期货 吧 交易 方法"
+   ],
+   "why": "retail futures boards"
+  },
+  {
+   "name": "掘金 Juejin",
+   "route": "juejin",
+   "kind": "blog",
+   "queries": [
+    "期货 量化 策略 回测",
+    "黄金 外汇 量化 策略",
+    "因子 挖掘 遗传规划",
+    "高频 因子 期货 分钟"
+   ],
+   "why": "developer community with quant articles; JSON API works"
+  },
+  {
+   "name": "微信公众号 via 搜狗",
+   "route": "sogou",
+   "kind": "blog",
+   "queries": [
+    "黄金 期货 日内 策略 实盘",
+    "期货 高手 访谈 交易系统",
+    "实盘大赛 冠军 复盘",
+    "商品期货 跨期 套利 策略",
+    "外汇 套息 策略 实盘",
+    "股指期货 日内 回转 策略",
+    "夜盘 开盘 效应",
+    "换月 效应 期货"
+   ],
+   "why": "where a large share of Chinese quant writing lives"
+  },
+  {
+   "name": "Bilibili",
+   "route": "bilibili",
+   "kind": "video",
+   "queries": [
+    "期货 高手 访谈 交易 方法",
+    "实盘大赛 冠军 策略",
+    "黄金 期货 日内 策略 讲解",
+    "外汇 黄金 交易 策略 复盘",
+    "商品期货 套利 策略 讲解",
+    "股指期货 日内 交易 系统"
+   ],
+   "transcripts": 6,
+   "why": "lecture and interview video; public subtitles when present"
+  },
+  {
+   "name": "Gitee",
+   "route": "gitee",
+   "kind": "code",
+   "queries": [
+    "量化 期货 策略",
+    "量化交易 因子",
+    "黄金 外汇 策略 回测",
+    "CTA 策略 python",
+    "vnpy 策略"
+   ],
+   "why": "Chinese code host; README claims and licences"
+  },
+  {
+   "name": "中国知网 (CNKI)",
+   "route": "unreachable",
+   "kind": "academic",
+   "site": "cnki.net",
+   "why": "paywalled; recorded so the gap is visible, not silent"
+  },
+  {
+   "name": "note.com / Qiita (JP)",
+   "route": "search",
+   "kind": "blog",
+   "site": "note.com",
+   "queries": [
+    "ゴールド 手法 検証 FX",
+    "ドル円 デイトレ 手法 実績",
+    "システムトレード 検証 ルール 公開"
+   ],
+   "why": "Japanese practitioner write-ups; sibling forest with the same claim grammar"
+  },
+  {
+   "name": "Naver blog (KR)",
+   "route": "search",
+   "kind": "blog",
+   "site": "blog.naver.com",
+   "queries": [
+    "골드 선물 매매 기법 실전",
+    "해외선물 돌파 매매 규칙",
+    "나스닥 선물 데이트레이딩 기법"
+   ],
+   "why": "Korean retail futures practitioners"
+  },
+  {
+   "name": "smart-lab / mfd (RU)",
+   "route": "search",
+   "kind": "forum",
+   "site": "smart-lab.ru",
+   "queries": [
+    "золото стратегия внутридневная правила",
+    "торговая система форекс правила входа выхода",
+    "фьючерс нефть стратегия пробой"
+   ],
+   "why": "Russian trader forum; era archaeology of ru-forex"
+  }
+ ],
+ "engines": [
+  "bing",
+  "duckduckgo"
+ ],
+ "policy": "every claim -> deepening queue kind=story_mechanism with provenance; the worker seat extracts an exact MT5 recipe or rejects; nothing bypasses the gauntlet; discovered URLs feed the world crawler's frontier so the forest keeps growing"
+}

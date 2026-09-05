@@ -90,3 +90,59 @@ def test_unreadable_kill_file_is_latched_not_absent(tmp_path, monkeypatch):
     c = m._clamp_state()
     assert c is not None, "an unreadable rail file must never read as 'no rail latched'"
     assert "UNREADABLE" in c["detail"] or "latched" in c["detail"]
+
+
+def _promotion_row(m, tmp_path, monkeypatch, *, kill: Path | None, fast_track: str) -> dict:
+    """Build the audit and return its `promotion_latency` row, read back from the artifact.
+
+    `_OUT` is redirected to a scratch file and only the shadow read is stubbed, so this never
+    touches the live `web/growth_audit.json` and never asserts against a hook that exists only
+    for the test.
+    """
+    import json as _json
+    monkeypatch.setattr(m, "_KILL", kill if kill is not None else tmp_path / "no-such-kill")
+    out = tmp_path / "growth_audit.json"
+    monkeypatch.setattr(m, "_OUT", out)
+    real_load = m._load
+    monkeypatch.setattr(m, "_load", lambda p: (
+        {"fast_track": fast_track} if "cashcarry_shadow" in str(p) else real_load(p)))
+    m.main()
+    doc = _json.loads(out.read_text("utf-8"))
+    return next(i for i in doc["items"] if i["check"] == "promotion_latency")
+
+
+def test_a_retired_sleeve_is_not_ordered_to_live_capital(tmp_path, monkeypatch):
+    """The gate read a PERMANENTLY RETIRED book and published ACT-NOW / justified_by NONE.
+
+    Measured 2026-08-27: `data/CASHCARRY_KILL` latched since 2026-08-15T20:55 (the sleeve was
+    retired by principal order b0fe6f50 on real capital, and its whole universe is banned by the
+    standing MT5 mandate), while `web/cashcarry_shadow.json` was still rewritten that morning
+    carrying `fast_track: ELIGIBLE ... -> live-promotable`. The audit's own `rule` field tells the
+    reader to close a NONE-gap same-cycle; an organ obeying that promotes a retired book.
+
+    A safety gate that goes stale fails CLOSED and someone notices. An anti-timidity gate that
+    goes stale fails by SHOUTING, which is why this one survived: it agreed with desk doctrine.
+    """
+    m = _mod()
+    k = tmp_path / "CASHCARRY_KILL"
+    k.write_text("live_guard freeze: pager ladder at 4h rung (disarmed)", "utf-8")
+    row = _promotion_row(m, tmp_path, monkeypatch, kill=k,
+                         fast_track="ELIGIBLE (>=40d) -> live-promotable")
+
+    assert row["verdict"] == "RETIRED"
+    assert not row["justified_by"].startswith("NONE"), (
+        "a NONE justification is what `conservatism_defects` is derived from -- a retired sleeve "
+        "must never enter that list")
+    assert "CASHCARRY_KILL" in row["justified_by"], "the justification must name the rail"
+
+
+def test_an_eligible_sleeve_with_no_rail_is_still_ACT_NOW(tmp_path, monkeypatch):
+    """The direction that must never regress. Real foregone growth still shouts."""
+    m = _mod()
+    row = _promotion_row(m, tmp_path, monkeypatch, kill=None,
+                         fast_track="ELIGIBLE (>=40d) -> live-promotable")
+
+    assert row["verdict"] == "ACT-NOW"
+    assert row["justified_by"].startswith("NONE"), (
+        "an eligible sleeve with nothing holding it back is pure foregone growth and the audit "
+        "must keep saying so")

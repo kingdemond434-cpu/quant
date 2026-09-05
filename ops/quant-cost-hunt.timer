@@ -1,0 +1,9 @@
+[Unit]
+Description=Timer for restored organ: cost-hunt
+
+[Timer]
+OnCalendar=*-*-* *:23:00
+Unit=quant-cost-hunt.service
+
+[Install]
+WantedBy=timers.target

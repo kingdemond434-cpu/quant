@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "session": "BRAIN_HUNTER_s41",
+  "screened_at": "2026-08-31T08:11:58Z",
+  "authority": "research-only public-source and static semantics evidence; no promotion or capital authority",
+  "corpora_first": {
+    "source": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "readable_new_mechanisms": 0,
+    "video_fetched": 0,
+    "video_newly_locked": 0,
+    "note": "Four Great Goat rows remained transcript-unavailable and AgonAlpha remained metadata-only; no failed transcript route was retried."
+  },
+  "repair_conversion": {
+    "recommendation_id": "R0011",
+    "verdict": "REJECTED",
+    "reason": "The blanket CDX replay row was stale and crypto-scoped under the MT5/Fusion-only mandate. Its reusable method and same-day negative adjacency are already durable in OP-031; a named MT5/macro endpoint with measured truncation remains eligible for that operator."
+  },
+  "legitimacy_screen": [
+    {
+      "repo": "Henxun/worlquant_alpha",
+      "commit": "a4e467a447306bddfb4991998e767ffb26897ecb",
+      "license": null,
+      "verdict": "LICENSE_WALLED",
+      "body_read": false
+    },
+    {
+      "repo": "Anikesh-99/wq_alpha_research",
+      "commit": "83ed787dc73e0141a3b3cafe7fa83a089f00de50",
+      "license": null,
+      "verdict": "LICENSE_WALLED",
+      "body_read": false,
+      "advertised_claim": "approximately 400 simulations; 259 tested to 30 survivors",
+      "claim_disposition": "UNINSPECTED_ORE; the failure cohort was not opened"
+    },
+    {
+      "repo": "mingu0822/WorldQuantBrain---tools",
+      "commit": "53307ce30001b0df8f369143c078cd12d73f4c44",
+      "license": null,
+      "verdict": "LICENSE_WALLED",
+      "body_read": false
+    },
+    {
+      "repo": "YungTingKai/Worldquant-BRAIN-alpha-generator",
+      "commit": "7f7112972b09fd68f68a319c0d8a70bd56a5a125",
+      "license": null,
+      "verdict": "LICENSE_WALLED",
+      "body_read": false
+    },
+    {
+      "repo": "nutdnuy/worldquant-brain-public-knowledge",
+      "commit": null,
+      "license": null,
+      "verdict": "EMPTY_OR_UNBORN_AND_LICENSE_WALLED",
+      "body_read": false,
+      "evidence": "repository metadata exists; root contents and license endpoints both returned 404"
+    },
+    {
+      "repo": "zc6600/worldquant-brain-hub",
+      "commit": "26dfde88d6a3f014b554b6a71d5d0f1aca63e764",
+      "license": "MIT",
+      "verdict": "EMPTY_LICENSE_ONLY",
+      "body_read": true,
+      "evidence": "root contains LICENSE only"
+    }
+  ],
+  "licensed_static_screens": [
+    {
+      "repo": "0xceb1/brain-learn",
+      "commit": "0612662b1b16c9ca8eba73cb6ae04e7ec5818c43",
+      "license": "MIT",
+      "source_type": "genetic-programming BRAIN client",
+      "third_party_code_executed": false,
+      "findings": [
+        {
+          "id": "BH-S41-F1",
+          "verdict": "REFUTED_INITIAL_GENERATION_EVALUATION",
+          "static_trace": [
+            "_initialize_population adds every new expression to evaluated_expressions",
+            "evolve selects fitness-is-None members for evaluation",
+            "parallel_evaluate_fitness removes every expression already in evaluated_expressions"
+          ],
+          "measured_consequence": "all N random initial candidates are filtered from the evaluator; their fitness is then set to -infinity. Supplied seed programs follow the same pre-mark path.",
+          "confidence": 0.99,
+          "uncertainty": "static path inspection; the third-party package was deliberately not executed"
+        },
+        {
+          "id": "BH-S41-F2",
+          "verdict": "REFUTED_SEED_MEMORY",
+          "static_trace": "_save_to_initial_population receives rpn but never appends or serializes it; it moves the prior file to .bak and pickles an empty list",
+          "measured_consequence": "every threshold-qualified save produces an empty active seed file, so the advertised evolutionary memory cannot seed the next run",
+          "confidence": 0.99,
+          "uncertainty": "static path inspection"
+        },
+        {
+          "id": "BH-S41-F3",
+          "verdict": "REFUTED_UNIT_ALGEBRA",
+          "static_trace": "DIV declares its output unit as x*y rather than x/y",
+          "measured_consequence": "dimension validation can reject a valid ratio or certify the wrong dimensional identity before BRAIN evaluates it",
+          "confidence": 0.99,
+          "uncertainty": "the downstream frequency on generated trees is unmeasured"
+        }
+      ],
+      "refused_imports": [
+        "hard-coded Hall-of-Fame Sharpe/Fitness thresholds",
+        "BRAIN account concurrency constants",
+        "authenticated API execution",
+        "pickle seed format"
+      ]
+    },
+    {
+      "repo": "Milkyway688/wq_auto_backtests",
+      "commit": "db9c40c544f38f6b1a8ec4f55ccc1bf091afebb4",
+      "license": "Apache-2.0",
+      "source_type": "template-by-datafield BRAIN simulation pipeline",
+      "third_party_code_executed": false,
+      "findings": [
+        {
+          "id": "BH-S41-F4",
+          "verdict": "REFUTED_EXPERIMENT_IDENTITY",
+          "static_trace": "load_tested_expressions and filter_untested deduplicate on expression alone although each payload carries simulation settings",
+          "measured_consequence": "the same construction under a different universe, delay, neutralization or other setting is silently treated as already tested",
+          "confidence": 0.99,
+          "uncertainty": "frequency depends on the user's configuration population"
+        },
+        {
+          "id": "BH-S41-F5",
+          "verdict": "REFUTED_BATCH_CONSERVATION",
+          "static_trace": "_resolve_group iterates zip(group, children) without asserting equal cardinality",
+          "measured_consequence": "if the API returns fewer child IDs than submitted payloads, the unmatched tail has no outcome row and disappears from every denominator",
+          "confidence": 0.99,
+          "uncertainty": "the public source supplies no observed child-shortfall rate"
+        },
+        {
+          "id": "BH-S41-F6",
+          "verdict": "REFUTED_DURABLE_FAILURE_LEDGER",
+          "static_trace": "batch group-submit failures append rows to in-memory results but not pending_save; only pending_save is flushed to SQLite/CSV",
+          "measured_consequence": "failed submitted cells can appear in the terminal report yet be absent from the durable trial ledger",
+          "confidence": 0.99,
+          "uncertainty": "the number lost per run equals the payloads in failed batch submissions"
+        },
+        {
+          "id": "BH-S41-F7",
+          "verdict": "REFUTED_FULL_POPULATION_REPORTING",
+          "static_trace": "single mode returns immediately after three consecutive errors without emitting typed rows for the unattempted remainder",
+          "measured_consequence": "a preregistered population is censored by submission order unless the remainder is explicitly conserved as deferred/unattempted",
+          "confidence": 0.99,
+          "uncertainty": "batch mode follows a different path and does not use this breaker"
+        }
+      ],
+      "refused_imports": [
+        "BRAIN check outcomes as desk pass/fail authority",
+        "quality labels and thresholds",
+        "private pre-gauntlet field filters",
+        "authenticated API execution"
+      ]
+    }
+  ],
+  "mt5_fusion_translation": {
+    "translate_to_mt5_calls": {
+      "genetic programming trial conservation": [],
+      "simulation payload identity settings data vintage": [],
+      "point in time full population trial ledger": []
+    },
+    "disposition": "These are research-process failures, not market mechanisms. Their exact Fusion analogue is the terminal-enumerated candidate population keyed by symbol, family, parameters, side, session/horizon, preregistered regime, constructor/code hash, resolved config, PIT data snapshot and executable cost-model version. Every planned cell must retain a typed outcome through the canonical ten gates; no private threshold transfers.",
+    "execution_fields_if_a_candidate_is_later_created": [
+      "point-in-time bid and ask",
+      "Fusion spread and commission",
+      "realised slippage and partial-fill markout",
+      "swap/financing",
+      "symbol contract specification"
+    ],
+    "timeframe": "methodology applies to every preregistered Fusion timeframe; none was selected or tested in this session"
+  },
+  "trial_accounting": {
+    "desk_constructions": 0,
+    "target_horizon_cells": 0,
+    "tradeable_cards": 0,
+    "survivors": 0
+  },
+  "screen_counts": {
+    "repositories": 8,
+    "license_walled_or_unborn": 5,
+    "licensed_empty": 1,
+    "licensed_semantics_carriers": 2,
+    "static_failure_findings": 7,
+    "new_operators": 0,
+    "new_data_axes": 0,
+    "new_venues": 0
+  },
+  "provenance": {
+    "source": "public GitHub repository metadata, license endpoints and permissively licensed source text",
+    "derives_from": "data/brain_hunter_s40_legitimacy_queue_screen.json next_unexhausted_ground plus data/brain_hunter_s31_repo_triage.json",
+    "additional_derives_from": "NONE (checked)",
+    "credentialed_brain_content_accessed": false,
+    "third_party_code_executed": false
+  },
+  "next_unexhausted_ground": [
+    "continue the measured permissive-license queue at talingaur/quant-research-model-WorldQuant and ThinhPhan0108/wq-brain-alpha-analytics",
+    "follow 0xceb1/brain-learn's gplearn author/citation graph for failure-preserving GP alternatives",
+    "run the existing Rsquare conditioner when shared compute is quiet"
+  ]
+}

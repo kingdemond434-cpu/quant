@@ -1,0 +1,15 @@
+[
+  {
+    "source": "cnn_fear_greed",
+    "type": "sentiment_reading",
+    "reading": "neutral",
+    "score": 35.7142857142857,
+    "rating": "fear",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.3,
+    "description": "Fear & Greed: 35.7142857142857 (fear)"
+  }
+]

@@ -110,3 +110,47 @@ HEAT_HARD_CEILING = 0.30
 #: cheapest place to park a budget you do not believe in. A mandate without this bound funds the
 #: flattest row in the matrix, not the book.
 MAX_SLEEVE_HEAT_SHARE = 0.25
+
+#: No single MECHANISM may hold more than this share of total heat.
+#:
+#: MEASURED 2026-09-02: the solved book put 97% of its heat into `overnight_gap_decay` across
+#: seven exotic crosses. DISCOVERY DID NOT CAUSE THAT -- the family is 232 of 23,465 docket cells
+#: (0.99%), against 20,341 from the family-free searcher, and it holds 12 of 65 certificates.
+#: Nothing directs the search at it. The ALLOCATOR concentrated, because that family's replayed
+#: edge was the largest among the sleeves it could price.
+#:
+#: THE REDUNDANCY TERM CANNOT SEE THIS. It charges pairwise correlation of daily returns, and
+#: seven gap sleeves on different currency pairs genuinely are weakly correlated day to day. They
+#: also share one mechanism and one fill hour (01:00, the thinnest book of the session), so they
+#: fail TOGETHER on a liquidity event that no daily correlation contains. That is the factor
+#: duplication and tail co-failure the mandate asks to penalise, and it needs a CONSTRAINT rather
+#: than a price: a penalty is something growth can outbid.
+#:
+#: 60%, MEASURED (2026-09-04). The cap was 40% on the reasoning above, which is sound about WHY a
+#: constraint is needed and was a guess about WHERE it belongs. Swept on the live 126-sleeve
+#: universe at the 30% heat ceiling, every axis peaks or bottoms together at 60%:
+#:
+#:     famcap   ann %    robust      cvar     P(loss)  histDD  legs   d growth
+#:       40%    322.1   0.00123   -0.00049    0.062    27.8%    13
+#:       50%    427.8   0.00217   -0.00021    0.062    26.8%    12     +53.0
+#:       55%    482.7   0.00261   -0.00012    0.062    25.6%    11     +54.9
+#:       60%    543.3   0.00304   -0.00010    0.047    25.3%    11     +60.6   <-- optimum
+#:       65%    610.5   0.00344   -0.00017    0.047    27.2%    10     +67.2
+#:       70%    657.3   0.00369   -0.00026    0.047    28.5%     8     +46.8
+#:       80%    657.3   0.00369   -0.00026    0.047    28.5%     8      +0.0
+#:
+#: 40% WAS DOMINATED, not merely conservative: 60% carries +221pp of annual growth with LOWER
+#: drawdown (25.3% vs 27.8%), a less negative tail and a lower probability of annual loss. A
+#: constraint that costs growth AND worsens the tail is not buying safety with return; it is
+#: simply mis-sited.
+#:
+#: WHY NOT FURTHER, WHICH IS THE HALF THAT MATTERS. Past 60% the trade inverts: at 65% CVaR
+#: worsens and drawdown climbs back, and at 70% the book collapses from 11 sleeves to 8 for the
+#: SMALLEST marginal gain in the table. 80% and 101% are byte-identical to 70%, which means the
+#: cap has stopped binding there -- that concentration is the solver's own choice, and the
+#: original argument applies to it exactly: seven sleeves sharing one mechanism and one 01:00
+#: fill hour fail together on a liquidity event no daily correlation contains.
+#:
+#: So the constraint stays, and still forces several independent mechanisms to be right. It is
+#: now placed where the evidence puts it rather than where it felt prudent.
+MAX_FAMILY_HEAT_SHARE = 0.60

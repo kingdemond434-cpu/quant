@@ -1,6 +1,6 @@
 {
  "_": "HIGH-WATER MARK for prompt invariants -- the RULES each governed prompt asserts, not its wording. Raised automatically when a prompt gains a rule; NEVER lowered by code. A prompt may be rewritten, shortened, sharpened or translated freely; it may not silently stop asserting a rule it once asserted. The only way to retire one is a dated, signed, argued entry in PROMPT_RATCHET_WAIVERS.json -- editing the prompt's prose retires nothing. The quoted text under each invariant is the sentence that carried it when the mark was set, so a later drop can be reported as a diff rather than as an accusation. See libs/doctrine/prompt_ratchet.py for how the catalogue was derived and -- stated there plainly -- for what this cannot prove: it guarantees NON-REGRESSION, never that a rewrite is SHARPER.",
- "updated": "2026-08-05T13:43:03.440233+00:00",
+ "updated": "2026-08-28T09:38:59.364755+00:00",
  "invariants": {
   "legitimacy-gate": "Sources must be public and licensed; a forbidding licence is a HARD STOP, never a hurdle, and cracked or closed-group material is never touched in any language.",
   "no-route-around-access": "Discovery widens WHERE you look, never HOW you get in: never route around a venue's own access control.",
@@ -33,8 +33,8 @@
   "exhaustion-mandate": "Every pasted prompt file carries the EXHAUSTION MANDATE block -- the human paste-path gets the same doctrine the code path injects."
  },
  "totals": {
-  "prompts": 30,
-  "invariant_slots": 331
+  "prompts": 31,
+  "invariant_slots": 334
  },
  "high_water": {
   "ops/CRO_CONSTITUTION.md": {
@@ -87,7 +87,7 @@
   "ops/frontier_ar_prompt.txt": {
    "count": 16,
    "invariants": {
-    "coverage-counts-families": "sts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
+    "coverage-counts-families": "osts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
     "gauntlet-only-rejects": "ecides it. So read it all, extract what is usable, and let the GAUNTLET reject. The gauntlet is measured (docs/research/gate_p",
     "language-blind": "w docs/research/FRONTIER_MINER_TEMPLATE.md discipline. Language-blind, anti-consensus: prioritize code-included practitioner",
     "legitimacy-gate": "ONLY TWO LIMITS, and neither is a scope limit: (1) the \u00a713 legitimacy gate -- public and licensed sources only; a",
@@ -97,18 +97,18 @@
     "no-route-around-access": "group, a forbidding licence is a HARD STOP), and never route around a venue's own access control. Discovery widens WHERE y",
     "no-third-party-tooling": "to docs/research/improvement_inbox.md as ENGINE ideas. NEVER install or run third-party agent tooling on desk hardware (supply",
     "null-over-padding": "hain that makes exhaustion achievable ACROSS runs. - A NULL IS A RESULT, NEVER A REASON TO SLOW: an empty seam documented is w",
-    "research-only-freeze": "eak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
-    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is screened or",
+    "research-only-freeze": "weak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
+    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is 1. BACKTEST",
     "seat-exhaustion-false": "e \"done\" exists, and claiming it is a DELIVERABLE. SEAT-EXHAUSTION IS ALWAYS FALSE. There is no state in which your groun",
-    "source-class-universality": "uctures, untested alphas, video info, everything\") === NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
-    "survival-rails-untouchable": "es target. UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
+    "source-class-universality": "ese AI quants, datasets, AI quant structures, untested NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
+    "survival-rails-untouchable": "ver changes UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
     "write-as-you-go": "IS RUN. Update that note as each item resolves -- never hold findings in context to write at the end. If you are killed mid-run, t"
    }
   },
   "ops/frontier_br_prompt.txt": {
    "count": 16,
    "invariants": {
-    "coverage-counts-families": "sts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
+    "coverage-counts-families": "osts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
     "gauntlet-only-rejects": "ecides it. So read it all, extract what is usable, and let the GAUNTLET reject. The gauntlet is measured (docs/research/gate_p",
     "language-blind": "w docs/research/FRONTIER_MINER_TEMPLATE.md discipline. Language-blind, anti-consensus: prioritize code-included practitioner",
     "legitimacy-gate": "ONLY TWO LIMITS, and neither is a scope limit: (1) the \u00a713 legitimacy gate -- public and licensed sources only; a",
@@ -118,18 +118,18 @@
     "no-route-around-access": "group, a forbidding licence is a HARD STOP), and never route around a venue's own access control. Discovery widens WHERE y",
     "no-third-party-tooling": "to docs/research/improvement_inbox.md as ENGINE ideas. NEVER install or run third-party agent tooling on desk hardware (supply",
     "null-over-padding": "hain that makes exhaustion achievable ACROSS runs. - A NULL IS A RESULT, NEVER A REASON TO SLOW: an empty seam documented is w",
-    "research-only-freeze": "eak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
-    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is screened or",
+    "research-only-freeze": "weak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
+    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is 1. BACKTEST",
     "seat-exhaustion-false": "e \"done\" exists, and claiming it is a DELIVERABLE. SEAT-EXHAUSTION IS ALWAYS FALSE. There is no state in which your groun",
-    "source-class-universality": "uctures, untested alphas, video info, everything\") === NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
-    "survival-rails-untouchable": "es target. UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
+    "source-class-universality": "ese AI quants, datasets, AI quant structures, untested NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
+    "survival-rails-untouchable": "ver changes UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
     "write-as-you-go": "IS RUN. Update that note as each item resolves -- never hold findings in context to write at the end. If you are killed mid-run, t"
    }
   },
   "ops/frontier_cn_prompt.txt": {
    "count": 16,
    "invariants": {
-    "coverage-counts-families": "sts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
+    "coverage-counts-families": "osts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
     "gauntlet-only-rejects": "a tone, or a smell. Extract value from every page and let the GAUNTLET do the rejecting -- that is what it is for, it is now",
     "language-blind": "w docs/research/FRONTIER_MINER_TEMPLATE.md discipline. Language-blind, anti-consensus: prioritize code-included practitioner",
     "legitimacy-gate": "ONLY TWO LIMITS, and neither is a scope limit: (1) the \u00a713 legitimacy gate -- public and licensed sources only; a",
@@ -139,18 +139,18 @@
     "no-route-around-access": "group, a forbidding licence is a HARD STOP), and never route around a venue's own access control. Discovery widens WHERE y",
     "no-third-party-tooling": "to docs/research/improvement_inbox.md as ENGINE ideas. NEVER install or run third-party agent tooling on desk hardware (supply",
     "null-over-padding": "hain that makes exhaustion achievable ACROSS runs. - A NULL IS A RESULT, NEVER A REASON TO SLOW: an empty seam documented is w",
-    "research-only-freeze": "eak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
-    "screen-on-discovery": "s a candidate axis (route to data_axis_watchlist, screen-on-discovery in the SAME run, mechanism prior first. Do NOT br",
+    "research-only-freeze": "weak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
+    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is 1. BACKTEST",
     "seat-exhaustion-false": "e \"done\" exists, and claiming it is a DELIVERABLE. SEAT-EXHAUSTION IS ALWAYS FALSE. There is no state in which your groun",
-    "source-class-universality": "uctures, untested alphas, video info, everything\") === NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
-    "survival-rails-untouchable": "es target. UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
+    "source-class-universality": "ese AI quants, datasets, AI quant structures, untested NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
+    "survival-rails-untouchable": "ver changes UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
     "write-as-you-go": "IS RUN. Update that note as each item resolves -- never hold findings in context to write at the end. If you are killed mid-run, t"
    }
   },
   "ops/frontier_en_prompt.txt": {
    "count": 16,
    "invariants": {
-    "coverage-counts-families": "sts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
+    "coverage-counts-families": "osts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
     "gauntlet-only-rejects": "ecides it. So read it all, extract what is usable, and let the GAUNTLET reject. The gauntlet is measured (docs/research/gate_p",
     "language-blind": "w docs/research/FRONTIER_MINER_TEMPLATE.md discipline. Language-blind, anti-consensus: prioritize code-included practitioner",
     "legitimacy-gate": "ONLY TWO LIMITS, and neither is a scope limit: (1) the \u00a713 legitimacy gate -- public and licensed sources only; a",
@@ -160,18 +160,18 @@
     "no-route-around-access": "group, a forbidding licence is a HARD STOP), and never route around a venue's own access control. Discovery widens WHERE y",
     "no-third-party-tooling": "to docs/research/improvement_inbox.md as ENGINE ideas. NEVER install or run third-party agent tooling on desk hardware (supply",
     "null-over-padding": "hain that makes exhaustion achievable ACROSS runs. - A NULL IS A RESULT, NEVER A REASON TO SLOW: an empty seam documented is w",
-    "research-only-freeze": "eak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
-    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is screened or",
+    "research-only-freeze": "weak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
+    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is 1. BACKTEST",
     "seat-exhaustion-false": "e \"done\" exists, and claiming it is a DELIVERABLE. SEAT-EXHAUSTION IS ALWAYS FALSE. There is no state in which your groun",
-    "source-class-universality": "uctures, untested alphas, video info, everything\") === NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
-    "survival-rails-untouchable": "es target. UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
+    "source-class-universality": "ese AI quants, datasets, AI quant structures, untested NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
+    "survival-rails-untouchable": "ver changes UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
     "write-as-you-go": "IS RUN. Update that note as each item resolves -- never hold findings in context to write at the end. If you are killed mid-run, t"
    }
   },
   "ops/frontier_jp_prompt.txt": {
    "count": 16,
    "invariants": {
-    "coverage-counts-families": "sts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
+    "coverage-counts-families": "osts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
     "gauntlet-only-rejects": "ecides it. So read it all, extract what is usable, and let the GAUNTLET reject. The gauntlet is measured (docs/research/gate_p",
     "language-blind": "w docs/research/FRONTIER_MINER_TEMPLATE.md discipline. Language-blind, anti-consensus: prioritize code-included practitioner",
     "legitimacy-gate": "ONLY TWO LIMITS, and neither is a scope limit: (1) the \u00a713 legitimacy gate -- public and licensed sources only; a",
@@ -181,18 +181,18 @@
     "no-route-around-access": "group, a forbidding licence is a HARD STOP), and never route around a venue's own access control. Discovery widens WHERE y",
     "no-third-party-tooling": "to docs/research/improvement_inbox.md as ENGINE ideas. NEVER install or run third-party agent tooling on desk hardware (supply",
     "null-over-padding": "hain that makes exhaustion achievable ACROSS runs. - A NULL IS A RESULT, NEVER A REASON TO SLOW: an empty seam documented is w",
-    "research-only-freeze": "eak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
-    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is screened or",
+    "research-only-freeze": "weak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
+    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is 1. BACKTEST",
     "seat-exhaustion-false": "e \"done\" exists, and claiming it is a DELIVERABLE. SEAT-EXHAUSTION IS ALWAYS FALSE. There is no state in which your groun",
-    "source-class-universality": "uctures, untested alphas, video info, everything\") === NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
-    "survival-rails-untouchable": "es target. UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
+    "source-class-universality": "ese AI quants, datasets, AI quant structures, untested NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
+    "survival-rails-untouchable": "ver changes UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
     "write-as-you-go": "IS RUN. Update that note as each item resolves -- never hold findings in context to write at the end. If you are killed mid-run, t"
    }
   },
   "ops/frontier_kr_prompt.txt": {
    "count": 16,
    "invariants": {
-    "coverage-counts-families": "sts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
+    "coverage-counts-families": "osts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
     "gauntlet-only-rejects": "ecides it. So read it all, extract what is usable, and let the GAUNTLET reject. The gauntlet is measured (docs/research/gate_p",
     "language-blind": "w docs/research/FRONTIER_MINER_TEMPLATE.md discipline. Language-blind, anti-consensus: prioritize code-included practitioner",
     "legitimacy-gate": "ONLY TWO LIMITS, and neither is a scope limit: (1) the \u00a713 legitimacy gate -- public and licensed sources only; a",
@@ -202,18 +202,18 @@
     "no-route-around-access": "group, a forbidding licence is a HARD STOP), and never route around a venue's own access control. Discovery widens WHERE y",
     "no-third-party-tooling": "to docs/research/improvement_inbox.md as ENGINE ideas. NEVER install or run third-party agent tooling on desk hardware (supply",
     "null-over-padding": "hain that makes exhaustion achievable ACROSS runs. - A NULL IS A RESULT, NEVER A REASON TO SLOW: an empty seam documented is w",
-    "research-only-freeze": "eak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
-    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is screened or",
+    "research-only-freeze": "weak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
+    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is 1. BACKTEST",
     "seat-exhaustion-false": "e \"done\" exists, and claiming it is a DELIVERABLE. SEAT-EXHAUSTION IS ALWAYS FALSE. There is no state in which your groun",
-    "source-class-universality": "uctures, untested alphas, video info, everything\") === NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
-    "survival-rails-untouchable": "es target. UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
+    "source-class-universality": "ese AI quants, datasets, AI quant structures, untested NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
+    "survival-rails-untouchable": "ver changes UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
     "write-as-you-go": "IS RUN. Update that note as each item resolves -- never hold findings in context to write at the end. If you are killed mid-run, t"
    }
   },
   "ops/frontier_ru_prompt.txt": {
    "count": 16,
    "invariants": {
-    "coverage-counts-families": "sts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
+    "coverage-counts-families": "osts you nothing to attempt. BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve findings from one",
     "gauntlet-only-rejects": "ecides it. So read it all, extract what is usable, and let the GAUNTLET reject. The gauntlet is measured (docs/research/gate_p",
     "language-blind": "w docs/research/FRONTIER_MINER_TEMPLATE.md discipline. Language-blind, anti-consensus: prioritize code-included practitioner",
     "legitimacy-gate": "ONLY TWO LIMITS, and neither is a scope limit: (1) the \u00a713 legitimacy gate -- public and licensed sources only; a",
@@ -223,12 +223,19 @@
     "no-route-around-access": "group, a forbidding licence is a HARD STOP), and never route around a venue's own access control. Discovery widens WHERE y",
     "no-third-party-tooling": "to docs/research/improvement_inbox.md as ENGINE ideas. NEVER install or run third-party agent tooling on desk hardware (supply",
     "null-over-padding": "hain that makes exhaustion achievable ACROSS runs. - A NULL IS A RESULT, NEVER A REASON TO SLOW: an empty seam documented is w",
-    "research-only-freeze": "eak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
-    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is screened or",
+    "research-only-freeze": "weak signals to docs/research/weak_signal_registry.md. RESEARCH ONLY (freeze): write docs/research/* and data/* catalogs ON",
+    "screen-on-discovery": "ver cracked/closed-group) and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is 1. BACKTEST",
     "seat-exhaustion-false": "e \"done\" exists, and claiming it is a DELIVERABLE. SEAT-EXHAUSTION IS ALWAYS FALSE. There is no state in which your groun",
-    "source-class-universality": "uctures, untested alphas, video info, everything\") === NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
-    "survival-rails-untouchable": "es target. UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
+    "source-class-universality": "ese AI quants, datasets, AI quant structures, untested NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WH",
+    "survival-rails-untouchable": "ver changes UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth, sources or ses",
     "write-as-you-go": "IS RUN. Update that note as each item resolves -- never hold findings in context to write at the end. If you are killed mid-run, t"
+   }
+  },
+  "ops/frontier_unified_prompt.txt": {
+   "count": 2,
+   "invariants": {
+    "legitimacy-gate": "s and never throttles mining; permanent free-frontier; \u00a713 legitimacy hard-stops; social proof is never evidence)",
+    "no-quota-no-ceiling": "u take -- an earlier version said \"1-3\" and that was a quota in disguise, the exact defect this prompt names two paragraphs dow"
    }
   },
   "ops/litminer_dig_prompt.txt": {
@@ -252,23 +259,24 @@
    }
   },
   "ops/principal_doctrine.txt": {
-   "count": 15,
+   "count": 16,
    "invariants": {
-    "all-trials-reported": "nominated and an FX-denominated build are BOTH trials; reporting only the winner is garden-of-forking-paths p-hacking. (4) DECLARE TIME",
-    "legitimacy-gate": "en was REFUTED at full 8.2y depth by those same gates. \u00a713 legitimacy is absolute in every language: a licence fo",
-    "negatives-are-deliverables": "ORWARD CLOCK, never a cent; only Stage B promotes. (6) NEGATIVE SCREENS ARE FIRST-CLASS DELIVERABLES. GATE-OPTIMALITY DUTY: t",
+    "all-trials-reported": "very target-horizon cell tried is a counted trial, and reporting only the winner is garden-of-forking-paths p-hacking. Selective report",
+    "legitimacy-gate": "ers; rank by reverse-engineering cost per unit effort; \u00a713 legitimacy is absolute in every language. **L1.12** no",
+    "negatives-are-deliverables": "ecute. A sixth, stated here for a different reason: **NEGATIVE SCREENS ARE FIRST-CLASS DELIVERABLES** \u2014 refutations and grade",
     "never-loosen-the-bar": "n reducing it. The rails are a growth argument and are never loosened; every other conservative proposal must name the rui",
-    "no-quota-no-ceiling": "e you would stop; NAME THE NEXT GROUND before closing; NEVER CAP YOURSELF. NOTHING RECOMMENDED IS EVER FORGOTTEN (L2.3 + L2.7 --",
-    "no-third-party-tooling": "installed or run on desk hardware: mine them as TEXT, supply-chain rule); NICHE AI-QUANT COMMUNITIES explicitly including the",
-    "nothing-is-complete": "a clamp must cite QUANTIFIED ruin risk and an explicit lifting condition or be removed); timidity on proven edge and recklessne",
-    "screen-on-discovery": "TY are first-class objectives, not support functions. SCREEN-ON-DISCOVERY DUTY (closes the catalog-and-stop leak). DISCOVERING A",
-    "seat-exhaustion-false": "EXHAUSTED with a date so no seat re-surface-scans it). SEAT-EXHAUSTION IS ALWAYS FALSE: 'the forest is thin here' is a findin",
-    "sole-objective": "e expected lifetime geometric growth of capital -- max E[log(W_T)] -- as aggressively as the evidence permits, comp",
-    "source-class-universality": "SOURCE CARRIES INFORMATION A COMPETITOR WOULD HAVE TO PAY TO RECONSTRUCT, IT IS IN SCOPE, regardless of format, language, age,",
-    "survival-rails-untouchable": "uman less and less. SURVIVAL RAILS (L1.23): ruin <=2%, Tier-3 rails untouchable, size only on proven edge (Kelly-shrunk) -",
-    "unmeasured-is-not-ok": "e are running at 60% and that seems fine\" is a DEFECT. UNMEASURED UTILISATION COUNTS AS ZERO UTILISATION. || THE ONLY LEGITIMATE IDLE HEADROOM: an",
-    "verify-then-claim": "e probe battery (same patterns file), verifying with a FRESH READ; bare \"verified/fine/looks good\" without a named artif",
-    "zero-promotion-authority": "very cross-source series and flag look-ahead risk. (5) ZERO PROMOTION AUTHORITY -- Stage A earns a pre-registered FORWARD CLOCK, never"
+    "no-fabricated-results": "ainly that it cannot be built today. - Report plainly; never fabricate a fix or claim something works without verifying it ag",
+    "no-quota-no-ceiling": "ey are restored at full strength, not summarised: - **NO QUOTA, NO CEILING.** Depth per item AND number of items are",
+    "no-third-party-tooling": "missing was never named. - **NO THIRD-PARTY TOOLING.** Never install or run third-party agent tooling on desk hardware \u2014 mine it",
+    "nothing-is-complete": "clamp must cite a QUANTIFIED ruin risk and an explicit lifting condition or be removed. Under-sizing a proven edge, holding idl",
+    "screen-on-discovery": "L1.28b** conversion parity \u2014 finding without fixing is half a deliverable. **L1.28c** cadence is aggression \u2014 every schedule hun",
+    "seat-exhaustion-false": "is precisely how idle capacity survives an audit. - **SEAT-EXHAUSTION IS ALWAYS FALSE.** SECTION-exhaustion is real and is c",
+    "sole-objective": "every answer you give) === THE SOLE OBJECTIVE: max_pi E[log W_T] -- maximise the expected log of terminal wealth.",
+    "source-class-universality": "rld, and it is how a miner quietly retires itself. - **NO SOURCE CLASS is out of scope for any seat.** The standing test is w",
+    "survival-rails-untouchable": "d less. **L1.23 SURVIVAL RAILS (sealed)** \u2014 ruin \u2264 2%, Tier-3 rails untouchable, size only on proven edge, Kelly-shrunk. *",
+    "unmeasured-is-not-ok": "OUNTS AS ZERO.** Unmeasured never reads as healthy: an unmeasured utilisation, conversion or birth rate COUNTS AS ZERO, not as fin",
+    "verify-then-claim": "claim something works without verifying it against a fresh read (path + value cited together). - **The box** (`ubuntu-",
+    "zero-promotion-authority": "th zero promotion authority; promotion comes only from pre-registered forward evidence, Holm-corrected, concurrent slots capped (`MA"
    }
   },
   "ops/prospector_dig_prompt.txt": {

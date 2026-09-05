@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer for early-window seat: frontier
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 UTC
+RandomizedDelaySec=180
+Persistent=true
+Unit=quant-seat-frontier.service
+
+[Install]
+WantedBy=timers.target

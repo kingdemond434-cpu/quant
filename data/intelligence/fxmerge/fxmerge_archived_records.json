@@ -1,0 +1,1759 @@
+{
+ "ts": "2026-08-27T10:38:03.665026+00:00",
+ "source": "web.archive.org CDX of fxmerge.com/strategies-results (section removed from the live site)",
+ "rows": [
+  {
+   "account_id": "1013718",
+   "url": "https://www.fxmerge.com/strategies-results/1013718/ea-stabil-profit-berkah",
+   "snapshot": "20250524152659",
+   "text_len": 3752,
+   "gain": "1,979.43",
+   "daily": "2.19",
+   "monthly": "197.06",
+   "drawdown": "0.00",
+   "broker": "Headway",
+   "platform": "MT5",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:2000",
+   "trades": "0.00",
+   "owner": "eastabil",
+   "name": "EA STABIL PROFIT BERKAH \u00ae",
+   "placeholder_fields": 24
+  },
+  {
+   "account_id": "10407",
+   "url": "https://www.fxmerge.com/strategies-results/10407/euronis-com-contact",
+   "snapshot": "20220625163030",
+   "text_len": 3797,
+   "gain": "573.99",
+   "daily": "0.08",
+   "monthly": "22.63",
+   "drawdown": "40.84",
+   "broker": "XM",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:200",
+   "trades": "1.28",
+   "owner": null,
+   "name": "Euronis.com/contact",
+   "placeholder_fields": 29
+  },
+  {
+   "account_id": "1047051",
+   "url": "https://fxmerge.com/strategies-results/1047051/ea-goldlover",
+   "snapshot": "20241006023822",
+   "text_len": 3534,
+   "gain": "1,602.73",
+   "daily": "4.08",
+   "monthly": "105.90",
+   "drawdown": "0.00",
+   "broker": "FBS",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:1000",
+   "trades": "0.00",
+   "owner": "eastabil",
+   "name": "EA GOLDLOVER\u00ae",
+   "placeholder_fields": 33
+  },
+  {
+   "account_id": "1048424",
+   "url": "https://fxmerge.com/strategies-results/1048424/ea-goldlover-928",
+   "snapshot": "20250116193113",
+   "text_len": 3544,
+   "gain": "1,350.66",
+   "daily": "2.17",
+   "monthly": "152.42",
+   "drawdown": "0.00",
+   "broker": "Headway",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:2000",
+   "trades": "0.00",
+   "owner": "eastabil",
+   "name": "EA GOLDLOVER\u00ae 928",
+   "placeholder_fields": 33
+  },
+  {
+   "account_id": "1065008",
+   "url": "https://fxmerge.com/strategies-results/1065008/ea-goldlover-44",
+   "snapshot": "20250116184801",
+   "text_len": 3619,
+   "gain": "1,634.53",
+   "daily": "2.20",
+   "monthly": "188.87",
+   "drawdown": "1.17",
+   "broker": "Headway",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:2000",
+   "trades": "125.41",
+   "owner": "eastabil",
+   "name": "EA GOLDLOVER\u00ae 44",
+   "placeholder_fields": 24
+  },
+  {
+   "account_id": "1088385",
+   "url": "https://fxmerge.com/strategies-results/1088385/news-ea",
+   "snapshot": "20250218083756",
+   "text_len": 3769,
+   "gain": "1,602.72",
+   "daily": "0.21",
+   "monthly": "48.31",
+   "drawdown": "15.70",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.79",
+   "owner": "mqlblue",
+   "name": "News EA",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1094719",
+   "url": "https://fxmerge.com/strategies-results/1094719/ea-sugih-barakah",
+   "snapshot": "20250116173743",
+   "text_len": 3563,
+   "gain": "1,359.38",
+   "daily": "0.07",
+   "monthly": "5.14",
+   "drawdown": "26.71",
+   "broker": "FBS",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "23.89",
+   "owner": "eastabil",
+   "name": "EA SUGIH BARAKAH",
+   "placeholder_fields": 33
+  },
+  {
+   "account_id": "1158868",
+   "url": "https://www.fxmerge.com/strategies-results/1158868/active-gold-hunter-agh",
+   "snapshot": "20250524155756",
+   "text_len": 6214,
+   "gain": "1,083.72",
+   "daily": "0.42",
+   "monthly": "21.93",
+   "drawdown": "18.59",
+   "broker": "FBS",
+   "platform": "MT4",
+   "trading": "Fundamental Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.54",
+   "owner": "ActiveTrader",
+   "name": "Active Gold Hunter (AGH)",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1159034",
+   "url": "https://www.fxmerge.com/strategies-results/1159034/active-forex-hunter-afh",
+   "snapshot": "20250524161310",
+   "text_len": 6527,
+   "gain": "206.37",
+   "daily": "0.04",
+   "monthly": "6.35",
+   "drawdown": "8.95",
+   "broker": "JustMarkets",
+   "platform": "MT4",
+   "trading": "Fundamental Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:1000",
+   "trades": "2.96",
+   "owner": "ActiveTrader",
+   "name": "Active Forex Hunter (AFH)",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1162205",
+   "url": "https://www.fxmerge.com/strategies-results/1162205/pam-account",
+   "snapshot": "20250422031047",
+   "text_len": 3466,
+   "gain": "367.13",
+   "daily": "0.13",
+   "monthly": "20.34",
+   "drawdown": "6.04",
+   "broker": "Kubera Markets",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:100",
+   "trades": "1.25",
+   "owner": "Dihogold",
+   "name": "PAM ACCOUNT",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1210165",
+   "url": "https://www.fxmerge.com/strategies-results/1210165/fx-eurusd-robot",
+   "snapshot": "20250316202243",
+   "text_len": 3869,
+   "gain": "407.73",
+   "daily": "0.64",
+   "monthly": "32.89",
+   "drawdown": "13.75",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.60",
+   "owner": "mqlblue",
+   "name": "Fx EurUsd Robot",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "123",
+   "url": "https://fxmerge.com/strategies-results/123/fxmartin-rebate",
+   "snapshot": "20220815133709",
+   "text_len": 4637,
+   "gain": "27.19",
+   "daily": "0.17",
+   "monthly": "8.39",
+   "drawdown": "13.52",
+   "broker": "FBS",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "1.35",
+   "owner": "zensu66",
+   "name": "FXMartin Rebate",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1236144",
+   "url": "https://www.fxmerge.com/strategies-results/1236144/2-3-afsid-pro-global-inves",
+   "snapshot": "20250422035549",
+   "text_len": 7353,
+   "gain": "1,071.88",
+   "daily": "0.04",
+   "monthly": "84.09",
+   "drawdown": "43.10",
+   "broker": "JustMarkets",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "3.08",
+   "owner": "AFSIDGroup",
+   "name": "2.3 AFSID Pro Global Inves",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "123748",
+   "url": "https://www.fxmerge.com/strategies-results/123748/5k-usd-admiral-standard",
+   "snapshot": "20230506104539",
+   "error": "HTTPError"
+  },
+  {
+   "account_id": "123847",
+   "url": "https://fxmerge.com/strategies-results/123847/ea-golden-pickaxe",
+   "snapshot": "20230327232953",
+   "text_len": 4213,
+   "gain": "749.10",
+   "daily": "0.08",
+   "monthly": "365.32",
+   "drawdown": "2.86",
+   "broker": "LiteFinance",
+   "platform": "MT4",
+   "trading": "Fundamental Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.01",
+   "owner": "sathitsukhirun",
+   "name": "Ea Golden Pickaxe",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1244178",
+   "url": "https://www.fxmerge.com/strategies-results/1244178/active-global-market-agm",
+   "snapshot": "20250422022452",
+   "text_len": 7280,
+   "gain": "99,929.41",
+   "daily": "0.28",
+   "monthly": "354.12",
+   "drawdown": "8.34",
+   "broker": "JustMarkets",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "1.74",
+   "owner": "ActiveTrader",
+   "name": "Active Global Market (AGM)",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1244180",
+   "url": "https://www.fxmerge.com/strategies-results/1244180/active-gold-hunter-agh",
+   "snapshot": "20250524154333",
+   "error": "TimeoutError"
+  },
+  {
+   "account_id": "1244183",
+   "url": "https://www.fxmerge.com/strategies-results/1244183/active-crypto-hunter-ach",
+   "snapshot": "20250422022923",
+   "text_len": 7488,
+   "gain": "324.51",
+   "daily": "0.50",
+   "monthly": "13.98",
+   "drawdown": "4.88",
+   "broker": "JustMarkets",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "3.96",
+   "owner": "ActiveTrader",
+   "name": "Active Crypto Hunter (ACH)",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1254655",
+   "url": "https://www.fxmerge.com/strategies-results/1254655/assetra",
+   "snapshot": "20250316182526",
+   "error": "URLError"
+  },
+  {
+   "account_id": "125726",
+   "url": "https://fxmerge.com/strategies-results/125726/dmt-euphoria-plus",
+   "snapshot": "20230327222750",
+   "error": "URLError"
+  },
+  {
+   "account_id": "125728",
+   "url": "https://fxmerge.com/strategies-results/125728/dmt-flash-fx",
+   "snapshot": "20230531201508",
+   "error": "URLError"
+  },
+  {
+   "account_id": "125729",
+   "url": "https://fxmerge.com/strategies-results/125729/dmt-gold-picker",
+   "snapshot": "20230531190357",
+   "error": "URLError"
+  },
+  {
+   "account_id": "125731",
+   "url": "https://fxmerge.com/strategies-results/125731/dmt-gold-kingdom",
+   "snapshot": "20230531190226",
+   "error": "URLError"
+  },
+  {
+   "account_id": "125733",
+   "url": "https://fxmerge.com/strategies-results/125733/dmt-heinseinberg",
+   "snapshot": "20230531204608",
+   "text_len": 4535,
+   "gain": "29.89",
+   "daily": "0.13",
+   "monthly": "3.91",
+   "drawdown": "7.70",
+   "broker": "Tradehall",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Manual Trading",
+   "leverage": "1:100",
+   "trades": "1.23",
+   "owner": "DMTGlobal",
+   "name": "DMT - Heinseinberg",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "125734",
+   "url": "https://fxmerge.com/strategies-results/125734/dmt-hgp-team",
+   "snapshot": "20230531190523",
+   "error": "URLError"
+  },
+  {
+   "account_id": "125735",
+   "url": "https://fxmerge.com/strategies-results/125735/dmt-true-ranger",
+   "snapshot": "20230531190601",
+   "text_len": 4534,
+   "gain": "60.21",
+   "daily": "0.08",
+   "monthly": "7.22",
+   "drawdown": "6.12",
+   "broker": "Tradehall",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Manual Trading",
+   "leverage": "1:100",
+   "trades": "1.42",
+   "owner": "DMTGlobal",
+   "name": "DMT - True Ranger",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "125737",
+   "url": "https://fxmerge.com/strategies-results/125737/dmt-xau-foever",
+   "snapshot": "20230531190313",
+   "error": "URLError"
+  },
+  {
+   "account_id": "125739",
+   "url": "https://fxmerge.com/strategies-results/125739/dmt-eagle-fx",
+   "snapshot": "20230531204833",
+   "error": "URLError"
+  },
+  {
+   "account_id": "126",
+   "url": "https://www.fxmerge.com/strategies-results/126/life-changer-fxmartin",
+   "snapshot": "20211018172157",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1262",
+   "url": "https://www.fxmerge.com/strategies-results/1262/prop-funded",
+   "snapshot": "20211018172239",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1272032",
+   "url": "https://fxmerge.com/strategies-results/1272032/ea-jaya-dana-134",
+   "snapshot": "20250116182539",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1288883",
+   "url": "https://www.fxmerge.com/strategies-results/1288883/samurai",
+   "snapshot": "20250422034703",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1305322",
+   "url": "https://fxmerge.com/strategies-results/1305322/afsid-pro-global-inv-2024",
+   "snapshot": "20260312005137",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1314921",
+   "url": "https://fxmerge.com/strategies-results/1314921/1-razertrade-global-m",
+   "snapshot": "20260312013002",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1315019",
+   "url": "https://fxmerge.com/strategies-results/1315019/1-razertrade-crypto-h",
+   "snapshot": "20260312014939",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1315028",
+   "url": "https://fxmerge.com/strategies-results/1315028/1-razertrade-forex-h",
+   "snapshot": "20260312013144",
+   "text_len": 5750,
+   "gain": "67.76",
+   "daily": "0.04",
+   "monthly": "4.27",
+   "drawdown": "19.71",
+   "broker": "JustMarkets",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.44",
+   "owner": "RAZERTRADE",
+   "name": "1. RAZERTRADE FOREX H",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1315032",
+   "url": "https://fxmerge.com/strategies-results/1315032/1-razertrade-gold-h",
+   "snapshot": "20260312021930",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1323628",
+   "url": "https://fxmerge.com/strategies-results/1323628/ea-jayadana-242",
+   "snapshot": "20250116194149",
+   "error": "URLError"
+  },
+  {
+   "account_id": "135069",
+   "url": "https://fxmerge.com/strategies-results/135069/ea-waka-waka-low-risk",
+   "snapshot": "20230531202611",
+   "error": "URLError"
+  },
+  {
+   "account_id": "135724",
+   "url": "https://fxmerge.com/strategies-results/135724/sniper-fx-r",
+   "snapshot": "20230921095414",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1364213",
+   "url": "https://fxmerge.com/strategies-results/1364213/pamm-manager",
+   "snapshot": "20250108112412",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1370064",
+   "url": "https://www.fxmerge.com/strategies-results/1370064/samurai-copy-trading",
+   "snapshot": "20250422032443",
+   "text_len": 6316,
+   "gain": "17.03",
+   "daily": "0.09",
+   "monthly": "3.20",
+   "drawdown": "4.30",
+   "broker": "RoboForex",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:1000",
+   "trades": "1.74",
+   "owner": "PYCTAM",
+   "name": "Samurai Copy trading",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1373662",
+   "url": "https://www.fxmerge.com/strategies-results/1373662/gold-m79",
+   "snapshot": "20250422024939",
+   "error": "URLError"
+  },
+  {
+   "account_id": "13815",
+   "url": "https://fxmerge.com/strategies-results/13815/hp80280050",
+   "snapshot": "20220702151438",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1403743",
+   "url": "https://www.fxmerge.com/strategies-results/1403743/gbpusd-robot",
+   "snapshot": "20250316185818",
+   "error": "TimeoutError"
+  },
+  {
+   "account_id": "1415038",
+   "url": "https://www.fxmerge.com/strategies-results/1415038/ea-smart-crypto-601m",
+   "snapshot": "20250422030241",
+   "error": "URLError"
+  },
+  {
+   "account_id": "14396",
+   "url": "https://fxmerge.com/strategies-results/14396/expert-mhr",
+   "snapshot": "20220702142929",
+   "error": "URLError"
+  },
+  {
+   "account_id": "146605",
+   "url": "https://fxmerge.com/strategies-results/146605/smart-fxalgo",
+   "snapshot": "20230921094001",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1480613",
+   "url": "https://fxmerge.com/strategies-results/1480613/powerhouse-ea",
+   "snapshot": "20260519064209",
+   "error": "URLError"
+  },
+  {
+   "account_id": "15",
+   "url": "https://www.fxmerge.com/strategies-results/15/ea-itex",
+   "snapshot": "20211018175719",
+   "error": "URLError"
+  },
+  {
+   "account_id": "151193",
+   "url": "https://fxmerge.com/strategies-results/151193/ndx-explosion-real",
+   "snapshot": "20230921094254",
+   "error": "URLError"
+  },
+  {
+   "account_id": "155420",
+   "url": "https://fxmerge.com/strategies-results/155420/xg-gold-robot",
+   "snapshot": "20230531192041",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1600962",
+   "url": "https://fxmerge.com/strategies-results/1600962/scalping-robot",
+   "snapshot": "20250321174521",
+   "text_len": 3850,
+   "gain": "120.88",
+   "daily": "0.75",
+   "monthly": "30.33",
+   "drawdown": "6.85",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.08",
+   "owner": "mqlblue",
+   "name": "Scalping Robot",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "163937",
+   "url": "https://fxmerge.com/strategies-results/163937/invest-nova",
+   "snapshot": "20230531182840",
+   "error": "URLError"
+  },
+  {
+   "account_id": "17",
+   "url": "https://www.fxmerge.com/strategies-results/17/ic-strategy",
+   "snapshot": "20211018163413",
+   "error": "URLError"
+  },
+  {
+   "account_id": "17049",
+   "url": "https://www.fxmerge.com/strategies-results/17049/exness-0-spread-real-acc",
+   "snapshot": "20250422030955",
+   "text_len": 5554,
+   "gain": "27.58",
+   "daily": "0.99",
+   "monthly": "27.58",
+   "drawdown": "0.39",
+   "broker": "Exness",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:2000",
+   "trades": "101.80",
+   "owner": "bemmyhendrias",
+   "name": "Exness 0 Spread - Real Acc",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "1737378",
+   "url": "https://www.fxmerge.com/strategies-results/1737378/ea-jayadana-951",
+   "snapshot": "20260415014607",
+   "error": "URLError"
+  },
+  {
+   "account_id": "17490",
+   "url": "https://fxmerge.com/strategies-results/17490/pamm-fvptrade",
+   "snapshot": "20220702140757",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1786165",
+   "url": "https://www.fxmerge.com/strategies-results/1786165/eawb-330",
+   "snapshot": "20260415001451",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1834689",
+   "url": "https://www.fxmerge.com/strategies-results/1834689/active-global-market-agm",
+   "snapshot": "20250803201353",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1837063",
+   "url": "https://fxmerge.com/strategies-results/1837063/afsid-trading-central-pro",
+   "snapshot": "20251211004827",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1851660",
+   "url": "https://fxmerge.com/strategies-results/1851660/afsid-pro-global-invest-2",
+   "snapshot": "20251211004731",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1852319",
+   "url": "https://fxmerge.com/strategies-results/1852319/afsid-pro-global-invest-1",
+   "snapshot": "20251211000045",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1887470",
+   "url": "https://www.fxmerge.com/strategies-results/1887470/razor-2000",
+   "snapshot": "20260212215008",
+   "error": "URLError"
+  },
+  {
+   "account_id": "18937",
+   "url": "https://fxmerge.com/strategies-results/18937/iron-jarvis-v-12-ea-20000",
+   "snapshot": "20220815135505",
+   "error": "URLError"
+  },
+  {
+   "account_id": "198142",
+   "url": "https://fxmerge.com/strategies-results/198142/powerhouse-ea-mt5",
+   "snapshot": "20230921094212",
+   "error": "URLError"
+  },
+  {
+   "account_id": "198143",
+   "url": "https://fxmerge.com/strategies-results/198143/the-comeback-kid-ea",
+   "snapshot": "20230921101442",
+   "error": "URLError"
+  },
+  {
+   "account_id": "198144",
+   "url": "https://fxmerge.com/strategies-results/198144/sharpshooter-ea",
+   "snapshot": "20230921081531",
+   "text_len": 3965,
+   "gain": "60.52",
+   "daily": "0.02",
+   "monthly": "3.01",
+   "drawdown": "8.29",
+   "broker": "Xyleum",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "1.65",
+   "owner": null,
+   "name": "Sharpshooter EA",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "198147",
+   "url": "https://fxmerge.com/strategies-results/198147/crackerjack-ea",
+   "snapshot": "20230921090930",
+   "error": "URLError"
+  },
+  {
+   "account_id": "1987948",
+   "url": "https://fxmerge.com/strategies-results/1987948/zephyr",
+   "snapshot": "20250715190422",
+   "error": "URLError"
+  },
+  {
+   "account_id": "199082",
+   "url": "https://fxmerge.com/strategies-results/199082/xg-gold-real",
+   "snapshot": "20230921090706",
+   "error": "URLError"
+  },
+  {
+   "account_id": "200878",
+   "url": "https://fxmerge.com/strategies-results/200878/kuncisugihea-my-id",
+   "snapshot": "20250116180112",
+   "text_len": 4082,
+   "gain": "197.59",
+   "daily": "0.07",
+   "monthly": "34.96",
+   "drawdown": "12.75",
+   "broker": "FBS",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:1000",
+   "trades": "2.08",
+   "owner": "gusfx",
+   "name": "Kuncisugihea.my.id",
+   "placeholder_fields": 14
+  },
+  {
+   "account_id": "20746",
+   "url": "https://fxmerge.com/strategies-results/20746/mystats-15",
+   "snapshot": "20230205151331",
+   "error": "URLError"
+  },
+  {
+   "account_id": "21",
+   "url": "https://www.fxmerge.com/strategies-results/21/testing-mt5",
+   "snapshot": "20211018171202",
+   "error": "URLError"
+  },
+  {
+   "account_id": "210334",
+   "url": "https://fxmerge.com/strategies-results/210334/tradingforliving-my-id-ea",
+   "snapshot": "20250116182901",
+   "text_len": 3974,
+   "gain": "110.96",
+   "daily": "3.58",
+   "monthly": "110.96",
+   "drawdown": "4.60",
+   "broker": "Weltrade",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:1000",
+   "trades": "2.49",
+   "owner": "gusfx",
+   "name": "Tradingforliving.my.id EA",
+   "placeholder_fields": 33
+  },
+  {
+   "account_id": "210336",
+   "url": "https://fxmerge.com/strategies-results/210336/sniper-master-ea",
+   "snapshot": "20250116174852",
+   "error": "URLError"
+  },
+  {
+   "account_id": "21054",
+   "url": "https://fxmerge.com/strategies-results/21054/demos1",
+   "snapshot": "20230327223730",
+   "error": "URLError"
+  },
+  {
+   "account_id": "21055",
+   "url": "https://fxmerge.com/strategies-results/21055/demos2",
+   "snapshot": "20230327224249",
+   "error": "URLError"
+  },
+  {
+   "account_id": "210770",
+   "url": "https://fxmerge.com/strategies-results/210770/kuncisugih-ea",
+   "snapshot": "20250116174430",
+   "text_len": 4076,
+   "gain": "1,076.28",
+   "daily": "0.05",
+   "monthly": "5.56",
+   "drawdown": "26.71",
+   "broker": "FBS",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "6.88",
+   "owner": "gusfx",
+   "name": "KunciSugih EA",
+   "placeholder_fields": 24
+  },
+  {
+   "account_id": "212092",
+   "url": "https://fxmerge.com/strategies-results/212092/winsmart-ea",
+   "snapshot": "20250116185840",
+   "error": "URLError"
+  },
+  {
+   "account_id": "212094",
+   "url": "https://fxmerge.com/strategies-results/212094/ea-hidden-tpsl-100",
+   "snapshot": "20250116191601",
+   "text_len": 3963,
+   "gain": "132.42",
+   "daily": "4.27",
+   "monthly": "132.42",
+   "drawdown": "0.00",
+   "broker": "FBS",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Manual Trading",
+   "leverage": "1:2000",
+   "trades": "0.00",
+   "owner": "gusfx",
+   "name": "EA Hidden TPSL 100$",
+   "placeholder_fields": 33
+  },
+  {
+   "account_id": "2124110",
+   "url": "https://fxmerge.com/strategies-results/2124110/tradeox",
+   "snapshot": "20260119215001",
+   "error": "URLError"
+  },
+  {
+   "account_id": "212506",
+   "url": "https://fxmerge.com/strategies-results/212506/ea7mil100",
+   "snapshot": "20250116181847",
+   "error": "TimeoutError"
+  },
+  {
+   "account_id": "2129475",
+   "url": "https://www.fxmerge.com/strategies-results/2129475/caliskan-pamm",
+   "snapshot": "20260115030836",
+   "text_len": 2943,
+   "gain": "19.50",
+   "daily": "0.63",
+   "monthly": "19.50",
+   "drawdown": "11.71",
+   "broker": "Doo Tech",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Manual Trading",
+   "leverage": "1:500",
+   "trades": "1.60",
+   "owner": null,
+   "name": "CALISKAN PAMM",
+   "placeholder_fields": 33
+  },
+  {
+   "account_id": "213106",
+   "url": "https://fxmerge.com/strategies-results/213106/big-forex-players",
+   "snapshot": "20230921080204",
+   "text_len": 3360,
+   "gain": "171.65",
+   "daily": "0.95",
+   "monthly": "28.40",
+   "drawdown": "4.18",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.12",
+   "owner": "mqlblue",
+   "name": "Big Forex Players",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "213582",
+   "url": "https://fxmerge.com/strategies-results/213582/ea-kursustradingmyid-lvl-2",
+   "snapshot": "20250116194359",
+   "text_len": 3971,
+   "gain": "72.87",
+   "daily": "0.07",
+   "monthly": "20.83",
+   "drawdown": "7.06",
+   "broker": "FBS",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.88",
+   "owner": "gusfx",
+   "name": "EA Kursustradingmyid Lvl 2",
+   "placeholder_fields": 33
+  },
+  {
+   "account_id": "213583",
+   "url": "https://fxmerge.com/strategies-results/213583/ea-belajarfx-lvl-2",
+   "snapshot": "20250116193613",
+   "text_len": 3963,
+   "gain": "72.90",
+   "daily": "0.07",
+   "monthly": "20.84",
+   "drawdown": "7.01",
+   "broker": "FBS",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.88",
+   "owner": "gusfx",
+   "name": "EA Belajarfx Lvl 2",
+   "placeholder_fields": 33
+  },
+  {
+   "account_id": "215071",
+   "url": "https://fxmerge.com/strategies-results/215071/ea-7m-belajarfx-my-id",
+   "snapshot": "20241208204451",
+   "text_len": 3996,
+   "gain": "285.64",
+   "daily": "9.52",
+   "monthly": "285.64",
+   "drawdown": "19.41",
+   "broker": "FBS",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:1000",
+   "trades": "2.65",
+   "owner": "gusfx",
+   "name": "EA 7M Belajarfx.my.id",
+   "placeholder_fields": 29
+  },
+  {
+   "account_id": "219596",
+   "url": "https://fxmerge.com/strategies-results/219596/ea-urwah-al-bariqi",
+   "snapshot": "20250116180419",
+   "error": "URLError"
+  },
+  {
+   "account_id": "22",
+   "url": "https://www.fxmerge.com/strategies-results/22/my-system-grid",
+   "snapshot": "20211018174750",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2223568",
+   "url": "https://www.fxmerge.com/strategies-results/2223568/oko-horusa-zaawansowana-ai",
+   "snapshot": "20260419085123",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2239477",
+   "url": "https://fxmerge.com/strategies-results/2239477/a-s-quant-trading-algo",
+   "snapshot": "20260116015035",
+   "error": "URLError"
+  },
+  {
+   "account_id": "229861",
+   "url": "https://fxmerge.com/strategies-results/229861/kunci-sugih-ea-899",
+   "snapshot": "20250116182736",
+   "error": "URLError"
+  },
+  {
+   "account_id": "229892",
+   "url": "https://fxmerge.com/strategies-results/229892/profitably-ea",
+   "snapshot": "20250116175942",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2355844",
+   "url": "https://fxmerge.com/strategies-results/2355844/afsid-metal-hunter-pro-x1",
+   "snapshot": "20260312015420",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2355858",
+   "url": "https://fxmerge.com/strategies-results/2355858/afsid-pro-global-inv-2025",
+   "snapshot": "20260312004850",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2374379",
+   "url": "https://fxmerge.com/strategies-results/2374379/ai-forex-robot",
+   "snapshot": "20260213161618",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2374415",
+   "url": "https://fxmerge.com/strategies-results/2374415/ai-prop-firms",
+   "snapshot": "20260416043057",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2379091",
+   "url": "https://fxmerge.com/strategies-results/2379091/bitcoin-robot",
+   "snapshot": "20260213165601",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2382652",
+   "url": "https://fxmerge.com/strategies-results/2382652/xg-gold",
+   "snapshot": "20260416044325",
+   "text_len": 3802,
+   "gain": "10,101.83",
+   "daily": "0.08",
+   "monthly": "19.30",
+   "drawdown": "10.76",
+   "broker": "IC Trading",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "3.15",
+   "owner": "mqlblue",
+   "name": "XG Gold",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "2383564",
+   "url": "https://fxmerge.com/strategies-results/2383564/big-forex-players-ea",
+   "snapshot": "20260312022628",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2447711",
+   "url": "https://fxmerge.com/strategies-results/2447711/afsid-quantum-trade-ai",
+   "snapshot": "20260312020049",
+   "error": "ConnectionResetError"
+  },
+  {
+   "account_id": "253437",
+   "url": "https://fxmerge.com/strategies-results/253437/ea7mil",
+   "snapshot": "20250116183418",
+   "error": "URLError"
+  },
+  {
+   "account_id": "2618699",
+   "url": "https://fxmerge.com/strategies-results/2618699/xiro-robot",
+   "snapshot": "20260519061935",
+   "text_len": 3878,
+   "gain": "852.88",
+   "daily": "0.39",
+   "monthly": "63.36",
+   "drawdown": "4.24",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "3.56",
+   "owner": "mqlblue",
+   "name": "Xiro Robot",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "2618811",
+   "url": "https://fxmerge.com/strategies-results/2618811/scalping-robot",
+   "snapshot": "20260416054246",
+   "text_len": 3777,
+   "gain": "560.47",
+   "daily": "0.19",
+   "monthly": "37.99",
+   "drawdown": "4.79",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "3.13",
+   "owner": "mqlblue",
+   "name": "Scalping Robot",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "26459",
+   "url": "https://fxmerge.com/strategies-results/26459/sapie32",
+   "snapshot": "20230205133256",
+   "text_len": 3886,
+   "gain": "0.33",
+   "daily": "0.01",
+   "monthly": "0.33",
+   "drawdown": "0.62",
+   "broker": "XM",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Manual Trading",
+   "leverage": "1:30",
+   "trades": "1.30",
+   "owner": null,
+   "name": "Sapie32",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "2669670",
+   "url": "https://fxmerge.com/strategies-results/2669670/wall-street-robot",
+   "snapshot": "20260510211357",
+   "text_len": 3904,
+   "gain": "648.35",
+   "daily": "0.33",
+   "monthly": "52.35",
+   "drawdown": "7.18",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:200",
+   "trades": "3.15",
+   "owner": "mqlblue",
+   "name": "Wall Street Robot",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "2801",
+   "url": "https://fxmerge.com/strategies-results/2801/mam-1-000-000",
+   "snapshot": "20220702151153",
+   "text_len": 3929,
+   "gain": "269.76",
+   "daily": "0.18",
+   "monthly": "12.74",
+   "drawdown": "1.31",
+   "broker": "FX Winning",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Manual Trading",
+   "leverage": "1:30",
+   "trades": "2.52",
+   "owner": "CLTrading",
+   "name": "MAM +1,000,000$",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "300941",
+   "url": "https://fxmerge.com/strategies-results/300941/the-comeback-kid-ea-live",
+   "snapshot": "20240228214722",
+   "text_len": 4978,
+   "gain": "2.38",
+   "daily": "0.02",
+   "monthly": "0.47",
+   "drawdown": "0.31",
+   "broker": "TradersWay",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:300",
+   "trades": "2.77",
+   "owner": null,
+   "name": "The Comeback Kid EA (LIVE)",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "30743",
+   "url": "https://fxmerge.com/strategies-results/30743/wisefx-baraka-ea",
+   "snapshot": "20220702140422",
+   "text_len": 3234,
+   "gain": "190.61",
+   "daily": "0.01",
+   "monthly": "48.39",
+   "drawdown": "7.55",
+   "broker": "Octa Investama",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "3.87",
+   "owner": "gusfx",
+   "name": "WISEFX\u00ae BARAKA EA",
+   "placeholder_fields": 15
+  },
+  {
+   "account_id": "30744",
+   "url": "https://www.fxmerge.com/strategies-results/30744/revolut-ic-markets",
+   "snapshot": "20250524155709",
+   "text_len": 4937,
+   "gain": "45.82",
+   "daily": "1.13",
+   "monthly": "8.74",
+   "drawdown": "10.87",
+   "broker": "IC Markets",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "1.49",
+   "owner": null,
+   "name": "Revolut IC Markets",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "33",
+   "url": "https://www.fxmerge.com/strategies-results/33/ea-happy-gold-ecn-real-1",
+   "snapshot": "20211018175331",
+   "error": "URLError"
+  },
+  {
+   "account_id": "333680",
+   "url": "https://fxmerge.com/strategies-results/333680/serenity-ea",
+   "snapshot": "20240413164700",
+   "text_len": 4935,
+   "gain": "10.43",
+   "daily": "0.05",
+   "monthly": "1.67",
+   "drawdown": "2.36",
+   "broker": "TradersWay",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:200",
+   "trades": "1.93",
+   "owner": null,
+   "name": "Serenity EA",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "3661",
+   "url": "https://fxmerge.com/strategies-results/3661/1000-cuenta-de-muestra",
+   "snapshot": "20230204024637",
+   "text_len": 3973,
+   "gain": "35.39",
+   "daily": "0.18",
+   "monthly": "7.96",
+   "drawdown": "1.33",
+   "broker": "FX Winning",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Manual Trading",
+   "leverage": "1:30",
+   "trades": "2.12",
+   "owner": null,
+   "name": "1000$ - Cuenta de muestra",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "37436",
+   "url": "https://fxmerge.com/strategies-results/37436/wisefx-quest-10k-daily",
+   "snapshot": "20220815124614",
+   "text_len": 3244,
+   "gain": "56.98",
+   "daily": "1.90",
+   "monthly": "56.98",
+   "drawdown": "18.02",
+   "broker": "FBS",
+   "platform": "MT5",
+   "trading": "Technical Strategy",
+   "type": "Manual Trading",
+   "leverage": "1:1000",
+   "trades": "1.80",
+   "owner": "gusfx",
+   "name": "WISEFX\u00ae QUEST $10K DAILY",
+   "placeholder_fields": 10
+  },
+  {
+   "account_id": "3823",
+   "url": "https://www.fxmerge.com/strategies-results/3823/trx-robot",
+   "snapshot": "20211127141202",
+   "error": "URLError"
+  },
+  {
+   "account_id": "3854",
+   "url": "https://fxmerge.com/strategies-results/3854/foxi-robot",
+   "snapshot": "20220702150752",
+   "error": "URLError"
+  },
+  {
+   "account_id": "3857",
+   "url": "https://www.fxmerge.com/strategies-results/3857/ok-forex-martingale-system",
+   "snapshot": "20211127133748",
+   "error": "URLError"
+  },
+  {
+   "account_id": "3858",
+   "url": "https://www.fxmerge.com/strategies-results/3858/fps-v2-size-0-01-lot",
+   "snapshot": "20211127140122",
+   "error": "URLError"
+  },
+  {
+   "account_id": "3859",
+   "url": "https://www.fxmerge.com/strategies-results/3859/fps-v2-size-0-03-lot",
+   "snapshot": "20211127144734",
+   "error": "URLError"
+  },
+  {
+   "account_id": "3860",
+   "url": "https://www.fxmerge.com/strategies-results/3860/fps-v2-size-1-lot",
+   "snapshot": "20211127150417",
+   "error": "URLError"
+  },
+  {
+   "account_id": "3861",
+   "url": "https://www.fxmerge.com/strategies-results/3861/fps-v2-size-0-05-lot",
+   "snapshot": "20211127145549",
+   "error": "URLError"
+  },
+  {
+   "account_id": "3862",
+   "url": "https://www.fxmerge.com/strategies-results/3862/forex-pip-shooter-v2",
+   "snapshot": "20211127140518",
+   "error": "URLError"
+  },
+  {
+   "account_id": "39019",
+   "url": "https://fxmerge.com/strategies-results/39019/wisefx-solution-ea",
+   "snapshot": "20220702150418",
+   "text_len": 3203,
+   "gain": "5.68",
+   "daily": "0.03",
+   "monthly": "2.82",
+   "drawdown": "0.91",
+   "broker": "Octa Investama",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "4.83",
+   "owner": "gusfx",
+   "name": "WISEFX\u00ae SOLUTION EA",
+   "placeholder_fields": 24
+  },
+  {
+   "account_id": "403",
+   "url": "https://www.fxmerge.com/strategies-results/403/ea-pros-free-forex-robot",
+   "snapshot": "20211018163049",
+   "error": "URLError"
+  },
+  {
+   "account_id": "405",
+   "url": "https://fxmerge.com/strategies-results/405/oil-basket",
+   "snapshot": "20220525234543",
+   "text_len": 3914,
+   "gain": "27.87",
+   "daily": "0.06",
+   "monthly": "13.72",
+   "drawdown": "2.98",
+   "broker": "Global Prime",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:33",
+   "trades": "2.34",
+   "owner": null,
+   "name": "OIL Basket",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "41385",
+   "url": "https://fxmerge.com/strategies-results/41385/new-v7-3",
+   "snapshot": "20230327232737",
+   "error": "URLError"
+  },
+  {
+   "account_id": "417487",
+   "url": "https://fxmerge.com/strategies-results/417487/ea-kuncisugih-mt5-200",
+   "snapshot": "20250116180505",
+   "error": "URLError"
+  },
+  {
+   "account_id": "420173",
+   "url": "https://fxmerge.com/strategies-results/420173/ea-prospero-abundance",
+   "snapshot": "20250116191239",
+   "error": "URLError"
+  },
+  {
+   "account_id": "420188",
+   "url": "https://fxmerge.com/strategies-results/420188/ea-tradingforliving-150",
+   "snapshot": "20250116190708",
+   "error": "URLError"
+  },
+  {
+   "account_id": "42152",
+   "url": "https://fxmerge.com/strategies-results/42152/eank",
+   "snapshot": "20230327225924",
+   "error": "URLError"
+  },
+  {
+   "account_id": "426128",
+   "url": "https://www.fxmerge.com/strategies-results/426128/my-xc-pips",
+   "snapshot": "20250316200031",
+   "error": "URLError"
+  },
+  {
+   "account_id": "4278",
+   "url": "https://fxmerge.com/strategies-results/4278/scalper-robot",
+   "snapshot": "20220702144335",
+   "error": "URLError"
+  },
+  {
+   "account_id": "43036",
+   "url": "https://fxmerge.com/strategies-results/43036/iron-jarvis-v-08-ea-1000",
+   "snapshot": "20220815120433",
+   "error": "URLError"
+  },
+  {
+   "account_id": "45097",
+   "url": "https://fxmerge.com/strategies-results/45097/seir19",
+   "snapshot": "20230327233818",
+   "error": "URLError"
+  },
+  {
+   "account_id": "462",
+   "url": "https://www.fxmerge.com/strategies-results/462/goldtrader",
+   "snapshot": "20211127134412",
+   "error": "URLError"
+  },
+  {
+   "account_id": "470530",
+   "url": "https://fxmerge.com/strategies-results/470530/ea-profitably-200",
+   "snapshot": "20250116181751",
+   "error": "URLError"
+  },
+  {
+   "account_id": "4717",
+   "url": "https://fxmerge.com/strategies-results/4717/bitcoin-robot",
+   "snapshot": "20220702150149",
+   "error": "URLError"
+  },
+  {
+   "account_id": "47353",
+   "url": "https://fxmerge.com/strategies-results/47353/myami",
+   "snapshot": "20230327224110",
+   "error": "URLError"
+  },
+  {
+   "account_id": "47639",
+   "url": "https://www.fxmerge.com/strategies-results/47639/augetrading",
+   "snapshot": "20250524160319",
+   "error": "URLError"
+  },
+  {
+   "account_id": "477",
+   "url": "https://www.fxmerge.com/strategies-results/477/tmd100",
+   "snapshot": "20211018180941",
+   "error": "URLError"
+  },
+  {
+   "account_id": "4798",
+   "url": "https://fxmerge.com/strategies-results/4798/gold-robot",
+   "snapshot": "20220702141506",
+   "error": "URLError"
+  },
+  {
+   "account_id": "48",
+   "url": "https://www.fxmerge.com/strategies-results/48/ea-happy-gold-ecn-real-2",
+   "snapshot": "20211018175524",
+   "error": "URLError"
+  },
+  {
+   "account_id": "4800",
+   "url": "https://fxmerge.com/strategies-results/4800/gold-money-machine-pro",
+   "snapshot": "20220702145156",
+   "error": "URLError"
+  },
+  {
+   "account_id": "4801",
+   "url": "https://www.fxmerge.com/strategies-results/4801/ea-profi-pro",
+   "snapshot": "20211127153309",
+   "error": "URLError"
+  },
+  {
+   "account_id": "4831",
+   "url": "https://fxmerge.com/strategies-results/4831/gold-trader-2",
+   "snapshot": "20220702144715",
+   "error": "URLError"
+  },
+  {
+   "account_id": "48377",
+   "url": "https://fxmerge.com/strategies-results/48377/mac39",
+   "snapshot": "20230327235245",
+   "error": "URLError"
+  },
+  {
+   "account_id": "485",
+   "url": "https://www.fxmerge.com/strategies-results/485/attiya",
+   "snapshot": "20211018174632",
+   "error": "URLError"
+  },
+  {
+   "account_id": "49",
+   "url": "https://www.fxmerge.com/strategies-results/49/ea-happy-breakout-ecn",
+   "snapshot": "20211018163323",
+   "error": "URLError"
+  },
+  {
+   "account_id": "49680",
+   "url": "https://fxmerge.com/strategies-results/49680/inversiones-esc",
+   "snapshot": "20230327220944",
+   "error": "URLError"
+  },
+  {
+   "account_id": "50",
+   "url": "https://www.fxmerge.com/strategies-results/50/ea-happy-news-ecn-1",
+   "snapshot": "20211018170129",
+   "error": "URLError"
+  },
+  {
+   "account_id": "500120",
+   "url": "https://www.fxmerge.com/strategies-results/500120/live-prototype-robot",
+   "snapshot": "20250422024123",
+   "error": "URLError"
+  },
+  {
+   "account_id": "51",
+   "url": "https://www.fxmerge.com/strategies-results/51/ea-profiter",
+   "snapshot": "20211018171034",
+   "error": "URLError"
+  },
+  {
+   "account_id": "52561",
+   "url": "https://fxmerge.com/strategies-results/52561/ea1984",
+   "snapshot": "20230327221707",
+   "error": "URLError"
+  },
+  {
+   "account_id": "527416",
+   "url": "https://fxmerge.com/strategies-results/527416/ea-iscalper",
+   "snapshot": "20250116193817",
+   "error": "URLError"
+  },
+  {
+   "account_id": "528819",
+   "url": "https://fxmerge.com/strategies-results/528819/ea-warren-buffets",
+   "snapshot": "20241005005725",
+   "error": "URLError"
+  },
+  {
+   "account_id": "53592",
+   "url": "https://fxmerge.com/strategies-results/53592/pallow",
+   "snapshot": "20230327235720",
+   "error": "URLError"
+  },
+  {
+   "account_id": "54731",
+   "url": "https://fxmerge.com/strategies-results/54731/pamm-for-newbie",
+   "snapshot": "20230327232213",
+   "error": "URLError"
+  },
+  {
+   "account_id": "547717",
+   "url": "https://fxmerge.com/strategies-results/547717/xc-pips-ea",
+   "snapshot": "20240521100716",
+   "error": "URLError"
+  },
+  {
+   "account_id": "55283",
+   "url": "https://fxmerge.com/strategies-results/55283/uninter-capital",
+   "snapshot": "20230205145252",
+   "error": "URLError"
+  },
+  {
+   "account_id": "57392",
+   "url": "https://fxmerge.com/strategies-results/57392/xt-eurusd-ea",
+   "snapshot": "20230205141759",
+   "error": "URLError"
+  },
+  {
+   "account_id": "58",
+   "url": "https://www.fxmerge.com/strategies-results/58/nasdaq-ai",
+   "snapshot": "20211018170621",
+   "error": "URLError"
+  },
+  {
+   "account_id": "60219",
+   "url": "https://fxmerge.com/strategies-results/60219/fuji-hibiki",
+   "snapshot": "20230327223221",
+   "error": "URLError"
+  },
+  {
+   "account_id": "61713",
+   "url": "https://fxmerge.com/strategies-results/61713/vory2000",
+   "snapshot": "20230327232100",
+   "error": "URLError"
+  },
+  {
+   "account_id": "6183",
+   "url": "https://fxmerge.com/strategies-results/6183/pips-ea-2022",
+   "snapshot": "20220702145651",
+   "error": "URLError"
+  },
+  {
+   "account_id": "62977",
+   "url": "https://fxmerge.com/strategies-results/62977/tron31",
+   "snapshot": "20230328001851",
+   "error": "URLError"
+  },
+  {
+   "account_id": "63982",
+   "url": "https://fxmerge.com/strategies-results/63982/soliso",
+   "snapshot": "20230327233548",
+   "error": "URLError"
+  },
+  {
+   "account_id": "66397",
+   "url": "https://fxmerge.com/strategies-results/66397/ibs-ea-1-1",
+   "snapshot": "20221007100817",
+   "error": "URLError"
+  },
+  {
+   "account_id": "69364",
+   "url": "https://fxmerge.com/strategies-results/69364/actur27",
+   "snapshot": "20230531203655",
+   "text_len": 3951,
+   "gain": "3.40",
+   "daily": "0.11",
+   "monthly": "3.40",
+   "drawdown": "1.40",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Technical Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:400",
+   "trades": "2.37",
+   "owner": null,
+   "name": "Actur27",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "69892",
+   "url": "https://fxmerge.com/strategies-results/69892/trading387",
+   "snapshot": "20230327234618",
+   "error": "URLError"
+  },
+  {
+   "account_id": "70926",
+   "url": "https://fxmerge.com/strategies-results/70926/fma",
+   "snapshot": "20230205135128",
+   "error": "URLError"
+  },
+  {
+   "account_id": "70942",
+   "url": "https://fxmerge.com/strategies-results/70942/acs-8105241",
+   "snapshot": "20230205135408",
+   "error": "URLError"
+  },
+  {
+   "account_id": "71149",
+   "url": "https://fxmerge.com/strategies-results/71149/nasdaq-evolution-pro",
+   "snapshot": "20230205133002",
+   "error": "URLError"
+  },
+  {
+   "account_id": "71150",
+   "url": "https://fxmerge.com/strategies-results/71150/nasdaq-evolution",
+   "snapshot": "20230921094338",
+   "error": "URLError"
+  },
+  {
+   "account_id": "73256",
+   "url": "https://fxmerge.com/strategies-results/73256/fx-trader",
+   "snapshot": "20230205133551",
+   "error": "URLError"
+  },
+  {
+   "account_id": "74886",
+   "url": "https://fxmerge.com/strategies-results/74886/acs-8105329",
+   "snapshot": "20230205151624",
+   "error": "URLError"
+  },
+  {
+   "account_id": "75",
+   "url": "https://www.fxmerge.com/strategies-results/75/rickyes",
+   "snapshot": "20211018171407",
+   "error": "URLError"
+  },
+  {
+   "account_id": "76",
+   "url": "https://www.fxmerge.com/strategies-results/76/ea-cad",
+   "snapshot": "20211018165544",
+   "error": "URLError"
+  },
+  {
+   "account_id": "77",
+   "url": "https://fxmerge.com/strategies-results/77/trading-with-cfds",
+   "snapshot": "20230921100444",
+   "error": "URLError"
+  },
+  {
+   "account_id": "79",
+   "url": "https://www.fxmerge.com/strategies-results/79/ea-management",
+   "snapshot": "20211018173920",
+   "error": "URLError"
+  },
+  {
+   "account_id": "791146",
+   "url": "https://fxmerge.com/strategies-results/791146/bitcoin-robot",
+   "snapshot": "20241118084329",
+   "text_len": 3716,
+   "gain": "2,663.15",
+   "daily": "0.47",
+   "monthly": "46.03",
+   "drawdown": "6.82",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "3.27",
+   "owner": "mqlblue",
+   "name": "Bitcoin Robot",
+   "placeholder_fields": 0
+  },
+  {
+   "account_id": "80104",
+   "url": "https://fxmerge.com/strategies-results/80104/ndx-explosion-dow-jones",
+   "snapshot": "20230205134023",
+   "error": "URLError"
+  },
+  {
+   "account_id": "83914",
+   "url": "https://fxmerge.com/strategies-results/83914/forex-pip-shooter-v2-hig",
+   "snapshot": "20230921085153",
+   "error": "URLError"
+  },
+  {
+   "account_id": "83926",
+   "url": "https://fxmerge.com/strategies-results/83926/nasdaq-evo",
+   "snapshot": "20230921092148",
+   "error": "URLError"
+  },
+  {
+   "account_id": "83932",
+   "url": "https://fxmerge.com/strategies-results/83932/forex-pip-shooter-v2-med",
+   "snapshot": "20230921093744",
+   "error": "URLError"
+  },
+  {
+   "account_id": "999703",
+   "url": "https://fxmerge.com/strategies-results/999703/stock-indexes-ea",
+   "snapshot": "20241004234956",
+   "text_len": 3686,
+   "gain": "615.46",
+   "daily": "1.38",
+   "monthly": "32.73",
+   "drawdown": "10.35",
+   "broker": "IC Markets",
+   "platform": "MT4",
+   "trading": "Combined Strategy",
+   "type": "Automated Trading",
+   "leverage": "1:500",
+   "trades": "2.59",
+   "owner": "mqlblue",
+   "name": "Stock Indexes EA",
+   "placeholder_fields": 0
+  }
+ ]
+}

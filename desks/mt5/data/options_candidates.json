@@ -1,5 +1,41 @@
 {
- "updated": "2026-08-23T03:40:18.495678+00:00",
- "candidates": [],
- "note": "forward-shadow only; archive age 12 vintages"
+ "updated": "2026-08-25T15:55:08.495673+00:00",
+ "candidates": [
+  {
+   "currency": "BTC",
+   "field": "atm_iv",
+   "z": -3.76,
+   "ts": "2026-08-25T15:55:08.483413+00:00",
+   "hypothesis": "BTC atm_iv at z=-3.76: cheap -> buy"
+  },
+  {
+   "currency": "BTC",
+   "field": "iv_rv",
+   "z": -3.78,
+   "ts": "2026-08-25T15:55:08.483877+00:00",
+   "hypothesis": "BTC iv_rv at z=-3.78: cheap -> buy"
+  },
+  {
+   "currency": "BTC",
+   "field": "skew",
+   "z": 2.1,
+   "ts": "2026-08-25T15:55:08.484222+00:00",
+   "hypothesis": "BTC skew at z=2.10: rich -> fade"
+  },
+  {
+   "currency": "ETH",
+   "field": "atm_iv",
+   "z": -7.16,
+   "ts": "2026-08-25T15:55:08.488460+00:00",
+   "hypothesis": "ETH atm_iv at z=-7.16: cheap -> buy"
+  },
+  {
+   "currency": "ETH",
+   "field": "iv_rv",
+   "z": -7.15,
+   "ts": "2026-08-25T15:55:08.491764+00:00",
+   "hypothesis": "ETH iv_rv at z=-7.15: cheap -> buy"
+  }
+ ],
+ "note": "forward-shadow only; archive age 689 vintages"
 }

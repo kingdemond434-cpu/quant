@@ -1,0 +1,15 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Test-time Reinforcement Learning in Imperfect Information Games",
+    "summary": "Test-time reasoning has significantly improved performance in domains ranging from games to language models. However, test-time policy changes with formal guarantees on the performance of the resultin",
+    "url": "https://arxiv.org/abs/2608.30635v1",
+    "published": "2026-08-31T11:44:15Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

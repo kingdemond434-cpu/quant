@@ -1,0 +1,106 @@
+# THE MACHINE-READABLE CONSTITUTION. One canonical path per job; everything else is retired.
+#
+# WHY THIS FILE EXISTS (principal blueprint, 2026-08-29)
+#
+# The desk carried five conflicting descriptions of itself and nothing forced them to agree.
+# Measured on 2026-08-29 alone:
+#
+#   * `run_key` and `sleeve_key` built two different identities for the same sleeve, in the two
+#     modules that must agree which clock is which.
+#   * THREE forward engines decided the same verdict three ways; two required no significance
+#     test at all, and which bar a sleeve met was an accident of which door it entered.
+#   * `run_daily_research.py` declared itself CRYPTO-ONLY and "MT5 abandoned" while docs/LAWS.md
+#     said the opposite in bold -- and it was still being spawned detached.
+#   * The same status was spelled `PROMOTION CANDIDATE` and `PROMOTION_CANDIDATE`, and the
+#     promoter matched each on a different code path.
+#
+# Every one of those is the same failure: no single place says which implementation is canonical,
+# so a second one gets written and nobody notices until the two disagree in production. This file
+# is that place. `scripts/check_desk_manifest.py` verifies each entry exists, is importable, and
+# that nothing listed as RETIRED is still reachable from a scheduled path.
+#
+# CHANGING A `canonical:` ENTRY IS AN ARCHITECTURE DECISION, not a refactor. It redirects every
+# consumer at once.
+
+version: 3
+updated: 2026-08-29
+
+universe:
+  canonical: mt5_fusion
+  # docs/LAWS.md:40-45 -- the full MT5/Fusion universe is the sole traded and hunted ground.
+  # Crypto reference data is admissible ONLY where it measurably informs an MT5 instrument.
+  law: docs/LAWS.md
+  registry: desks/mt5/data/universe/universe.json
+  bars: desks/mt5/data/universe/*_H1.parquet
+
+research:
+  semantic_space: libs.research.semantic_space
+  edge_queue: libs.research.edge_queue
+  funnel_census: libs.research.funnel_census
+  mechanism_ontology: libs.research.mechanism_census
+  novelty: libs.research.novelty_v2
+  tri_alignment: libs.research.tri_alignment
+  successive_halving: libs.research.successive_halving
+  lineage: libs.research.lineage_dag
+  search_controller: libs.research.search_controller
+  artifacts: libs.research.artifacts
+
+validation:
+  # The truth engine. Nothing in `research:` may weaken anything here.
+  gauntlet: desks.mt5.scripts.external_gauntlet
+  gate_policy: desks.mt5.research.gate_policy
+  gate_spec: desks/mt5/policy/gate_spec.yaml
+  forward_verdict: desks.mt5.research.forward_verdict
+  family_evidence: desks.mt5.research.family_evidence
+
+promotion:
+  lockbox: libs.research.lockbox
+  reviewer: libs.research.lockbox
+  promoter: desks.mt5.research.promoter
+  sleeve_identity: desks.mt5.research.sleeve_registry
+  sizing: desks.mt5.mt5desk.sizing
+  portfolio_weight: desks.mt5.mt5desk.portfolio_weight
+  account_profiles: desks.mt5.mt5desk.account_profile
+
+shadow:
+  type: wall_clock_forward
+  engines:
+    # ALL THREE call forward_verdict.verdict. They were three standards until 2026-08-29.
+    - desks.mt5.research.shadow_forward
+    - desks.mt5.research.scalp_shadow
+    - desks.mt5.research.qquant_shadow
+  admission: desks.mt5.research.shadow_admission
+  # `run_key` DELEGATES to `sleeve_key`; two builders for one identity is the defect.
+  key_builder: desks.mt5.research.shadow_forward.sleeve_key
+
+watchdogs:
+  # Every one of these runs on a systemd user timer and leaves an artifact.
+  # UNWIRED OR IDLE IS A DEFECT (LAWS III.16).
+  forward_lane: scripts/heal_forward_lane.py
+  forward_clock: scripts/check_forward_clock.py
+  bar_coverage: scripts/check_bar_coverage.py
+  research_allocation: scripts/check_research_allocation.py
+  family_evidence: scripts/build_family_evidence.py
+  universe_mandate: scripts/check_universe_mandate.py
+  module_drift: scripts/check_desk_module_drift.py
+  desk_cycles: scripts/check_desk_cycles.py
+  manifest: scripts/check_desk_manifest.py
+
+retired:
+  # Present for audit, MUST NOT be reachable from any scheduled path. Each halts on the mandate
+  # rather than being deleted -- a deleted file cannot tell anyone why it went.
+  - path: scripts/run_daily_research.py
+    why: "CRYPTO-ONLY chain; contradicts the MT5/Fusion mandate. Halts via _mandate_halt."
+    retired: 2026-08-25
+  - path: scripts/run_crypto_testnet.py
+    why: "spawns the retired chain detached; the spawn is now inert because the target halts"
+    retired: 2026-08-25
+  - path: desks/mt5/side_channels/fix_gateway_canary.py
+    why: "duplicated the canary ramp; sizing.authority_ramp is canonical"
+    retired: 2026-08-29
+
+superseded:
+  # Kept and still imported, but no longer the canonical answer for their job.
+  - path: desks/mt5/side_channels/shadow.py
+    by: desks.mt5.research.forward_verdict
+    why: "read-only view over shadow_state with zero importers; not a verdict engine"

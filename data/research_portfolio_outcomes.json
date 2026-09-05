@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-31",
+  "authority": "research allocation evidence only; no promotion, sizing, order or capital authority",
+  "policy": "ops/research_allocation_policy.json",
+  "current_weights": {
+    "exploitation": 0.5,
+    "exploration": 0.5
+  },
+  "evidence_used_to_move_prior": false,
+  "reason": "Neither portfolio has realised validated economic value or a measured common research-cost denominator. Candidate, finding, disposition and commit counts are not economic yield, so the principal's 50/50 prior is retained.",
+  "latest_cycle": {
+    "cycle": "BRAIN_HUNTER_s47",
+    "as_of": "2026-08-31",
+    "exploitation": {
+      "work": "Reasoned rejection of R0169, R0281 and R0305 after fresh evidence showed their exact consumers are permanently retired crypto-exchange executor or moat paths; transferable survival, order-flow and discrete-rollover mechanisms remain distinct Fusion-native questions.",
+      "validated_economic_value": {
+        "status": "UNKNOWN",
+        "value": null,
+        "unit": "expected_log_wealth",
+        "why": "The dispositions prevent implementation effort from reviving prohibited venue machinery while retaining the mechanisms on current Fusion ground, but no counterfactual engineering cost or downstream portfolio contribution is measured."
+      },
+      "research_cost": {
+        "status": "UNKNOWN",
+        "value": null,
+        "unit": "common_cost_unit",
+        "why": "Wall time and controller tokens are not durably metered by portfolio in an artifact usable for two-sided comparison."
+      },
+      "source_evidence": [
+        "docs/research/recommendation_ledger.json::R0169",
+        "docs/research/recommendation_ledger.json::R0281",
+        "docs/research/recommendation_ledger.json::R0305"
+      ]
+    },
+    "exploration": {
+      "work": "Static public-text mining of the MIT Arbor/HTR skill state manager reached from the open-autoresearch lineage.",
+      "validated_economic_value": {
+        "status": "UNKNOWN",
+        "value": null,
+        "unit": "expected_log_wealth",
+        "why": "The cycle retained prewritten identities and negative constraints while refuting empty-baseline admission, repeated held-out reuse and unfenced state persistence, but no Fusion market cell, canonical-gate certificate, forward evidence or realised portfolio contribution exists."
+      },
+      "research_cost": {
+        "status": "UNKNOWN",
+        "value": null,
+        "unit": "common_cost_unit",
+        "why": "No comparable portfolio-level cost meter exists."
+      },
+      "source_evidence": [
+        "data/brain_hunter_s47_arbor_htr_state_screen.json",
+        "docs/research/improvement_inbox.md::BRAIN HUNTER s47",
+        "docs/research/prospector_coverage.md::BRAIN HUNTER s47"
+      ]
+    }
+  }
+}

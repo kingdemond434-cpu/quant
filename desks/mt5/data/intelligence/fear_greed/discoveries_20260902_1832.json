@@ -1,0 +1,28 @@
+[
+  {
+    "source": "cnn_fear_greed",
+    "type": "sentiment_reading",
+    "reading": "neutral",
+    "score": 34.0571428571429,
+    "rating": "fear",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.3,
+    "description": "Fear & Greed: 34.0571428571429 (fear)"
+  },
+  {
+    "source": "cnn_fear_greed",
+    "type": "rapid_change",
+    "score": 34.0571428571429,
+    "previous_close": 44.5714285714286,
+    "change": -10.5,
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.5257142857142849,
+    "description": "Fear & Greed changed worsening by 11 pts in 1 day"
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "source": "mql5_signals",
+    "name": "Filter",
+    "profit": "",
+    "drawdown": "",
+    "url": "https://www.mql5.com/en/signals",
+    "confidence": 0.3
+  },
+  {
+    "source": "mql5_signals",
+    "name": "Broker server",
+    "profit": "",
+    "drawdown": "",
+    "url": "https://www.mql5.com/en/signals",
+    "confidence": 0.3
+  },
+  {
+    "source": "mql5_signals",
+    "name": "Maximum profit",
+    "profit": "Maximum profit",
+    "drawdown": "",
+    "url": "https://www.mql5.com/en/signals",
+    "confidence": 0.3
+  },
+  {
+    "source": "mql5_signals",
+    "name": "Reliability",
+    "profit": "",
+    "drawdown": "",
+    "url": "https://www.mql5.com/en/signals",
+    "confidence": 0.3
+  },
+  {
+    "source": "mql5_signals",
+    "name": "Popular among subscribers",
+    "profit": "",
+    "drawdown": "",
+    "url": "https://www.mql5.com/en/signals",
+    "confidence": 0.3
+  }
+]

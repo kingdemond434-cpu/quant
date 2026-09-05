@@ -1,3 +1,9 @@
+> **SUPERSEDED 2026-08-25 (principal consolidation order).** Operative law now lives in
+> [docs/LAWS.md](/docs/LAWS.md) and [docs/RESEARCH.md](/docs/RESEARCH.md); dispositions in
+> [docs/MANDATE_COVERAGE.md](/docs/MANDATE_COVERAGE.md). This file is the unabridged ANNEX —
+> consult it for detail, never for standing orders; on conflict the compact documents govern.
+> The MT5 UNIVERSE MANDATE (LAWS §1) voids every crypto-universe clause herein.
+
 > Authority: `docs/MASTER_QUANT_CONSTITUTION.md`. This mandate is an implementation contract under the sealed master.
 
 This is the **subordinate Tier-1 implementation contract** beneath the sealed master constitution. Its job is not to add another hundred research doctrines; it forces the quant to **close the actual gap toward tier-1 capability every day**, while relentlessly producing survivors.  FINAL TIER-1 QUANT CONVERGENCE, SURVIVOR MAXIMIZATION & PERMANENT FRONTIER DIRECTIVE
