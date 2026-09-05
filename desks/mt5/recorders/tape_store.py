@@ -52,6 +52,49 @@ manifest row is embedded in the parquet's own key-value metadata, so a segment s
 its manifest -- by a crash, a partial copy, a restore from backup -- can always be re-registered
 without guessing.
 
+COMPACTION, AND WHY A DESIGN THAT LOSES NOTHING STILL HAD TO CHANGE. One segment per 60-second
+cycle is what makes a crash cost at most one cycle. It is also 1,440 parquet files per symbol per
+day, and a parquet file has a floor price: MEASURED 2026-09-05 in this container, 3.0-3.8 KB of
+footer per segment REGARDLESS of how many ticks are in it. At 1,440 segments that is 4.3 MB per
+symbol per day of pure container -- more than the ticks themselves for every symbol on this
+account except XAUUSD, and 1.09 GB/day across the 251-symbol universe. The "keep everything
+forever" policy below was written against 3.05 B/tick measured on ONE segment holding a whole
+day. The recorder does not write that file. The arithmetic was out by 34x and nobody would have
+found it by reading the code, because the code is correct -- it is the WRITE PATTERN that is
+expensive, and only a measurement of the write pattern shows it.
+
+So a day that has stopped receiving is COMPACTED before it is sealed: its segments are read,
+merged, deduped and rewritten as ONE segment, the manifest is replaced by the short one that
+describes what is actually there, and the originals are removed. The invariant at the top of this
+file is untouched -- compaction never opens an existing SEGMENT for writing; it writes a NEW
+content-addressed one and only then retires what it replaced. Every crash point is safe in the
+same asymmetric direction, and the ORDER is what makes it so:
+
+  1 write the compacted segment  -> crash: an orphan; `reconcile` re-registers it from its own
+                                    embedded row and the day reads as the compacted segment PLUS
+                                    its sources: duplicates, removed on read, never a hole
+  2 append its manifest row      -> crash: same, duplicates
+  3 append the compaction row    -> crash: same; this row is audit, not correctness
+  4 replace the manifest         -> crash: the long manifest stands and is still correct
+  5 delete the retired files     -> crash: they become orphans, get re-registered, read as
+                                    duplicates, and the next compaction folds them again into a
+                                    byte-identical segment. Idempotent.
+
+The one order that would be fatal is retiring the sources BEFORE the compacted segment is in the
+manifest: that window reads as an EMPTY day while every byte is intact on disk, which is the worst
+outcome available here. It is why step 2 precedes steps 3 and 4 rather than being batched with
+them, and the code says so at the call site.
+
+THE MANIFEST IS PRUNED AT COMPACTION, AND THAT IS A DELIBERATE RETREAT FROM "APPEND-ONLY FOREVER".
+1,440 per-cycle rows cost 620 KB per symbol-day -- MEASURED -- which across this universe is
+57 GB/year to record which minute each container was opened in, for containers that no longer
+exist and whose contents are proven by the compacted segment's digest. That is more than the ticks
+cost. What survives in `_superseded.jsonl` is the count folded, the ticks in and out (so the
+duplicate rate the overlap policy costs stays measurable), and the digest of the manifest as it
+stood, so the chain from live capture to compacted day stays checkable against the seal. The
+manifest replacement itself is atomic and the manifest is rebuildable from the segments' own
+embedded rows, so this is the one file here where a rewrite cannot lose anything a reader needs.
+
 THE ENCODING IS INTEGER POINTS, AND IT IS MEASURED, NOT PREFERRED. Prices are stored as
 `round(price / point)` in int64 columns with parquet's DELTA_BINARY_PACKED encoding under zstd.
 Measured on a synthetic tape at this broker's own observed tick rates (`tick_volume` from the
@@ -85,11 +128,15 @@ reason the tape is.
 THE RETENTION POLICY, AND THE ARITHMETIC THAT DECIDES IT
 
     FULL TICK RESOLUTION IS KEPT FOREVER. NOTHING IS EVER DOWNSAMPLED OR DELETED.
+    A DAY IS COMPACTED ONCE IT STOPS RECEIVING. COMPACTION IS NOT DOWNSAMPLING:
+    EVERY TICK SURVIVES IT BYTE-FOR-BYTE; ONLY THE CONTAINERS ARE MERGED.
 
-That is a strong claim, so here is the measurement behind it rather than a preference.
+That is a strong claim, so here is the measurement behind it rather than a preference. The
+previous version of this section was an honest estimate and it was WRONG BY 34x, which is worth
+recording: it priced the encoding, and the cost of this recorder is not the encoding.
 
 WHAT A DAY COSTS. Tick rates are the broker's own, taken from the `tick_volume` column of the
-desk's H1 parquets over 2026-06-01..2026-09-05 -- these are counted quote updates, not estimates:
+desk's H1 parquets over 2026-06-01..2026-09-05 -- counted quote updates, not estimates:
 
     XAUUSD   553,742 ticks/day (median)    the heaviest instrument the desk holds
     GBPJPY   182,834
@@ -98,23 +145,42 @@ desk's H1 parquets over 2026-06-01..2026-09-05 -- these are counted quote update
     ---------------------------------------------------------------------------
     median across those 24 symbols: 125,898 ticks/day; sum 3,021,558 ticks/day
 
-At the measured encoding cost of 3.05-3.35 bytes/tick (see above; 2.08 on the smoother synthetic
-tape used in tests, so the real figure is the conservative one):
+MEASURED 2026-09-05 IN THIS CONTAINER, writing a full synthetic trading day at each of those
+rates THE WAY THE RECORDER ACTUALLY WRITES -- one segment per 60-second cycle, 1,440 segments,
+plus the manifest and the seal:
 
-    the 24 liquid symbols          ~9.7 MB/day        ~3.5 GB/year
-    XAUUSD alone                   ~1.7 MB/day        ~0.6 GB/year
-    the median symbol              ~0.4 MB/day        ~0.15 GB/year
+    ticks/day    UNCOMPACTED  B/tick   B/segment      COMPACTED  B/tick   segments
+      552,960    6.07 MB/day   11.51       3,830    1.030 MB/day    1.86   1440 -> 1
+      181,440    5.41 MB/day   29.79       3,368    0.403 MB/day    2.22   1440 -> 1
+       82,080    5.19 MB/day   63.23       3,215    0.200 MB/day    2.44   1440 -> 1
+       56,160    5.16 MB/day   91.86       3,194    0.141 MB/day    2.51   1440 -> 1
+       28,800    5.12 MB/day  177.78       3,165    0.078 MB/day    2.70   1440 -> 1
+        1,440    4.95 MB/day  3438.0       3,051    0.008 MB/day    5.87   1440 -> 1
 
-THE OTHER 227 SYMBOLS ARE AN EXTRAPOLATION AND ARE LABELLED ONE. The universe holds 251
-instruments; only 24 have H1 history on this host, and they are the liquid end. The remainder are
-equity CFDs and exotics whose tick rates are far lower. At an assumed 30,000 ticks/day each they
-add ~22 MB/day, putting the whole universe near 32 MB/day -- about 11.5 GB/year. That number is
-an ESTIMATE and is replaced by a measurement within a day of the recorder running: the integrity
-report publishes `bytes_per_symbol_day` per symbol from the tape itself, and this paragraph
-should be rewritten from it rather than argued about.
+READ THE `B/segment` COLUMN, BECAUSE IT IS THE WHOLE FINDING. It barely moves with the tick rate:
+a parquet file costs ~3.0-3.8 KB of footer whether it holds 57 ticks or 3,447. Of the 3.08 KB
+measured on a 57-row segment, 1.40 KB is the irreducible schema footer for six columns, 1.13 KB
+is the embedded SegmentRecord and 0.55 KB is column statistics. Stripping the embedded record
+would save a third and destroy the self-describing recovery this store is built on, so the
+container cost cannot be argued away -- it has to be AMORTISED. The compacted read-back is
+verified byte-for-byte against the uncompacted one in `test_tape_store.py`, so "compaction is not
+downsampling" is a test rather than a promise.
+
+Uncompacted, the universe costs ~1.26 GB/day (~458 GB/year) and is ~85% container. Compacted at
+seal it costs ~24 MB/day (~8.9 GB/year) and is ~95% ticks. The estimate this section used to
+carry -- "~32 MB/day, ~11.5 GB/year" -- happened to land near the compacted answer while being
+blind to the containers entirely, which is worse than being wrong: it would have stayed
+"confirmed" by the steady state right up until someone changed the cycle length.
+
+THE OTHER 227 SYMBOLS ARE STILL AN EXTRAPOLATION AND ARE STILL LABELLED ONE. Only 24 of the 251
+have H1 history on this host and they are the liquid end; the rest are equity CFDs and exotics
+quoting far less. At an assumed 30,000 ticks/day each they add ~17.7 MB/day compacted on top of
+the liquid 24's ~6.7 MB/day. The integrity report publishes `bytes_per_symbol_day` per symbol from
+the tape itself, and that number REPLACES this paragraph within a day of the recorder running on
+the box.
 
 WHY "KEEP EVERYTHING" IS THE CORRECT POLICY AND NOT LAZINESS. The two sides of the trade are not
-comparable quantities. On one side, roughly 12 GB a year -- a few pounds of disk, and less than
+comparable quantities. On one side, roughly 11 GB a year -- a few pounds of disk, and less than
 this desk's existing `data/` directory. On the other, an unbounded and permanent loss: a tick
 discarded in 2026 cannot be re-acquired in 2029 at any price, from any vendor, because no archive
 of one retail CFD broker's quote stream exists or ever will. A downsampling policy trades an
@@ -130,20 +196,30 @@ WHAT IS DOWNSAMPLED, because something is. The DERIVED layers are cache, not ass
     data/cost_surface_tick.json             a rebuildable aggregate
 
 Those may be pruned to the last 90 days whenever disk pressure appears, because every one of
-them is a pure function of the bronze tape and can be rebuilt. The manifests, the seals, the gap
-ledger and the clock-skew rows are kept forever too: together they are a few hundred bytes per
-symbol-day and they are what makes the tape auditable rather than merely large.
+them is a pure function of the bronze tape and can be rebuilt. The manifests, the seals, the
+superseded ledger, the gap ledger and the clock-skew rows are kept forever too: together they are
+a few hundred bytes per symbol-day and they are what makes the tape auditable rather than merely
+large.
 
 THE PRESSURE VALVE IS PAUSING, NEVER PRUNING. When free space falls below the recorder's floor
-it stops capturing and writes DISK_FLOOR gap rows every cycle. It does not delete tape to make
-room. A recorder that can destroy an unbuyable asset to acquire a cheaper one will eventually do
-it on a day the disk filled for an entirely unrelated reason.
+it stops capturing and says so. It does not delete tape to make room. A recorder that can destroy
+an unbuyable asset to acquire a cheaper one will eventually do it on a day the disk filled for an
+entirely unrelated reason.
+
+TRANSIENT PEAK IS THE NUMBER THE DISK FLOOR HAS TO CLEAR, not the steady state. A day is
+uncompacted from its first tick until roughly six hours after it ends, so at any instant the tape
+holds up to ~1.3 days uncompacted (1.4 GB across the universe) on top of the compacted history.
+The 10 GB default floor clears that with room; a box with a smaller disk should raise the floor
+rather than shorten `seal_after_hours`, because sealing early is a false completeness claim and
+disk is cheaper than a lie.
 
 FALSIFIER, stated so this policy can be overturned by evidence rather than by opinion: if the
-measured `bytes_per_symbol_day` across the full 251-symbol universe exceeds ~200 MB/day (6x the
-estimate above, i.e. ~70 GB/year), the arithmetic is no longer a rounding error and the right
-response is a tiered policy -- full ticks for the traded universe, 1-second aggregates for the
-rest -- decided on that measurement.
+measured `bytes_per_symbol_day` across the full 251-symbol universe exceeds ~200 MB/day COMPACTED
+(6x the measurement above, i.e. ~70 GB/year), the arithmetic is no longer a rounding error and
+the right response is a tiered policy -- full ticks for the traded universe, 1-second aggregates
+for the rest -- decided on that measurement. The uncompacted figure is not the one to judge
+against: it is a transient, and judging a policy on a transient is how a recorder gets throttled
+for a cost it does not actually carry.
 ================================================================================================
 """
 from __future__ import annotations
@@ -180,6 +256,10 @@ ZSTD_LEVEL = 9
 _TMP_PREFIX = ".tmp-"
 _MANIFEST = "_manifest.jsonl"
 _SEAL = "_sealed.json"
+#: Which segments a compaction folded into which. Append-only, like the manifest and the gap
+#: ledger, and for the same reason: an edit is an opportunity to lose a row, and the one thing
+#: this store may never do is forget that a segment existed.
+_SUPERSEDED = "_superseded.jsonl"
 _SEG_RE = re.compile(r"^[0-9a-f]{16}\.parquet$")
 
 #: Reason codes for the gap ledger. Every one of these is a DIFFERENT question for the person
@@ -238,6 +318,10 @@ class SegmentRecord:
     #: and the manifest append. Counted by the integrity report -- a recovery is a fact, not a
     #: detail to hide.
     recovered: bool = False
+    #: Set when this segment is the OUTPUT of a compaction rather than a live capture. It carries
+    #: the ticks of many cycles, so its `cycle_id` names no single one; the segments it replaced
+    #: are named in `_superseded.jsonl` beside it.
+    compacted: bool = False
 
     @property
     def filename(self) -> str:
@@ -285,6 +369,9 @@ class DaySeal:
     gaps: int = 0
     gap_seconds: float = 0.0
     orphans_recovered: int = 0
+    #: Segments folded away by compaction. Their manifest rows are still there; their files are
+    #: not, and that is a recorded fact rather than a missing file.
+    superseded: int = 0
     notes: list[str] = field(default_factory=list)
 
 
@@ -326,7 +413,7 @@ def _append_line(path: Path, line: str) -> None:
 
 
 def encode_segment(ticks: np.ndarray, symbol: str, day: str, point: float, digits: int,
-                   cycle_id: str = "") -> tuple[bytes, SegmentRecord]:
+                   cycle_id: str = "", compacted: bool = False) -> tuple[bytes, SegmentRecord]:
     """Ticks -> (parquet bytes, manifest row). Pure: touches no disk, so it is fully testable.
 
     The round trip is VERIFIED here rather than trusted. `round(price / point)` is exact for
@@ -396,7 +483,7 @@ def encode_segment(ticks: np.ndarray, symbol: str, day: str, point: float, digit
         schema=SCHEMA, symbol=symbol, day=day, sha256="", rows=int(tms.size),
         first_ms=int(tms.min()), last_ms=int(tms.max()), point=float(point), digits=int(digits),
         encoding=encoding, bytes=0, written_at=datetime.now(tz=UTC).isoformat(timespec="seconds"),
-        cycle_id=cycle_id,
+        cycle_id=cycle_id, compacted=bool(compacted),
     )
     meta = {k: json.dumps(v) for k, v in asdict(rec_stub).items()}
     table = table.replace_schema_metadata({**meta, "schema_name": SCHEMA})
@@ -501,6 +588,9 @@ class TapeStore:
     def seal_path(self, symbol: str, day: str) -> Path:
         return self.day_dir(symbol, day) / _SEAL
 
+    def superseded_path(self, symbol: str, day: str) -> Path:
+        return self.day_dir(symbol, day) / _SUPERSEDED
+
     def gap_path(self, symbol: str, day: str) -> Path:
         return self.gaps_dir / _safe(symbol) / f"{day}.jsonl"
 
@@ -514,9 +604,16 @@ class TapeStore:
         """
         payload, rec = encode_segment(ticks, symbol, day, point, digits, cycle_id)
         dest = self.day_dir(symbol, day) / rec.filename
+        # THE MANIFEST IS ONLY SCANNED WHEN THE DESTINATION ALREADY EXISTED, and that is a
+        # measured cost rather than a micro-optimisation. By the end of a trading day the
+        # manifest holds 1,440 rows and the naive form re-parses all of them on every write --
+        # over a million json.loads per symbol-day, on a box that is also running the terminal
+        # that holds live positions. A destination that did not exist a moment ago cannot be in
+        # the manifest, so the scan is only needed on the collision path, which is exactly the
+        # crash-between-rename-and-append case it exists to cover.
+        existed = dest.exists()
         _atomic_write_bytes(dest, payload)                       # steps 2-4 of the write order
-        known = {r.sha256 for r in self.manifest(symbol, day)}
-        if rec.sha256 not in known:
+        if not existed or rec.sha256 not in {r.sha256 for r in self.manifest(symbol, day)}:
             _append_line(self.manifest_path(symbol, day),
                          json.dumps(asdict(rec), separators=(",", ":")))   # step 5
         return rec
@@ -543,6 +640,38 @@ class TapeStore:
                 out.append(SegmentRecord(**row))
             except (ValueError, TypeError):
                 continue
+        return out
+
+    def compactions(self, symbol: str, day: str) -> list[dict[str, Any]]:
+        """Every compaction this day has been through, newest last.
+
+        WHAT THIS KEEPS AND WHAT IT LETS GO. It keeps the count of segments folded, the ticks in
+        and out (so the duplicate rate the overlap policy costs stays measurable after the rows
+        that showed it are gone), and the digest of the manifest as it stood -- enough to prove
+        the seal's chain and to see that a compaction happened at all. It does NOT keep 1,440
+        per-cycle rows. That history was MEASURED at 620 KB per symbol-day, which across this
+        universe is 57 GB/year -- more than the ticks it describes -- to record which minute each
+        container was opened in, for containers that no longer exist and whose contents are proven
+        by the compacted segment's own digest. Paying more for the receipt than for the goods is
+        not rigour.
+        """
+        path = self.superseded_path(symbol, day)
+        if not path.exists():
+            return []
+        out: list[dict[str, Any]] = []
+        try:
+            lines = path.read_text("utf-8").splitlines()
+        except OSError:
+            return out
+        for line in lines:
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict):
+                out.append(row)
         return out
 
     def reconcile(self, symbol: str, day: str) -> dict[str, Any]:
@@ -656,6 +785,179 @@ class TapeStore:
             return 0
         return sum(f.stat().st_size for f in d.iterdir() if f.is_file())
 
+    def minute_mask(self, symbol: str, day: str) -> np.ndarray:
+        """Which of the day's 1,440 minutes carried at least one tick, cached per day.
+
+        WHY A CACHE IS THE DIFFERENCE BETWEEN A REPORT AND A REPORT NOBODY RUNS. Building a
+        symbol's session model needs the minute coverage of 90 days, and computing it the obvious
+        way decodes 90 full days of ticks PER SYMBOL -- 22,590 whole-day parquet decodes per
+        integrity pass across the universe, growing with every day recorded, on an hourly job.
+        The mask itself is 1,440 bits. It is keyed by the digest of the day's manifest, so a day
+        that GREW recomputes and a day that did not is a 200-byte read; a stale cache is
+        structurally impossible rather than merely unlikely.
+
+        The cache lives under `state/` and never inside the day directory: the day directory is
+        the ASSET and its byte count is the number the retention policy is defended with, so a
+        derived file must not inflate it.
+        """
+        token = self._day_token(symbol, day)
+        cache = self.state_dir / "minutes" / _safe(symbol) / f"{day}.json"
+        if cache.exists():
+            try:
+                doc = json.loads(cache.read_text("utf-8"))
+                if str(doc.get("token")) == token and isinstance(doc.get("mask"), str):
+                    raw = bytes.fromhex(doc["mask"])
+                    if len(raw) == 180:
+                        return np.unpackbits(np.frombuffer(raw, dtype=np.uint8)).astype(bool)
+            except (OSError, ValueError, TypeError):
+                pass
+        df = self.read_day(symbol, day)
+        mask = np.zeros(1440, dtype=bool)
+        if not df.empty:
+            day_start = int(pd.Timestamp(day, tz="UTC").timestamp() * 1000)
+            minute = (np.asarray(df["time_msc"], dtype=np.int64) - day_start) // 60_000
+            minute = minute[(minute >= 0) & (minute < 1440)]
+            if minute.size:
+                mask[np.unique(minute)] = True
+        with suppress(OSError, ValueError):
+            _atomic_write_bytes(cache, json.dumps({
+                "token": token, "n_ticks": len(df),
+                "mask": np.packbits(mask).tobytes().hex(),
+            }, separators=(",", ":")).encode("utf-8"))
+        return mask
+
+    def _day_token(self, symbol: str, day: str) -> str:
+        """A content token for one symbol-day: the digest of its manifest and superseded ledger.
+
+        Both, because a compaction rewrites what the day HOLDS without adding a manifest row that
+        a manifest-only digest would notice on its own -- it appends one and retires several, and
+        a token blind to the retirement would serve a mask built from double-counted segments.
+        """
+        h = hashlib.sha256()
+        for p in (self.manifest_path(symbol, day), self.superseded_path(symbol, day)):
+            with suppress(OSError):
+                if p.exists():
+                    h.update(p.read_bytes())
+            h.update(b"|")
+        return h.hexdigest()[:32]
+
+    # -------------------------------------------------------------- compaction --
+    def compact_day(self, symbol: str, day: str) -> dict[str, Any]:
+        """Fold a day's live segments into one, then remove what it replaced.
+
+        ONLY EVER CALL THIS ON A DAY THAT HAS STOPPED RECEIVING. It is safe to call on a live one
+        -- nothing is lost, because the compacted segment is written before anything is deleted
+        and a concurrently-written segment is simply not in it -- but it would be pointless work
+        that the next cycle undoes.
+
+        Segments are grouped by (point, digits, encoding) and each group is compacted separately.
+        A broker re-quote mid-day leaves a symbol with two units in one day, and merging those
+        into one segment would have to pick one point and silently re-price half the ticks --
+        which is the exact failure `mt5desk/tape.py` warns about, one layer down. Two units means
+        two compacted segments and both are right.
+        """
+        out: dict[str, Any] = {"symbol": symbol, "day": day, "status": "NOTHING_TO_DO",
+                               "segments_before": 0, "segments_after": 0, "superseded": 0,
+                               "rows_in": 0, "rows_out": 0, "duplicates_removed": 0,
+                               "bytes_before": 0, "bytes_after": 0, "groups": 0}
+        self.reconcile(symbol, day)
+        live = self.manifest(symbol, day)
+        out["segments_before"] = len(live)
+        out["bytes_before"] = self.day_bytes(symbol, day)
+        if len(live) < 2:
+            return out
+        d = self.day_dir(symbol, day)
+        groups: dict[tuple[float, int, str], list[SegmentRecord]] = {}
+        for r in live:
+            if (d / r.filename).exists():
+                groups.setdefault((float(r.point), int(r.digits), r.encoding), []).append(r)
+
+        keep: list[SegmentRecord] = []
+        changed = False
+        for (point, digits, _enc), recs in sorted(groups.items()):
+            if len(recs) < 2:
+                keep.extend(recs)
+                continue
+            frames = []
+            for r in recs:
+                with suppress(OSError, ValueError, pa.ArrowInvalid):
+                    frames.append(decode_segment(d / r.filename))
+            if len(frames) < 2:
+                keep.extend(recs)
+                continue
+            rows_in = sum(len(f) for f in frames)
+            df = pd.concat(frames, ignore_index=True).sort_values("time_msc", kind="mergesort")
+            df = df.drop_duplicates(subset=["time_msc", "bid", "ask", "last", "volume", "flags"],
+                                    keep="first")
+            arr = _ticks_from_frame(df)
+            if arr.size == 0:
+                keep.extend(recs)
+                continue
+            payload, rec = encode_segment(arr, symbol, day, point, digits,
+                                          cycle_id=f"compaction:{len(recs)}", compacted=True)
+            # THE COMPACTED SEGMENT MAY ALREADY BE ONE OF ITS OWN SOURCES, when an interrupted
+            # compaction re-runs: identical ticks give identical bytes and therefore an identical
+            # digest. Retiring it would retire the only file holding the day. It is excluded from
+            # its own victim list, and a group with no other victim is already compacted.
+            victims = [r for r in recs if r.sha256 != rec.sha256]
+            if not victims:
+                keep.append(rec)
+                continue
+
+            # THE ORDER BELOW IS THE SAFETY AND EVERY STEP IS A CRASH POINT ON PURPOSE.
+            #   after 1: an orphan segment -> re-registered by reconcile; the day reads as the
+            #            compacted segment PLUS its sources, which is duplicates, never a hole
+            #   after 2: the manifest names both -> duplicates on read, removed on read
+            #   after 3: audit row written; the day still reads correctly either way
+            #   after 4: the manifest names only what is live; victims are now orphans on disk
+            #   after 5: done
+            # The one order that would be fatal is writing the supersede/prune BEFORE the
+            # compacted segment reaches the manifest -- that window reads as an EMPTY day while
+            # every byte is intact on disk, which is the worst outcome available here.
+            _atomic_write_bytes(d / rec.filename, payload)                            # 1
+            if rec.sha256 not in {r.sha256 for r in self.manifest(symbol, day)}:
+                _append_line(self.manifest_path(symbol, day),                          # 2
+                             json.dumps(asdict(rec), separators=(",", ":")))
+            _append_line(self.superseded_path(symbol, day), json.dumps({               # 3
+                "compacted_into": rec.sha256, "folded": len(victims),
+                "rows_in": int(rows_in), "rows_out": rec.rows,
+                "duplicates_removed": int(max(0, rows_in - rec.rows)),
+                "bytes": rec.bytes, "point": point, "digits": digits,
+                "manifest_sha256": self.manifest_digest(symbol, day),
+                "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            }, separators=(",", ":")))
+            keep.append(rec)
+            changed = True
+            out["superseded"] += len(victims)
+            out["rows_in"] += int(rows_in)
+            out["rows_out"] += rec.rows
+            out["duplicates_removed"] += int(max(0, rows_in - rec.rows))
+            out["groups"] += 1
+            out["_victims"] = [*out.get("_victims", []), *(r.filename for r in victims)]
+
+        if changed:
+            _atomic_write_bytes(self.manifest_path(symbol, day), "".join(                # 4
+                json.dumps(asdict(r), separators=(",", ":")) + "\n" for r in keep
+            ).encode("utf-8"))
+            for name in out.pop("_victims", []):
+                with suppress(OSError):
+                    (d / name).unlink()                                                  # 5
+            _fsync_dir(d)
+        out.pop("_victims", None)
+        out["segments_after"] = len(self.manifest(symbol, day))
+        out["bytes_after"] = self.day_bytes(symbol, day)
+        out["status"] = "COMPACTED" if changed else "NOTHING_TO_DO"
+        return out
+
+    def manifest_digest(self, symbol: str, day: str) -> str:
+        """The digest of the manifest exactly as it stands. Carried into the seal and into every
+        compaction row, so the chain from a live capture to a compacted day is checkable."""
+        p = self.manifest_path(symbol, day)
+        try:
+            return hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else ""
+        except OSError:
+            return ""
+
     # ------------------------------------------------------------------- seal --
     def seal_day(self, symbol: str, day: str) -> DaySeal:
         """Declare a day complete. Reconciles first, then records what it holds.
@@ -683,6 +985,8 @@ class TapeStore:
             gaps=len([g for g in gaps if g.reason != GAP_RESOLVED]),
             gap_seconds=round(sum(g.seconds for g in gaps if g.reason != GAP_RESOLVED), 3),
             orphans_recovered=len(rec["orphans_recovered"]),
+            superseded=sum(int(c.get("folded") or 0)
+                           for c in self.compactions(symbol, day)),
             notes=([f"missing segments: {', '.join(rec['missing'][:5])}"] if rec["missing"] else [])
                   + ([f"corrupt segments: {', '.join(rec['corrupt'][:5])}"] if rec["corrupt"]
                      else []),
@@ -835,6 +1139,30 @@ def split_by_day(ticks: np.ndarray) -> Iterator[tuple[str, np.ndarray]]:
     days = np.array([broker_day(int(t)) for t in tms])
     for day in pd.unique(days):
         yield str(day), ticks[days == day]
+
+
+def _ticks_from_frame(df: pd.DataFrame) -> np.ndarray:
+    """A decoded frame back into the capture dtype, so compaction can re-encode it.
+
+    The round trip is exact for an int-points segment -- decoding is `pts * point` and encoding is
+    `rint(price / point)`, which recovers the same integer -- and `encode_segment` verifies it
+    again anyway rather than trusting this comment. `time` and `volume_real` are DERIVED here
+    rather than carried: neither is stored (see TICK_COLUMNS), and a compaction that invented
+    values for them would be writing numbers the broker never sent.
+    """
+    from recorders.tick_source import TICK_DTYPE
+    n = len(df)
+    out = np.empty(n, dtype=TICK_DTYPE)
+    tms = np.asarray(df["time_msc"], dtype=np.int64)
+    out["time_msc"] = tms
+    out["time"] = tms // 1000
+    out["bid"] = np.asarray(df["bid"], dtype=np.float64)
+    out["ask"] = np.asarray(df["ask"], dtype=np.float64)
+    out["last"] = np.asarray(df["last"], dtype=np.float64)
+    out["volume"] = np.asarray(df["volume"], dtype=np.int64).astype(np.uint64)
+    out["flags"] = np.asarray(df["flags"], dtype=np.int64).astype(np.uint32)
+    out["volume_real"] = 0.0
+    return out
 
 
 def dedupe(ticks: np.ndarray) -> np.ndarray:

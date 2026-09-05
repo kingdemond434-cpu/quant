@@ -559,7 +559,8 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
 
 
 def book_from_allocation(total: float, book: object, book_fallback: object, *,
-                         certified: bool, why: str) -> tuple[dict[str, float] | None, str]:
+                         certified: bool, why: str,
+                         zeroed: object = None) -> tuple[dict[str, float] | None, str]:
     """The optimiser's PER-SLEEVE target risk fractions, or None with the reason.
 
     THE BOOK WAS SOLVED AND THEN NOT USED. `allocator_heat` takes the optimiser's TOTAL and the
@@ -577,6 +578,23 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
     (`book_fallback`), because the floor is deployed either way (principal, 2026-09-04: 20%
     minimum, 24/7). A stale or failed proof changes WHO allocates the floor, never WHETHER it
     is allocated.
+
+    ZERO IS AN ANSWER, AND IT COULD NOT BE GIVEN (principal, 2026-09-05: "five minutes/hour/
+    session later, it can be 0%"). `pf_allocation.json`'s `book` is filtered to heat > 1e-5, so a
+    sleeve the optimiser ZEROED simply vanished from it -- and a name not in the book reads as
+    `from_book = False` in the gateway, which falls through to `promoted_lot`'s ramp path and
+    `sizing.clamp_risk_frac`, which FLOORS at BASE_RISK_FRAC. The allocator's "hold none of this"
+    therefore reached the venue as 3% of equity times the authority ramp. `zeroed` is the
+    allocator's explicit list of ROSTERED sleeves it gave no heat (`book_zeroed`), and those names
+    are carried into the returned book at 0.0 so the gateway's existing "allocator gave this
+    sleeve no heat; skipped" path -- present at every placement site and until now unreachable --
+    actually fires.
+
+    STRICTLY ADDITIVE AND REDUCE-ONLY. Absent or unreadable `zeroed` leaves the answer exactly as
+    it was; a zero entry can only lower a sleeve's size, never raise one; zeros do not change the
+    book's sum, so the drift check against `total` is unaffected; and the empty-book refusal is
+    decided BEFORE any zero is added, so a book of nothing but zeros still reads as "the allocator
+    declined to allocate" rather than as an instruction to size everything at zero.
 
     Pure over the artifact's parsed pieces: `total` is the certified heat `allocator_heat`
     returned, `book` and `book_fallback` are the artifact's own fields. The gateway reads the
@@ -612,7 +630,18 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
         # one of them was rewritten independently, and sizing on a book that does not sum to the
         # budget the heat cap enforces would over- or under-deploy silently.
         return None, f"book sums to {sum(book_.values()):.4f}, heat says {total:.4f}"
-    return book_, f"allocator book authoritative ({len(book_)} sleeve(s)); {why}"
+    n_zero = 0
+    try:
+        for name in (zeroed or {}):
+            if str(name) not in book_:
+                book_[str(name)] = 0.0
+                n_zero += 1
+    except TypeError:
+        n_zero = 0                      # unreadable list: the book stands exactly as it was
+    if not n_zero:
+        return book_, f"allocator book authoritative ({len(book_)} sleeve(s)); {why}"
+    return book_, (f"allocator book authoritative ({len(book_) - n_zero} sleeve(s), {n_zero} held "
+                   f"at zero by this solve); {why}")
 
 
 def allocator_rank(base: Path, now: float | None = None) -> dict[str, float] | None:
@@ -697,9 +726,27 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     # Per-sleeve q: an explicit scalar override still applies to every sleeve (that is what a
     # caller asking for one means), otherwise each sleeve is priced on ITS OWN instrument.
     qs: list[float] = []
+    #: Parallel to `qs`: this leg was priced at zero by the ALLOCATOR, not by a failed
+    #: measurement. Kept separate so the unmeasurable-leg fallback below cannot overwrite it.
+    zeroed_by_allocator: list[bool] = []
     for s in sleeves:
+        zeroed_by_allocator.append(False)
         if per_sleeve_q is not None:
             qs.append(float(per_sleeve_q))
+            continue
+        # AN EXPLICIT ZERO IS A PRICE, NOT A MISSING ONE. `gateway` sets `q_charge` from the
+        # allocator's own fraction for a sleeve in the solved book, and `book_zeroed` puts a
+        # sleeve the solve gave NO heat into that book at exactly 0.0 -- `promoted_lot` then
+        # returns no lot for it and it places nothing. Billing it at its measured stop cost would
+        # reserve budget nothing will use and could defer a leg the book actually wanted. It stays
+        # in the returned roster either way, because dropping it here would orphan any bracket it
+        # still has open. Before `book_zeroed` existed this value could not BE zero
+        # (`sizing.clamp_risk_frac` floors at the base fraction), so nothing that worked before
+        # reads differently now.
+        _qc = s.get("q_charge")
+        if isinstance(_qc, (int, float)) and not isinstance(_qc, bool) and float(_qc) == 0.0:
+            zeroed_by_allocator[-1] = True
+            qs.append(0.0)
             continue
         # A sleeve annotated with its own effective fraction (risk_frac x ramp, set by the
         # caller) is billed exactly that -- the sizing path and the heat path must price the
@@ -736,8 +783,11 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     known = [q for q in qs if q == q and q > 0]
     fallback = max(known) if known else 0.0
     budget = solved if solved is not None else heat_budget(k_eff)
-    qs = [(q if q == q and q > 0 else fallback) for q in qs]
-    if fallback <= 0:
+    # An allocator-zeroed leg keeps its zero; every OTHER unpriceable leg is still charged at the
+    # most expensive measured one, exactly as before.
+    qs = [(0.0 if z else (q if q == q and q > 0 else fallback))
+          for q, z in zip(qs, zeroed_by_allocator, strict=True)]
+    if fallback <= 0 and not all(zeroed_by_allocator):
         note = ("PORTFOLIO HEAT CAP: no sleeve's risk could be priced in account currency; "
                 "admitting none rather than sizing from another instrument's constants")
         return [], note

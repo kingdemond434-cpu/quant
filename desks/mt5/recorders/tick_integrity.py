@@ -136,6 +136,11 @@ class DayVerdict:
     orphans_recovered: int = 0
     corrupt_segments: int = 0
     missing_segments: int = 0
+    #: How many times this day has been folded, and how many containers it cost. A day that was
+    #: never compacted and a day compacted to one segment look identical on disk otherwise, and
+    #: the second is a finished day while the first is one the recorder has not got to.
+    compactions: int = 0
+    segments_folded: int = 0
     session_basis: str = "none"
     session_obs: int = 0
     claimed_minutes: int = 0
@@ -201,24 +206,31 @@ class SessionModel:
 
 def observed_session(store: TapeStore, symbol: str, days: list[str],
                      quorum: float = SESSION_QUORUM) -> SessionModel:
-    """Build the session model from this symbol's own recorded days."""
+    """Build the session model from this symbol's own recorded days.
+
+    THE MINUTE MASKS ARE CACHED AND THAT IS WHAT MAKES THIS RUNNABLE HOURLY. The denominator
+    needs 90 days of minute coverage per symbol; computing it from the ticks means decoding 90
+    whole days per symbol -- 22,590 full-day parquet decodes per pass across this universe,
+    growing with every day recorded, on a job scheduled every hour. `TapeStore.minute_mask` keys
+    a 180-byte bitmap on the day's own content digest, so a day that has not changed costs a small
+    read and a day that has is recomputed. A report that takes longer than its own period is a
+    report that stops running, and a checker that stops running is worse than no checker because
+    the desk goes on believing it is watched.
+    """
     counts = np.zeros((7, 1440), dtype=np.int64)
     obs = np.zeros(7, dtype=np.int64)
     pooled_counts = np.zeros(1440, dtype=np.int64)
     pooled_obs = 0
     for day in days:
-        df = store.read_day(symbol, day)
-        if df.empty:
+        mask = store.minute_mask(symbol, day)
+        if not mask.any():
             continue
         wd = pd.Timestamp(day).weekday()
         obs[wd] += 1
-        day_start = int(pd.Timestamp(day, tz="UTC").timestamp() * 1000)
-        minute = (np.asarray(df["time_msc"], dtype=np.int64) - day_start) // 60_000
-        minute = np.unique(minute[(minute >= 0) & (minute < 1440)])
-        counts[wd, minute] += 1
+        counts[wd] += mask
         if wd <= 4:
             pooled_obs += 1
-            pooled_counts[minute] += 1
+            pooled_counts += mask
     per_wd = np.zeros((7, 1440), dtype=bool)
     for wd in range(7):
         if obs[wd] > 0:
@@ -314,10 +326,24 @@ def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
     for g in open_gaps:
         v.gap_reasons[g.reason] = v.gap_reasons.get(g.reason, 0) + 1
 
+    # COMPACTION REMOVES THE DUPLICATES IT MEASURES, so the measurement has to survive it. A
+    # compacted day holds one segment of already-deduped ticks, and reading `written_rows` off it
+    # would report a duplicate rate of zero for every finished day -- retiring the only number
+    # that says what the overlap re-pull actually costs, on exactly the days worth judging. The
+    # compaction row carries the ticks that went in and the duplicates it dropped, so the rate is
+    # read from there when the day has been through one.
+    comps = store.compactions(symbol, day)
+    v.compactions = len(comps)
+    v.segments_folded = sum(int(c.get("folded") or 0) for c in comps)
     df = store.read_day(symbol, day, verify=True)
     v.n_ticks = len(df)
-    v.dup_rows = max(0, written_rows - v.n_ticks)
-    v.dup_rate = round(v.dup_rows / written_rows, 6) if written_rows else 0.0
+    if comps:
+        rows_in = sum(int(c.get("rows_in") or 0) for c in comps)
+        v.dup_rows = sum(int(c.get("duplicates_removed") or 0) for c in comps)
+        v.dup_rate = round(v.dup_rows / rows_in, 6) if rows_in else 0.0
+    else:
+        v.dup_rows = max(0, written_rows - v.n_ticks)
+        v.dup_rate = round(v.dup_rows / written_rows, 6) if written_rows else 0.0
     v.bytes_per_tick = round(v.bytes / v.n_ticks, 3) if v.n_ticks else 0.0
 
     if v.n_ticks == 0:
@@ -538,6 +564,16 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "corrupt_segments": sum(r.corrupt_segments for r in rows),
             "missing_segments": sum(r.missing_segments for r in rows),
             "orphans_recovered": sum(r.orphans_recovered for r in rows),
+            # THE RETENTION STORY, MADE OBSERVABLE. A parquet segment costs ~3KB of footer
+            # whatever it holds, so a finished day still carrying its 1,440 per-cycle containers
+            # is ~25x its compacted size. `sealed_but_uncompacted` is the actionable number: it
+            # counts days the recorder declared complete and has not yet folded, which is a
+            # housekeeping backlog rather than a data defect -- but it is the difference between
+            # ~24 MB/day and ~1.26 GB/day across this universe, so it is not a detail.
+            "days_compacted": sum(1 for r in rows if r.compactions),
+            "segments_folded": sum(r.segments_folded for r in rows),
+            "sealed_but_uncompacted": sum(1 for r in rows
+                                          if r.sealed and not r.compactions and r.n_segments > 1),
         },
         "verdicts": tally,
         "recorder": recorder,
@@ -618,6 +654,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  verdicts: {rep['verdicts']}")
     print(f"  UNEXPLAINED session minutes: {t['unexplained_minutes']}  "
           f"(explained by a gap row: {t['explained_minutes']})")
+    print(f"  compaction: {t['days_compacted']} day(s) folded, {t['segments_folded']:,} "
+          f"container(s) reclaimed; {t['sealed_but_uncompacted']} sealed day(s) NOT yet folded")
     for row in rep["failures"][:10]:
         print(f"  FAIL {row['symbol']}/{row['day']}: {'; '.join(row['reasons'][:2])}")
     print(f"  -> {args.out}")

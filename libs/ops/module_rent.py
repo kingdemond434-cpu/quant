@@ -93,6 +93,10 @@ SHADOW_DIR = "desks/mt5/reports/shadow/"          # trailing slash: the graph na
 LIVE_LEDGER = "desks/mt5/data/live_ledger.jsonl"
 HISTORY = "desks/mt5/data/module_rent.jsonl"
 REPORT = "desks/mt5/reports/MODULE_RENT.json"
+#: THE EXECUTION-LEARNING LINE (2026-09-05). The fill corpus and the two models built on it.
+ALPHA_CAPTURE = "desks/mt5/reports/ALPHA_CAPTURE.json"
+CAPTURE_HISTORY = "desks/mt5/data/alpha_capture_history.jsonl"
+EXECUTION_TWIN = "desks/mt5/reports/EXECUTION_TWIN.json"
 
 #: The execution algorithms the registry competes (mt5desk.execution_registry). `market` is the
 #: baseline every other one is measured against, so its own rent is zero by definition.
@@ -176,6 +180,11 @@ MODULES: tuple[Module, ...] = (
            "mean growth at the tail-bounded fraction minus at the book's own fraction, when the "
            "tail bound binds (f_tail < 1)", "measure_kelly_surface",
            "libs/portfolio/kelly_surface.surface"),
+    Module("pf_allocator:marginal_admission", "allocator_component", ALLOCATION,
+           "dE[log W] of the candidates the criterion ADMITTED, each re-solved into the held book "
+           "at the same total heat on the same sampled worlds: E[logW | book + i] - E[logW | book]"
+           " summed over the admitted set (pf_allocator.marginal_admission)",
+           "measure_marginal_admission", "desks/mt5/research/pf_allocator.marginal_admission"),
     Module("pf_allocator:regime_conditioning", "allocator_component", ALLOCATION,
            "needs the book scored on unconditioned worlds beside the conditioned ones; the "
            "artifact carries regime.conditioned but no with/without score",
@@ -190,6 +199,36 @@ MODULES: tuple[Module, ...] = (
              "trials beside; <= 0 over the window with trials is dead information",
              "measure_research_source", "research_pnl sources", key=src, sources=(src,))
       for src in DATA_HYPOTHESIS_SOURCES),
+    # THE BREADTH LANE'S RENT LINES (2026-09-05). Three producers whose entire output is research
+    # instructions, so the only honest ledger is the growth their instructions eventually carry in
+    # the funded book -- RESEARCH_PNL, by the source name each one stamps on the tasks it queues
+    # (`libs.research.bandit.SOURCE_ARM` maps the same three names to arms). Like the vol archive
+    # above, these read UNMEASURED until a queued task becomes a certificate and that certificate
+    # carries heat: a research organ cannot be billed for growth before its first hypothesis has
+    # been through the gauntlet, and an UNMEASURED row here is the rule working rather than a gap.
+    # The measurement is FORWARD by construction, and it arrives without anyone remembering to add
+    # a line later.
+    Module("alpha_breadth", "proposer", RESEARCH_PNL,
+           "expected log-wealth per day carried in the funded book by certificates whose "
+           "hypothesis came from an EMPTY-CLUSTER task -- the first sleeve of a phenomenon the "
+           "book did not occupy. 'Without' is genuinely nothing: nothing else on the desk names "
+           "an unoccupied cluster, so a certificate traced to this source would not exist",
+           "measure_research_source", "desks/mt5/research/alpha_breadth.py",
+           key="alpha_breadth", sources=("alpha_breadth",)),
+    Module("drawdown_alpha", "proposer", RESEARCH_PNL,
+           "expected log-wealth per day carried by certificates whose hypothesis came from a "
+           "drawdown-state task. THE RENT IS UNDERSTATED BY THIS LEDGER AND THAT IS DELIBERATE: "
+           "a tail-positive sleeve's real contribution is the leverage the whole book can then "
+           "carry, which shows up as everyone else's growth, not its own. Billing it on its own "
+           "growth is the conservative reading and cannot flatter it",
+           "measure_research_source", "desks/mt5/research/drawdown_alpha.py",
+           key="drawdown_alpha", sources=("drawdown_alpha",)),
+    Module("survivor_neighbourhood", "proposer", RESEARCH_PNL,
+           "expected log-wealth per day carried by certificates whose hypothesis came from a "
+           "survivor-state task -- a state where an existing edge is stronger, or one where it "
+           "pays nothing and the heat should go elsewhere",
+           "measure_research_source", "desks/mt5/research/survivor_neighbourhood.py",
+           key="survivor_neighbourhood", sources=("survivor_neighbourhood",)),
     # THE DATA MOAT'S OWN RENT LINES. A recorder is a component like any other and the principal's
     # rule admits no exception: E[log W] with it minus E[log W] without it, measured forward, or
     # it is retired. That is deliberately an uncomfortable line to write for an asset whose whole
@@ -215,6 +254,28 @@ MODULES: tuple[Module, ...] = (
            "measure_research_source", "desks/mt5/recorders/vol_archive.py",
            key="vol_archive", sources=("vol_archive", "vol_term", "variance_premium",
                                        "implied_vol")),
+    # THE EXECUTION-LEARNING LINES (2026-09-05, the principal's order). One billable quantity --
+    # R per filled trade recovered from execution leakage -- and three claimants. The corpus
+    # bills the leakage trend because it is what made leakage decomposable at all; the two models
+    # bill nothing until they are MEASURED on their own power gate AND wired to something that
+    # changes an order. Both currently read UNMEASURED WITH THE SHORTFALL, which is the rule
+    # working: a model that cannot yet be fitted must not be billed for what a measurement bought.
+    Module("data_source:fill_corpus", "data_source", CAPTURE_HISTORY,
+           "leakage per fill in the FIRST half of the alpha-capture history minus the SECOND: "
+           "E[R kept with the corpus] - E[R kept without it], where 'without' is genuinely "
+           "nothing because leakage could not be decomposed before a joined fill record existed",
+           "measure_execution_learning", "libs/execution/fill_corpus.py", key="fill_corpus"),
+    Module("execution_choice_model", "execution_algo", ALPHA_CAPTURE,
+           "R per fill saved by routing to the style the conditional surface names instead of "
+           "the market baseline; unbillable until the surface is MEASURED on its own power gate "
+           "and a consumer that changes an order is declared",
+           "measure_execution_learning", "libs/execution/execution_choice_model.py",
+           key="execution_choice_model"),
+    Module("meta_labeler", "allocator_component", ALPHA_CAPTURE,
+           "R per fill of the meta-sized book minus the 1x book on the same signals; unbillable "
+           "until the labeler is MEASURED and wired. It can never re-admit a signal a gate "
+           "refused, so its downside is bounded at SKIP and its upside is zero while UNMEASURED",
+           "measure_execution_learning", "libs/execution/meta_label.py", key="meta_labeler"),
     Module("ai_capital_modifier", "ai_organ", MODIFIER_LEDGER,
            "the AI capital modifier's own conditioning ledger: heat its categories moved x what "
            "that heat earned, realised per day (the same rows as state_posterior, read as the "
@@ -594,6 +655,74 @@ def measure_execution_algo(m: Module, led: Ledgers) -> dict[str, Any]:
                 mean_filled_frac=ff_mine, baseline_filled_frac=ff_base)
 
 
+def measure_execution_learning(m: Module, led: Ledgers) -> dict[str, Any]:
+    """Rent for the fill corpus and the two models built on it. Unit: R per filled trade.
+
+    ONE BILLABLE QUANTITY, THREE CLAIMANTS. All three exist to recover execution leakage -- the
+    gap between the predicted frictionless edge and the realised one -- so all three bill on the
+    SAME number: the R per fill the desk stopped losing, measured FORWARD across the alpha
+    capture ledger's own history. `with` is the second half of that history, `without` the first.
+
+    THE CORPUS BILLS FIRST BECAUSE IT IS WHAT MAKES THE OTHERS MEASURABLE AT ALL. Its "without"
+    is genuinely nothing: before a joined fill record existed, leakage could not be decomposed
+    into spread, slippage, commission and residual, so no execution decision could be aimed. The
+    two MODELS bill only once they are (a) MEASURED on their own power gate and (b) declared as
+    the consumer of an order-changing decision. Until both hold, this returns UNMEASURED WITH THE
+    SHORTFALL -- which is the module working, not a gap. Attributing the corpus's leakage
+    improvement to an unwired model would be billing a model for what a measurement bought.
+
+    THIS IS DELIBERATELY AN UNCOMFORTABLE LINE for an asset whose whole argument is that it
+    cannot be re-acquired later. "Unbuyable" is a reason to start capture TODAY, not a licence to
+    skip the billing: if the corpus's leakage line does not improve after a fair window, the
+    right response is to stop building models on it, not to keep paying because the rows felt
+    precious.
+    """
+    cap = led.json(ALPHA_CAPTURE)
+    hist = led.rows(CAPTURE_HISTORY)
+    twin = led.json(EXECUTION_TWIN)
+    n_exec = int(_num((cap.get("corpus") or {}).get("unique_executions")) or 0)
+    if m.key in ("execution_choice_model", "meta_labeler"):
+        block = (twin.get("execution_choice") if m.key == "execution_choice_model"
+                 else twin.get("meta_label")) or {}
+        status = str(block.get("status") or UNMEASURED)
+        raw_power = block.get("power")
+        power: dict[str, Any] = raw_power if isinstance(raw_power, dict) else {}
+        raw_gate = power.get("gate")
+        gate: dict[str, Any] = raw_gate if isinstance(raw_gate, dict) else power
+        short = _num(gate.get("shortfall_per_arm"))
+        need = _num(gate.get("n_required_per_arm")) or _num(
+            power.get("n_required_per_bucket"))
+        return _row(m, UNMEASURED, unit="R/fill", n=n_exec,
+                    why=(f"{m.key} is {status} and wired to nothing that sends an order; it "
+                         "cannot bill a leakage improvement a measurement bought. "
+                         f"corpus holds {n_exec} execution(s)"
+                         + (f"; needs {need:.0f} per arm" if need else "")
+                         + (f", short {short:.0f}" if short else "")),
+                    model_status=status,
+                    n_required_per_arm=(int(need) if need else None),
+                    shortfall_per_arm=(int(short) if short else None))
+    leaks = [v for v in (_num(r.get("leakage_r")) for r in hist) if v is not None]
+    if len(leaks) < 2 * MIN_N:
+        return _row(m, UNMEASURED, unit="R/fill", n=n_exec,
+                    why=(f"{len(leaks)} alpha-capture point(s) on {CAPTURE_HISTORY}; a forward "
+                         f"with/without split needs {2 * MIN_N}. The corpus holds {n_exec} "
+                         "execution(s); a point is only written when the capture ratio is "
+                         "MEASURED, so this reads UNMEASURED until the desk has fills"),
+                    capture_points=len(leaks))
+    half = len(leaks) // 2
+    before, after = leaks[:half], leaks[half:]
+    rent = statistics.fmean(before) - statistics.fmean(after)   # leakage FELL => positive rent
+    se = math.sqrt(statistics.variance(before) / len(before)
+                   + statistics.variance(after) / len(after))
+    t = rent / se if se > 0 else (math.inf if rent > 0 else (-math.inf if rent < 0 else 0.0))
+    verdict = EARNS if t > T_LINE else (COSTS if t < -T_LINE else UNMEASURED)
+    return _row(m, verdict, rent=rent, unit="R/fill", n=n_exec,
+                ci=[round(rent - 1.96 * se, 12), round(rent + 1.96 * se, 12)],
+                window=f"{len(before)} point(s) before vs {len(after)} after",
+                why=("" if verdict != UNMEASURED else f"|t| = {abs(t):.2f} < {T_LINE}"),
+                t=(round(t, 3) if math.isfinite(t) else None), capture_points=len(leaks))
+
+
 def measure_dynamic_weights(m: Module, led: Ledgers) -> dict[str, Any]:
     alloc = led.json(ALLOCATION)
     if not alloc:
@@ -656,6 +785,41 @@ def measure_kelly_surface(m: Module, led: Ledgers) -> dict[str, Any]:
                 note="binding this pass: the bound's growth against the unbounded book; a "
                      "negative number is growth the tail bound declined and must be weighed "
                      "against the ruin it refused")
+
+
+def measure_marginal_admission(m: Module, led: Ledgers) -> dict[str, Any]:
+    """What the dE[log W] admission criterion is worth: the growth its admitted set adds.
+
+    THE UNIT IS THE OBJECTIVE ITSELF, which is the whole reason this criterion replaced a Sharpe
+    ranking: each admitted candidate's rent IS `E[logW | book + i] - E[logW | book]`, measured on
+    one world population at one total heat. A scan that admits nothing is NOT_BINDING (it changed
+    no allocation and cost no growth), not a failure -- a book that already holds everything worth
+    holding is the criterion working.
+    """
+    alloc = led.json(ALLOCATION)
+    if not alloc:
+        return _row(m, UNMEASURED, why=f"{ALLOCATION} absent: no allocator pass on this host")
+    adm = alloc.get("admission") or {}
+    if str(adm.get("status") or "") != "MEASURED":
+        return _row(m, UNMEASURED,
+                    why=f"no measured admission scan on the artifact (status "
+                        f"{adm.get('status', 'ABSENT')!r})")
+    rent = _num((adm.get("rent") or {}).get("sum_admitted_delta_elogw_per_day"))
+    n_scored = int(_num(adm.get("n_scored")) or 0)
+    n_admitted = int(_num(adm.get("n_admitted")) or 0)
+    if rent is None:
+        return _row(m, UNMEASURED, why="the scan carries no rent line")
+    if not n_admitted:
+        return _row(m, NOT_BINDING, rent=0.0, n=n_scored,
+                    window=f"one pass, {n_scored} candidate(s) scored",
+                    why="the criterion admitted nothing this pass: it changed no allocation")
+    verdict = EARNS if rent > 0 else (COSTS if rent < 0 else NOT_BINDING)
+    return _row(m, verdict, rent=rent, n=max(n_scored, MIN_N),
+                window=f"one pass, {n_admitted}/{n_scored} candidate(s) admitted",
+                why="", n_admitted=n_admitted, n_scored=n_scored,
+                unscored=len(adm.get("unscored") or {}), basis=str(adm.get("basis") or ""),
+                note=("a sum of separately-measured marginals against the same held book; the "
+                      "joint delta of admitting all of them at once is smaller"))
 
 
 def measure_regime_conditioning(m: Module, led: Ledgers) -> dict[str, Any]:

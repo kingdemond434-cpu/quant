@@ -14,7 +14,6 @@ fence stays attached to the constitution, the build standard and the scheduler.
 
 from __future__ import annotations
 
-import ast
 import json
 import subprocess
 import sys
@@ -137,34 +136,24 @@ def test_foreign_pytest_paths_are_excluded(sandbox: Path) -> None:
 
 # --- the wiring: these fail if the live repairs are reverted -----------------------------------
 
-def test_live_guard_ramp_declares_its_provenance() -> None:
-    """THE PROVING INSTANCE. run_live_guard published SIZE_STEPS[0] and six never-evaluated
-    conditions as a measurement, from a file that has never existed. If this assertion is
-    deleted the fabrication returns silently."""
-    src = (_ROOT / "scripts/run_live_guard.py").read_text("utf-8")
-    assert "from libs.ops.input_provenance import Inputs" in src
-    assert 'Inputs("run_live_guard._ramp")' in src
-    assert '"provenance": ramp_inp.block()' in src
-    assert '"measured": ramp_inp.measured()' in src
-    # the six checks must not be published as evaluated when the evidence file is absent
-    assert '"checks": ramp_checks if ramp_inp.measured() else None' in src
-
-
-def test_live_guard_promotion_gate_declares_its_provenance() -> None:
-    """A green S1 gate writes a principal-action file telling a human to deploy LIVE CAPITAL."""
-    src = (_ROOT / "scripts/run_live_guard.py").read_text("utf-8")
-    assert 'Inputs("run_live_guard.promo_evidence")' in src
-    assert '"provenance": promo_inp.block()' in src
-
-
-def test_live_guard_ramp_is_not_read_through_the_conflating_idiom() -> None:
-    """`_load(_RAMP, {})` returns its default for a missing file exactly as for an empty one.
-    Every ramp read must go through Inputs, or the absence vanishes again."""
-    tree = ast.parse((_ROOT / "scripts/run_live_guard.py").read_text("utf-8"))
-    bad = [n.lineno for n in ast.walk(tree)
-           if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "_load"
-           and any(isinstance(a, ast.Name) and a.id == "_RAMP" for a in n.args)]
-    assert not bad, f"_load(_RAMP, ...) still conflates absent with empty at line(s) {bad}"
+# THE PROVING INSTANCE WAS `scripts/run_live_guard.py`, AND IT IS GONE (2026-09-05).
+#
+# Three tests stood here. They pinned that run_live_guard's ramp and promotion gate declared their
+# provenance through `Inputs`, and that the ramp was never read through `_load(_RAMP, {})` -- the
+# idiom that returns the same default for a missing file as for an empty one. That organ was the
+# retired crypto-exchange desk's Gate-0 size governor; it was deleted with the desk under the MT5
+# universe mandate (2026-08-18), its cron row is retired in ops/crontab.manifest with the reason,
+# and the alerts that paged on it went with it.
+#
+# THE TESTS ARE DELETED RATHER THAN REPOINTED, and that is the honest call rather than the
+# convenient one. A wiring test buys its keep by naming a SPECIFIC repair on a SPECIFIC organ; the
+# MT5 gateway has its own sizing path and has never committed this defect, so pointing these
+# assertions at it would invent a regression site instead of guarding one. What must NOT be lost is
+# the general law, and it is not lost: `check_input_provenance.py` scans the whole tree, the
+# arithmetic tests above still prove it catches a fabricated measurement and refuses on an empty
+# set, and `test_idle_cost_does_not_erase_clamps_when_the_guard_is_unreadable` below keeps a live
+# repair of exactly this class fenced. If a future MT5 organ publishes a default as a measurement,
+# the fence -- not a deleted test -- is what catches it.
 
 
 def test_idle_cost_does_not_erase_clamps_when_the_guard_is_unreadable() -> None:
@@ -196,11 +185,29 @@ def test_idle_cost_unmeasured_clamp_is_unpriced_not_zero() -> None:
 
 # --- L1.41: the organ is attached to the desk -------------------------------------------------
 
-def test_law_is_in_the_constitution_and_the_doctrine() -> None:
+def test_law_is_in_the_constitution_and_reaches_every_organ() -> None:
+    """L1.36: a law that never reaches an organ cannot change behaviour -- so it is checked at BOTH
+    ends, the full statement and the document every seat is handed.
+
+    THE ORGAN-FACING ADDRESS MOVED, AND THE FENCE FOLLOWED IT (2026-09-05). This used to require
+    L1.55 in `ops/principal_doctrine.txt`. That file was COMPACTED by principal order on 2026-08-25
+    and says so in its own second paragraph -- "the sprawling duty text that used to live here is
+    compacted there", meaning docs/LAWS.md and docs/RESEARCH.md, "with zero law regression". The
+    law did not stop reaching organs; its address changed, and the doctrine file now points at
+    LAWS.md by name. A fence still pinning the old address goes red on a deliberate consolidation,
+    and the way a red-but-wrong fence gets satisfied is by pasting the law back into the file it
+    was deliberately moved out of. Same correction the source-universality fences took, for the
+    same reason. The assertion is unchanged in strength: the law must be in the constitution AND in
+    the document every organ is handed.
+    """
     con = (_ROOT / "docs/CONSTITUTION.md").read_text("utf-8")
     assert "L1.55" in con
+    laws = (_ROOT / "docs/LAWS.md").read_text("utf-8")
+    assert "L1.55" in laws, "a law that never reaches an organ cannot change behaviour (L1.36)"
     doc = (_ROOT / "ops/principal_doctrine.txt").read_text("utf-8")
-    assert "L1.55" in doc, "a law that never reaches an organ cannot change behaviour (L1.36)"
+    assert "docs/LAWS.md" in doc, (
+        "the doctrine no longer routes organs to LAWS.md, so the compaction that moved the law "
+        "there has broken its only path to a reader")
 
 
 def test_fence_is_mapped_in_the_enforcement_matrix() -> None:
