@@ -244,6 +244,12 @@ def test_both_generators_fall_back_to_their_previous_order_if_the_allocator_cann
     for name, marker in (("edge_search.py", "class-balanced rotation"),
                          ("orthogonal_sweep.py", "alphabetical")):
         src = (RESEARCH / name).read_text(encoding="utf-8")
-        head = src[src.index("trial_allocator"):]
+        # ANCHOR ON THE IMPORT, NOT THE FIRST MENTION (2026-09-05). This sliced from
+        # `src.index("trial_allocator")`, which is a PROSE mention in whichever docstring happens
+        # to come first -- so explaining the allocator in a docstring pushed the guard out of the
+        # 1,400-character window and failed a module whose guard was three lines below. The
+        # property being pinned is about the CALL SITE; anchor there and the check cannot be
+        # broken (or satisfied) by a comment.
+        head = src[src.index("import trial_allocator"):]
         assert "except Exception" in head[:1400], f"{name} must not die on a measurement outage"
         assert marker in head[:1800], f"{name} must name what it falls back to"

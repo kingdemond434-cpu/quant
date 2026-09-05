@@ -84,10 +84,23 @@ _DIRECTIONS = {
     "divergence": 1,
 }
 
-#: OUTPUT -> hold horizon in H1 bars. Sub-hourly horizons are ABSENT rather than rounded to one
+#: OUTPUT -> hold horizon in HOURS. Sub-hourly horizons are ABSENT rather than rounded to one
 #: bar: a 5m claim tested on H1 bars is a different claim, and silently substituting one would
 #: put a result in the docket under a coordinate it does not belong to.
+#:
+#: THE UNIT IS HOURS, NOT H1 BARS (2026-09-05). It was `{"1h": 1, "4h": 4, "daily": 24}` and used
+#: directly as `ttl_bars`, which is the same number only on an hourly chart: on M5 the coordinate
+#: "1h" would have held for five minutes and "daily" for two, so the cell in the docket would
+#: carry a name it does not implement -- exactly the substitution the paragraph above refuses.
+#: `_hold_bars` converts to the frame's own bars, and is the identity on H1.
 _HORIZONS = {"1h": 1, "4h": 4, "daily": 24}
+
+
+def _hold_bars(hours: int, d: pd.DataFrame) -> int:
+    """`hours` of market time in bars of whatever chart `d` is. 24 bars an hour on H1."""
+    from mt5desk.families import bar_minutes
+    minutes = bar_minutes(d) or 60
+    return max(1, int(round(hours * 60 / minutes)))
 
 
 def _rng(d: pd.DataFrame) -> pd.Series:
@@ -148,7 +161,8 @@ def family_generic(
     ev_fn = _EVENTS.get(event)
     ctx_fn = _CONTEXTS.get(context)
     sign = _DIRECTIONS.get(direction)
-    hold = _HORIZONS.get(output)
+    hold_hours = _HORIZONS.get(output)
+    hold = None if hold_hours is None else _hold_bars(hold_hours, df)
     # REFUSE, DO NOT SUBSTITUTE. Falling back to a default axis would run a different experiment
     # under this coordinate's name, and the docket would record the answer to a question nobody
     # asked.

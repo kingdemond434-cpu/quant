@@ -32,7 +32,7 @@ from typing import Any, Callable
 import numpy as np
 import pandas as pd
 
-from mt5desk.families import Signal, _atr, _h1
+from mt5desk.families import Signal, _atr, _h1, bars_per_day
 
 
 def family_ensemble(
@@ -60,7 +60,8 @@ def family_ensemble(
     if len(weights) != len(members) or not np.isfinite(weights).all():
         return []
     d = _h1(df)
-    if len(d) < 24 * 120:
+    # 120 DAYS of history, on whatever chart this is (identical on H1, where it is 24 bars/day).
+    if len(d) < bars_per_day(d) * 120:
         return []
     vote = pd.Series(0.0, index=d.index)
     n_ok = 0

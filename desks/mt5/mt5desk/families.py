@@ -17,6 +17,7 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 from mt5desk.engine import Signal
+from mt5desk.universe_registry import TIMEFRAME_MINUTES
 
 try:
     from libs.research.bar_span import is_out_of_calendar
@@ -156,8 +157,76 @@ def _atr(df: pd.DataFrame, n: int = 14) -> pd.Series:
     return tr.rolling(n, min_periods=1).mean()
 
 
+#: Fraction of consecutive bar gaps that must equal the modal gap before a frame is accepted as a
+#: REGULAR chart rather than an irregular series needing resampling. FX bars gap over weekends,
+#: holidays and rollovers, so it can never be 1.0; a genuinely irregular series (ticks, a merged
+#: multi-source frame) has no gap holding a majority at all.
+_REGULAR_GAP_SHARE = 0.5
+
+
+def bar_minutes(df: pd.DataFrame) -> int | None:
+    """The chart this frame IS, in minutes, or None when it is not a regular ladder chart.
+
+    Measured from the frame's own modal gap rather than from a filename or a caller's promise,
+    because the whole class of defect this guards against is a frame arriving somewhere that
+    believes it is something else.
+    """
+    if not isinstance(df.index, pd.DatetimeIndex) or len(df) < 3:
+        return None
+    gaps = df.index.to_series().diff().dropna()
+    if gaps.empty:
+        return None
+    seconds = gaps.dt.total_seconds()
+    modal = seconds.mode()
+    if modal.empty or float(modal.iloc[0]) <= 0:
+        return None
+    span = float(modal.iloc[0])
+    if float((seconds == span).mean()) < _REGULAR_GAP_SHARE:
+        return None
+    minutes = span / 60.0
+    if minutes != int(minutes):
+        return None
+    return int(minutes) if int(minutes) in set(TIMEFRAME_MINUTES.values()) else None
+
+
+def bars_per_day(df: pd.DataFrame, *, default: int = 24) -> int:
+    """How many bars of THIS frame's chart make a 24-hour day.
+
+    Families whose horizon is genuinely daily (a multi-speed trend over 252 DAYS, a regime hazard
+    refit every N DAYS) guard their history with `24 * n_days` -- an hourly spelling of a daily
+    quantity. On D1 that guard asks for 24 bars per day of a one-bar-a-day chart and refuses
+    thirty years of history; on M1 it waves through a frame far too short. `default` keeps the
+    hourly answer when the frame's chart cannot be established, so nothing changes where nothing
+    is known.
+    """
+    minutes = bar_minutes(df)
+    return default if minutes is None else max(1, 1440 // minutes)
+
+
 def _h1(df: pd.DataFrame) -> pd.DataFrame:
-    """Resample to H1 if not already. The index leaves here tz-aware UTC, always.
+    """Normalise to the BAR CLOCK THE CALLER HANDED IN; resample to H1 only when there is none.
+
+    THE NAME IS HISTORICAL AND THE CONTRACT IS NOT (2026-09-05). This function used to force
+    every frame to an hourly clock, and `pd.infer_freq` returns None on any real FX series
+    (weekend gaps), so the H1 early-out never fired and the resample ran on every call. That was
+    invisible while every caller passed H1 bars. It stopped being invisible the moment the desk
+    started fetching the full ladder: MEASURED on this tree, a 100,000-bar `AUDCAD_M15` frame
+    came back as 25,001 H1 bars. An M15 cell would therefore have produced H1 signals, been
+    backtested on H1 trades, and been certified under an identity claiming M15 -- seven charts
+    collapsing into one, silently, while the docket claimed seven. That is a corruption of the
+    canon no gate downstream can see, because every number in it is internally consistent.
+
+    So a frame that IS a regular chart on the desk's ladder is returned on ITS OWN clock, and
+    only a frame with no regular bar spacing (a tick series, a spliced multi-source frame) is
+    resampled to H1 -- which is the only case the old behaviour was ever right for.
+
+    WHAT DOES NOT CHANGE, and it is checked by test_timeframe_identity: an H1 frame comes back
+    with byte-identical OHLC. The old path resampled it to a 1h grid and dropped the empty hours,
+    which reproduces the input rows exactly; the new path returns those same rows without the
+    round trip. It also stops discarding the broker's `spread` and `real_volume` columns, which
+    `family_spread_state` had to reach around the resample to recover.
+
+    The index leaves here tz-aware UTC, always.
 
     A producer rewrote the universe parquets with a tz-NAIVE datetime64[ms] index (caught
     2026-08-27: every comparison against an aware stamp -- lookahead guards, forward boundaries,
@@ -196,6 +265,12 @@ def _h1(df: pd.DataFrame) -> pd.DataFrame:
     freq = pd.infer_freq(df.index)
     if freq and freq.upper().startswith("1H"):
         return df
+    # THE FRAME IS ALREADY A CHART. Return it on its own clock: an M5 hypothesis must never be
+    # answered with H1 signals, and a D1 one must never be spread over hours that do not exist.
+    # Ordered and de-duplicated so the caller gets the same guarantees the resample used to give.
+    if bar_minutes(df) is not None:
+        ordered = df.sort_index()
+        return ordered[~ordered.index.duplicated(keep="last")]
     vol_col = "volume" if "volume" in df.columns else "tick_volume"
     agg = {
         "open": "first", "high": "max", "low": "min", "close": "last",
