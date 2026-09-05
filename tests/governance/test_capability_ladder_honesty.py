@@ -182,8 +182,20 @@ class TestTheLadderIsOrdered:
 
 #: Decision-affecting nodes that no MODULE_RENT line can name. A RATCHET: it may fall and may
 #: never rise. Measured 2026-09-05 at 51 of 71 nodes, from a rent registry of 62 modules whose
-#: names overlap the graph's by exactly 6.
-MAX_UNBILLABLE = 51
+#: names overlapped the graph's by exactly 6. Lowered to 42 the same day by adding rent lines
+#: for the nine discovery organs whose RESEARCH_PNL source string was CONFIRMED in the
+#: producers rather than guessed; the rest stamp no source, and inventing one would make a node
+#: read billable while nothing could ever price it. Lowered again to 30 after re-running the
+#: search as an AST-anchored regex for each node's module-level `SOURCE = "..."`, the idiom
+#: the first literal-grep pass missed: twelve more organs stamp a source on every row they
+#: write, four of them under a name that is not the node's. The remaining 30 are not discovery
+#: organs -- gateway, promoter, universal_gate, regime_monitor, execution_twin, fill_surface --
+#: so no RESEARCH_PNL source will ever price them and each needs its own measurement scheme.
+#: 27 after mapping three organs that act ONLY through a mechanism the ledger already prices:
+#: regime_monitor through the hibernate rail, state_admission_run through the dimensions it
+#: admits, capital_modifier_score through the AI capital modifier. In each the rail's
+#: counterfactual and the organ's are the same world, so the line prices it directly.
+MAX_UNBILLABLE = 27
 
 
 def test_no_new_organ_lands_that_the_rent_ledger_cannot_price() -> None:
