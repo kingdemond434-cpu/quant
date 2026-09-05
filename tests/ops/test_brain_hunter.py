@@ -101,11 +101,24 @@ def test_PUBLIC_COMPETITIONS_ARE_MINED_AS_MT5_ORE_NOT_EVIDENCE() -> None:
 def test_IT_EXTRACTS_MECHANISMS_AND_DEMANDS_AN_MT5_ANALOGUE() -> None:
     """A copied formula is a crowded expression over a universe the desk does not trade. The
     platform is primarily an EQUITIES venue, so a factor rarely transfers while its transformation,
-    neutralization idea or methodology often does."""
+    neutralization idea or methodology often does.
+
+    THE PIN MOVED OFF `CURRENT VENUE OVERRIDE` ON 2026-09-05, and the wording is the reason. An
+    "override" is a temporary redirection of something still underneath it, and this brief's
+    header used it while adding that "older passages below naming crypto/Binance describe
+    historically valuable SOURCE surfaces" -- passages that no longer exist. A reader arriving
+    cold was told the default universe is a crypto exchange and that crypto instructions are
+    somewhere further down. Neither is true: the MT5/Fusion book is the universe by standing
+    principal order (2026-08-18), not an override of one. The fence now pins the standing
+    declaration, which is a stronger claim than the one it replaced.
+    """
     src = _prompt()
     assert "EXTRACT MECHANISMS, NOT FORMULAS" in src
     assert "MT5 ANALOGUE" in src and "translate_to_mt5" in src
-    assert "CURRENT VENUE OVERRIDE — MT5/FUSION" in src
+    assert "UNIVERSE — MT5/FUSION, AND NOTHING ELSE" in src, (
+        "the brain hunter no longer declares its universe in its opening lines")
+    assert "CURRENT VENUE OVERRIDE" not in src, (
+        "the universe is a standing mandate, not an override of a crypto default")
     assert "PRIMARILY AN EQUITIES VENUE" in src.upper()
 
 

@@ -1110,6 +1110,474 @@ def state_growth_curves(ev: list[SleeveEvidence], worlds: Worlds, book: dict[str
                  f"from {len(buckets)} bucket(s)")
 
 
+# ---------------------------------------------------------------------------------------
+# ADMISSION -- dE[log W] AGAINST THE BOOK THE DESK IS ACTUALLY HOLDING
+# ---------------------------------------------------------------------------------------
+
+#: Wall clock the admission scan may spend, in seconds. A candidate re-solve is ~1.2 s warm-started
+#: on the desk's 110-sleeve population, so this measures ~150 of them on the hourly heavy pass.
+#: The budget exists so a widening library DEGRADES the scan honestly (unreached candidates are
+#: NAMED and refused) instead of silently stretching the pass that sizes the live book.
+ADMISSION_BUDGET_S = 180.0
+#: Iterations a candidate's re-solve gets, warm-started from the incumbent's own optimum. One
+#: sleeve added to a solved book is a small perturbation; a cold solve of the same problem
+#: converged in 104 iterations, so this is headroom, and `converged` is recorded either way.
+ADMISSION_ITERATIONS = 120
+#: How stale a published scan may be before a reader must treat it as absent. Matches
+#: `allocator_proof.MAX_AGE_S`: one number for "this measurement still describes today's book".
+ADMISSION_MAX_AGE_S = 26 * 3600
+#: Marginal growth this small is inside the noise of a sampled-world estimate, so it is not a
+#: win. Expressed as a fraction of the incumbent book's OWN growth rate, and it is the same
+#: `allocator_proof.MARGIN_FRAC` the proof uses -- one margin, not two that drift apart.
+try:                                                                     # pragma: no cover
+    from libs.portfolio.allocator_proof import MARGIN_FRAC as ADMISSION_MARGIN_FRAC
+except Exception:                                                        # pragma: no cover
+    ADMISSION_MARGIN_FRAC = 0.02
+
+#: Cap on the FULL-KELLY REFERENCE solve in `kelly_fraction`. Not a risk limit -- nothing is ever
+#: deployed from this solve -- but a reference on an unbounded simplex does not terminate on
+#: anything meaningful, and 500% heat is far above any book this desk could hold. When the
+#: reference lands ON it the fraction is reported as an upper bound and says so.
+REFERENCE_CAP = 5.0
+
+
+def _selector_of(e: SleeveEvidence) -> str:
+    """The selector (window / session / state suffix) inside a sleeve's own name.
+
+    `sleeve_evidence` builds names as `SYMBOL_family_selector` and keeps symbol and family on the
+    record but not the remainder, and the remainder is exactly what a forward clock keys on. So
+    it is recovered from the name rather than guessed, and an unparseable name yields "" -- which
+    joins on nothing, which is the honest outcome for a name nobody can decompose.
+    """
+    name = str(e.name)
+    rest = name[len(e.symbol) + 1:] if e.symbol and name.startswith(f"{e.symbol}_") else ""
+    if e.family and rest.startswith(f"{e.family}_"):
+        rest = rest[len(e.family) + 1:]
+    return rest
+
+
+def _annual_sharpe(r: np.ndarray) -> float | None:
+    """Standalone annualised Sharpe of a daily-R series, or None when it cannot be measured.
+
+    REPORTED, NEVER RANKED ON. It is on the row so a reader can SEE that the admission decision
+    disagreed with the Sharpe ordering -- which is the whole point of the criterion.
+    """
+    a = np.asarray(r, dtype=float)
+    if a.size < 2:
+        return None
+    sd = float(a.std(ddof=1))
+    if not (sd > 0):
+        return None
+    return float(a.mean() / sd * math.sqrt(252.0))
+
+
+def _corr_to_book(cand: np.ndarray, held: dict[str, float],
+                  by_name: dict[str, SleeveEvidence]) -> float | None:
+    """Correlation of a candidate's daily R to the HELD book's own daily R, or None.
+
+    The book stream is the heat-weighted sum of what the desk is holding -- the thing the
+    candidate is actually being added to, not an average of pairwise correlations, which is a
+    different and weaker number.
+    """
+    legs = [(by_name[k], float(v)) for k, v in held.items()
+            if k in by_name and float(v) > 0 and by_name[k].daily_r.size > 1]
+    if not legs:
+        return None
+    obs = min([int(cand.size)] + [int(e.daily_r.size) for e, _ in legs])
+    if obs < 30:
+        return None
+    stream = np.zeros(obs, dtype=float)
+    for e, h in legs:
+        stream += h * np.asarray(e.daily_r[-obs:], dtype=float)
+    c = np.asarray(cand[-obs:], dtype=float)
+    if not (stream.std() > 0 and c.std() > 0):
+        return None
+    return float(np.corrcoef(stream, c)[0, 1])
+
+
+def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfig, *,
+                       incumbent: dict[str, float], bounds: dict[str, float],
+                       total_heat: float,
+                       order: dict[str, float] | None = None,
+                       prefer: set[str] | None = None,
+                       budget_s: float = ADMISSION_BUDGET_S,
+                       iterations: int = ADMISSION_ITERATIONS,
+                       margin_frac: float = ADMISSION_MARGIN_FRAC) -> dict[str, Any]:
+    """dE[log W]_i = E[log W | book + i] - E[log W | book], on ONE world population.
+
+        "Don't rank candidates primarily by Sharpe. Rank by dE[log W] after adding the candidate
+         to the existing portfolio. A Sharpe-1.2 strategy at correlation -0.2 to the book can be
+         vastly more valuable than a Sharpe-2.5 strategy at correlation +0.9. Now make that
+         principle the actual automatic admission criterion."       -- the principal, 2026-09-05
+
+    WHAT WAS ACTUALLY MISSING, measured on this tree. `robust_elog.marginal_delta_elog` has
+    computed exactly this since the module was written, and `libs/research/alpha_fitness.py`
+    calls it -- inside the EVOLUTIONARY search, to breed alphas. Nothing on the CAPITAL path used
+    it. The allocation artifact's field named `marginal_delta_elog` is `AllocationResult.marginal`,
+    the per-sleeve GRADIENT at the solved optimum: a real number, a useful ranking for the heat
+    cap to trim by, and NOT the marginal value of admitting a candidate the book does not hold.
+    A gradient at h_i = 0 says how the objective moves for the first infinitesimal unit; it does
+    not say what the book looks like once the optimiser has re-spent its whole budget around the
+    new sleeve, and those differ by exactly the reallocation the candidate causes. So the desk
+    could rank what it held and could not price what it did not, and the promoter admitted on a
+    forward clock with no reference to the book at all.
+
+    EQUAL TOTAL HEAT, WHICH IS THE ONLY FAIR VERSION OF THE QUESTION. Both books are re-solved at
+    the SAME total heat on the SAME worlds, so a candidate cannot win by adding exposure -- it
+    wins by displacing something, and `displaced` says what paid for it. This is the same
+    equalisation `allocator_proof.contest` applies for the same reason. The one exception is a
+    desk holding nothing: there is no book to displace from, so both solves are free under the
+    same cap and `basis` says `free` rather than `equal_heat`.
+
+    THE MARGIN IS NOT ZERO. A hair's-breadth win over a sampled-world estimate is noise, and
+    admitting on it is admitting on luck; the bar is `margin_frac` of the incumbent book's own
+    growth rate, the same fraction the proof certificate demands of the allocator itself.
+
+    Returns the artifact block. Every candidate is either SCORED (with its delta, the heat the
+    re-solve gave it, what it displaced, and -- reported beside, never ranked on -- its standalone
+    Sharpe and its correlation to the held book) or NAMED as unscored with the reason. A candidate
+    the budget did not reach is not admitted: absence is never permission.
+    """
+    t0 = time.time()
+    by_name = {e.name: e for e in ev}
+    names = [e.name for e in ev]
+    held = {k: float(v) for k, v in (incumbent or {}).items()
+            if k in by_name and float(v) > 1e-9}
+    cap = max(float(HEAT_HARD_CEILING), float(total_heat))
+
+    def _ub(allowed: set[str]) -> dict[str, float]:
+        """Per-sleeve bounds that admit exactly `allowed` -- everything else is pinned to zero."""
+        return {n: (min(float(bounds.get(n, cap)), cap) if n in allowed else 0.0) for n in names}
+
+    allowed_base = set(held)
+    room = float(sum(_ub(allowed_base).values()))
+    target: float | None
+    if allowed_base and room > 1e-9:
+        target, basis = min(float(total_heat), room), "equal_heat"
+    else:
+        target, basis = None, "free"
+
+    doc: dict[str, Any] = {
+        "measured_utc": datetime.now(UTC).isoformat(),
+        "basis": basis, "total_heat": round(float(total_heat), 6),
+        "margin_frac": margin_frac, "budget_s": budget_s,
+        # THE SCAN CARRIES ITS OWN EXPIRY, like the proof certificate does. `promoter` refuses to
+        # price capital from a scan older than this -- stated here so the rule travels with the
+        # measurement instead of living only in the reader.
+        "max_age_s": ADMISSION_MAX_AGE_S,
+        "incumbent": {k: round(v, 6) for k, v in sorted(held.items(), key=lambda kv: -kv[1])},
+        "rule": ("a candidate is admitted when re-solving the book WITH it, at the same total "
+                 "heat on the same sampled worlds, raises robust mean log growth by more than "
+                 "the margin -- never on its standalone Sharpe, which is reported beside the "
+                 "decision so a reader can see the two disagree"),
+        "candidates": {}, "admitted": [], "refused": [], "unscored": {},
+        # THE PARTS OF EVERY PRICED SLEEVE. `pf_allocator` names a sleeve `SYM_family_selector`;
+        # the forward clocks and the promoter name the same thing `SYM.selector[.STATE]` or by
+        # its certificate key. Publishing the parts is what lets `promoter._join_keys` recognise
+        # them as the same sleeve instead of matching nothing and calling it a refusal.
+        "universe": {e.name: {"symbol": e.symbol, "family": e.family,
+                              "selector": _selector_of(e)} for e in ev},
+    }
+    if worlds is None or not ev:
+        doc["status"] = "UNMEASURED: no world population"
+        return doc
+
+    g_base = 0.0
+    base_heat: dict[str, float] = {}
+    if allowed_base:
+        try:
+            base = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
+                            max_per_sleeve=_ub(allowed_base), warm_start=held or None)
+        except ValueError as exc:
+            doc["status"] = f"UNMEASURED: the held book cannot be re-solved ({exc})"
+            return doc
+        g_base, base_heat = float(base.mean_log_growth), dict(base.heat)
+        if not math.isfinite(g_base):
+            # A ruinous incumbent has no growth rate to add to. Reporting a delta against -inf
+            # would make every candidate look infinitely valuable, which is the opposite of true.
+            doc["status"] = ("UNMEASURED: the held book is wiped out in at least one sampled "
+                             "world, so it has no growth rate a candidate can be marginal to")
+            return doc
+    doc["incumbent_elogw_per_day"] = round(g_base, 10)
+    doc["incumbent_elogw_per_year"] = round(g_base * 252.0, 6)
+    bar = abs(g_base) * float(margin_frac)
+    doc["margin_per_day"] = round(bar, 10)
+
+    # THE ORDER, AND WHY IT ROTATES. Within a pass the most promising candidate goes first: the
+    # free solve's marginal at the current book is the best cheap guess at which re-solve is worth
+    # spending a second on. But a pass whose budget runs out would otherwise leave the SAME tail
+    # unmeasured every hour -- a candidate below the cut could never be admitted, which is a
+    # compute limit hardening into a verdict. So whatever the last pass could not reach goes
+    # FIRST, ranked among itself, and the rest follow ranked among themselves. Coverage is
+    # therefore complete over a few passes without any pass giving up its ranking.
+    cand_names = [n for n in names if n not in allowed_base]
+    rank = order or {}
+    pref = set(prefer or ())
+    cand_names.sort(key=lambda n: (n not in pref, -float(rank.get(n, 0.0)), n))
+    doc["n_candidates"] = len(cand_names)
+    doc["order"] = ("last pass's unreached candidates first, then the rest; each group ranked by "
+                    "the free solve's marginal at the current book"
+                    if pref else "ranked by the free solve's marginal at the current book")
+    doc["n_carried_from_last_unreached"] = len(pref & set(cand_names))
+
+    for name in cand_names:
+        if time.time() - t0 > budget_s:
+            doc["unscored"][name] = (f"the {budget_s:.0f}s admission budget was spent before this "
+                                     f"candidate was reached; NOT admitted -- an unmeasured "
+                                     f"marginal is not a positive one")
+            continue
+        e = by_name[name]
+        sharpe = _annual_sharpe(e.daily_r)
+        corr = _corr_to_book(e.daily_r, held, by_name)
+        row: dict[str, Any] = {
+            "sharpe_standalone_annual": (None if sharpe is None else round(sharpe, 4)),
+            "corr_to_book": (None if corr is None else round(corr, 4)),
+            "family": e.family, "symbol": e.symbol, "selector": _selector_of(e),
+            "forward_days": int(e.forward_days), "live_days": int(e.live_days),
+        }
+        try:
+            ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
+                           max_per_sleeve=_ub(allowed_base | {name}),
+                           warm_start={**base_heat, name: 0.0},
+                           iterations=iterations)
+        except ValueError as exc:
+            doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
+            continue
+        got = float(ext.heat.get(name, 0.0))
+        g_ext = float(ext.mean_log_growth)
+        if not math.isfinite(g_ext):
+            row.update({"delta_elogw_per_day": None, "heat_earned": round(got, 6),
+                        "admit": False, "converged": bool(ext.converged),
+                        "why": "the book WITH this candidate is wiped out in a sampled world"})
+            doc["candidates"][name] = row
+            doc["refused"].append(name)
+            continue
+        delta = g_ext - g_base
+        # WHAT PAID FOR IT. The candidate's own heat is not displacement -- it is the thing being
+        # paid for -- so it is excluded here; `heat_earned` already carries it.
+        displaced = {k: round(float(ext.heat.get(k, 0.0)) - v, 6)
+                     for k, v in base_heat.items()
+                     if k != name and abs(float(ext.heat.get(k, 0.0)) - v) > 1e-5}
+        admit = bool(delta > bar and got > 1e-5)
+        sr, rho = row["sharpe_standalone_annual"], row["corr_to_book"]
+        shape = (f"standalone Sharpe {sr:.2f}" if sr is not None else "Sharpe unmeasured")
+        shape += (f" at correlation {rho:+.2f} to the held book" if rho is not None
+                  else ", correlation to the book unmeasured")
+        if admit:
+            why = (f"admitted: re-solving at {float(total_heat):.2%} total heat with it raises "
+                   f"robust growth {delta:+.6f}/day ({delta * 252.0:+.2%}/yr) and it earns "
+                   f"{got:.2%} heat -- {shape}")
+        elif got <= 1e-5:
+            why = (f"refused: the optimiser gives it {got:.4%} heat at equal total heat, so the "
+                   f"book does not want it at any size -- {shape}")
+        else:
+            why = (f"refused: {delta:+.6f}/day is not above the {bar:.6f}/day noise margin -- "
+                   f"{shape}")
+        row.update({
+            "delta_elogw_per_day": round(delta, 10),
+            "delta_elogw_per_year": round(delta * 252.0, 6),
+            "heat_earned": round(got, 6),
+            "displaced": dict(sorted(displaced.items(), key=lambda kv: kv[1])[:6]),
+            "converged": bool(ext.converged), "admit": admit, "why": why,
+        })
+        doc["candidates"][name] = row
+        (doc["admitted"] if admit else doc["refused"]).append(name)
+
+    # THE RANKING IS THE DELTA, and it is written in that order so a reader cannot mistake which
+    # number decided. Sharpe is on every row and orders nothing.
+    doc["admitted"].sort(key=lambda n: -(doc["candidates"][n].get("delta_elogw_per_day") or 0.0))
+    doc["refused"].sort(key=lambda n: -(doc["candidates"][n].get("delta_elogw_per_day") or -1e9))
+    doc["n_scored"] = len(doc["candidates"])
+    doc["n_admitted"] = len(doc["admitted"])
+    doc["elapsed_s"] = round(time.time() - t0, 1)
+    doc["status"] = "MEASURED"
+    # THE RENT LINE (AGENTS.md): what this criterion is worth is the growth the admitted set adds
+    # to the held book, measured the same way each candidate was. It is a SUM OF SEPARATE
+    # marginals, not the delta of admitting them together -- said here so nobody reads it as the
+    # joint number, which would need one more solve and is the honest next measurement.
+    doc["rent"] = {
+        "unit": "log-wealth per day",
+        "sum_admitted_delta_elogw_per_day": round(sum(
+            float(doc["candidates"][n].get("delta_elogw_per_day") or 0.0)
+            for n in doc["admitted"]), 10),
+        "note": ("sum of individually-measured marginals over the admitted set, each against the "
+                 "same held book at the same total heat; the joint delta of admitting all of "
+                 "them at once is a different and smaller number"),
+    }
+    return doc
+
+
+def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
+                extra: dict[str, float] | None = None) -> dict[str, str]:
+    """Rostered sleeves this solve gave NO heat -- 0% right now, and NOT retired.
+
+        "Never have 'this strategy is allocated 3% forever'. Have 'this strategy currently earns
+         7.4% portfolio risk because its posterior edge, uncertainty, conditional state and
+         covariance make that the current robust log-optimal allocation.' Five minutes/hour/session
+         later, it can be 0%."                                      -- the principal, 2026-09-05
+
+    THE HOLE THIS FILLS, TRACED END TO END. `run()` publishes `book` filtered to heat > 1e-5, so a
+    sleeve the optimiser zeroes DISAPPEARS from the artifact. `decision_core.book_from_allocation`
+    then cannot see it, `gateway` reads `from_book = name in book` as False, and
+    `decision_core.promoted_lot` falls through to `ramped_fraction` -> `sizing.clamp_risk_frac`,
+    which FLOORS at BASE_RISK_FRAC. So the allocator's "zero" arrived at the venue as 3% of equity
+    times the authority ramp. The allocator could not say zero; it could only say "small", and
+    below 3% it could not even say that.
+
+    Naming them explicitly is what lets the answer be zero. The gateway already handles a zero
+    lot at every placement site ("allocator gave this sleeve no heat; skipped") -- that path was
+    simply unreachable. Nothing here retires anything: the sleeve keeps its row, its clock and its
+    certificate, and the next pass that wants it funds it again.
+
+    Only sleeves the desk can actually TRADE are listed (the promoted roster plus whatever the
+    caller passes as `extra`, normally the previously-held book), because a list of the hundred
+    library sleeves nobody holds would be noise in a file the money path reads.
+    """
+    priced = {e.name for e in ev}
+    rostered: set[str] = set()
+    try:
+        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+        rostered = {str(r.get("name")) for r in rows
+                    if isinstance(r, dict) and str(r.get("status") or "").upper() == "LIVE"}
+    except (OSError, ValueError, AttributeError):
+        rostered = set()
+    rostered |= {str(k) for k in (extra or {})}
+    out: dict[str, str] = {}
+    for name in sorted(rostered):
+        if name in funded or name not in priced:
+            continue
+        out[name] = ("the current solve gives this sleeve no heat: its posterior edge, "
+                     "uncertainty, conditional state and covariance with the rest of the book "
+                     "make zero the log-optimal allocation right now. NOT retired -- its row, "
+                     "clock and certificate stand, and the next solve that wants it funds it.")
+    return out
+
+
+def kelly_fraction(ev: list[SleeveEvidence], cfg: WorldConfig, *,
+                   deployed: float, bounds: dict[str, float],
+                   seed: int = 0) -> dict[str, Any]:
+    """The effective Kelly fraction, MEASURED -- not an emergent property nobody can name.
+
+        "fractional Kelly rather than blindly betting full Kelly"   -- the principal, 2026-09-05
+
+    Full Kelly on an ESTIMATED edge is how estimation error compounds into ruin, and this desk
+    does shrink -- in six separate places, none of which ever produced a number anybody could
+    quote. `robust_elog` deflates the mean for the winner's curse, shrinks it hierarchically
+    toward the family and toward no edge, draws the mean from its own posterior, decays the edge
+    in 30% of worlds, widens the cost, overlays crisis worlds, blends the objective 50/50 with
+    the CVaR of the worst fifth, and charges correlation-weighted redundancy. The book that
+    results is a fraction of the full-Kelly book, and the fraction was nowhere.
+
+    HOW IT IS MEASURED. The same evidence and the same solver are run against a POINT-ESTIMATE
+    reference: no winner's-curse deflation (`n_trials = 1`), no crisis worlds, no edge decay, no
+    cost spread, no CVaR blend and no redundancy charge -- the book a full-Kelly bettor who
+    believed his own backtest would hold. `f_eff = H_deployed / H_full_kelly`.
+
+    WHAT IT DOES NOT CLAIM. The residual sampling noise in the posterior MEAN (`se` in
+    `_posterior_mu`) is present in both solves, so it is not counted as shrinkage; the reference
+    is "the same estimates, believed" and not "the truth". The rungs are measured one at a time
+    against the same reference, so each says what THAT layer costs in heat, and they do not sum:
+    the layers interact.
+
+    A PINNED REFERENCE IS REPORTED AS A BOUND, NOT AS A NUMBER. Full Kelly on a hundred
+    believed-at-face-value sleeves is enormous, so the reference solve needs a cap or it does not
+    terminate on anything sane. `REFERENCE_CAP` is set far above any heat this desk would ever
+    deploy, and when the solve still sits ON it the fraction reported is an UPPER BOUND -- the
+    true full-Kelly book is larger, so the true fraction is smaller. Reporting the pinned ratio
+    as if it were measured is a defect wearing a plausible answer, which is the one thing this
+    module's own plausibility fence exists to refuse.
+    """
+    from dataclasses import replace as _replace
+
+    out: dict[str, Any] = {
+        "definition": ("f_eff = deployed heat / the heat a full-Kelly bettor would deploy on the "
+                       "same evidence believed at face value (no winner's-curse deflation, no "
+                       "crisis worlds, no edge decay, no cost spread, no CVaR blend, no "
+                       "redundancy charge)"),
+        "deployed_heat": round(float(deployed), 6),
+    }
+    # A REFERENCE, NOT A SIZING DECISION, so it is measured on a smaller population than the book
+    # itself. Seven solves at the heavy pass's own 256 worlds would add minutes to a clock whose
+    # job is to keep the book fresh, and the fast leg stands down while an allocator runs. The
+    # fraction is a ratio of two totals and is insensitive to the last few worlds; the BOOK is
+    # never solved on this population.
+    naive_cfg = _replace(cfg, crisis_prob=0.0, decay_prob=0.0, cost_uncertainty=0.0,
+                         robust_lambda=0.0, redundancy_lambda=0.0, seed=int(seed) + 7717,
+                         n_worlds=min(int(cfg.n_worlds), 96), n_rows=min(int(cfg.n_rows), 200))
+    naive_ev = [_replace(e, n_trials=1) for e in ev]
+    out["reference_population"] = {"n_worlds": naive_cfg.n_worlds, "n_rows": naive_cfg.n_rows}
+    try:
+        w_full = sample_worlds(naive_ev, naive_cfg)
+        full = optimise(naive_ev, hard_cap=REFERENCE_CAP, target=None, cfg=naive_cfg,
+                        worlds=w_full, max_per_sleeve=None, iterations=200)
+    except (ValueError, MemoryError) as exc:
+        out["status"] = f"UNMEASURED: the full-Kelly reference could not be solved ({exc})"
+        return out
+    h_full = float(full.total_heat)
+    out["full_kelly_heat"] = round(h_full, 6)
+    out["full_kelly_annual_growth_pct"] = full.annual_growth_pct
+    out["reference_cap"] = REFERENCE_CAP
+    if not (h_full > 1e-9):
+        out["status"] = ("UNMEASURED: even believed at face value the evidence wants no heat, so "
+                         "there is no full-Kelly book to be a fraction of")
+        return out
+    pinned = h_full >= REFERENCE_CAP - 1e-6
+    out["kelly_fraction"] = round(float(deployed) / h_full, 4)
+    out["reference_pinned"] = bool(pinned)
+    out["status"] = "BOUND" if pinned else "MEASURED"
+    if pinned:
+        out["bound_note"] = (
+            f"the full-Kelly reference sits ON its {REFERENCE_CAP:.0%} cap, so the true reference "
+            f"is larger and the true fraction is SMALLER than {out['kelly_fraction']:.4f}. "
+            f"Reported as an upper bound rather than as a measurement.")
+
+    # THE LADDER: what each shrinkage layer costs in heat, each measured alone against the same
+    # reference, so "where and how much" is a table rather than a paragraph.
+    rungs: dict[str, Any] = {}
+    ladder = (
+        ("winners_curse_deflation", {}, False),
+        ("crisis_worlds", {"crisis_prob": cfg.crisis_prob,
+                           "crisis_vol_mult": cfg.crisis_vol_mult,
+                           "crisis_common_share": cfg.crisis_common_share}, True),
+        ("edge_decay", {"decay_prob": cfg.decay_prob, "decay_floor": cfg.decay_floor}, True),
+        ("cost_uncertainty", {"cost_uncertainty": cfg.cost_uncertainty}, True),
+        ("cvar_blend", {"robust_lambda": cfg.robust_lambda, "cvar_alpha": cfg.cvar_alpha}, True),
+        ("redundancy_charge", {"redundancy_lambda": cfg.redundancy_lambda}, True),
+    )
+    for label, overrides, keep_naive_ev in ladder:
+        try:
+            c = _replace(naive_cfg, **overrides)
+            e_ = naive_ev if keep_naive_ev else list(ev)
+            w_ = sample_worlds(e_, c)
+            r_ = optimise(e_, hard_cap=REFERENCE_CAP, target=None, cfg=c, worlds=w_,
+                          max_per_sleeve=None, iterations=200)
+            h_ = float(r_.total_heat)
+            rungs[label] = {
+                "heat": round(h_, 6),
+                "heat_cost_vs_full_kelly": round(h_ - h_full, 6),
+                # A RUNG PINNED AT THE SAME CAP AS THE REFERENCE HAS NOT BEEN MEASURED. Both
+                # sides sit on the bound, the difference is zero by construction, and "this layer
+                # costs nothing" would be the wrong reading of a saturated solve.
+                "pinned": bool(h_ >= REFERENCE_CAP - 1e-6),
+                "settings": {k: float(v) for k, v in overrides.items()} or
+                            {"n_trials": "the desk's own search intensity"}}
+            if rungs[label]["pinned"] and pinned:
+                rungs[label]["why"] = ("both this rung and the reference sit on the "
+                                       f"{REFERENCE_CAP:.0%} cap: UNMEASURED, not costless")
+        except (ValueError, MemoryError) as exc:
+            rungs[label] = {"status": f"UNMEASURED ({type(exc).__name__}: {exc})"}
+    rungs["per_sleeve_bounds"] = {
+        "note": ("drawdown-derived per-sleeve caps and the mechanism cap bind the COMPOSITION as "
+                 "well as the total; they are applied to the deployed book and not to the "
+                 "reference, so their effect is inside f_eff rather than a rung of its own"),
+        "n_bounded": sum(1 for v in bounds.values() if math.isfinite(v)),
+    }
+    out["ladder"] = rungs
+    out["ladder_note"] = ("each rung is that layer ALONE against the same full-Kelly reference; "
+                          "they interact, so they do not sum to the total shrinkage")
+    return out
+
+
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
     t0 = time.time()
@@ -1553,6 +2021,73 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                  "capital at work); the CEILING counts max(covariance, factor, tail), because "
                  "hidden concentration bites at the top of the band and nowhere else"),
     }
+    # ------------------------------------------------- ADMISSION BY dE[log W], NOT BY SHARPE
+    # THE CRITERION, NOT A REPORT (principal, 2026-09-05). Every priced sleeve the published book
+    # does NOT hold is re-solved INTO that book at the same total heat on these same worlds, and
+    # what it is worth is the growth it adds. `promoter.py` reads this block and gives capital to
+    # nothing that fails it, however good its standalone Sharpe -- which is on every row, beside
+    # the correlation to the held book, so the disagreement between the two orderings is legible
+    # rather than asserted.
+    #
+    # HEAVY CLOCK ONLY, AND CARRIED WITH ITS AGE. A candidate re-solve is a full optimisation; a
+    # hundred of them do not fit in a five-minute clock. The heavy pass runs hourly, and the
+    # short clocks carry its answer forward stamped with when it was taken, so a reader (and the
+    # promoter's freshness check) can tell a measurement from an inheritance.
+    admission: dict[str, Any]
+    adm_bounds = per_sleeve_bounds(dd, max(book.total_heat, HEAT_TARGET))
+    prev_admission: dict[str, Any] = {}
+    try:
+        _prev_art = json.loads(OUT.read_text("utf-8")).get("admission")
+        prev_admission = _prev_art if isinstance(_prev_art, dict) else {}
+    except (OSError, ValueError, AttributeError):
+        prev_admission = {}
+    if heavy and funded:
+        admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
+                                       total_heat=book.total_heat, order=free.marginal,
+                                       # Whatever the last scan's budget could not reach goes
+                                       # first, so a candidate below the cut is measured within a
+                                       # few passes instead of never.
+                                       prefer=set(prev_admission.get("unscored") or {}))
+        _log(f"admission: {admission.get('status')} -- {admission.get('n_admitted', 0)}/"
+             f"{admission.get('n_scored', 0)} scored candidate(s) raise robust growth "
+             f"(basis={admission.get('basis')}, {admission.get('elapsed_s', 0)}s, "
+             f"{len(admission.get('unscored') or {})} unreached, "
+             f"{admission.get('n_carried_from_last_unreached', 0)} carried from last pass)")
+    else:
+        admission = {"status": "not measured on this clock", "candidates": {},
+                     "admitted": [], "refused": [], "unscored": {}}
+        if prev_admission.get("status") == "MEASURED":
+            admission = {**prev_admission,
+                         "carried_from": prev_admission.get("measured_utc"),
+                         "carried_by": mode}
+    # SLEEVES THIS SOLVE ZEROED, NAMED so the answer can actually BE zero. Without this list the
+    # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
+    # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
+    zeroed = zeroed_live(ev, funded, extra=prev_book)
+    if zeroed:
+        _log(f"zeroed but NOT retired: {len(zeroed)} rostered sleeve(s) earn 0% this pass "
+             f"({', '.join(sorted(zeroed)[:6])})")
+
+    # THE FRACTIONAL-KELLY NUMBER, said out loud. Heavy clock: it costs a second world population
+    # and a handful of solves, and it is the number the principal asked to be reported rather
+    # than left emergent.
+    kelly: dict[str, Any]
+    if heavy:
+        kelly = kelly_fraction(ev, cfg, deployed=book.total_heat, bounds=adm_bounds, seed=seed)
+        _log(f"kelly: f_eff={kelly.get('kelly_fraction')} "
+             f"(deployed {kelly.get('deployed_heat')} of full-Kelly "
+             f"{kelly.get('full_kelly_heat')}) -- {kelly.get('status')}")
+    else:
+        kelly = {"status": "not measured on this clock"}
+        try:
+            prev_k = json.loads(OUT.read_text("utf-8")).get("kelly")
+            # BOUND carries forward too: an upper bound on the fraction is a real answer, and
+            # dropping it on the short clocks would make the number vanish for 59 minutes an hour.
+            if isinstance(prev_k, dict) and prev_k.get("status") in ("MEASURED", "BOUND"):
+                kelly = {**prev_k, "carried_by": mode}
+        except (OSError, ValueError, AttributeError):
+            pass
+
     # THE AI CAPITAL MODIFIER LEDGER: what the state conditioning claimed for each funded
     # sleeve this pass, so each category can later prove its increment.
     try:
@@ -1618,6 +2153,15 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                           "standing": WorldConfig().crisis_prob,
                           "why": crisis_why, "source": drift_why},
         "book": funded,
+        # ROSTERED SLEEVES THIS SOLVE GAVE ZERO. Read by `decision_core.book_from_allocation`,
+        # which carries them into the sizing book AT ZERO so the gateway can size them at zero
+        # instead of falling back to the 3% base fraction. Nothing here is retired.
+        "book_zeroed": zeroed,
+        # THE ADMISSION CRITERION: dE[log W] per candidate against THIS book, on THESE worlds, at
+        # equal total heat. `promoter.py` gives capital to nothing that fails it.
+        "admission": admission,
+        # WHAT FRACTION OF FULL KELLY THE DEPLOYED BOOK IS, and which shrinkage layer costs what.
+        "kelly": kelly,
         # The solve this pass produced, whether or not the verdict let it out. Equal to `book`
         # on a REBALANCE pass; the declined move on a binding NO CHANGE.
         "proposed_book": proposed_book,
@@ -1644,7 +2188,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # sleeves it is spread across, and that is invisible from the sleeve list alone.
         "mechanism_mix": {k: round(v, 6)
                           for k, v in sorted(fam_share.items(), key=lambda kv: -kv[1])},
+        # THE GRADIENT AT THE SOLVED OPTIMUM, and the name is a legacy the readers depend on
+        # (`decision_core.allocator_rank`, `hour_surface`, `portfolio_gap`). It is the value of
+        # each FUNDED sleeve's LAST unit of heat -- the correct ordering for `cap_by_heat` to trim
+        # by -- and it is NOT the marginal value of admitting a sleeve the book does not hold.
+        # That measurement is `admission.candidates[*].delta_elogw_per_day`, which re-solves the
+        # whole book around the candidate instead of reading a slope at zero. Kept apart on
+        # purpose: conflating them is how the desk came to believe it had an admission criterion.
         "marginal_delta_elog": book.marginal,
+        "marginal_delta_elog_basis": (
+            "gradient of the robust objective at the solved book (per-sleeve value of the last "
+            "unit of heat); the ADMISSION marginal is `admission.candidates[*]"
+            ".delta_elogw_per_day`, which re-solves the book with the candidate in it"),
         "growth": {
             "annual_growth_pct": book.annual_growth_pct,
             "mean_log_per_day": round(book.mean_log_growth, 8),

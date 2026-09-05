@@ -8397,11 +8397,219 @@
    ],
    "status": null,
    "consumer": "deepening_worker (alpha_expression) -> compiler -> gauntlet"
+  },
+  {
+   "source": "drawdown_alpha",
+   "kind": "drawdown_state_target",
+   "title": "State signature of the book's worst 20% of hour periods",
+   "description": "The book's own drawdown, worst 20% by hour: weekday=Tue is 33% of the drawdown against 19% of all periods (n=11, lift 1.8x); session_phase=LONDON_NY_OVERLAP is 24% of the drawdown against 15% of all periods (n=8, lift 1.571x); session_phase=NY_MID is 24% of the drawdown against 17% of all periods (n=8, lift 1.455x). Propose a mechanism with POSITIVE expectancy specifically in that state, on the MT5/Fusion universe. Standalone Sharpe is NOT the bar here -- a mediocre edge that pays while the book is losing raises the leverage the whole book can carry, which is worth more than another sleeve correlated with what already works. Carry the sample size: a conditional edge needs n >= 8 in the band and t_deflated >= 2.0 after the multiplicity of every slice tried.",
+   "granularity": "hour",
+   "band": "20%",
+   "status": null,
+   "consumer": "tail_alpha_search / deepening_worker / proposers"
+  },
+  {
+   "source": "drawdown_alpha",
+   "kind": "drawdown_alpha_candidate",
+   "title": "mean_reversion earns +2.60R inside the book's worst 20% (hour, n=11)",
+   "description": "Conditional expectancy +2.5956R on n=11 observations inside the worst 20% of hour periods, cut on the book EXCLUDING this candidate. t_raw 2.759, t_deflated -0.017 against 330 tests, correlation to the drawdown 0.56 (n=11). Verdict WATCH. Deepen this cell: does the edge survive out of sample, and is its cause specific to the drawdown state or incidental to it?",
+   "candidate": "mean_reversion",
+   "band": 0.2,
+   "status": null,
+   "consumer": "deepening_worker / tail_alpha_search"
+  },
+  {
+   "source": "drawdown_alpha",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve in the book is a crisis / drawdown edge",
+   "description": "Every sleeve the book holds is scored above; none is a mechanism DESIGNED to pay inside the book's own worst periods. That is the cluster with the largest leverage consequence: the binding constraint on total heat is the depth of the book's bad states, not the height of its good ones. Hunt forced-deleveraging mechanisms on the MT5/Fusion universe -- stop cascades, margin liquidation, the bid that leaves when everyone needs it.",
+   "cluster": "crisis_drawdown",
+   "status": null,
+   "consumer": "tail_alpha_search / proposers"
+  },
+  {
+   "source": "survivor_neighbourhood",
+   "kind": "survivor_state_strength",
+   "title": "cluster session_liquidity is 2.911x itself at weekday=Wed (n=37, WATCH)",
+   "description": "session_liquidity earns +0.118R unconditionally over 158 trades. At weekday=Wed it earns +0.588R raw on n=37, which the k_state prior shrinks to +0.344R -- a shrunk lift of 2.911x. t_deflated 1.195 against 70 slices tried. Deepen THIS state rather than searching for a new sleeve: is there a mechanism that explains why this state is different, and does the lift survive the next block of forward trades? A lift with no mechanism is a slice of a small sample.",
+   "sleeve": "session_liquidity",
+   "dimension": "weekday",
+   "bucket": "Wed",
+   "status": null,
+   "consumer": "deepening_worker / proposers"
+  },
+  {
+   "source": "survivor_neighbourhood",
+   "kind": "survivor_state_strength",
+   "title": "cluster session_liquidity is 2.541x itself at weekday=Thu (n=23, WATCH)",
+   "description": "session_liquidity earns +0.118R unconditionally over 158 trades. At weekday=Thu it earns +0.617R raw on n=23, which the k_state prior shrinks to +0.300R -- a shrunk lift of 2.541x. t_deflated 1.679 against 70 slices tried. Deepen THIS state rather than searching for a new sleeve: is there a mechanism that explains why this state is different, and does the lift survive the next block of forward trades? A lift with no mechanism is a slice of a small sample.",
+   "sleeve": "session_liquidity",
+   "dimension": "weekday",
+   "bucket": "Thu",
+   "status": null,
+   "consumer": "deepening_worker / proposers"
+  },
+  {
+   "source": "survivor_neighbourhood",
+   "kind": "survivor_state_strength",
+   "title": "cluster mean_reversion earns +0.62R at hour_utc=01 against +0.05R elsewhere (n=107, contrast t_deflated 2.882)",
+   "description": "mean_reversion earns +0.6201R at hour_utc=01 on n=107 against +0.0494R on the other n=161 trades of the same group -- a Welch contrast of t=5.115, 2.882 after deflation against 70 slices. The shrunk lift is 1.9x, which is BELOW the 2.0x line, so this is not promoted as STRONGER; it is the best-powered evidence in the decomposition that the edge is genuinely different in this state. Find the mechanism that explains the state before any heat follows it, and confirm the contrast on the next block of forward trades.",
+   "sleeve": "mean_reversion",
+   "dimension": "hour_utc",
+   "bucket": "01",
+   "status": null,
+   "consumer": "deepening_worker / state_admission"
+  },
+  {
+   "source": "survivor_neighbourhood",
+   "kind": "survivor_state_strength",
+   "title": "cluster mean_reversion earns +0.60R at session_phase=ASIA_OPEN against +0.06R elsewhere (n=108, contrast t_deflated 2.658)",
+   "description": "mean_reversion earns +0.6039R at session_phase=ASIA_OPEN on n=108 against +0.0567R on the other n=160 trades of the same group -- a Welch contrast of t=4.891, 2.658 after deflation against 70 slices. The shrunk lift is 1.86x, which is BELOW the 2.0x line, so this is not promoted as STRONGER; it is the best-powered evidence in the decomposition that the edge is genuinely different in this state. Find the mechanism that explains the state before any heat follows it, and confirm the contrast on the next block of forward trades.",
+   "sleeve": "mean_reversion",
+   "dimension": "session_phase",
+   "bucket": "ASIA_OPEN",
+   "status": null,
+   "consumer": "deepening_worker / state_admission"
+  },
+  {
+   "source": "survivor_neighbourhood",
+   "kind": "survivor_state_dead",
+   "title": "cluster session_liquidity earns nothing at hour_utc=16 (-0.144R shrunk, n=21)",
+   "description": "session_liquidity earns +0.118R unconditionally but -0.144R (shrunk) at hour_utc=16 on n=21 trades, t_deflated -7.596 over 70 slices. This is the cheapest kind of finding: withdrawing heat from a state that pays nothing needs no new edge and adds no new risk. Confirm the state is causal rather than incidental before it conditions capital -- the state-admission gauntlet, not this report, is what admits a dimension.",
+   "sleeve": "session_liquidity",
+   "dimension": "hour_utc",
+   "bucket": "16",
+   "status": null,
+   "consumer": "deepening_worker / state_admission"
+  },
+  {
+   "source": "survivor_neighbourhood",
+   "kind": "survivor_state_dead",
+   "title": "cluster session_liquidity earns nothing at weekday=Tue (-0.086R shrunk, n=39)",
+   "description": "session_liquidity earns +0.118R unconditionally but -0.086R (shrunk) at weekday=Tue on n=39 trades, t_deflated -5.288 over 70 slices. This is the cheapest kind of finding: withdrawing heat from a state that pays nothing needs no new edge and adds no new risk. Confirm the state is causal rather than incidental before it conditions capital -- the state-admission gauntlet, not this report, is what admits a dimension.",
+   "sleeve": "session_liquidity",
+   "dimension": "weekday",
+   "bucket": "Tue",
+   "status": null,
+   "consumer": "deepening_worker / state_admission"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises cross-asset lead / lag",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Cross-asset lead / lag is EMPTY. Who pays: Slow updaters. One market prices news before another that shares the same driver, because its participants watch a different screen. What to hunt: A driver that moves first (rates, oil, the index future) against an instrument that prices it late; the edge is the lag, measured in bars, not the correlation. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "cross_asset_lead_lag",
+   "payer": "Slow updaters. One market prices news before another that shares the same driver, because its participants watch a different screen.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises scheduled-event surprise",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Scheduled-event surprise is EMPTY. Who pays: Anyone who must be positioned before a release and cannot wait for the number. What to hunt: The distribution of the move CONDITIONAL on surprise sign and size at a scheduled release, and the reversal or continuation that follows it. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "event_surprise",
+   "payer": "Anyone who must be positioned before a release and cannot wait for the number.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises relative value and residual",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Relative value and residual is EMPTY. Who pays: Arbitrage capacity that is finite. A cross is its two legs up to the cross spread, and the residual is flow specific to the cross rather than to either currency. What to hunt: Triangles, cointegrated pairs, PCA residuals against the driver basket -- the residual series, never the level. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "relative_value",
+   "payer": "Arbitrage capacity that is finite. A cross is its two legs up to the cross spread, and the residual is flow specific to the cross rather than to either currency.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises volatility regime transition",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Volatility regime transition is EMPTY. Who pays: Anyone sized for the volatility that just ended. A regime change forces them to re-size at the worst moment. What to hunt: Compression that precedes expansion, expansion that mean-reverts, and the change point itself -- traded as a state, not as a level. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "volatility_transition",
+   "payer": "Anyone sized for the volatility that just ended. A regime change forces them to re-size at the worst moment.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises trend and momentum",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Trend and momentum is EMPTY. Who pays: Slow reallocators who move capital over weeks, and the risk premium for holding a position through the drawdowns that make trend uncomfortable. What to hunt: Persistent drift at horizons the book does not already hold, across the whole Fusion universe rather than one instrument. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "trend",
+   "payer": "Slow reallocators who move capital over weeks, and the risk premium for holding a position through the drawdowns that make trend uncomfortable.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises positioning and crowding",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Positioning and crowding is EMPTY. Who pays: Crowded holders. A position everyone holds must be unwound into a market with nobody left to sell to. What to hunt: COT and futures open interest, retail positioning, swap and financing skew -- the state of who is already on. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "positioning_flow",
+   "payer": "Crowded holders. A position everyone holds must be unwound into a market with nobody left to sell to.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises options-implied state",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Options-implied state is EMPTY. Who pays: Dealers who are short gamma and must hedge into the move, and the risk premium in implied against realised volatility. What to hunt: Implied-realised spread, skew, gamma exposure at strikes, and the pinning or acceleration each implies for the underlying. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "options_implied",
+   "payer": "Dealers who are short gamma and must hedge into the move, and the risk premium in implied against realised volatility.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises execution and entry alpha",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Execution and entry alpha is EMPTY. Who pays: The desk's own past self. Money made or lost between the decision and the fill is a P&L source with no market view at all. What to hunt: Passive against aggressive entry, the queue, the pullback that would have been filled, and the markout curve of the desk's own orders. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "execution_entry",
+   "payer": "The desk's own past self. Money made or lost between the decision and the fill is a P&L source with no market view at all.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises unscheduled news reaction",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Unscheduled news reaction is EMPTY. Who pays: Everyone who has to reprice on an unscheduled headline, in the minutes before the market agrees what it means. What to hunt: Central-bank tone, geopolitical and policy headlines -- the reaction function, not the sentiment score. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "news_reaction",
+   "payer": "Everyone who has to reprice on an unscheduled headline, in the minutes before the market agrees what it means.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises cross-sectional selection",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Cross-sectional selection is EMPTY. Who pays: Whoever is on the other side of the spread between the strongest and weakest member of a basket, when the basket itself is not the bet. What to hunt: Rank instruments on a characteristic and trade the spread, with the common factor demeaned out so the basket direction is not the trade. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "cross_sectional_fx",
+   "payer": "Whoever is on the other side of the spread between the strongest and weakest member of a basket, when the basket itself is not the bet.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
+  },
+  {
+   "source": "alpha_breadth",
+   "kind": "empty_alpha_cluster",
+   "title": "No sleeve monetises crisis and drawdown alpha",
+   "description": "The book holds 31 nominal sleeves at an effective breadth of 1.324 (4 of 15 declared phenomena occupied). Crisis and drawdown alpha is EMPTY. Who pays: Forced deleveraging. Stops, margin calls and risk limits liquidate into a market that already has no bid, and the liquidation itself is the opportunity. What to hunt: Mechanisms with POSITIVE expectancy specifically inside the book's own worst periods. Standalone Sharpe is not the bar here -- the bar is the sign, in that state. Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an unoccupied phenomenon buys more breadth than the next five inside an occupied one -- propose a mechanism whose payer is the one named here, on the MT5/Fusion universe, not a re-parameterisation of what the book already trades.",
+   "cluster": "crisis_drawdown",
+   "payer": "Forced deleveraging. Stops, margin calls and risk limits liquidate into a market that already has no bid, and the liquidation itself is the opportunity.",
+   "status": null,
+   "consumer": "deepening_worker / proposers / research brains"
   }
  ],
  "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
  "opportunity_curve_tasks_at": "2026-09-04T21:08:53.457331+00:00",
  "regime_coverage_tasks_at": "2026-09-04T21:09:16.489653+00:00",
  "excursions_tasks_at": "2026-09-04T21:09:17.554744+00:00",
- "alpha_evolution_tasks_at": "2026-09-05T12:39:13.531183+00:00"
+ "alpha_evolution_tasks_at": "2026-09-05T12:39:13.531183+00:00",
+ "drawdown_alpha_tasks_at": "2026-09-05T17:29:11.628857+00:00",
+ "survivor_neighbourhood_tasks_at": "2026-09-05T17:29:12.524668+00:00",
+ "alpha_breadth_tasks_at": "2026-09-05T17:30:30.920668+00:00"
 }

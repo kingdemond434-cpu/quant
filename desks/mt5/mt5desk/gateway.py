@@ -268,9 +268,14 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
             return book_from_allocation(total, art.get("book"),
                                         {"name": src, "book": by_name},
                                         certified=False, why=f"state-conditioned: {swhy}")
+    # `book_zeroed` names the rostered sleeves THIS solve gave no heat. Carried through so the
+    # answer can be zero: without it a zeroed sleeve is invisible to the sizer and falls back to
+    # the 3% base fraction (see `book_from_allocation`). Only on the certified path -- a baseline
+    # fallback book is a different allocation and does not carry this solve's zeros.
     return book_from_allocation(total, art.get("book"), art.get("book_fallback"),
                                 certified=(cert is not None and src == "dynamic"),
-                                why=(f"{cwhy}; {swhy}" if cert is not None else cwhy))
+                                why=(f"{cwhy}; {swhy}" if cert is not None else cwhy),
+                                zeroed=art.get("book_zeroed"))
 
 
 def cap_by_heat(sleeves: list[dict], equity: float,

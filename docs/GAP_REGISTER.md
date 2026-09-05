@@ -1,7 +1,19 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
-**#130 NEW, LOGGED NOT RANKED (2026-08-23) — the data-source intake pipeline itself never
-migrated off crypto.** `docs/research/data_axis_watchlist.md` (3353 lines, 42 catalogued sources)
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Rows opened before 2026-08-18 name organs, venues and capabilities of the retired crypto-exchange desk, and many of those organs have since been deleted. Read an old row as a dated statement of what was missing THEN; a gap whose subject no longer exists is closed by the retirement, not outstanding.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
+**#130 MOSTLY CLOSED BY MEASUREMENT (2026-09-05), one residual breach fixed in the same commit.
+Opened 2026-08-23 — the data-source intake pipeline itself never migrated off crypto.**
+_Original text, preserved because it is the record of what was true then:_
+`docs/research/data_axis_watchlist.md` (3353 lines, 42 catalogued sources)
 is almost entirely crypto-exchange-native (Upbit/Bithumb venue state, Kraken historical archive,
 CoinGecko taxonomy, Polymarket-vs-Deribit BTC contracts, DEX wallet tape, stablecoin flows) with
 essentially zero MT5/FX-macro content (1 incidental grep match repo-wide). `scripts/
@@ -18,6 +30,38 @@ parsing contract for a 3353-line, format-sensitive file. Principal declined the 
 full-rebuild options offered in-session in favor of logging this as its own priority item first.
 NEXT STEP: a dedicated research pass rebuilding the watchlist against MT5/FX/metals/indices/
 energy/commodities mechanisms, source by source, same rigor as the original crypto build.
+
+> **STATUS 2026-09-05, MEASURED RATHER THAN ASSERTED.** The dedicated research pass the NEXT STEP
+> asked for has happened across the intervening cycles, so the row's premise no longer holds and
+> the numbers say by how much. The watchlist is **11,735 lines / 296 source headings** (was 3,353 /
+> 42) and `source_backlog_next.py --limit 0` now reports **102 catalogued, 78 resolved, 12 pending
+> verification, 12 deferred**. Counting mentions: **604 MT5/FX/macro** (XAUUSD, EURUSD, USDJPY,
+> Fusion, MT5, FX, COT, CFTC, FRED) against **280 crypto-venue**. This cycle's VERIFY queue is
+> QuantConnect, ForexFactory Trade Explorer, ForexPeaceArmy, Collective2, Myfxbook, Darwinex,
+> broker swap/spread tables across MT5 brokers, the residual 9,827 supranational SDMX dataflows,
+> the CNH–CNY basis, and a tick/M1 archive over history. That is an MT5 queue, not a crypto one.
+>
+> **THE ONE RESIDUAL BREACH, FOUND BY RUNNING THE TOOL INSTEAD OF READING THE ROW, AND FIXED HERE.**
+> Card **#1 Upbit Historical Market Data portal** was still live in the LEGITIMACY queue, deferred
+> to the 2026-09-15 governance window, waiting on the principal ruling GAP #67 has owed since
+> 2026-08-15. Upbit is a crypto exchange and that portal is its own market data: crypto-exchange-
+> native, the mandate's explicitly banned target, sitting in the desk's own "what to hunt next"
+> tool. **The mandate answers #67 by making it moot** — the question the card was blocked on is
+> whether Upbit's licence permits commercial use, and the desk will never hunt the venue under any
+> licence, so the ruling is no longer owed. The card is dispositioned `[§33: retired ...]` and
+> stays in the file as a record. This also closes an overdue governance item rather than deferring
+> it a third time.
+>
+> **TWO CARDS DELIBERATELY LEFT LIVE, and why they are not the same thing.** Card **#26 Kraken
+> downloadable OHLCVT archive** carries `uses re-scoped to MT5 crypto CFDs` in its own grade — that
+> is crypto reference data read to inform a Fusion-executable instrument, which the mandate permits
+> in as many words. Card **#29 RFB "Criptoativos"** is a Brazilian national tax-reporting panel, a
+> government open-data release, not an exchange venue; it is catalogued and explicitly NOT screened.
+> Retiring either would be enforcing a slogan rather than the rule as written.
+>
+> RESIDUAL WORK, honestly small: the 280 crypto-venue mentions are overwhelmingly resolved or
+> killed cards kept as record, which is what this register is for. Nothing further is owed unless a
+> future queue run surfaces a venue card, which `check_mt5_purity.py` now fails on.
 
 _MERGE 2026-08-04 (two account lines united; nothing dropped): the governance line's newest
 re-rank is 2026-08-01T17:35Z (directly below); the execution line's 2026-08-02T13:20Z re-rank —

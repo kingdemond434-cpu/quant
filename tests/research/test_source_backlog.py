@@ -187,3 +187,69 @@ class TestNonActionableCardsAreNotOfferedAsThisCycle:
         assert not (offered & deferred_names), "a deferred card is also being offered"
         assert rep.n_total == (rep.n_resolved + rep.n_verification_pending
                                + rep.n_legitimacy_pending + rep.n_deferred), "cards lost"
+
+
+class TestRetiredByMandate:
+    """`retired` is the MT5 UNIVERSE MANDATE removing a card from the hunt, added 2026-09-05.
+
+    GAP #130's residual breach: card #1, Upbit's own market-data portal, sat LIVE in the legitimacy
+    queue awaiting a principal licence ruling three weeks after the pivot. The desk will not hunt a
+    crypto exchange under a permissive licence either, so the ruling was never owed -- it was moot.
+    """
+
+    def test_a_retired_card_leaves_every_live_queue(self) -> None:
+        text = "### 1. Upbit — grade: needs-legitimacy-review [§33: retired -> MT5 mandate]\n"
+        card = parse_watchlist(text, today=_TODAY)[0]
+        assert card.category == "resolved", "a retired venue must never be offered as work"
+        rep = next_pending([card])
+        assert not rep.next_legitimacy and not rep.next_verification and not rep.deferred
+
+    def test_retirement_is_not_a_kill_and_the_grade_still_says_which(self) -> None:
+        """Killed means the desk judged the source; retired means the desk left the universe.
+        Both resolve, but conflating the verbs would lose the reason if the mandate ever changes,
+        and Upbit's data was graded verified-clean -- calling that a kill would be false."""
+        retired = parse_watchlist("### 1. A — grade: x [§33: retired -> mandate]\n")[0]
+        killed = parse_watchlist("### 2. B — grade: x [§33: killed -> graveyard.md b]\n")[0]
+        assert retired.category == killed.category == "resolved"
+        assert "retired" in retired.grade_raw and "killed" not in retired.grade_raw
+
+    def test_retirement_beats_a_live_deferral_rather_than_racing_it(self) -> None:
+        """Order matters: the marker is read before the deferral branch, so a card retired while
+        still carrying a future date does not stay queued until that date arrives."""
+        text = "### 1. A — grade: x [§33: retired(2027-01-01) -> mandate]\n"
+        assert parse_watchlist(text, today=_TODAY)[0].category == "resolved"
+
+
+#: Venues whose OWN market data is crypto-exchange-native. Not a vocabulary list -- these are
+#: matched against card NAMES, i.e. against what the desk would go and hunt.
+_VENUES = ("upbit", "binance", "bybit", "okx", "deribit", "hyperliquid", "bithumb",
+           "coinbase", "kraken", "bitmex", "gate.io", "kucoin", "huobi", "bitfinex")
+
+
+def test_no_crypto_exchange_venue_is_ever_offered_as_work() -> None:
+    """THE STANDING INVARIANT, on the real file the miners read.
+
+    CLAUDE.md, 2026-08-18: "No crypto-exchange universe may EVER be hunted again -- no miner,
+    hunter, query, channel list, scoring vocabulary, or research mandate may target
+    crypto-exchange-native opportunities."
+
+    `check_mt5_purity.py` cannot see this: it reads executable text and docstring declarations, and
+    the hunt queue is markdown data. So the invariant is pinned where the queue is actually
+    computed. A card may STAY in the file as a record -- that is what the watchlist is for -- but
+    it may never be surfaced as this cycle's work.
+
+    Kraken is on the venue list and card #26 is deliberately NOT retired: its grade records "uses
+    re-scoped to MT5 crypto CFDs", which is crypto reference data informing a Fusion-executable
+    instrument -- permitted in as many words. So the assertion is on what is OFFERED, never on what
+    is catalogued, and a re-scoped card must carry that scope in its own grade to stay live.
+    """
+    rep = backlog_from_file(Path("docs/research/data_axis_watchlist.md"))
+    offered = list(rep.next_verification) + list(rep.next_legitimacy)
+    breaches = [name for name in offered
+                if any(v in name.lower() for v in _VENUES)
+                and "mt5" not in name.lower() and "cfd" not in name.lower()]
+    assert not breaches, (
+        f"the hunt queue is directing effort at crypto-exchange venues: {breaches}. "
+        "Retire the card with `[§33: retired -> ...]`, or record in its grade why the reading "
+        "informs a Fusion-executable instrument."
+    )

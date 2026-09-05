@@ -7,6 +7,18 @@ metadata:
   originSessionId: 4af772ee-24a6-45c2-aa20-7c72e83a9443
 ---
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** The FRAMEWORK below is live and is
+> the desk's own — the log-wealth objective, engineering-ROI discipline, validation as a hard
+> constraint, dynamic leverage, the growth audit's anti-conservatism rule, and the two-stage
+> promotion doctrine all stand and are universe-independent. **The EXAMPLES and the BACKLOG are
+> not.** Its 2026-07-04 addendum routes a validated candidate to a crypto-exchange testnet
+> alongside the delta-neutral carry, and its 2026-07-10 entry calls
+> `autodiscovery_crypto_throughput` "the single open top-ROI backlog item". That desk was RETIRED
+> on 2026-08-18 by standing principal order: the operational-rehearsal step now runs on a broker
+> DEMO account of the same MT5/Fusion server (`ops/CRO_CONSTITUTION.md`), and no crypto-exchange
+> backlog item may be built. The current risk mandate, including the measured heat ceiling that
+> replaced the fixed 30% cap on 2026-09-05, is `docs/GROWTH_GOVERNANCE.md`.
+
 The user adopted an **Institutional Quantitative Research Constitution** as the standing operating framework for the quant platform. It generalizes (does not replace) the honesty mandate in `desks/mt5/` (the crypto-desk-state note was deleted 2026-09-05 with the retired desk) and [[research-strategy-pivot]].
 
 **Master objective:** maximize expected *lifetime geometric growth* (E[log wealth] / Kelly utility), subject to statistically-justified survival constraints. Sharpe/CAGR/drawdown/infra are proxies — never optimize them directly.

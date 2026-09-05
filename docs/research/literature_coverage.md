@@ -1,5 +1,16 @@
 # Literature coverage map
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Coverage rows dated before 2026-08-18 record literature swept for the retired crypto-exchange desk. Papers are venue-agnostic and the coverage is real; the rotation now runs against the MT5/Fusion book's mechanisms.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
+
 _Seeded 2026-07-18; rotation rule: >=40% of budget to least-recently-covered._
 
 | Family | Last visited | Sessions | Yield | Notes |
