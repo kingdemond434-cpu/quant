@@ -128,3 +128,42 @@ def test_every_witness_is_the_artifact_its_own_breach_names() -> None:
             f"WITNESS[{cls!r}] points at {path.name}, which check_research_health never reads -- "
             f"so a fix could be 'proved' by a file unrelated to the breach it answered"
         )
+
+
+class TestATaskThatIsFailingIsNotReportedAsStarted:
+    """`schtasks /Run` succeeds when the SCHEDULER accepts the request, never when the task works.
+
+    MEASURED on the live dashboard 2026-09-05: the desk journalled "healed: FAILING MT5-Gauntlet:
+    last result 1 twice in a row -- re-run" while the canon went 58.3 hours without a sweep. The
+    task was failing, the repair was to start it again, and the answer to a task returning 1 is
+    never another trigger. `_desk_task` now reads the task's own LastTaskResult back.
+    """
+
+    def _stub(self, monkeypatch, output: str, rc: int = 0):
+        monkeypatch.setattr(auto_fixers, "_ssh", lambda cmd: (rc, output))
+
+    def test_a_nonzero_last_result_is_a_failed_fix_and_says_so(self, monkeypatch) -> None:
+        self._stub(monkeypatch, "SUCCESS: Attempted to run the scheduled task.\n1")
+        ok, detail = auto_fixers._desk_task("MT5-Gauntlet")
+        assert ok is False
+        assert "LAST RESULT is 1" in detail and "another trigger will not fix it" in detail
+
+    @pytest.mark.parametrize("code", ["0", "267009"])
+    def test_zero_and_currently_running_are_both_healthy(self, monkeypatch, code) -> None:
+        """267009 is 'task is currently running', which is the expected state moments after a
+        trigger -- reading it as a failure would make every successful start look broken."""
+        self._stub(monkeypatch, f"SUCCESS: Attempted to run the scheduled task.\n{code}")
+        ok, detail = auto_fixers._desk_task("MT5-Gauntlet")
+        assert ok is True and f"LastTaskResult={code}" in detail
+
+    def test_an_unreadable_result_is_unmeasured_not_success(self, monkeypatch) -> None:
+        """The trigger landed and the box said nothing about the outcome. That is a third fact,
+        and folding it into success is the defect the WITNESS map exists to prevent."""
+        self._stub(monkeypatch, "SUCCESS: Attempted to run the scheduled task.")
+        ok, detail = auto_fixers._desk_task("MT5-Gauntlet")
+        assert ok is True and "UNREADABLE" in detail
+
+    def test_a_trigger_that_could_not_be_sent_is_never_a_start(self, monkeypatch) -> None:
+        self._stub(monkeypatch, "ssh: connect to host ... Connection refused", rc=255)
+        ok, detail = auto_fixers._desk_task("MT5-Gauntlet")
+        assert ok is False and "trigger failed rc=255" in detail

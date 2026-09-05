@@ -65,10 +65,46 @@ def _ssh(command: str) -> tuple[int, str]:
 
 
 def _desk_task(name: str) -> tuple[bool, str]:
-    """Enable + start a desk scheduled task. IgnoreNew on every research task makes this safe."""
+    """Enable + start a desk scheduled task, and REPORT WHAT IT LAST RETURNED.
+
+    RE-TRIGGERING A FAILING TASK IS NOT HEALING, and the desk has been doing exactly that.
+    `schtasks /Run` succeeds whenever the scheduler ACCEPTS the request, so rc==0 says the task
+    was started -- never that it worked. Measured on the live dashboard 2026-09-05: the desk's own
+    healer journalled `healed: FAILING MT5-Gauntlet: last result 1 twice in a row -- re-run` while
+    the canon went 58.3 hours without a sweep. The task was failing, the fixer's answer was to
+    start it again, and the answer to a task that returns 1 is never another trigger.
+
+    So the task's OWN last result is read back after the run and carried into the journal. A task
+    that returns non-zero is reported as a FAILED fix with the code, not as an attempt that might
+    have worked -- which is the same distinction the WITNESS map draws one level up, applied to
+    the one repair type where the box can simply be asked.
+
+    LastTaskResult is read AFTER a short settle: `schtasks /Run` is asynchronous, so reading it
+    immediately returns the PREVIOUS run's code. Five seconds is not enough for the gauntlet to
+    finish -- nothing here waits for that -- but it is enough for a task that dies on startup
+    (a missing interpreter, a bad working directory, an unreadable script) to have already
+    recorded its code, and startup death is the failure this is trying to surface.
+    """
     rc, out = _ssh(f"powershell -Command \"Enable-ScheduledTask -TaskName {name} "
-                   f"-ErrorAction SilentlyContinue | Out-Null; schtasks /Run /TN {name}\"")
-    return rc == 0, out.strip()[-160:]
+                   f"-ErrorAction SilentlyContinue | Out-Null; schtasks /Run /TN {name}; "
+                   f"Start-Sleep -Seconds 5; "
+                   f"(Get-ScheduledTaskInfo -TaskName {name}).LastTaskResult\"")
+    text = out.strip()
+    last = None
+    for line in reversed(text.splitlines()):
+        token = line.strip()
+        if token.lstrip("-").isdigit():
+            last = int(token)
+            break
+    if rc != 0:
+        return False, f"trigger failed rc={rc}: {text[-140:]}"
+    if last is None:
+        # UNMEASURED, not success: the trigger was accepted but the box did not report a code.
+        return True, f"started; LastTaskResult UNREADABLE -- {text[-120:]}"
+    if last not in (0, 267009):        # 267009 = currently running, which is healthy
+        return False, (f"started but the task's LAST RESULT is {last} -- it is FAILING, not "
+                       f"unstarted, and another trigger will not fix it: {text[-100:]}")
+    return True, f"started; LastTaskResult={last} {text[-100:]}"
 
 
 def _clear_lock(job: str) -> None:
