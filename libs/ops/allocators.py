@@ -136,7 +136,7 @@ ALLOCATORS: tuple[Allocator, ...] = (
         "heat, inside the mandated floor and the measured ceiling",
         "desks/mt5/research/pf_allocator.py",
         ("desks/mt5/reports/pf_allocation.json", "desks/mt5/reports/ALLOCATOR_PROOF.json"),
-        gap=("",),  # measured when both artifacts are present: this is the level that works
+        gap="",  # measured when both artifacts are present: this is the level that works
         feeds=("execution",)),
     Allocator(
         6, "execution", "How is each position actually implemented?",
@@ -180,7 +180,7 @@ def status(root: Path | None = None) -> dict[str, dict[str, Any]]:
             "decider_present": has_decider,
             "prices": list(a.prices), "prices_present": present, "prices_missing": missing,
             "status": state,
-            "gap": (a.gap if isinstance(a.gap, str) else next((g for g in a.gap if g), "")),
+            "gap": a.gap,
             "feeds": list(a.feeds),
         }
     # A GAIN AT LEVEL k IS WORTHLESS IF k+1 CANNOT CARRY IT, and that is not a metaphor: it is

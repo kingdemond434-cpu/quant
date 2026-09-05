@@ -1108,7 +1108,7 @@ def measure_organ(m: Module, led: Ledgers, _chain: tuple[str, ...] = ()) -> dict
     rows: dict[str, dict[str, Any]] = {}
     for name, mod in priced.items():
         fn = MEASURES[mod.measure]
-        rows[name] = (fn(mod, led, (*_chain, m.name)) if fn is measure_organ  # type: ignore[call-arg]
+        rows[name] = (fn(mod, led, (*_chain, m.name)) if fn is measure_organ
                       else fn(mod, led))
     earns = [n for n, r in rows.items() if r["verdict"] == EARNS]
     costs = [n for n, r in rows.items() if r["verdict"] == COSTS]
