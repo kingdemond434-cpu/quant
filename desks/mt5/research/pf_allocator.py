@@ -306,6 +306,87 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     return out, acct
 
 
+#: The scalp lane's per-trade forward ledgers, one file per clock, written by `scalp_shadow`.
+SCALP_LEDGERS = "ledger_*.json"
+
+
+def scalp_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
+    """Daily-R series for every scalp clock, from its OWN forward ledger.
+
+    THE DEFECT THIS EXISTS TO FIX, and it is the same one `certified_evidence` was written for --
+    one lane later. Measured 2026-09-05: `pf_allocator.py` did not contain the string "scalp"
+    anywhere, so no scalp sleeve had ever been priced. Follow that through the promoter and the
+    lane is a dead end by construction:
+
+        scalp_shadow      matures a clock to PROMOTION_CANDIDATE on 50 forward trades
+        promote_scalp     builds the exact recipe and asks `capital_verdict`
+        admission_of      finds no allocator row answering to the sleeve -> (None, "not in the
+                          priced universe")
+        capital_verdict   UNMEASURED (correctly: nobody looked)
+        _door_status      "LIVE" only on a measured admission -> STANDBY
+
+    So a scalp sleeve with a perfect forward record -- 50+ trades, positive expectancy, inside its
+    drawdown bound -- lands on the roster at STANDBY and stays there for ever, and every artifact
+    reads healthy the whole time. The promoter says PROMOTED, the clock says PROMOTION_CANDIDATE,
+    the allocator says nothing at all, and nothing anywhere says "this cannot become live".
+
+    THE LANE IS NOT IN `UNIVERSAL_SURVIVORS` AND THAT IS NOT AN OVERSIGHT: `promote_scalp` states
+    it plainly -- "the ten-gate gauntlet has no path that certifies an M5/M15 scalp spec", so the
+    lane's FORWARD CLOCK is its certificate. What was missing is the other half of that decision.
+    A lane whose certificate is its forward record must have that forward record priced, or the
+    lane cannot reach capital however good the record is.
+
+    FORWARD PHASE ONLY. `scalp_shadow` writes every trade to `ledger_<name>.json` tagged
+    `historical` or `forward` against its frozen pre-registration boundary. Only forward rows are
+    read here: the historical ones are in-sample for this lane, and pricing a sleeve on the
+    evidence that selected it is the same overfit the ten gates exist to refuse. It is also the
+    difference between a marginal the allocator can trust and one it cannot.
+
+    THE NAME IS THE CLOCK'S OWN KEY, so `promoter._join_keys`' first and most specific key --
+    the raw sleeve name, lowercased -- matches directly. A second naming convention here would
+    reproduce the join failure this function exists to remove.
+    """
+    acct: dict[str, Any] = {"ledgers": 0, "priced": 0, "refused": {}}
+    shadow = BASE / "reports" / "shadow"
+    if not shadow.exists():
+        acct["refused"]["shadow"] = f"{shadow} absent on this host"
+        return {}, acct
+    out: dict[str, pd.Series] = {}
+    for path in sorted(shadow.glob(SCALP_LEDGERS)):
+        name = path.stem[len("ledger_"):]
+        acct["ledgers"] += 1
+        try:
+            rows = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError) as exc:
+            acct["refused"][name] = f"{type(exc).__name__}: {exc}"
+            continue
+        if not isinstance(rows, list):
+            acct["refused"][name] = "ledger is not a list of trades"
+            continue
+        by_day: dict[Any, float] = {}
+        for r in rows:
+            if not isinstance(r, dict) or str(r.get("phase")) != "forward":
+                continue
+            stamp = r.get("exit_time") or r.get("entry_time") or r.get("time")
+            value = r.get("r")
+            if stamp is None or value is None:
+                continue
+            try:
+                day = pd.Timestamp(str(stamp)).date()
+                by_day[day] = by_day.get(day, 0.0) + float(value)
+            except (ValueError, TypeError):
+                continue
+        if len(by_day) < 2:
+            acct["refused"][name] = (f"{len(by_day)} forward day(s) in the ledger: a series the "
+                                     f"bootstrap cannot draw from is not evidence")
+            continue
+        out[name] = pd.Series([by_day[d] for d in sorted(by_day)], index=sorted(by_day))
+        acct["priced"] += 1
+    _log(f"scalp library: {acct['priced']}/{acct['ledgers']} clock(s) priced from their forward "
+         f"ledgers, {len(acct['refused'])} refused")
+    return out, acct
+
+
 def live_days_by_sleeve() -> dict[str, int]:
     """Days of REAL-CAPITAL evidence per sleeve, from the gateway's live ledger.
 
@@ -1648,8 +1729,15 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     daily, forward = build_evidence(force=heavy)
     live = live_days_by_sleeve()
     certified, cert_acct = certified_evidence()
-    daily = align(daily, certified)
-    _log(f"aligned universe: {daily.shape[1]} sleeves on {daily.shape[0]} trading days")
+    # THE SCALP LANE JOINS THE SOLVE. Its clocks are its certificates -- the ten gates have no
+    # path that certifies an M5/M15 spec -- so their FORWARD ledgers are the evidence, and until
+    # this line existed no scalp sleeve was ever in the priced universe. A matured scalp clock
+    # therefore reached the roster at STANDBY and could never leave it, because `admission_of`
+    # had nothing to join to and `_door_status` writes LIVE only on a MEASURED admission.
+    scalp, scalp_acct = scalp_evidence()
+    daily = align(align(daily, certified), scalp)
+    _log(f"aligned universe: {daily.shape[1]} sleeves on {daily.shape[0]} trading days "
+         f"({len(scalp)} of them scalp clocks priced on forward ledgers)")
     forward, fwd_acct = join_forward([str(c) for c in daily.columns], forward)
     trials = search_trials()
     _log(f"search intensity for deflation: {trials or 'UNMEASURED (no deflation applied)'}")
@@ -2321,6 +2409,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "note": worlds.note,
             "forward_join": fwd_acct,
             "certified_library": cert_acct,
+            # REPORTED BESIDE THE CERTIFIED LIBRARY, not folded into it: a scalp clock's evidence
+            # is its own forward record, not a ten-gate certificate, and a reader deciding whether
+            # to trust a scalp sleeve's heat needs to know which kind of evidence stands behind it.
+            "scalp_library": scalp_acct,
             "search_trials": trials,
         },
         "solver": {"iterations": book.iterations, "converged": book.converged},

@@ -195,7 +195,30 @@ class TestTheLadderIsOrdered:
 #: regime_monitor through the hibernate rail, state_admission_run through the dimensions it
 #: admits, capital_modifier_score through the AI capital modifier. In each the rail's
 #: counterfactual and the organ's are the same world, so the line prices it directly.
-MAX_UNBILLABLE = 27
+#:
+#: ZERO, 2026-09-05. The remaining 27 were the ones the note above says "each needs its own
+#: measurement scheme" -- the gauntlets, the forward clock, the promoter, the execution organs,
+#: the tape, the counterfactual ledgers, the macro layer. Twenty-seven bespoke schemes was the
+#: wrong answer to the question; the right one was a single rule that already held for all of
+#: them: A MODULE'S RENT IS MEASURED WHERE IT CHANGES A DECISION. An organ produces a report, and
+#: a report has no price of its own, so it is billed through its CONSUMER -- organ -> artifact ->
+#: the node that reads the artifact -> that node's rent -- with the chain read off this same
+#: capability graph rather than restated in a second hand-maintained table that would drift.
+#:
+#: `module_rent.measure_organ` returns one of four honest verdicts and never a manufactured
+#: number: NOT_BINDING when nothing reads the artifact (rent is zero BY CONSTRUCTION, which is
+#: the retire signal); NOT_BINDING when the graph declares it HUMAN_READ (advisory by design, an
+#: intended terminal state, not a defect); UNMEASURED naming the external consumer, the money
+#: path, or the research loop that the chain runs into; and the consumer's own verdict inherited
+#: verbatim where the chain closes -- never recomputed, so two modules in one chain cannot
+#: disagree about the same value.
+#:
+#: THE RATCHET IS NOW AT ITS FLOOR AND THAT IS THE POINT. A new decision-affecting organ can no
+#: longer land unpriced at all: it either declares a consumer, or its own rent line reads
+#: NOT_BINDING with its artifact named the first time this runs. What remains is the MEASURED
+#: rung, which this deliberately does not grant -- every one of these still reads UNMEASURED
+#: until the box's ledgers carry the evidence, and that is a different debt with a different cure.
+MAX_UNBILLABLE = 0
 
 
 def test_no_new_organ_lands_that_the_rent_ledger_cannot_price() -> None:

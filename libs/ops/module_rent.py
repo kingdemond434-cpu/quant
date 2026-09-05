@@ -67,7 +67,7 @@ from libs.research.bandit import ARMS, SOURCE_ARM
 ROOT = Path(__file__).resolve().parents[2]
 
 KINDS: tuple[str, ...] = ("rail", "proposer", "state_dimension", "execution_algo",
-                          "allocator_component", "data_source", "ai_organ")
+                          "allocator_component", "data_source", "ai_organ", "organ")
 EARNS, COSTS, NOT_BINDING, UNMEASURED = "EARNS", "COSTS", "NOT_BINDING", "UNMEASURED"
 
 #: Samples (days, trials, fills, test trades) before a verdict is a verdict.
@@ -148,6 +148,86 @@ def _proposer_modules() -> tuple[Module, ...]:
                         "on gross survivor growth and the spend is reported, not netted",
                         "measure_proposer", "libs.research.bandit.ARMS -> research_pnl arms",
                         key=a) for a in ARMS)
+
+
+# ------------------------------------------------------------------- the organs, billed by use
+#
+# THE RULE, AND IT IS THE ONE THAT MAKES THE REST OF THIS FILE FINITE. A module's rent is measured
+# WHERE IT CHANGES A DECISION. A rail changes the size of a trade, so `missed_growth` prices it; a
+# proposer changes what is in the book, so `research_pnl` prices it. But 27 decision-affecting
+# organs on this desk -- the gauntlets, the forward clock, the promoter, the execution twin, the
+# tape recorder, the counterfactual ledgers, the macro layer -- produce a REPORT, and a report has
+# no price of its own. Billing them by their own output would price effort, not value.
+#
+# So an organ is billed through its CONSUMER, and the chain is read off the capability graph
+# rather than restated here: organ -> artifact -> the node that reads the artifact -> that node's
+# own rent. Three outcomes, and the middle one is the reason this is worth building:
+#
+#   NOTHING READS IT   NOT_BINDING, with the artifact named. An organ whose output changes no
+#                      decision has zero rent BY CONSTRUCTION, and that is the retire signal the
+#                      principal asked for -- "if persistently <= 0, retire it". This is the only
+#                      verdict here that can be reached without any live evidence at all, which
+#                      is exactly right: it is a wiring fact, not a market fact.
+#   READ, PRICED       the consumer carries its own rent line, so the organ inherits the verdict
+#                      and the number, with the consumer named. No new arithmetic: two modules in
+#                      one chain must never produce two different answers about the same value.
+#   READ, UNPRICED     UNMEASURED, naming the consumer AND the ledger that would price it. Never
+#                      folded into a pass (L1.28a): "something reads it" is not "it earns".
+#
+# WHY THE GRAPH RATHER THAN A TABLE HERE. The reader/writer relation already exists, is already
+# fenced (`check_read_without_writer`, `check_reachability`), and is already how the desk decides
+# whether a producer reaches a decision. A second hand-maintained copy of it in this file would
+# drift the moment an organ gained a consumer, and the drift would show up as an organ billed for
+# work nobody uses -- the precise failure this whole ledger exists to catch.
+
+#: Organs whose rent is inherited from a consumer, and the artifact the chain runs through. The
+#: artifact is named here (rather than taken as "the node's first write") because an organ often
+#: writes several and only one of them is the thing a decision is made from.
+ORGAN_OUTPUT: dict[str, str] = {
+    # -- admission: what reaches the book at all
+    "external_gauntlet": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+    "universal_gate": "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+    "scalp_gauntlet": "desks/mt5/reports/SCALP_GAUNTLET.json",
+    "recertify_canon": "desks/mt5/reports/recertification_audit.json",
+    "shadow_forward": "desks/mt5/reports/shadow/",
+    "promoter": "desks/mt5/data/sleeves.json",
+    "miner_candidate_compiler": "desks/mt5/data/hypotheses/miner_candidates.json",
+    # -- execution: what a filled order costs
+    "markout": "desks/mt5/reports/markout.json",
+    "fill_surface": "desks/mt5/reports/FILL_SURFACE.json",
+    "execution_intelligence": "desks/mt5/reports/NETTING.json",
+    "execution_twin": "desks/mt5/reports/EXECUTION_TWIN.json",
+    "counterfactual_markout": "desks/mt5/reports/FILTER_VALUE.json",
+    "counterfactual_replay": "desks/mt5/reports/COUNTERFACTUAL_WORLD.json",
+    "action_counterfactuals": "desks/mt5/reports/ACTION_COUNTERFACTUALS.json",
+    # -- the tape and the features built on it
+    "tick_recorder": "desks/mt5/reports/TAPE_RECORDER.json",
+    "tick_integrity": "desks/mt5/reports/TICK_INTEGRITY.json",
+    "tape_features": "desks/mt5/data/tape/ticks/",
+    "state_vector_build": "desks/mt5/data/state_vector.json",
+    # -- learning about the desk itself
+    "alpha_genome": "desks/mt5/reports/ALPHA_GENOME.json",
+    "feature_roi": "desks/mt5/reports/FEATURE_ROI.json",
+    "drift_monitor": "desks/mt5/reports/DRIFT.json",
+    "allocator_attribution": "desks/mt5/reports/GROWTH_ATTRIBUTION_WEEKLY.json",
+    "research_pnl": "desks/mt5/reports/RESEARCH_PNL.json",
+    "macro_intel": "desks/mt5/data/macro/allocator_interrupt.json",
+}
+
+#: Organs that ARE the money path or the release gate rather than an input to it. Their rent is
+#: not separable and pretending otherwise would be theatre: without `gateway` there are no orders
+#: to price, without `release` and `immutable_evaluator` there is no authority to place one, so
+#: "E[logW] without it" is not a smaller number -- it is a desk that does not trade. Declared here
+#: so they are BILLED AND ANSWERED rather than silently unbillable, which is the state this ledger
+#: exists to end. They are not retire candidates and the verdict says why.
+INFRASTRUCTURE: dict[str, str] = {
+    "gateway": "the order path itself: without it no intent becomes a fill, so there is no "
+               "counterfactual book to compare against -- only no book",
+    "release": "the release identity that authorises a live order; without it the deadman "
+               "refuses to arm and the desk is flat by construction",
+    "immutable_evaluator": "the signature that makes a judge's verdict admissible; without it "
+                           "no certificate carries authority, so nothing reaches capital to bill",
+}
 
 
 MODULES: tuple[Module, ...] = (
@@ -355,7 +435,29 @@ MODULES: tuple[Module, ...] = (
              "trials and declared spend beside", "measure_research_source",
              f"desks/mt5/research/{organ}.py", key=organ, sources=prefixes)
       for organ, prefixes in AI_ORGANS.items()),
+    # THE 27 DECISION-AFFECTING ORGANS THAT CARRIED NO RENT LINE AT ALL (2026-09-05). Measured on
+    # the capability ladder that day: 71 nodes, 57 of them DECISION_AFFECTING, 1 MEASURED, 0
+    # LIVE_LEARNING -- and 27 of the decision-affecting ones were not billable, meaning nothing
+    # could ever retire them however long they cost. A component nothing bills is a component
+    # nothing can retire, which is precisely how a desk accumulates organs that compute forever.
+    #
+    # They are billed THROUGH WHAT THEY CHANGE (see `measure_organ`), so this list adds no new
+    # arithmetic to the desk -- only the chain from an organ to a priced decision, and a NAMED
+    # verdict where that chain is not closed.
+    *(Module(organ, "organ", "capability graph -> the consumer's own ledger",
+             "rent of the decision this organ's output changes, inherited from the consumer that "
+             "reads it; NOT_BINDING with the artifact named when nothing reads it at all",
+             "measure_organ", f"writes {artifact}", key=artifact)
+      for organ, artifact in ORGAN_OUTPUT.items()),
+    *(Module(organ, "organ", "n/a -- the money path itself", why, "measure_organ",
+             "libs.ops.module_rent.INFRASTRUCTURE", key=organ)
+      for organ, why in INFRASTRUCTURE.items()),
 )
+
+#: Name -> Module, for `measure_organ`'s inheritance lookup. Built once from the registry rather
+#: than passed around, because the chain is organ -> artifact -> consumer NAME and the consumer's
+#: own line has to be found by that name.
+MODULES_BY_NAME: dict[str, Module] = {m.name: m for m in MODULES}
 
 
 # --------------------------------------------------------------------------- ledgers
@@ -902,6 +1004,122 @@ def measure_regime_conditioning(m: Module, led: Ledgers) -> dict[str, Any]:
                                     "same book on unconditioned worlds; needs "
                                     "growth.mean_log_per_day_unconditioned beside "
                                     "growth.mean_log_per_day"))
+
+
+def _graph_consumers(artifact: str) -> tuple[list[str], str, str]:
+    """(node readers, external reader, terminal state) for `artifact`, from the capability graph.
+
+    THE GRAPH KNOWS THREE WAYS AN ARTIFACT IS CONSUMED and this reads all three, because reading
+    only the first gets the answer confidently wrong:
+
+      NODES[].reads     a graph node consumes it -- the chain continues to that node's rent
+      EXTERNAL_READERS  a consumer that is not a graph node (`research_supervisor` is a process
+                        manager, not a node), declared with its reason. Missing this reported
+                        `macro_intel` as reading NOT_BINDING when its interrupt is in fact the one
+                        artifact of that whole layer which reaches a decision.
+      HUMAN_READ        advisory BY DESIGN: a person reads it and no automated decision turns on
+                        it. That is a legitimate terminal state the desk has already reasoned
+                        about, not an unwired defect, and calling it one would put correct
+                        designs on a retire list.
+
+    Imported LAZILY: `capability_graph` reads this module's registry to decide what is billable,
+    so a module-level import here is a cycle. Prefix matching runs both ways -- the graph's own
+    convention, since a node may declare a directory where the writer names a file inside it.
+    """
+    try:
+        from libs.ops.capability_graph import EXTERNAL_READERS, HUMAN_READ, NODES
+    except Exception:
+        return [], "", ""
+    nodes = sorted(n.name for n in NODES
+                   if any(r.startswith(artifact) or artifact.startswith(r) for r in n.reads))
+    external = ""
+    for path, who in EXTERNAL_READERS.items():
+        if path.startswith(artifact) or artifact.startswith(path):
+            external = str(who)
+            break
+    human = "HUMAN_READ" if any(h.startswith(artifact) or artifact.startswith(h)
+                                for h in HUMAN_READ) else ""
+    return nodes, external, human
+
+
+def measure_organ(m: Module, led: Ledgers, _chain: tuple[str, ...] = ()) -> dict[str, Any]:
+    """An organ's rent, inherited from whatever its output actually changes.
+
+    `_chain` carries the organs already visited on this inheritance walk. The desk's artifact
+    graph has genuine cycles -- `miner_candidate_compiler` writes the candidates the gauntlet
+    reads and reads the gate report the gauntlet writes -- so a walk without it recurses until
+    the stack ends. A cycle is not an error either: it is a research LOOP, and the honest verdict
+    names it rather than crashing on it or silently picking one arbitrary direction.
+    """
+    if m.name in INFRASTRUCTURE:
+        return _row(m, NOT_BINDING, rent=0.0, unit="log-wealth/day",
+                    why=f"MONEY PATH, not an input to it -- {INFRASTRUCTURE[m.name]}",
+                    infrastructure=True)
+    artifact = ORGAN_OUTPUT.get(m.name, m.key)
+    nodes, external, human = _graph_consumers(artifact)
+    readers = [r for r in nodes if r != m.name]
+    if human and not readers and not external:
+        return _row(m, NOT_BINDING, rent=0.0,
+                    why=(f"{artifact} is declared HUMAN_READ: advisory by design, a person reads "
+                         f"it and no automated decision turns on it. Rent is zero because it "
+                         f"changes no sizing -- that is the intended terminal state here, NOT an "
+                         f"unwired organ, and it becomes billable the day a consumer is declared"),
+                    artifact=artifact, readers=[], terminal="HUMAN_READ")
+    if external and not readers:
+        return _row(m, UNMEASURED,
+                    why=(f"{artifact} is consumed OUTSIDE the graph -- {external[:180]} -- so the "
+                         f"consumer carries no rent line to inherit. What would price it is the "
+                         f"decision that consumer changes, measured against the same decision "
+                         f"taken on its own clock"),
+                    artifact=artifact, readers=[], external_reader=external)
+    if not readers:
+        return _row(m, NOT_BINDING, rent=0.0,
+                    why=(f"nothing on this tree reads {artifact}: this organ's output changes no "
+                         f"decision, so its rent is zero by construction. Either wire a consumer "
+                         f"or retire it -- the one thing it must not stay is unbilled"),
+                    artifact=artifact, readers=[])
+    # THE MONEY PATH IS NOT AN INHERITABLE PRICE. An organ feeding `gateway`, `release` or the
+    # evaluator feeds something whose own rent is NOT_BINDING by construction, and inheriting that
+    # would report "this organ does not bind" about an organ that decides what the desk holds.
+    # What prices it is the realised growth of what it put there.
+    infra = [r for r in readers if r in INFRASTRUCTURE]
+    priced = {r: MODULES_BY_NAME[r] for r in readers
+              if r in MODULES_BY_NAME and r not in INFRASTRUCTURE and r not in _chain}
+    if not priced and infra:
+        return _row(m, UNMEASURED,
+                    why=(f"{artifact} feeds the money path directly ({', '.join(infra)}), whose "
+                         f"own rent is not separable. What prices this organ is the realised "
+                         f"growth of what it put in the book -- {LIVE_LEDGER} joined to the "
+                         f"sleeves it admitted -- not an inherited NOT_BINDING"),
+                    artifact=artifact, readers=readers, feeds_money_path=infra)
+    if not priced:
+        looped = [r for r in readers if r in _chain]
+        return _row(m, UNMEASURED,
+                    why=((f"{artifact} is read by {', '.join(readers)}, which is already on this "
+                          f"inheritance chain ({' -> '.join(_chain)}): a research LOOP, so no "
+                          f"consumer outside it prices this organ yet")
+                         if looped else
+                         (f"{artifact} is read by {', '.join(readers)}, and none of those carries "
+                          f"a rent line either -- so the chain from this organ to a priced "
+                          f"decision is not closed. 'Something reads it' is not 'it earns'")),
+                    artifact=artifact, readers=readers)
+    # INHERITED, NEVER RECOMPUTED. Two modules in one chain must not produce two different
+    # answers about the same value; the consumer owns the arithmetic and this reports its verdict.
+    rows: dict[str, dict[str, Any]] = {}
+    for name, mod in priced.items():
+        fn = MEASURES[mod.measure]
+        rows[name] = (fn(mod, led, (*_chain, m.name)) if fn is measure_organ  # type: ignore[call-arg]
+                      else fn(mod, led))
+    earns = [n for n, r in rows.items() if r["verdict"] == EARNS]
+    costs = [n for n, r in rows.items() if r["verdict"] == COSTS]
+    best = (earns or costs or sorted(rows))[0]
+    row = rows[best]
+    verdict = row["verdict"] if (earns or costs) else UNMEASURED
+    return _row(m, verdict, rent=row.get("rent"), unit=str(row.get("unit") or "log-wealth/day"),
+                n=int(row.get("n") or 0), ci=row.get("ci"), window=str(row.get("window") or ""),
+                why=(f"inherited from {best}, which this organ's {artifact} feeds"
+                     + (f": {row['why']}" if row.get("why") else "")),
+                artifact=artifact, readers=readers, priced_through=best)
 
 
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
