@@ -278,7 +278,10 @@ def test_every_shipped_enforcement_claim_resolves():
 
 
 #: Lessons the desk paid for that reach NO organ and that no test enforces. RATCHET: may fall,
-#: never rise. 32, measured 2026-09-05 at 228 active lessons.
+#: never rise. 23, measured 2026-09-05 at 228 active lessons -- down from 32 in the same session
+#: once the rendered form was compacted (evidence capped at EVIDENCE_CHARS, framing halved), which
+#: is the ratchet working exactly as intended: 106 -> 32 by routing, 32 -> 23 by compaction, and
+#: each step pinned so it cannot drift back.
 #:
 #: WHY THIS IS A RATCHET AND NOT ZERO, and it is a correction rather than a relaxation. The bar
 #: used to be "nothing unenforced falls out of the single global corpus", which is satisfiable
@@ -293,7 +296,7 @@ def test_every_shipped_enforcement_claim_resolves():
 #: 32. The remaining 32 are named below, and the ratchet is what stops the number drifting back up
 #: while nobody is looking. Lower it by retiring a lesson whose falsifier arrived, graduating one
 #: into a test, or improving the routing. Never by raising BUDGET_CHARS.
-MAX_LESSONS_REACHING_NOBODY = 32
+MAX_LESSONS_REACHING_NOBODY = 23
 
 
 def test_every_paid_for_lesson_reaches_some_organ():
@@ -380,3 +383,38 @@ def test_an_unverifiable_enforcement_claim_is_counted_as_lost_not_demoted(tmp_pa
     lost, demoted = dm.unreached(budget=1, path=p)
     assert [i.id for i in lost] == ["L0001"]
     assert demoted == []
+
+
+# ---------------------------------------------------------------- compaction
+
+def test_the_instruction_is_never_truncated_only_its_evidence():
+    """The two fields do different jobs and must be compacted differently.
+
+    A half-stated lesson is worse than no lesson -- the reader acts on the first clause. A
+    shortened evidence pointer still points, which is all the evidence has to do inside a prompt.
+    """
+    long_lesson = "Do the specific measurable thing rather than assuming it. " * 12
+    long_ev = "measured in scripts/audit_gate_power.py on 2026-08-01, 1234 rows. " * 12
+    item = dm.Lesson("L0001", "2026-08-01", "blind", long_lesson, long_ev)
+    out = item.render()
+    assert " ".join(long_lesson.split()) in out, "the instruction was cut -- it never may be"
+    assert len(out) < len(long_lesson) + len(long_ev), "evidence was not compacted at all"
+
+
+def test_a_truncated_quote_says_so_and_names_its_row():
+    """A silently shortened quote is a fabricated one. The marker and the id are what make it a
+    pointer rather than a paraphrase somebody has to trust."""
+    item = dm.Lesson("L0042", "2026-08-01", "blind", "x" * 40, "y" * (dm.EVIDENCE_CHARS + 200))
+    out = item.render()
+    assert "..." in out and "L0042" in out, f"truncation is unmarked or unattributed: {out[-80:]}"
+
+
+def test_compaction_actually_bought_lessons():
+    """The measured claim, asserted: an organ carries more than the pre-compaction 19 lessons.
+
+    Without this the compaction is a refactor nobody can tell happened, and the next edit that
+    re-expands the render costs a third of every organ's memory with no test to notice.
+    """
+    _, dropped = dm.corpus(organ=dm.organs()[0])
+    assert len(dm.load()) - len(dropped) >= 22, (
+        "an organ carries fewer lessons than the compaction bought")

@@ -136,6 +136,17 @@ _ALIASES: dict[str, str] = {
 #: cannot catch, because everything a machine can catch should be caught by the machine.
 ENFORCED_WEIGHT = 0.35
 
+#: Characters of EVIDENCE carried into an organ's context, per lesson. The lesson itself is never
+#: cut; see `Lesson.render` for why the two fields are treated differently.
+#:
+#: 160 IS A MEASURED TRADE, not a round number. Evidence is 46% of the rendered corpus. Dropping
+#: it entirely would fit 37 lessons per organ instead of 19 -- and would turn the corpus into 37
+#: assertions with nothing behind them, which is precisely the "opinions injected into every
+#: organ" this module's admission bar exists to refuse. At 160 the head of the evidence still
+#: carries the number and the source (it is written key-fact-first), the marker names the row for
+#: anyone who wants the rest, and 24.6 lessons reach each organ instead of 18.8.
+EVIDENCE_CHARS = 160
+
 
 @dataclass(frozen=True)
 class Lesson:
@@ -178,8 +189,28 @@ class Lesson:
         return base * (ENFORCED_WEIGHT if self.enforced_verified else 1.0)
 
     def render(self) -> str:
+        """One lesson, as compactly as it can be stated without becoming unfalsifiable.
+
+        THE LESSON IS NEVER TRUNCATED, THE EVIDENCE IS. They do different jobs: the lesson is the
+        behaviour change, and a half-stated instruction is worse than none; the evidence exists so
+        the claim is CHECKABLE, and a pointer that points is enough for that. Measured over the
+        228-lesson ledger, evidence is 46% of the rendered corpus at a mean of 294 chars, and it
+        is written key-fact-first -- "BIS WS_XRU: all 1,067,834 daily rows are titled..." -- so
+        the head of it carries the number and the source that make the lesson believable.
+
+        Capping it at EVIDENCE_CHARS takes the mean lesson from 639 chars to 459, which is 24.6
+        lessons per organ instead of 18.8: a third more of what the desk has paid for reaching
+        each organ, for the same 12,000 characters and no loss of any instruction.
+
+        THE TRUNCATION IS MARKED AND THE ROW IS NAMED. `...(L0187 full)` is not decoration -- a
+        silently shortened quote is a fabricated one, and the id is what lets a reader who doubts
+        the claim open the ledger and read all of it.
+        """
         mark = f"  [enforced by {self.enforced_by}]" if self.enforced_verified else ""
-        return f"- {self.lesson.strip()}{mark}\n    EVIDENCE: {self.evidence.strip()}"
+        ev = " ".join(self.evidence.split())
+        if len(ev) > EVIDENCE_CHARS:
+            ev = f"{ev[:EVIDENCE_CHARS].rstrip()}...({self.id} full)"
+        return f"- {' '.join(self.lesson.split())}{mark}\n  EV: {ev}"
 
 
 def _test_exists(ref: str, root: Path | None = None) -> bool:
@@ -706,18 +737,22 @@ def unreached(budget: int = BUDGET_CHARS,
     return lost, demoted
 
 
+# THE FRAMING COSTS BUDGET TOO. At 613 chars the old header and footer were 5% of every organ's
+# 12,000 -- about one whole lesson, spent every call on prose that says the same thing each time.
+# Compressed to ~250 without losing either instruction that changes behaviour: read these as your
+# own likely mistakes (not as background), and record what you learn (or the desk pays twice).
+# Everything else in the old text explained the RANKING, which is a property of this module and
+# not something the reader has to act on.
 _HEADER = """
-=== DESK MEMORY -- lessons this desk PAID for, ranked by what ignorance cost (injected at
-runtime from docs/desk_lessons.jsonl; do not summarise, do not skip) ===
-These are not principles. Each one is a specific thing that went wrong here, with the evidence
-still on disk. They are ordered by cost x how many times the desk has had to re-learn them, so
-the top of this list is where this desk repeatedly fails. Read it as a list of your own likely
-mistakes, not as background.
+=== DESK MEMORY: what this desk has already paid to learn, costliest first (from
+docs/desk_lessons.jsonl -- do not summarise, do not skip). Each line is a specific thing that
+went wrong HERE. Read it as a list of your own likely mistakes. EV = the evidence, truncated;
+the id in brackets opens the full row. ===
 """
 
 _FOOTER = """
-When you learn something durable, record it:  python scripts/learn.py add ...
-A lesson nobody records is one the desk pays for twice.
+Learned something durable? `python scripts/learn.py add ...` -- an unrecorded lesson is paid for
+twice.
 """
 
 

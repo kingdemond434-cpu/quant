@@ -541,9 +541,13 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
     binding = "growth"
     if mandate and h < floor:
         h, binding = floor, "mandate"
-        reasons.append(f"utilisation mandate: floored {free_optimum:.2%} -> {floor:.2%}"
-                       + (f"; the full {target:.0%} applies at readiness 100%"
-                          if r < 0.999 else ""))
+        # NO READINESS CLAUSE HERE, and the removal is the point. This line used to add "the full
+        # 20% applies at readiness 100%" whenever readiness was short, which described a ramp the
+        # code above had already stopped doing -- a message that contradicts its own function is
+        # worse than no message, because a reader trusts it and stops reading the code. The floor
+        # is flat. Readiness is reported beside it and gates nothing.
+        reasons.append(f"utilisation mandate: floored {free_optimum:.2%} -> {floor:.2%} "
+                       f"(FLAT -- readiness {r:.1%} does not scale this floor)")
     # THE STATE MAY ONLY RAISE. A state whose curve wants LESS than the unconditional optimum is
     # not permitted to cut here: a reduction is a rail, and this one has not proved its
     # dE[log W] (growth governance rule 1). Wanting MORE is rule 2 in one line.

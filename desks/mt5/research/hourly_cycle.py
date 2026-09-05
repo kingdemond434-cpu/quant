@@ -409,6 +409,23 @@ def execution_twin() -> dict:
     return _producer("execution_twin", "research/execution_twin.py")
 
 
+def model_skill() -> dict:
+    """`model_self_improvement`: score every prediction the desk makes against a named baseline.
+
+    SCHEDULED FROM THE HOUR IT WAS WRITTEN, because the alternative is the defect this whole file
+    keeps finding: an organ that exists, is imported, is documented, and runs never. A skill score
+    is also only useful as a SERIES -- one reading says whether the desk forecasts well today, an
+    hourly track says whether it is getting better -- and a series needs a clock.
+
+    Its non-zero exit is a VERDICT, not a cycle failure: it exits 2 while any predictor is
+    unscored or beaten by its baseline, which is true today (the research forecast register scores
+    -0.177 Brier skill against its own base rate over 537 resolved claims). `_producer` records
+    the exit code and the cycle continues, which is the right shape -- a measurement organ must
+    never be able to stop the desk by reporting bad news.
+    """
+    return _producer("model_self_improvement", "research/model_self_improvement.py")
+
+
 def causal_graph() -> dict:
     """`world_causal_graph`: which driver moves which instrument, and in which regime.
 
@@ -520,6 +537,7 @@ def main() -> None:
     dp = _costed("deepen", deepen)
     et = _costed("execution_twin", execution_twin)
     cg = _costed("causal_graph", causal_graph)
+    ms = _costed("model_skill", model_skill)
     fr = _costed("frontier", frontier)
     _costed("frontier_report", lambda: frontier_report(h))
     (BASE / "data" / "sync_marker.json").write_text(
@@ -527,7 +545,8 @@ def main() -> None:
                     "health": h, "tape": t, "state_vector": s, "daily": d,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "sweep": sw, "compile": cc,
-                    "execution_twin": et, "causal_graph": cg, "frontier": fr,
+                    "execution_twin": et, "causal_graph": cg, "model_skill": ms,
+                    "frontier": fr,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
