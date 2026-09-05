@@ -94,6 +94,16 @@ def _classify(grade_raw: str, *, today: date) -> tuple[str, date | None]:
     # separately by max_audit's mine-conversion check). Read from the MARKER, never from prose.
     if verb == "killed":
         return "resolved", None
+    # A §33 RETIREMENT is the UNIVERSE MANDATE removing a card from the hunt, not a judgement that
+    # the source is bad. Added 2026-09-05 for GAP #130's residual breach: card #1 (Upbit's own
+    # market-data portal) sat in the LEGITIMACY queue awaiting a principal licence ruling, but
+    # Upbit is a crypto exchange and the mandate bars hunting the venue under ANY licence -- so the
+    # ruling was not owed, it was moot, and re-deferring it a third time would have been the wrong
+    # answer to the right question. Distinct verb from `killed` on purpose: killed means the desk
+    # judged the source, retired means the desk no longer trades that universe. Conflating them
+    # would lose the reason if the mandate ever changes.
+    if verb == "retired":
+        return "resolved", None
     # A DATED DEFERRAL is workable-later, not workable-now. Strictly `>` today, so a card whose
     # date is TODAY is workable today -- and every past date returns to the queue automatically.
     if verb == "deferred" and until is not None and until > today:

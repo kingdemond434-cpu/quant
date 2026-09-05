@@ -1,5 +1,16 @@
 # IMPROVEMENT INBOX — Master Research Expansion Package (received 2026-07-17)
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** The 61-item menu and its triage were written for the retired crypto-exchange desk. An item is actionable today only if its mechanism has a Fusion-executable expression.
+>
+> Nothing below is deleted: a row recording what was tried, graded or exhausted on the retired
+> desk is exactly the knowledge that stops a future session paying for the same thing twice. But
+> it is a RECORD, not a queue. Every new row runs against the MT5/Fusion Markets universe -- FX
+> majors/crosses/exotics, metals, equity indices, energy, softs, US share CFDs and the crypto CFDs
+> Fusion itself lists. **No crypto-exchange venue may be hunted, screened or scored again**
+> (`docs/LAWS.md` S1); crypto reference data is admissible only where a specific reading informs a
+> Fusion-executable instrument, never as a universe of its own.
+
+
 _Principal-supplied 61-item menu + amendments. CRO first-pass triage below; the BRAIN processes
 this across daily cycles per the standing rules: spec-prebuild for every queued item (top-5
 first), six-dimension gate, independence gate, complexity budget. NOTE: the package's prose

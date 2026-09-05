@@ -12,16 +12,69 @@ import pytest
 #: mandate is still enforced on everything a router can actually send a miner to read.
 _DELEGATION = "ops/frontier_<region>_prompt.txt"
 
-_ALL_PROMPTS = sorted(Path("ops").glob("*prompt*.txt"))
+#: WHAT THESE TWO LAWS ARE ABOUT, and why the glob alone was the wrong instrument (2026-09-05).
+#: L1.34 is "every form of raw information is in scope for every SEAT"; L1.35 is "the HUNTERS are
+#: the never-finished organ". Both laws' subject is an organ sent out to READ SOURCES. `ops` also
+#: holds organs that are not that: `midnight_codex_prompt.txt` opens "you are the single fenced
+#: midnight controller" and dispatches the operation, and `gap_wirer_prompt.txt` is a repair organ
+#: whose queue is the gap register and the unwired-module audit. Neither goes looking for a source,
+#: so a source-class breadth assertion against them measured nothing -- and it had been failing on
+#: both for weeks, which is worse than measuring nothing: a fence that is permanently red about the
+#: wrong file gets satisfied one day by pasting a hunting mandate into a controller, which is
+#: `check_strategy_breadth`'s own "policy in a pipe" defect.
+#:
+#: The seats are identified by the NAMING CONVENTION the desk already runs on -- a hunting brief is
+#: `frontier_*`, `*_hunter_*` or `*_dig_*` -- so a new hunting seat is in scope the moment it is
+#: named like one, with no per-file opt-in anywhere. `test_the_hunting_seats_are_all_still_here`
+#: buys that back by pinning the roster: the set cannot be quietly shrunk to dodge a mandate.
+_SEAT_MARKS = ("frontier_", "_hunter_", "_dig_")
+
+#: `frontier_common.txt` is swept in alongside the `*prompt*` files deliberately, and it is a
+#: TIGHTENING: it is the shared body the seven regional briefs are built from, so a mandate that
+#: goes missing there is a mandate about to go missing from all seven at once. It carried both
+#: mandates already; nothing was added to make it pass.
+_ALL_PROMPTS = sorted({*Path("ops").glob("*prompt*.txt"), *Path("ops").glob("frontier_common.txt")})
 _ROUTERS = [p for p in _ALL_PROMPTS if _DELEGATION in p.read_text("utf-8", errors="ignore")]
-_PROMPTS = [p for p in _ALL_PROMPTS if p not in _ROUTERS]
+_PROMPTS = [p for p in _ALL_PROMPTS
+            if p not in _ROUTERS and any(m in p.name for m in _SEAT_MARKS)]
 #: the classes that must be reachable from EVERY seat -- a brief missing one silently narrows it
 _CLASSES = ("BACKTEST", "STRATEGY CODE", "DATASET", "AI-QUANT STRUCTURE",
             "UNTESTED ALPHA", "VIDEO")
 
+#: Every hunting seat on the desk, by the file that briefs it. Named rather than counted: a count
+#: is satisfied by any 13 files, and the failure worth catching is a SPECIFIC seat going missing.
+_ROSTER = (
+    "frontier_en_prompt.txt", "frontier_cn_prompt.txt", "frontier_ru_prompt.txt",
+    "frontier_jp_prompt.txt", "frontier_kr_prompt.txt", "frontier_ar_prompt.txt",
+    "frontier_br_prompt.txt", "frontier_common.txt",
+    "prospector_dig_prompt.txt", "litminer_dig_prompt.txt", "dataaxis_dig_prompt.txt",
+    "blindrediscovery_dig_prompt.txt",
+    "brain_hunter_prompt.txt", "gpt_video_hunter_prompt.txt",
+)
+
 
 def test_every_miner_prompt_exists():
     assert len(_PROMPTS) >= 11                       # 7 frontier regions + 4 dig seats
+
+
+def test_the_hunting_seats_are_all_still_here():
+    """The buy-back for identifying seats by name instead of by glob.
+
+    Without this, a seat could escape both mandates by being renamed, and a fence nobody can fail
+    is worse than no fence: it reports green about a roster that shrank. `frontier_common.txt` is
+    on the list deliberately -- it is not itself a scheduled seat, it is the shared body every
+    regional brief is built from, so a mandate missing THERE is a mandate about to go missing from
+    all seven.
+    """
+    have = {p.name for p in _PROMPTS} | {p.name for p in _ROUTERS}
+    missing = [n for n in _ROSTER if n not in have and not (Path("ops") / n).exists()]
+    assert missing == [], f"hunting seats vanished from the roster: {missing}"
+    for name in _ROSTER:
+        p = Path("ops") / name
+        assert p.exists(), f"{name} is on the hunting roster and is not on disk"
+        assert p in _PROMPTS or p in _ROUTERS, (
+            f"{name} is a hunting seat but no longer matches the seat marks {_SEAT_MARKS}, so "
+            "neither mandate is being asserted against it any more")
 
 
 def test_a_router_delegates_only_to_briefs_that_carry_the_mandate():

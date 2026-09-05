@@ -30,6 +30,13 @@ be recovered from it at any price.
   currently has to assume an order, and the assumption decides which of a stop and a target was
   hit on the bars where both were touched -- the bars that matter most.
 
+  REALISED VOLATILITY AND JUMP INTENSITY. How far price actually travelled inside the bar, and
+  how much of that travel was diffusion rather than a gap. A bar's range is the distance between
+  two extremes and says nothing about the path between them: the same H1 range is produced by a
+  smooth drift and by one release print, and a stop sized off volatility survives the first and is
+  taken out by the second. The realised/bipower decomposition separates them, and it needs the
+  individual returns -- there is no OHLC transformation that recovers it.
+
 HONESTY RULES, ENFORCED IN THE CODE RATHER THAN THE COMMENTS
 
   1. A RETAIL CFD TAPE HAS NO TRADE SIDE. There is no aggressor flag and no per-side size on this
@@ -48,6 +55,7 @@ HONESTY RULES, ENFORCED IN THE CODE RATHER THAN THE COMMENTS
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -67,6 +75,37 @@ LATENCY_GRID_MS: tuple[int, ...] = (0, 10, 50, 100, 250, 1_000, 5_000)
 
 #: Horizons at which the realised spread (post-fill mid reversion) is measured, in milliseconds.
 REALISED_HORIZONS_MS: tuple[int, ...] = (1_000, 5_000, 30_000, 300_000)
+
+#: THE GRID REALISED VARIANCE IS SAMPLED ON, and it is not an implementation detail. Realized
+#: variance computed on every quote revision does not measure volatility; it measures the bid-ask
+#: bounce, and it diverges as the sampling gets finer -- the standard result that makes naive
+#: tick-level RV useless and is why the literature samples sparsely (Andersen-Bollerslev-Diebold-
+#: Labys; Zhang-Mykland-Ait-Sahalia). One second is the conventional compromise on a feed at these
+#: rates: fine enough that a 1-minute bar still has ~60 returns behind it, coarse enough that the
+#: bounce has averaged out. Previous-tick interpolation fills a grid point with no fresh quote,
+#: which is the standard estimator for irregular data and contributes a zero return rather than a
+#: fabricated one -- and `stale_grid_frac` reports how much of the bar that was, so a number
+#: computed over a mostly-stale grid can be recognised as one.
+RV_SAMPLE_MS = 1_000
+
+#: Below this many grid returns a bar states no variance. A realised volatility over six returns
+#: is a number, not an estimate (L1.28a).
+RV_MIN_RETURNS = 20
+
+#: A grid return is a JUMP above this many local standard deviations, where the local scale comes
+#: from bipower variation rather than from realised variance. Using RV would be circular: a jump
+#: inflates RV, which raises the threshold, which hides the jump. BV is jump-robust by
+#: construction, which is the whole reason it is the estimator in the decomposition below.
+JUMP_K = 4.0
+
+#: Above this share of exactly-zero grid returns the jump THRESHOLD is degenerate and the jump
+#: statistics are UNMEASURED. See the note at the point of use: the variance sums stay valid, the
+#: count does not.
+RV_MAX_ZERO_FRAC = 0.5
+
+#: The MedRV consistency constant, pi / (6 - 4*sqrt(3) + pi). Written out rather than as a
+#: literal so a reader can check it against the paper instead of trusting a decimal.
+_MEDRV_C = math.pi / (6.0 - 4.0 * math.sqrt(3.0) + math.pi)
 
 
 @dataclass
@@ -353,6 +392,142 @@ def path_excursions(path: pd.DataFrame, point: float) -> pd.DataFrame:
     out["mfe_pts"] = (out["high"] - out["open"]) / point
     out["mae_pts"] = (out["open"] - out["low"]) / point
     return out
+
+
+def realized_variation(df: pd.DataFrame, freq: str = "1h",
+                       sample_ms: int = RV_SAMPLE_MS,
+                       min_returns: int = RV_MIN_RETURNS) -> pd.DataFrame:
+    """Per bar: realised volatility, its jump-robust twin, and how much of it was jumps.
+
+    THE SECOND THING BAR DATA STRUCTURALLY CANNOT GIVE, after the order of the extremes. An H1
+    bar's range says how far price travelled between two extremes; it cannot say whether it got
+    there on a smooth diffusion or in one gap, and those are different trades. A stop sized off
+    realised volatility survives the first and is taken out by the second, at the same range.
+
+    THE DECOMPOSITION, and why both estimators are here rather than one:
+
+        RV = sum r_i^2                          all variation, jumps included
+        BV = (pi/2) * sum |r_i| |r_{i-1}|       converges to the CONTINUOUS variation alone,
+                                                because a jump enters only one of the two
+                                                factors in each product and is annihilated by
+                                                its diffusive neighbour
+        jump_frac = max(0, RV - BV) / RV        the share of variation that was not diffusion
+
+    Reporting only RV would hide the distinction; reporting only BV would discard the jumps, which
+    on this universe are the release prints and the session rolls -- the events with the most
+    tradeable structure in them. `max(0, .)` because in finite samples BV can exceed RV on a bar
+    with no jumps at all, and a negative jump share is an estimator artefact, not a fact about the
+    market.
+
+    Columns
+      rv_bp / bv_bp     realised and bipower volatility over the bar, in BASIS POINTS OF THE MID
+                        -- deliberately not points. Points are the right unit for a cost and the
+                        wrong one for a volatility: a point of XAUUSD and a point of EURUSD differ
+                        by five orders of magnitude, and a cross-sectional volatility feature in
+                        points would rank the universe by tick size. `rv_pts` is carried too,
+                        because a stop is placed in points and the conversion should not have to
+                        be re-derived by every consumer.
+      jump_frac         share of variation attributable to jumps, in [0, 1]
+      n_jumps           grid returns beyond JUMP_K local standard deviations
+      jump_intensity    n_jumps per hour of bar -- comparable across the bar clock, which a count
+                        is not: 3 jumps in a minute and 3 in an hour are not the same market
+      zero_return_frac  share of grid returns that were exactly zero. Above RV_MAX_ZERO_FRAC the
+                        jump columns are None: the threshold has collapsed onto the price grid
+      stale_grid_frac   share of grid points carried forward from an older quote
+      n_returns         the bar's own n. Below `min_returns` every value above is None
+    """
+    if df.empty:
+        return pd.DataFrame()
+    ts = pd.to_datetime(np.asarray(df["time_msc"], dtype=np.int64), unit="ms", utc=True)
+    mid = pd.Series(np.asarray(df["mid"], dtype=np.float64), index=ts).sort_index()
+    grid = mid.resample(f"{int(sample_ms)}ms").last()
+    fresh = grid.notna()
+    grid = grid.ffill().dropna()
+    if grid.size < 2:
+        return pd.DataFrame()
+    fresh = fresh.reindex(grid.index, fill_value=False)
+    px = grid.to_numpy(dtype=np.float64)
+    ok = px > 0
+    logp = np.full(px.shape, np.nan)
+    logp[ok] = np.log(px[ok])
+    rows: list[dict[str, Any]] = []
+    bars = pd.Series(np.arange(grid.size), index=grid.index).groupby(pd.Grouper(freq=freq))
+    for stamp, idx in bars:
+        i = idx.to_numpy()
+        if i.size < min_returns + 1:
+            if i.size:
+                rows.append({"bar": stamp, "n_returns": max(0, int(i.size) - 1),
+                             "rv_bp": None, "bv_bp": None, "rv_pts": None, "jump_frac": None,
+                             "n_jumps": None, "jump_intensity": None, "zero_return_frac": None,
+                             "stale_grid_frac": round(float(1.0 - fresh.to_numpy()[i].mean()), 4)})
+            continue
+        r = np.diff(logp[i])
+        lvl = px[i][:-1]
+        r = r[np.isfinite(r)]
+        if r.size < min_returns:
+            continue
+        rv = float(np.sum(r * r))
+        bv = float((np.pi / 2.0) * np.sum(np.abs(r[1:]) * np.abs(r[:-1]))) if r.size > 1 else 0.0
+        # THE THRESHOLD SCALE IS MedRV, NOT BV, AND THE FIRST VERSION USED BV AND WAS WRONG.
+        # Bipower variation is jump-robust in the limit but not against one DOMINANT jump: that
+        # return enters two of the products, inflating BV, raising the threshold, and hiding the
+        # very event it was raised by. Measured on a synthetic tape with a single 1,000-point gap
+        # injected into one hour, the BV-scaled count went DOWN from 26 to 5 -- the bar with the
+        # only real jump on the tape reported the fewest. `jump_frac` still moved correctly
+        # (0.47 -> 0.997) because RV explodes faster than BV, so the defect was invisible in the
+        # headline number and lived entirely in the count.
+        #
+        # MedRV (Andersen-Dobrev-Schaumburg) takes a rolling median of three consecutive absolute
+        # returns, so a lone jump -- and even two adjacent ones -- is discarded by the median
+        # rather than averaged into the scale.
+        scale = 0.0
+        if r.size >= 3:
+            med = np.median(np.abs(np.stack([r[:-2], r[1:-1], r[2:]])), axis=0)
+            medrv = float(_MEDRV_C * (r.size / (r.size - 2)) * np.sum(med * med))
+            scale = math.sqrt(medrv / max(1, r.size - 2)) if medrv > 0 else 0.0
+        n_jump = int(np.count_nonzero(np.abs(r) > JUMP_K * scale)) if scale > 0 else 0
+        hours = max(1e-9, (r.size * sample_ms) / 3_600_000.0)
+        # A COUNT ON A DEGENERATE SCALE IS NOT A COUNT. When most grid returns are exactly zero --
+        # a thin instrument, or a price grid coarser than one second of movement -- the median of
+        # three consecutive absolute returns is itself zero, the threshold collapses toward the
+        # tick, and every single-tick move reads as a jump. Measured on the lattice-walk fake
+        # tape: 30 "jumps" an hour on a tape with none. Above RV_MAX_ZERO_FRAC the jump statistics
+        # are UNMEASURED and `zero_return_frac` says why, rather than shipping a count that
+        # counts the price grid (L1.28a). `rv_bp` and `bv_bp` survive -- variance over a mostly
+        # flat grid is small and correct; it is the THRESHOLD that degenerates, not the sum.
+        zero_frac = float(np.count_nonzero(r == 0.0) / r.size)
+        measurable = scale > 0 and zero_frac <= RV_MAX_ZERO_FRAC
+        rows.append({
+            "bar": stamp,
+            "rv_bp": round(math.sqrt(rv) * 1e4, 4),
+            "bv_bp": round(math.sqrt(max(0.0, bv)) * 1e4, 4),
+            "rv_pts": round(float(math.sqrt(rv) * float(np.mean(lvl))), 6),
+            "jump_frac": round(max(0.0, rv - bv) / rv, 5) if rv > 0 else 0.0,
+            "n_jumps": n_jump if measurable else None,
+            "jump_intensity": round(n_jump / hours, 4) if measurable else None,
+            "zero_return_frac": round(zero_frac, 4),
+            "stale_grid_frac": round(float(1.0 - fresh.to_numpy()[i].mean()), 4),
+            "n_returns": int(r.size),
+        })
+    out = pd.DataFrame(rows)
+    return out.set_index("bar") if not out.empty else out
+
+
+def bar_statistics(df: pd.DataFrame, freq: str, point: float) -> pd.DataFrame:
+    """One per-bar table: the path, the excursions, and the variation. ONE artifact, one join.
+
+    Kept as a single table on purpose. The path and the variation are asked together -- "did the
+    high come first, and was getting there a drift or a gap" is one question -- and splitting them
+    across two files would make every consumer perform a join that this can do once, correctly,
+    on the bar stamp it already owns.
+    """
+    path = path_excursions(intrabar_path(df, freq), point)
+    if path.empty:
+        return path
+    rv = realized_variation(df, freq)
+    if rv.empty:
+        return path
+    return path.join(rv, how="left")
 
 
 def hour_cell(df: pd.DataFrame, symbol: str, hour: int, point: float,

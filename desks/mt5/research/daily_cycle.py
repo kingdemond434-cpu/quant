@@ -322,7 +322,14 @@ def _state_research_feedback() -> None:
     have just refreshed, which is why they run late in the cycle."""
     for name in ("excursions", "counterfactual_markout", "action_counterfactuals",
                  "exit_accounts", "alpha_genome", "opportunity_curve",
-                 "regime_coverage", "data_prospector", "resurrection", "research_productivity",
+                 "regime_coverage",
+                 # THE BREADTH LANE, after the coverage map because they read the same shadow
+                 # ledgers it has just re-read and write into the same deepening queue: how many
+                 # INDEPENDENT bets the book is against how many labels it has, what pays inside
+                 # the book's own worst periods, and which states of a surviving edge deserve
+                 # capital. None conditions capital; each queues research keyed on its own source.
+                 "alpha_breadth", "drawdown_alpha", "survivor_neighbourhood",
+                 "data_prospector", "resurrection", "research_productivity",
                  "research_pnl", "mutation_yield", "drift_monitor", "revival_engine",
                  # THE COUNTERFACTUAL WORLD runs BEFORE missed_growth on purpose: it writes
                  # VETO_ALPHA, which is the veto rails' evidence, and a rail judged against

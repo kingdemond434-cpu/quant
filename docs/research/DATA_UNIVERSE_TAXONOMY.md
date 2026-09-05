@@ -9,6 +9,18 @@
 > what was once built, never evidence that this desk covers that domain today, and NEVER a
 > licence to hunt a crypto-exchange venue to 'close the gap'. Diff against the DOMAINS; treat the
 > coverage column as an archive.
+>
+> **THE SEED NAME-LIST IS UNDER THE SAME RULE, and it is the half a reader will miss.** Its own
+> heading calls it "the seed the organs expand daily", so it reads as a live hunting vocabulary --
+> and roughly forty of its entries are crypto-exchange-native (Halving, Hashrate, Mempool, UTXO,
+> SOPR, MVRV, NUPL, Realizedcap, Stablecoins, Bridges, Validators, Airdrops, Forks, TVL, DEX, CEX,
+> Perpetuals, Staking, Burn, Issuance and their neighbours). **Those names are ARCHIVED VOCABULARY:
+> no organ may expand them into a hunt, a collector, a card or a query.** They are left on the page
+> because the list is the principal's own 2026-08-04 text and because deleting the crypto entries
+> by hand would silently disturb the ~350 that ARE this book's vocabulary -- swaps, basis,
+> contango, backwardation, COT positioning, sessions, DXY, gold, indices, macro releases, vol
+> surfaces, skew, execution and microstructure. Expand THOSE. A name here is a candidate axis only
+> if it can be measured on, or made to inform, a Fusion-executable instrument.
 
 **Installed 2026-08-04 by principal order.** Thirty domains and the bulk name-list below are the
 STANDING UNIVERSE every breadth organ hunts against, every day. The order is explicit that this is

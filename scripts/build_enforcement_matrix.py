@@ -542,13 +542,24 @@ _MAP: dict[str, list[str]] = {
     # as refusals rather than zeros, and the 7.1% tape coverage is the defect the surface reports.
     "L1.58-r0371": ["libs/research/fee_attribution.py",
                     "tests/test_fee_attribution.py", "scripts/run_execution_intel.py"],
-    # R0303 Upbit purge-proof snapshot (L1.46 unrecoverable-series duty): the venue erases a
-    # market's candle history at delisting (~11.4 KRW markets/yr; AQT/AERGO lost 2026-08-03),
-    # and the desk's own >=120-aligned-day panel filter stacks a second survivorship bias on
-    # top. The collector holds full daily history for every market plus flagged-market 1m,
-    # and its manifest's delist ledger is the treatment group the purge erases.
-    "L1.46-r0303": [
-                    "tests/research/test_upbit_snapshot.py"],
+    # R0303 RETIRED 2026-09-05 (universe mandate). The row read:
+    #
+    #   "L1.46-r0303": ["tests/research/test_upbit_snapshot.py"]
+    #
+    # R0303 was the Upbit purge-proof snapshot -- the venue erases a market's candle history at
+    # delisting (~11.4 KRW markets/yr; AQT/AERGO lost 2026-08-03), so the collector held full
+    # daily history for every market plus flagged-market 1m and its manifest's delist ledger was
+    # the treatment group the purge erases. Upbit is a crypto exchange the desk may never hunt
+    # again; the collector and its test went with that desk in c242249b, leaving this row citing
+    # a path that does not exist -- which check_enforcement_execution.py correctly reported as
+    # "LAWS ENFORCED BY NOTHING: L1.46-r0303", taking a LAW fence red.
+    #
+    # THE LAW IS NOT RETIRED, ONLY THIS ROW. L1.46 (unrecoverable-series duty) keeps its own
+    # enforcement two hundred lines above -- scripts/check_clock_provenance.py plus
+    # libs/research/clock_provenance.py, both present and both run by the law gate. What is
+    # deliberately NOT done is a fake repoint at an MT5 series: a broker does not erase an
+    # instrument's bar history at delisting, so pointing this row at the MT5 universe would
+    # register a duty against a hazard that venue does not have.
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive

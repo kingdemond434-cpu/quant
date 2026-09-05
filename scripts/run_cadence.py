@@ -737,13 +737,19 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # a candidate can cross the bar on a cycle that found no new survivor at all.
     for _organ, _script, _artifact in (
             # THE CALLERS THAT WERE THEMSELVES ORPHANS. Each of these was written to make a
-            # library module reachable -- emergence, wallet_graph, ict.cross_sectional -- and then
-            # nothing ran the caller. The libs orphan check went green because the import existed,
-            # which is how a wiring fix can be one link short and still report success. Each exits
+            # library module reachable -- emergence, ict.cross_sectional -- and then nothing ran
+            # the caller. The libs orphan check went green because the import existed, which is
+            # how a wiring fix can be one link short and still report success. Each exits
             # cleanly naming its own blocker when its input is absent, so running them every cycle
             # costs seconds and turns "no data yet" into a dated statement rather than a silence.
+            #
+            # THE WALLET-GRAPH LEG IS GONE, 2026-09-05 (universe mandate). It ran
+            # scripts/resolve_wallets.py, which resolved on-chain addresses to entities and
+            # reported entity-level exchange flow -- an on-chain mechanic with no MT5 instrument
+            # behind it, so it was deleted rather than repointed. Its library,
+            # libs/data/wallet_graph.py, now has no importer at all and belongs in the same
+            # deletion; it is left standing only because libs/ is not this sweep's to edit.
             ("weak-signals", "scripts/cluster_weak_signals.py", "data/weak_signal_clusters.json"),
-            ("wallet-graph", "scripts/resolve_wallets.py", "data/wallet_entities.json"),
             ("ict-xsec", "scripts/run_ict_cross_sectional.py", "data/ict_cross_sectional.json"),
             # SOLE IMPORTERS THAT NOTHING RAN -- found by the same sweep, pre-existing rather than
             # mine. run_axis_generate keeps libs.research.alpha_economics reachable and completes

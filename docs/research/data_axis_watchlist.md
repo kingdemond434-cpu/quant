@@ -64,7 +64,24 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 
 ## SOURCE CARDS (graded; full genealogy in `data/data_universe_map.json`)
 
-### 1. Upbit Historical Market Data portal — grade: needs-legitimacy-review (data itself verified-clean; commercial-use licence is the open question, re-graded 2026-07-25) [§33: deferred(2026-09-15) tier:3]
+### 1. Upbit Historical Market Data portal — grade: RETIRED BY THE MT5 UNIVERSE MANDATE 2026-09-05 (the licence question below is moot, not answered: the desk will not hunt this venue under any licence) [§33: retired -> CLAUDE.md MT5 UNIVERSE MANDATE 2026-08-18; closes GAP #67]
+> **§33 RETIREMENT 2026-09-05, AND IT CLOSES AN OVERDUE GOVERNANCE ITEM RATHER THAN DEFERRING IT A
+> THIRD TIME.** Found by running `source_backlog_next.py --limit 0` instead of re-reading GAP #130's
+> row: this card was still LIVE in the legitimacy queue, deferred to the 2026-09-15 window, waiting
+> on the principal ruling GAP #67 has owed since 2026-08-15. Upbit is a crypto exchange and this is
+> its own market-data portal — crypto-exchange-native, the MT5 UNIVERSE MANDATE's explicitly banned
+> target, sitting in the desk's own "what should I hunt next" tool three weeks after the pivot.
+>
+> **THE MANDATE ANSWERS #67 BY MAKING IT MOOT.** The blocked question is whether Upbit's licence
+> permits commercial use. The desk will never hunt the venue under a permissive licence either, so
+> no ruling is owed and none should be requested — the card's own analysis already records the cost
+> of the lapse as zero (static archive back to 2017, nothing decays). A third deferral would have
+> been asking the principal to rule on a question the mandate had already settled.
+>
+> Retired, not killed, and not deleted: `killed` means the desk judged the source and found it
+> wanting, which would be false here — the data was graded verified-clean. `retired` means the desk
+> no longer trades this universe. The distinction keeps the reason recoverable if the mandate ever
+> changes, and everything below stays as the record of what was verified.
 > **§33 RE-DEFERRAL 2026-08-18 (free-data miner) — AND THE LAPSE IS THE HEADLINE: GAP_REGISTER #67's
 > "RULE BY 2026-08-15" HAS PASSED WITH NO RULING.** Checked this run: `data/principal_replies.jsonl`
 > carries no Upbit answer (latest entry is an unrelated 08-18 deadman page); row #67 is still `open`.

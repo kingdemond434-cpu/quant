@@ -56,25 +56,40 @@ def test_fence_calls_the_law_guard() -> None:
     assert "_law_guard" in called, "main() must call guard() at the top (L1.42)"
 
 
-def test_listener_flush_clears_only_after_a_durable_write() -> None:
-    """REGRESSION on the 41-day defect: `_BUF.clear()` must not precede the archive read.
+# THE 41-DAY DEFECT'S REGRESSION SITE IS GONE, AND HALF OF IT IS REPOINTED (2026-09-05).
+#
+# `test_listener_flush_clears_only_after_a_durable_write` stood here. It read
+# `scripts/liquidation_listener.py` and pinned, structurally, that `_BUF.clear()` could not appear
+# at a line before the `read_parquet` that loaded the archive -- because the original order cleared
+# the buffer first and destroyed 41 days of liquidations against an archive that turned out to be
+# corrupt. That listener collected crypto-exchange liquidations; it was deleted with the retired
+# desk under the MT5 universe mandate, and its systemd row is parked in ops/crontab.manifest.
+#
+# THE ORDERING HALF IS NOT REPOINTED, deliberately. No MT5 recorder buffers-then-clears -- they
+# write straight through -- so aiming that assertion at one would invent a regression site rather
+# than guard one, and a fence that cannot fail on the code it reads is worse than no fence.
+# THE ATOMICITY HALF IS repointed below, because that one IS live: every tape writer on the money
+# path still has to make a partial write impossible, and that is what actually made the archive
+# corrupt in the first place.
 
-    Pinned structurally rather than behaviourally so the ordering cannot silently regress even if
-    someone rewrites the body: in the fixed implementation the clear happens after the write, so
-    no `read_parquet` call may appear at a later line than the clear.
+
+def test_the_tape_writers_make_a_partial_write_impossible() -> None:
+    """A half-written archive is the precondition for the whole 41-day loss, not a detail of it.
+
+    The listener cleared its buffer against an archive it believed it had read; the archive was
+    truncated because the write was not atomic. Ordering protected the data only if the file on
+    disk was either the old one or the new one and never something in between. So the surviving
+    assertion is the one that still has live code under it: a tape file is written to a temporary
+    path and moved into place with `os.replace`, which is atomic on POSIX and on Windows.
     """
-    src = (ROOT / "scripts/liquidation_listener.py").read_text("utf-8")
-    tree = ast.parse(src)
-    flush = next(n for n in ast.walk(tree)
-                 if isinstance(n, ast.FunctionDef) and n.name == "_flush")
-    clears = [n.lineno for n in ast.walk(flush)
-              if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
-              and n.func.attr == "clear"]
-    reads = [n.lineno for n in ast.walk(flush)
-             if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
-             and n.func.attr == "read_parquet"]
-    assert clears and reads, "_flush must both read the archive and clear the buffer"
-    assert min(clears) > max(reads), (
-        "the buffer must be cleared AFTER the archive is read -- the original order destroyed "
-        "41 days of liquidations against a corrupt archive")
-    assert "replace(" in src, "the archive write must be atomic (tmp + replace)"
+    for rel in ("desks/mt5/recorders/tape_store.py", "desks/mt5/moat/moat_recorder.py"):
+        src = (ROOT / rel).read_text("utf-8")
+        tree = ast.parse(src)
+        replaces = [n for n in ast.walk(tree)
+                    if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                    and n.func.attr == "replace"
+                    and isinstance(n.func.value, ast.Name) and n.func.value.id == "os"]
+        assert replaces, (
+            f"{rel} never moves a finished file into place with os.replace -- a reader can then "
+            "see a partially written tape file, which is the state the archive was in when "
+            "clearing the buffer against it destroyed 41 days of data")

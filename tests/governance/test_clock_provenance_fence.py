@@ -201,38 +201,94 @@ def test_report_carries_the_keys_the_desk_reads(tmp_path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- THE WIRING
-# These fail if venue-stamp retention is removed from a recorder. A schema nothing writes is not
-# built, however green the fence looks reading a corpus that no longer carries it.
+# These fail if clock-provenance retention is removed from a recorder. A schema nothing writes is
+# not built, however green the fence looks reading a corpus that no longer carries it.
+#
+# REPOINTED 2026-09-05 (MT5 universe mandate, 2026-08-18). This class used to read
+# scripts/run_recorder.py, run_recorder_spot.py and run_recorder_bybit.py -- the Binance
+# futures/spot and Bybit collectors of the retired crypto-exchange desk -- plus
+# scripts/moat_audit.py. All four were deleted with that desk, so the class stopped importing at
+# COLLECTION time and took
+# this whole module down with it. Deleting the class instead would have been the wrong trade: L1.46
+# did not retire, the recorders did. The law now binds `desks/mt5/recorders/` (the Fusion tick tape)
+# and `desks/mt5/moat/moat_recorder.py` (the Bronze moat node), so the wiring fence follows the law
+# to the code that writes the tape TODAY. The library tests above still exercise the venue-tape
+# schema because scripts/check_clock_provenance.py still reads it; when that fence is retired too,
+# this module goes with it.
 
 class TestRecorderWiring:
-    FUT = (_ROOT / "scripts/run_recorder.py").read_text("utf-8")
-    SPOT = (_ROOT / "scripts/run_recorder_spot.py").read_text("utf-8")
-    BYBIT = (_ROOT / "scripts/run_recorder_bybit.py").read_text("utf-8")
+    TICKS = _ROOT / "desks/mt5/recorders/tick_recorder.py"
+    STORE = _ROOT / "desks/mt5/recorders/tape_store.py"
+    SOURCE = _ROOT / "desks/mt5/recorders/tick_source.py"
+    MOAT = _ROOT / "desks/mt5/moat/moat_recorder.py"
 
-    def test_futures_depth_retains_the_venue_stamp(self) -> None:
-        assert '"k": "d", "c": "recv"' in self.FUT
-        assert '"E": d.get("E"), "T": d.get("T")' in self.FUT
+    def test_the_recorders_the_law_binds_actually_exist(self) -> None:
+        """The failure this class exists to make loud: a wiring fence whose subject was deleted
+        reports nothing rather than reporting a gap, which is how absence reads as clean."""
+        for p in (self.TICKS, self.STORE, self.SOURCE, self.MOAT):
+            assert p.exists(), (
+                f"{p.relative_to(_ROOT)} is gone, so nothing writes the L1.46 clock provenance "
+                "the fence above certifies. Retire the fence deliberately or restore the writer; "
+                "a silently unwritten schema is the defect this class was built to catch.")
 
-    def test_futures_trades_declare_the_venue_clock(self) -> None:
-        assert '"k": "t", "c": "venue"' in self.FUT
+    def test_the_tick_recorder_probes_the_broker_clock_every_cycle(self) -> None:
+        """Broker-server time, local UTC and local monotonic are THREE INSTANTS. MOAT_NODE_SPEC
+        release 1 item 6 makes the skew between them a recorded quantity, because a bad clock
+        silently ruins every lead-lag and execution study built on the tape afterwards."""
+        src = self.TICKS.read_text("utf-8")
+        assert "clock_probe" in src, "the tick recorder no longer samples the broker clock"
+        assert "record_clock" in src, "the clock probe is taken and then not persisted"
+        assert "clock_probe" in self.SOURCE.read_text("utf-8")
+        assert "def record_clock" in self.STORE.read_text("utf-8")
 
-    def test_spot_depth_is_marked_recv_only_not_recv(self) -> None:
-        # The distinction is the whole reason the fence does not cry wolf on Binance spot.
-        assert '"k": "d", "c": "recv_only"' in self.SPOT
+    def test_the_moat_recorder_retains_receipt_provenance_on_every_row(self) -> None:
+        """The MT5 analogue of the venue-stamp retention this class used to fence: a row must
+        carry WHEN WE RECEIVED IT on both a wall clock and a monotonic one. Wall clock alone is
+        not enough -- an NTP step backwards reorders the tape, which is the same class of defect
+        as the mixed-clock sort the library tests above refuse."""
+        src = self.MOAT.read_text("utf-8")
+        assert "recv_utc" in src, "moat rows no longer carry a receipt wall clock"
+        assert "recv_mono" in src, "moat rows no longer carry a monotonic receipt"
+        assert "time.monotonic()" in src
 
-    def test_bybit_depth_retains_ts_and_sequence(self) -> None:
-        assert '"k": "depth", "c": "recv"' in self.BYBIT
-        assert '"vt": r.get("ts"), "u": r.get("u"), "sq": r.get("seq")' in self.BYBIT
+    def test_recorder_receipt_stamps_are_refreshed_inside_the_fetch_loop(self) -> None:
+        """REGRESSION, carried forward from the retired Bybit collector because the SHAPE is what
+        transfers, not the venue: `now` was captured ONCE, above a serial 20-symbol fetch loop, so
+        every symbol after the first carried a receipt stamp EARLIER than the moment we received
+        it -- a look-ahead in our own receipt axis, same class as the R0060 leaky copies. Measured
+        before the fix on the retired tape: 32.8% of 877,314 batches had a receipt preceding the
+        newest trade in them.
 
-    def test_bybit_batches_are_stamped_at_their_own_receipt(self) -> None:
-        """REGRESSION: `now` is captured once before a 20-symbol serial loop, so every symbol
-        after the first carried a receipt stamp EARLIER than the moment we received it -- a
-        look-ahead in our own receipt axis, same class as the R0060 leaky Upbit copies. Measured
-        before the fix: 32.8% of 877,314 batches had a receipt preceding the newest trade in them.
+        THE BAR IS PER-FETCH, NOT PER-ROW, and the difference is the whole reason this is checked
+        structurally. One `copy_ticks_range` call returns one array that arrived at one instant;
+        stamping every row of that array with that instant is HONEST, and a fence demanding a
+        fresh `datetime.now()` per row would fire on correct code and get switched off. What may
+        never happen is a receipt hoisted ABOVE the call that fetches the data. So the rule is:
+        every name a receipt field is stamped from must be re-bound inside some loop that encloses
+        the stamp -- a name bound once at function top, outside every loop, is the defect.
         """
-        assert '{"t": int(now * 1000), "k": "trades"' not in self.BYBIT
-        assert '"t": int(time.time() * 1000), "k": "trades"' in self.BYBIT
-        assert '{"t": int(now * 1000), "k": "meta"' not in self.BYBIT
+        for path in (self.MOAT, self.TICKS):
+            tree = ast.parse(path.read_text("utf-8"))
+            loops = [n for n in ast.walk(tree) if isinstance(n, ast.For | ast.While)]
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.Assign) and len(node.targets) == 1
+                        and isinstance(node.value, ast.Name)):
+                    continue
+                tgt = node.targets[0]
+                if not (isinstance(tgt, ast.Subscript) and isinstance(tgt.slice, ast.Constant)
+                        and tgt.slice.value in ("recv_utc", "recv_mono")):
+                    continue
+                refreshed = any(
+                    any(n is node for n in ast.walk(loop))
+                    and node.value.id in {t.id for a in ast.walk(loop)
+                                          if isinstance(a, ast.Assign)
+                                          for t in a.targets if isinstance(t, ast.Name)}
+                    for loop in loops)
+                assert refreshed, (
+                    f"{path.name}:{node.lineno}: {tgt.slice.value} is stamped from "
+                    f"`{node.value.id}`, which is bound outside every loop that reaches this "
+                    "line -- so every fetch after the first claims a receipt earlier than its "
+                    "own arrival.")
 
     def test_recorder_literals_match_the_library_constants(self) -> None:
         """The recorders deliberately import nothing from libs -- a collector that dies on an
@@ -242,19 +298,14 @@ class TestRecorderWiring:
         assert cp.CLOCK_VENUE == "venue"
         assert cp.CLOCK_RECV_ONLY == "recv_only"
         assert cp.MARKER == "c"
-        for src in (self.FUT, self.SPOT, self.BYBIT):
-            assert f'"{cp.MARKER}": "' in src
 
-    def test_moat_audit_no_longer_coalesces_three_clocks(self) -> None:
+    def test_no_recorder_coalesces_two_clocks_into_one_field(self) -> None:
         """The desk's own auditor read `d.get("t") or d.get("E") or d.get("ts")` -- three clocks
         merged into one field, silently preferring whichever was present.
 
-        Checked STRUCTURALLY rather than by string match, for two reasons: the docstring in
-        moat_audit legitimately quotes the old line, and a structural check catches the defect
-        SHAPE reintroduced in any spelling -- `.get("ts") or .get("E")`, a different field order,
-        a walrus -- instead of only the one arrangement that happened to be there.
-
-        Narrowed to CLOCK fields on its first run, which flagged
+        Checked STRUCTURALLY rather than by string match, so the defect SHAPE is caught in any
+        spelling -- a different field order, a walrus -- instead of only the one arrangement that
+        happened to be there. Narrowed to CLOCK fields on its first run, which flagged
 
             b, a = d.get("b") or d.get("bids"), d.get("a") or d.get("asks")
 
@@ -262,16 +313,16 @@ class TestRecorderWiring:
         instrument was narrowed rather than the code reworded to suit it: a check that fires on
         healthy code gets acknowledged into silence, and that is how enforcement actually dies.
         """
-        src = (_ROOT / "scripts/moat_audit.py").read_text("utf-8")
-        for node in ast.walk(ast.parse(src)):
-            if not isinstance(node, ast.BoolOp) or not isinstance(node.op, ast.Or):
-                continue
-            fields = {v.args[0].value for v in node.values
-                      if isinstance(v, ast.Call) and isinstance(v.func, ast.Attribute)
-                      and v.func.attr == "get" and v.args
-                      and isinstance(v.args[0], ast.Constant)
-                      and isinstance(v.args[0].value, str)}
-            assert len(fields & cp.CLOCK_FIELDS) < 2, (
-                f"line {node.lineno}: {sorted(fields & cp.CLOCK_FIELDS)} coalesced with `or` -- "
-                f"those are DIFFERENT INSTANTS, and this is the L1.46 defect growing back")
-        assert "cp.recv_ms(d, venue)" in src
+        for path in (self.TICKS, self.STORE, self.MOAT):
+            for node in ast.walk(ast.parse(path.read_text("utf-8"))):
+                if not isinstance(node, ast.BoolOp) or not isinstance(node.op, ast.Or):
+                    continue
+                fields = {v.args[0].value for v in node.values
+                          if isinstance(v, ast.Call) and isinstance(v.func, ast.Attribute)
+                          and v.func.attr == "get" and v.args
+                          and isinstance(v.args[0], ast.Constant)
+                          and isinstance(v.args[0].value, str)}
+                assert len(fields & cp.CLOCK_FIELDS) < 2, (
+                    f"{path.name}:{node.lineno}: {sorted(fields & cp.CLOCK_FIELDS)} coalesced "
+                    "with `or` -- those are DIFFERENT INSTANTS, and this is the L1.46 defect "
+                    "growing back")
