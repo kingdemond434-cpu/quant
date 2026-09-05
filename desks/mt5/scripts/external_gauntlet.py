@@ -36,8 +36,8 @@ sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "desks" / "mt5"))
 
 from mt5desk import families  # noqa: E402
-from mt5desk.universe_registry import TIMEFRAME_MINUTES as _TF_MINUTES  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from mt5desk.universe_registry import TIMEFRAME_MINUTES as _TF_MINUTES  # noqa: E402
 from research.frontier_identity import cell_id, economic_prior  # noqa: E402
 
 from libs.data.pit import is_stamped  # noqa: E402
@@ -94,7 +94,44 @@ FRESH_BUILD_BUDGET_SEC = float(os.environ.get("GAUNTLET_FRESH_BUDGET_SEC", "1200
 #:
 #: Raise it only with a measurement showing the box has the room, and never above what
 #: `exclusive_job` was told to admit on.
-MEMORY_BUDGET_MB = float(os.environ.get("GAUNTLET_MEMORY_BUDGET_MB", "1200"))
+#:
+#: DERIVED FROM THE ADMISSION FIGURE, NOT RESTATED BESIDE IT (2026-09-06). The block above says
+#: this "is the SAME number the job declares at admission", and it was not: both were the literal
+#: 1200, while the sweep's measured working set is 1619MB and 1615MB across the runs on record.
+#: Two copies of one number is how one of them goes stale, and this one had.
+#:
+#: THE COST OF THE STALE COPY WAS THROUGHPUT, EVERY HOUR. The budget makes the sweep DEFER cells
+#: once its RSS passes the cap, so a cap 400MB below the true working set is reached on every run
+#: -- the sweep stopped early, every time, and judged a fraction of the docket it had been given.
+#: Measured off the live dashboard 2026-09-05: 8,804 judged and 2,108 unmeasured against a docket
+#: of 19,632. Roughly eight thousand candidates were not reached, by a constant.
+#:
+#: `measured_need_mb` is the one place that knows what this job actually uses: it corrects the
+#: declaration upward by the p75 of the recent peaks and never below it. Deriving from it means
+#: the throttle and the admission ask cannot disagree again, and both track measurement rather
+#: than a figure somebody typed. The declaration is still the FLOOR, so this can only ever rise
+#: to what the job has been observed to need -- never to what it would like.
+def _measured_budget_mb() -> float:
+    override = os.environ.get("GAUNTLET_MEMORY_BUDGET_MB")
+    if override:
+        return float(override)
+    try:
+        # `research.job_lock`, matching how `exclusive_job` is imported at the bottom of this
+        # file -- sys.path carries `desks/mt5`, not `desks/mt5/research`. A bare `job_lock` here
+        # raised ModuleNotFoundError, was swallowed by the fallback, and silently pinned the
+        # budget to the declaration: the exact silent-degradation shape this file fences.
+        from research.job_lock import measured_need_mb
+        return float(measured_need_mb("external_gauntlet", DECLARED_NEED_MB)[0])
+    except Exception:
+        # A budget that cannot be measured falls back to the declaration, never to unlimited:
+        # an unmeasurable box must not have its throttle removed.
+        return float(DECLARED_NEED_MB)
+
+
+#: What the sweep DECLARES at admission. The floor for both the ask and the throttle above.
+DECLARED_NEED_MB = 1200
+
+MEMORY_BUDGET_MB = _measured_budget_mb()
 
 
 def _rss_mb() -> float:
@@ -270,7 +307,7 @@ def timeframe_of(params: dict | None, family: str = "") -> str:
 
 def _frame_rows(frame) -> int:
     try:
-        return int(len(frame))
+        return len(frame)
     except TypeError:
         return 0
 
@@ -634,7 +671,7 @@ def _save_build_cursor(cursor: dict[str, str], built: set[str]) -> None:
     if not built:
         return
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
-    cursor.update({sym: now for sym in built})
+    cursor.update(dict.fromkeys(built, now))
     try:
         BUILD_CURSOR.parent.mkdir(parents=True, exist_ok=True)
         BUILD_CURSOR.write_text(json.dumps(cursor, indent=1, sort_keys=True), encoding="utf-8")
@@ -1667,7 +1704,7 @@ def _cli_main() -> int:
     # and asking for it made every reproduction stand down on admission and report UNMEASURED
     # (rc=75) -- honest, and useless, because a reproducer that is never admitted checks nothing.
     _job = "external_gauntlet_repro" if _REPRO is not None else "external_gauntlet"
-    _need = 300 if _REPRO is not None else 1200
+    _need = 300 if _REPRO is not None else DECLARED_NEED_MB
     with exclusive_job(_job, need_mb=_need) as acquired:
         if not acquired:
             return 75
