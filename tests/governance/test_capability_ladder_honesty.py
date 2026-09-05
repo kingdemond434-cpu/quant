@@ -178,3 +178,73 @@ class TestTheLadderIsOrdered:
                 assert v["decision_affecting"], f"{name} is measured but affects no decision"
             if v["live_learning"]:
                 assert v["measured"], f"{name} claims learning without measurement"
+
+
+#: Decision-affecting nodes that no MODULE_RENT line can name. A RATCHET: it may fall and may
+#: never rise. Measured 2026-09-05 at 51 of 71 nodes, from a rent registry of 62 modules whose
+#: names overlap the graph's by exactly 6.
+MAX_UNBILLABLE = 51
+
+
+def test_no_new_organ_lands_that_the_rent_ledger_cannot_price() -> None:
+    """THE DEBT THAT TIME ALONE NEVER PAYS, and the reason it was invisible.
+
+    A DECISION_AFFECTING count that falls as evidence accumulates is the desk working. A count
+    that CANNOT fall however long the desk runs is a wiring defect -- and before `billed_as`
+    existed the two were indistinguishable in every report, so the second was being read as the
+    first. "We have not measured enough yet" was the wrong diagnosis; "nothing here can be
+    measured by name" was the right one.
+
+    The rent ledger bills MECHANISMS (rails, proposer arms, execution algorithms, allocator
+    components, data sources, state dimensions); the capability graph names ORGANS. Six names
+    coincide. So the principal's MEASURED rung is structurally unreachable for the rest until each
+    organ is either given a rent line of its own or mapped with `billed_as` to one that genuinely
+    prices its output.
+
+    A mapping is a CLAIM, so a wrong one grants MEASURED falsely -- the same free pass removed
+    from `stages()` the same day, re-entering by another door. Hence a ratchet rather than a
+    scramble to map everything at once: no NEW unpriceable organ may land, and the number falls as
+    each real rent rule is written.
+    """
+    debt = cg.unbillable()
+    assert len(debt) <= MAX_UNBILLABLE, (
+        f"{len(debt)} decision-affecting nodes cannot be priced by any rent line, above the "
+        f"ratchet of {MAX_UNBILLABLE}. A new organ must arrive with the ledger line that prices "
+        f"it -- give it a MODULE_RENT module, or declare `billed_as` naming the line that already "
+        f"measures its output. New since the ratchet: {sorted(debt)[:8]}"
+    )
+
+
+def test_billability_is_read_from_the_registry_not_from_a_generated_report() -> None:
+    """`MODULE_RENT.json` is written by the daily cycle on the trading host. Reading billability
+    from the report would make every node on a research container look unbillable, turning a
+    host's emptiness into a false wiring defect -- the mirror of the absent-ledger-reads-MEASURED
+    failure this file exists to prevent, one direction over."""
+    from libs.ops.module_rent import MODULES
+    names = {m.name for m in MODULES}
+    assert names, "the rent registry is empty; billability cannot be measured from code"
+    st = cg.stages()
+    billable = {n for n, v in st.items() if v["billable"]}
+    assert billable, "no node is billable even though the registry is populated"
+    # every billable node is billable BECAUSE of a registry name or an explicit declaration
+    for name in billable:
+        v = st[name]
+        assert v["billed_as"] or name in names or any(r.startswith(name) for r in names), (
+            f"{name} reads billable without a registry name or a billed_as declaration")
+
+
+def test_a_declared_mapping_makes_a_node_billable(rung, tmp_path) -> None:
+    """The mechanism itself: an organ the ledger bills under another name must be reachable."""
+    n = _node(authority=("x",), writes=("desks/mt5/data/probe_state.json",),
+              billed_as=("regime_hibernate",))          # a real rail in the registry
+    st = rung(n)
+    assert st["billable"] is True and st["billed_as"] == ["regime_hibernate"]
+
+
+def test_a_declared_mapping_is_consulted_alongside_the_nodes_own_name(rung, tmp_path) -> None:
+    """`billed_as` must ADD a way to be priced, never replace the node's own name -- otherwise
+    declaring a mapping on a node the ledger already names directly would un-measure it."""
+    desk = _rent_ledger(tmp_path / "ledgers", "EARNS")   # prices "probe" by its own name
+    n = _node(authority=("x",), writes=("desks/mt5/data/probe_state.json",),
+              billed_as=("something_else_entirely",))
+    assert rung(n, desk=desk)["measured"] is True
