@@ -481,22 +481,49 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
         for k, v in list(macro.items())[:6]:
             if isinstance(v, (int, float)) and not isinstance(v, bool):
                 extra[f"macro_{k}"] = pd.Series(float(v), index=index)
-    for name in ("cot_tff.json", "cot.json", "cot_disagg.json"):
-        doc = _read(BASE / "data" / name)
-        rows = doc if isinstance(doc, list) else (doc or {}).get("rows")
-        if not isinstance(rows, list) or not rows:
-            continue
+    # THE SEARCH LEG HAS BEEN BLIND TO COT FOR ITS WHOLE LIFE, and the three filenames below are
+    # why: nothing in this repository has ever written `cot.json`, `cot_tff.json` or
+    # `cot_disagg.json`. The only two mentions of them anywhere are this loop and the identical
+    # one in `orthogonal_sweep._cot_frame`. Every pass fell through all three, hit `continue`,
+    # and resolved with no `cot_net` at all -- silently, because a missing optional input is
+    # indistinguishable here from an input that is genuinely unavailable.
+    #
+    # The desk owns the data: `data/cot_zcache.parquet`, 26 years of point-in-time CFTC history
+    # across 11 assets, refreshed by `scripts/refresh_cot_zcache.py` (Tue/Wed/Sat) and shipped to
+    # the desk box by `ops/run_external_pipeline.sh`. `orthogonal_sweep` was given this exact
+    # read for this exact reason -- its comment records that a COT miner "could produce a real
+    # candidate that always rebuilt with cot=None" -- and the SEARCH leg never got the fix.
+    #
+    # Weekly, not daily: the cache is forward-filled per day, so resampling to one observation
+    # per report week stops a repeated value from masquerading as an independent report.
+    zcache = BASE.parent.parent / "data" / "cot_zcache.parquet"
+    if zcache.exists():
         try:
-            cdf = pd.DataFrame(rows)
-            tcol = next((c for c in ("date", "report_date", "as_of") if c in cdf.columns), None)
-            ncol = next((c for c in ("net", "noncomm_net", "net_position")
-                         if c in cdf.columns), None)
-            if tcol and ncol:
-                cdf.index = pd.to_datetime(cdf[tcol], utc=True, errors="coerce")
-                extra["cot_net"] = cdf[ncol].astype(float).dropna()
-                break
+            frame = pd.read_parquet(zcache, columns=[symbol])
+            series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
+            if len(series) >= 52:                      # a year of reports or it is not a series
+                extra["cot_net"] = series
         except Exception:
-            continue
+            pass                                       # no COT for this symbol; the rest resolve
+
+    if "cot_net" not in extra:
+        for name in ("cot_tff.json", "cot.json", "cot_disagg.json"):
+            doc = _read(BASE / "data" / name)
+            rows = doc if isinstance(doc, list) else (doc or {}).get("rows")
+            if not isinstance(rows, list) or not rows:
+                continue
+            try:
+                cdf = pd.DataFrame(rows)
+                tcol = next((c for c in ("date", "report_date", "as_of")
+                             if c in cdf.columns), None)
+                ncol = next((c for c in ("net", "noncomm_net", "net_position")
+                             if c in cdf.columns), None)
+                if tcol and ncol:
+                    cdf.index = pd.to_datetime(cdf[tcol], utc=True, errors="coerce")
+                    extra["cot_net"] = cdf[ncol].astype(float).dropna()
+                    break
+            except Exception:
+                continue
 
     _RESOLVE_CACHE[_ck] = extra
     while len(_RESOLVE_CACHE) > _RESOLVE_CACHE_DEPTH:
@@ -849,30 +876,78 @@ def main(symbols: list[str] | None = None) -> int:
         # another parameterisation. The tail is interleaved round-robin BY CLASS so every class
         # is represented in every run's budget; within a class the cursor still rotates, so
         # nothing is ever declared exhausted.
+        #
+        # AND CLASS-BALANCED WAS NOT THE SAME THING AS CLASS-BUDGETED, which is what the
+        # conversion ledger measured on 2026-09-05. One cursor over one woven list gives every
+        # symbol exactly one search per cycle whatever the weave -- so the LONG-RUN mix is the
+        # class POPULATION mix, and the population is 99 equity CFDs against ~30 exotic crosses.
+        # The docket that reached the gauntlet was 61.5% equity certifying at 0.031% and 3.0%
+        # fx_exotic certifying at 1.4%; the single best cell type on the desk,
+        # overnight_gap_decay x fx_exotic, certifies at 14.8% off 122 trials. Balancing the weave
+        # could not move any of that, because it never touched how often each class comes round.
+        #
+        # PER-CLASS CURSORS, BUDGETED BY MEASURED CERTIFICATION YIELD (research/trial_allocator).
+        # Every class keeps its own rotation and receives AT LEAST ONE symbol per run, so nothing
+        # is ever exhausted, nothing is starved and every symbol still returns forever -- what
+        # changes is how OFTEN a class's cycle comes round, in proportion to what the ten gates
+        # have actually certified there. No screen, threshold or gate is touched: a candidate
+        # from any class faces the identical gauntlet at the identical bar.
         tail = symbols[len(ranked):]
+        _alloc_cursors: dict[str, int] | None = None
         try:
             import sys as _sys
             _sys.path.insert(0, str(BASE))
-            from mt5desk.universe import asset_class as _aclass
-            by_class: dict[str, list[str]] = {}
-            for s in tail:
-                by_class.setdefault(_aclass(s), []).append(s)
-            if len(by_class) > 1:
-                order = sorted(by_class)
-                woven: list[str] = []
-                i = 0
-                while len(woven) < len(tail):
-                    for cls in order:
-                        bucket = by_class[cls]
-                        if i < len(bucket):
-                            woven.append(bucket[i])
-                    i += 1
-                tail = woven
-                print(f"  class-balanced rotation over {len(order)} asset class(es): "
-                      f"{', '.join(order)}")
+            _sys.path.insert(0, str(BASE / "research"))
+            import trial_allocator as _ta
+            _cls_w = _ta.class_weights(_ta.observed())
+            if _cls_w and tail:
+                _prior = (_read(cursor_file) or {}).get("class_cursors")
+                _chosen, _alloc_cursors = _ta.allocate_symbols(
+                    tail, max(1, PER_RUN - min(len(ranked), max(1, PER_RUN // 2))), _cls_w,
+                    _prior if isinstance(_prior, dict) else None)
+                tail = _chosen + [s for s in tail if s not in set(_chosen)]
+                print("  yield-budgeted rotation: "
+                      + ", ".join(f"{c}={_cls_w[c]:.0%}" for c in sorted(_cls_w)))
         except Exception as _exc:
-            print(f"  class balancing unavailable ({type(_exc).__name__}); flat rotation")
-        if tail:
+            print(f"  yield budgeting unavailable ({type(_exc).__name__}: {_exc}); "
+                  f"falling back to class-balanced rotation")
+            _alloc_cursors = None
+        if _alloc_cursors is None:
+            try:
+                import sys as _sys
+                _sys.path.insert(0, str(BASE))
+                from mt5desk.universe import asset_class as _aclass
+                by_class: dict[str, list[str]] = {}
+                for s in tail:
+                    by_class.setdefault(_aclass(s), []).append(s)
+                if len(by_class) > 1:
+                    order = sorted(by_class)
+                    woven: list[str] = []
+                    i = 0
+                    while len(woven) < len(tail):
+                        for cls in order:
+                            bucket = by_class[cls]
+                            if i < len(bucket):
+                                woven.append(bucket[i])
+                        i += 1
+                    tail = woven
+                    print(f"  class-balanced rotation over {len(order)} asset class(es): "
+                          f"{', '.join(order)}")
+            except Exception as _exc:
+                print(f"  class balancing unavailable ({type(_exc).__name__}); flat rotation")
+        if _alloc_cursors is not None and tail:
+            # The per-class cursors ARE the rotation now; the global one would rotate the
+            # allocated head away and undo the budget. It is still written, unchanged in
+            # meaning, so a run that falls back to the weave resumes exactly where it was.
+            symbols = ranked + tail
+            cursor_file.parent.mkdir(parents=True, exist_ok=True)
+            cursor_file.write_text(json.dumps({
+                "cursor": cursor + PER_RUN,
+                "class_cursors": _alloc_cursors,
+                "note": "per-class rotation cursors -- every class is a cycle, never a completed "
+                        "sweep; the budget sets how often each cycle comes round",
+            }), "utf-8")
+        elif tail:
             off = cursor % len(tail)
             symbols = ranked + tail[off:] + tail[:off]
             cursor_file.parent.mkdir(parents=True, exist_ok=True)
