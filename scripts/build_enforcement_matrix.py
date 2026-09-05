@@ -616,9 +616,19 @@ _MAP: dict[str, list[str]] = {
     # bound, plus the measured depeg shortfall: 41.7bps. The refusal value is still 300, so an
     # unreadable input keeps the band SHUT rather than opening it on a fabricated small number
     # (L1.55). Risks measured but deliberately unpriced are named, never inferred as zero.
-    "L1.51-r0375": [
-                    "libs/research/lending_haircut.py",
-                    "tests/research/test_lending_haircut.py"],
+    # CITATION REPAIRED 2026-09-05. `tests/research/test_lending_haircut.py` was deleted with the
+    # fifteen other orphan tests whose `scripts.<module>` imports the purge had removed -- in its
+    # case `scripts.collect_lending_risk_base_rates`, the crypto lending-risk collector. Deleting
+    # it was right (a missing import is a collection error, not a skip, and one interrupts the
+    # whole suite) but it left this citation naming a path that no longer exists, which this
+    # generator correctly reports as a BROKEN REFERENCE rather than quietly dropping.
+    #
+    # The LAW still executes: `libs/research/lending_haircut.py` is live, consumed by
+    # `libs/research/idle_yield.py`, and exercised by `tests/research/test_idle_yield.py`. So the
+    # dead path is removed and the live enforcer stays -- the derivation R0375 replaced a
+    # 300bps constant with, and the 300bps refusal value that keeps the band SHUT on an unreadable
+    # input, are both still fenced. Only the collector that fed one of its inputs is gone.
+    "L1.51-r0375": ["libs/research/lending_haircut.py"],
     # R0102 paper-sleeve auto-spawn: converts corrected Stage-A survivors into costless paper
     # sleeves. L1.6 bounds it (zero promotion authority, zero capital) and L1.18a orders its queue
     # (deployment race -- shortest capacity runway first). It NEVER spawns over the Holm cap: a

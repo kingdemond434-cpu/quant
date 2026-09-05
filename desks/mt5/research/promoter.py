@@ -146,6 +146,13 @@ RETIRE_MIN_EXP = 0.05
 GOLD_WINDOWS = ["asia", "london_am", "ny_open", "afternoon"]
 
 
+def _sleeve_timeframe(params: dict | None) -> str:
+    """The chart a certificate was hunted on. Absent means H1 -- the desk-wide spelling, see
+    `research/frontier_identity`: every certificate written before the M1..D1 ladder is an H1
+    one, and naming H1 explicitly would rename all of them at once."""
+    return str((params or {}).get("timeframe") or "H1").upper()
+
+
 def plog(msg: str) -> None:
     """Append one line to the promoter log. A locked log NEVER fails the promoter.
 
@@ -1093,7 +1100,15 @@ def main() -> None:
             # named on the row, which refuses the row rather than the pass.
             try:
                 from mt5desk import executables
-                gap = executables.executor_gap(family)
+                # THE CHART IS PART OF THE QUESTION (2026-09-05). `gateway.run_family_sleeves`
+                # reads TIMEFRAME_H1 unconditionally, so promoting a certificate hunted on
+                # another chart would put real capital into signals computed from bars it was
+                # never certified on. Asked ONLY when the chart is not H1, so an hourly row makes
+                # byte-identical the call it has always made -- including against a box whose
+                # `executables` predates the argument, where a non-H1 row instead raises here and
+                # is refused by the handler below. Fail-closed on the one path that spends money.
+                gap = (executables.executor_gap(family) if _sleeve_timeframe(params) == "H1"
+                       else executables.executor_gap(family, _sleeve_timeframe(params)))
             except Exception as exc:                                    # noqa: BLE001
                 gap = (f"executor registry unavailable on this box "
                        f"({type(exc).__name__}: {exc}) -- refusing the row, not the pass")

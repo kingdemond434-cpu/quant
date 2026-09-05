@@ -35,6 +35,61 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+# EVERY CHART, NOT ONE (principal, 2026-09-05: "m1 m5 m15 m30 h1 h4 d1 all possible every type
+# of mechanism n chart for all always").
+#
+# This fetched H1 alone, for every symbol, and wrote `<SYM>_H1.parquet`. Gold was the only
+# instrument with anything finer, and only because `fetch_gold_scalp.py` was hand-written for
+# it. The consequence was structural rather than cosmetic: no family could express an intraday
+# mechanism on anything but gold, the scalp lane existed on XAUUSD alone because it was the
+# only symbol with M5/M15, and every sub-hour question -- including "was this event already
+# priced?" -- resolved to UNMEASURABLE for want of bars fine enough to see the answer in.
+#
+# WHY THE FULL LADDER IS AFFORDABLE, measured rather than assumed. The tick recorder captures
+# 251 symbols at ~24 MB/day compacted (~8.9 GB/year), and a tick is strictly finer than an M1
+# bar -- so bars are cheap beside an asset the desk already pays for. The real cost is the
+# GAUNTLET.
+#
+# AND IT IS A DAILY COST, NOT A ONE-TIME BUILD. This said the opposite -- "a ONE-TIME build,
+# because the cell cache is content-addressed and every later sweep is a cache hit" -- and that
+# is not what the cache is addressed BY. `external_gauntlet._cache_key` hashes
+# (cell, params, chart, LAST COMPLETE DATA-DAY), and it must: the gate matrix aligns columns by
+# length from the end, so every column has to end on the same complete day or PBO and SPA compare
+# yesterday's row of one cell against today's of another. So every cell recomputes once per
+# TRADING DAY, and the module's own budget note says as much ("the cache key rolls over and every
+# cell goes cold again").
+#
+# What that means for the ladder, measured on this tree (build_cell + daily_series on AUDCAD):
+# 0.4-2.0 s per sweep-family cell at H1, scaling roughly linearly with bar count, so ~1-2 s at
+# M15 and tens of seconds at M1. The docket is 23,465 rows of which 20,341 are `discovered` --
+# an H1-only searcher this ladder does not multiply -- so the ~3,100 sweep cells grow ~4x (the
+# residual and peer families are declared H1-and-slower) and the whole docket grows ~1.4x.
+# Against `FRESH_BUILD_BUDGET_SEC` (20 minutes an hour) the desk ALREADY cannot rebuild its
+# docket inside a day; `gauntlet_build_cursor` rotates it instead and `trial_allocator` orders
+# that rotation by measured certification yield. The ladder lengthens that rotation; it does not
+# introduce the constraint, and no cell is dropped -- a cell the budget did not reach is recorded
+# UNMEASURED with its reason and is at the front of the next sweep.
+#
+# AND WIDENING THE SWEEP DOES NOT RAISE THE BAR. I wrote the opposite here first and it was
+# wrong: this desk pins `fixed_trial_count` and `fixed_variance_of_sharpes` in
+# `policy/gate_spec.yaml` precisely so that "a candidate must not face a higher bar for having
+# been scheduled into a wider sweep" (gate_policy.py). The spec records the measurement that
+# forced it -- sr0 ran 0.3786 at 597 charged trials and 1.3593 at 5,963 for the SAME cell,
+# purely because the sweep around it grew. The deflated Sharpe still corrects for multiple
+# testing; it just no longer punishes a candidate for the company it keeps.
+#
+# So the ten gates are fixed and permanent, and every cell from every chart faces exactly the
+# bar it would have faced alone. More timeframes is therefore strictly more candidates judged
+# at an unchanged bar -- more certificates, not fewer. There is no tradeoff here to manage.
+#
+# Brokers keep far less M1 than H1, so many symbols will fail MIN_BARS on the fast end and
+# record why. That self-selection is the feature: the ladder asks for everything and keeps what
+# can actually support a ten-gate verdict.
+# ONE LADDER, IMPORTED. A second literal spelling of the charts here is how a producer and a
+# consumer quietly stop agreeing about which charts exist; `universe_registry` owns what the
+# registry means, and `min_bars` below reads the same module for the floor.
+from mt5desk.universe_registry import TIMEFRAMES
+
 BASE = Path(__file__).resolve().parent.parent
 UNIVERSE = BASE / "data" / "universe"
 REGISTRY = UNIVERSE / "universe.json"
@@ -42,43 +97,29 @@ REPORT = BASE / "data" / "universe_expansion.json"
 
 #: Years of history to request. Enough for the gauntlet's walk-forward and CPCV folds.
 YEARS = 6
-#: A symbol/timeframe with fewer bars than this cannot support the ten gates and is recorded
-#: as such. Applied PER TIMEFRAME, which is what lets the thin ones exclude themselves.
+#: An HOURLY chart with fewer bars than this cannot support the ten gates. It is the ADMISSION
+#: floor and it has not moved.
 MIN_BARS = 3000
 
-#: EVERY CHART, NOT ONE (principal, 2026-09-05: "m1 m5 m15 m30 h1 h4 d1 all possible every type
-#: of mechanism n chart for all always").
-#:
-#: This fetched H1 alone, for every symbol, and wrote `<SYM>_H1.parquet`. Gold was the only
-#: instrument with anything finer, and only because `fetch_gold_scalp.py` was hand-written for
-#: it. The consequence was structural rather than cosmetic: no family could express an intraday
-#: mechanism on anything but gold, the scalp lane existed on XAUUSD alone because it was the
-#: only symbol with M5/M15, and every sub-hour question -- including "was this event already
-#: priced?" -- resolved to UNMEASURABLE for want of bars fine enough to see the answer in.
-#:
-#: WHY THE FULL LADDER IS AFFORDABLE, measured rather than assumed. The tick recorder captures
-#: 251 symbols at ~24 MB/day compacted (~8.9 GB/year), and a tick is strictly finer than an M1
-#: bar -- so bars are cheap beside an asset the desk already pays for. The real cost is the
-#: GAUNTLET: seven timeframes is roughly seven times the docket. That is a ONE-TIME build,
-#: because the cell cache is content-addressed and every later sweep is a cache hit; it is not
-#: a sevenfold recurring bill.
-#:
-#: AND WIDENING THE SWEEP DOES NOT RAISE THE BAR. I wrote the opposite here first and it was
-#: wrong: this desk pins `fixed_trial_count` and `fixed_variance_of_sharpes` in
-#: `policy/gate_spec.yaml` precisely so that "a candidate must not face a higher bar for having
-#: been scheduled into a wider sweep" (gate_policy.py). The spec records the measurement that
-#: forced it -- sr0 ran 0.3786 at 597 charged trials and 1.3593 at 5,963 for the SAME cell,
-#: purely because the sweep around it grew. The deflated Sharpe still corrects for multiple
-#: testing; it just no longer punishes a candidate for the company it keeps.
-#:
-#: So the ten gates are fixed and permanent, and every cell from every chart faces exactly the
-#: bar it would have faced alone. More timeframes is therefore strictly more candidates judged
-#: at an unchanged bar -- more certificates, not fewer. There is no tradeoff here to manage.
-#:
-#: Brokers keep far less M1 than H1, so many symbols will fail MIN_BARS on the fast end and
-#: record why. That self-selection is the feature: the ladder asks for everything and keeps what
-#: can actually support a ten-gate verdict.
-TIMEFRAMES: tuple[str, ...] = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
+
+def min_bars(timeframe: str) -> int:
+    """`MIN_BARS` re-expressed as the SAME MARKET TIME on `timeframe`.
+
+    ONE NUMBER APPLIED TO SEVEN CHARTS IS SEVEN DIFFERENT RULES, and the flat version of this
+    would have emptied a whole lane in silence. 3,000 bars is four months of H1 and TWELVE YEARS
+    of D1; six years of daily bars is ~1,560, so every symbol on the desk would have recorded
+    `D1:1560` as a thin chart and the DAILY lane -- the swing lane, the one the principal named
+    in the same breath as the scalp lane -- would have been empty on all 250 symbols with nothing
+    anywhere saying why. That is absence read as a clean verdict (WS-005), on a whole timeframe.
+
+    Deriving from the span makes the rule the same rule everywhere: "at least as much market time
+    as 3,000 hourly bars", i.e. ~125 trading days. It is the identity at H1, so the admission
+    decision -- which symbols are in the universe at all -- is byte-identical to before.
+    """
+    from mt5desk.universe_registry import min_bars_for
+    return min_bars_for(timeframe, h1_floor=MIN_BARS)
+
+
 
 
 def main() -> int:
@@ -140,10 +181,11 @@ def main() -> int:
             n = 0 if rates is None else len(rates)
             if tf == "H1":
                 h1_rates = rates
-            if n < MIN_BARS:
+            if n < min_bars(tf):
                 # NOT A FAILURE. Brokers keep far less M1 than H1; a chart too short for the
                 # gates is recorded with its count so the gap is visible rather than inferred.
-                thin.append(f"{tf}:{n}")
+                # The floor is the SAME MARKET TIME on every chart -- see min_bars().
+                thin.append(f"{tf}:{n}/{min_bars(tf)}")
                 continue
             df = pd.DataFrame(rates)
             df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
@@ -156,7 +198,7 @@ def main() -> int:
             wrote.append(tf)
 
         # ADMISSION IS STILL H1. Without it there is no walk-forward the ten gates can run.
-        if h1_rates is None or len(h1_rates) < MIN_BARS or "H1" not in wrote:
+        if h1_rates is None or len(h1_rates) < min_bars("H1") or "H1" not in wrote:
             short.append({"symbol": name, "class": asset_class,
                           "bars": 0 if h1_rates is None else len(h1_rates),
                           "timeframes_written": wrote, "timeframes_thin": thin,
@@ -234,6 +276,7 @@ def main() -> int:
         "short_history": short, "failed": failed,
         "by_class": by_class,
         "timeframes_requested": list(TIMEFRAMES),
+        "min_bars_by_timeframe": {tf: min_bars(tf) for tf in TIMEFRAMES},
         "timeframe_coverage": {tf: sum(1 for w in tf_written.values() if tf in w)
                                for tf in TIMEFRAMES},
         "timeframes_thin": tf_thin,

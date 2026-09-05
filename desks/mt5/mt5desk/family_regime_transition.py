@@ -33,7 +33,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from mt5desk.families import Signal, _atr, _h1
+from mt5desk.families import Signal, _atr, _h1, bars_per_day
 
 #: Trailing days each fit sees. Long enough for the hazard to have runs to count, short enough
 #: that the vocabulary describes the recent market and that eight fits cover a full history.
@@ -136,7 +136,9 @@ def family_regime_transition(
     if side_mode not in {"exhaustion", "expansion"}:
         return []
     d = _h1(df)
-    if len(d) < 24 * (window + refit_days):
+    # `window` and `refit_days` are DAYS (the hazard is fitted on a daily close series), so the
+    # history guard counts this chart's own bars per day. Identical on H1.
+    if len(d) < bars_per_day(d) * (window + refit_days):
         return []
     daily = _daily_close(d)
     if daily.size < window + refit_days or float(daily.std()) <= 0:

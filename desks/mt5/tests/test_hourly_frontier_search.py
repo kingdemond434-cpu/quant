@@ -226,13 +226,18 @@ def test_lvc_candidate_uses_native_m5_clock(monkeypatch, tmp_path) -> None:
     m5 = _bars(720).resample("5min").ffill()
     m5.to_parquet(universe / "XAUUSD_M5.parquet")
     monkeypatch.setattr(external_gauntlet, "UNI", universe)
-    external_gauntlet._NATIVE_CACHE.clear()
+    external_gauntlet._FRAME_CACHE.clear()
 
     frame = external_gauntlet._frame_for("XAUUSD", "lvc_asia_london")
 
     assert frame is not None
     assert len(frame) == len(m5)
     assert frame.index[1] - frame.index[0] == pd.Timedelta(minutes=5)
+    # THE PIN IS THE FAMILY'S, NOT THE PARAMS'. `lvc_asia_london` reproduces a public EA on
+    # native M5 bars with defaults tied to a named blob, so a candidate carrying a different
+    # `timeframe` must not be able to move it -- that would be a different strategy under the
+    # same certificate.
+    assert external_gauntlet.timeframe_of({"timeframe": "H1"}, "lvc_asia_london") == "M5"
 
 
 def test_orthogonal_candidates_persist_runtime_provenance() -> None:
@@ -266,7 +271,16 @@ def test_orthogonal_candidates_persist_runtime_provenance() -> None:
 
 def test_orthogonal_sweep_caches_are_memory_bounded() -> None:
     # Full-universe coverage remains unchanged; only resident dataframes are bounded.
-    assert orthogonal_sweep._bars.cache_parameters()["maxsize"] == 16
+    #
+    # THE BAR CACHE IS BUDGETED IN ROWS, NOT FRAMES (2026-09-05). A frame count was the right
+    # unit while every frame was H1; with the M1..D1 ladder an M1 frame holds sixty bars per H1
+    # bar, so sixteen frames is ~34 MB of H1 and ~1.4 GB of M1 -- more than the job's whole
+    # 1,250 MB admission. The budget is derived in `orthogonal_sweep`: ten frames (the swept
+    # symbol, its peer and the eight-instrument factor basket) at ~54,000 hourly rows each.
+    assert orthogonal_sweep.BAR_CACHE_ROWS == 600_000
+    assert orthogonal_sweep.BAR_CACHE_ROWS >= 10 * 54_000, (
+        "the budget must hold the largest legitimate working set -- the swept symbol, its peer "
+        "and FACTOR_BASKET_MAX factor frames -- or every residual cell re-reads its parquets")
     assert orthogonal_sweep._cot_frame.cache_parameters()["maxsize"] == 32
     assert orthogonal_sweep._event_index.cache_parameters()["maxsize"] == 1
 

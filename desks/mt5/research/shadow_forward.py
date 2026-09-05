@@ -238,6 +238,11 @@ def _family_needs(fam: str) -> str | None:
     return None if desc[1] is None else str(desc[0])
 
 
+def timeframe_of(params: dict | None) -> str:
+    """The chart a certified cell was hunted on. Absent means H1 -- see `frontier_identity`."""
+    return str((params or {}).get("timeframe") or "H1").upper()
+
+
 def sleeve_key(sym: str, win: str, params: dict, family: str = "session_range_breakout",
                side: str = "LONG") -> str:
     """One clock per parameterization -- the key carries what makes them different.
@@ -253,12 +258,21 @@ def sleeve_key(sym: str, win: str, params: dict, family: str = "session_range_br
     has always been, and a short clock on the same symbol, window and parameterization gets a
     distinct key instead of colliding with its long twin and splicing two directions into one
     forward series.
+
+    THE CHART IS APPENDED BY THE SAME RULE AND FOR THE SAME REASON (2026-09-05). Two certificates
+    on one symbol and family, hunted on M5 and on H1, are two strategies; sharing a key would
+    splice their forward series into one and let either claim the other's fourteen days. `params`
+    carries `timeframe` only when it is not H1, so an hourly key is byte-identical to what it has
+    always been and no running clock is renamed.
     """
-    extra = {k: v for k, v in sorted(params.items()) if WINDOWS.get(win, {}).get(k) != v}
+    extra = {k: v for k, v in sorted(params.items())
+             if k != "timeframe" and WINDOWS.get(win, {}).get(k) != v}
     sig = "_".join(f"{k}={v}" for k, v in extra.items())
+    tf = timeframe_of(params)
     stem = f"{sym}.{win}" if family == "session_range_breakout" else f"{sym}.{family}.{win}"
+    chart = "" if tf == "H1" else f"@{tf}"
     tail = (f"#{sig}" if sig else "")
-    return stem + tail + ("" if str(side).upper() != "SHORT" else ".SHORT")
+    return stem + chart + tail + ("" if str(side).upper() != "SHORT" else ".SHORT")
 
 
 FETCH_DAYS = 45
@@ -329,8 +343,13 @@ def frozen_costs(key: str):
         return None
 
 
-def fetch_h1(sym: str):
+def fetch_h1(sym: str, timeframe: str = "H1"):
     """Bars from whatever source is available, with the provenance attached.
+
+    `timeframe` defaults to H1 so every historical caller is unchanged. A clock replaying a
+    certificate hunted on another chart MUST ask for that chart: replaying an M5 certificate on
+    hourly bars would accrue forward evidence for a strategy nobody certified, under a key that
+    says otherwise, and the fourteen-day promotion window would be served by the wrong series.
 
     THIS IMPORTED MetaTrader5 DIRECTLY, which made the entire shadow record
     hostage to a Windows box with a logged-in terminal -- on this Linux box the
@@ -348,13 +367,13 @@ def fetch_h1(sym: str):
     from research.h1_source import fetch_h1 as _fetch
     start = max(SHADOW_START - timedelta(days=FETCH_DAYS),
                 datetime(2018, 1, 1, tzinfo=UTC))
-    bars = _fetch(sym, start)
+    bars = _fetch(sym, start, timeframe=str(timeframe).upper())
     if bars is None:
-        slog(f"{sym}: NO DATA from any source. That is an absence of bars, not "
+        slog(f"{sym} [{timeframe}]: NO DATA from any source. That is an absence of bars, not "
              f"an empty market, and no verdict may be drawn from it.")
         return None
     ok, why = bars.covers(SHADOW_START)
-    slog(f"{sym}: {bars.n} bars from {bars.source} -- {why}")
+    slog(f"{sym} [{timeframe}]: {bars.n} bars from {bars.source} -- {why}")
     if not ok:
         # NOT a silent continue: replaying a window the source does not cover
         # would record "no trades" for days that are actually NO DATA, and the
@@ -414,7 +433,10 @@ def main() -> None:
     # Keep variants of one symbol adjacent so their bars are loaded once, while never retaining
     # the full multi-symbol history set. The old unbounded h1_cache crossed the service's 400 MB
     # safety ceiling as soon as all certified families became genuinely enrollable.
-    enrolled.sort(key=lambda row: (row[0], row[1], row[3], repr(sorted(row[2].items()))))
+    # CHART BEFORE SELECTOR, because the cache now keys on (symbol, chart): grouping the M5 rows
+    # of a symbol together is what keeps one fetch serving all of them.
+    enrolled.sort(key=lambda row: (row[0], timeframe_of(row[2]), row[1], row[3],
+                                   repr(sorted(row[2].items()))))
     cached_symbol: str | None = None
     breached = clock_breaches()
     if breached:
@@ -470,12 +492,16 @@ def main() -> None:
         # Counters are left untouched -- a failed evaluation produces no new evidence, so it must
         # not overwrite the evidence the row already holds.
         try:
+            # THE CACHE KEY IS (SYMBOL, CHART). Keyed by symbol alone, the first clock on a
+            # symbol would hand its bars to every later clock on the same symbol whatever chart
+            # those were certified on -- an M5 certificate replayed on H1 bars, silently.
+            sleeve_tf = timeframe_of(params)
             if cached_symbol != sym:
                 h1_cache.clear()
                 cached_symbol = sym
-            if sym not in h1_cache:
-                h1_cache[sym] = fetch_h1(sym)
-            bars = h1_cache[sym]
+            if (sym, sleeve_tf) not in h1_cache:
+                h1_cache[(sym, sleeve_tf)] = fetch_h1(sym, sleeve_tf)
+            bars = h1_cache[(sym, sleeve_tf)]
             if bars is None:
                 # NO BARS IS A NAMED STATE, NOT A SILENT SKIP (2026-09-05). Four certified
                 # overnight_gap_decay cells (USDZAR, AUDCHF, CADCHF, GBPCHF) read
@@ -487,7 +513,7 @@ def main() -> None:
                 # Watch, backfill its bars -- instead of waiting for an enrolment that cannot
                 # happen. Counters are untouched: no bars is no evidence.
                 st["last_attempt_at"] = datetime.now(UTC).isoformat()
-                st["last_error"] = (f"no H1 bars from any source for {sym} covering "
+                st["last_error"] = (f"no {sleeve_tf} bars from any source for {sym} covering "
                                     f"SHADOW_START {SHADOW_START.date()}")
                 if st.get("status") not in _TERMINAL_STATUSES:
                     st["status"] = "BLOCKED_NO_BARS"
@@ -692,7 +718,12 @@ def main() -> None:
                     # THE DIRECTION THIS CLOCK ACTUALLY REPLAYS. Hardcoded "LONG" here meant
                     # a short certificate's clock froze an identity asserting long, so the
                     # one field that would have exposed the mismatch agreed with the bug.
-                    family=fam, symbol=sym, direction=str(side).upper(), timeframe="H1",
+                    # THE CHART THIS CLOCK ACTUALLY REPLAYS. Hardcoded "H1" here meant a
+                    # certificate hunted on M5 would freeze an identity asserting H1 -- the one
+                    # field that would expose the mismatch agreeing with the bug, exactly as
+                    # `direction` did before it was fixed on the line below.
+                    family=fam, symbol=sym, direction=str(side).upper(),
+                    timeframe=timeframe_of(params),
                     selector=win, condition=None, params=params,
                     code=_reg.code_hash(fam_fn),
                     # BYTECODE ALONGSIDE SOURCE. code_hash covers the source text, so editing a

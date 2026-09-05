@@ -57,6 +57,12 @@ MODULES = [
     "desks/mt5/research/free_data.py",          # vol_archive's fallback chain
     "desks/mt5/mt5desk/families.py",
     "desks/mt5/mt5desk/families_orthogonal.py",
+    # THE BAR LADDER, and `families.py` now imports it AT MODULE SCOPE (2026-09-05). That is the
+    # dangerous shape this list exists for: a new import of an UNWATCHED module. If the box holds
+    # a copy without `TIMEFRAME_MINUTES`, `import mt5desk.families` raises ImportError and every
+    # family on the desk -- the whole hunt, not one organ -- goes dark with a message about a
+    # constant. `expand_universe` and the sweep read the same module for the same ladder.
+    "desks/mt5/mt5desk/universe_registry.py",
     "desks/mt5/mt5desk/engine.py",
     "desks/mt5/mt5desk/universe.py",
     "desks/mt5/research/job_lock.py",
@@ -146,6 +152,13 @@ MODULES = [
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
     "desks/mt5/research/shadow_forward.py",
+    # THE BAR SOURCE `shadow_forward` REPLAYS ON, unwatched until now. It gained a `timeframe`
+    # argument on 2026-09-05 and the forward loop passes it for every clock, so a stale copy
+    # raises TypeError on the FIRST sleeve of every pass -- the whole forward book reads
+    # BLOCKED_SLEEVE_ERROR with a message about an argument, which is the shape of failure this
+    # list exists to make impossible. It is also the only module that decides whether a replay
+    # carries promotion authority.
+    "desks/mt5/research/h1_source.py",
     # Imported by edge_search while rebuilding `discovered` runtime inputs. Its absence blocked
     # seven live EURCHF forward clocks even though family_inputs and shadow_forward both matched.
     "desks/mt5/research/carry_state.py",

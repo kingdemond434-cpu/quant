@@ -517,12 +517,17 @@ _SYSTEM_BY_KIND = {
 }
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    # `argv` accepts an explicit list so an in-process caller can invoke this without inheriting
+    # ITS argv, matching daily_cycle.main. Added 2026-09-05 when hourly_cycle began draining the
+    # queue: `parse_args()` with no argument reads sys.argv, so `hourly_cycle.py --whatever` would
+    # have been parsed as this worker's flags -- an unrelated caller's arguments silently changing
+    # how much the desk spends on seat calls.
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     ap.add_argument("--dry-run", action="store_true",
                     help="report what would be worked; call no seat and write nothing")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     queue = json.loads(DEEPEN.read_text("utf-8")) if DEEPEN.exists() else {}
     tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]

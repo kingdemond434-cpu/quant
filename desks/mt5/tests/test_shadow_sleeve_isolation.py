@@ -65,7 +65,9 @@ def _wire(monkeypatch, tmp_path: Path, enrolled: list[tuple[str, str, dict]], me
     monkeypatch.setattr(shadow_forward, "SHADOW_DIR", shadow_dir)
     monkeypatch.setattr(shadow_forward, "SLEEVES", [])
     monkeypatch.setattr(shadow_forward, "certified_sleeves", lambda: enrolled)
-    monkeypatch.setattr(shadow_forward, "fetch_h1", lambda sym: _bars())
+    # The stand-in mirrors the real arity: the loop asks for the CHART a certificate was hunted
+    # on, so a one-argument stub would make every sleeve here read BLOCKED_SLEEVE_ERROR.
+    monkeypatch.setattr(shadow_forward, "fetch_h1", lambda sym, timeframe="H1": _bars())
     monkeypatch.setattr(shadow_forward, "_family_fn",
                         lambda fam: (lambda df, **kw: pd.Series(0, index=df.index)))
     monkeypatch.setattr(shadow_forward, "slog", lambda *a: None)
