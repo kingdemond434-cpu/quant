@@ -290,6 +290,38 @@ MODULES: tuple[Module, ...] = (
           ("revival_engine", "revival_engine", "desks/mt5/research/revival_engine.py"),
           ("plumbing_miner", "plumbing_miner", "desks/mt5/research/plumbing_miner.py"),
           ("alpha_evolution", "alpha_evolution", "desks/mt5/research/alpha_evolution.py"),
+          # TWELVE MORE, FOUND BY READING THE SOURCE CONSTANT RATHER THAN GREPPING FOR A LITERAL.
+          # The first pass looked for `source[:=]"<organ name>"` and missed every organ that
+          # stamps its source through a module-level `SOURCE = "..."`, which is the more common
+          # idiom here -- so twelve organs were filed as "stamps no source" when they stamp one on
+          # every row they write. The lesson is the same one the dead-wire fence learned: a
+          # vocabulary search finds the phrasing you thought of, and the thing you are looking for
+          # is a CAPABILITY. Re-run as an AST-anchored regex over each node's declared module, it
+          # is twelve for twelve.
+          #
+          # FOUR OF THEM BILL UNDER A NAME THAT IS NOT THE NODE'S, which is precisely why the
+          # graph needed `billed_as`: microstructure_miner stamps "microstructure",
+          # style_premia_sweep stamps "style_premia", tail_alpha_search stamps "tail_alpha", and
+          # weak_signal_compiler stamps "weak_signal_ensemble". Keying these on the node name
+          # would have produced four lines that never match a row -- billable in appearance,
+          # unpriceable in fact.
+          ("anomaly_factory", "anomaly_factory", "desks/mt5/research/anomaly_factory.py"),
+          ("cross_asset_graph", "cross_asset_graph", "desks/mt5/research/cross_asset_graph.py"),
+          ("factor_model_coevolution", "factor_model_coevolution",
+           "desks/mt5/research/factor_model_coevolution.py"),
+          ("fund_playbook", "fund_playbook", "desks/mt5/research/fund_playbook.py"),
+          ("microstructure_miner", "microstructure",
+           "desks/mt5/research/microstructure_miner.py"),
+          ("mutation_yield", "mutation_yield", "desks/mt5/research/mutation_yield.py"),
+          ("style_premia_sweep", "style_premia", "desks/mt5/research/style_premia_sweep.py"),
+          ("survivor_distiller", "survivor_distiller",
+           "desks/mt5/research/survivor_distiller.py"),
+          ("tail_alpha_search", "tail_alpha", "desks/mt5/research/tail_alpha_search.py"),
+          ("transition_alpha", "transition_alpha", "desks/mt5/research/transition_alpha.py"),
+          ("weak_signal_compiler", "weak_signal_ensemble",
+           "desks/mt5/research/weak_signal_compiler.py"),
+          ("world_causal_graph", "world_causal_graph",
+           "desks/mt5/research/world_causal_graph.py"),
       )),
     # THE EXECUTION-LEARNING LINES (2026-09-05, the principal's order). One billable quantity --
     # R per filled trade recovered from execution leakage -- and three claimants. The corpus

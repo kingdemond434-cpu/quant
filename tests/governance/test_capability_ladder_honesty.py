@@ -185,8 +185,13 @@ class TestTheLadderIsOrdered:
 #: names overlapped the graph's by exactly 6. Lowered to 42 the same day by adding rent lines
 #: for the nine discovery organs whose RESEARCH_PNL source string was CONFIRMED in the
 #: producers rather than guessed; the rest stamp no source, and inventing one would make a node
-#: read billable while nothing could ever price it.
-MAX_UNBILLABLE = 42
+#: read billable while nothing could ever price it. Lowered again to 30 after re-running the
+#: search as an AST-anchored regex for each node's module-level `SOURCE = "..."`, the idiom
+#: the first literal-grep pass missed: twelve more organs stamp a source on every row they
+#: write, four of them under a name that is not the node's. The remaining 30 are not discovery
+#: organs -- gateway, promoter, universal_gate, regime_monitor, execution_twin, fill_surface --
+#: so no RESEARCH_PNL source will ever price them and each needs its own measurement scheme.
+MAX_UNBILLABLE = 30
 
 
 def test_no_new_organ_lands_that_the_rent_ledger_cannot_price() -> None:
