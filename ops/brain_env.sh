@@ -622,10 +622,24 @@ dig_dry_run() {                       # $1 = organ label, $2 = prompt file
 # no. Adding lessons past the budget DISPLACES weaker ones rather than growing the context, so
 # organs get smarter over time without getting slower. Overflow goes to stderr, never silently.
 #
+# ROUTED PER ORGAN (2026-09-05), and the budget did NOT move. One global ranking meant every organ
+# received the same top-of-ledger lessons, so the ledger saturated: at 228 lessons exactly 25 were
+# reaching anybody and 106 that the desk had paid for were read by nothing. The 12,000-char ceiling
+# was never the problem -- the assumption that the gateway and the free-data miner need the same
+# lessons was. Selecting by the reading organ's own subject spends the identical budget on what
+# applies HERE, and took reach from 25 lessons to 141 with no organ getting one character more.
+#
+# THE ORGAN IS DERIVED, NEVER DECLARED. `$0` is the run_<organ>.sh script that sourced this file,
+# so a new organ is routed the day it is written and nobody has to remember to register it. An
+# unrecognised name renders the old global ranking, so the failure mode is the previous behaviour
+# rather than an empty corpus.
+#
 # `|| true` is load-bearing: a broken memory layer must never stop an organ from running. The
 # corpus is an improvement to a working organ, not a precondition for one.
+_ORGAN="${QUANT_ORGAN:-$(basename "${BASH_SOURCE[1]:-$0}" .sh)}"
+_ORGAN="${_ORGAN#run_}"
 _MEMORY="$(cd /home/quant/quant-platform 2>/dev/null && \
-    .venv/bin/python scripts/learn.py render 2>/dev/null || true)"
+    .venv/bin/python scripts/learn.py render --organ "$_ORGAN" 2>/dev/null || true)"
 _DOCTRINE="${_DOCTRINE}
 ${_MEMORY}"
 
