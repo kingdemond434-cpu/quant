@@ -52,25 +52,44 @@ def _read(p: Path):
         return None
 
 
-def _revocation_recorded(doc: object) -> bool:
+def _revocation_recorded(doc: object) -> bool | None:
     """Did this artifact record an explicit revocation? Delegates to the authority ratchet.
+    True yes, False no, None COULD NOT ASK -- and the three are not interchangeable.
 
     ONE DETECTOR, NOT FOUR. The ratchet defines what counts as a sanctioned fall in earned
     evidence; every other fence that reacts to a falling count must ask IT, or the desk ends up
     with several answers to one question and finds out which is wrong only when they disagree.
-    An unavailable ratchet returns False -- the alarm still fires, which is the safe direction.
+
+    WHY THIS RETURNS THREE THINGS NOW (measured 2026-09-05, on the live box). It returned False
+    on failure -- "the alarm still fires, which is the safe direction" -- and that reasoning was
+    wrong twice over. First, the failure was not hypothetical: `check_authority_ratchet` imports
+    `libs.ops.canon_lease` at module scope, and when THIS file runs as a script `sys.path[0]` is
+    `scripts/`, not the repo root, so that import raised ModuleNotFoundError on EVERY run. The
+    bare `except` swallowed it and the detector answered False forever. Called by hand from the
+    repo root it answered True, which is why it read as correct.
+
+    Second, and worse: the alarm it fired says "restore from canon before anything else", and
+    following it would have restored six AFG and two AFL certificates the desk had just retired
+    with a full record for being uncashable. An alarm that instructs a destructive repair is not
+    the safe direction when it cannot tell whether the repair is needed. Silence about a real
+    wipe is bad; a confident instruction to undo a correct decision is worse.
+
+    So the path is repaired AND the uncertainty is reported as uncertainty.
     """
     try:
         import importlib.util
+        # THE REPO ROOT, NOT JUST scripts/. The ratchet imports `libs.*` at module scope.
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
         spec = importlib.util.spec_from_file_location(
             "_car_for_health", ROOT / "scripts" / "check_authority_ratchet.py")
         if spec is None or spec.loader is None:
-            return False
+            return None
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return bool(mod._has_revocation(doc))
     except Exception:
-        return False
+        return None
 
 
 def _age_h(ts: str | None, now: datetime) -> float | None:
@@ -256,9 +275,20 @@ def collect(now: datetime) -> tuple[list[str], dict]:
         # wipe got past the writer seals; restore from canon before anything else". Acting on
         # that advice would have restored the very rows the desk had just decided it can never
         # trade. Import the one detector rather than writing a fourth copy of it.
-        if m["certs_n"] < last_n and not _revocation_recorded(surv):
-            breaches.append(f"GAUNTLET: canon SHRANK {last_n} -> {m['certs_n']} -- a wipe got "
-                            f"past the writer seals; restore from canon before anything else")
+        if m["certs_n"] < last_n:
+            sanctioned = _revocation_recorded(surv)
+            m["canon_fall_sanctioned"] = sanctioned
+            if sanctioned is None:
+                # COULD NOT ASK. Report the fall and say the question is unanswered; do NOT
+                # instruct a restore, because the restore is destructive when the fall was
+                # sanctioned and this branch is precisely where that is unknown.
+                breaches.append(
+                    f"GAUNTLET: canon fell {last_n} -> {m['certs_n']} and the authority ratchet "
+                    f"could not be asked whether it was sanctioned -- UNMEASURED, not a wipe. "
+                    f"Check retired_certificates before restoring anything.")
+            elif not sanctioned:
+                breaches.append(f"GAUNTLET: canon SHRANK {last_n} -> {m['certs_n']} -- a wipe got "
+                                f"past the writer seals; restore from canon before anything else")
 
     # --- data feeds: a starved input idles whole families while reading as quiet ground
     # (measured: macro 5 days stale -> macro_conditional produced zero signals on 297 straight
