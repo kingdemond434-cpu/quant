@@ -30,11 +30,19 @@ scp -pq "$REMOTE:C:/opt/quant/web/desk_state.json" web/desk_state.json.tmp 2>/de
 # Pull every state producer consumed by the read-only watchdog. Omitting shadow_health meant the
 # VPS could have current sleeve ledgers but keep judging yesterday's aggregate health; omitting
 # external_shadow_state made newly certified generic frontiers invisible after they enrolled.
+# newer-only (reports): the VPS runs shadow passes too, and a stale box copy landing on top of a
+# fresher local one is how IDENTITY_BROKEN rows and retired clocks keep reappearing after repair.
 for f in shadow_state.json qquant_shadow_state.json scalp_shadow_state.json \
          external_shadow_state.json shadow_health.json; do
-  scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/shadow/$f" \
-      "desks/mt5/reports/shadow/$f.tmp" 2>/dev/null \
-    && mv "desks/mt5/reports/shadow/$f.tmp" "desks/mt5/reports/shadow/$f"
+  _d="desks/mt5/reports/shadow/$f"
+  if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/shadow/$f" "$_d.tmp" 2>/dev/null; then
+    if [ ! -f "$_d" ] || [ "$_d.tmp" -nt "$_d" ]; then
+      mv -f "$_d.tmp" "$_d"
+    else
+      rm -f "$_d.tmp"
+      echo "pull kept local $f: the box copy is not newer"
+    fi
+  fi
 done
 
 # THE LEDGERS THEMSELVES, which this script's own header has claimed travel since it was written
@@ -60,9 +68,22 @@ if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/shadow/ledger_*.json" "$_LDIR
   done
 fi
 rm -rf "$_LDIR"
-scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json" \
-    desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp 2>/dev/null \
-  && mv desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp desks/mt5/reports/UNIVERSAL_SURVIVORS.json
+# newer-only (reports): BOTH BOXES CERTIFY, so the box copy is not automatically the truth.
+# The VPS gauntlet writes this file too. A blind overwrite meant every certificate the VPS sweep
+# produced was reverted by the next pull, 90 seconds later: measured 2026-09-05, the canon read
+# 66 survivors at 23:42 and 54 at 01:05 with an mtime of 22:45 -- the local sweep certified and
+# the pull put the box's older canon back on top, so the desk looked like it was certifying
+# nothing while it was certifying and losing it. scp -p preserves the remote mtime, so -nt
+# compares the two canons honestly and the older one never wins.
+_US=desks/mt5/reports/UNIVERSAL_SURVIVORS.json
+if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json" "$_US.tmp" 2>/dev/null; then
+  if [ ! -f "$_US" ] || [ "$_US.tmp" -nt "$_US" ]; then
+    mv -f "$_US.tmp" "$_US"
+  else
+    rm -f "$_US.tmp"
+    echo "pull kept local UNIVERSAL_SURVIVORS.json: the box canon is not newer"
+  fi
+fi
 
 # THE GATE REPORT ITSELF, which was never pulled at all. Every question worth asking about the
 # pipeline -- which gate binds, how many cells were judged versus dropped, what the trial charge
