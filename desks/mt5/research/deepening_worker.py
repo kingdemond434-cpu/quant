@@ -554,7 +554,78 @@ _SYSTEM_BY_KIND = {
 }
 
 
+#: Where the single-flight lock lives, and how long a lock may be held before it is presumed dead.
+#: DERIVED FROM THE RUN BUDGET, not chosen: a run may legitimately hold this for `RUN_BUDGET_SEC`
+#: plus the last task it was already inside when the budget expired, so the stale threshold has to
+#: clear both or a healthy long run would be killed by the next hour's tick. One extra budget is
+#: the margin, which on the default puts the threshold at eighty minutes -- comfortably past any
+#: honest run and comfortably short of leaving a crashed one locked out for a day.
+LOCK = BASE / "data" / "hypotheses" / ".deepening.lock"
+
+
+def _single_flight():
+    """Acquire the run lock, or None when another run holds it.
+
+    A CRASHED RUN MUST NOT LOCK THE DESK OUT FOR EVER, which is the failure mode of every naive
+    lock file: the process dies mid-task, the file stays, and the organ is silently dark until a
+    person notices. So the lock carries its own start time and a run older than the stale
+    threshold is TAKEN OVER with the takeover logged -- an unattended desk cannot wait for someone
+    to clear a file by hand.
+    """
+    stale_after = RUN_BUDGET_SEC * 2.0
+    try:
+        LOCK.parent.mkdir(parents=True, exist_ok=True)
+        if LOCK.exists():
+            try:
+                held = json.loads(LOCK.read_text("utf-8"))
+                age = time.time() - float(held.get("at") or 0.0)
+            except (OSError, ValueError, TypeError):
+                age = stale_after + 1.0                       # unreadable lock is a dead lock
+                held = {}
+            if age <= stale_after:
+                dlog(f"another deepening run holds the lock (pid={held.get('pid')}, "
+                     f"{age:.0f}s old): exiting rather than racing it. The queue is worked once "
+                     f"per hour whichever schedule wins -- MT5-Deepening or hourly_cycle -- and "
+                     f"two runs would choose the same tasks and overwrite each other's output")
+                return None
+            dlog(f"taking over a stale lock ({age:.0f}s > {stale_after:.0f}s): the run holding it "
+                 f"is presumed dead, because an unattended desk cannot wait for a person to "
+                 f"clear a file")
+        LOCK.write_text(json.dumps({"pid": os.getpid(), "at": time.time()}), "utf-8")
+    except OSError as exc:
+        # A LOCK THAT CANNOT BE TAKEN MUST NOT STOP THE WORK. The race it prevents is wasteful,
+        # not dangerous -- the worked-ledger still stops double billing -- so an unwritable path
+        # degrades to the previous behaviour rather than silencing the organ.
+        dlog(f"lock unavailable ({type(exc).__name__}: {exc}); running unlocked")
+        return LOCK
+    return LOCK
+
+
+def _release(lock) -> None:
+    if lock is not None:
+        try:
+            lock.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    """Acquire the run lock, work the queue, and ALWAYS release -- including on a crash.
+
+    The release is a `finally` rather than a line at the end, because the one run whose lock most
+    needs clearing is the one that died: a lock left by a crash is what turns a wasteful race into
+    a silently dark organ until the stale threshold expires.
+    """
+    lock = _single_flight()
+    if lock is None:
+        return 0
+    try:
+        return _work(argv)
+    finally:
+        _release(lock)
+
+
+def _work(argv: list[str] | None = None) -> int:
     # `argv` accepts an explicit list so an in-process caller can invoke this without inheriting
     # ITS argv, matching daily_cycle.main. Added 2026-09-05 when hourly_cycle began draining the
     # queue: `parse_args()` with no argument reads sys.argv, so `hourly_cycle.py --whatever` would

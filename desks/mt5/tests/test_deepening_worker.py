@@ -22,6 +22,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 DESK = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(DESK / "research"))
 
@@ -187,3 +189,70 @@ def test_a_seat_error_is_reported_never_raised() -> None:
         return "", "budget exhausted"
     found, why = dw.extract(_TASK, chat=chat)
     assert found == {} and "budget exhausted" in why
+
+
+# ------------------------------------------------- one queue, two schedules, one run at a time
+
+class TestSingleFlight:
+    """TWO SCHEDULES NOW FIRE THIS WORKER and they were racing.
+
+    `MT5-Deepening` has run it hourly with `--limit 25` since 2026-09-03, and
+    `hourly_cycle.deepen()` began draining the whole queue in-process on 2026-09-05. The
+    worked-ledger stops a task being BILLED twice, but it cannot stop two concurrent runs from
+    CHOOSING the same task -- both read the decided set before either appends -- and
+    `OUT.write_text` is last-writer-wins, so the 25-task run can overwrite the whole-queue run's
+    output with a fraction of it.
+
+    A LOCK RATHER THAN A SCHEDULE CHANGE, deliberately: the Windows box's task registry is not in
+    this repo, so a fix that depends on editing it is a fix that may never be applied.
+    """
+
+    def _lock_at(self, tmp_path, monkeypatch):
+        p = tmp_path / ".deepening.lock"
+        monkeypatch.setattr(dw, "LOCK", p)
+        return p
+
+    def test_a_second_run_refuses_rather_than_racing(self, tmp_path, monkeypatch) -> None:
+        self._lock_at(tmp_path, monkeypatch)
+        assert dw._single_flight() is not None
+        assert dw._single_flight() is None, "two runs would choose the same tasks"
+
+    def test_a_crashed_run_does_not_lock_the_desk_out_for_ever(self, tmp_path,
+                                                               monkeypatch) -> None:
+        """The failure mode of every naive lock file: the process dies mid-task, the file stays,
+        and the organ is silently dark until a person notices. An unattended desk cannot wait."""
+        import json as _json
+        import time as _time
+        p = self._lock_at(tmp_path, monkeypatch)
+        p.write_text(_json.dumps({"pid": 1, "at": _time.time() - dw.RUN_BUDGET_SEC * 2 - 60}))
+        assert dw._single_flight() is not None, "a stale lock was not taken over"
+
+    def test_a_lock_inside_its_budget_is_respected(self, tmp_path, monkeypatch) -> None:
+        """The threshold clears a legitimate long run: a pass may hold this for the whole run
+        budget plus the task it was already inside when the budget expired."""
+        import json as _json
+        import time as _time
+        p = self._lock_at(tmp_path, monkeypatch)
+        p.write_text(_json.dumps({"pid": 1, "at": _time.time() - dw.RUN_BUDGET_SEC - 10}))
+        assert dw._single_flight() is None, "a healthy long run was killed by the next tick"
+
+    def test_an_unreadable_lock_is_a_dead_lock(self, tmp_path, monkeypatch) -> None:
+        p = self._lock_at(tmp_path, monkeypatch)
+        p.write_text("{not json")
+        assert dw._single_flight() is not None
+
+    def test_the_lock_is_released_even_when_the_work_raises(self, tmp_path, monkeypatch) -> None:
+        """The one run whose lock most needs clearing is the one that died."""
+        p = self._lock_at(tmp_path, monkeypatch)
+        monkeypatch.setattr(dw, "_work", lambda argv=None: (_ for _ in ()).throw(RuntimeError("x")))
+        with pytest.raises(RuntimeError):
+            dw.main([])
+        assert not p.exists(), "a crashed run left its lock behind"
+
+    def test_a_lock_that_cannot_be_written_does_not_stop_the_work(self, tmp_path,
+                                                                  monkeypatch) -> None:
+        """The race it prevents is wasteful, not dangerous -- the worked-ledger still stops double
+        billing -- so an unwritable path degrades to the previous behaviour, never to silence."""
+        monkeypatch.setattr(dw, "LOCK", tmp_path / "nope" / "deep" / ".lock")
+        monkeypatch.setattr(Path, "mkdir", lambda *a, **k: (_ for _ in ()).throw(OSError("ro")))
+        assert dw._single_flight() is not None
