@@ -97,7 +97,7 @@ _SIZING_MODULES: tuple[str, ...] = (
 #: magic number, two in-process caches, two venue retcode tables, the session window definitions,
 #: and two session clock times). The ratchet is set to the count that actually stands, not to the
 #: count before the exemptions -- a ceiling with slack in it is not a ratchet.
-MAX_UNJUSTIFIED = 25
+MAX_UNJUSTIFIED = 17
 
 #: Words that mark a real derivation. A comment must contain at least one AND a digit, so
 #: "measured" alone does not pass -- the number itself has to appear in the justification.
@@ -135,6 +135,25 @@ _DERIVATION_WORDS = (
     # would match everything and the fence would stop asking anything.
     "one-sided", "two-sided", "paired", "|t|", "t-stat", "p-value", "significance",
     "critical value", "aligned with",
+    # MEASURED-BOOK derivations -- the sixth false-positive class, found 2026-09-05 when the scope
+    # was re-pointed at the live MT5 money path. Every earlier class was a statistical procedure;
+    # this one is a number read off the desk's OWN BOOK or its own solver, which is the most
+    # defensible kind of derivation there is and had no word in the list.
+    #
+    # `BOOK_WORST_DD_R = 33.7` carries eleven lines explaining that it is the worst peak-to-trough
+    # drawdown the armed book produced at the sweep that validated it, that it is in-sample, and
+    # that a safety haircut beyond 1.22x would drop the heat budget below the 3.12% the book
+    # already runs -- and it was reported "no derivation cited" because none of those words was
+    # in the vocabulary. `MIN_STATE_WORLDS = 24` explains itself as "at cvar_alpha 0.20 a 24-world
+    # bucket puts ~5 worlds in the CVaR tail". `ADMISSION_ITERATIONS` cites a solver that
+    # "converged in 104 iterations, so this is headroom".
+    #
+    # Widening is this list's own standing instruction for exactly this case ("Widen the list on a
+    # false positive; never reword an organ to satisfy a check"), and rewording eleven lines of
+    # correct reasoning to contain the token "measured" would have been the gaming it forbids.
+    # Each word is specific enough not to match prose generally: no bare "book", no bare "risk".
+    "peak-to-trough", "worst drawdown", "own worst", "the armed book", "cvar",
+    "converged", "iterations", "headroom", "the sweep that", "solver",
 )
 
 #: Constants that are pure plumbing, not sizing. Naming them is a DECISION, same as the schedule

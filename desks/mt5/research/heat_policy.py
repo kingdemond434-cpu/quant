@@ -105,6 +105,15 @@ __all__ = [
 #: A sleeve with no measured drawdown cannot have a drawdown-derived bound, and the honest
 #: answer is not "unlimited". This is the R-drawdown assumed for such a sleeve -- the armed
 #: book's own worst, so an unmeasured sleeve is bounded as tightly as the most-measured one.
+#:
+#: THE FIGURE IS 33.7R AND IT IS NOT A ROUND NUMBER SOMEBODY CHOSE. It is exactly
+#: `mt5desk.gateway_config_fallback.BOOK_WORST_DD_R` -- the worst peak-to-trough drawdown the
+#: armed book produced at the sweep that validated it -- restated here rather than imported
+#: because this module must not depend on the gateway package. The two are kept equal on purpose:
+#: an unmeasured sleeve is charged the same worst case as the book itself, so the assumption can
+#: only ever be conservative relative to what has actually been observed. Cited by value, per
+#: L1.41: the sizing fence asks for the number that set it, and "the armed book's own worst" is
+#: the source but 33.7 is the datum, and a reader cannot check a source without the datum.
 _DEFAULT_DD_R = 33.7
 
 
