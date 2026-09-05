@@ -1,0 +1,19 @@
+{
+ "_": "HIGH-WATER MARK for the point-in-time stamped fraction of ingested discovery rows. Sealed once by --init, raised by the gate whenever a census measures higher, NEVER lowered by code. A missing file is a CI failure, not a zero.",
+ "sealed_at": "2026-09-05T01:38:55.996818+00:00",
+ "measured_at": "2026-09-05T13:24:55.375207+00:00",
+ "stamped_frac": 0.0002,
+ "rows": 4769,
+ "stamped": 1,
+ "sources": 44,
+ "field_frac": {
+  "event_time": 0.0,
+  "available_time": 0.0002,
+  "ingested_time": 0.0002,
+  "source_version": 0.0002,
+  "payload_hash": 0.0002
+ },
+ "report": "desks/mt5/reports/PIT_CENSUS.json",
+ "census_generated_utc": "2026-09-05T13:24:55.371887+00:00",
+ "command": "python scripts/check_pit.py"
+}
