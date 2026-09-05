@@ -1,13 +1,13 @@
 {
- "signed_utc": "2026-09-05T17:24:37.401663+00:00",
- "signed_by": "principal",
+ "signed_utc": "2026-09-05T19:08:21.259642+00:00",
+ "signed_by": "timeframe identity: external_gauntlet cache key and promoter clock now carry the chart",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "a916da8c17a1be8f",
+  "desks/mt5/scripts/external_gauntlet.py": "6ee630c6d89b2b1c",
   "desks/mt5/research/universal_gate.py": "564b02439b938431",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "830723c7f399411c",
   "desks/mt5/research/heat_policy.py": "25b9469c860d1fb6",
-  "desks/mt5/research/promoter.py": "e6e4221be6b93baa",
+  "desks/mt5/research/promoter.py": "ee8fa6a5fee5fdd2",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
   "libs/portfolio/allocator_proof.py": "ab3cdbd00048bb78",
   "libs/portfolio/rails.py": "8f5f7d313712447a",
