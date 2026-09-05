@@ -21,7 +21,10 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
+from mt5desk import decision_core as _dc  # noqa: E402
+
 _SRC = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+_CORE_SRC = (_DESK / "mt5desk" / "decision_core.py").read_text(encoding="utf-8")
 
 #: The armed brackets as the live state file recorded them.
 LIVE_STOPS = {"asia": 53.40, "london_am": 27.91, "ny_open": 18.65,
@@ -29,38 +32,10 @@ LIVE_STOPS = {"asia": 53.40, "london_am": 27.91, "ny_open": 18.65,
 
 
 def _load():
-    """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
-    from mt5desk.gateway_config_fallback import (
-        BOOK_WORST_DD_R, HEAT_HARD_CEILING, HEAT_TARGET, MAX_DRAWDOWN_TOLERANCE,
-        MAX_SLEEVE_HEAT_SHARE, Q_OPT)
-    from mt5desk.sizing import clamp_risk_frac, decay_factor
-    tree = ast.parse(_SRC)
-    ns = {"math": math, "Q_OPT": Q_OPT,
-          "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
-          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
-          # The heat law lives in gateway_config_fallback and gateway.py imports it; the AST
-          # extraction keeps only function/const defs, so the names have to be supplied here.
-          "HEAT_TARGET": HEAT_TARGET, "HEAT_HARD_CEILING": HEAT_HARD_CEILING,
-          "MAX_SLEEVE_HEAT_SHARE": MAX_SLEEVE_HEAT_SHARE,
-          # gateway.py imports this from mt5desk.sizing; the AST extraction keeps only
-          # function/const defs, so the import has to be supplied here or promoted_lot
-          # dies on a NameError that looks like a sizing bug
-          "clamp_risk_frac": clamp_risk_frac,
-          # Same repair, same reason (gap-fixer 2026-08-29): promoted_lot now
-          # multiplies by the L1.59 fade and the AST extraction drops imports.
-          "decay_factor": decay_factor}
-    wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "stop_distance",
-                 "promoted_lot", "heat_budget", "cap_by_heat",
-                 "_eur_per_price_unit", "min_lot_risk_eur"}
-    wanted_const = {"DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
-                    "MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS",
-                    "GOLD_SYMBOL"}
-    keep = [n for n in tree.body
-            if (isinstance(n, ast.FunctionDef) and n.name in wanted_fn)
-            or (isinstance(n, ast.Assign) and any(
-                getattr(t, "id", "") in wanted_const for t in n.targets))]
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), ns)
-    return ns
+    """The sizing laws, IMPORTED from the decision core (split 2026-09-05) rather than
+    AST-extracted out of a gateway that imports MetaTrader5. Same functions, same names; the
+    difference is that the coverage report now sees them execute."""
+    return dict(vars(_dc))
 
 
 NS = _load()
@@ -222,17 +197,17 @@ def test_the_gateway_sizes_from_the_spec_and_refuses_when_it_cannot():
     assert "dist = stop_distance(spec)" in _SRC
     # canon evolved the call to carry the symbol's own risk units (L1.67) and the clamped
     # per-sleeve risk fraction; the property under test -- the REAL distance reaches the
-    # sizer, never the house constant -- is unchanged
-    assert "auto_lot(equity, dist_usd, symbol, info, q=q_eff)" in _SRC
+    # sizer, never the house constant -- is unchanged. The delegation now lives in the core.
+    assert "auto_lot(equity, dist_usd, symbol, info, q=q_eff)" in _CORE_SRC
     assert "refusing to size from the house average" in _SRC
 
 
 def test_no_call_site_sizes_from_the_house_constant_by_omission():
-    """A bare auto_lot(equity) in the trade loop is the bug returning."""
-    tree = ast.parse(_SRC)
+    """A bare auto_lot(equity) in the trade loop is the bug returning -- in either file."""
     bad = []
-    for node in ast.walk(tree):
-        if (isinstance(node, ast.Call) and getattr(node.func, "id", "") == "auto_lot"
-                and len(node.args) < 2):
-            bad.append(node.lineno)
+    for src in (_SRC, _CORE_SRC):
+        for node in ast.walk(ast.parse(src)):
+            if (isinstance(node, ast.Call) and getattr(node.func, "id", "") == "auto_lot"
+                    and len(node.args) < 2):
+                bad.append(node.lineno)
     assert not bad, f"auto_lot called without a stop distance at line(s) {bad}"

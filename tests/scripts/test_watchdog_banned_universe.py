@@ -40,10 +40,42 @@ def test_cashcarry_kill_alone_blocks_the_banned_arms(tmp_path, monkeypatch) -> N
 
 
 def test_every_banned_arm_consults_the_gate() -> None:
-    """A gate one arm forgets to call is not a gate. Each banned spawn must sit behind `blocked`."""
-    for arm in ("cashcarry-exec", "liquidation-listener", "public-tunnel"):
+    """A gate one arm forgets to call is not a gate. Each banned spawn must sit behind `blocked`.
+
+    UPDATED 2026-09-05 (universe mandate). Two of the three arms this originally named --
+    `cashcarry-exec` and `liquidation-listener` -- no longer exist to be gated: their scripts were
+    deleted with the crypto-exchange desk. Asserting they still consult the gate would have been
+    asserting that a deleted arm is politely refused, which is not a property worth holding and
+    would have forced the watchdog to keep dead branches alive to satisfy this test.
+
+    What replaces it is STRICTLY STRONGER, and `test_the_retired_arms_cannot_be_spawned_at_all`
+    below is the half that matters: an arm that cannot be spawned is safer than one that is
+    spawnable-but-refused, because a refusal depends on a kill-file being present and a deletion
+    does not. This test keeps the gating requirement for every arm that still exists.
+    """
+    for arm in ("crypto-exchange execution", "public-tunnel"):
         assert f'refused.append(f"{arm} ' in SRC, f"{arm} does not consult the mandate gate"
     assert SRC.count("_banned_universe_block()") >= 2
+
+
+def test_the_retired_arms_cannot_be_spawned_at_all() -> None:
+    """The banned executors must be UNSPAWNABLE, not merely refused.
+
+    `data/CASHCARRY_KILL` and `data/RECORDERS_OFF` are files, and a file can be removed by anyone
+    with shell access or a careless deploy. The mandate says this universe is never hunted again,
+    so the guarantee has to survive the kill-file going missing -- which it only does if the
+    watchdog carries no branch that could start these processes in the first place.
+
+    COMMENTS ARE STRIPPED BEFORE THE CHECK, on purpose and for the same reason
+    `scripts/check_mt5_purity.py` strips them: this watchdog's header RECORDS that it once stood
+    ready to respawn `run_cashcarry_executor.py --live --capital 4500`, and that record is the
+    evidence for why this test exists. A test that forced the desk to delete its own account of
+    the incident would be trading real memory for a cosmetic pass.
+    """
+    executable = "\n".join(ln for ln in SRC.splitlines() if not ln.lstrip().startswith("#"))
+    for retired in ("run_cashcarry_executor.py", "liquidation_listener.py",
+                    "run_crypto_portfolio.py", "run_recorder.py"):
+        assert retired not in executable, f"watchdog can still spawn {retired}"
 
 
 def test_the_ruin_rail_is_never_gated() -> None:

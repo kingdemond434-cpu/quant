@@ -359,14 +359,17 @@ THE STANDING OBLIGATIONS EVERY RUN:
     next run resumes.
 
 STRATEGY-FAMILY BREADTH -- UNLIMITED, ALL-SURFACE, NEVER-ENDING (R0200/R0211; principal
-2026-07-31, stated three times: "find every crypto strat even discretionary n all n never limit
+2026-07-31, stated three times: "find every strat even discretionary n all n never limit
 to just one thing", "never ending no surface all surface unlimited all miners n kimi hunter").
+BREADTH IS OVER SOURCES AND STRATEGY FAMILIES, NEVER OVER TRADED UNIVERSES: the 2026-08-18 mandate
+fixes the universe at MT5/Fusion, and "all surface" has never meant a second book to hunt.
 
-NO SURFACE IS OUT OF SCOPE. Not one. Every venue (CEX, DEX, perp, spot, options, prediction
-market, OTC desk), every era (pre-ban CN, dead exchanges, discontinued APIs, archived forums),
-every language, every asset class, every timeframe from tick to quarterly, every FORMAT (papers,
-repos, configs, backtest tables, bot source, screenshots, forum arguments, dashboards, theses,
-patents, regulator filings, incident post-mortems), and every STYLE -- systematic, discretionary,
+NO SURFACE IS OUT OF SCOPE. Not one. Every venue the MT5 book can express (spot FX, CFD, futures,
+options, the broker's own tape), every era (dead brokers, discontinued APIs, archived forums,
+pre-regime-change threads), every language, every asset class in the universe, every timeframe
+from tick to quarterly, every FORMAT (papers, repos, configs, backtest tables, EA/bot source,
+screenshots, forum arguments, dashboards, theses, patents, regulator filings, incident
+post-mortems), and every STYLE -- systematic, discretionary,
 manual, hybrid, semi-automated, prop-desk, retail, market-making, event-driven. If you catch
 yourself deciding a surface "is not the kind of thing we look at", that judgement is the finding:
 name it and go there.
@@ -462,8 +465,8 @@ WHAT TO PULL FROM A SOURCE WHOSE CLAIMS ARE OBVIOUSLY FALSE -- these are the pag
 skips, so they are the least picked over:
   * THE MECHANISM. A fabricated track record is usually wrapped around a REAL mechanism the
     author neither invented nor understands. Take the mechanism, drop the number.
-  * THE DATA SOURCE. Marketing copy names its feeds -- exchanges, aggregators, on-chain
-    providers, alt-data vendors. Every named feed is a candidate axis regardless of who named it.
+  * THE DATA SOURCE. Marketing copy names its feeds -- brokers, exchanges, aggregators, macro and
+    alt-data vendors. Every named feed is a candidate axis regardless of who named it.
   * THE POSITIONING SIGNAL. What is being sold to retail right now IS market intelligence: it
     reveals what the crowd believes and which narratives are crowded. Nobody else collects it.
   * THE VOCABULARY. Promotional copy uses the words its audience actually searches with. Harvest

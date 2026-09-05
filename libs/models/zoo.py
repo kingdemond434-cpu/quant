@@ -23,9 +23,24 @@ from typing import Any
 import numpy as np
 
 #: Declared tax in nats per prediction. Ridge/logistic are the reference: zero tax.
+#: soft_moe sits above the router: same K experts and gate, plus a noise variance per expert
+#: and a temperature, and an EM fit that can settle on a different partition per fold -- more
+#: freedom and more fold-to-fold instability than the router's sharpened k-means.
+#: double_adapt is priced with the MLP: it refits on every prediction from the last `window`
+#: labelled rows, so it carries the MLP's instability AND a latency cost the others do not --
+#: the recent labels must exist before it can predict, which at horizon h means h bars stale.
 TAX: dict[str, float] = {"logistic": 0.0, "ridge_sign": 0.0, "hist_gb": 0.0015,
-                         "mlp": 0.0025, "router": 0.0015}
+                         "mlp": 0.0025, "router": 0.0015, "soft_moe": 0.002,
+                         "double_adapt": 0.0025}
 MIN_ROWS = 300
+#: Rows the adaptive model adapts on at prediction time; clamped to half the train fold.
+ADAPT_WINDOW = 120
+
+
+def _squash(raw: np.ndarray) -> np.ndarray:
+    """A +-1 regression read as a probability; clipped so a confident model cannot overflow."""
+    out: np.ndarray = 1.0 / (1.0 + np.exp(-np.clip(4.0 * raw, -50.0, 50.0)))
+    return out
 
 
 def _log_score(p: np.ndarray, y: np.ndarray) -> float:
@@ -74,6 +89,17 @@ def _fit_predict(name: str, xtr: np.ndarray, ytr: np.ndarray, xte: np.ndarray,
         r = ExpertRouter(n_experts=3).fit(xtr, 2 * ytr - 1, z_tr)
         raw = r.predict(xte, z_te)
         return 1.0 / (1.0 + np.exp(-4.0 * raw))
+    if name == "soft_moe":
+        from libs.models.router import SoftMoE
+        g_tr = ztr if ztr is not None else xtr
+        g_te = zte if zte is not None else xte
+        moe = SoftMoE(n_experts=3).fit(xtr, 2 * ytr - 1, g_tr)
+        return _squash(moe.predict(xte, g_te))
+    if name == "double_adapt":
+        from libs.models.adapter import DoubleAdapt
+        w = int(min(ADAPT_WINDOW, xtr.shape[0] // 2))
+        da = DoubleAdapt().fit(xtr, 2 * ytr - 1, window=w)
+        return _squash(da.predict(xtr[-w:], 2 * ytr[-w:] - 1, xte))
     raise KeyError(name)
 
 

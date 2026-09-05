@@ -54,7 +54,8 @@ def main() -> int:
     runs_by_cert: dict[str, dict] = {}
     try:
         from shadow_admission import authorized_runs
-        for r in authorized_runs(DESK):
+        # H1 lane only: scalp certificates are re-judged daily by scalp_gauntlet itself.
+        for r in authorized_runs(DESK, lanes=("h1",)):
             runs_by_cert[str(r.get("certificate"))] = r
     except Exception as exc:
         print(f"recertify: authorized_runs unavailable ({type(exc).__name__}: {exc})")

@@ -26,9 +26,13 @@ THREE THINGS THIS MAKES POSSIBLE THAT THE PARAMETRIC MODEL CANNOT:
   has not measured. It has. Given resting size ahead of us at a level and the trade volume that
   actually arrived, the fill probability is measurable rather than bracketed.
 
-THE CROSSED-BOOK AND ORDERING GUARDS ARE COPIED FROM moat_mine DELIBERATELY. Venue order is not
-guaranteed and a torn snapshot with bid >= ask yields NEGATIVE slippage -- "the venue pays us to
-trade" -- which is exactly the kind of artifact that survives review because it is exciting.
+THE CROSSED-BOOK AND ORDERING GUARDS ARE DELIBERATE AND ARE THE SAME ONES `orderbook_state`
+applies. Feed order is not guaranteed and a torn snapshot with bid >= ask yields NEGATIVE slippage
+-- "the venue pays us to trade" -- which is exactly the kind of artifact that survives review
+because it is exciting.
+
+VENUE-NEUTRAL. It takes parsed depth rows and returns a fill; it knows no host and no instrument,
+so an MT5 depth-of-market snapshot walks exactly as any other book does.
 
 Pure numpy. No I/O, no network.
 """
@@ -55,9 +59,10 @@ __all__ = [
     "walk_book",
 ]
 
-#: Both recorder schemas. Binance stamps depth `k="d"` with `b`/`a`; Bybit uses `k="depth"`.
-#: Reading one and not the other returns clean, plausible, half-empty results over the other
-#: venue's archive -- the bug that made moat_mine blind to 4.4GB until DEPTH_KINDS existed.
+#: Depth-row kind tags this walker accepts. Two spellings exist because two recorders wrote the
+#: tape and only one was ever read: reading one and not the other returns clean, plausible,
+#: HALF-EMPTY results over the other recorder's archive, and 4.4GB sat invisible until this set
+#: covered both. A new recorder adds its tag here rather than renaming its rows.
 DEPTH_KINDS = frozenset({"d", "depth"})
 
 

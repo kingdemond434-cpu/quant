@@ -54,56 +54,11 @@ MODULES = [
     # and what may be promoted. Neither was watched, and both were just changed to open
     # the cure lane beyond one family -- a revert here silently re-closes it.
     # The one forward verdict all three engines call, and the portfolio-contribution
-
-
-
-
-
-
-
     # multiplier the gateway sizes with. Both are NEW modules, which is exactly the class
-
-
-
-
-
-
-
     # the healer used to skip: absent on the box scored the same as an unreachable box.
-
-
-
-
-
-
-
     "desks/mt5/research/forward_verdict.py",
-
-
-
-
-
-
-
     "desks/mt5/mt5desk/portfolio_weight.py",
-
-
-
-
-
-
-
     "desks/mt5/mt5desk/sizing.py",
-
-
-
-
-
-
-
-
-
-
     "desks/mt5/research/shadow_admission.py",
     "desks/mt5/research/promoter.py",
     "desks/mt5/side_channels/promoter_fixed.py",
@@ -112,6 +67,16 @@ MODULES = [
     "desks/mt5/scripts/warm_gauntlet_cache.py",
     "desks/mt5/scripts/stall_watch.ps1",
     "libs/research/bar_span.py",
+    # THE ALPHA SEARCH'S IMPORT CLOSURE (2026-09-05). `alpha_evolution` runs on the box every
+    # hour and now imports the modules that decide what it can even PROPOSE: the grammar (whose
+    # production screen is structure + type + UNITS), the typed samplers, the portfolio-aware
+    # fitness and the nine-population registry. A stale grammar on the box is a box constructing
+    # arithmetic this tree forbids, with every fence reporting all-match.
+    "desks/mt5/research/alpha_evolution.py",
+    "libs/research/alpha_grammar.py",
+    "libs/research/generators.py",
+    "libs/research/alpha_fitness.py",
+    "libs/research/search_populations.py",
     # The program-level gates the sweep imports. reality_check was NOT on this list and
     # was stale on the box by a full optimisation (2026-08-28) -- a module can be central
     # to certification and still be invisible to every sync, because nothing names it.
@@ -158,6 +123,11 @@ MODULES = [
     # follow the import graph will always be missing exactly the module nobody thought about --
     # and here it was missing the one that decides what the book keeps holding.
     "desks/mt5/research/daily_cycle.py",
+    # Every step the daily chain imports, as tests/ops/test_desk_module_drift_covers_the_daily_chain
+    # enforces: a step added to STEPS without a line here decays on the box unwatched.
+    "desks/mt5/research/conservation_ledger.py",
+    "desks/mt5/research/research_bandit.py",
+    "desks/mt5/research/state_admission_run.py",
     "desks/mt5/research/decay_monitor.py",
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
@@ -203,6 +173,99 @@ MODULES = [
     "desks/mt5/moat/moat_silver.py",
     # The task installer lives on the box beside the PowerShell it registers.
     "desks/mt5/scripts/install_moat_miner_task.ps1",
+    # THE BOX'S OWN SYNC AND THE MONEY PATH IT RUNS (2026-09-05). sync_shadow_to_git.ps1 was
+    # fixed on 2026-09-03 and the fix was inert for two days: the script that fetches code on the
+    # box is the script that was broken, so the box could never fetch its own repair (no
+    # "mt5 shadow state sync" commit has reached the remote since 2026-08-26). This channel is
+    # the one that still works -- ssh from the VPS -- so it carries the sync script and every
+    # module the gateway, the promoter and the forward clocks import. The scalp executor and the
+    # netting ledger are here because a promotion that reaches `sleeves.json` on the box with an
+    # executor the box does not have is a certified sleeve that can never trade.
+    "desks/mt5/scripts/sync_shadow_to_git.ps1",
+    "desks/mt5/scripts/sync_to_vps.ps1",
+    "desks/mt5/mt5desk/gateway.py",
+    # THE DECISIONS THE GATEWAY SENDS (2026-09-05 split). gateway.py imports
+    # `mt5desk.decision_core` at module scope, so a box without this file cannot import the
+    # gateway at all -- the hourly pass dies at import and the desk stops trading with no
+    # signal that a module went missing. It ships with the gateway or the gateway does not run.
+    "desks/mt5/mt5desk/decision_core.py",
+    # WHICH CERTIFIED FAMILIES THE GATEWAY CAN TRADE. `research/promoter.py` imports this to
+    # decide whether a PROMOTION CANDIDATE gets a LIVE row or a named `executor_gap`, so a box
+    # that has the new promoter and not this file raises ImportError mid-promotion and the whole
+    # pass dies. Measured 2026-09-05: the healer re-shipped promoter.py the minute the merge
+    # landed and this file was not on the list -- shipping a caller without its callee.
+    "desks/mt5/mt5desk/executables.py",
+    "desks/mt5/mt5desk/gateway_config_fallback.py",
+    "desks/mt5/mt5desk/scalp_exec.py",
+    "desks/mt5/mt5desk/netting.py",
+    "desks/mt5/mt5desk/execution_policy.py",
+    "desks/mt5/mt5desk/execution_registry.py",
+    "desks/mt5/mt5desk/fill_surface.py",
+    # THE STATE VECTOR THE BOX BUILDS AND THE ALLOCATOR SIZES FROM (2026-09-05). `hourly_cycle`
+    # is watched and IMPORTS state_vector_build, which was not -- the caller was pinned to HEAD
+    # while the callee could sit on the box's own stale branch, the defect at the head of this
+    # list. It now also reads the world causal graph's hints and weights every input by
+    # libs.research.information_decay, so the module, the graph organ and the two libs must move
+    # together: a box with the new consumer and an old decay registry weights a weekly COT read
+    # as if it were an hourly bar.
+    "desks/mt5/research/state_vector_build.py",
+    "desks/mt5/research/world_causal_graph.py",
+    "libs/regime/state_vector.py",
+    "libs/research/causal_graph.py",
+    "libs/research/information_decay.py",
+    # THE FEATURE WAREHOUSE and its lifecycle. feature_roi runs on the box's daily chain and
+    # writes a status onto every sidecar that decides whether an organ may spend compute on that
+    # feature; a box with an old lifecycle table spends effort the ledger already withdrew.
+    "desks/mt5/research/feature_roi.py",
+    "libs/data/feature_store.py",
+    "libs/data/feature_lifecycle.py",
+    "libs/data/pit_certificate.py",
+    # THE COUNTERFACTUAL WORLD and its import closure. The organ is on the daily chain and both
+    # libs modules are authored here and executed there; a module missing from this list is one
+    # that can silently revert to the box's own branch.
+    "desks/mt5/research/counterfactual_replay.py",
+    "libs/research/counterfactual_world.py",
+    "libs/research/decision_dataset.py",
+    "libs/research/decision_ledger.py",
+    # The execution digital twin runs on the box because only the box has the three ledgers.
+    "desks/mt5/research/execution_twin.py",
+    "libs/execution/digital_twin.py",
+    "desks/mt5/mt5desk/risk_units.py",
+    "desks/mt5/mt5desk/position_manager.py",
+    "desks/mt5/mt5desk/provenance.py",
+    "desks/mt5/mt5desk/independence.py",
+    "desks/mt5/mt5desk/multiplicity.py",
+    "desks/mt5/mt5desk/config.py",
+    "desks/mt5/research/run_gateway_loop.py",
+    "desks/mt5/mt5desk/release_identity.py",
+    "desks/mt5/scripts/smoke_release.py",
+    "desks/mt5/research/shadow_cycle.py",
+    "desks/mt5/research/external_shadow.py",
+    "desks/mt5/research/scalp_family_expansion.py",
+    # THE SCALP LANE'S GAUNTLET (2026-09-05): imported by the daily chain, its report read by
+    # the canon writer; a stale copy on the box is a lane back to forward-clock-only certificates
+    # while the fence reports all-match.
+    "desks/mt5/scripts/scalp_gauntlet.py",
+    "desks/mt5/mt5desk/scalp_families.py",
+    "desks/mt5/research/scalp_reverse_engineering.py",
+    "desks/mt5/research/pf_allocator.py",
+    "desks/mt5/research/heat_policy.py",
+    "desks/mt5/research/allocation.py",
+    "desks/mt5/research/live_manifest.py",
+    "desks/mt5/research/run_hunt12.py",
+    "desks/mt5/research/run_hunt16.py",
+    "desks/mt5/research/qquant_gates.py",
+    "desks/mt5/research/universal_gate.py",
+    "libs/portfolio/robust_elog.py",
+    "libs/portfolio/allocator_proof.py",
+    "libs/portfolio/posterior_growth.py",
+    "libs/portfolio/multiperiod_worlds.py",
+    "libs/portfolio/rails.py",
+    "libs/portfolio/capital_modifiers.py",
+    "libs/portfolio/kelly_surface.py",
+    "libs/portfolio/challengers.py",
+    "libs/portfolio/aggression.py",
+    "libs/risk/fx_factors.py",
 ]
 
 

@@ -103,12 +103,23 @@ def test_stale_forward_clock_refuses_to_license_a_promotion(tmp_path, monkeypatc
 
 
 def test_latched_rail_is_never_reported_as_timidity(tmp_path, monkeypatch):
-    """(2) R0274 generalised: a rail-clamped book is not a conservatism defect, in ANY check."""
+    """(2) R0274 generalised: a rail-clamped book is not a conservatism defect, in ANY check.
+
+    UPDATED 2026-09-05. The verdict is now RETIRED rather than ACT-NOW, and that is the 2026-08-27
+    half of this file's argument taking effect rather than a regression. R0274 says a rail may
+    change a JUSTIFICATION but never a VERDICT, because a temporary clamp lifts and leaves a real
+    gap behind it. That reasoning needs a lifting condition to exist. The cash-carry executor was
+    deleted with the crypto-exchange universe, so there is no condition under which this book ever
+    trades again -- and "ACT-NOW: promote this sleeve" would be a standing instruction to move a
+    dead book toward capital on a universe the mandate closed for good.
+
+    What is still asserted, and is the property that matters: the rail alone never launders the
+    gap into health. `conservatism_defects` stays empty for a permanently-retired sleeve, exactly
+    as it did for a clamped one.
+    """
     out = _run(tmp_path, monkeypatch, shadow_age_h=1.0, fast_track=_ELIGIBLE, rail=True)
     it = _item(out, "promotion_latency")
-    assert it["verdict"] == "ACT-NOW", "the GAP must still read as a gap -- only the reason changes"
-    assert it["justified_by"].startswith("RAIL (CASHCARRY_KILL)")
-    assert "Lifting condition:" in it["justified_by"]
+    assert it["verdict"] == "RETIRED", "a deleted executor is retired, not merely clamped"
     assert out["conservatism_defects"] == []
 
 

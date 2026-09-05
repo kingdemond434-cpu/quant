@@ -1,5 +1,12 @@
 # Intraday rotation/continuation on Binance perps — MEASURED, and the answer is NO-GO
 
+> **ARCHIVED 2026-09-05 — the retired crypto-exchange era.** This document is a HISTORICAL
+> RECORD, not a live mandate. The desk's traded and hunted universe is the MT5/Fusion Markets
+> book (principal order 2026-08-18); the crypto-exchange desk this study belonged to was
+> retired that day. Nothing here authorizes hunting, screening or scoring a crypto-exchange
+> universe. Kept because the protocol and the measured negative transfer; the venue does not.
+> See `docs/research/archive_crypto_era/README.md`.
+
 **2026-08-04. Pre-registration**: `INTRADAY_ROTATION_PREREGISTRATION.md` (committed before data).
 **Data**: Binance USD-M perps, real venue archive (data.binance.vision), 315,648 five-minute bars
 × BTCUSDT/ETHUSDT/SOLUSDT, 2023-08→2026-07, full funding history. **Protocol**: 6m/2m rolling

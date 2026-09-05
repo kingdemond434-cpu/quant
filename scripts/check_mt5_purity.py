@@ -88,6 +88,15 @@ _DECLARES = (
 #: saying so clearly.
 _PERMITTED = re.compile(r"crypto only as information|fusion[- ]executable|crypto CFD", re.I)
 
+#: A file that says the ground is RETIRED is not claiming it. `deploy/finish_setup.sh` opens by
+#: explaining that the crypto-exchange desk's runbook is dead and that there is no Binance
+#: account any more -- which is precisely the record an outside reviewer needs, and flagging it
+#: would push the desk to delete its own explanation of what happened. Same rule, and same
+#: wording, as `check_universe_mandate._EXEMPT`: a stated retirement settles the question.
+_RETIRED = re.compile(r"\bis retired\b|\bwas retired\b|\bretired\b.{0,40}\b20\d\d-\d\d-\d\d|"
+                      r"HALTED BY MANDATE|preserved for audit|no longer (?:exists|runs|trades)",
+                      re.I)
+
 _DECLARATION_WINDOW = 2500
 
 #: Allowed to reach a venue, each with the reason it survives an MT5-only purge. A bare allowlist
@@ -201,8 +210,8 @@ def scan() -> dict:
         code = _executable_text(text, p)
         hosts = sorted({h for h in _VENUE_HOSTS if h in code})
         window = _docstring_window(text, p)
-        claims = ([r.pattern for r in _DECLARES if r.search(window)]
-                  if not _PERMITTED.search(window) else [])
+        excused = _PERMITTED.search(window) or _RETIRED.search(text)
+        claims = [] if excused else [r.pattern for r in _DECLARES if r.search(window)]
 
         if not hosts and not claims:
             continue

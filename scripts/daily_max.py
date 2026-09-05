@@ -65,28 +65,20 @@ _FORBIDDEN_VERBS = (
 REMEDIATIONS: dict[str, tuple[list[str], str]] = {
     "coverage-missing": (["python3", "scripts/build_audit_coverage.py"],
                          "build the audit coverage artifact"),
+    # scripts/run_trade_forensics.py was deleted by sync commit dadac868 and restored from
+    # dadac868^ on 2026-09-05; the entry stands as it always did.
     "production-missing: forensics": (["python3", "scripts/run_trade_forensics.py"],
                                       "run trade forensics to produce its artifact"),
-    "exploration-blocked-upstream": (["python3", "scripts/build_bars.py"],
-                                     "resample the recorder tape into bars"),
     "asymmetry": (["python3", "scripts/asymmetry_ledger.py"],
                   "refresh the asymmetry ledger"),
     "decay": (["python3", "scripts/monitor_data_decay.py"],
               "refresh the data decay monitor"),
-    "moat-never-screened": (["python3", "scripts/screen_moat.py"],
-                            "hunt survivors in the self-recorded L2 tape"),
-    # A HUNT WHOSE FINDINGS NOTHING READS IS A DIARY. The registry accumulates survivors with
-    # their misses; this is the only thing that adjudicates whether any of them beats the sweep's
-    # own false-positive rate. It buys a forward clock and nothing else -- no capital, no weight --
-    # which is exactly why it is safe to run unattended.
-    "moat-survivors-unexploited": (["python3", "scripts/promote_moat_survivors.py"],
-                                   "adjudicate persistent survivors into forward clocks"),
-    # The frontier standing still is a SCHEDULER problem, and one more pass is how the desk finds
-    # out whether it is stuck or merely between cells.
-    "moat-screen-not-converging": (["python3", "scripts/screen_moat.py"],
-                                   "advance the moat screening frontier one more pass"),
-    "moat-clocks-unread": (["python3", "scripts/review_moat_clocks.py"],
-                           "check whether pre-registered candidates held out of sample"),
+    # FIVE MOAT/BARS FIXERS REMOVED 2026-09-05 (universe mandate): build_bars, screen_moat (x2),
+    # promote_moat_survivors and review_moat_clocks. Every one of them read or wrote the
+    # self-recorded crypto-exchange L2 tape and was deleted with it. A fixer whose command cannot
+    # execute turns its defect class into one this loop retries for ever and never closes --
+    # exactly the state the `_UNFIXABLE` register below exists to prevent, except invisible,
+    # because the class would look actionable right up until the subprocess failed.
 }
 
 #: Defect classes no command can close. Naming them stops the loop retrying forever and stops the

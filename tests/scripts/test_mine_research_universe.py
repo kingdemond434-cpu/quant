@@ -1,7 +1,7 @@
-"""MT5 UNIVERSE MANDATE (2026-08-18): the miner hunts the full MT5/Fusion universe and NO
-crypto-exchange universe. These pin both halves on the miner's own query surface -- removal of
-the crypto-exchange-native vocabulary AND presence of the MT5 market and its mechanisms -- so a
-future edit that quietly re-adds a Binance/funding/on-chain query fails loudly.
+"""MT5 UNIVERSE MANDATE (2026-08-18): the miner hunts the full MT5/Fusion market and nothing
+exchange-native. These pin both halves on the miner's own query surface -- removal of the retired
+vocabulary AND presence of the MT5 market and its mechanisms -- so a future edit that quietly
+re-adds a venue/funding/on-chain query fails loudly.
 
 The scorer is deliberately NOT asserted crypto-free: it ranks by METHODOLOGY (permutation,
 walk-forward, overfit), which is universe-neutral and transfers to any market. What must change

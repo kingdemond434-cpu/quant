@@ -100,6 +100,23 @@ export QUANT_PIPELINE_STARTED_AT="$(date -u +%FT%TZ)"
 # VERIFIED BY HASH, NEVER BY EXIT CODE. scp exits 0 in cases that did not land, the same way
 # `git push` exits 0 on a remote reject -- this desk has been burned by exactly that. The
 # comparison is against `git hash-object` run on the box itself.
+# STANDING ORPHAN SWEEP, EVERY CYCLE, BEFORE ANYTHING IS LAUNCHED (2026-09-05). The reaper
+# existed and nothing scheduled it: not the crontab, not a unit, not this pipeline -- so the
+# hourly legs starved behind orphans exactly as its own docstring measured (a 6.0 GB gauntlet
+# from before the memory fix, 215 MB free, edge_search unable to start, both search artifacts
+# a day stale). It touches only the named research scripts past their age bound and spares
+# lock holders; the gateway, the forward engine and the moat recorder are not eligible.
+# THE MANDATE, ENFORCED RATHER THAN WRITTEN DOWN (2026-09-05). Thirteen installed timers were
+# still hunting the retired crypto-exchange universe on this box and holding the memory the
+# search (~2000MB) and sweep (~1250MB) legs need to start; the health fence read 238MB available
+# on an 8GB box and could not say who held the rest. This stops and disables those units, kills
+# their processes, and writes the memory census the fence now names holders from. It can never
+# signal the gateway, the forward engine, the allocator, the deadman rail or the moat recorders.
+echo "[$(date -u +%FT%TZ)] stage -2: enforce the MT5 universe mandate and census memory"
+$PY scripts/enforce_mt5_mandate.py || echo "mandate enforcement FAILED (rc=$?) -- continuing"
+
+echo "[$(date -u +%FT%TZ)] stage -1: reap orphaned research processes on the desk box"
+$PY scripts/reap_desk_orphans.py || echo "orphan reap FAILED (rc=$?) -- continuing"
 echo "[$(date -u +%FT%TZ)] stage 0: sync remotely-executed modules to the desk box"
 # `families_orthogonal` imports the edge-queue and generic families at module import time.
 # They are runtime dependencies of both the remote discovery jobs and the writer-side forward

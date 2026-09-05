@@ -5,6 +5,15 @@ redaction) that 1 of 318 library modules used. These tests pin the ACTIVATION: t
 now leaves a trail, the library still never configures handlers (so importing it cannot change
 any script's output), and -- the load-bearing one -- no log call in the touched files can leak a
 key, secret or signature.
+
+WHY `libs/execution/binance_live.py` IS NO LONGER IN `_WIRED` (2026-09-05, MT5-only purge). That
+module was the retired crypto-exchange live connector and it is gone from disk; a parametrisation
+over a path that does not exist is a test that fails for the wrong reason, not a fence. The fence
+itself is UNCHANGED and still binds on every wired module that survives. The two Binance modules
+that DO survive -- `binance_testnet.py` / `binance_spot_testnet.py`, the Tier-3 deadman rail's own
+plumbing -- were deliberately never wired to `libs.core.logging` and are held byte-for-byte frozen,
+so they are not candidates for this list. Any NEW module that grows a `_log` on the money path
+must be added here.
 """
 from __future__ import annotations
 
@@ -15,7 +24,7 @@ from pathlib import Path
 import pytest
 
 _ROOT = Path(__file__).resolve().parents[2]
-_WIRED = ("libs/execution/binance_live.py", "libs/execution/staging.py", "libs/risk/gate.py")
+_WIRED = ("libs/execution/staging.py", "libs/risk/gate.py")
 _FORBIDDEN = ("key", "secret", "signature", "sig", "token", "password", "credential",
               "query", "body")
 
@@ -91,12 +100,9 @@ def test_risk_gate_rejection_is_logged(caplog: pytest.LogCaptureFixture) -> None
         assert any("risk gate REJECTED" in r.message for r in caplog.records)
 
 
-def test_unarmed_signed_call_is_logged_and_still_raises(
-        caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Logging must ADD a trail without changing behaviour: the refusal still raises."""
-    from libs.execution import binance_live
-    monkeypatch.setattr(binance_live, "is_armed", lambda: (False, "keys_present=False"))
-    with caplog.at_level(logging.WARNING, logger="libs.execution.binance_live"), \
-            pytest.raises(RuntimeError, match="not armed"):
-        binance_live._signed("/fapi/v1/order", {"symbol": "BTCUSDT"}, method="POST")
-    assert any("REFUSED" in r.message for r in caplog.records)
+# REMOVED 2026-09-05: `test_unarmed_signed_call_is_logged_and_still_raises` exercised
+# `libs/execution/binance_live._signed`, the retired crypto-exchange live connector, which is
+# deleted. Its claim -- "logging ADDS a trail without changing behaviour, the refusal still
+# raises" -- has no surviving subject: the frozen deadman-rail connectors carry no `_log`. It is
+# recorded here rather than silently dropped so the claim can be re-pinned on the MT5 gateway's
+# signed path when that path grows a logger.

@@ -7,7 +7,7 @@ metadata:
   originSessionId: 4af772ee-24a6-45c2-aa20-7c72e83a9443
 ---
 
-The user adopted an **Institutional Quantitative Research Constitution** as the standing operating framework for the quant platform. It generalizes (does not replace) the honesty mandate in [[crypto-desk-state]] and [[research-strategy-pivot]].
+The user adopted an **Institutional Quantitative Research Constitution** as the standing operating framework for the quant platform. It generalizes (does not replace) the honesty mandate in `desks/mt5/` (the crypto-desk-state note was deleted 2026-09-05 with the retired desk) and [[research-strategy-pivot]].
 
 **Master objective:** maximize expected *lifetime geometric growth* (E[log wealth] / Kelly utility), subject to statistically-justified survival constraints. Sharpe/CAGR/drawdown/infra are proxies — never optimize them directly.
 

@@ -64,12 +64,31 @@ def _reg(n: int, *, ccy: bool = True) -> dict[str, object]:
     return {f"SYM{i}": dict(row, symbol=f"SYM{i}") for i in range(n)}
 
 
-def test_the_live_failure_is_refused(tmp_path: Path) -> None:
-    """Same rows, one column gone -- the exact copy that overwrote this box every two minutes."""
+def test_the_live_failure_is_healed_by_union_not_refused(tmp_path: Path) -> None:
+    """Same rows, one column gone -- the exact copy that overwrote this box every two minutes.
+
+    The guard's contract changed on 2026-09-03 (measured: 4,067 fields -> 3,864 through the old
+    all-or-nothing refusal, 203 records gone) from REFUSE to UNION: the incoming row wins every
+    field it has, and any field the local row carries and the incoming one lacks is carried
+    forward. So the lossy copy installs WITH the column restored, and the pull reports how many
+    records it kept. This pinned the old rc=2 and went red the day the heredoc improved.
+    """
+    incoming = tmp_path / "incoming.json"
     rc, out = _run(_reg(251, ccy=False), _reg(251, ccy=True), tmp_path)
+    assert rc == 0
+    assert "union kept 251 record(s)" in out          # the count is reported, not just the fact
+    healed = json.loads(incoming.read_text("utf-8"))
+    assert all(row["currency_profit"] == "USD" for row in healed.values())
+
+
+def test_a_loss_the_union_cannot_repair_is_still_refused(tmp_path: Path) -> None:
+    """UNION is not a blank cheque: a row the union cannot read (not a dict) keeps its loss, and a
+    field count that still falls after the union is the one case the guard must refuse."""
+    incoming = _reg(251, ccy=False)
+    incoming["SYM0"] = "corrupt"                       # type: ignore[assignment]
+    rc, out = _run(incoming, _reg(251, ccy=True), tmp_path)
     assert rc == 2
-    assert "currency_profit" in out
-    assert "248" not in out or "251" in out       # counts are reported, not just the name
+    assert "REFUSING" in out and "currency_profit" in out
 
 
 def test_a_row_stump_is_still_refused(tmp_path: Path) -> None:

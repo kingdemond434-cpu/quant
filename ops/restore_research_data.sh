@@ -83,6 +83,9 @@ fi
 echo "== placing into data/ =="
 mkdir -p data
 cp -pr "$ROOT/data/." data/
-echo "  done. Studies that reported BLOCKED can now run:"
-echo "    python scripts/run_failed_breakout_study.py"
-echo "    python scripts/screen_moat.py --files 24"
+# RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): these two lines told the
+# operator to run scripts/run_failed_breakout_study.py and scripts/screen_moat.py, both deleted
+# with the crypto-exchange desk. A restore script that ends by naming two commands which fail
+# teaches the operator the restore itself failed, which it did not.
+echo "  done. Registered studies live in ops/run_study_on_vps.sh; its registry is currently"
+echo "  empty by design -- no pre-registered study runs on this box under the MT5 mandate yet."

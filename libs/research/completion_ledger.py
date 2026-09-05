@@ -202,6 +202,14 @@ def _scheduled(callers: list[str], root: Path) -> list[str]:
     """Callers a scheduler actually reaches. A caller nothing schedules is not wired."""
     hit = []
     for caller in callers:
+        # A caller that IS one of the scheduler files is wired by definition: the roster above
+        # names the files that are the clocks, and a clock does not need a second clock to name
+        # it. Without this clause the research cycle -- the file that runs run_completion_ledger
+        # on every firing -- read as unwired because no other scheduler spells out its basename,
+        # and the ledger reported its own scheduler as WIRED-minus.
+        if caller in _SCHEDULERS:
+            hit.append(f"{caller} <- itself (a scheduler entrypoint)")
+            continue
         name = Path(caller).name
         for sched in _SCHEDULERS:
             p = root / sched

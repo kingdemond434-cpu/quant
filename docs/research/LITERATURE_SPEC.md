@@ -21,16 +21,20 @@ pre-registration → gauntlet._
 3. REPLICATION SCAN: search for published replications/refutations of any candidate mechanism
    before it advances. A mechanism that failed replication enters the graveyard as prior, not
    the queue.
-4. ADAPT: map each surviving mechanism to crypto-perp data the desk HAS (funding, OI/LS,
-   liquidation stream, FRED macro, recorder microstructure) — or name exactly what data it
-   would need. No mapping, no card.
+4. ADAPT: map each surviving mechanism to MT5/Fusion data the desk HAS (broker tick and bar
+   tape, spread and swap history, symbol specs, futures-curve and roll data, CFTC COT, FRED
+   macro and release timestamps, session/holiday calendars) — or name exactly what data it
+   would need. No mapping, no card. RETARGETED 2026-09-05: this step read "crypto-perp data"
+   until the 2026-08-18 universe mandate; a mechanism with no MT5 expression is a graveyard row
+   naming the instrument it would have required, never a card.
 
 ## SOURCE UNIVERSE + COVERAGE (log to docs/research/literature_coverage.md; >=40% of budget
 to least-recently-covered families)
 - arXiv q-fin (all subcategories, not just the feed's slice) + stat.ML for method papers.
-- SSRN: market microstructure, asset pricing anomalies, crypto/DeFi working papers.
+- SSRN: market microstructure, asset-pricing anomalies, FX and commodity working papers.
 - PRACTITIONER RESEARCH (published, free, criminally under-mined): AQR Insights, Man
-  Institute, Two Sigma papers, BIS/IMF/Fed notes on crypto market structure.
+  Institute, Two Sigma papers, and BIS/IMF/Fed/central-bank notes on FX market structure --
+  the BIS Triennial FX survey and its dealer-behaviour companions are a standing read.
 - JOURNALS (free/preprint versions): Journal of Finance/JFE/RFS anomaly literature,
   Journal of Portfolio Management practitioner pieces.
 - THESES + DISSERTATIONS: university repositories — detailed, honest, nobody reads them.

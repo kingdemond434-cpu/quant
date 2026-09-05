@@ -5,7 +5,10 @@ After=network.target
 [Service]
 Type=oneshot
 WorkingDirectory=/home/quant/quant-platform/desks/mt5
-ExecStart=/home/quant/quant-platform/.venv/bin/python -c "import sys; sys.path.insert(0,'.'); sys.path.insert(0,'research'); sys.path.insert(0,'../..'); from research.shadow_forward import main; main()"
+# Run the file, not a `-c` import string: shadow_forward.py already puts desks/mt5 and research/
+# on sys.path itself (lines 25/33), and a unit whose ExecStart names no script is invisible to
+# the scheduler-manifest fence -- the DR floor could not tell what this timer runs.
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/research/shadow_forward.py
 StandardOutput=append:/home/quant/logs/shadow_forward_user.log
 StandardError=append:/home/quant/logs/shadow_forward_user.log
 MemoryMax=400M

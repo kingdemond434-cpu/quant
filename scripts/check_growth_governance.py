@@ -60,6 +60,12 @@ def check() -> list[dict[str, str]]:
     hp = _src("desks/mt5/research/heat_policy.py")
     pa = _src("desks/mt5/research/pf_allocator.py")
     gw = _src("desks/mt5/mt5desk/gateway.py")
+    #: THE SIZING LAW MOVED (2026-09-05 split) and this fence did not follow it. G3's
+    #: `if from_book:` test still passed against gateway.py -- but only INCIDENTALLY, on an
+    #: unrelated `if from_book:` in the scalp lane's heat billing. The law it exists to protect
+    #: could have been deleted from `promoted_lot` and this check would have stayed green. A
+    #: fence that passes for the wrong reason is worse than one that fails.
+    dc = _src("desks/mt5/mt5desk/decision_core.py")
 
     # G1 -- flat floor, growth free above it
     if "floor = target if mandate else 0.0" not in hp:
@@ -85,8 +91,9 @@ def check() -> list[dict[str, str]]:
     # G3 -- gateway wiring
     if "solved, why = allocator_heat()" not in gw:
         f.append({"check": "G3_BUDGET_FROM_ALLOCATOR", "why": "cap_by_heat does not budget from allocator_heat()"})
-    if "from_book: bool = False" not in gw or "if from_book:" not in gw:
-        f.append({"check": "G3_BOOK_FRACTION_DEPLOYED", "why": "promoted_lot re-shrinks the allocator's fraction"})
+    if "from_book: bool = False" not in dc or "if from_book:" not in dc:
+        f.append({"check": "G3_BOOK_FRACTION_DEPLOYED",
+                  "why": "promoted_lot re-shrinks the allocator's fraction (decision_core)"})
     if gw.count("from_book=(s.get(\"sized_by\") == \"allocator_book\")") < 2:
         f.append({"check": "G3_BOOK_FRACTION_DEPLOYED", "why": "a promoted_lot call site does not pass from_book"})
     if "book_fallback" not in gw:
@@ -118,7 +125,8 @@ def check() -> list[dict[str, str]]:
         f.append({"check": "G5_RAIL_MEASURED", "why": f"rails/missed_growth unreadable: {exc}"})
 
     # G6 -- no Sharpe ranking in capital-authority modules
-    for rel in ("desks/mt5/mt5desk/gateway.py", "desks/mt5/research/pf_allocator.py",
+    for rel in ("desks/mt5/mt5desk/gateway.py", "desks/mt5/mt5desk/decision_core.py",
+                "desks/mt5/research/pf_allocator.py",
                 "desks/mt5/research/promoter.py"):
         s = _src(rel)
         for m in re.finditer(r"sort(?:ed)?\([^\n]*sharpe", s, flags=re.IGNORECASE):

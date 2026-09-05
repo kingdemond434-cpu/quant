@@ -9,7 +9,6 @@ with nothing anywhere reporting the substitution.
 
 from __future__ import annotations
 
-import ast
 import sys
 from pathlib import Path
 
@@ -20,18 +19,17 @@ for p in (str(_DESK), str(_DESK / "research")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from mt5desk import decision_core as _dc  # noqa: E402
+
 _GW = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+_CORE = (_DESK / "mt5desk" / "decision_core.py").read_text(encoding="utf-8")
 _SF = (_DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
 _PR = (_DESK / "research" / "promoter.py").read_text(encoding="utf-8")
 
 
 def _state_allows():
-    tree = ast.parse(_GW)
-    fn = next(n for n in tree.body
-              if isinstance(n, ast.FunctionDef) and n.name == "state_allows")
-    ns: dict = {}
-    exec(compile(ast.Module(body=[fn], type_ignores=[]), "<gw>", "exec"), ns)
-    return ns["state_allows"]
+    """The state gate, from the decision core that has held it since the 2026-09-05 split."""
+    return _dc.state_allows
 
 
 ALLOWS = _state_allows()
@@ -109,7 +107,8 @@ def test_the_promoter_parses_a_three_part_key():
 def test_every_link_in_the_chain_carries_the_state():
     """A gate applied at only one layer is not a gate."""
     assert '"state": cond' in _PR, "promoter does not write the state"
-    assert '"state": s.get("state")' in _GW, "gateway does not read the state"
+    # The roster is built by the decision core's `roster`; the gateway logs and sends it.
+    assert '"state": s.get("state")' in _CORE, "the roster does not read the state"
     assert "state_allows(s, df" in _GW, "the state gate is never applied in the trading path"
     # Shadow's conditioned replay retired WITH the conditioned sleeves (all hunt12/macro rows
     # are RETIRED_ORPHAN/RETIRED_GATE_FAIL; enrolment is certificates only). What the law still
@@ -121,10 +120,31 @@ def test_every_link_in_the_chain_carries_the_state():
 
 def test_the_state_gate_runs_before_a_bracket_is_computed():
     """Ordering matters: computing a bracket for a sleeve that must not trade wastes nothing but
-    invites a later edit to place it."""
-    i_gate = _GW.index("state_allows(s, df")
-    i_range = _GW.index("rng2 = day_range(df")
-    assert i_gate < i_range
+    invites a later edit to place it.
+
+    READ FROM THE AST OF THE TRADING FUNCTION, not from the first match in the file. After the
+    2026-09-05 split `bracket_from_bars` is also called by `_record_vetoed_bracket`, a helper
+    defined ABOVE the trading loop that exists precisely to record a bracket the desk refused --
+    so a whole-file `str.index` compared the gate against the veto recorder and read the law
+    backwards. The invariant is about ONE function's control flow: inside the loop that both
+    gates and builds, the gate comes first.
+    """
+    import ast
+    tree = ast.parse(_GW)
+    gated = [fn for fn in ast.walk(tree)
+             if isinstance(fn, ast.FunctionDef)
+             and any(isinstance(c, ast.Call) and getattr(c.func, "id", "") == "state_allows"
+                     for c in ast.walk(fn))]
+    assert gated, "the state gate is never applied in the trading path"
+    for fn in gated:
+        calls = {}
+        for c in ast.walk(fn):
+            if isinstance(c, ast.Call):
+                calls.setdefault(getattr(c.func, "id", ""), []).append(c.lineno)
+        assert calls.get("bracket_from_bars"), (
+            f"{fn.name} gates a sleeve and then builds no bracket -- the gate guards nothing")
+        assert min(calls["state_allows"]) < min(calls["bracket_from_bars"]), (
+            f"{fn.name} computes a bracket before asking whether the sleeve may trade")
 
 
 # --------------------------------------------------------- the verdict needs evidence

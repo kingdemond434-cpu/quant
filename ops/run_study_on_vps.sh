@@ -92,14 +92,20 @@ echo "INTERPRETER $PY"
 # THE STUDIES, and each names the pre-registration that binds it. A study with no pre-registration
 # in this table cannot be run from here -- that is the point of the table, not an oversight. The
 # kill criteria have to exist before the run, or the run is a search.
+# ALL FOUR REGISTERED STUDIES RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18).
+# Every one ran against the crypto-exchange universe and every runner script is deleted:
+#   ["failed_breakout"]="scripts/run_failed_breakout_study.py|docs/research/FAILED_BREAKOUT_PREREGISTRATION.md"
+#   ["moat_screen"]="scripts/screen_moat.py --files 200|docs/research/MAX_SURVIVORS_PROGRAM.md"
+#   ["ethbtc_rotation"]="scripts/run_ethbtc_rotation_study.py|docs/research/ETHBTC_ROTATION_PREREGISTRATION.md"
+#   ["full_sweep"]="scripts/run_full_sweep.py --max-minutes 180|docs/research/FULL_SWEEP_PREREGISTRATION.md"
+# (ethbtc_rotation's pre-registration was deleted with the desk; the others' remain as record.)
+#
+# THE TABLE IS DELIBERATELY LEFT EMPTY RATHER THAN THE SCRIPT DELETED. Its rule -- a study with no
+# pre-registration in this table cannot be run from here, because the kill criteria have to exist
+# before the run or the run is a search -- is the desk's, not the crypto desk's, and it is exactly
+# what an MT5 study will need. An empty registry makes the honest statement that NO pre-registered
+# study currently runs on this box; a deleted script would have made that fact unfindable.
 declare -A STUDIES=(
-  ["failed_breakout"]="scripts/run_failed_breakout_study.py|docs/research/FAILED_BREAKOUT_PREREGISTRATION.md"
-  ["moat_screen"]="scripts/screen_moat.py --files 200|docs/research/MAX_SURVIVORS_PROGRAM.md"
-  ["ethbtc_rotation"]="scripts/run_ethbtc_rotation_study.py|docs/research/ETHBTC_ROTATION_PREREGISTRATION.md"
-  # THE WHOLE DECLARED SPACE AT ONCE -- 898,560 candidates, one pass, no sampling decision to
-  # justify. It PROJECTS ITS OWN RUNTIME on a calibration batch and refuses past --max-minutes
-  # rather than starving the recorders, so running it here is safe by construction.
-  ["full_sweep"]="scripts/run_full_sweep.py --max-minutes 180|docs/research/FULL_SWEEP_PREREGISTRATION.md"
 )
 
 # EXECUTION ORDER, EXPLICIT. This script's own header promised "every registered study, in order"

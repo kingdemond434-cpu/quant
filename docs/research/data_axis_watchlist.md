@@ -1,5 +1,12 @@
 # Data-Axis Watchlist (Free-Data-Alternatives mission)
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** This catalogue is APPEND-ONLY and
+> its older cards are the retired crypto-exchange desk's record -- kept because a graded card that
+> failed verification is exactly the knowledge that stops a future session paying for the same
+> source twice. **NO NEW CARD MAY BE A CRYPTO-EXCHANGE SOURCE.** A new card earns its place only
+> if it feeds a Fusion-executable MT5 instrument; crypto reference data qualifies only where it
+> informs one, never as a universe of its own.
+
 _Companion to `data/data_universe_map.json`. Session summaries logged here chronologically per
 FREE_DATA_ALTERNATIVES_SPEC. This is the operator-visible "what did the data digger find" record._
 

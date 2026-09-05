@@ -151,13 +151,20 @@ def test_UNREADABLE_ranks_WORSE_than_missing_and_is_listed_first(tmp_path: Path,
 
 
 def test_an_INCOMPLETE_file_names_the_missing_field(tmp_path: Path, monkeypatch) -> None:
-    """'binance_live.json is wrong' sends someone to re-read the docs. 'missing api_secret' does
-    not."""
+    """'the keyfile is wrong' sends someone to re-read the docs. 'missing api_secret' does not.
+
+    Was written against `binance_live.json`, a row retired 2026-09-05 with the live crypto
+    executors. Re-pointed at the dead-man rail's futures keyfile, which carries the identical
+    two-field shape and is the reason that row survives the universe purge at all: the Tier-3
+    rail still reconciles and closes stranded positions with it, so an INCOMPLETE keyfile there
+    is a real money-path defect rather than a hypothetical one.
+    """
     secrets = tmp_path / "secrets"
     secrets.mkdir(parents=True)
-    (secrets / "binance_live.json").write_text(json.dumps({"api_key": "k"}), "utf-8")
+    (secrets / "binance_testnet.json").write_text(json.dumps({"api_key": "k"}), "utf-8")
     monkeypatch.setattr(CC, "SECRETS", secrets)
-    row = next(r for r in CC.build()["credentials"] if r["file"].endswith("binance_live.json"))
+    row = next(r for r in CC.build()["credentials"]
+               if r["file"].endswith("binance_testnet.json"))
     assert row["status"] == "INCOMPLETE" and "api_secret" in row["detail"]
 
 

@@ -183,7 +183,8 @@ def test_levels_are_sorted_so_index_zero_really_is_the_touch() -> None:
 
 def test_a_crossed_book_is_dropped_rather_than_priced() -> None:
     """bid >= ask is physically impossible and means a torn snapshot. Pricing one yields a
-    NEGATIVE spread -- "the venue pays us to trade" -- the exciting artifact that survives review."""
+    NEGATIVE spread -- "the venue pays us to trade" -- the exciting kind of artifact that
+    survives review."""
     rows = [
         {"t": T0, "b": [[101.0, 1.0]], "a": [[100.0, 1.0]]},        # crossed
         {"t": T0 + 1, "b": [[100.0, 1.0]], "a": [[100.0, 1.0]]},    # locked
@@ -239,12 +240,25 @@ def test_state_primitives_are_nan_not_zero_when_unmeasurable() -> None:
     assert states["depth_bid"][0] == 0.0             # the SUM is genuinely measured at zero
 
 
-def test_withdrawal_is_not_netted_against_replenishment() -> None:
-    """Netting additions against removals averages the exact event of interest into invisibility:
-    size vanishing before a move is not cancelled by size arriving after it."""
-    bid = np.array([100.0, 50.0, 50.0])              # bid halves, then holds
-    ask = np.array([100.0, 100.0, 200.0])            # ask holds, then doubles
+def test_withdrawal_asymmetry_is_signed_and_bar_local() -> None:
+    """The sign is the whole content: which side pulled harder. And each bar is measured against
+    its OWN predecessor, so a withdrawal is never cancelled by a later replenishment -- netting
+    across bars would average the exact event of interest into invisibility."""
+    bid = np.array([100.0, 50.0, 100.0])             # halves, then fully recovers
+    ask = np.array([100.0, 100.0, 100.0])            # holds throughout
     w = withdrawal_asymmetry(bid, ask)
+
     assert np.isnan(w[0])                            # no previous bar
-    assert w[1] > 0.0, "the bid withdrew and the ask did not -- that is a signed asymmetry"
-    assert w[2] < 0.0 or w[2] == pytest.approx(0.0), "an ADDITION is never counted as a withdrawal"
+    assert w[1] == pytest.approx(0.5), "the bid pulled half its size and the ask did not"
+    assert w[2] == pytest.approx(-1.0), "the recovery is its own bar, not a cancellation of bar 1"
+    assert w[1] > 0.0, "the withdrawal bar survives the later replenishment"
+
+    # Mirror it: the ask pulling must carry the opposite sign, or the measure is not an asymmetry.
+    assert withdrawal_asymmetry(ask, bid)[1] == pytest.approx(-0.5)
+
+
+def test_withdrawal_from_zero_depth_is_nan_not_a_fabricated_ratio() -> None:
+    """A previous depth of zero has no fraction to take. Returning a number there would invent a
+    100% withdrawal out of a bar where nothing was resting in the first place."""
+    w = withdrawal_asymmetry(np.array([0.0, 10.0]), np.array([10.0, 10.0]))
+    assert np.isnan(w[1])

@@ -40,10 +40,20 @@ def test_THE_ORGAN_EXISTS_AND_IS_WIRED_INTO_THE_DAILY_ROTATION() -> None:
 
 
 def test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE() -> None:
-    """A dig that dies mid-run must cost a log, not a day. The rotation skips only on a REAL log
-    (>1500b), so a stub does not count as a completed dig."""
+    """A dig that dies mid-run must cost a log, not a day. The rotation skips only on a log that
+    carries the hunter's own EXIT MARKER, so neither a stub nor a cut-off dig counts as completed.
+
+    This pinned the earlier `-size +1500c` rule. 5c8db433 (2026-08-28) replaced it after the
+    unified dig was cut off at 10,667 bytes and the size gate called it done: size measures how
+    much was written, the marker proves the run REACHED ITS END, and only the latter is a
+    completion. The mechanism the test guards -- resume, never re-dig, never skip a dead run --
+    is unchanged; the literal it read was the weaker of the two.
+    """
     rot = ROTATION.read_text("utf-8")
-    assert "-size +1500c" in rot
+    assert 'grep -lq "brain-hunter exit" data/cro_ai_logs/brain_hunter_${TODAY}T*.log' in rot, (
+        "the hunter's resume check no longer keys on its own exit marker")
+    assert "-size +" not in rot.split("BRAIN HUNTER")[-1], (
+        "a byte-count gate is back -- a cut-off dig would read as complete again")
     src = RUNNER.read_text("utf-8")
     assert "brain_auth_check" in src and "dig_dry_run" in src
     # THE ROUTING IS INHERITED, AND ASSERTING THE LITERAL DEMANDED THE OPPOSITE. This required

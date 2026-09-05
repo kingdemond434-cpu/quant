@@ -7,9 +7,9 @@ reach capital, the exact gap the growth rules forbid.
 
 What is pinned:
 
-  * a matured, certified, Fusion-fed scalp candidate is written LIVE with its exact recipe on the
-    promoter's next run, idempotently; an uncertified one is BLOCKED_UNIVERSAL_GATES; a
-    proxy-fed clock carries no capital authority;
+  * a matured, Fusion-fed scalp candidate is written LIVE with its exact recipe on the
+    promoter's next run, idempotently; the lane's own forward clock is its certificate (no
+    ten-gate path exists for a scalp spec); a proxy-fed clock carries no capital authority;
   * retirement kills the row in the scalp lane itself, so it is never re-promoted;
   * the planner computes the anti-breakout short with the replay's geometry, refuses when there
     is no signal, adds slices only on the replay's conditions, and quarters lots honestly;
@@ -38,6 +38,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, p)
 
 import promoter  # noqa: E402
+from mt5desk import decision_core as _dc  # noqa: E402
 from mt5desk import provenance  # noqa: E402
 from mt5desk import scalp_exec as sx  # noqa: E402
 
@@ -102,11 +103,17 @@ def test_a_matured_certified_scalp_candidate_goes_live_immediately_and_idempoten
     assert len(desk.sleeves()) == 1
 
 
-def test_an_uncertified_scalp_candidate_is_blocked_not_promoted(desk):
-    desk.scalp({_NAME: dict(_CAND)})
+def test_the_forward_clock_is_the_scalp_lanes_certificate(desk):
+    """No ten-gate certificate can exist for an M5/M15 scalp spec, so the lane's own matured
+    forward clock is what promotes it -- and a row that is not a matured candidate does not."""
+    desk.scalp({_NAME: dict(_CAND)})                              # nothing certified by name
     promoter.main()
-    assert desk.sleeves() == []
-    assert desk.read_scalp()["sleeves"][_NAME]["status"] == "BLOCKED_UNIVERSAL_GATES"
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE" and s["certificate"] == "forward_clock"
+    desk.scalp({"other": {**_CAND, "status": "ACCUMULATING"},
+                "immature": {**_CAND, "matured": False}})
+    promoter.main()
+    assert {x["name"] for x in desk.sleeves()} == {_NAME}
 
 
 def test_a_proxy_fed_scalp_clock_carries_no_capital_authority(desk):
@@ -209,12 +216,19 @@ def test_frame_from_rates_reads_broker_rows() -> None:
 # ------------------------------------------------------------------------------- the gateway
 _GW_SRC = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
 _GW_TREE = ast.parse(_GW_SRC)
+_CORE_SRC = (_DESK / "mt5desk" / "decision_core.py").read_text("utf-8")
+_CORE_TREE = ast.parse(_CORE_SRC)
 
 
 def _exec(names: tuple[str, ...], ns: dict) -> dict:
+    """The gateway's executor, exec'd out of its source over the REAL decision core (the
+    scalp lane's pure steps live there since the 2026-09-05 split); the caller's fakes win."""
+    seed = {k: v for k, v in vars(_dc).items() if not k.startswith("__")}
+    seed["_core"] = _dc
+    seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), ns)
-    return ns
+    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), seed)
+    return seed
 
 
 def test_the_gateway_wires_the_scalp_executor_into_the_money_path() -> None:
@@ -225,9 +239,11 @@ def test_the_gateway_wires_the_scalp_executor_into_the_money_path() -> None:
                     if isinstance(n, ast.FunctionDef) and n.name == "main")
     assert main_src.index("run_family_sleeves(st, sleeves, equity)") < \
         main_src.index("run_scalp_sleeves(st, sleeves, equity)")
-    sleeve_set_src = next(ast.get_source_segment(_GW_SRC, n) for n in _GW_TREE.body
-                          if isinstance(n, ast.FunctionDef) and n.name == "sleeve_set")
-    assert '"scalp_market"' in sleeve_set_src and '"stop_atr"' in sleeve_set_src
+    # The roster's admission rules are the decision core's `roster`; the gateway logs it.
+    roster_src = next(ast.get_source_segment(_CORE_SRC, n) for n in _CORE_TREE.body
+                      if isinstance(n, ast.FunctionDef) and n.name == "roster")
+    assert '"scalp_market"' in roster_src and '"stop_atr"' in roster_src
+    assert "sleeves, notes = roster(" in _GW_SRC
     assert main_src.count('("family_market", "scalp_market")') >= 2
     assert _GW_SRC.count('from_book=(s.get("sized_by") == "allocator_book")') >= 3
 
@@ -256,12 +272,22 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
     enable = tmp_path / "GENERIC_EXEC_ENABLED"
     if armed_file:
         enable.write_text("", "utf-8")
+    book: list[tuple] = []
     ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "GENERIC_EXEC_ENABLED": enable,
           "datetime": datetime, "UTC": UTC, "pd": pd,
           "promoted_lot": lambda *a, **k: 0.12, "sleeve_live_n": lambda name: 0,
           "margin_ok": lambda *a, **k: True, "_record_intent": lambda **row: intents.append(row),
           "_policy_advice": lambda *a, **k: {"policy": "MARKET"}, "diagnose": lambda *a: "",
-          "_logs": logs, "_intents": intents}
+          # The theoretical-position book and the registry's outcome ledger are measured
+          # beside the executor; here they record into a list so a test can pin that the
+          # executor tells the book what it wants (armed or not) and what it got.
+          "_book_target": lambda *a, **k: book.append(("target", *a)),
+          "_book_fill": lambda *a, **k: book.append(("fill", *a)),
+          "_record_exec_outcome": lambda *a, **k: book.append(("outcome", *a)),
+          # The release-identity verdict `main()` sets once per pass; these tests exercise the
+          # executor on a box whose code matches its seal.
+          "NEW_RISK_OK": True,
+          "_logs": logs, "_intents": intents, "_book": book}
     return _exec(("run_scalp_sleeves", "close_sleeve_positions", "_retarget_sleeve_positions",
                   "_sleeve_positions"), ns)
 

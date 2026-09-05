@@ -97,9 +97,25 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/data/intelligence/", "desks/mt5/reports/FUND_PLAYBOOK.json",
                  "desks/mt5/data/hypothesis_graph.jsonl")),
     Node("external_gauntlet", "desks/mt5/scripts/external_gauntlet.py",
-         writes=("desks/mt5/reports/universal_gates_external.json",),
-         reads=("desks/mt5/data/hypotheses/miner_candidates.json", "desks/mt5/data/universe/"),
+         # the authority file itself: every certificate the ten gates minted, which the canon
+         # copy floors and the recertification audit re-judges
+         writes=("desks/mt5/reports/universal_gates_external.json",
+                 "desks/mt5/reports/UNIVERSAL_SURVIVORS.json"),
+         reads=("desks/mt5/data/hypotheses/miner_candidates.json", "desks/mt5/data/universe/",
+                "desks/mt5/reports/SCALP_GAUNTLET.json",
+                # THE TICK TAPE REACHES A CERTIFICATE THROUGH HERE, and it always has --
+                # external_gauntlet.py:329 calls `inputs._tape_series(sym, h1.index)`, which
+                # reads data/tape/ticks/<SYM>/<DAY>.parquet and hands the spread and flow series
+                # to the liquidity_regime and orderflow_imbalance families. The edge was real
+                # and undeclared, so the graph could not see that a starved tape starves two
+                # families of the gauntlet.
+                "desks/mt5/data/tape/ticks/"),
          authority=("certificate",)),
+    Node("scalp_gauntlet", "desks/mt5/scripts/scalp_gauntlet.py",
+         # the scalp lane's ten-gate verdicts and certificates; external_gauntlet merges the
+         # passes into the canon under `scalp.<candidate>` (certificate authority stays there)
+         writes=("desks/mt5/reports/SCALP_GAUNTLET.json",),
+         reads=("desks/mt5/data/universe/",)),
     Node("universal_gate", "desks/mt5/research/universal_gate.py",
          writes=("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",),
          reads=("desks/mt5/data/universe/",), authority=("certificate",)),
@@ -107,14 +123,32 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/shadow/",),
          reads=("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json", "desks/mt5/data/universe/")),
     Node("promoter", "desks/mt5/research/promoter.py",
-         writes=("desks/mt5/data/sleeve_registry.json",),
-         reads=("desks/mt5/reports/shadow/", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"),
+         # sleeves.json is the LIVE roster the gateway trades from; the promoter writes a
+         # matured candidate there on the run its clock matures (automatic, principal 2026-09-04).
+         writes=("desks/mt5/data/sleeve_registry.json", "desks/mt5/data/sleeves.json"),
+         reads=("desks/mt5/reports/shadow/", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+                # the daily re-judge of every certificate at today's costs: a fresh
+                # COST_REGRADE_FAIL refuses promotion (BLOCKED_COST_REGRADE)
+                "desks/mt5/reports/recertification_audit.json"),
          authority=("promotion",)),
+    Node("recertify_canon", "desks/mt5/scripts/recertify_canon.py",
+         reads=("desks/mt5/reports/UNIVERSAL_SURVIVORS.json", "desks/mt5/data/universe/"),
+         writes=("desks/mt5/reports/recertification_audit.json",)),
+    Node("world_causal_graph", "desks/mt5/research/world_causal_graph.py",
+         reads=("desks/mt5/data/universe/", "desks/mt5/data/deep_forest_claims.jsonl",
+                "desks/mt5/reports/CROSS_ASSET_GRAPH.json",
+                "desks/mt5/data/world_causal_graph.json"),
+         writes=("desks/mt5/data/world_causal_graph.json",
+                 "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json")),
     Node("state_vector_build", "desks/mt5/research/state_vector_build.py",
          writes=("desks/mt5/data/state_vector.json", "desks/mt5/data/state_fits.json"),
          reads=("desks/mt5/data/universe/", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
                 "desks/mt5/data/intelligence/ff_calendar_vintage",
-                "desks/mt5/data/state_fits.json")),
+                "desks/mt5/data/state_fits.json",
+                # the admitted upstream nodes it turns into conditioning hints, and the graph
+                # itself as the fallback when reports/ has not been written on this box
+                "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json",
+                "desks/mt5/data/world_causal_graph.json")),
     Node("state_admission_run", "desks/mt5/research/state_admission_run.py",
          writes=("desks/mt5/reports/STATE_ADMISSION.json",),
          reads=("backups/moat/shadow_ledgers/", "desks/mt5/data/live_ledger.jsonl"),
@@ -134,17 +168,26 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/data/gateway_state.json", "desks/mt5/data/order_intents.jsonl",
                  "desks/mt5/data/live_ledger.jsonl", "desks/mt5/data/decision_ledger.jsonl",
                  # via research.session_phase._record_broker_clock, from the live terminal
-                 "desks/mt5/data/broker_clock.json"),
+                 "desks/mt5/data/broker_clock.json",
+                 # via mt5desk.netting.TheoreticalBook and execution_registry.record_outcome:
+                 # every sleeve's desired position and fill, and what each fill cost against
+                 # what the market plan expected
+                 "desks/mt5/data/theoretical_positions.jsonl",
+                 "desks/mt5/data/execution_algo_outcomes.jsonl"),
          reads=("desks/mt5/reports/ALLOCATOR_PROOF.json", "desks/mt5/data/sleeve_registry.json",
                 "desks/mt5/data/state_vector.json", "desks/mt5/data/regime_state.json",
-                "desks/mt5/reports/pf_allocation.json", "desks/mt5/data/RELEASE.json"),
+                "desks/mt5/reports/pf_allocation.json", "desks/mt5/data/RELEASE.json",
+                "desks/mt5/data/theoretical_positions.jsonl", "desks/mt5/data/sleeves.json"),
          authority=("position", "size"),
          freshness_s={"desks/mt5/reports/ALLOCATOR_PROOF.json": 26 * 3600}),
     # THE GROWTH GOVERNANCE LOOP: every rail billed daily, tunable rails calibrated toward
     # growth, the AI capital modifier's categories scored against what they claimed.
     Node("missed_growth", "desks/mt5/research/missed_growth.py",
          reads=("desks/mt5/reports/pf_allocation.json", "desks/mt5/reports/FILTER_VALUE.json",
-                "desks/mt5/reports/STATE_ADMISSION.json"),
+                "desks/mt5/reports/STATE_ADMISSION.json",
+                # VETO_ALPHA: the counterfactual world's per-reason table, which `_veto_evidence`
+                # merges over FILTER_VALUE's rows -- the veto rails' better evidence.
+                "desks/mt5/reports/COUNTERFACTUAL_WORLD.json"),
          writes=("desks/mt5/reports/MISSED_GROWTH.json", "desks/mt5/data/missed_growth.jsonl",
                  "desks/mt5/data/rail_calibration.json",
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
@@ -156,12 +199,83 @@ NODES: tuple[Node, ...] = (
     Node("fill_surface", "desks/mt5/mt5desk/fill_surface.py",
          reads=("desks/mt5/data/order_intents.jsonl", "desks/mt5/reports/markout.json"),
          writes=("desks/mt5/reports/FILL_SURFACE.json",)),
+    # THE THEORETICAL-POSITION LEDGER (2026-09-05): the gateway asserts every sleeve's desired
+    # signed position and records every fill into `netting.TheoreticalBook`; `netting.route`
+    # then computes the ONE order the venue would see per symbol. The gateway logs that order as
+    # NET WOULD SEND -- measured, never placed -- and the algorithm registry's expected-vs-realised
+    # ledger feeds the daily execution report. Both ledgers are written FROM the gateway process,
+    # which is why the gateway node declares them; this module owns the replay and the report.
     Node("netting", "desks/mt5/mt5desk/netting.py",
-         reads=("desks/mt5/data/order_intents.jsonl",),
-         writes=("desks/mt5/reports/NETTING.json",)),
+         reads=("desks/mt5/data/order_intents.jsonl",
+                "desks/mt5/data/theoretical_positions.jsonl"),
+         writes=("desks/mt5/reports/NETTING.json", "desks/mt5/reports/NETTING_BOOK.json")),
+    Node("execution_intelligence", "desks/mt5/research/execution_intelligence.py",
+         reads=("desks/mt5/data/order_intents.jsonl",
+                "desks/mt5/data/theoretical_positions.jsonl",
+                "desks/mt5/data/execution_algo_outcomes.jsonl", "desks/mt5/reports/markout.json"),
+         writes=("desks/mt5/reports/FILL_SURFACE.json", "desks/mt5/reports/NETTING.json",
+                 "desks/mt5/reports/NETTING_BOOK.json")),
+    # THE EXECUTION DIGITAL TWIN (2026-09-05): every live intent joined to what the venue did,
+    # calibrated, and turned into the correction the simulator should apply. ADVISORY until
+    # engine.Costs / external_gauntlet.costs_for read EXECUTION_TWIN.json: when that wiring
+    # lands, add the report to the external_gauntlet node's `reads` and drop it from HUMAN_READ
+    # so the graph shows the Live -> Simulator path instead of a report a person reads.
+    Node("execution_twin", "desks/mt5/research/execution_twin.py",
+         reads=("desks/mt5/data/order_intents.jsonl",
+                "desks/mt5/data/execution_algo_outcomes.jsonl",
+                "desks/mt5/data/live_ledger.jsonl", "desks/mt5/data/universe/",
+                "desks/mt5/data/execution_twin_state.json",
+                "desks/mt5/data/execution_twin_cases.jsonl"),
+         writes=("desks/mt5/reports/EXECUTION_TWIN.json",
+                 "desks/mt5/data/execution_twin_cases.jsonl",
+                 "desks/mt5/data/execution_twin_state.json")),
+    # THE PORTFOLIO GAP (scheduled 2026-09-05; it existed with no clock): what the book cannot
+    # fill and where research should point. ADVISORY until the research bandit reads it.
+    # THE COUNTERFACTUAL WORLD (2026-09-05, the principal's order): every decision minute joined
+    # from the eleven ledgers and priced against every alternative -- entered/skipped,
+    # 0.5x/1x/1.5x, market/limit/delayed, fixed TP/trail/hold/partial -- with the desk's own cost
+    # posterior, named on every row. ADVISORY until missed_growth reads VETO_ALPHA off
+    # COUNTERFACTUAL_WORLD.json; when that wiring lands, add the report to the missed_growth
+    # node's `reads` and drop it from HUMAN_READ, so the graph shows the Behaviour -> Rail path
+    # instead of a report a person reads.
+    Node("counterfactual_replay", "desks/mt5/research/counterfactual_replay.py",
+         reads=("desks/mt5/data/decision_ledger.jsonl", "desks/mt5/data/order_intents.jsonl",
+                "desks/mt5/data/live_ledger.jsonl",
+                "desks/mt5/data/theoretical_positions.jsonl",
+                "desks/mt5/data/execution_algo_outcomes.jsonl",
+                "desks/mt5/data/broker_clock.json", "desks/mt5/data/pf_forecast_log.jsonl",
+                "desks/mt5/data/capital_modifier_ledger.jsonl",
+                "desks/mt5/data/counterfactuals.jsonl",
+                "desks/mt5/data/action_counterfactuals.jsonl",
+                "desks/mt5/data/excursions.jsonl",
+                "desks/mt5/reports/EXECUTION_TWIN.json", "desks/mt5/reports/FILL_SURFACE.json",
+                "desks/mt5/data/universe/", "desks/mt5/data/decision_dataset.jsonl",
+                "desks/mt5/data/decision_dataset_watermark.json"),
+         writes=("desks/mt5/reports/COUNTERFACTUAL_WORLD.json",
+                 "desks/mt5/data/decision_dataset.jsonl",
+                 "desks/mt5/data/decision_dataset_watermark.json")),
+    Node("portfolio_gap", "desks/mt5/research/portfolio_gap.py",
+         reads=("desks/mt5/reports/pf_allocation.json",
+                "desks/mt5/reports/UNIVERSAL_SURVIVORS.json"),
+         writes=("desks/mt5/reports/portfolio_gap.json",)),
     Node("release", "libs/ops/release.py",
-         reads=("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",),
+         reads=("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+                "desks/mt5/data/IMMUTABLE_MANIFEST.json", "desks/mt5/data/sleeves.json"),
          writes=("desks/mt5/data/RELEASE.json",)),
+    # RELEASE IDENTITY (2026-09-05): the running SHA measured against the sealed release. The
+    # gateway asks `release_identity.verdict()` every pass and opens nothing new on a refusal;
+    # the verdict file rides the box's git sync so every brain can read it, and the hourly smoke
+    # test proves the money-path modules on the box import and match the seal.
+    # The signed money-path manifest: `--sign` is a person's act after a reviewed change; the
+    # release seal and the box smoke test both verify against it.
+    Node("immutable_evaluator", "scripts/check_immutable_evaluator.py",
+         writes=("desks/mt5/data/IMMUTABLE_MANIFEST.json",)),
+    Node("release_identity", "desks/mt5/mt5desk/release_identity.py",
+         reads=("desks/mt5/data/RELEASE.json",),
+         writes=("desks/mt5/data/release_identity.json",)),
+    Node("smoke_release", "desks/mt5/scripts/smoke_release.py",
+         reads=("desks/mt5/data/RELEASE.json",),
+         writes=("desks/mt5/reports/release_smoke.json",)),
     # THE PROPRIETARY-DATA FLYWHEEL: every decision the desk made, taken or not, priced after the
     # fact and fed back as research targets. None of these nodes has authority; each feeds one.
     Node("counterfactual_markout", "desks/mt5/research/counterfactual_markout.py",
@@ -191,8 +305,11 @@ NODES: tuple[Node, ...] = (
                 # the growth decomposition (2026-09-04) reads every term's own ledger
                 "desks/mt5/reports/ALLOCATOR_PROOF.json", "desks/mt5/reports/pf_allocation.json",
                 "desks/mt5/reports/EXIT_ACCOUNTS.json", "desks/mt5/reports/FILL_SURFACE.json",
-                "desks/mt5/reports/FILTER_VALUE.json", "desks/mt5/reports/MISSED_GROWTH.json"),
-         writes=("desks/mt5/reports/allocator_attribution.json",)),
+                "desks/mt5/reports/FILTER_VALUE.json", "desks/mt5/reports/MISSED_GROWTH.json",
+                # the ENTRY term's ledger (nothing read it before) and research P&L per source
+                "desks/mt5/reports/EXCURSIONS.json", "desks/mt5/reports/RESEARCH_PNL.json"),
+         writes=("desks/mt5/reports/allocator_attribution.json",
+                 "desks/mt5/reports/GROWTH_ATTRIBUTION_WEEKLY.json")),
     Node("regime_monitor", "desks/mt5/research/regime_monitor.py",
          reads=("desks/mt5/data/live_ledger.jsonl", "desks/mt5/reports/shadow/",
                 "desks/mt5/reports/FILTER_VALUE.json"),
@@ -223,6 +340,14 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/data/state_vector.json", "desks/mt5/reports/STATE_ADMISSION.json",
                 "desks/mt5/data/pf_forecast_log.jsonl"),
          writes=("desks/mt5/data/LIVE_MANIFEST.jsonl",)),
+    # THE HOURLY DISCOVERY PASS (2026-09-05): every miner, proposer and data organ once an hour,
+    # each in its own subprocess on a bandit-weighted budget. It decides nothing itself -- the
+    # organs donate through the proposer contract as before -- so its own artifacts are the
+    # per-organ status the fence reads and the ordering state the next pass reads.
+    Node("hourly_discovery", "desks/mt5/research/hourly_discovery.py",
+         reads=("desks/mt5/data/hourly_discovery_state.json",),
+         writes=("desks/mt5/reports/HOURLY_DISCOVERY.json",
+                 "desks/mt5/data/hourly_discovery_state.json")),
     # ---- THE DISCOVERY LOOP (2026-09-04): proposers, miners, feedback engines -----------------
     # Every proposer donates through proposer_common.donate into the intelligence intake the
     # compiler merges; every miner writes deepening tasks; every feedback engine writes a report
@@ -230,7 +355,13 @@ NODES: tuple[Node, ...] = (
     # shows up red rather than looking busy.
     Node("alpha_evolution", "desks/mt5/research/alpha_evolution.py",
          reads=("desks/mt5/data/universe/", "backups/moat/shadow_ledgers/",
-                "desks/mt5/data/generator_weights.json"),
+                "desks/mt5/data/generator_weights.json",
+                # 2026-09-05: the three derived populations mine these ledgers, and the
+                # portfolio-aware fitness prices a candidate against the book it would join.
+                "desks/mt5/data/hypothesis_graph.jsonl",
+                "desks/mt5/data/world_causal_graph.json",
+                "desks/mt5/data/deep_forest_claims.jsonl",
+                "desks/mt5/reports/pf_allocation.json"),
          writes=("desks/mt5/reports/alpha_evolution.json",
                  "desks/mt5/data/intelligence/alpha_evolution/")),
     Node("style_premia_sweep", "desks/mt5/research/style_premia_sweep.py",
@@ -287,7 +418,10 @@ NODES: tuple[Node, ...] = (
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
     Node("drift_monitor", "desks/mt5/research/drift_monitor.py",
          reads=("desks/mt5/data/universe/", "backups/moat/shadow_ledgers/",
-                "desks/mt5/reports/shadow/", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"),
+                "desks/mt5/reports/shadow/", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+                # the hazard channels: admission verdicts, realised execution cost, edge signs
+                "desks/mt5/reports/STATE_ADMISSION.json", "desks/mt5/reports/EXECUTION_TWIN.json",
+                "desks/mt5/reports/CROSS_ASSET_GRAPH.json"),
          writes=("desks/mt5/reports/DRIFT.json",)),
     Node("exit_accounts", "desks/mt5/research/exit_accounts.py",
          reads=("backups/moat/shadow_ledgers/", "desks/mt5/data/excursions.jsonl",
@@ -318,10 +452,73 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/reports/REGIME_COVERAGE.json", "docs/graveyard.md",
                 "docs/research/search_operator_library.md", "docs/GROWTH_GOVERNANCE.md"),
          writes=("desks/mt5/data/memory/",)),
+    Node("feature_roi", "desks/mt5/research/feature_roi.py",
+         reads=("desks/mt5/data/capital_modifier_ledger.jsonl",
+                "desks/mt5/reports/CAPITAL_MODIFIERS.json",
+                "desks/mt5/reports/allocator_attribution.json",
+                "desks/mt5/reports/RESEARCH_PNL.json",
+                "desks/mt5/reports/STATE_ADMISSION.json",
+                "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"),
+         # It rewrites the sidecars' `status`/`roi` in place: the warehouse is both its input
+         # population and where its verdict lands.
+         writes=("desks/mt5/reports/FEATURE_ROI.json", "desks/mt5/data/features/"),
+         # It DECIDES: `feature_lifecycle.withdraw` reads the status it writes, and an organ that
+         # honours it stops spending compute. That is authority, not advice.
+         authority=("feature_effort",)),
+    Node("module_rent", "libs/ops/module_rent.py",
+         reads=("desks/mt5/reports/MISSED_GROWTH.json", "desks/mt5/reports/RESEARCH_PNL.json",
+                "desks/mt5/reports/STATE_ADMISSION.json",
+                "desks/mt5/reports/CAPITAL_MODIFIERS.json",
+                "desks/mt5/reports/pf_allocation.json",
+                "desks/mt5/data/capital_modifier_ledger.jsonl",
+                "desks/mt5/data/execution_algo_outcomes.jsonl",
+                "desks/mt5/data/live_ledger.jsonl", "desks/mt5/reports/shadow/",
+                "desks/mt5/data/module_rent.jsonl"),
+         writes=("desks/mt5/reports/MODULE_RENT.json", "desks/mt5/data/module_rent.jsonl")),
     Node("research_bandit", "desks/mt5/research/research_bandit.py",
-         reads=("desks/mt5/data/hypothesis_graph.jsonl", "desks/mt5/data/research_marginal.json"),
+         reads=("desks/mt5/data/hypothesis_graph.jsonl", "desks/mt5/data/research_marginal.json",
+                # dElog per data source and the DEAD INFORMATION list: the budget is where
+                # naming becomes a decision.
+                "desks/mt5/reports/allocator_attribution.json"),
          writes=("desks/mt5/data/research_budget.json",
                  "desks/mt5/reports/RESEARCH_BANDIT.json")),
+
+    # ----------------------------------------------------------- THE DATA MOAT --
+    # Three nodes forming one chain, and the chain is the argument: the recorder captures what
+    # cannot be recaptured, the checker proves what was captured, and only proven days become
+    # features. Each reads the one before it, so a break anywhere is visible as a break rather
+    # than as a quiet decline in coverage.
+    #
+    # THE TAPE ITSELF IS NOT A GRAPH ARTIFACT and cannot be: it lives at MT5_TAPE_ROOT
+    # (C:\mt5tape by default), outside the git tree, because a directory growing by gigabytes a
+    # year has no business in a repository. `reports/TAPE_RECORDER.json` is the recorder's one
+    # in-repo output and exists precisely so the tape is observable from a box with no shell on
+    # the Windows machine -- the reachability problem AGENTS.md names.
+    Node("tick_recorder", "desks/mt5/recorders/tick_recorder.py",
+         writes=("desks/mt5/reports/TAPE_RECORDER.json",)),
+    Node("tick_integrity", "desks/mt5/recorders/tick_integrity.py",
+         writes=("desks/mt5/reports/TICK_INTEGRITY.json",),
+         reads=("desks/mt5/reports/TAPE_RECORDER.json",)),
+    Node("tape_features", "desks/mt5/recorders/tape_features.py",
+         # data/tape/ticks/ is the silver layer external_gauntlet already reads (see its node);
+         # the rest are measured surfaces whose consumers are NAMED in the module's CONSUMERS
+         # map and not yet wired, which is why they sit in HUMAN_READ rather than claiming a
+         # decision path they do not have.
+         writes=("desks/mt5/data/tape/ticks/", "desks/mt5/data/tape/intrabar/",
+                 "desks/mt5/data/cost_surface_tick.json",
+                 "desks/mt5/data/tape/slippage_surface.json",
+                 "desks/mt5/data/tape_features_state.json",
+                 "desks/mt5/reports/TAPE_FEATURES.json"),
+         reads=("desks/mt5/reports/TICK_INTEGRITY.json",
+                "desks/mt5/data/universe/universe.json")),
+    # The vol archive is ADVISORY BY CONSTRUCTION and its node says so: it holds no authority,
+    # reaches no decision, and every one of its outputs is human-read. That is not a gap to close
+    # later -- a forward-only dataset with no backtest may not condition capital, and the node is
+    # where that claim is checkable rather than merely written in a docstring.
+    Node("vol_archive", "desks/mt5/recorders/vol_archive.py",
+         writes=("desks/mt5/data/vol_archive/observations.jsonl",
+                 "desks/mt5/reports/VOL_ARCHIVE.json"),
+         reads=("desks/mt5/data/universe/universe.json", "desks/mt5/data/universe/")),
 )
 
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
@@ -338,7 +535,39 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/OPPORTUNITY_CURVE.json", "desks/mt5/reports/MICROSTRUCTURE_SURFACES.json",
     "desks/mt5/reports/microstructure_miner.json", "desks/mt5/reports/MISSED_GROWTH.json",
     "desks/mt5/reports/CAPITAL_MODIFIERS.json", "desks/mt5/reports/FILL_SURFACE.json",
-    "desks/mt5/reports/NETTING.json",
+    "desks/mt5/reports/NETTING.json", "desks/mt5/reports/NETTING_BOOK.json",
+    # The execution twin's report, private dataset and watermark: advisory until the cost
+    # model reads the report (see the execution_twin node). The portfolio gap likewise until
+    # the research bandit reads it.
+    "desks/mt5/reports/EXECUTION_TWIN.json", "desks/mt5/data/execution_twin_cases.jsonl",
+    # The counterfactual world's report, its versioned dataset and its watermark: advisory
+    # until missed_growth reads VETO_ALPHA off the report (see the counterfactual_replay node).
+    "desks/mt5/reports/FEATURE_ROI.json", "desks/mt5/reports/MODULE_RENT.json",
+    "desks/mt5/reports/GROWTH_ATTRIBUTION_WEEKLY.json",
+    "desks/mt5/data/decision_dataset.jsonl",
+    "desks/mt5/data/decision_dataset_watermark.json",
+    "desks/mt5/data/execution_twin_state.json", "desks/mt5/reports/portfolio_gap.json",
+    # THE DATA MOAT'S MEASURED SURFACES, advisory until their named consumers are switched.
+    # `data/cost_surface_tick.json` is byte-compatible with what research/cost_surface.py writes,
+    # so cost_surface.spread_pts() reads it with no code change -- but nothing points at it YET,
+    # and claiming a decision path before the switch is made would be exactly the producer/
+    # consumer collapse this graph exists to catch. Same for the slippage surface, whose consumer
+    # (mt5desk/fill_surface.py's below-MIN_FILLS fallback constant) is named in
+    # recorders/tape_features.CONSUMERS. Both switches deserve a before/after, not a silent edit.
+    "desks/mt5/data/cost_surface_tick.json", "desks/mt5/data/tape/slippage_surface.json",
+    "desks/mt5/reports/TAPE_FEATURES.json", "desks/mt5/reports/TICK_INTEGRITY.json",
+    "desks/mt5/data/tape_features_state.json",
+    # The vol archive: forward-only, no backtest, no promotion authority in any lane until its
+    # own vintages are long enough. Human-read is the CORRECT terminal state for it today, not a
+    # placeholder -- see recorders/vol_archive.py's MOAT CLAIM.
+    "desks/mt5/reports/VOL_ARCHIVE.json",
+    # The release-identity verdict and the box smoke test: read by every brain through the
+    # box's git sync and by the dashboard; the gateway consumes the verdict in-process.
+    "desks/mt5/data/release_identity.json", "desks/mt5/reports/release_smoke.json",
+    # The hourly discovery pass's own bookkeeping: per-organ status for the fence and a person,
+    # and the staleness order the next pass reads. The organs' donations reach decisions through
+    # the compiler; this pass only schedules them.
+    "desks/mt5/reports/HOURLY_DISCOVERY.json", "desks/mt5/data/hourly_discovery_state.json",
     "desks/mt5/reports/alpha_evolution.json", "desks/mt5/reports/style_premia_sweep.json",
     "desks/mt5/reports/CROSS_ASSET_GRAPH.json", "desks/mt5/reports/tail_alpha_search.json",
     "desks/mt5/reports/ANOMALY_FACTORY.json", "desks/mt5/reports/SURVIVOR_DISTILLER.json",
@@ -356,6 +585,14 @@ EXTERNAL_READERS = {
     "desks/mt5/data/prospector_targets.json": "world_crawler (side_channels)",
     "desks/mt5/data/hypotheses/deepened_candidates.json": "external_gauntlet via compiler merge",
     "desks/mt5/data/state_fits.json": "state_vector_build (its own cache)",
+    "desks/mt5/data/module_rent.jsonl": "module_rent (its own append-only window history)",
+    "desks/mt5/data/vol_archive/observations.jsonl": ("vol_archive (its own append-only vintage "
+                                                     "series; the archive IS the asset and is "
+                                                     "read back to count desk vintages)"),
+    "desks/mt5/data/tape/intrabar/": ("read per bar by whatever revalues the engine's fill "
+                                      "semantics; NOT wired into mt5desk/engine.py, because "
+                                      "every live certificate was minted under its current "
+                                      "assumption and re-pricing the canon is a deliberate act"),
     # Append-only ledgers that are their own memory: each engine reads back what it wrote so
     # a decision is priced exactly once. Self-reads are not counted as readers by `check`.
     "desks/mt5/data/counterfactuals.jsonl": "counterfactual_markout (its own append-only memory)",
@@ -605,12 +842,13 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
     measured_names: set[str] = set()
     for rel in ("reports/MISSED_GROWTH.json", "reports/FILTER_VALUE.json",
                 "reports/allocator_attribution.json", "reports/CAPITAL_MODIFIERS.json",
-                "reports/RESEARCH_PRODUCTIVITY.json"):
+                "reports/RESEARCH_PRODUCTIVITY.json", "reports/MODULE_RENT.json"):
         try:
             doc = json.loads((DESK / rel).read_text("utf-8"))
             measured_names |= set(map(str, (doc.get("rails") or doc.get("filters") or
                                             doc.get("terms") or doc.get("categories") or
-                                            doc.get("stages") or {}).keys()))
+                                            doc.get("modules") or doc.get("stages")
+                                            or {}).keys()))
         except (OSError, ValueError):
             continue
     now = datetime.now(tz=UTC).timestamp()

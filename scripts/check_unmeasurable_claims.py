@@ -63,11 +63,18 @@ SEARCH_SPACE: dict[str, list[tuple[str, str]]] = {
          "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/"
          "rates_of_exchange?page[size]=1"),
     ],
+    # The second row here was `api.binance.com/api/v3/depth` (labelled "crypto reference only").
+    # Retired 2026-09-05: the crypto-exchange universe is closed to this desk, and a search space
+    # is a RESEARCH CHANNEL -- a row here tells the desk where to go looking. It is replaced, not
+    # merely deleted, because dropping it would quietly halve the evidence behind "order-flow
+    # depth is measurable" and make the claim easier to re-assert as unmeasurable. CFTC TFF
+    # carries dealer/asset-manager gross positioning per contract, which is depth-of-participation
+    # on the MT5 universe's own instruments rather than on a venue this desk may not trade.
     "order_flow_depth": [
         ("CBOE delayed book quotes",
          "https://cdn.cboe.com/api/global/delayed_quotes/quotes/_SPX.json"),
-        ("Binance public depth (crypto reference only)",
-         "https://api.binance.com/api/v3/depth?symbol=BTCUSDT&limit=5"),
+        ("CFTC TFF gross positioning by trader class (MT5 futures-linked instruments)",
+         "https://publicreporting.cftc.gov/resource/gpe5-46if.json?$limit=1"),
     ],
     "term_structure": [
         ("Treasury par yield curve",

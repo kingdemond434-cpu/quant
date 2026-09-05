@@ -54,6 +54,17 @@ class StateVector:
     #: Everything that could NOT be built, by name and reason. A hole recorded is a fact about
     #: what the desk knows; a hole filled in is a lie about it.
     gaps: dict[str, str] = field(default_factory=dict)
+    #: Per input: its information class, its TRUE age and the weight that age leaves it
+    #: (`libs.research.information_decay.state_freshness`). `at` says when the vector was BUILT;
+    #: this says when each thing INSIDE it was last true, which is the question a consumer
+    #: asking "is this still information" actually has. A weekly COT read does not become new
+    #: every minute because the file was rewritten.
+    freshness: dict[str, Any] = field(default_factory=dict)
+    #: Per instrument: the ADMITTED upstream nodes the world causal graph found, with the lag
+    #: they act at, their information class and the weight that information still carries.
+    #: INFORMATION, NOT AUTHORITY -- as with every state here, conditioning capital on it
+    #: requires the admission gauntlet to have judged it first.
+    conditioning: dict[str, Any] = field(default_factory=dict)
 
     @property
     def id(self) -> str:
@@ -130,7 +141,7 @@ class StateVector:
             "assets": {k: v.to_dict() for k, v in sorted(self.assets.items())},
             "factors": {k: v.to_dict() for k, v in sorted(self.factors.items())},
             "session": self.session, "event": self.event, "liquidity": self.liquidity,
-            "gaps": self.gaps,
+            "gaps": self.gaps, "freshness": self.freshness, "conditioning": self.conditioning,
         }
 
     @classmethod
@@ -142,6 +153,8 @@ class StateVector:
             factors={str(k): _from_dict(v) for k, v in (d.get("factors") or {}).items()},
             session=dict(d.get("session") or {}), event=dict(d.get("event") or {}),
             liquidity=dict(d.get("liquidity") or {}), gaps=dict(d.get("gaps") or {}),
+            freshness=dict(d.get("freshness") or {}),
+            conditioning=dict(d.get("conditioning") or {}),
         )
 
     def age_seconds(self, now: datetime | None = None) -> float:

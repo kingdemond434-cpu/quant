@@ -78,6 +78,19 @@ def run_step(name: str, fn) -> dict:
     return out
 
 
+def _scalp_gauntlet() -> None:
+    """The scalp lane's ten-gate certificate, judged daily on the box's own M5/M15 bars BEFORE
+    shadow, so the clock's row can name its certificate today. scripts/scalp_gauntlet.py builds
+    one cell per scalp_shadow.CANDIDATES entry through external_gauntlet.run_gauntlet -- the one
+    validator -- and writes reports/SCALP_GAUNTLET.json. rc=2 is UNMEASURED (no M5/M15 tape or
+    no cost basis on this box): the honest answer off the desk box, never a cycle failure."""
+    sys.path.insert(0, str(BASE / "scripts"))
+    import scalp_gauntlet
+    rc = scalp_gauntlet.main()
+    if rc not in (0, 2):
+        raise RuntimeError(f"scalp_gauntlet returned {rc}")
+
+
 def _shadow() -> None:
     import shadow_forward
     shadow_forward.main()
@@ -92,6 +105,23 @@ def _execution() -> None:
     """Reconstruct execution quality from the venue's own ticks BEFORE the promoter runs."""
     from mt5desk import shadow_execution
     shadow_execution.main()
+
+
+def _recertify() -> None:
+    """Re-judge every standing certificate under the CURRENT cost model, before the promoter
+    reads the shadow verdicts. The audit never shrinks canon; the promoter refuses to fund a
+    certificate the audit fails (BLOCKED_COST_REGRADE). Unscheduled until 2026-09-05 -- the
+    audit existed, ran by hand once, and nothing read it."""
+    import importlib.util
+    path = BASE / "scripts" / "recertify_canon.py"
+    spec = importlib.util.spec_from_file_location("recertify_canon", path)
+    if spec is None or spec.loader is None:
+        dlog("recertify: scripts/recertify_canon.py not present on this tree")
+        return
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    rc = mod.main()
+    dlog(f"recertify: rc={rc} -> reports/recertification_audit.json")
 
 
 def _promote() -> None:
@@ -294,11 +324,29 @@ def _state_research_feedback() -> None:
                  "exit_accounts", "alpha_genome", "opportunity_curve",
                  "regime_coverage", "data_prospector", "resurrection", "research_productivity",
                  "research_pnl", "mutation_yield", "drift_monitor", "revival_engine",
+                 # THE COUNTERFACTUAL WORLD runs BEFORE missed_growth on purpose: it writes
+                 # VETO_ALPHA, which is the veto rails' evidence, and a rail judged against
+                 # yesterday's report is a rail judged a day late.
+                 "counterfactual_replay",
                  "missed_growth", "capital_modifier_score", "execution_intelligence",
+                 # The nine-term growth decomposition and the portfolio gap: both existed and
+                 # ran on nobody's clock (found 2026-09-05). They read every term's own ledger,
+                 # which is why they run after the engines that write those ledgers.
+                 "allocator_attribution", "portfolio_gap",
+                 # THE WAREHOUSE'S FEEDBACK ARM. It reads the conditioning ledger, RESEARCH_PNL's
+                 # share_of_heat and allocator_attribution's state term, so it runs after all
+                 # three; it writes a lifecycle status onto every feature sidecar, which is what
+                 # stops the desk spending compute on features that do not contribute.
+                 "feature_roi",
                  "live_manifest"):
         try:
             mod = __import__(name)
-            out = mod.run() if hasattr(mod, "run") else mod.write()
+            if hasattr(mod, "run"):
+                out = mod.run()
+            elif hasattr(mod, "write"):
+                out = mod.write()
+            else:
+                out = {"rc": mod.main()}
             if name == "live_manifest":
                 v = mod.verify()
                 dlog(f"live manifest: chain ok={v.get('ok')} entries={v.get('entries')}")
@@ -377,6 +425,21 @@ def _export_aurum() -> None:
         raise RuntimeError(f"export_aurum_findings returned {rc}")
 
 
+def _module_rent() -> None:
+    """WHAT EVERY COMPONENT IS WORTH, from the ledgers the steps above have just refreshed.
+
+    ModuleRent = E[log W] with it minus E[log W] without it. It NAMES a component whose rent is
+    negative; a person retires it. A gate that failed the build on a rent verdict would make the
+    ledger unwritable, which is how a measurement stops being taken. `libs.ops.module_rent` is
+    not a `research/` module, so it gets its own step rather than a name in the feedback tuple.
+    """
+    from libs.ops import module_rent
+    out = module_rent.run(BASE.parent.parent)
+    named = list((out or {}).get("retire") or {})
+    dlog(f"module rent: {len((out or {}).get('modules') or {})} component(s) priced"
+         + (f"; NAMED for retirement: {', '.join(named[:6])}" if named else ""))
+
+
 def _zentech() -> None:
     root = BASE.parent.parent
     sys.path.insert(0, str(root / "scripts"))
@@ -394,11 +457,13 @@ STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("world_miners", _world_miners), ("proposers", _proposers),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
          ("state_admission", _state_admission),
-         ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
-         ("execution", _execution), ("promoter", _promote), ("markout", _markout),
+         ("reconcile", _reconcile), ("scalp_gauntlet", _scalp_gauntlet),
+         ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
+         ("execution", _execution), ("recertify", _recertify),
+         ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("decay", _decay),
          ("state_research_feedback", _state_research_feedback),
-         ("zentech", _zentech), ("conservation", _conservation),
+         ("module_rent", _module_rent), ("zentech", _zentech), ("conservation", _conservation),
          ("export_aurum", _export_aurum))
 
 def main(argv: list[str] | None = None) -> int:

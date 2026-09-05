@@ -34,6 +34,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 import itertools
 
+from mt5desk import decision_core as _dc  # noqa: E402
 from mt5desk.gateway_config_fallback import HEAT_HARD_CEILING, HEAT_TARGET  # noqa: E402
 from research.heat_policy import resolve  # noqa: E402
 
@@ -64,20 +65,23 @@ def test_floor_20_growth_free_to_30() -> None:
 
 # --------------------------------------------------------------------------- the sizer
 def _exec(names: tuple[str, ...], ns: dict) -> dict:
+    """Gateway adapters, exec'd out of the source over the REAL decision core (the gateway
+    imports MetaTrader5; the core imports anywhere). The caller's names win over the seed."""
+    seed = {k: v for k, v in vars(_dc).items() if not k.startswith("__")}
+    seed["_core"] = _dc
+    seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), ns)
-    return ns
+    assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"
+    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), seed)
+    return seed
 
 
-def test_the_books_fraction_reaches_the_venue_unshrunk() -> None:
-    import math
-
-    from mt5desk.sizing import MAX_RISK_FRAC, clamp_risk_frac, decay_factor
-    ns = _exec(("promoted_lot",), {"math": math, "MAX_RISK_FRAC": MAX_RISK_FRAC,
-                                   "clamp_risk_frac": clamp_risk_frac,
-                                   "decay_factor": decay_factor, "GOLD_SYMBOL": "XAUUSD",
-                                   "auto_lot": lambda equity, dist, symbol, info, q: q * 100.0})
-    lot = ns["promoted_lot"]
+def test_the_books_fraction_reaches_the_venue_unshrunk(monkeypatch) -> None:
+    # The sizing law lives in the decision core since the split; the gateway's `promoted_lot`
+    # is a delegate to it (pinned in test_gateway_adapter). Isolate the fraction law by
+    # replacing the lot arithmetic it delegates to.
+    monkeypatch.setattr(_dc, "auto_lot", lambda equity, dist, symbol, info, q: q * 100.0)
+    lot = _dc.promoted_lot
     # A 1.7% book fraction on a sleeve with 3 live trades: the ramp would have made it 0.75%
     # and the clamp would have raised it to 3%. From the book it is 1.7%.
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.017, None, from_book=True) == pytest.approx(1.7)
@@ -105,7 +109,9 @@ def test_gateway_sizes_the_floor_with_the_best_baseline_when_the_proof_fails(tmp
            "book": {"a": 0.12, "b": 0.08},
            "book_fallback": {"name": "inverse_vol", "book": {"a": 0.09, "b": 0.11}}}
     (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
-    ns = _exec(("allocator_book",), {"json": json, "BASE": tmp_path,
+    # The gateway's `allocator_book` reads the artifact and the certificate, then hands the
+    # parsed pieces to `decision_core.book_from_allocation`, which decides.
+    ns = _exec(("allocator_book",), {"BASE": tmp_path,
                                      "allocator_heat": lambda: (0.2, "allocator book (ok)")})
     monkeypatch.setattr(ap, "read_certificate", lambda root: (None, "proof failed"))
     book, why = ns["allocator_book"]()
@@ -261,6 +267,27 @@ def test_a_rail_that_costs_growth_is_weakened_and_one_that_earns_is_left(tmp_pat
     d2 = missed_growth.run(write=True, today="2026-08-21")
     assert d2["calibration"]["position_inertia"] == pytest.approx(0.81)
     assert d2["rails"]["regime_hibernate"]["verdict"] == missed_growth.UNMEASURED
+
+
+def test_the_effective_heat_ceiling_is_a_registered_cap_that_never_cuts_the_floor() -> None:
+    """A NEW CAP IS ONLY LEGAL IF IT IS REGISTERED, BILLED, AND ABOVE THE FLOOR (2026-09-05).
+
+    `heat_policy.effective_ceiling` caps NOMINAL heat at what the book's independent risk earns,
+    so four sleeves that are one hidden factor cannot buy four bets' worth of room. It is a rail
+    (so `missed_growth` prices what it costs) and it clips into [floor, ceiling], so the 20%
+    stays deployed 24/7 whatever the correlation estimate says.
+    """
+    from research.heat_policy import effective_ceiling
+
+    r = rails.rail("effective_heat_ceiling")
+    assert r.kind == "cap" and r.measure in missed_growth.MEASURES
+    for h_eff in (0.01, 0.10, 0.20, 0.2999, 0.30):
+        cap, why, _d = effective_ceiling({"nominal": 0.30, "covariance": h_eff,
+                                          "factor": h_eff, "tail": h_eff})
+        assert HEAT_TARGET - 1e-12 <= cap <= HEAT_HARD_CEILING + 1e-12, why
+    # Unmeasured leaves the nominal bar: a broken input may not cost growth silently.
+    assert effective_ceiling(None)[0] == pytest.approx(HEAT_HARD_CEILING)
+    assert resolve(0.24, curve=GOOD_CURVE, effective_heat=None).total_heat == pytest.approx(0.24)
 
 
 def test_the_governance_fence_passes_on_this_tree() -> None:

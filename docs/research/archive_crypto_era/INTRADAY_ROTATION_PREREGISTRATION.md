@@ -1,5 +1,12 @@
 # Pre-registration — intraday rotation/continuation on Binance USD-M perps
 
+> **ARCHIVED 2026-09-05 — the retired crypto-exchange era.** This document is a HISTORICAL
+> RECORD, not a live mandate. The desk's traded and hunted universe is the MT5/Fusion Markets
+> book (principal order 2026-08-18); the crypto-exchange desk this study belonged to was
+> retired that day. Nothing here authorizes hunting, screening or scoring a crypto-exchange
+> universe. Kept because the protocol and the measured negative transfer; the venue does not.
+> See `docs/research/archive_crypto_era/README.md`.
+
 **Written 2026-08-04, BEFORE any bar of crypto data was downloaded for this study and before any
 backtest code existed.** Source: the principal's discretionary XAUUSD intraday book (11 trades,
 5 days, 0.1 lots, M5/M15, net +933.72 EUR, 10 winners, largest win 470.56 = 50.4% of P&L, single

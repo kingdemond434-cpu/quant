@@ -141,6 +141,7 @@ tools/*.exe
 # docs/research/COVERAGE_RATCHET.json and are committed; the raw report is regenerated on every
 # run and would otherwise churn a large file on every commit.
 coverage.json
+mt5cov.json
 .coverage
 htmlcov/
 

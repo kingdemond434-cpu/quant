@@ -3,16 +3,21 @@
 
 WHY THIS EXISTS. docs/research/canary_searches.md declares its own cadence -- "re-run at the START
 of every digging session AND at least every 4 DAYS" -- and §36 holds the file to it. But nothing
-ran the canaries. Nine cheap HTTP checks, promised every four days, executed by whoever remembered:
+ran the canaries. Eight cheap HTTP checks, promised every four days, executed by whoever remembered:
 the same "cadence by LLM memory is a reliability hole" that run_cadence's own docstring names, and
 the same shape the gap-register re-rank had until this cycle. The file's own history says it best:
 seeded 2026-07-19 with placeholder baselines and "never re-run -- so until today the baselines did
 not exist and no shift was detectable in principle."
 
 WHAT A CANARY IS FOR. Not to find edge. To notice that the ground moved BEFORE a collector breaks:
-free tiers enclosing, endpoints deprecating, a fallback chain that no longer falls back. C9 is the
-only one guarding a live data path, which is why an unreachable C9 is reported differently from an
-unreachable C2.
+free tiers enclosing, endpoints deprecating, a fallback chain that no longer falls back. Exactly
+one guards a live data path -- `LIVE_PATH_CANARY` -- which is why its being unreachable is
+reported differently from C2 being unreachable.
+
+WHICH ECOSYSTEM IT WATCHES (2026-09-05). The MT5/Fusion one, and only that one. Six of the nine
+original canaries watched crypto-exchange ground and were repointed rather than dropped; the
+ninth, a keyless Ethereum RPC, had no MT5 question to ask and was retired with its POST client.
+See the CANARIES table for the per-row reasoning.
 
 HONEST WHEN BLOCKED, AND THIS IS LOAD-BEARING. The Claude Code container proxies egress and answers
 403/000 to most of these hosts -- the same reason the recorders cannot run here. A canary that
@@ -58,33 +63,48 @@ _TIMEOUT = 15.0
 #: id -> (label, url, extractor). The extractor turns a response body into the ONE number or short
 #: string this canary tracks, because a diff over a whole page is noise and a diff over one
 #: measured quantity is a signal. Keep <=10 total, per the charter.
+#:
+#: REPOINTED AT THE MT5 UNIVERSE, 2026-09-05. Five of these watched crypto-exchange ground --
+#: `data.binance.vision`, the Binance derivatives changelog, a GitHub search for "funding rate
+#: arbitrage", a Korean-web search for 펀딩비 (funding fee), CryptoQuant's free tier, and a keyless
+#: Ethereum RPC. A canary is a RESEARCH CHANNEL: it decides which ecosystem the desk is told has
+#: moved, so leaving them pointed at Binance would have kept the retired universe on the desk's
+#: agenda every four days under the mandate that forbids exactly that. Each was replaced by the
+#: question its MT5 equivalent asks, NOT deleted -- an ecosystem-shift detector with holes in it
+#: is worse than one nobody repointed, because the gaps are invisible in the artifact.
 CANARIES: dict[str, tuple[str, str, str]] = {
-    "C1": ("GitHub repos: funding rate arbitrage",
+    "C1": ("GitHub repos: MetaTrader 5 algorithmic trading",
            "https://api.github.com/search/repositories"
-           "?q=funding+rate+arbitrage&sort=updated&per_page=5", "gh_total"),
+           "?q=metatrader5+algorithmic+trading&sort=updated&per_page=5", "gh_total"),
     "C2": ("Gitee Explore: quant trading (CN OSS)",
            "https://gitee.com/explore/finance", "len"),
-    "C3": ("data.binance.vision reachability + tree",
-           "https://data.binance.vision/", "len"),
-    "C4": ("Binance futures API changelog",
-           "https://developers.binance.com/docs/derivatives/change-log", "len"),
+    # The LIVE path: libs/data/cot_source.py reads this exact resource, so an unreachable C3 means
+    # the desk's positioning axis is about to go dark, not merely that the ecosystem moved.
+    "C3": ("CFTC COT public reporting reachability (live positioning path)",
+           "https://publicreporting.cftc.gov/resource/6dca-aqww.json?$limit=1", "len"),
+    # What the REGULATOR newly publishes -- the MT5 analogue of a venue changelog. A new CFTC
+    # dataset is a free data axis appearing; a vanished one is a collector about to break.
+    "C4": ("CFTC/Socrata dataset catalogue (new public series)",
+           "https://api.us.socrata.com/api/catalog/v1"
+           "?domains=publicreporting.cftc.gov&q=traders&limit=10", "len"),
     "C5": ("arXiv q-fin.TR submission rate",
            "http://export.arxiv.org/api/query?search_query=cat:q-fin.TR"
            "&sortBy=submittedDate&sortOrder=descending&max_results=100", "arxiv_total"),
-    "C6": ("Hummingbot commit velocity (30d)",
-           "https://api.github.com/repos/hummingbot/hummingbot/commits?per_page=100", "gh_commits"),
-    "C7": ("Naver: funding-fee arbitrage (KR web)",
-           "https://openapi.naver.com/v1/search/webkr.json?query=%ED%8E%80%EB%94%A9%EB%B9%84",
-           "len"),
-    "C8": ("CryptoQuant free-tier scope",
-           "https://cryptoquant.com/pricing", "len"),
-    "C9": ("keyless eth_getLogs across the public RPC chain",
-           "https://ethereum-rpc.publicnode.com", "rpc"),
+    "C6": ("nautilus_trader commit velocity (multi-asset OSS execution stack)",
+           "https://api.github.com/repos/nautechsystems/nautilus_trader/commits?per_page=100",
+           "gh_commits"),
+    "C7": ("Naver: overseas futures (해외선물, KR web)",
+           "https://openapi.naver.com/v1/search/webkr.json"
+           "?query=%ED%95%B4%EC%99%B8%EC%84%A0%EB%AC%BC", "len"),
+    "C8": ("Dukascopy free historical FX/metals tick scope",
+           "https://www.dukascopy.com/swiss/english/marketwatch/historical/", "len"),
 }
 
 #: The canary that guards a LIVE data path. Its failure is a different severity from the rest:
 #: the others warn that the ecosystem moved, this one warns that a collector is about to break.
-LIVE_PATH_CANARY = "C9"
+#: Was C9 (a keyless Ethereum RPC, retired with the crypto universe); it is now the CFTC COT
+#: endpoint, which is the one URL in this table a production reader actually depends on.
+LIVE_PATH_CANARY = "C3"
 
 
 def _get(url: str) -> tuple[int, str]:
@@ -97,44 +117,6 @@ def _get(url: str) -> tuple[int, str]:
         return e.code, ""
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
         return 0, str(e)[:120]
-
-
-def _rpc_post(url: str, method: str, params: list) -> tuple[int, str]:
-    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method,
-                       "params": params}).encode()
-    req = urllib.request.Request(
-        url, data=body, headers={"Content-Type": "application/json",
-                                 "User-Agent": "quant-canary/1.0"})
-    try:
-        with urllib.request.urlopen(req, timeout=_TIMEOUT, context=_CTX) as r:
-            return r.status, r.read(20_000).decode("utf-8", errors="ignore")
-    except urllib.error.HTTPError as e:
-        return e.code, ""
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
-        return 0, str(e)[:120]
-
-
-def _rpc(url: str) -> tuple[int, str]:
-    """C9: does a KEYLESS 700-block eth_getLogs still get ACCEPTED here?
-
-    That is the doc's stated question ("keyless eth_getLogs over a 700-block range"), and it is
-    the question that broke collectors in July (403s and range caps hit getLogs while other
-    methods kept working). The first implementation POSTed eth_blockNumber and tracked the HEAD
-    -- a number that advances every ~12s, so the canary read SHIFT on every single run: welded
-    ON, zero information, the exact cry-wolf shape that gets a detector acked into silence
-    (L1.37/L1.43). The tracked value is now CATEGORICAL (ok / denied:<class> / range-capped), so
-    PASS is the steady state and SHIFT means the acceptance policy itself moved.
-    """
-    status, body = _rpc_post(url, "eth_blockNumber", [])
-    if status != 200:
-        return status, body
-    m = re.search(r'"result"\s*:\s*"(0x[0-9a-f]+)"', body)
-    if not m:
-        return 200, body                     # extractor renders this as getLogs700=no-head
-    head = int(m.group(1), 16)
-    status, body = _rpc_post(url, "eth_getLogs", [
-        {"fromBlock": hex(head - 700), "toBlock": hex(head)}])
-    return status, body
 
 
 def _numeric_shift(prev: str, val: str, band: float = 0.10) -> bool | None:
@@ -165,19 +147,10 @@ def _extract(kind: str, body: str) -> str:
     if kind == "arxiv_total":
         m = re.search(r"<opensearch:totalResults[^>]*>(\d+)<", body)
         return f"total={m.group(1)}" if m else "total=?"
-    if kind == "rpc":
-        # CATEGORICAL acceptance verdict, never the head (the head advances every run). The
-        # error-class taxonomy mirrors the 07-26 shift log: denial, auth demand, range cap.
-        low = body.lower()
-        if re.search(r'"result"\s*:\s*\[', body):
-            return "getLogs700=ok"
-        if '"error"' in low:
-            if "range" in low or "limit" in low or "max" in low:
-                return "getLogs700=range-capped"
-            if "auth" in low or "unauthorized" in low or "api key" in low:
-                return "getLogs700=auth-required"
-            return "getLogs700=denied"
-        return "getLogs700=no-head" if "0x" not in low else "getLogs700=unparsed"
+    # The "rpc" kind and its `_rpc`/`_rpc_post` POST helpers were removed 2026-09-05 with C9, the
+    # keyless Ethereum getLogs canary. Nothing in this table POSTs any more, so keeping a
+    # JSON-RPC client here would be an unreachable path to a retired universe -- and an extractor
+    # no canary selects is exactly the decorative code the desk's own audits flag.
     return f"bytes={len(body)}"
 
 
@@ -205,7 +178,7 @@ def run_all() -> dict:
     base = _baselines()
     results: dict[str, dict] = {}
     for cid, (label, url, kind) in CANARIES.items():
-        status, body = (_rpc(url) if kind == "rpc" else _get(url))
+        status, body = _get(url)
         if status != 200:
             # NEVER "PASS". "We could not look" and "we looked and nothing moved" are opposite
             # facts, and a shift detector that conflates them reports blindness as stability.

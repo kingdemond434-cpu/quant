@@ -93,6 +93,30 @@ def test_unknown_symbols_are_reported_not_counted_as_diversification() -> None:
         assert "UNMEASURED" in why
 
 
+# ------------------------------------------------- 2b. and now it reaches the CAPITAL BUDGET
+
+def test_the_four_heat_breadth_reaches_the_heat_law_not_just_a_report() -> None:
+    """THE SAME DEFECT, ONE LAYER UP (2026-09-05). `fx_factors` measured currency concentration and
+    nothing changed because of it; `latent_factors` then measured covariance / latent-factor / tail
+    heat and the allocator REPORTED it after the solve, so H_eff bound nothing either. It binds
+    now: the breadth those four heats imply sets the CEILING on nominal heat, by the same
+    sqrt-breadth law `heat_budget` already applies to k_eff -- and the floor is untouched.
+    """
+    import sys as _sys
+    _sys.path.insert(0, str(DESK / "research"))
+    from research.heat_policy import HEAT_HARD_CEILING, HEAT_TARGET, effective_ceiling
+
+    one_bet = {"nominal": 0.28, "covariance": 0.26, "factor": 0.27, "tail": 0.25}
+    spread = {"nominal": 0.28, "covariance": 0.09, "factor": 0.10, "tail": 0.08}
+    assert effective_ceiling(one_bet)[0] == HEAT_TARGET, (
+        "four expressions of one factor must not earn the room four bets earn")
+    assert effective_ceiling(spread)[0] == HEAT_HARD_CEILING
+    # An unusable measurement NEVER widens the budget past the standing bar -- the same property
+    # this file already pins for the currency decomposition.
+    assert effective_ceiling(None)[0] <= HEAT_HARD_CEILING
+    assert effective_ceiling({"nominal": 0.28, "covariance": 1e-9})[0] <= HEAT_HARD_CEILING
+
+
 # ------------------------------------------------- 3. it constrains breadth, it does not size
 
 def test_the_module_exposes_no_sizing_authority() -> None:

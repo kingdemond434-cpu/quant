@@ -40,6 +40,14 @@ dependencies = [
     # Same class as certifi, found by the same new test: pinned for the VPS, declared nowhere.
     "psutil>=7.2.2,<8",        # scripts/watchdog.py -- process reaping on the live box
     "websockets>=16.0,<17",    # scripts/liquidation_listener.py -- TOP-LEVEL import, no guard
+    # Same class again, and this one took the MT5 money-path gate down (2026-09-04, CI run
+    # 33930005488): every desks/mt5/side_channels miner and the four research fetchers
+    # (fetch_sge_premium, fetch_fred, fetch_alfred, fetch_gld) import requests at MODULE SCOPE,
+    # tests/test_sge_premium.py imports the fetcher, and pytest aborts the whole desk suite on
+    # the first collection error -- so the floor, the capability graph and the PIT census never
+    # ran. Pinned in requirements-vps.txt only; a clean `pip install -e .` had no such module.
+    # Floor is production's exact pin, cap is the next major, per the doctrine above.
+    "requests>=2.34.2,<3",
 ]
 
 [project.optional-dependencies]
@@ -209,8 +217,13 @@ mypy_path = "."
 # libs/-coupling detector -- widening it to admit the import would be editing the guard to fit
 # the violation. Listing the rail here once already took CI red (2026-07-26); the rail's
 # protection is isolation, not type coverage.
+# 2026-09-05: commit dadac868 (an hourly sync commit, not a decision) deleted the Tier-3 rail
+# scripts/run_deadman_switch.py together with run_deadman_reconciliation.py,
+# run_deadman_stranded_sweep.py and run_trade_forensics.py while purging the Binance executors.
+# All four are restored byte-for-byte from dadac868^ and the three checkable ones are listed
+# again below. Only scripts/run_cashcarry_executor.py stays out: its retirement IS the MT5
+# mandate (2026-08-18), and listing an absent file makes mypy exit before checking anything.
 files = ["libs", "app", "migrations",
-         "scripts/run_cashcarry_executor.py",
          "scripts/run_deadman_reconciliation.py",
          "scripts/run_deadman_stranded_sweep.py",
          "scripts/reconcile_venue.py", "scripts/run_trade_forensics.py"]
@@ -219,9 +232,18 @@ files = ["libs", "app", "migrations",
 # `type: ignore[no-untyped-call]`s that are REQUIRED on the pinned pyarrow (>=24,<25) and read
 # as unused on 25.x. Without this override the two environments disagree about whether the file
 # is clean, and the disagreement surfaced as a deploy-gate failure rather than as a type error.
-# Scoped to the one module: warn_unused_ignores stays on everywhere else.
+# Scoped to these modules: warn_unused_ignores stays on everywhere else.
+#
+# 2026-09-05: bar_span.py:446 (pads.dataset) and perishability.py:239 (pq.read_schema) call the
+# same untyped pyarrow surface and carry the same ignore -- both comments SAY so and one even
+# cites this override by line ("pyproject:219") -- but neither module was ever added to the list,
+# so on 25.x mypy reported exactly two `unused-ignore` errors and the gate was red for the very
+# condition this override exists to absorb. The two candidate "fixes" are both wrong: deleting
+# the ignores reds the pinned (<25) box, and turning warn_unused_ignores off globally would hide
+# every genuinely stale ignore in the repo. Registering the modules that make the straddling
+# call is the only change that keeps both environments honest.
 [[tool.mypy.overrides]]
-module = ["libs.data.lake"]
+module = ["libs.data.lake", "libs.research.bar_span", "libs.research.perishability"]
 warn_unused_ignores = false
 
 [[tool.mypy.overrides]]

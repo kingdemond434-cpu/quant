@@ -88,6 +88,106 @@
    "repo": "ricequant/rqalpha",
    "host": "gitee",
    "why": "Gitee mirror of RQAlpha (concept only, non-commercial licence)"
+  },
+  {
+   "repo": "richmanbtc/mlbot_tutorial",
+   "why": "JP botter ML pipeline: feature/label discipline, walk-forward (method only; venue claims are fenced by FORBIDDEN_VENUES)"
+  },
+  {
+   "repo": "sharebook-kr/pykrx",
+   "why": "KR: KRX data access and investor-type flow tables (the KRW flow channel)"
+  },
+  {
+   "repo": "FinanceData/FinanceDataReader",
+   "why": "KR: market data reader; index and FX series"
+  },
+  {
+   "repo": "quantylab/rltrader",
+   "why": "KR: RL trader book code; stated reward/feature design"
+  },
+  {
+   "repo": "mlouielu/twstock",
+   "why": "TW: TWSE data and simple strategies"
+  },
+  {
+   "repo": "FinMind/FinMind",
+   "why": "TW: institutional-flow and margin datasets (法人籌碼)"
+  },
+  {
+   "repo": "thinh-vu/vnstock",
+   "why": "VN: HOSE/HNX data access; derivatives"
+  },
+  {
+   "repo": "zerodha/pykiteconnect",
+   "why": "IN: broker API client; order and margin mechanics"
+  },
+  {
+   "repo": "swapniljariwala/nsepy",
+   "why": "IN: NSE derivatives history"
+  },
+  {
+   "repo": "jugaad-py/jugaad-data",
+   "why": "IN: NSE/RBI data access"
+  },
+  {
+   "repo": "QuantConnect/Lean",
+   "why": "West: strategy library with explicit algorithms"
+  },
+  {
+   "repo": "quantopian/zipline",
+   "why": "West: the archived Quantopian engine and example algorithms"
+  },
+  {
+   "repo": "stefan-jansen/machine-learning-for-trading",
+   "why": "West: full pipelines with stated features and horizons"
+  },
+  {
+   "repo": "je-suis-tm/quant-trading",
+   "why": "West: many named strategies with stated rules"
+  },
+  {
+   "repo": "polakowo/vectorbt",
+   "why": "West: vectorised backtesting; example strategies"
+  },
+  {
+   "repo": "kernc/backtesting.py",
+   "why": "West: backtesting library; strategy examples"
+  },
+  {
+   "repo": "ranaroussi/quantstats",
+   "why": "West: performance analytics used across the retail-quant register"
+  },
+  {
+   "repo": "twopirllc/pandas-ta",
+   "why": "West: indicator library; what the retail register measures"
+  },
+  {
+   "repo": "letianzj/QuantResearch",
+   "why": "West: research notebooks with stated mechanisms"
+  },
+  {
+   "repo": "edtechre/pybroker",
+   "why": "West: ML strategy framework with walk-forward"
+  },
+  {
+   "repo": "goldmansachs/gs-quant",
+   "why": "West: sell-side toolkit; FX and rates analytics"
+  },
+  {
+   "repo": "wilsonfreitas/awesome-quant",
+   "why": "West: the hub list -- every region's libraries link from it"
+  },
+  {
+   "repo": "EA31337/EA31337",
+   "why": "MT5-native EA framework; entry conditions in source"
+  },
+  {
+   "repo": "darwinex/dwx-zeromq-connector",
+   "why": "MT4/MT5 bridge; execution mechanics"
+  },
+  {
+   "repo": "Tinkoff/invest-python",
+   "why": "RU: broker API client; MOEX instrument mechanics"
   }
  ],
  "queries": [
@@ -95,7 +195,22 @@
   "因子进化 自动化投研",
   "策略工厂 实盘交易 python",
   "alpha mining formulaic factor evolution",
-  "gflownet alpha generation"
+  "gflownet alpha generation",
+  "システムトレード 検証 バックテスト",
+  "日経225 先物 戦略 python",
+  "해외선물 자동매매 전략",
+  "코스피 백테스트 전략 python",
+  "台指期 策略 回測 python",
+  "algo trading nse python backtest",
+  "MQL5 expert advisor stars:>50",
+  "алготрейдинг стратегия бэктест python",
+  "estratégia trading b3 backtest python",
+  "estrategia trading backtest python bolsa",
+  "Handelsstrategie Backtest python",
+  "chiến lược giao dịch backtest python",
+  "strategi trading saham backtest python",
+  "strategia tradingowa backtest python gpw",
+  "altın forex strateji backtest python"
  ],
  "policy": "every mined claim enters the deepening queue as kind=repo_mechanism; the worker seat extracts an exact recipe or rejects; nothing bypasses the gauntlet"
 }

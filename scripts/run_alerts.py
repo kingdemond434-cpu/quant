@@ -162,19 +162,17 @@ def _poll_replies(topic: str) -> None:
             _PAGE_ACK.write_text(
                 f"{datetime.now(tz=UTC).isoformat()} {body[:120]}\n", "utf-8")
             cmd = body.split()[0].upper() if body.split() else ""
+            # The REARM command was removed 2026-09-05 (universe mandate). It re-armed
+            # `scripts/run_live_guard.py` -- the size governor for the retired cash-carry
+            # executor -- and lifted `data/CASHCARRY_KILL`. Both the guard and the executor are
+            # deleted, so the command could only ever have unlinked a kill file guarding nothing
+            # while reporting a successful re-arm to the principal's phone. An operator command
+            # that lies about what it did is worse than one that does not exist.
             if cmd == "REARM":
-                out = subprocess.run(
-                    [sys.executable, "scripts/run_live_guard.py", "--rearm",
-                     "principal-ntfy"], capture_output=True, text=True, timeout=60,
-                ).stdout.strip()
-                kill = Path("data/CASHCARRY_KILL")
-                lifted = ""
-                if kill.exists() and kill.read_text("utf-8").startswith("live_guard freeze"):
-                    kill.unlink()   # completes the human's order; other writers' kills stay
-                    lifted = "; freeze lifted"
+                out = ("REARM is retired: the cash-carry size governor it re-armed was deleted "
+                       "with the crypto-exchange universe (2026-09-05). Nothing was changed.")
                 with contextlib.suppress(Exception):
-                    _push(topic, "Quant desk: REARM received",
-                          f"{out or 'ladder re-armed'}{lifted} -- book resumes next tick")
+                    _push(topic, "Quant desk: REARM received", out)
         if last_id:
             _REPLY_STATE.write_text(
                 json.dumps({"last_id": last_id,
@@ -322,15 +320,13 @@ def _checks() -> list[tuple[str, str]]:
             lg_age = lg_age_h * 3600.0
     except (OSError, ValueError, TypeError) as exc:
         lg_absent = f"missing/unreadable ({type(exc).__name__})"
-    if lg_absent:
-        out.append(("live_guard_missing", f"data/live_guard.json {lg_absent} -- size "
-                    "governor and stage tripwires UNEVALUATED; executor fail-opens to full "
-                    "size; start: .venv/bin/python scripts/run_live_guard.py"))
-    if lg_age is not None and lg_age > 900:
-        out.append(("live_guard_dead", f"live guard stale {lg_age/60:.0f}min (cadence 5min) -- "
-                    "executor fail-opens to FULL SIZE + takers and stage demotion is "
-                    "unevaluated; a dead guard cannot write its own KILL file; restart: "
-                    ".venv/bin/python scripts/run_live_guard.py"))
+    # THE TWO live_guard ALERTS WERE REMOVED 2026-09-05 (universe mandate). They paged when
+    # `data/live_guard.json` was missing or stale, on the grounds that "the executor fail-opens to
+    # full size". That executor is deleted; the artifact now has no writer at all, so both alerts
+    # would fire on EVERY tick, for ever, about a size governor for a book that cannot trade.
+    # A permanently-firing pager row is the cry-wolf shape this desk fences elsewhere -- it trains
+    # the principal to ack the whole channel, which is how a real alert gets missed.
+    _ = (lg_absent, lg_age)     # read above; retained so the parse stays a measured no-op
     try:
         v = json.loads(Path("data/cadence_violation.json").read_text("utf-8"))
         out.append(("cadence_floor_violation", "review/safety cadence FLOOR breached: "

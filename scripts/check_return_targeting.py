@@ -63,12 +63,17 @@ _PASSING = frozenset({"OK"})
 #: prompt surfaces that reach a model. Scoped deliberately -- the ledger and research notes RECORD
 #: what the principal asked for verbatim, and rewriting a quotation to satisfy a fence would be
 #: falsifying the record.
+#: NARROWED 2026-09-05 (universe mandate). Six money-path entries left this scope because their
+#: FILES left the repo with the retired book: run_conviction_trader, run_llm_trader,
+#: resolve_paper_book, run_sleeve_allocator, run_trade_review, build_chart_context. They are
+#: removed rather than kept-and-skipped because a scope naming files that cannot be read reports
+#: "0 violations" over an empty set -- a fence measuring nothing while looking green, which is the
+#: L1.43 welded-gate shape this desk fences elsewhere. The MT5 money path is under desks/mt5/ and
+#: carries its own return-language discipline; adding it here is a decision for whoever wires it,
+#: not a silent widening by a cleanup.
 _SCOPE: tuple[str, ...] = (
     "docs/DISCRETIONARY_DESK.md", "docs/CONSTITUTION.md", "docs/PROJECT_HANDOFF.md",
     "ops/principal_doctrine.txt", "ops/crontab.manifest",
-    "scripts/run_conviction_trader.py", "scripts/run_llm_trader.py",
-    "scripts/resolve_paper_book.py", "scripts/run_sleeve_allocator.py",
-    "scripts/run_trade_review.py", "scripts/build_chart_context.py",
 )
 
 #: Goal language. A return figure near ANY of these is a target rather than a measurement.

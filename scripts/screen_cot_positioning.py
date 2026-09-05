@@ -10,9 +10,9 @@ data axis is idle capacity (L1.28a), and this one is idle on the desk's own prim
 THE ROW OFFERED THREE EXITS AND THE MANDATE CLOSED TWO OF THEM. R0562 was raised 2026-08-13 and
 said: wire it to a screen, REMAP IT TO CRYPTO CONTRACTS, or record it dormant. Five days later the
 principal's MT5 UNIVERSE MANDATE (2026-08-18) made the desk's primary universe the full
-MT5/Fusion market and forbade hunting a crypto-exchange universe at all -- which makes the crypto
-remap illegal and makes `COT_MAP`'s existing keying, already XAUUSD/EURUSD/XTIUSD and nine more,
-exactly right. Dormant was the third exit and it is not available either: all eleven mapped
+MT5/Fusion market and closed every exchange-native market to it -- which makes that remap illegal
+and makes `COT_MAP`'s existing keying, already XAUUSD/EURUSD/XTIUSD and nine more, exactly
+right. Dormant was the third exit and it is not available either: all eleven mapped
 instruments carry D1 bars in this desk's own lake, and the CFTC endpoint answered on 2026-08-20
 with a report dated 2026-08-11. Nothing is missing. So: wire it.
 

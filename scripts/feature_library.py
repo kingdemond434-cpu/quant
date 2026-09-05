@@ -51,6 +51,14 @@ MECH = ROOT / "data/mechanism_board.json"
 # ---------------------------------------------------------------- REGISTERED FEATURES
 # Seeded from features this desk has ACTUALLY computed. Nothing aspirational: every row below
 # corresponds to code that ran. `tested_constructions` is what was carried through to a verdict.
+#
+# SEVERAL `producer` PATHS NO LONGER EXIST (micro_factory.py, funding_persistence.py,
+# run_axis_shadows.py), deleted 2026-09-05 under the universe mandate. The rows STAY, and that is
+# the point of this file: it is a RECORD of what was computed and what it measured, not a list of
+# things that can be re-run today. Deleting the rows would delete the desk's evidence -- including
+# the IC +0.432 microstructure result that half the institutional memory argues from -- to make a
+# registry agree with a directory listing. A producer path here reads as provenance ("this is
+# where the number came from"), never as an instruction to run it.
 FEATURES = [
     # -- microstructure state variables from the moat (micro_factory.py, commit ae4045b)
     {

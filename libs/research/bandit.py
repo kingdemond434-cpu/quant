@@ -80,9 +80,36 @@ SOURCE_ARM: dict[str, str] = {
     # external arm and cannot drown the desk's own mechanism arm.
     "repo_miner": "external_screen", "deep_forest": "external_screen",
     "world_crawler": "external_screen",
+    # THE WORLD FOREST, ONE SOURCE PER REGION CLUSTER (2026-09-05). `deep_forest` stays the
+    # Chinese founding forest; every other cluster carries its own source name so the research
+    # P&L, which censuses hypotheses BY SOURCE before rolling them up to an arm, can learn which
+    # forests pay. All of them screen at external-claim volume and share the external arm.
+    "deep_forest_jp": "external_screen", "deep_forest_kr": "external_screen",
+    "deep_forest_tw_hk": "external_screen", "deep_forest_sea": "external_screen",
+    "deep_forest_in": "external_screen", "deep_forest_south_asia": "external_screen",
+    "deep_forest_anz": "external_screen", "deep_forest_mena": "external_screen",
+    "deep_forest_africa": "external_screen", "deep_forest_west": "external_screen",
+    "deep_forest_eu": "external_screen", "deep_forest_nordics": "external_screen",
+    "deep_forest_east_eu": "external_screen", "deep_forest_ru": "external_screen",
+    "deep_forest_latam": "external_screen", "deep_forest_institutional": "external_screen",
     "tail_alpha": "new_mechanism", "anomaly_factory": "new_mechanism",
     "action_counterfactuals": "exit_improvement",
     "drift_monitor": "conditional_state_edge",
+    # THE NINE SEARCH POPULATIONS (2026-09-05, libs/research/search_populations.py). They all
+    # run inside `alpha_evolution`, but each is a different KIND of research and the bandit
+    # cannot learn which pays if they share one source name. Arms follow what the population
+    # DOES, not where it runs: an enumerator and a TPE surrogate are new mechanisms, a GP over
+    # the elite is a mutation, the zoo is an external screen, and the three derived populations
+    # inherit the arm of the ledger they mine.
+    "alpha_evolution:gp": "mutate_survivor",
+    "alpha_evolution:gflownet": "new_mechanism",
+    "alpha_evolution:symreg": "new_mechanism",
+    "alpha_evolution:program_synthesis": "new_mechanism",
+    "alpha_evolution:bayesian": "new_mechanism",
+    "alpha_evolution:zoo_mutation": "external_screen",
+    "alpha_evolution:graveyard_derived": "failure_derived",
+    "alpha_evolution:causal_derived": "cross_asset_signal",
+    "alpha_evolution:claims_derived": "external_screen",
 }
 KIND_ARM: dict[str, str] = {
     "coverage_gap": "conditional_state_edge", "dead_phase": "conditional_state_edge",
