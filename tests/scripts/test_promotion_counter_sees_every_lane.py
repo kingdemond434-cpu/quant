@@ -122,3 +122,58 @@ def test_a_scalp_candidate_is_counted_end_to_end(bzs, tmp_path, monkeypatch) -> 
     assert set(out.get("promotion_ready_names") or []) == {
         "gold_scalp_m5_asia", "gold_scalp_m15_london"}, (
         "the counter must NAME what it counted; a bare number is what let this hide")
+
+
+def test_a_scalp_sleeves_real_day_count_reaches_the_dashboard(bzs, tmp_path, monkeypatch) -> None:
+    """`days_active` vs `days` -- the same defect as the status separator, one field over.
+
+    `shadow_forward` and `qquant_shadow` publish `days_active`; `scalp_shadow` published `days`.
+    The tile read only the first, so three gold scalp sleeves that had been on their forward
+    clock since 2026-08-22 displayed as `day 0/14` for a fortnight -- reading, to anyone looking,
+    as if they had only just started and had thirteen more days to wait.
+    """
+    desk = tmp_path / "desks" / "mt5"
+    (desk / "reports" / "shadow").mkdir(parents=True)
+    (desk / "data").mkdir(parents=True)
+    (desk / "reports" / "shadow" / "scalp_shadow_state.json").write_text(json.dumps({
+        "sleeves": {
+            # No forward_start, so the tile must fall back to the row's own day count -- which is
+            # the exact path that was reading the wrong field name.
+            "xau_m15_anti_breakout": {"status": "ACCUMULATING", "n": 0, "n_historical": 69,
+                                      "days": 14, "expectancy_r": None},
+        }}), "utf-8")
+    monkeypatch.setattr(bzs, "ROOT", tmp_path)
+    monkeypatch.setattr(bzs, "DESK", desk)
+
+    row = next(r for r in bzs._funnel({"n": 0})["forward_detail"]
+               if r["name"] == "xau_m15_anti_breakout")
+    assert row["days"] == 14, (
+        f"the scalp sleeve reports day {row['days']}/14 when its lane says 14 -- the tile is "
+        "reading `days_active` only again, and a sleeve at the gate looks like one that just "
+        "started")
+
+
+def test_the_lane_publishes_both_day_field_names(bzs) -> None:
+    """Fixed at the WRITER too, not only the reader.
+
+    Normalising the reader fixes today's dashboard; publishing both names is what stops the next
+    consumer -- a fence, a script, an export -- rediscovering the same zero. Neither half alone is
+    the fix: the reader must be tolerant AND the writer must be conventional.
+    """
+    src = (_ROOT / "desks" / "mt5" / "research" / "scalp_shadow.py").read_text("utf-8")
+    assert '"days_active": days' in src, (
+        "scalp_shadow no longer publishes days_active; every consumer that knows only the "
+        "convention will read 0 for a sleeve that has been running for weeks")
+
+
+def test_an_empty_forward_count_says_why_it_is_empty(bzs) -> None:
+    """Zero must distinguish "quiet market" from "this sleeve has no clock at all".
+
+    Both publish n=0 and demand opposite responses: one waits, the other means the state file is
+    not persisting and the sleeve can never mature however many trades it takes. Three gold scalp
+    sleeves sat at n=0 with 39/65/69 observations tagged historical and nothing said which.
+    """
+    src = (_ROOT / "desks" / "mt5" / "research" / "scalp_shadow.py").read_text("utf-8")
+    assert '"forward_empty_reason"' in src, "a zero forward count is unexplained again"
+    assert "no prior clock for this sleeve" in src and "no trade has occurred since" in src, (
+        "the two zero-causes are not distinguished; that is the whole point of the field")
