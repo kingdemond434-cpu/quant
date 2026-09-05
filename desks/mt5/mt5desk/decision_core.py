@@ -1236,9 +1236,28 @@ def family_signal_hour(window: dict) -> int:
 
 def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
     """The last CLOSED bar when it is the sleeve's signal bar, else None. The in-progress bar
-    is excluded by the caller, exactly as the replay sees it."""
+    is excluded by the caller, exactly as the replay sees it.
+
+    ONE DECISION PER DAY ON EVERY CHART, which `hour == sig_hour` alone only delivered on H1.
+    An hour holds one H1 bar, twelve M5 bars and sixty M1 bars, so the bare hour test would have
+    fired a sleeve certified to take ONE entry a day twelve or sixty times -- the same defect
+    `family_calendar_month` had with its `hour == 0` test when the M1..D1 ladder landed, and the
+    same correction: also require the bar to START the hour.
+
+    H1 IS UNCHANGED BYTE FOR BYTE. Every H1 bar begins on the hour, so `minute == 0` is always
+    true there and this test cannot alter a single existing decision. It is the sub-hourly charts
+    that gain a rule they never had.
+
+    WHY THE FIRST BAR OF THE HOUR AND NOT THE LAST. It preserves the H1 relationship exactly: the
+    H1 bar labelled N closes at N+1:00 and the executor acts on it as the last closed bar, so the
+    sleeve acts on the first bar whose label is the signal hour, as soon as that bar closes. On M5
+    that is the N:00 bar acting at N:05 -- the same "act on the signal bar the moment it is
+    final", one chart down.
+    """
     last_bar = closed.index[-1]
-    return last_bar if last_bar.hour == sig_hour else None
+    if last_bar.hour != sig_hour:
+        return None
+    return last_bar if last_bar.minute == 0 else None
 
 
 def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,

@@ -1280,6 +1280,63 @@ def _net_routes(symbols: set[str]) -> None:
         except Exception as exc:                                # noqa: BLE001
             log(f"[netting] {symbol} route unmeasured ({type(exc).__name__}: {exc})")
 
+#: Bars an H1 family read has always fetched, and the market time it stands for: 400 hours, about
+#: 16 trading days, which is what the daily-range and day-state helpers need behind them.
+_FAMILY_H1_BARS = 400
+#: Bars per hour on each chart. The bar COUNT is scaled by this so a family is not handed the same
+#: number of bars on every chart: 400 M1 bars is under seven hours, and a daily-range family
+#: handed that would compute its range from a fraction of a day and take a position on it.
+#:
+#: THE INVARIANT IS "ENOUGH BARS ON EVERY CHART", NOT "THE SAME MARKET TIME", and the two pull in
+#: opposite directions at the ends of the ladder. Scaling alone would give D1 seventeen bars --
+#: fewer than ATR_N needs -- so the floor below raises it to 60, which is 60 DAYS, far more market
+#: time than H1's 400 hours. That asymmetry is deliberate: each chart gets what its own lookbacks
+#: require, and a rule that insisted on equal market time would starve the slow end to match the
+#: fast one.
+#: MINUTES PER BAR rather than bars per hour, so every value is an integer literal. The inverse
+#: form needed `"D1": 1 / 24`, and a division is not a literal -- which mattered beyond style:
+#: `test_gateway_adapter` builds its harness by `ast.literal_eval`-ing the gateway's module-level
+#: constants, and a BinOp there is silently uncarried, so the executor raised NameError inside the
+#: harness and six passing tests failed for a reason none of them was about.
+_BAR_MINUTES: dict[str, int] = {"M1": 1, "M5": 5, "M15": 15, "M30": 30,
+                                "H1": 60, "H4": 240, "D1": 1440}
+#: Hard cap on one `copy_rates_from_pos` call. 400 hours of M1 is 24,000 bars; the terminal will
+#: serve it, but the family helpers only need the recent days and the rest is latency on a box
+#: that already runs out of memory. 6,000 M1 bars is a little over four days, which covers every
+#: day-state and daily-range lookback the families use.
+_FAMILY_MAX_BARS = 6000
+#: The full ladder the sweep hunts, mapped to MT5's own constants. `scalp_exec` carries M1..H1 for
+#: its own lane; this one adds H4 and D1 because the family sweep certifies on them and a family
+#: executor that stopped at H1 was the whole reason `GATEWAY_FAMILY_TIMEFRAMES` had to exist.
+_FAMILY_TF_ATTR: dict[str, str] = {
+    "M1": "TIMEFRAME_M1", "M5": "TIMEFRAME_M5", "M15": "TIMEFRAME_M15",
+    "M30": "TIMEFRAME_M30", "H1": "TIMEFRAME_H1", "H4": "TIMEFRAME_H4", "D1": "TIMEFRAME_D1",
+}
+
+
+def _family_chart(s: dict) -> tuple[str, object, int]:
+    """(timeframe, mt5 timeframe constant, bars to fetch) for one family sleeve row.
+
+    THE CHART COMES FROM THE CERTIFICATE, NOT FROM A CONSTANT. Every `family_market` path here
+    used to call `copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, 400)` unconditionally, so a
+    certificate earned on M5 would have had its signals computed from HOURLY bars -- a live
+    position in a strategy nobody certified, under the name of one that was, with every artifact
+    agreeing. `executables.GATEWAY_FAMILY_TIMEFRAMES` existed to keep those rows out of the book
+    entirely while that was true.
+
+    ABSENT MEANS H1, the desk-wide spelling: every certificate written before the M1..D1 ladder is
+    an H1 one and naming H1 explicitly would rename all of them at once. So an old row resolves to
+    exactly what it resolved to before, including its 400-bar read.
+    """
+    tf = str(((s.get("params") or {}).get("timeframe") or "H1")).upper()
+    attr = _FAMILY_TF_ATTR.get(tf)
+    if attr is None or not hasattr(mt5, attr):
+        return tf, None, 0                       # caller refuses the row by name; never guesses
+    minutes = _FAMILY_H1_BARS * 60                    # the market time an H1 read has always seen
+    bars = int(min(_FAMILY_MAX_BARS, round(minutes / _BAR_MINUTES.get(tf, 60))))
+    return tf, getattr(mt5, attr), max(bars, 60)
+
+
 def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
     """Execute hunt-certified family sleeves with replay-faithful semantics (GAP 124).
 
@@ -1316,9 +1373,16 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             log(f"[{name}] FAMILY-EXEC refused: family/selector has no exact executable")
             continue
         sig_hour = family_signal_hour(WINDOWS[selector])
-        h1 = mt5.copy_rates_from_pos(s["symbol"], mt5.TIMEFRAME_H1, 0, 400)
+        tf, tf_const, n_bars = _family_chart(s)
+        if tf_const is None:
+            # REFUSED BY NAME, never traded on a substitute chart. This is the one outcome that
+            # must not fall back to H1: computing an M5 certificate's signals from hourly bars is
+            # a live position in a strategy nobody certified.
+            log(f"[{name}] FAMILY-EXEC refused: timeframe {tf!r} has no MT5 chart on this box")
+            continue
+        h1 = mt5.copy_rates_from_pos(s["symbol"], tf_const, 0, n_bars)
         if h1 is None or len(h1) < 60:
-            log(f"[{name}] FAMILY-EXEC: bars unavailable; skipped")
+            log(f"[{name}] FAMILY-EXEC: {tf} bars unavailable; skipped")
             continue
         # The last CLOSED bar: current in-progress bar is excluded, exactly as replay sees it.
         closed = h1_frame(h1).iloc[:-1]
