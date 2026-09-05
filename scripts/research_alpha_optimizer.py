@@ -26,10 +26,23 @@ Read-only. Run from repo root.
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from libs.research.search_strategy import evolve_search_strategies
+ROOT = Path(__file__).resolve().parent.parent
+
+# PATH BOOTSTRAP, AND IT MUST PRECEDE THE `libs` IMPORT. `python scripts/x.py` puts `scripts/` on
+# sys.path, never the repo root, so `from libs...` resolves only when the project happens to be
+# pip-installed into whichever interpreter the scheduler picked -- and the runners choose between
+# `.venv/bin/python` and `python3` at runtime. A script that imports under one and not the other
+# is a scheduling coin flip, and the failure is silent wherever a caller swallows the exception.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.research.search_strategy import (  # noqa: E402  (must follow the bootstrap)
+    evolve_search_strategies,
+)
 
 LEDGER = Path("data/decision_ledger.json")
 OUT = Path("data/research_alpha_optimizer.json")

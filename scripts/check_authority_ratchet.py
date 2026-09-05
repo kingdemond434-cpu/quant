@@ -29,10 +29,19 @@ from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
-from libs.ops.canon_lease import hold
-from libs.ops.repair_invoke import request_repair
-
 ROOT = Path(__file__).resolve().parent.parent
+
+# PATH BOOTSTRAP, AND IT MUST PRECEDE THE `libs` IMPORT. `python scripts/x.py` puts `scripts/` on
+# sys.path, never the repo root, so `from libs...` resolves only when the project happens to be
+# pip-installed into whichever interpreter the scheduler picked -- and the runners choose between
+# `.venv/bin/python` and `python3` at runtime. A script that imports under one and not the other
+# is a scheduling coin flip, and the failure is silent wherever a caller swallows the exception.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.ops.canon_lease import hold  # noqa: E402  (must follow the bootstrap)
+from libs.ops.repair_invoke import request_repair  # noqa: E402
+
 DESK = ROOT / "desks" / "mt5"
 FLOORS = ROOT / "data" / "authority_ratchet.json"
 ALARM = ROOT / "data" / "AUTHORITY_ALARM.txt"

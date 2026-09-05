@@ -3340,3 +3340,19 @@ SYSTEMD unit="quant-hourly-discovery.timer" on="*:35" exec="ops/run_hourly_disco
 # nominal heat floor -- which is the check that must never be skipped because it is cheap.
 # EVIDENCE: desks/mt5/reports/ABSOLUTE_CEILING_STATUS.json
 15 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_absolute_ceiling.py >> data/cro_ai_logs/absolute_ceiling.log 2>&1
+
+# MINER MAINTENANCE (principal 2026-09-05: "make sure the fund miner and implementer crawler all
+# miners r always optimal and the 3 hr every local fixer here maintains them"). Runs all six
+# miner and seat fences on one clock and REPAIRS what it safely can -- chiefly job locks whose
+# owner is provably dead, which are the cheapest miner outage there is: a job killed by the OOM
+# killer leaves its lock behind and every later run refuses to start until the 45min stale timer
+# expires. Liveness vetoes age, so a live holder's lock is never reclaimed.
+#
+# TWO OF THE SIX FENCES WERE ON NO SCHEDULE AT ALL when this was written -- check_miner_health
+# and check_organ_readiness, the two that answer "is this miner producing anything real" and
+# "could this seat even start". Detection with no actuator is this desk's most repeated defect;
+# this is the actuator. It exits non-zero only on UNREPAIRABLE, never on a successful repair,
+# so its scheduler never learns to ignore it.
+# EVIDENCE: desks/mt5/reports/MINER_MAINTENANCE.json (per-check verdict, every repair, every
+# thing it could not repair and why)
+20 */3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_miner_maint.lock .venv/bin/python scripts/run_miner_maintenance.py >> data/cro_ai_logs/miner_maintenance.log 2>&1

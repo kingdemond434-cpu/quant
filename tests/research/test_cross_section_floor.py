@@ -241,28 +241,14 @@ def test_fence_counts_unreadable_files_in_its_denominator(monkeypatch, tmp_path)
 # ------------------------------------------------- the locked-mirror invariant (the live repair)
 
 
-def test_shadow_and_backfill_share_one_cross_section_floor() -> None:
-    """scripts/backfill_oi_ls_oos.py declares itself the LOCKED MIRROR of the shadow's
-    construction. Until 2026-08-13 only the backfill floored thin dates, so the OOS evidence was
-    earned on a construction the live forward clock does not run (L1.61).
-    """
-    shadow = (ROOT / "scripts/run_derivative_shadow.py").read_text("utf-8")
-    backfill = (ROOT / "scripts/backfill_oi_ls_oos.py").read_text("utf-8")
-
-    import re
-    s = re.search(r"^_MIN_SYMBOLS\s*=\s*(\d+)", shadow, re.M)
-    b = re.search(r"^MIN_SYMBOLS\s*=\s*(\d+)", backfill, re.M)
-    assert s and b, "both mirrors must declare a cross-section floor constant"
-    assert int(s.group(1)) == int(b.group(1)), (
-        "the locked mirrors' cross-section floors have drifted apart")
-
-
-def test_shadow_forward_returns_applies_the_floor() -> None:
-    """Fails if the wiring is removed from the live clock."""
-    import ast
-    src = (ROOT / "scripts/run_derivative_shadow.py").read_text("utf-8")
-    fn = next(n for n in ast.walk(ast.parse(src))
-              if isinstance(n, ast.FunctionDef) and n.name == "_forward_returns")
-    code = ast.unparse(fn)
-    assert "measure_cross_section" in code, "the live forward clock lost its cross-section floor"
-    assert "_keep.mask" in code, "the measured mask must actually be applied"
+# ---------------------------------------------------------------------------------------------
+# RETIRED 2026-09-05. The tests removed here drove `scripts/run_derivative_shadow.py` and
+# `scripts/backfill_oi_ls_oos.py`, deleted in 1657d5f7 with the
+# retired crypto desk (MT5 universe mandate, 2026-08-18). They had been failing on
+# ModuleNotFoundError ever since, which is not a verdict on anything -- it is a test for code the
+# desk decided on purpose not to have, and a permanently red test is a disabled gate that also
+# trains its reader to skip the file.
+#
+# Everything in this file that tests code which still EXISTS is untouched: the properties worth
+# keeping are asserted above against modules that are here.
+# ---------------------------------------------------------------------------------------------

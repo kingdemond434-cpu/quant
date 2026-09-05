@@ -123,34 +123,14 @@ class TestTheLadderNeverWritesTheRealRegistry:
         assert after == before, "the live registry must be untouched by a test run"
 
 
-class TestItReachesStageB:
-    def test_a_registered_survivor_lists_as_UNTRACKED_rather_than_vanishing(
-            self, tmp_path: Path, monkeypatch) -> None:
-        """END TO END, and the point of the whole wire: the ladder writes, Stage-B reads, and the
-        survivor appears -- unscoreable but VISIBLE, which is the difference between an owed clock
-        and a forgotten one."""
-        import scripts.run_axis_shadows as ras
-
-        reg = tmp_path / "reg.json"
-        register_owed(["stranded|survivor"], source="run_live_ladder", registry=reg)
-        monkeypatch.setattr(ras, "_REGISTRY", reg)
-        tracked, untracked = ras._all_axes()
-
-        assert "stranded|survivor" not in tracked, "no target symbol -- must not be scored"
-        names = [u["axis"] for u in untracked]
-        assert "stranded|survivor" in names
-        row = next(u for u in untracked if u["axis"] == "stranded|survivor")
-        assert row["verdict"] == "UNTRACKED"
-        assert "invisible candidate" in str(row["note"])
-
-    def test_curated_axes_still_win_a_name_collision(self, tmp_path: Path, monkeypatch) -> None:
-        """A considered decision in _AXES outranks anything auto-registered, so a re-registration
-        can never redirect a live clock's target."""
-        import scripts.run_axis_shadows as ras
-
-        curated = next(iter(ras._AXES))
-        reg = tmp_path / "reg.json"
-        register_owed([curated], source="t", registry=reg)
-        monkeypatch.setattr(ras, "_REGISTRY", reg)
-        tracked, _ = ras._all_axes()
-        assert tracked[curated] == ras._AXES[curated], "the curated tuple must survive intact"
+# ---------------------------------------------------------------------------------------------
+# RETIRED 2026-09-05. The tests removed here drove `scripts/run_axis_shadows.py`, deleted
+# in 1657d5f7 with the
+# retired crypto desk (MT5 universe mandate, 2026-08-18). They had been failing on
+# ModuleNotFoundError ever since, which is not a verdict on anything -- it is a test for code the
+# desk decided on purpose not to have, and a permanently red test is a disabled gate that also
+# trains its reader to skip the file.
+#
+# Everything in this file that tests code which still EXISTS is untouched: the properties worth
+# keeping are asserted above against modules that are here.
+# ---------------------------------------------------------------------------------------------

@@ -7,7 +7,6 @@ that reads like a verdict.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -161,30 +160,14 @@ def test_trade_management_counts_trades_that_never_left_the_first_rung() -> None
 # ------------------------------------------------------------------------------ the producer
 
 
-def test_the_producer_refuses_an_empty_book(tmp_path: Path) -> None:
-    """UNMEASURED, never a clean scorecard (L1.28a)."""
-    from scripts.run_execution_quality import build_report
-    rep = build_report(tmp_path)
-    assert rep["status"] == "UNMEASURED"
-    assert rep["n_closes"] == 0
-
-
-def test_the_producer_labels_the_book_as_paper(tmp_path: Path) -> None:
-    """Every conviction row is paper:true. A scorecard that does not say so invites a reader to
-    treat it as live-capital evidence."""
-    import json
-
-    from scripts.run_execution_quality import build_report
-    (tmp_path / "data").mkdir()
-    n = MIN_N + 3
-    entries, closes, paths = _book(n)
-    (tmp_path / "data/conviction_book.jsonl").write_text(
-        "\n".join(json.dumps(e) for e in entries), "utf-8")
-    (tmp_path / "data/paper_book_pnl.json").write_text(json.dumps({"marks": closes}), "utf-8")
-    (tmp_path / "data/paper_book_marks.jsonl").write_text(
-        "\n".join(json.dumps({"key": k, **row}) for k, rows in paths.items() for row in rows),
-        "utf-8")
-    rep = build_report(tmp_path)
-    assert rep["status"] == "MEASURED"
-    assert "PAPER" in rep["book"]
-    assert "moves no size" in rep["sizing_note"]
+# ---------------------------------------------------------------------------------------------
+# RETIRED 2026-09-05. The tests removed here drove `scripts/run_execution_quality.py`,
+# deleted in 1657d5f7 with the
+# retired crypto desk (MT5 universe mandate, 2026-08-18). They had been failing on
+# ModuleNotFoundError ever since, which is not a verdict on anything -- it is a test for code the
+# desk decided on purpose not to have, and a permanently red test is a disabled gate that also
+# trains its reader to skip the file.
+#
+# Everything in this file that tests code which still EXISTS is untouched: the properties worth
+# keeping are asserted above against modules that are here.
+# ---------------------------------------------------------------------------------------------

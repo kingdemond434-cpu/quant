@@ -34,13 +34,15 @@ OPS = ROOT / "ops"
 
 #: Named exemptions, with the reason. An exemption without a reason is an oversight with a
 #: config entry, and the reason is what makes it reviewable when the blocker clears.
-_EXEMPT: dict[str, str] = {
-    "run_cashcarry_executor.py": (
-        "ORDER PATH, and the Codex seat rewrote ~840 lines of it on the VPS branch. A three-line "
-        "edit here would manufacture a merge conflict on the one file where a bad resolution can "
-        "place a trade. Bootstrap it AFTER that branch merges -- see TestKnownExemption below, "
-        "which fails once the exemption is spent"),
-}
+#:
+#: EMPTY SINCE 2026-09-05, and the way it emptied is worth recording. The one entry exempted
+#: `scripts/run_cashcarry_executor.py` because it was the ORDER PATH and a rewrite of it was in
+#: flight on another branch -- a good reason to defer a three-line edit. That file was then
+#: DELETED with the retired crypto desk (MT5 universe mandate, 2026-08-18), which spends the
+#: exemption in the strongest possible way: there is no file to bootstrap and no merge to wait
+#: for. The exemption outlived its subject and its guard test then failed on a missing path,
+#: which is the exemption ledger working exactly as designed.
+_EXEMPT: dict[str, str] = {}
 
 
 def _ops_invoked_scripts() -> list[Path]:
@@ -121,18 +123,22 @@ class TestTheForensicsDefectSpecifically:
             "the exact defect the bootstrap was added to remove")
 
 
-class TestKnownExemption:
-    def test_the_executor_is_named_rather_than_silently_skipped(self) -> None:
-        """scripts/run_cashcarry_executor.py is the one ops script left without a bootstrap.
+class TestNoExemptionOutlivesItsSubject:
+    """An exemption for a file that no longer exists is a permission nobody can revoke.
 
-        DELIBERATE, and recorded here so it is a decision rather than an oversight: the Codex seat
-        rewrote ~840 lines of that file on the VPS branch, and it is the order path. A three-line
-        edit here would manufacture a merge conflict on the one file where a bad resolution can
-        place a trade. It gets the bootstrap after that branch is merged, not before.
-        """
-        src = (ROOT / "scripts" / "run_cashcarry_executor.py").read_text("utf-8")
-        if _has_bootstrap(src):
-            pytest.skip("executor now has a bootstrap -- exemption is spent, delete this test")
-        assert _imports_libs(src), (
-            "the exemption assumes this file imports libs; if it no longer does, the exemption is "
-            "stale and should be removed rather than left as decoration")
+    `_EXEMPT` above is a list of scripts allowed to skip the bootstrap, each with a written
+    reason. Its one entry named a file that was later deleted, so the exemption sat in the
+    config granting a waiver to nothing -- harmless here only because the guard test failed
+    loudly on the missing path. This asserts the general property instead of that one case:
+    every exemption names a file that is really there, or it is not an exemption, it is litter.
+    """
+
+    def test_every_exemption_names_a_file_that_exists(self) -> None:
+        missing = [n for n in _EXEMPT if not (ROOT / "scripts" / n).exists()]
+        assert not missing, (
+            f"exemption(s) for script(s) that do not exist: {missing}. Delete the entry -- a "
+            "waiver whose subject is gone can never be reviewed away, it can only be inherited.")
+
+    def test_every_exemption_carries_a_reason(self) -> None:
+        thin = [n for n, why in _EXEMPT.items() if len(why or "") < 40]
+        assert not thin, f"exemption(s) with no usable reason: {thin}"

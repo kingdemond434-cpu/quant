@@ -37,9 +37,26 @@ from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from libs.ops.repair_invoke import request_repair
-
 ROOT = Path(__file__).resolve().parent.parent
+
+# PATH BOOTSTRAP, AND IT MUST PRECEDE THE `libs` IMPORT. Running a file by path puts that file's
+# DIRECTORY on sys.path -- `scripts/` -- never the repo root, so `from libs...` resolved only when
+# something else had already put the root there (an editable install, a caller that imported this
+# as a module, pytest's rootdir handling). Invoked the way a scheduler actually invokes it,
+# `python scripts/check_miner_conversion.py`, it died on ModuleNotFoundError before reading a
+# single artifact.
+#
+# MEASURED 2026-09-05 by `scripts/run_miner_maintenance.py`, whose whole job is running these
+# fences on a clock: this one came back FAILING with `No module named 'libs'`. The fence was
+# scheduled, ran, exited non-zero every time, and the non-zero read as "conversion is bad" rather
+# than as "the fence cannot start" -- the two states this desk keeps insisting are different. The
+# same shape is live on the VPS right now in daily_cycle's conservation, factor_residual and
+# state_admission steps.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.ops.repair_invoke import request_repair  # noqa: E402  (must follow the bootstrap)
+
 DESK = ROOT / "desks" / "mt5"
 INTEL = [DESK / "data" / "intelligence", ROOT / "data" / "intelligence"]
 CERTS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
