@@ -96,17 +96,38 @@ TARGETS = [
 #: never sized a position; the desk fell back to the derived formula every pass and reported the
 #: allocator ARMED. A decision organ with no clock is a claim, not a capability.
 #:
-#: The allocator's own cadences (its docstring): fast ~5 min re-solves on the cached world
-#: population, normal ~15 min rebuilds evidence and the no-trade filter, heavy hourly resamples
-#: the worlds and re-measures the growth curve. ONE allocator process at a time; the mode is the
-#: most overdue of the three. The gateway consumes the newest book every minute and the
-#: no-trade filter, not this clock, decides whether the book is worth trading toward
-#: (dE[log W] > turnover + slippage + the uncertainty buffer). The principal's target is capital
-#: following the freshest information state every minute; this is the honest solve cadence.
+#: The cadences: fast re-solves EVERY MINUTE on the cached world population, normal rebuilds
+#: evidence and the no-trade filter every 15 min, heavy resamples the worlds and re-measures the
+#: growth curve hourly. ONE allocator process at a time; the mode is the most overdue of the
+#: three. The gateway consumes the newest book every minute and the no-trade filter, not this
+#: clock, decides whether the book is worth trading toward (dE[log W] > turnover + slippage +
+#: the uncertainty buffer), so a faster clock makes the book fresher without making it churn.
+#:
+#: This line used to read "fast ~5 min" and end "the principal's target is capital following the
+#: freshest information state every minute; this is the honest solve cadence" -- an accurate
+#: admission that the desk was five times slower than its own target. It is no longer five
+#: minutes, so the admission is gone rather than left to rot into a false claim.
 PERIODIC = [
     {"name": "pf_allocator", "match": "pf_allocator.py",
      "script": "research/pf_allocator.py",
-     "cadence_s": {"fast": 300, "normal": 900, "heavy": 3600}},
+     # EVERY MINUTE (principal, 2026-09-05: "all reactions must be every minute all allocations
+     # etc"). The fast leg was 300s, so the desk's quickest possible response to anything -- a
+     # macro release, a cross-asset move, an event -- was five minutes, while the gateway was
+     # already consuming the newest book every minute. The solve was the bottleneck, not the
+     # execution.
+     #
+     # SAFE BECAUSE OF THE GUARD ABOVE, NOT BECAUSE THE SOLVE IS FAST. `tick_periodic` refuses to
+     # launch when an allocator is already running (`is_running(p["match"])`), so a 60s cadence
+     # cannot stack solves on an 8GB box. If a fast pass takes 90s the desk gets a solve every
+     # ~90s instead of every 300s -- strictly fresher, never concurrent. The clock is a floor on
+     # staleness, not a promise about runtime.
+     #
+     # Only the FAST leg moves. Normal still rebuilds evidence every 15 min and heavy still
+     # resamples the world population and re-measures the growth curve hourly, because those are
+     # the expensive passes and running them every minute would starve the gauntlet and the
+     # brain seats that share this box. Fast re-solves on the CACHED worlds, which is what makes
+     # a one-minute cadence affordable at all.
+     "cadence_s": {"fast": 60, "normal": 900, "heavy": 3600}},
 ]
 
 

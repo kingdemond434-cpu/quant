@@ -16,18 +16,29 @@ for _p in (str(_DESK), str(_DESK / "research")):
 
 import research_supervisor as rs  # noqa: E402
 
-CAD = {"fast": 300, "normal": 900, "heavy": 3600}
+#: READ FROM THE SOURCE, NOT RETYPED. This was a literal copy of the cadence and it went red the
+#: moment the fast leg moved from 300s to 60s -- a true statement about a stale copy, not about
+#: the supervisor. What is worth pinning is the BEHAVIOUR: most-overdue wins heaviest-first, and
+#: a heavier pass resets the lighter clocks. The numbers belong to the module.
+CAD = dict(rs.PERIODIC[0]["cadence_s"])
 
 
 def test_the_most_overdue_mode_wins_heaviest_first() -> None:
+    """The ORDERING is the rule; the clocks are the module's business.
+
+    These probe times were literals tuned to a 300s fast leg, so moving the leg to 60s made
+    them assert the old schedule rather than the ordering. Derived from the live cadence now:
+    each probe sits just past the mode it should trigger and short of the next one up.
+    """
     assert rs._allocator_mode({}, 10_000.0, CAD) == "heavy"
-    st = {"pf_allocator_heavy": {"last_spawn": 9_000.0},
-          "pf_allocator_normal": {"last_spawn": 9_000.0},
-          "pf_allocator_fast": {"last_spawn": 9_000.0}}
-    assert rs._allocator_mode(st, 9_100.0, CAD) is None
-    assert rs._allocator_mode(st, 9_400.0, CAD) == "fast"
-    assert rs._allocator_mode(st, 9_950.0, CAD) == "normal"
-    assert rs._allocator_mode(st, 12_700.0, CAD) == "heavy"
+    t0 = 9_000.0
+    st = {f"pf_allocator_{m}": {"last_spawn": t0} for m in ("heavy", "normal", "fast")}
+    assert rs._allocator_mode(st, t0 + CAD["fast"] - 1.0, CAD) is None
+    assert rs._allocator_mode(st, t0 + CAD["fast"] + 1.0, CAD) == "fast"
+    assert rs._allocator_mode(st, t0 + CAD["normal"] + 1.0, CAD) == "normal"
+    assert rs._allocator_mode(st, t0 + CAD["heavy"] + 1.0, CAD) == "heavy"
+    # and the ordering holds even when every clock is overdue at once
+    assert rs._allocator_mode(st, t0 + CAD["heavy"] * 10, CAD) == "heavy"
 
 
 def test_a_tick_launches_the_due_mode_and_resets_the_lighter_clocks(tmp_path, monkeypatch) -> None:
@@ -44,9 +55,11 @@ def test_a_tick_launches_the_due_mode_and_resets_the_lighter_clocks(tmp_path, mo
     assert calls[0][1][-3:] == ["research/pf_allocator.py", "--mode", "heavy"]
     for mode in ("heavy", "normal", "fast"):
         assert state[f"pf_allocator_{mode}"]["last_spawn"] == 100_000.0
-    # nothing is due four minutes later; the fast clock is due after five
-    assert rs.tick_periodic(state, 100_240.0, spawn) == []
-    assert rs.tick_periodic(state, 100_301.0, spawn) == ["pf_allocator:fast"]
+    # Nothing is due until the fast clock comes round; then fast, and only fast, is launched.
+    # Derived from the live cadence so this pins the RULE rather than a particular clock.
+    fast_s = CAD["fast"]
+    assert rs.tick_periodic(state, 100_000.0 + fast_s - 1.0, spawn) == []
+    assert rs.tick_periodic(state, 100_000.0 + fast_s + 1.0, spawn) == ["pf_allocator:fast"]
     assert state["pf_allocator_heavy"]["last_spawn"] == 100_000.0
 
 
