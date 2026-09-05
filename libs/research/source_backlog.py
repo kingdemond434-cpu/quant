@@ -64,7 +64,8 @@ from pydantic import BaseModel, ConfigDict
 #: THE ID IS THE FIRST NUMBER IN THE RANGE. A merged card is one entry with one identity, and the
 #: range is part of its heading rather than part of its name -- so the trailing `-14` is consumed
 #: here and the card's name starts where the writer thought it did.
-_CARD_RE = re.compile(r"^### (\d+)(?:[-\u2013\u2014]\d+)?\.\s+(.+?)\s+—\s+grade:\s*(.+?)\s*$", re.MULTILINE)
+_CARD_RE = re.compile(
+    r"^### (\d+)(?:[-\u2013\u2014]\d+)?\.\s+(.+?)\s+—\s+grade:\s*(.+?)\s*$", re.MULTILINE)
 #: The §33 disposition marker the miners write, e.g. `[§33: deferred(2026-08-24) tier:2]`,
 #: `[§33: killed -> docs/graveyard.md eodhd_paid_vendor]`, `[§33: wired -> data/x.jsonl]`.
 _S33_RE = re.compile(r"\[§33:\s*(?P<verb>[a-z]+)\s*(?:\((?P<date>\d{4}-\d{2}-\d{2})\))?")

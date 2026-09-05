@@ -74,7 +74,8 @@ from pydantic import BaseModel, ConfigDict
 #: THE ID IS THE FIRST NUMBER IN THE RANGE. A merged card is one entry with one identity, and the
 #: range is part of its heading rather than part of its name -- so the trailing `-14` is consumed
 #: here and the card's name starts where the writer thought it did.
-_ITEM_RE = re.compile(r"^### (?P<cid>\d+)(?:[-\u2013\u2014]\d+)?\.\s+(?P<card>.+?)\s*$", re.MULTILINE)
+_ITEM_RE = re.compile(
+    r"^### (?P<cid>\d+)(?:[-\u2013\u2014]\d+)?\.\s+(?P<card>.+?)\s*$", re.MULTILINE)
 #: The inline disposition tag. Tolerant of "S33"/"section 33" so an ASCII-only writer still counts.
 _DISP_RE = re.compile(
     r"\[(?:§|S|section\s*)33:\s*(?P<verb>[a-z-]+)\s*"
