@@ -561,3 +561,100 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
                        state=str(state or ""),
                        state_worlds=int(state_detail.get("n_worlds", 0.0)),
                        state_optimum=float(h_state))
+
+
+def measured_ceiling(curve: dict[float, float], *, floor: float = HEAT_TARGET,
+                     fallback: float = HEAT_HARD_CEILING,
+                     tolerance: float = CERTIFY_TOLERANCE) -> tuple[float, str]:
+    """The highest heat THIS opportunity set supports, measured on the curve rather than decreed.
+
+    THE PRINCIPAL REMOVED THE FIXED 30% CAP (2026-09-05): "if growth optimum permits 32 35 40 45
+    wtv in future w new edges etc it can use those w 20 as minimum floor". The 20% floor stays.
+
+    Deleting the constant outright would have been the wrong reading of that instruction, and the
+    constant itself says why. `HEAT_HARD_CEILING = 0.30` is not a round number somebody liked: it
+    records a measurement taken 2026-09-02 across 256 sampled worlds on the 109-sleeve matrix,
+    where the robust score ran +0.00133/day at the free optimum, +0.00072 at 20%, +0.00011 at 25%
+    and NEGATIVE at 30%. On the book as it stood, 30% already destroyed wealth in the worlds the
+    desk has to survive. Removing the bound and allowing 45% would not have been aggression, it
+    would have been sizing into a region the desk had already measured as loss-making.
+
+    The principal's own reasoning is the resolution: the constraint should be ECONOMIC, not
+    arbitrary. So the bound stops being a constant and becomes a reading of the growth curve. When
+    new edges raise the curve and it still climbs at 42%, this returns 42% and the allocator may
+    deploy it. When the opportunity set is thin, it returns something below 30% and the allocator
+    is held tighter than the old constant ever held it.
+
+    THREE PROPERTIES MAKE THAT SAFE, and each is the difference between aggression and gambling:
+
+      * NEVER PAST THE LAST MEASURED POINT. A heat nobody sampled is not a heat anybody certified.
+        The curve must actually be measured out to 42% before 42% can be deployed, so the ceiling
+        follows evidence rather than extrapolation -- which is the exact failure mode of Kelly
+        sizing on an overestimated edge.
+      * NEVER WHERE GROWTH HAS TURNED. The bound is the last heat still within `tolerance` of the
+        peak rate and still positive. Past that the book is paying real growth for exposure.
+      * ABSENCE IS NEVER PERMISSION. Too few points, an unreadable curve or a non-positive peak
+        all fall back to the recorded constant. A missing measurement must never read as
+        "unlimited", which is how a monitoring gap becomes a margin call.
+
+    Returns (ceiling, reason). The reason is written into the allocation artifact so a reader can
+    see WHY the book was allowed as much heat as it was.
+    """
+    if len(curve) < 3:
+        return fallback, (f"UNMEASURED: {len(curve)} points on the growth curve, need 3 -- "
+                          f"holding the recorded {fallback:.0%} bound. Absence is not permission.")
+    pts = sorted(curve.items())
+    peak_h, peak_g = max(pts, key=lambda kv: kv[1])
+    if peak_g <= 0:
+        return floor, (f"peak growth is {peak_g:+.5f}/day, non-positive at every heat measured -- "
+                       f"held at the {floor:.0%} mandate floor; no exposure is the growth optimum "
+                       f"and only the floor keeps the desk in the market at all.")
+
+    # The last heat still buying growth: within tolerance of the peak rate, and positive.
+    bar = peak_g * (1.0 - tolerance)
+    supported = [h for h, g in pts if h >= peak_h and g >= bar and g > 0.0]
+    ceiling = max(supported) if supported else peak_h
+    measured_to = max(h for h, _ in pts)
+
+    if ceiling >= measured_to - 1e-9:
+        # The curve is still climbing where the sampling stopped. The bound is the edge of the
+        # evidence, not the edge of the opportunity: say so, so somebody widens the sweep.
+        return measured_to, (
+            f"measured ceiling {measured_to:.1%}: growth still within {tolerance:.0%} of its "
+            f"{peak_g:+.5f}/day peak at the HIGHEST heat sampled. The bound is the edge of the "
+            f"measurement, not of the opportunity -- sweep further out to earn more.")
+
+    return max(ceiling, floor), (
+        f"measured ceiling {ceiling:.1%}: growth peaks {peak_g:+.5f}/day at H={peak_h:.1%} and "
+        f"stays within {tolerance:.0%} of it up to {ceiling:.1%}, then turns. Curve sampled to "
+        f"{measured_to:.1%}.")
+
+
+def heat_accounting(raw: float, robust: float, curve: dict[float, float],
+                    *, floor: float = HEAT_TARGET) -> dict:
+    """The three heat numbers and what the mandate costs, kept where a reader can audit them.
+
+    The principal's instruction was explicit that the floor must not hide inside the optimum:
+    "A real Tier-6 system should measure the incremental growth/drawdown cost of that policy
+    continuously, rather than hiding it." So the artifact carries the unconstrained answer, the
+    robust answer, what was actually deployed, whether the floor was the binding constraint, and
+    the measured growth given up when it was.
+
+    A floor that is never audited is a belief. A floor whose cost is measured every pass is a
+    decision, and the evidence is there to overturn it if it is wrong.
+    """
+    ceiling, why = measured_ceiling(curve, floor=floor)
+    deployed = min(max(robust, floor), ceiling)
+    doc = {"heat_raw": round(float(raw), 6), "heat_robust": round(float(robust), 6),
+           "heat_deployed": round(float(deployed), 6),
+           "heat_ceiling": round(float(ceiling), 6), "ceiling_reason": why,
+           "heat_floor": round(float(floor), 6),
+           "floor_binding": bool(robust < floor - 1e-9),
+           "ceiling_binding": bool(robust > ceiling + 1e-9)}
+    if doc["floor_binding"] and len(curve) >= 3:
+        pts = sorted(curve.items())
+        at_floor = min(pts, key=lambda kv: abs(kv[0] - floor))[1]
+        at_robust = min(pts, key=lambda kv: abs(kv[0] - robust))[1]
+        doc["growth_cost_of_floor_per_day"] = round(float(at_robust - at_floor), 8)
+        doc["growth_cost_of_floor_per_year"] = round(float((at_robust - at_floor) * 252.0), 6)
+    return doc

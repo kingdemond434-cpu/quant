@@ -67,6 +67,8 @@ from libs.portfolio.robust_elog import (  # noqa: E402
 from research.heat_policy import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
+    heat_accounting,
+    measured_ceiling,
     MIN_STATE_WORLDS,
     StateCurve,
     enforce_family_cap,
@@ -1284,8 +1286,17 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                           if heavy else ({}, f"{mode} clock: the global curve stands"))
     _log(f"state: id={current_state or '(none)'} ({adm_why}); {curves_why}")
 
+    # THE CEILING IS MEASURED, NOT DECREED (principal, 2026-09-05: the fixed 30% cap is removed;
+    # "if growth optimum permits 32 35 40 45 wtv in future w new edges etc it can use those w 20
+    # as minimum floor"). `measured_ceiling` reads the highest heat THIS opportunity set still
+    # buys growth at, never past the last heat actually sampled, and falls back to the recorded
+    # constant when the curve cannot be read -- absence is never permission. So a richer book
+    # earns more than 30% and a thin one is held tighter than 30% ever held it.
+    ceiling_now, ceiling_why = measured_ceiling(curve, floor=HEAT_TARGET)
+    _log(f"heat ceiling: {ceiling_why}")
+
     verdict = resolve(free.total_heat, curve=curve, target=HEAT_TARGET,
-                      hard_ceiling=HEAT_HARD_CEILING, mandate=True,
+                      hard_ceiling=ceiling_now, mandate=True,
                       readiness=ready, readiness_why=ready_why,
                       effective_heat=eff_pre, state=current_state, curves=curves,
                       allocator_ok=(bool(free.heat) and math.isfinite(free.mean_log_growth)
@@ -1573,6 +1584,15 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "filled": filled, "shortfall": round(shortfall, 6),
             "readiness": round(verdict.readiness, 4), "floor": round(verdict.floor, 6),
             "readiness_why": ready_why,
+            # THE MANDATE'S PRICE, MEASURED EVERY PASS. The principal's instruction on removing
+            # the fixed cap was explicit that the 20% floor must not hide inside the optimum:
+            # "measure the incremental growth/drawdown cost of that policy continuously, rather
+            # than hiding it". So the artifact carries the unconstrained answer, the robust one,
+            # what was deployed, which bound bit, and what the floor gave up when it was the
+            # thing that bit. A floor nobody audits is a belief; a floor whose cost is on the
+            # dashboard every pass is a decision, with the evidence to overturn it.
+            **heat_accounting(raw=free.total_heat, robust=verdict.total_heat, curve=curve,
+                              floor=HEAT_TARGET),
             # THE CEILING THE BOOK'S INDEPENDENCE EARNED, and the four heats behind it. `binding`
             # above reads "effective_ceiling" when this is what bound rather than the nominal bar.
             "effective_ceiling": round(verdict.effective_ceiling, 6),
