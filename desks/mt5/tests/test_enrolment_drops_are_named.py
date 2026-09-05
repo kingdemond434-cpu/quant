@@ -81,7 +81,13 @@ class TestTheCanonLevelRefusalIsAnnounced:
         assert sa.authorized_runs(base, lanes=("h1",)) == []
         assert sa.DROPPED_CERTIFICATES, "the whole canon was refused with no report"
         why = sa.DROPPED_CERTIFICATES[0]["why"]
-        assert "gate_policy" in why and "NO certificate can enrol" in why
+        # ASSERTED ON THE PROPERTY, NOT THE SENTENCE. The message gained the list of artifacts it
+        # tried when the sealed canon became a fallback, and a fence pinned to one phrasing would
+        # have to be edited every time the message got MORE useful.
+        assert "attestation" in why
+        assert "NOTHING can enrol" in why or "NO certificate can enrol" in why
+        assert all(rel in why for rel, _ in sa.CANON_SOURCES), (
+            "a whole-canon refusal must name every artifact it looked in")
         assert "1 survivor row" in sa.DROPPED_CERTIFICATES[0]["certificate"]
 
 

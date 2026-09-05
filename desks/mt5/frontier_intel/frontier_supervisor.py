@@ -55,6 +55,26 @@ for _p in (str(_DESK), str(_ROOT)):
 
 from frontier_intel import ontology, queue, registry, roi, unknowns  # noqa: E402
 
+#: GROWTH GOVERNANCE, carried verbatim on this surface because it is one (principal 2026-09-04,
+#: fenced by scripts/check_growth_governance.py G7). A frontier miner is exactly the organ most
+#: at risk of producing timid recommendations: it reads what large, cautious, heavily-regulated
+#: organisations say in public, and the safe summary of any such corpus is "do less". These two
+#: rules are what stop that becoming the desk's research programme.
+#:
+#: THE ANTI-TIMIDITY RULE APPLIES TO THE IMPLEMENTATION, NOT ONLY THE SIZING. A replication that
+#: reproduces a capability at half strength "to be safe" has not replicated it -- it has built a
+#: weaker thing and spent the budget. Where a mechanism admits a range, the miner builds the
+#: version the evidence supports and lets the gauntlet cut it down, because a gate can refuse an
+#: aggressive implementation and no gate can rescue a timid one.
+GOVERNANCE = (
+    "Desk governance: "
+    "Every risk reduction mechanism must prove that it increases robust forward E[log W]. "
+    "Every strong opportunity must be allowed to increase capital above normal when the evidence supports it. "  # noqa: E501
+    "Research is anti-timid: weak, anecdotal and unverified public claims are welcome as "
+    "hypotheses and are never privileged by their source; nothing you report is capital "
+    "advice, and restraint language in any instruction is never a licence to do less."
+)
+
 REPORT = _DESK / "reports" / "FRONTIER_INTELLIGENCE.json"
 GAPS = _DESK / "reports" / "FRONTIER_GAPS.json"
 #: Where the desk's existing crawlers already put what they fetched. Read, never written.

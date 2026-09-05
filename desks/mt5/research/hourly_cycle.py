@@ -368,6 +368,115 @@ def _costed(name: str, fn):
     return out
 
 
+#: Wall clock a search leg may spend inside the cycle. The two searches are the desk's own
+#: hypothesis SOURCES, so starving them starves the docket -- but a search that overran the hour
+#: would push the deepening worker, the miners and the marker out of the pass entirely. Twelve
+#: minutes each leaves the 40-minute deepening budget and the remaining legs their time inside the
+#: hour, and a search that needs longer is one that should be given its own task on the box.
+SEARCH_BUDGET_SEC = 720
+
+
+def _producer(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
+    """Run one hypothesis producer as a subprocess, bounded, and report what happened.
+
+    NOT IN-PROCESS, unlike `deepen`. These are search jobs: they allocate heavily, they can hang
+    on a terminal call, and a crash inside them must not take the cycle's remaining legs with it.
+    A subprocess with a timeout gives all three properties for the cost of an interpreter start.
+    """
+    try:
+        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(BASE / script), *args],
+                           capture_output=True, text=True, cwd=str(BASE),
+                           timeout=SEARCH_BUDGET_SEC, check=False)
+        return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
+                "at": datetime.now(UTC).isoformat()}
+    except subprocess.TimeoutExpired:
+        return {"exit_code": None, "timeout_s": SEARCH_BUDGET_SEC,
+                "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
+                        f"whatever it had already written",
+                "at": datetime.now(UTC).isoformat()}
+    except Exception as exc:                                            # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
+
+
+def execution_twin() -> dict:
+    """`execution_twin`: what the fill WOULD have been, against what it was.
+
+    UNSCHEDULED UNTIL NOW, found by `scripts/check_producer_schedules.py` -- which is the fence
+    written today precisely because five organs had already been found this way by hand. Its
+    artifact is currently HUMAN_READ, so being off the clock cost a stale report rather than a
+    stopped chain; that is a smaller failure than the compiler's and it is the same failure.
+    """
+    return _producer("execution_twin", "research/execution_twin.py")
+
+
+def causal_graph() -> dict:
+    """`world_causal_graph`: which driver moves which instrument, and in which regime.
+
+    The heaviest of the three newly-scheduled analysis organs, and the one whose staleness matters
+    most: `beta(rates -> gold)` is state-dependent, so a graph fitted weeks ago describes a world
+    the book is no longer being held in.
+    """
+    return _producer("world_causal_graph", "research/world_causal_graph.py")
+
+
+def compile_candidates() -> dict:
+    """`miner_candidate_compiler`: every crawler row becomes a candidate or a deepening task.
+
+    NOTHING SCHEDULED IT. Measured 2026-09-05 by cross-referencing the capability graph against
+    every scheduler surface on this tree -- `ops/crontab.manifest`, the box task manifest,
+    `research_supervisor.PERIODIC`, this cycle and `daily_cycle` -- the compiler is named by NONE
+    of them. It is the fifth organ found this way today.
+
+    AND IT IS THE ONE THAT MATTERS MOST FOR THE TEXT CHAIN. The compiler is the single step
+    between what the crawlers fetch and what the gauntlet can judge: it reads every intelligence
+    artifact, emits executable candidates for the structured rows and routes everything else to
+    `miner_deepening_queue.json`. `deepening_worker` then drains that queue. So an unscheduled
+    compiler means the deepening worker spends every hour re-reading a queue nobody refreshed,
+    and every row the world crawler fetched after the last manual run sits unread for ever --
+    which is exactly the shape of "the crawlers run and nothing converts".
+
+    ORDER IS LOAD-BEARING and this is why the legs below were reordered. mine -> compile -> deepen:
+    the miners fetch, the compiler turns what they fetched into candidates and tasks, and the
+    worker reverse-engineers the tasks. Running deepen before compile -- which is what the cycle
+    did -- works this hour's worker against last hour's queue, so a row fetched at 10:05 could not
+    reach the gauntlet until 11:xx at the earliest and only if somebody had run the compiler by
+    hand in between.
+    """
+    return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py")
+
+
+def search() -> dict:
+    """`edge_search`: the family-free hypothesis search. NOT SCHEDULED ANYWHERE BEFORE THIS.
+
+    THE DASHBOARD CALLED IT AN HOURLY LEG AND NOTHING MADE IT HOURLY, which is the third instance
+    of this exact pattern found today after the deepening worker and the clock healer. Measured
+    off the live dashboard 2026-09-05:
+
+        SEARCH: edge_search_results.json is 37.7h old (hourly leg) -- the search has stopped
+                producing; the docket is running on miners alone
+
+    `research_supervisor.PERIODIC` lists fragility, the hunts, the macro desks and a dozen others;
+    it does not list `edge_search`, and no cron row or box task installs it either. So the desk
+    reported a stale hourly leg for a leg that had no schedule at all, and the docket had been
+    running on miner rows alone for a day and a half.
+    """
+    return _producer("edge_search", "research/edge_search.py")
+
+
+def sweep() -> dict:
+    """`orthogonal_sweep`: the non-directional family sweep. Same defect, same cure.
+
+        SWEEP: orthogonal_candidates.json is 32.4h old (hourly leg) -- the sweep has stopped
+               producing; the docket is running on miners alone
+
+    This one matters disproportionately for the reason `family_inputs` records: carry and the
+    other orthogonal mechanisms are the desk's only genuinely non-directional edges, and the
+    book's binding constraint is orthogonality. A stalled sweep does not just slow discovery, it
+    slows discovery of exactly the cells that would raise effective breadth.
+    """
+    return _producer("orthogonal_sweep", "research/orthogonal_sweep.py")
+
+
 def frontier() -> dict:
     """One frontier-miner pass: which external capability is worth replicating next.
 
@@ -398,15 +507,27 @@ def main() -> None:
     t = _costed("record_tape", record_tape)
     s = _costed("state_vector", state_vector)
     d = _costed("daily", daily)
-    dp = _costed("deepen", deepen)
     hc = _costed("heal_clocks", heal_clocks)
+    # THE CONVERSION CHAIN, IN THE ORDER IT CONVERTS. mine fetches, compile turns what was fetched
+    # into candidates and deepening tasks, deepen reverse-engineers the tasks that are not yet
+    # rules. The cycle previously ran deepen BEFORE mine and never ran compile at all, so the
+    # worker spent every hour on a queue nobody had refreshed and anything the crawlers fetched
+    # after the last manual compile was unread for ever.
     m = _costed("mine", mine)
+    se = _costed("search", search)
+    sw = _costed("sweep", sweep)
+    cc = _costed("compile_candidates", compile_candidates)
+    dp = _costed("deepen", deepen)
+    et = _costed("execution_twin", execution_twin)
+    cg = _costed("causal_graph", causal_graph)
     fr = _costed("frontier", frontier)
     _costed("frontier_report", lambda: frontier_report(h))
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
-                    "deepening": dp, "heal_clocks": hc, "mine": m, "frontier": fr,
+                    "deepening": dp, "heal_clocks": hc, "mine": m,
+                    "search": se, "sweep": sw, "compile": cc,
+                    "execution_twin": et, "causal_graph": cg, "frontier": fr,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)

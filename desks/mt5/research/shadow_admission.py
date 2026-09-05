@@ -467,6 +467,55 @@ def _drop(name: object, why: str) -> None:
     print(line, file=sys.stderr, flush=True)
 
 
+#: The canon, in the order it is trusted. THE GAUNTLET'S FRESH REPORT FIRST, THE SEALED CANON
+#: SECOND -- and the second entry is the whole point of this tuple.
+#:
+#: MEASURED 2026-09-05, and it is the largest silent stop on the desk. `authorized_runs` read
+#: `reports/UNIVERSAL_SURVIVORS.json` and nothing else. That file is the external gauntlet's
+#: OUTPUT, so when the gauntlet fails the file is stale or absent -- and an absent file reads as
+#: `gate_policy = None`, which trips the whole-canon policy refusal and returns ZERO authorized
+#: runs. Not "the newest certificates cannot enrol": NOTHING can enrol, including certificates
+#: that passed all ten gates days earlier and are sitting in the sealed canon with a valid
+#: attestation.
+#:
+#: The dashboard was showing exactly that shape and it read as four unrelated faults:
+#:     GAUNTLET: canon last swept 60.8h ago ... the desk gauntlet or the cert pull stopped
+#:     healed: FAILING MT5-Gauntlet: last result 1
+#:     CERTIFIED-NOT-ENROLLED: external.USDZAR.overnight_gap_decay ... 91 hours ago, no clock
+#:     CERTIFIED-NOT-ENROLLED: external.AUDCHF / CADCHF / GBPCHF ... 117-142 hours, no clock
+#: One cause: the gauntlet crashes, its report goes missing, and enrolment silently drops to zero
+#: for every certificate the desk has ever earned.
+#:
+#: THIS IS NOT A LOOSENING, and the distinction is exact. `is_exact_policy` still runs on whatever
+#: file is used, and `all_ten_pass` still runs per row -- a canon without the exact ten-gate
+#: attestation is still refused whole. What changes is WHICH ARTIFACT carries the attestation: the
+#: sealed `data/UNIVERSAL_SURVIVORS.canon.json` is the same certificates under the same policy,
+#: dated, and it is already what the promoter, the allocator and `alpha_genome` read as the canon.
+#: Enrolling on the last sealed canon while the gauntlet is down is strictly better than enrolling
+#: nothing, and it is the same evidence either way.
+CANON_SOURCES: tuple[tuple[str, str], ...] = (
+    ("reports/UNIVERSAL_SURVIVORS.json", "the gauntlet's latest sweep"),
+    ("data/UNIVERSAL_SURVIVORS.canon.json", "the last SEALED canon"),
+)
+
+
+def _canon(base: Path) -> tuple[dict, str]:
+    """(canon document, where it came from). Prefers the fresh sweep, falls back to the seal.
+
+    A source is used only if it carries the exact ten-gate attestation, so the fallback cannot
+    admit anything the primary would have refused -- it can only find the same certificates in
+    the artifact that still has them.
+    """
+    first: dict = {}
+    for rel, what in CANON_SOURCES:
+        doc = _read(base / rel)
+        if not first:
+            first = doc
+        if is_exact_policy(doc.get("gate_policy")):
+            return doc, f"{rel} ({what})"
+    return first, CANON_SOURCES[0][0]
+
+
 def authorized_runs(base: Path = BASE,
                     lanes: tuple[str, ...] = ("h1", "scalp")) -> list[dict]:
     """Exactly-specified RUNNABLE certificates: symbol, selector, family AND certified params.
@@ -494,7 +543,7 @@ def authorized_runs(base: Path = BASE,
     # policy mismatch must not leave the previous pass's drops standing as if they were this
     # pass's findings. This list always describes the run that just happened, never a backlog.
     DROPPED_CERTIFICATES.clear()
-    universal = _read(base / "reports" / "UNIVERSAL_SURVIVORS.json")
+    universal, canon_from = _canon(base)
     if not is_exact_policy(universal.get("gate_policy")):
         # THE LARGEST SILENT DROP OF ALL, and this desk has already paid for it once.
         # `is_exact_policy`'s own docstring records 2026-09-02: "this is the whole reason the desk
@@ -507,10 +556,11 @@ def authorized_runs(base: Path = BASE,
         # itself instead of being re-diagnosed from first principles a second time.
         n = len(universal.get("survivors") or {})
         _drop(f"<entire canon: {n} survivor row(s)>",
-              f"gate_policy on UNIVERSAL_SURVIVORS.json is not the exact ten-gate attestation "
-              f"({universal.get('gate_policy')!r}); every certificate in the canon is refused "
-              f"together, so NO certificate can enrol until the canon is re-minted under the "
-              f"exact policy")
+              f"NO canon on this tree carries the exact ten-gate attestation. Tried, in order: "
+              f"{', '.join(rel for rel, _ in CANON_SOURCES)}. The last read carried "
+              f"{universal.get('gate_policy')!r}; every certificate is refused together, so "
+              f"NOTHING can enrol until one of those artifacts is re-minted under the exact "
+              f"policy. If the gauntlet is failing, the SEALED canon is the one to check first")
         return []
     runs: list[dict] = []
     for name, row in (universal.get("survivors") or {}).items():
