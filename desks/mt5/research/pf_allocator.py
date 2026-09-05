@@ -54,6 +54,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 
 from mt5desk.gateway_config_fallback import MAX_SLEEVE_HEAT_SHARE  # noqa: E402
 
+from libs.portfolio.latent_factors import crisis_share_from_drift  # noqa: E402
 from libs.portfolio.robust_elog import (  # noqa: E402
     AllocationResult,
     SleeveEvidence,
@@ -66,6 +67,10 @@ from libs.portfolio.robust_elog import (  # noqa: E402
 from research.heat_policy import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
+    heat_accounting,
+    measured_ceiling,
+    MIN_STATE_WORLDS,
+    StateCurve,
     enforce_family_cap,
     evidence_readiness,
     per_sleeve_bounds,
@@ -74,6 +79,9 @@ from research.heat_policy import (  # noqa: E402
 
 OUT = BASE / "reports" / "pf_allocation.json"
 DONE = BASE / "reports" / "DONE_pf_allocation"
+#: The change-point report `research/drift_monitor.py` writes. Read by the crisis overlay below;
+#: absent or stale, the crisis-world share is exactly what it was.
+DRIFT = BASE / "reports" / "DRIFT.json"
 CACHE = BASE / "data" / "pf_allocator_cache"
 ARMED = BASE / "data" / "PF_ALLOCATOR_ARMED"
 #: Append-only record of what each pass EXPECTED. Read by `allocator_attribution.py`.
@@ -982,6 +990,126 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
     return phase, trades, off
 
 
+def hazard_by_sleeve(drift: dict[str, Any] | None) -> dict[str, float]:
+    """P(edge breaks next horizon | history) per sleeve, from drift_monitor's nine channels.
+
+    Only rows that carry a hazard: `perishability.edge_hazard` returns None under its own floors
+    (fewer than three measured channels, or no sleeve-scoped one), and an absent hazard must read
+    as no tilt rather than as a confident zero.
+    """
+    rows = (drift or {}).get("hazard_by_sleeve") or {}
+    out: dict[str, float] = {}
+    for name, row in rows.items():
+        h = (row or {}).get("hazard") if isinstance(row, dict) else None
+        if isinstance(h, (int, float)) and 0.0 < float(h) <= 1.0:
+            out[str(name)] = float(h)
+    return out
+
+
+def apply_hazard_shrink(ev: list[SleeveEvidence], haz: dict[str, float]) -> dict[str, Any]:
+    """Shrink each sleeve's posterior mean by (1 - hazard) BEFORE any retirement threshold.
+
+        "allocation changes BEFORE the formal retirement threshold"      -- the principal
+
+    THE MEAN ONLY. `daily_r_shrunk = daily_r - mean * hazard` moves the centre and leaves the
+    dispersion exactly where it was; scaling the series by (1 - h) would shrink its variance too
+    and make a decaying sleeve look SAFER as its edge disappeared -- the opposite of the truth,
+    and the kind of error that is invisible until the drawdown arrives.
+    """
+    from dataclasses import replace as _replace
+    applied: dict[str, float] = {}
+    for i, e in enumerate(ev):
+        h = haz.get(e.name)
+        if h is None or getattr(e.daily_r, "size", 0) == 0:
+            continue
+        ev[i] = _replace(e, daily_r=e.daily_r - float(e.daily_r.mean()) * h)
+        applied[e.name] = round(h, 6)
+    return {"applied": applied, "n_shrunk": len(applied),
+            "rule": "posterior mean x (1 - hazard); dispersion unchanged; retirement unaffected"}
+
+
+def read_drift() -> tuple[dict[str, Any] | None, str]:
+    """`reports/DRIFT.json` if it can be read, else None with the reason. Never raises.
+
+    The freshness decision itself lives in `latent_factors.crisis_share_from_drift`, which reads
+    the document's own `generated_utc` -- one place decides whether a change-point signal is still
+    about today's market, and it is unit-testable without touching a filesystem.
+    """
+    try:
+        doc = json.loads(DRIFT.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, f"DRIFT.json unreadable ({type(exc).__name__})"
+    if not isinstance(doc, dict):
+        return None, "DRIFT.json is not an object"
+    return doc, f"DRIFT.json verdict={doc.get('verdict')} structure={doc.get('structure_verdict')}"
+
+
+def effective_heat_of(ev: list[SleeveEvidence], book: dict[str, float]) -> dict[str, Any]:
+    """The four heats of `book` -- nominal, covariance, factor, tail -- or an `error` key.
+
+    Wrapped rather than called inline because this runs BEFORE the solve now: the ceiling
+    `heat_policy.resolve` enforces is derived from it, so a failure here has to be a stated
+    UNMEASURED that leaves the nominal bar standing, never an exception that takes the pass.
+    """
+    if not book:
+        return {"error": "no candidate book to measure"}
+    try:
+        from libs.portfolio.latent_factors import effective as _effective
+        out: dict[str, Any] = _effective(ev, book)
+        return out
+    except Exception as exc:                                             # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def state_growth_curves(ev: list[SleeveEvidence], worlds: Worlds, book: dict[str, float],
+                        cfg: WorldConfig, now_buckets: dict[str, str] | None = None,
+                        ) -> tuple[dict[str, StateCurve], str]:
+    """E[log W | state] at each total heat on the grid, per admitted state bucket.
+
+    THE SURFACE THE PRINCIPAL ASKED FOR, LEARNED RATHER THAN MAPPED: "H*_t = argmax_{H in [20,30]}
+    E[logW | X_t]". `growth_curve` measures the unconditional curve by RE-OPTIMISING the
+    composition at each heat; this measures the conditional one by SCORING the candidate book,
+    proportionally scaled, on each state's own worlds.
+
+    THAT DIFFERENCE IS STATED AND NOT HIDDEN. Re-optimising the composition inside every bucket is
+    the better measurement and costs a full solve per bucket per grid point -- thirteen solves
+    times the number of states, on a five-minute heavy pass whose budget is already the world
+    population. What this measures is therefore "how does THE BOOK THE DESK IS ABOUT TO HOLD
+    behave at each heat in this state", which is the question the heat law asks, and the artifact
+    records `basis: scaled_candidate` so nobody later reads it as the stronger claim.
+    """
+    if not book or worlds is None or not worlds.regimes:
+        return {}, "no book or no regime-labelled worlds: the global curve stands"
+    try:
+        from libs.portfolio.allocator_proof import _subworlds, buckets_from_worlds
+    except Exception as exc:                                             # noqa: BLE001
+        return {}, f"state buckets unavailable ({type(exc).__name__}: {exc})"
+    buckets = buckets_from_worlds(worlds, now_buckets, min_worlds=MIN_STATE_WORLDS)
+    if not buckets:
+        return {}, f"no state bucket reached {MIN_STATE_WORLDS} worlds"
+    total = float(sum(book.values()))
+    if total <= 0:
+        return {}, "candidate book holds no heat"
+    out: dict[str, StateCurve] = {}
+    for sid, idx in sorted(buckets.items()):
+        try:
+            sub = _subworlds(worlds, idx)
+            curve: dict[float, float] = {}
+            for h in CURVE_GRID:
+                if h > HEAT_HARD_CEILING:
+                    continue
+                scaled = {k: v * h / total for k, v in book.items()}
+                g = score_book(ev, scaled, cfg=cfg, worlds=sub)["mean_log_growth"]
+                if math.isfinite(g):
+                    curve[float(h)] = float(g)
+            if len(curve) >= 3:
+                out[sid] = StateCurve(state=sid, curve=curve, n_worlds=len(idx))
+        except (ValueError, KeyError, IndexError) as exc:
+            _log(f"state curve for {sid} unmeasured ({type(exc).__name__}: {exc})")
+    return out, (f"{len(out)} state curve(s) of >= {MIN_STATE_WORLDS} worlds "
+                 f"from {len(buckets)} bucket(s)")
+
+
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
     t0 = time.time()
@@ -1043,11 +1171,33 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     except Exception as exc:
         _log(f"crisis calibration unavailable ({type(exc).__name__}: {exc}); constants stand")
 
+    # THE ALLOCATOR LISTENS TO THE DRIFT MONITOR (2026-09-05). `drift_monitor` has written
+    # `reports/DRIFT.json` -- structure_verdict, hazard_max, what_changed -- naming this crisis
+    # overlay as a consumer, and nothing here had ever opened the file. So the desk could know its
+    # sleeves had fused onto one factor and still draw the same 6% crisis worlds it draws on a
+    # quiet Tuesday. STRUCTURE_SHIFTED now multiplies that share, DRIFT_AHEAD does so in
+    # proportion to the hazard, and a stale or absent report changes nothing and says so. It is
+    # not a rail: it changes the POPULATION E[log W] solves over, not a cap on the answer.
+    drift_doc, drift_why = read_drift()
+    crisis_share, crisis_why = crisis_share_from_drift(drift_doc, WorldConfig().crisis_prob)
+    _log(f"drift: {drift_why}")
+    _log(f"crisis worlds: {crisis_why}")
+    # THE HAZARD TILT, BEFORE THE SOLVE AND BEFORE ANY RETIREMENT THRESHOLD. A sleeve whose edge
+    # is measurably breaking has its posterior MEAN shrunk toward zero on this pass; the desk
+    # does not wait for the retirement bar to react to evidence it already has. Report-only
+    # until `missed_growth.measure_hazard_shrink` bills it -- the rail is registered, so a tilt
+    # that costs growth walks its own multiplier down.
+    hazard_meta = apply_hazard_shrink(ev, hazard_by_sleeve(drift_doc))
+    if hazard_meta["n_shrunk"]:
+        _log(f"hazard shrink: {hazard_meta['n_shrunk']} sleeve(s) tilted "
+             f"({', '.join(f'{k}={v:.2f}' for k, v in list(hazard_meta['applied'].items())[:5])})")
+
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
                       # The fast clock buys its speed here and nowhere else: a smaller world
                       # population, never a shortcut through the posterior or the crisis worlds.
                       n_worlds=256 if heavy else 128,
                       n_rows=384 if heavy else 256,
+                      crisis_prob=crisis_share,
                       **(cov_cal.as_overrides() if cov_cal else {}))
 
     cachef = CACHE / "worlds.npz"
@@ -1106,9 +1256,49 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     oos = {e.name: 4.0 * e.forward_days + 12.0 * e.live_days for e in ev}
     ready, ready_why = evidence_readiness(oos, free.heat)
     _log(f"readiness {ready:.1%} -- {ready_why}")
+
+    # ---------------------------------------------- WHAT THE CANDIDATE BOOK IS REALLY MADE OF
+    # MEASURED BEFORE THE SOLVE, because the ceiling is derived from it. Until 2026-09-05 the four
+    # heats were computed AFTER the book was published and only reported, so H_eff = max(cov,
+    # factor, tail) bound nothing and a book of four sleeves that was one hidden USD factor bought
+    # the room four independent bets would have. The candidate is the FREE solve's composition --
+    # the shape the mandated book will hold -- and its concentration sets the ceiling
+    # (`heat_policy.effective_ceiling`); the floor stays nominal, deployed, 24/7.
+    eff_pre = effective_heat_of(ev, free.heat)
+    _log(f"candidate effective heat: nominal={eff_pre.get('nominal')} "
+         f"cov={eff_pre.get('covariance')} factor={eff_pre.get('factor')} "
+         f"tail={eff_pre.get('tail')} n_eff={eff_pre.get('n_eff')} "
+         f"{eff_pre.get('error') or ''}")
+
+    # ------------------------------------------------------- THE STATE THE TARGET IS SOLVED FOR
+    # H*_t = argmax_{H in [floor, ceiling]} E[log W | X_t] on the CURRENT state's own worlds. The
+    # state id joins the admitted state dimensions' present buckets (STATE_ADMISSION.json decides
+    # which may condition at all) to the regime the worlds were drawn from.
+    now_buckets = {**dict(_admitted_extra_dims()), **({"session": phase} if phase else {})}
+    top_regime = probs[0][0] if probs else ""
+    try:
+        from libs.portfolio.allocator_proof import admitted_now, state_id
+        kept_dims, adm_why = admitted_now(ROOT, now_buckets)
+        current_state = state_id(kept_dims, top_regime)
+    except Exception as exc:                                             # noqa: BLE001
+        kept_dims, adm_why, current_state = {}, f"{type(exc).__name__}: {exc}", ""
+    curves, curves_why = ((state_growth_curves(ev, worlds, free.heat, cfg, kept_dims))
+                          if heavy else ({}, f"{mode} clock: the global curve stands"))
+    _log(f"state: id={current_state or '(none)'} ({adm_why}); {curves_why}")
+
+    # THE CEILING IS MEASURED, NOT DECREED (principal, 2026-09-05: the fixed 30% cap is removed;
+    # "if growth optimum permits 32 35 40 45 wtv in future w new edges etc it can use those w 20
+    # as minimum floor"). `measured_ceiling` reads the highest heat THIS opportunity set still
+    # buys growth at, never past the last heat actually sampled, and falls back to the recorded
+    # constant when the curve cannot be read -- absence is never permission. So a richer book
+    # earns more than 30% and a thin one is held tighter than 30% ever held it.
+    ceiling_now, ceiling_why = measured_ceiling(curve, floor=HEAT_TARGET)
+    _log(f"heat ceiling: {ceiling_why}")
+
     verdict = resolve(free.total_heat, curve=curve, target=HEAT_TARGET,
-                      hard_ceiling=HEAT_HARD_CEILING, mandate=True,
+                      hard_ceiling=ceiling_now, mandate=True,
                       readiness=ready, readiness_why=ready_why,
+                      effective_heat=eff_pre, state=current_state, curves=curves,
                       allocator_ok=(bool(free.heat) and math.isfinite(free.mean_log_growth)
                                     and not implausible))
     for why in verdict.reasons:
@@ -1290,7 +1480,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     fallback: dict[str, Any] = {}
     try:
         from libs.portfolio.allocator_proof import certify, contest
-        proof = contest(ev, funded, current_book(), cfg=cfg, worlds=worlds)
+        # A*_t NEEDS THE STATE IT WAS SOLVED IN. Without `now_buckets` the certificate's
+        # `by_state` keys carry the regime alone, so `select` can only match by regime suffix and
+        # a session- or event-conditioned bucket that the admission gauntlet HAS judged is thrown
+        # away at exactly the moment it would decide which allocator to trust.
+        proof = contest(ev, funded, current_book(), cfg=cfg, worlds=worlds,
+                        now_buckets=kept_dims, root=ROOT)
         certify(proof, root=ROOT, book=funded)
         # THE FLOOR'S FALLBACK: the best baseline at the same total heat, carried on the
         # artifact so a failed or stale proof changes who allocates the floor, never whether.
@@ -1335,16 +1530,29 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     effective_heat: dict[str, Any] = {}
     trade_value: dict[str, Any] = {}
     try:
-        from libs.portfolio.latent_factors import effective as _effective
         from libs.portfolio.multiperiod_worlds import trade_value as _trade_value
         if funded:
-            effective_heat = _effective(ev, funded)
+            effective_heat = effective_heat_of(ev, funded)
             trade_value = _trade_value(worlds, prev_book, funded)
             _log(f"effective heat: nominal={effective_heat.get('nominal')} "
                  f"eff={effective_heat.get('effective')} n_eff={effective_heat.get('n_eff')}; "
                  f"trade value {trade_value.get('verdict')} ({trade_value.get('trade_value')})")
     except Exception as exc:                                         # noqa: BLE001
         effective_heat = {"error": f"{type(exc).__name__}: {exc}"}
+    # NOMINAL VS EFFECTIVE, AND WHICH BOUND BOUND -- on the published book beside the candidate
+    # the ceiling was actually derived from, so the artifact can be read as an argument rather
+    # than as an assertion: what was measured before the solve, what the cap came out at, what
+    # the book ended up carrying, and which of the two bars decided.
+    effective_heat["candidate_pre_solve"] = eff_pre
+    effective_heat["ceiling"] = {
+        "nominal_bar": HEAT_HARD_CEILING,
+        "effective_bar": round(verdict.effective_ceiling, 6),
+        "derived_from": verdict.effective,
+        "bound_by": verdict.binding,
+        "rule": ("the FLOOR counts nominal heat (20% deployed is a standing instruction about "
+                 "capital at work); the CEILING counts max(covariance, factor, tail), because "
+                 "hidden concentration bites at the top of the band and nowhere else"),
+    }
     # THE AI CAPITAL MODIFIER LEDGER: what the state conditioning claimed for each funded
     # sleeve this pass, so each category can later prove its increment.
     try:
@@ -1376,13 +1584,49 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "filled": filled, "shortfall": round(shortfall, 6),
             "readiness": round(verdict.readiness, 4), "floor": round(verdict.floor, 6),
             "readiness_why": ready_why,
+            # THE MANDATE'S PRICE, MEASURED EVERY PASS. The principal's instruction on removing
+            # the fixed cap was explicit that the 20% floor must not hide inside the optimum:
+            # "measure the incremental growth/drawdown cost of that policy continuously, rather
+            # than hiding it". So the artifact carries the unconstrained answer, the robust one,
+            # what was deployed, which bound bit, and what the floor gave up when it was the
+            # thing that bit. A floor nobody audits is a belief; a floor whose cost is on the
+            # dashboard every pass is a decision, with the evidence to overturn it.
+            **heat_accounting(raw=free.total_heat, robust=verdict.total_heat, curve=curve,
+                              floor=HEAT_TARGET),
+            # THE CEILING THE BOOK'S INDEPENDENCE EARNED, and the four heats behind it. `binding`
+            # above reads "effective_ceiling" when this is what bound rather than the nominal bar.
+            "effective_ceiling": round(verdict.effective_ceiling, 6),
+            "effective": verdict.effective,
+            # WHICH STATE THE TARGET WAS CONDITIONED ON, and on how many worlds.
+            "state": verdict.state, "state_worlds": verdict.state_worlds,
+            "state_optimum": round(verdict.state_optimum, 6),
+            "state_curves": {k: {"n_worlds": v.n_worlds,
+                                 "curve": [[round(h, 4), round(g, 8)]
+                                           for h, g in sorted(v.curve.items())]}
+                             for k, v in (curves or {}).items()},
+            "state_curves_why": curves_why,
+            "state_curves_basis": ("scaled_candidate: the candidate book proportionally scaled to "
+                                   "each heat and scored on that state's worlds -- the "
+                                   "composition is the global solve's, only the EVALUATION is "
+                                   "conditional"),
             "reasons": list(verdict.reasons),
             "curve": [[round(h, 4), round(g, 8)] for h, g in sorted(curve.items())],
         },
+        # WHAT THE CRISIS-WORLD SHARE WAS, AND WHY. `drift_monitor`'s verdict is the only thing
+        # that moves it, and a stale or absent report says so here rather than silently standing.
+        "drift_overlay": {"crisis_prob": round(crisis_share, 6),
+                          "standing": WorldConfig().crisis_prob,
+                          "why": crisis_why, "source": drift_why},
         "book": funded,
         # The solve this pass produced, whether or not the verdict let it out. Equal to `book`
         # on a REBALANCE pass; the declined move on a binding NO CHANGE.
         "proposed_book": proposed_book,
+        # WHICH ALLOCATOR WON WHERE. The gateway's `select` reads the certificate, not this;
+        # the artifact carries the same verdicts so a reader can see the meta-allocator's map
+        # without opening a second file.
+        "proof_by_state": {k: {"passed": v.get("passed"), "best": v.get("best"),
+                               "n_worlds": v.get("n_worlds")}
+                           for k, v in (proof.get("by_state") or {}).items()},
         "proof": {"passed": bool(proof.get("passed")), "why": proof.get("why", ""),
                   "best_baseline": proof.get("best_baseline", ""),
                   "scores": {k: (v.get("mean_log_growth") if isinstance(v, dict) else None)
@@ -1409,6 +1653,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "robust_score": round(book.robust_score, 8),
             "free_annual_growth_pct": free.annual_growth_pct,
         },
+        # WHAT THE HAZARD TILT DID. `missed_growth.measure_hazard_shrink` reads this pair; both
+        # scores must come from the SAME sampled worlds at the SAME total heat, which is the only
+        # comparison in which the difference is the tilt rather than the sizing.
+        "hazard_shrink": hazard_meta,
         "no_trade": nt,
         "opportunity": opp,
         # `probabilities` is the FORWARD mix the worlds were drawn from; `transition` carries the

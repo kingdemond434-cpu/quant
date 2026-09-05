@@ -65,6 +65,36 @@ The RESIDUAL stays reported and is never distributed into the named terms. Value
 files that may be absent off-box (the allocator's proof, the fill surface, the exit accounts,
 the rail ledgers) read UNMEASURED with the path named, so a missing artifact is a visible gap
 rather than a zero.
+
+THE WEEKLY TABLE, ENTRY, AND DEAD INFORMATION (2026-09-05).
+
+    "Portfolio growth attribution: dlogW = Alpha + Selection + State + Sizing + Diversification
+     + Execution + Exit + Costs + Veto, so every week you can answer what actually made us
+     richer."                                                              -- the principal
+    "Information attribution per data source: dElog_DataSource; kill dead information."
+
+Three things were missing to make that a weekly answer rather than a daily diagnostic.
+
+ENTRY. The nine terms price everything a trade does EXCEPT the moment it started. The desk has
+that ledger and nothing read it: `reports/EXCURSIONS.json` carries each sleeve's median adverse
+excursion, which is exactly what the entries paid before the thesis worked. It is a TENTH term
+(`_entry_term`), and the reason it is not simply appended to the nine is in `weekly_table`: the
+nine-term dict is a pinned contract, so the ten-term table lives in the weekly report.
+
+THE IDENTITY, AND WHY IT DOES NOT CLOSE. `dlogW` is a measurable number -- the heat-weighted
+realised return per scored day, from the forecast log's own books joined to the realised ledger.
+Four of the ten terms are priced in log-wealth per day and can be subtracted from it; the rest
+are priced in R, in heat, in fractions of price or as ratios, because that is the unit their
+ledger actually keeps. Summing them anyway would be a decomposition that balances by changing
+units mid-sum. So the report states the identity it CAN close, names every term it left out with
+its unit and the reason, and calls the gap RESIDUAL -- reported, never distributed. A residual
+this large is the honest measurement of how far the desk is from the principal's sentence, and
+shrinking it means giving a term a log-wealth ledger, not moving a number.
+
+INFORMATION ATTRIBUTION. `dElog_DataSource` per source, from the research P&L the desk already
+computes: the expected log-wealth per day the source's certificates carry in the funded book,
+against the trials it burned to get them. A source with trials and no growth is named DEAD
+INFORMATION -- the report NAMES it; killing it is the bandit's and a person's decision.
 """
 from __future__ import annotations
 
@@ -85,13 +115,29 @@ for _p in (str(BASE), str(BASE / "research"), str(BASE.parent.parent)):
 FORECASTS = BASE / "data" / "pf_forecast_log.jsonl"
 LIVE = BASE / "data" / "live_ledger.jsonl"
 OUT = BASE / "reports" / "allocator_attribution.json"
+WEEKLY_OUT = BASE / "reports" / "GROWTH_ATTRIBUTION_WEEKLY.json"
 
 #: Minimum scored days before a term is reported as a number rather than UNMEASURED. Below this
 #: the decomposition is describing noise, and four confident numbers about noise is worse than
 #: one honest refusal.
 MIN_DAYS = 5
+#: The weekly window the principal asked the question over, and the trailing window the same
+#: table is repeated on so one quiet week cannot read as a trend.
+WEEK_DAYS = 7
+TRAILING_DAYS = 30
+#: Trials a data source must have burned before "no growth" is a verdict rather than a cold arm.
+#: Below it the source is UNMEASURED, which is what protects a new source from being killed for
+#: being new (the same exploration floor the research bandit keeps).
+MIN_SOURCE_TRIALS = 20
+#: Measured trades a sleeve needs before its median excursion prices the entry.
+MIN_ENTRY_TRADES = 10
 
 UNMEASURED = "UNMEASURED"
+DEAD_INFORMATION = "DEAD_INFORMATION"
+PAYS = "PAYS"
+#: The one unit that can be summed against the realised ledger. Every other unit on the table is
+#: named on the term itself and kept OUT of the identity rather than converted by assumption.
+LOGW = "log-wealth per day"
 
 #: The utilisation floor and hard ceiling the sizing term reads the book against. These MIRROR
 #: `heat_policy.HEAT_TARGET` / `HEAT_HARD_CEILING` (principal, 2026-09-02) and are read from
@@ -590,6 +636,303 @@ def _veto_term() -> dict[str, Any]:
                   **extra)
 
 
+def _entry_term() -> dict[str, Any]:
+    """What the ENTRIES paid: the adverse excursion each one endured before the thesis worked.
+
+    THE LEDGER EXISTED AND NOTHING READ IT. `excursions.py` has recorded median MAE per sleeve
+    since it was written -- how far a trade went against the entry before it went anywhere -- and
+    the growth decomposition had no entry term at all. That is the quantity: an entry a bar later
+    at the same signal would have paid less of it, and a sleeve whose median MAE is 4R is not a
+    sleeve with an exit problem.
+
+    SIGNED AS A COST. Negative, like execution and cost, because excursion is a subtraction from
+    what the entry could have had. It is NOT summed into the realised identity and says so: MAE
+    is intra-trade drawdown, not a realised loss, and adding drawdown to realised return would
+    charge the desk twice for trades that recovered.
+    """
+    rel = "EXCURSIONS.json"
+    doc = _read_json(_report(rel))
+    if doc is None:
+        return _gterm(UNMEASURED, f"reports/{rel} (absent)",
+                      f"reports/{rel} is not on this host; needs per-sleeve median_mae_r, which "
+                      "is the R the entry gave away before the trade worked", unit="R per trade")
+    sleeves = doc.get("sleeves") if isinstance(doc.get("sleeves"), dict) else {}
+    rows: dict[str, float] = {}
+    thin: list[str] = []
+    for name, row in sleeves.items():
+        if not isinstance(row, dict):
+            continue
+        mae, n = _num(row.get("median_mae_r")), _num(row.get("n"))
+        if mae is None or n is None:
+            continue
+        if n < MIN_ENTRY_TRADES:
+            thin.append(str(name))
+            continue
+        rows[str(name)] = mae
+    if not rows:
+        return _gterm(UNMEASURED, f"reports/{rel}",
+                      f"no sleeve carries {MIN_ENTRY_TRADES}+ measured excursions "
+                      f"({len(thin)} thin, {len(sleeves)} sleeve(s) on the ledger)",
+                      unit="R per trade", thin_sleeves=sorted(thin))
+    worst = dict(sorted(rows.items(), key=lambda kv: -kv[1])[:8])
+    alloc = _read_json(_report("pf_allocation.json")) or {}
+    book = {str(k): v for k, v in (alloc.get("book") or {}).items()}
+    heat = {k: h for k in rows if (h := _num(book.get(k))) is not None and h > 0.0}
+    if heat:
+        value = -sum(heat[k] * rows[k] for k in heat)
+        return _gterm(round(value, 8), f"reports/{rel}: median_mae_r x reports/pf_allocation.json "
+                      "book heat",
+                      "minus the heat-weighted median adverse excursion: the log-wealth each "
+                      "entry gives away before the thesis works. NOT in the realised identity -- "
+                      "intra-trade drawdown is not a realised loss",
+                      unit="log-wealth of adverse excursion per trade", in_identity=False,
+                      n_sleeves_funded=len(heat), n_sleeves_measured=len(rows),
+                      worst_entries=worst, thin_sleeves=sorted(thin))
+    return _gterm(round(-statistics.median(rows.values()), 8), f"reports/{rel}: median_mae_r",
+                  "minus the median sleeve's median adverse excursion, in R: no funded book on "
+                  "this host to weight it by heat, so this is the typical entry's cost and not "
+                  "the book's",
+                  unit="R per trade", in_identity=False, n_sleeves_measured=len(rows),
+                  worst_entries=worst, thin_sleeves=sorted(thin),
+                  why_unweighted="reports/pf_allocation.json carries no book heat here")
+
+
+# --------------------------------------------------------------------------- the weekly table
+def _stat(samples: list[float]) -> dict[str, Any]:
+    """Mean, n and a 95% interval. The interval is the point: a term with n=5 and a term with
+    n=200 are different evidence and the table has to show which is which."""
+    n = len(samples)
+    if not n:
+        return {"value": UNMEASURED, "n": 0, "ci": None, "sd": None}
+    mean = statistics.fmean(samples)
+    sd = statistics.stdev(samples) if n > 1 else 0.0
+    se = sd / math.sqrt(n) if n else 0.0
+    return {"value": round(mean, 10), "n": n, "sd": round(sd, 10),
+            "ci": [round(mean - 1.96 * se, 10), round(mean + 1.96 * se, 10)]}
+
+
+def daily_book_growth(forecasts: list[dict[str, Any]],
+                      realized: dict[str, dict[str, float]]) -> dict[str, float]:
+    """Per scored day, sum_i h_i r_i -- the realised log-wealth the book actually made.
+
+    THE LAST PASS OF A DAY SPEAKS FOR IT. The allocator can run several times in a day and each
+    pass logs its book; summing them would count the same day's returns once per pass. The last
+    book is the one the day ended on, which is the book that earned the day's R -- the same rule
+    `_edge_term` already uses.
+    """
+    per_day: dict[str, float] = {}
+    for f in forecasts:
+        day = str(f["t"])[:10]
+        book = {str(k): float(v) for k, v in (f.get("book") or {}).items()}
+        got, seen = 0.0, False
+        for name, h in book.items():
+            r = realized.get(name, {}).get(day)
+            if r is None:
+                continue
+            seen = True
+            got += h * r
+        if seen:
+            per_day[day] = got
+    return per_day
+
+
+def per_sleeve(forecasts: list[dict[str, Any]], realized: dict[str, dict[str, float]],
+               limit: int = 40) -> dict[str, Any]:
+    """Which sleeve made the book richer, in the same unit as the book's own dlogW.
+
+    Contribution is h_i x r_i averaged over the days the sleeve was FUNDED AND TRADED, so the
+    per-sleeve rows sum to the book's dlogW over the days every sleeve was scored -- a sleeve
+    that sat out is not charged with the days it did not hold heat.
+    """
+    contrib: dict[str, list[float]] = defaultdict(list)
+    heats: dict[str, list[float]] = defaultdict(list)
+    for f in forecasts:
+        day = str(f["t"])[:10]
+        for name, h in (f.get("book") or {}).items():
+            r = realized.get(str(name), {}).get(day)
+            hv = _num(h)
+            if r is None or hv is None:
+                continue
+            contrib[str(name)].append(hv * r)
+            heats[str(name)].append(hv)
+    if not contrib:
+        return {"value": UNMEASURED, "n_sleeves": 0,
+                "why": "no forecast book joins a realised day: nothing to attribute per sleeve"}
+    rows = {}
+    for name, vals in contrib.items():
+        st = _stat(vals)
+        rows[name] = {**st, "mean_heat": round(statistics.fmean(heats[name]), 8),
+                      "mean_r": round(statistics.fmean(v / h for v, h in
+                                                       zip(vals, heats[name], strict=True)
+                                                       if h), 8) if any(heats[name]) else None}
+    ordered = sorted(rows.items(), key=lambda kv: -(kv[1]["value"] if
+                                                    isinstance(kv[1]["value"], float) else 0.0))
+    return {"n_sleeves": len(rows), "unit": LOGW,
+            "sleeves": dict(ordered[:limit]),
+            "best": [k for k, _ in ordered[:5]], "worst": [k for k, _ in ordered[-5:]],
+            "why": ("mean over the days the sleeve was funded and traded of heat x realised R; "
+                    f"showing the {min(limit, len(rows))} largest of {len(rows)}")}
+
+
+def information_attribution() -> dict[str, Any]:
+    """dElog_DataSource per source, and the ones that are DEAD INFORMATION.
+
+    THE NUMBER ALREADY EXISTS. `research_pnl.py` attributes the allocator's own expected growth
+    to the source each funded certificate came from, and counts the trials that source burned.
+    That IS dElog per data source; it had no reader that named the dead ones. A source with
+    trials past the exploration floor and no growth in the funded book is not "cold", it is
+    information the desk paid for and is not being made richer by.
+
+    KILLING IS NOT DONE HERE. The bandit already shrinks a cold arm's budget; this names the
+    source, its growth, its spend and its ROI so a person or the bandit can act on the number.
+    """
+    rel = "RESEARCH_PNL.json"
+    doc = _read_json(_report(rel))
+    if doc is None:
+        return {"value": UNMEASURED, "basis": f"reports/{rel} (absent)",
+                "why": f"reports/{rel} is not on this host; it is where dElog per source lives",
+                "unit": LOGW, "n_sources": 0, "sources": {}, "dead_information": [],
+                "pays": [], "unmeasured": [], "unattributed_growth_per_day": None,
+                "rule": (f"dElog_DataSource <= 0 with >= {MIN_SOURCE_TRIALS} trials is DEAD "
+                         "INFORMATION; no source ledger on this host to judge")}
+    sources = doc.get("sources") if isinstance(doc.get("sources"), dict) else {}
+    rows: dict[str, Any] = {}
+    dead: list[str] = []
+    for name, c in sorted(sources.items()):
+        if not isinstance(c, dict):
+            continue
+        growth = _num(c.get("growth_per_day"))
+        trials = int(_num(c.get("trials")) or 0)
+        cost = _num(c.get("cost_units")) or 0.0
+        if growth is None or trials < MIN_SOURCE_TRIALS:
+            verdict, why = UNMEASURED, (f"{trials} trial(s), need {MIN_SOURCE_TRIALS} before "
+                                        "'no growth' is a verdict rather than a cold start")
+        elif growth > 0.0:
+            verdict, why = PAYS, ""
+        else:
+            verdict = DEAD_INFORMATION
+            why = (f"{trials} trial(s) burned and the funded book carries no growth from this "
+                   "source over its whole history")
+            dead.append(str(name))
+        rows[str(name)] = {
+            "delta_elogw_per_day": (None if growth is None else round(growth, 10)),
+            "unit": LOGW, "arm": c.get("arm"), "trials": trials,
+            "certified": int(_num(c.get("certified")) or 0),
+            "cost_units": round(cost, 2),
+            "roi_growth_per_cost_unit": (round(growth / cost, 12)
+                                         if growth is not None and cost else None),
+            "verdict": verdict, "why": why}
+    return {
+        "basis": f"reports/{rel}: sources[*].growth_per_day, trials, cost_units",
+        "unit": LOGW, "n_sources": len(rows), "sources": rows,
+        "dead_information": sorted(dead),
+        "pays": sorted(k for k, v in rows.items() if v["verdict"] == PAYS),
+        "unmeasured": sorted(k for k, v in rows.items() if v["verdict"] == UNMEASURED),
+        "unattributed_growth_per_day": _num(doc.get("unattributed_growth_per_day")),
+        "rule": (f"dElog_DataSource <= 0 with >= {MIN_SOURCE_TRIALS} trials is DEAD INFORMATION. "
+                 "This NAMES it; the research bandit's budget and a person do the killing."),
+    }
+
+
+def weekly_table(days: int = WEEK_DAYS) -> dict[str, Any]:
+    """"What actually made us richer" over one window: ten terms, n, CI, and an honest residual.
+
+    THE IDENTITY IS STATED, NOT FORCED. Only the terms whose ledger prices them in log-wealth per
+    day are subtracted from the realised number; the rest carry their own unit and `in_identity`
+    is False with the reason. The gap is RESIDUAL, reported and never distributed -- a residual
+    folded into the named terms is how a decomposition becomes a story (the rule this file has
+    kept since it was written).
+    """
+    forecasts = load_forecasts(days)
+    realized, basis = realized_daily()
+    edge = _edge_term(forecasts, realized)
+    reg = _regime_term(forecasts)
+    exe = _execution_term(basis)
+    gd = growth_decomposition(forecasts, edge, reg, exe, UNMEASURED)
+
+    per_day = daily_book_growth(forecasts, realized)
+    dlogw = {**_stat(sorted(per_day.values())), "basis": basis,
+             "why": ("mean over scored days of sum_i heat_i x realised R_i, from the forecast "
+                     "log's own books joined to the realised ledger")}
+    if not per_day:
+        dlogw["why"] = ("no forecast book joins a realised day on this host: the ledger's own "
+                        "dlogW is UNMEASURED, so nothing can be checked against it")
+
+    #: Units per term, from the ledger each one actually reads. Anything not in log-wealth per
+    #: day stays OUT of the identity: converting it would be inventing an exchange rate.
+    units = {"alpha": LOGW, "selection": LOGW, "state": "regime total variation",
+             "sizing": LOGW, "diversification": "heat", "execution": "R per fill",
+             "exit": "capture ratio", "cost": "fraction of price", "veto": LOGW,
+             "entry": None}
+    terms: dict[str, Any] = {}
+    for name in ("alpha", "selection", "state", "sizing", "diversification", "entry",
+                 "execution", "exit", "cost", "veto"):
+        t = dict(_entry_term() if name == "entry" else gd["terms"][name])
+        unit = t.get("unit") or units[name] or LOGW
+        in_identity = bool(t.get("in_identity", unit == LOGW)) and isinstance(t.get("value"),
+                                                                             float)
+        t.update({"unit": unit, "in_identity": in_identity})
+        if not in_identity and isinstance(t.get("value"), float):
+            t["out_of_identity_why"] = (f"priced in {unit}; no measured exchange rate to "
+                                        "log-wealth per day exists on this desk, and inventing "
+                                        "one would balance the sum by changing units mid-sum")
+        # Every term's ledger counts its own evidence under its own name; the table needs ONE
+        # column, so the count is resolved here rather than leaving the reader to know which
+        # field each ledger uses. None stays None -- an absent count is not a zero.
+        if t.get("n") is None:
+            for key in ("scored_days", "n_matched_fills", "n_fills", "n_sleeves_funded",
+                        "n_sleeves_measured", "n_filters_priced"):
+                if t.get(key) is not None:
+                    t["n"], t["n_basis"] = int(t[key]), key
+                    break
+            else:
+                t["n"], t["n_basis"] = None, "the term's ledger carries no count"
+        terms[name] = t
+
+    summed = {k: float(t["value"]) for k, t in terms.items() if t["in_identity"]}
+    total = round(sum(summed.values()), 10)
+    closes = isinstance(dlogw["value"], float)
+    residual: Any = round(float(dlogw["value"]) - total, 10) if closes else UNMEASURED
+    # The two reasons a term sits outside the identity are DIFFERENT and must not read alike: a
+    # measured term in another unit is a conversion the desk does not have, an UNMEASURED one is
+    # a ledger the desk does not have. Folding them into one list would hide which is which.
+    other_unit = {k: t["unit"] for k, t in terms.items()
+                  if not t["in_identity"] and isinstance(t.get("value"), float)}
+    no_ledger = sorted(k for k, t in terms.items() if not isinstance(t.get("value"), float))
+    identity = {
+        "rule": ("dlogW_realised = (terms priced in log-wealth per day) + RESIDUAL. The residual "
+                 "is REPORTED and never distributed into the named terms."),
+        "dlogw_per_day": dlogw["value"], "terms_in_identity": sorted(summed),
+        "terms_summed_logw_per_day": total,
+        "terms_out_of_identity": {k: t["unit"] for k, t in terms.items() if not t["in_identity"]},
+        "measured_in_another_unit": other_unit, "unmeasured_terms": no_ledger,
+        "residual": {
+            "name": "UNDISTRIBUTED", "value": residual,
+            "why": ("everything the log-wealth terms do not account for: the book's own EXPECTED "
+                    "growth (alpha prices only realised minus expected); "
+                    + (", ".join(f"{k} ({u})" for k, u in other_unit.items())
+                       or "no measured term in another unit")
+                    + "; and " + (", ".join(no_ledger) or "no term")
+                    + " with no ledger on this host. Shrinking it means giving one of those "
+                      "terms a log-wealth ledger, not moving a number.")},
+        "closes": closes, "tolerance": 1e-9,
+    }
+    return {
+        "generated_utc": datetime.now(UTC).isoformat(),
+        "window_days": days, "forecast_passes": len(forecasts),
+        "scored_days": dlogw["n"], "realised_basis": basis,
+        "rules": list(GOVERNANCE_RULES),
+        "dlogw_per_day": dlogw, "terms": terms, "identity": identity,
+        "measured": sorted(k for k, t in terms.items() if isinstance(t.get("value"), float)),
+        "unmeasured": sorted(k for k, t in terms.items() if not isinstance(t.get("value"), float)),
+        "per_sleeve": per_sleeve(forecasts, realized),
+        "information": information_attribution(),
+        "reading": ("the answer to 'what made us richer this week'. A term that reads UNMEASURED "
+                    "has no ledger on this host and is NOT a zero; the residual is what the "
+                    "measured terms leave unexplained and is never distributed into them."),
+    }
+
+
 def growth_decomposition(forecasts: list[dict[str, Any]], edge: dict[str, Any],
                          reg: dict[str, Any], exe: dict[str, Any],
                          residual: Any) -> dict[str, Any]:
@@ -646,10 +989,67 @@ def build(days: int = 30) -> dict[str, Any]:
         "terms": {"edge": edge, "correlation": disp, "execution": exe, "regime": reg},
         "residual": residual,
         "growth_decomposition": growth_decomposition(forecasts, edge, reg, exe, residual),
+        # The tenth term and the two machine-readable tables, on the daily artifact as well as
+        # the weekly one so a consumer needs exactly one file (see `run`).
+        "entry": _entry_term(),
+        "dlogw_per_day": {**_stat(sorted(daily_book_growth(forecasts, realized).values())),
+                          "basis": basis, "unit": LOGW},
+        "per_sleeve": per_sleeve(forecasts, realized),
+        "information": information_attribution(),
         "note": ("Every term reports UNMEASURED rather than zero when the evidence is absent. "
                  "Read the regime term FIRST: a sleeve that loses in the wrong regime has not "
                  "decayed, and retiring it would destroy an edge on a calendar accident."),
     }
+
+
+def run(days: int = TRAILING_DAYS, week_days: int = WEEK_DAYS,
+        write: bool = True) -> dict[str, Any]:
+    """The scheduled pass: the daily artifact, plus the weekly table and its trailing companion.
+
+    IDEMPOTENT BY CONSTRUCTION. Both artifacts are whole-file rewrites of quantities derived from
+    append-only ledgers this pass does not touch, so running it twice in a day changes nothing
+    but the timestamp -- which is what let `daily_cycle` adopt it without a stamp of its own.
+
+    TWO WINDOWS, ONE TABLE. The weekly window answers the principal's question; the trailing one
+    is the same table over `days` so a single quiet week cannot read as a trend, and so a term
+    that is UNMEASURED at n=7 but measured at n=30 is visibly the SAME term rather than two.
+    """
+    doc = build(days)
+    weekly = weekly_table(week_days)
+    weekly["trailing"] = weekly_table(days)
+    if write:
+        for path, payload in ((_report("allocator_attribution.json"), doc),
+                              (_report("GROWTH_ATTRIBUTION_WEEKLY.json"), weekly)):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(payload, indent=1, default=str), "utf-8")
+    return {"window_days": days, "week_days": week_days,
+            "realised_basis": weekly["realised_basis"], "scored_days": weekly["scored_days"],
+            "measured": weekly["measured"], "unmeasured": weekly["unmeasured"],
+            "dlogw_per_day": weekly["dlogw_per_day"]["value"],
+            "residual": weekly["identity"]["residual"]["value"],
+            "dead_information": weekly["information"]["dead_information"],
+            "n_sleeves_attributed": weekly["per_sleeve"].get("n_sleeves", 0),
+            "weekly": weekly, "daily": doc}
+
+
+def _print_weekly(w: dict[str, Any]) -> None:
+    ident = w["identity"]
+    print(f"WHAT MADE US RICHER  window {w['window_days']}d  scored days {w['scored_days']}  "
+          f"basis {w['realised_basis']}  dlogW/day {w['dlogw_per_day']['value']}")
+    for name, t in w["terms"].items():
+        v = t.get("value")
+        shown = v if isinstance(v, str) else f"{v:+.8f}"
+        mark = "=" if t["in_identity"] else " "
+        print(f" {mark}{name:<16}{shown:>16}  [{t['unit']}]  n={t.get('n')}  ci={t.get('ci')}")
+        if isinstance(v, str) and t.get("why"):
+            print(f"                  {t['why']}")
+    print(f"  {'RESIDUAL':<16}{ident['residual']['value']!s:>16}  "
+          f"[{LOGW}]  {ident['residual']['name']}")
+    info = w["information"]
+    print(f"information: {info['n_sources']} source(s), dead={info['dead_information']}")
+    ps = w["per_sleeve"]
+    if ps.get("n_sleeves"):
+        print(f"per sleeve: best={ps['best']}  worst={ps['worst']}")
 
 
 def main() -> int:
@@ -676,9 +1076,10 @@ def main() -> int:
             print(f"                  {t['why']}")
         if t.get("reading"):
             print(f"                  {t['reading']}")
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=2, default=str), encoding="utf-8")
-    print(f"-> {OUT.relative_to(BASE.parent.parent)}")
+    out = run()
+    _print_weekly(out["weekly"])
+    for p in (OUT, WEEKLY_OUT):
+        print(f"-> {p.relative_to(BASE.parent.parent)}")
     return 0
 
 

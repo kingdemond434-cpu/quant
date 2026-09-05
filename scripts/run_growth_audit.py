@@ -115,10 +115,24 @@ def _permanently_retired() -> bool:
     into an audit that must stay a pure read. A parse failure returns False -- the answer that
     keeps the anti-timidity gate LOUD, never the one that quietly excuses under-deployment.
     """
+    # DELETION IS THE STRONGEST DECLARATION OF PERMANENCE THERE IS (2026-09-05). The executor
+    # used to declare `_PERMANENTLY_RETIRED = True` at module scope and this read that flag. Under
+    # the universe mandate the file itself is gone, so an absent executor now means the sleeve is
+    # retired forever -- not that the check failed.
+    #
+    # The old `except OSError: return False` was correct while the file was expected to exist: a
+    # parse failure had to keep the anti-timidity gate LOUD rather than quietly excuse
+    # under-deployment. It is exactly wrong now. It would report "this sleeve is merely clamped,
+    # go promote it" about a book that cannot be traded at all, which is the ACT-NOW instruction
+    # the 2026-08-27 fix exists to suppress -- an instruction to move a dead book toward capital
+    # on a universe the mandate closed for good.
+    exec_path = Path("scripts/run_cashcarry_executor.py")
+    if not exec_path.exists():
+        return True
     try:
-        src = Path("scripts/run_cashcarry_executor.py").read_text("utf-8")
+        src = exec_path.read_text("utf-8")
     except OSError:
-        return False
+        return False          # present but unreadable: still loud, still the safe direction
     return re.search(r"^_PERMANENTLY_RETIRED\s*=\s*True\b", src, re.M) is not None
 
 def _load(p: str) -> dict[str, Any]:

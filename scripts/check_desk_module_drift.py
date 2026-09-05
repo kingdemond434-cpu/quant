@@ -67,6 +67,16 @@ MODULES = [
     "desks/mt5/scripts/warm_gauntlet_cache.py",
     "desks/mt5/scripts/stall_watch.ps1",
     "libs/research/bar_span.py",
+    # THE ALPHA SEARCH'S IMPORT CLOSURE (2026-09-05). `alpha_evolution` runs on the box every
+    # hour and now imports the modules that decide what it can even PROPOSE: the grammar (whose
+    # production screen is structure + type + UNITS), the typed samplers, the portfolio-aware
+    # fitness and the nine-population registry. A stale grammar on the box is a box constructing
+    # arithmetic this tree forbids, with every fence reporting all-match.
+    "desks/mt5/research/alpha_evolution.py",
+    "libs/research/alpha_grammar.py",
+    "libs/research/generators.py",
+    "libs/research/alpha_fitness.py",
+    "libs/research/search_populations.py",
     # The program-level gates the sweep imports. reality_check was NOT on this list and
     # was stale on the box by a full optimisation (2026-08-28) -- a module can be central
     # to certification and still be invisible to every sync, because nothing names it.

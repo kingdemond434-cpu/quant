@@ -205,7 +205,10 @@ together on every exploration organ. **L1.34** every form of raw information is 
 every seat. **L1.35** the hunters are the never-finished organ — deep-forest exhaustiveness is
 compulsory. **L1.38** sterile cockpit — the money path does not change where a change cannot be
 caught; the freeze holds IMPROVEMENTS, NEVER REPAIRS, and a repair is never withheld because an
-improvement is (`scripts/check_change_window.py`). **L1.39** zero idle findings — everything found advances its next stage immediately.
+improvement is (`scripts/check_change_window.py`). **L1.39** zero idle findings — everything found advances its next stage immediately;
+'no idle' means zero ACTION latency, NOT zero VALIDATION latency — opposite risks — and a
+candidate is never an edge (L1.6): 'implement immediately' means SCREEN it immediately, CLOCK it
+immediately, NEVER SIZE it immediately. THE IMMEDIACY IS IN THE ROUTING, NEVER IN THE BAR.
 **L1.40** endless generation, and every bug hunted. **L1.41** the build standard — nothing enters
 below it. **L1.42** no act is exempt — every entry point passes the laws. **L1.43** governance is
 measured like everything else — a fence red from day one gets switched off. **L1.44**

@@ -248,7 +248,21 @@ def state_vector() -> dict:
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
+def smoke_release() -> dict:
+    """The box-side smoke test, every hour: does the code on this box import, compile and match
+    the sealed release? Its verdict rides sync_marker.json so every other brain sees it. A
+    failing smoke is the gateway refusing new risk an hour earlier than the dashboard would
+    notice; a smoke that cannot run is recorded as exactly that, never as a pass."""
+    try:
+        r = subprocess.run([PYE, str(BASE / "scripts" / "smoke_release.py")],
+                           capture_output=True, text=True, timeout=120)
+        return {"rc": r.returncode, "tail": (r.stdout or r.stderr or "")[-400:]}
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        return {"rc": None, "error": f"{type(exc).__name__}: {exc}"}
+
+
 def main() -> None:
+    smoke = smoke_release()
     h = health()
     t = record_tape()
     s = state_vector()
@@ -257,7 +271,8 @@ def main() -> None:
     frontier_report(h)
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
-                    "health": h, "tape": t, "state_vector": s, "daily": d, "mine": m},
+                    "health": h, "tape": t, "state_vector": s, "daily": d, "mine": m,
+                    "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 

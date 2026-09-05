@@ -17,7 +17,15 @@ from pathlib import Path
 import pandas as pd
 
 BASE = "https://publicreporting.cftc.gov/resource/72hh-3qpy.json"
-OUT = Path(r"C:\Users\dell\mt5-research\data\cot_disagg")
+# WRITE WHERE THE READERS LOOK. This wrote to the retired laptop's checkout
+# (C:\Users\dell\mt5-research), while `research/edge_search.py` and
+# `research/orthogonal_sweep.py` read COT from the desk's own tree. Writer and reader
+# never agreed, so the SEARCH and SWEEP legs found no COT and produced nothing -- and
+# because the mkdir SUCCEEDS, it failed by filling a directory nobody reads rather than
+# by raising. `config.desk_root()` is the single source of truth for every path here.
+from mt5desk.config import DATA
+
+OUT = DATA / "cot_disagg"
 OUT.mkdir(parents=True, exist_ok=True)
 
 SELECT = (

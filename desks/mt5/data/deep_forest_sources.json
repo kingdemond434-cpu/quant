@@ -1,94 +1,591 @@
 {
- "note": "The Chinese deep-forest grounds the story miner works (principal 2026-09-04): competition records, trader interviews, quant-platform communities, Q&A/blog/social, code hosts, video, forums. Every ground carries a ROUTE (how it is reached from a datacenter box), and every run re-measures reachability rather than trusting this file. Concepts are reimplemented; nothing is copied. Crypto-exchange grounds are forbidden and fenced in code (libs.research.mechanism_claims.FORBIDDEN_VENUES). Sibling forests (JP/KR/RU) ride the same routes and grammar.",
+ "note": "The WORLD deep-forest grounds the story miner works (principal 2026-09-04/05: China first, then every region at the same depth -- Asia, the West, Russia, the Middle East, Africa, Latin America, Oceania). Every ground carries a REGION, a LANGUAGE, a ROUTE (how it is reached from a datacenter box), a WEIGHT (its share of a run's budget) and a KIND: story grounds (forums, interviews, competitions, communities, code, video, columns, academic), dataset grounds (kind=dataset with a dataset_class; their endpoints reach acquire_datasets) and macro grounds (kind=macro: central-bank communications, auctions, interventions, whose claims map to the pair they move). The `regions` index says which cluster (one bandit source each) a region belongs to. Every run re-measures reachability rather than trusting this file; grounds whose robots.txt names this agent family are read as search-index snippets only (OP-041). Concepts are reimplemented; nothing is copied. Crypto-exchange grounds are forbidden and fenced in code (libs.research.mechanism_claims.FORBIDDEN_VENUES).",
+ "regions": {
+  "cn": {
+   "name": "China",
+   "cluster": "cn",
+   "languages": [
+    "zh"
+   ],
+   "market": "CN",
+   "grounds": 30
+  },
+  "jp": {
+   "name": "Japan",
+   "cluster": "jp",
+   "languages": [
+    "ja"
+   ],
+   "market": "JP",
+   "grounds": 26
+  },
+  "kr": {
+   "name": "Korea",
+   "cluster": "kr",
+   "languages": [
+    "ko"
+   ],
+   "market": "KR",
+   "grounds": 17
+  },
+  "tw": {
+   "name": "Taiwan",
+   "cluster": "tw_hk",
+   "languages": [
+    "zh-Hant"
+   ],
+   "market": "TW",
+   "grounds": 16
+  },
+  "hk": {
+   "name": "Hong Kong",
+   "cluster": "tw_hk",
+   "languages": [
+    "zh-Hant",
+    "en"
+   ],
+   "market": "HK",
+   "grounds": 11
+  },
+  "sg": {
+   "name": "Singapore",
+   "cluster": "sea",
+   "languages": [
+    "en"
+   ],
+   "market": "SG",
+   "grounds": 9
+  },
+  "vn": {
+   "name": "Vietnam",
+   "cluster": "sea",
+   "languages": [
+    "vi"
+   ],
+   "market": "VN",
+   "grounds": 12
+  },
+  "th": {
+   "name": "Thailand",
+   "cluster": "sea",
+   "languages": [
+    "th"
+   ],
+   "market": "TH",
+   "grounds": 10
+  },
+  "id": {
+   "name": "Indonesia",
+   "cluster": "sea",
+   "languages": [
+    "id"
+   ],
+   "market": "ID",
+   "grounds": 11
+  },
+  "my": {
+   "name": "Malaysia",
+   "cluster": "sea",
+   "languages": [
+    "ms",
+    "en"
+   ],
+   "market": "MY",
+   "grounds": 7
+  },
+  "ph": {
+   "name": "Philippines",
+   "cluster": "sea",
+   "languages": [
+    "en"
+   ],
+   "market": "PH",
+   "grounds": 5
+  },
+  "in": {
+   "name": "India",
+   "cluster": "in",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "market": "IN",
+   "grounds": 19
+  },
+  "pk": {
+   "name": "Pakistan",
+   "cluster": "south_asia",
+   "languages": [
+    "en"
+   ],
+   "market": "PK",
+   "grounds": 4
+  },
+  "bd": {
+   "name": "Bangladesh",
+   "cluster": "south_asia",
+   "languages": [
+    "en"
+   ],
+   "market": "BD",
+   "grounds": 2
+  },
+  "lk": {
+   "name": "Sri Lanka",
+   "cluster": "south_asia",
+   "languages": [
+    "en"
+   ],
+   "market": "LK",
+   "grounds": 2
+  },
+  "au": {
+   "name": "Australia",
+   "cluster": "anz",
+   "languages": [
+    "en"
+   ],
+   "market": "AU",
+   "grounds": 13
+  },
+  "nz": {
+   "name": "New Zealand",
+   "cluster": "anz",
+   "languages": [
+    "en"
+   ],
+   "market": "NZ",
+   "grounds": 4
+  },
+  "sa": {
+   "name": "Saudi Arabia",
+   "cluster": "mena",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "SA",
+   "grounds": 8
+  },
+  "ae": {
+   "name": "UAE and Qatar",
+   "cluster": "mena",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "AE",
+   "grounds": 4
+  },
+  "tr": {
+   "name": "Turkey",
+   "cluster": "mena",
+   "languages": [
+    "tr"
+   ],
+   "market": "TR",
+   "grounds": 11
+  },
+  "il": {
+   "name": "Israel",
+   "cluster": "mena",
+   "languages": [
+    "he",
+    "en"
+   ],
+   "market": "IL",
+   "grounds": 5
+  },
+  "eg": {
+   "name": "Egypt",
+   "cluster": "africa",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "EG",
+   "grounds": 4
+  },
+  "za": {
+   "name": "South Africa",
+   "cluster": "africa",
+   "languages": [
+    "en"
+   ],
+   "market": "ZA",
+   "grounds": 10
+  },
+  "ng": {
+   "name": "Nigeria",
+   "cluster": "africa",
+   "languages": [
+    "en"
+   ],
+   "market": "NG",
+   "grounds": 5
+  },
+  "ke": {
+   "name": "Kenya",
+   "cluster": "africa",
+   "languages": [
+    "en",
+    "sw"
+   ],
+   "market": "KE",
+   "grounds": 5
+  },
+  "ma": {
+   "name": "Morocco",
+   "cluster": "africa",
+   "languages": [
+    "fr",
+    "ar"
+   ],
+   "market": "MA",
+   "grounds": 4
+  },
+  "us": {
+   "name": "United States",
+   "cluster": "west",
+   "languages": [
+    "en"
+   ],
+   "market": "US",
+   "grounds": 40
+  },
+  "gb": {
+   "name": "United Kingdom",
+   "cluster": "west",
+   "languages": [
+    "en"
+   ],
+   "market": "GB",
+   "grounds": 9
+  },
+  "ca": {
+   "name": "Canada",
+   "cluster": "west",
+   "languages": [
+    "en",
+    "fr"
+   ],
+   "market": "CA",
+   "grounds": 5
+  },
+  "global": {
+   "name": "Global English",
+   "cluster": "west",
+   "languages": [
+    "en"
+   ],
+   "market": "US",
+   "grounds": 10
+  },
+  "de": {
+   "name": "Germany, Austria, Switzerland",
+   "cluster": "eu",
+   "languages": [
+    "de"
+   ],
+   "market": "DE",
+   "grounds": 13
+  },
+  "fr": {
+   "name": "France",
+   "cluster": "eu",
+   "languages": [
+    "fr"
+   ],
+   "market": "FR",
+   "grounds": 8
+  },
+  "it": {
+   "name": "Italy",
+   "cluster": "eu",
+   "languages": [
+    "it"
+   ],
+   "market": "IT",
+   "grounds": 6
+  },
+  "es": {
+   "name": "Spain",
+   "cluster": "eu",
+   "languages": [
+    "es"
+   ],
+   "market": "ES",
+   "grounds": 8
+  },
+  "nl": {
+   "name": "Netherlands and Belgium",
+   "cluster": "eu",
+   "languages": [
+    "nl"
+   ],
+   "market": "NL",
+   "grounds": 7
+  },
+  "se": {
+   "name": "Sweden",
+   "cluster": "nordics",
+   "languages": [
+    "sv"
+   ],
+   "market": "SE",
+   "grounds": 8
+  },
+  "dk": {
+   "name": "Denmark",
+   "cluster": "nordics",
+   "languages": [
+    "da"
+   ],
+   "market": "DK",
+   "grounds": 4
+  },
+  "no": {
+   "name": "Norway",
+   "cluster": "nordics",
+   "languages": [
+    "no"
+   ],
+   "market": "NO",
+   "grounds": 6
+  },
+  "fi": {
+   "name": "Finland",
+   "cluster": "nordics",
+   "languages": [
+    "fi"
+   ],
+   "market": "FI",
+   "grounds": 4
+  },
+  "pl": {
+   "name": "Poland",
+   "cluster": "east_eu",
+   "languages": [
+    "pl"
+   ],
+   "market": "PL",
+   "grounds": 10
+  },
+  "cz": {
+   "name": "Czechia",
+   "cluster": "east_eu",
+   "languages": [
+    "en"
+   ],
+   "market": "CZ",
+   "grounds": 3
+  },
+  "hu": {
+   "name": "Hungary",
+   "cluster": "east_eu",
+   "languages": [
+    "en"
+   ],
+   "market": "HU",
+   "grounds": 3
+  },
+  "ua": {
+   "name": "Ukraine",
+   "cluster": "east_eu",
+   "languages": [
+    "uk"
+   ],
+   "market": "UA",
+   "grounds": 3
+  },
+  "ru": {
+   "name": "Russia",
+   "cluster": "ru",
+   "languages": [
+    "ru"
+   ],
+   "market": "RU",
+   "grounds": 22
+  },
+  "br": {
+   "name": "Brazil",
+   "cluster": "latam",
+   "languages": [
+    "pt"
+   ],
+   "market": "BR",
+   "grounds": 19
+  },
+  "mx": {
+   "name": "Mexico",
+   "cluster": "latam",
+   "languages": [
+    "es"
+   ],
+   "market": "MX",
+   "grounds": 6
+  },
+  "cl": {
+   "name": "Chile",
+   "cluster": "latam",
+   "languages": [
+    "es"
+   ],
+   "market": "CL",
+   "grounds": 4
+  },
+  "co": {
+   "name": "Colombia",
+   "cluster": "latam",
+   "languages": [
+    "es"
+   ],
+   "market": "CO",
+   "grounds": 2
+  },
+  "pe": {
+   "name": "Peru",
+   "cluster": "latam",
+   "languages": [
+    "es"
+   ],
+   "market": "PE",
+   "grounds": 2
+  },
+  "ar": {
+   "name": "Argentina",
+   "cluster": "latam",
+   "languages": [
+    "es"
+   ],
+   "market": "AR",
+   "grounds": 5
+  },
+  "institutional": {
+   "name": "Global institutions",
+   "cluster": "institutional",
+   "languages": [
+    "en"
+   ],
+   "market": "US",
+   "grounds": 41
+  }
+ },
  "grounds": [
   {
    "name": "七禾网 期货人物专访",
+   "region": "cn",
+   "language": "zh",
    "route": "http",
    "kind": "interview",
+   "weight": 1.5,
+   "why": "long-form interviews with futures traders; mechanisms stated in their own words",
    "url": "https://www.7hcn.com/article/list-1.html",
    "alt": [
     "https://www.7hcn.com/"
-   ],
-   "site": "7hcn.com",
-   "why": "long-form interviews with futures traders; mechanisms stated in their own words"
+   ]
   },
   {
    "name": "期货日报 全国期货实盘交易大赛",
+   "region": "cn",
+   "language": "zh",
    "route": "http",
    "kind": "competition",
+   "weight": 1.5,
+   "why": "competition records and winner write-ups: numbers plus a stated method",
    "url": "https://www.qhrb.com.cn/",
    "alt": [
     "https://qhrb.com.cn/dasai/"
-   ],
-   "site": "qhrb.com.cn",
-   "why": "competition records and winner write-ups: numbers plus a stated method"
+   ]
   },
   {
    "name": "蓝海密剑 期货实盘大赛",
+   "region": "cn",
+   "language": "zh",
    "route": "search",
    "kind": "competition",
+   "weight": 1.3,
+   "why": "another public futures competition; winner interviews are mechanism-dense",
    "site": "qhrb.com.cn",
    "queries": [
     "蓝海密剑 冠军 策略",
     "实盘大赛 冠军 交易方法"
    ],
-   "why": "another public futures competition; winner interviews are mechanism-dense"
+   "market": "CN"
   },
   {
    "name": "私募排排网",
+   "region": "cn",
+   "language": "zh",
    "route": "search",
    "kind": "interview",
+   "weight": 1.2,
+   "why": "manager interviews and strategy descriptions",
    "site": "simuwang.com",
    "queries": [
     "量化 私募 策略 访谈 CTA",
     "量化 基金经理 策略 逻辑"
    ],
-   "why": "manager interviews and strategy descriptions"
+   "market": "CN"
   },
   {
    "name": "聚宽 JoinQuant 社区",
+   "region": "cn",
+   "language": "zh",
    "route": "render",
    "kind": "community",
-   "url": "https://www.joinquant.com/view/community/list?listType=1",
-   "site": "joinquant.com",
-   "why": "strategy posts with code; JS shell needs a rendered fetch"
+   "weight": 1.0,
+   "why": "strategy posts with code; JS shell needs a rendered fetch",
+   "url": "https://www.joinquant.com/view/community/list?listType=1"
   },
   {
    "name": "优矿 Uqer 社区",
+   "region": "cn",
+   "language": "zh",
    "route": "render",
    "kind": "community",
-   "url": "https://uqer.datayes.com/community/list",
-   "site": "uqer.datayes.com",
-   "why": "factor and strategy write-ups"
+   "weight": 1.0,
+   "why": "factor and strategy write-ups",
+   "url": "https://uqer.datayes.com/community/list"
   },
   {
    "name": "米筐 RiceQuant 社区",
+   "region": "cn",
+   "language": "zh",
    "route": "render",
    "kind": "community",
-   "url": "https://www.ricequant.com/community",
-   "site": "ricequant.com",
-   "why": "strategy posts; JS shell"
+   "weight": 1.0,
+   "why": "strategy posts; JS shell",
+   "url": "https://www.ricequant.com/community"
   },
   {
    "name": "掘金量化 myquant 论坛",
+   "region": "cn",
+   "language": "zh",
    "route": "http",
    "kind": "community",
-   "url": "https://bbs.myquant.cn/",
-   "site": "myquant.cn",
-   "why": "futures/stock strategy forum with code"
+   "weight": 1.0,
+   "why": "futures/stock strategy forum with code",
+   "url": "https://bbs.myquant.cn/"
   },
   {
    "name": "BigQuant 社区",
+   "region": "cn",
+   "language": "zh",
    "route": "render",
    "kind": "community",
-   "url": "https://bigquant.com/wiki/",
-   "site": "bigquant.com",
-   "why": "factor and ML strategy write-ups"
+   "weight": 1.0,
+   "why": "factor and ML strategy write-ups",
+   "url": "https://bigquant.com/wiki/"
   },
   {
    "name": "知乎",
+   "region": "cn",
+   "language": "zh",
    "route": "search",
    "kind": "qa",
+   "weight": 0.9,
+   "why": "HTTP 403 direct; reached through a search engine's index",
    "site": "zhihu.com",
    "queries": [
     "黄金 日内 交易 策略 实盘 经验",
@@ -100,12 +597,16 @@
     "期货 隔夜 跳空 策略",
     "量化 因子 挖掘 期货 分钟"
    ],
-   "why": "HTTP 403 direct; reached through a search engine's index"
+   "market": "CN"
   },
   {
    "name": "CSDN",
+   "region": "cn",
+   "language": "zh",
    "route": "search",
    "kind": "blog",
+   "weight": 0.9,
+   "why": "read timeout direct; reached through search",
    "site": "blog.csdn.net",
    "queries": [
     "期货 量化 策略 回测 源码 黄金",
@@ -113,88 +614,117 @@
     "股指期货 日内 策略 回测 代码",
     "遗传规划 因子 挖掘 期货"
    ],
-   "why": "read timeout direct; reached through search"
+   "market": "CN"
   },
   {
    "name": "雪球",
+   "region": "cn",
+   "language": "zh",
    "route": "search",
    "kind": "social",
+   "weight": 0.9,
+   "why": "WAF direct; reached through search",
    "site": "xueqiu.com",
    "queries": [
     "黄金 期货 交易 策略 复盘",
     "期货 实盘 策略 总结 回撤",
     "商品期货 CTA 策略 逻辑"
    ],
-   "why": "WAF direct; reached through search"
+   "market": "CN"
   },
   {
    "name": "淘股吧",
+   "region": "cn",
+   "language": "zh",
    "route": "search",
    "kind": "forum",
+   "weight": 0.9,
+   "why": "retail practitioner threads; mechanism lore",
    "site": "taoguba.com.cn",
    "queries": [
     "期货 日内 交易 方法 分享",
     "黄金 期货 实盘 记录"
    ],
-   "why": "retail practitioner threads; mechanism lore"
+   "market": "CN"
   },
   {
    "name": "集思录",
+   "region": "cn",
+   "language": "zh",
    "route": "http",
    "kind": "forum",
-   "url": "https://www.jisilu.cn/explore/",
-   "site": "jisilu.cn",
-   "why": "arbitrage community; convergence mechanisms transfer to metals/index basis"
+   "weight": 1.0,
+   "why": "arbitrage community; convergence mechanisms transfer to metals/index basis",
+   "url": "https://www.jisilu.cn/explore/"
   },
   {
    "name": "经管之家 量化投资",
+   "region": "cn",
+   "language": "zh",
    "route": "search",
    "kind": "forum",
+   "weight": 0.9,
+   "why": "academic-practitioner forum",
    "site": "bbs.pinggu.org",
    "queries": [
     "量化投资 策略 回测 期货 论坛",
     "因子 有效性 检验 期货"
    ],
-   "why": "academic-practitioner forum"
+   "market": "CN"
   },
   {
    "name": "和讯期货论坛",
+   "region": "cn",
+   "language": "zh",
    "route": "search",
    "kind": "forum",
+   "weight": 0.9,
+   "why": "older futures forum; era archaeology",
    "site": "bbs.hexun.com",
    "queries": [
     "期货 交易 系统 规则 分享",
     "黄金 期货 日内 策略"
    ],
-   "why": "older futures forum; era archaeology"
+   "market": "CN"
   },
   {
    "name": "东方财富 期货吧",
+   "region": "cn",
+   "language": "zh",
    "route": "search",
    "kind": "forum",
+   "weight": 0.9,
+   "why": "retail futures boards",
    "site": "guba.eastmoney.com",
    "queries": [
     "黄金 期货 吧 策略",
     "原油 期货 吧 交易 方法"
    ],
-   "why": "retail futures boards"
+   "market": "CN"
   },
   {
    "name": "掘金 Juejin",
+   "region": "cn",
+   "language": "zh",
    "route": "juejin",
    "kind": "blog",
+   "weight": 1.0,
+   "why": "developer community with quant articles; JSON API works",
    "queries": [
     "期货 量化 策略 回测",
     "黄金 外汇 量化 策略",
     "因子 挖掘 遗传规划",
     "高频 因子 期货 分钟"
-   ],
-   "why": "developer community with quant articles; JSON API works"
+   ]
   },
   {
    "name": "微信公众号 via 搜狗",
+   "region": "cn",
+   "language": "zh",
    "route": "sogou",
    "kind": "blog",
+   "weight": 1.2,
+   "why": "where a large share of Chinese quant writing lives",
    "queries": [
     "黄金 期货 日内 策略 实盘",
     "期货 高手 访谈 交易系统",
@@ -204,13 +734,16 @@
     "股指期货 日内 回转 策略",
     "夜盘 开盘 效应",
     "换月 效应 期货"
-   ],
-   "why": "where a large share of Chinese quant writing lives"
+   ]
   },
   {
    "name": "Bilibili",
+   "region": "cn",
+   "language": "zh",
    "route": "bilibili",
    "kind": "video",
+   "weight": 1.0,
+   "why": "lecture and interview video; public subtitles when present",
    "queries": [
     "期货 高手 访谈 交易 方法",
     "实盘大赛 冠军 策略",
@@ -219,69 +752,6030 @@
     "商品期货 套利 策略 讲解",
     "股指期货 日内 交易 系统"
    ],
-   "transcripts": 6,
-   "why": "lecture and interview video; public subtitles when present"
+   "transcripts": 6
   },
   {
    "name": "Gitee",
+   "region": "cn",
+   "language": "zh",
    "route": "gitee",
    "kind": "code",
+   "weight": 1.0,
+   "why": "Chinese code host; README claims and licences",
    "queries": [
     "量化 期货 策略",
     "量化交易 因子",
     "黄金 外汇 策略 回测",
     "CTA 策略 python",
     "vnpy 策略"
-   ],
-   "why": "Chinese code host; README claims and licences"
+   ]
   },
   {
    "name": "中国知网 (CNKI)",
+   "region": "cn",
+   "language": "zh",
    "route": "unreachable",
    "kind": "academic",
-   "site": "cnki.net",
-   "why": "paywalled; recorded so the gap is visible, not silent"
+   "weight": 0.0,
+   "why": "paywalled; recorded so the gap is visible, not silent",
+   "site": "cnki.net"
   },
   {
-   "name": "note.com / Qiita (JP)",
+   "name": "上海黄金交易所 行情与溢价",
+   "region": "cn",
+   "language": "zh",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 1.0,
+   "why": "the Shanghai gold premium is an indirect channel into XAUUSD; daily quotes page",
+   "url": "https://www.sge.com.cn/sjzx/mrhq",
+   "dataset_class": "physical_premia"
+  },
+  {
+   "name": "上期所 数据视图",
+   "region": "cn",
+   "language": "zh",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "SHFE daily volume / open interest / warehouse stocks",
+   "url": "https://www.shfe.com.cn/statements/dataview.html",
+   "dataset_class": "futures_volume_oi"
+  },
+  {
+   "name": "中国人民银行 调查统计",
+   "region": "cn",
+   "language": "zh",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "PBoC statistics releases",
+   "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "国家统计局 数据",
+   "region": "cn",
+   "language": "zh",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "NBS releases: the vintage is the release page",
+   "url": "https://www.stats.gov.cn/sj/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "中债 收益率曲线",
+   "region": "cn",
+   "language": "zh",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "ChinaBond curves; rates leg of CNH carry",
+   "url": "https://www.chinabond.com.cn/cb/cn/yjfx/zzsj/index.shtml",
+   "dataset_class": "rates_curves"
+  },
+  {
+   "name": "中国人民银行 公开市场业务与公告",
+   "region": "cn",
+   "language": "zh",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "PBoC press releases and policy communications -> USDCNH",
+   "url": "https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/index.html"
+  },
+  {
+   "name": "外汇交易中心 中间价公告",
+   "region": "cn",
+   "language": "zh",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "CFETS daily fixing announcements -> USDCNH",
+   "url": "https://www.chinamoney.com.cn/chinese/bkccpr/"
+  },
+  {
+   "name": "海关总署 进出口统计",
+   "region": "cn",
+   "language": "zh",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "China trade releases: iron ore, soy, copper imports -> AUD, BRL, copper",
+   "url": "http://www.customs.gov.cn/customs/302249/zfxxgk/2799825/302274/index.html",
+   "dataset_class": "trade_data"
+  },
+  {
+   "name": "みんかぶ FX",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "community",
+   "weight": 1.0,
+   "why": "retail FX commentary and prediction boards; ドル円 lore",
+   "url": "https://fx.minkabu.jp/",
+   "alt": [
+    "https://minkabu.jp/"
+   ]
+  },
+  {
+   "name": "Yahoo!ファイナンス 掲示板",
+   "region": "jp",
+   "language": "ja",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "robots.txt names this agent family (OP-041): search-index snippets only",
+   "site": "finance.yahoo.co.jp",
+   "queries": [
+    "掲示板 日経225 先物 手法",
+    "掲示板 ドル円 デイトレ 手法",
+    "掲示板 ゴールド 逆張り"
+   ],
+   "snippets_only": true,
+   "market": "JP"
+  },
+  {
+   "name": "株探 マーケットニュース",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.9,
+   "why": "daily market mechanics columns: 需給, 月末, SQ, 裁定",
+   "url": "https://kabutan.jp/news/marketnews/"
+  },
+  {
+   "name": "note.com システムトレード",
+   "region": "jp",
+   "language": "ja",
    "route": "search",
    "kind": "blog",
+   "weight": 1.2,
+   "why": "the botter community's home; robots names AI crawlers (OP-041) so snippets only",
    "site": "note.com",
    "queries": [
     "ゴールド 手法 検証 FX",
     "ドル円 デイトレ 手法 実績",
-    "システムトレード 検証 ルール 公開"
+    "システムトレード 検証 ルール 公開",
+    "日経225 先物 手法 検証 勝率",
+    "仲値 トレード 手法 検証",
+    "ゴトー日 アノマリー 検証"
    ],
-   "why": "Japanese practitioner write-ups; sibling forest with the same claim grammar"
+   "snippets_only": true,
+   "market": "JP"
+  },
+  {
+   "name": "Qiita systemtrade",
+   "region": "jp",
+   "language": "ja",
+   "route": "foreign",
+   "kind": "blog",
+   "weight": 1.0,
+   "why": "keyless JSON API; implementations with code",
+   "fn": "qiita",
+   "queries": [
+    "システムトレード 検証",
+    "FX 手法 バックテスト",
+    "ゴールド 戦略 検証",
+    "日経225 先物 戦略",
+    "仲値 ドル円 検証",
+    "スワップ キャリー 検証"
+   ]
+  },
+  {
+   "name": "Zenn quant",
+   "region": "jp",
+   "language": "ja",
+   "route": "foreign",
+   "kind": "blog",
+   "weight": 1.0,
+   "why": "keyless JSON; newer engineering platform",
+   "fn": "zenn",
+   "queries": [
+    "システムトレード",
+    "FX バックテスト",
+    "日経 先物 戦略"
+   ]
+  },
+  {
+   "name": "はてなブックマーク 投資",
+   "region": "jp",
+   "language": "ja",
+   "route": "foreign",
+   "kind": "social",
+   "weight": 1.0,
+   "why": "what Japanese engineers SAVE; RSS route",
+   "fn": "hatena",
+   "queries": [
+    "システムトレード 検証",
+    "FX 手法 検証",
+    "先物 アノマリー"
+   ]
+  },
+  {
+   "name": "楽天証券 トウシル",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.9,
+   "why": "broker research columns: 為替 需給, 日経 アノマリー",
+   "url": "https://media.rakuten-sec.net/"
+  },
+  {
+   "name": "松井証券 マーケット情報",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "broker market reports",
+   "url": "https://www.matsui.co.jp/market/"
+  },
+  {
+   "name": "SBI証券 マーケットレポート",
+   "region": "jp",
+   "language": "ja",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "broker research is login-heavy; index snippets",
+   "site": "sbisec.co.jp",
+   "queries": [
+    "マーケット レポート 為替 テクニカル",
+    "日経平均 需給 レポート"
+   ],
+   "snippets_only": true,
+   "market": "JP"
+  },
+  {
+   "name": "日経 マーケット",
+   "region": "jp",
+   "language": "ja",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "paywalled; snippets only",
+   "site": "nikkei.com",
+   "queries": [
+    "クオンツ 戦略 検証",
+    "日経平均 アノマリー 月末",
+    "為替 ドル円 需給 仲値",
+    "為替介入 円安 効果"
+   ],
+   "snippets_only": true,
+   "market": "JP"
+  },
+  {
+   "name": "5ch 株板 / 先物板",
+   "region": "jp",
+   "language": "ja",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "Cloudflare-managed block names this agent family (OP-041): index snippets only",
+   "site": "5ch.net",
+   "queries": [
+    "株板 手法 デイトレ 検証",
+    "先物 板 手法 ルール",
+    "ドル円 スレ 手法"
+   ],
+   "snippets_only": true,
+   "market": "JP"
+  },
+  {
+   "name": "Kabu-station / 個人トレーダーブログ",
+   "region": "jp",
+   "language": "ja",
+   "route": "search",
+   "kind": "blog",
+   "weight": 0.7,
+   "why": "the long tail of personal trading blogs",
+   "site": "fc2.com",
+   "queries": [
+    "FX 手法 検証 勝率 ブログ",
+    "日経225 先物 デイトレ 手法 ブログ"
+   ],
+   "market": "JP"
+  },
+  {
+   "name": "トレーダーズ・ウェブ / 市況",
+   "region": "jp",
+   "language": "ja",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "market-mechanics columns",
+   "site": "traders.co.jp",
+   "queries": [
+    "需給 SQ 裁定 解説",
+    "月末 リバランス 相場"
+   ],
+   "market": "JP"
+  },
+  {
+   "name": "YouTube JP トレード解説",
+   "region": "jp",
+   "language": "ja",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata through the index; transcripts through the mirror rotation (measured dead 2026-08-27, said so per video)",
+   "queries": [
+    "ゴールド 手法 検証 FX",
+    "日経225 先物 デイトレ 手法",
+    "ドル円 仲値 トレード 解説"
+   ],
+   "transcripts": 4,
+   "market": "JP"
+  },
+  {
+   "name": "X (nitter) JP trader talk",
+   "region": "jp",
+   "language": "ja",
+   "route": "nitter",
+   "kind": "social",
+   "weight": 0.6,
+   "why": "public tweets through a nitter mirror when one is up; never auth",
+   "queries": [
+    "ドル円 手法 検証 勝率",
+    "ゴールド 逆張り 仲値"
+   ],
+   "mirrors": [
+    "nitter.net",
+    "nitter.privacydev.net",
+    "nitter.poast.org"
+   ]
+  },
+  {
+   "name": "JPX 調査研究",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.7,
+   "why": "exchange research: derivatives microstructure, SQ effects",
+   "url": "https://www.jpx.co.jp/corporate/research-study/index.html"
+  },
+  {
+   "name": "日本証券アナリスト協会 論文",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.5,
+   "why": "practitioner-academic papers",
+   "url": "https://www.saa.or.jp/learning/publication/index.html"
+  },
+  {
+   "name": "日本銀行 統計",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BoJ statistics; JGB, flow of funds",
+   "url": "https://www.boj.or.jp/statistics/index.htm",
+   "alt": [
+    "https://www.boj.or.jp/en/statistics/index.htm"
+   ],
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "財務省 外国為替平衡操作の実施状況",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "MoF intervention disclosures: the yen intervention series -> USDJPY",
+   "url": "https://www.mof.go.jp/policy/international_policy/reference/feio/index.htm",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "財務省 対外及び対内証券売買契約等の状況",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "weekly portfolio flows: the JPY flow channel",
+   "url": "https://www.mof.go.jp/policy/international_policy/reference/itn_transactions_in_securities/index.htm",
+   "dataset_class": "fund_etf_flows"
+  },
+  {
+   "name": "JPX 統計",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "investor-type trading (投資部門別), margin balances",
+   "url": "https://www.jpx.co.jp/markets/statistics-equities/index.html",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "e-Stat",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "the statistics portal; release calendars",
+   "url": "https://www.e-stat.go.jp/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "日本銀行 金融政策決定会合",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "BoJ decisions and statements -> USDJPY",
+   "url": "https://www.boj.or.jp/mopo/mpmdeci/index.htm",
+   "alt": [
+    "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+   ]
+  },
+  {
+   "name": "財務省 為替介入・要人発言",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "MoF FX policy page -> USDJPY",
+   "url": "https://www.mof.go.jp/policy/international_policy/index.html"
+  },
+  {
+   "name": "財務省 国債入札結果",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "JGB auction results",
+   "url": "https://www.mof.go.jp/jgbs/auction/calendar/index.htm",
+   "dataset_class": "auction_fixing"
   },
   {
    "name": "Naver blog (KR)",
+   "region": "kr",
+   "language": "ko",
    "route": "search",
    "kind": "blog",
+   "weight": 1.0,
+   "why": "robots names this agent family (OP-041): index snippets only",
    "site": "blog.naver.com",
    "queries": [
     "골드 선물 매매 기법 실전",
     "해외선물 돌파 매매 규칙",
-    "나스닥 선물 데이트레이딩 기법"
+    "나스닥 선물 데이트레이딩 기법",
+    "원달러 환율 월말 네고 매매",
+    "금 선물 야간 매매 전략"
    ],
-   "why": "Korean retail futures practitioners"
+   "snippets_only": true,
+   "market": "KR"
   },
   {
-   "name": "smart-lab / mfd (RU)",
+   "name": "Naver 카페",
+   "region": "kr",
+   "language": "ko",
+   "route": "unreachable",
+   "kind": "community",
+   "weight": 0.0,
+   "why": "robots.txt Disallow: / with a prose header forbidding automated reading (OP-041); recorded, not routed around",
+   "site": "cafe.naver.com"
+  },
+  {
+   "name": "팍스넷 종목토론",
+   "region": "kr",
+   "language": "ko",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "Korea's oldest stock board; futures/options threads",
+   "url": "https://www.paxnet.co.kr/"
+  },
+  {
+   "name": "팍스넷 검색",
+   "region": "kr",
+   "language": "ko",
    "route": "search",
    "kind": "forum",
+   "weight": 0.7,
+   "why": "board search via the index",
+   "site": "paxnet.co.kr",
+   "queries": [
+    "해외선물 매매 기법",
+    "코스피200 선물 옵션 만기 전략"
+   ],
+   "market": "KR"
+  },
+  {
+   "name": "DC inside 주식/해외선물 갤러리",
+   "region": "kr",
+   "language": "ko",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.8,
+   "why": "robots names this agent family (OP-041): index snippets only",
+   "site": "gall.dcinside.com",
+   "queries": [
+    "주식 갤러리 매매 기법 검증",
+    "해외선물 갤러리 돌파 매매",
+    "금 선물 갤러리 야간"
+   ],
+   "snippets_only": true,
+   "market": "KR"
+  },
+  {
+   "name": "tistory 퀀트 블로그",
+   "region": "kr",
+   "language": "ko",
+   "route": "search",
+   "kind": "blog",
+   "weight": 1.0,
+   "why": "personal quant blogs; fetchable",
+   "site": "tistory.com",
+   "queries": [
+    "퀀트 백테스트 전략 수익률 검증",
+    "해외선물 자동매매 전략 규칙",
+    "금 선물 매매 전략 백테스트",
+    "코스피 계절성 월말 효과 백테스트"
+   ],
+   "market": "KR"
+  },
+  {
+   "name": "Velog quant",
+   "region": "kr",
+   "language": "ko",
+   "route": "foreign",
+   "kind": "blog",
+   "weight": 1.0,
+   "why": "keyless GraphQL; Korean engineering write-ups",
+   "fn": "velog",
+   "queries": [
+    "퀀트 백테스트",
+    "자동매매 전략",
+    "해외선물 백테스트"
+   ]
+  },
+  {
+   "name": "한국경제 퀀트 칼럼",
+   "region": "kr",
+   "language": "ko",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.8,
+   "why": "daily columns on market mechanics",
+   "site": "hankyung.com",
+   "queries": [
+    "퀀트 전략 칼럼",
+    "계절성 아노말리 코스피",
+    "원달러 환율 수급 외국인"
+   ],
+   "market": "KR"
+  },
+  {
+   "name": "매일경제 / 연합인포맥스 시장",
+   "region": "kr",
+   "language": "ko",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.8,
+   "why": "FX and rates desk coverage: the KRW flow channel",
+   "site": "einfomax.co.kr",
+   "queries": [
+    "환율 수급 네고 결제 수요",
+    "국채 입찰 결과 금리"
+   ],
+   "market": "KR"
+  },
+  {
+   "name": "KRX / 자본시장연구원 연구",
+   "region": "kr",
+   "language": "ko",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.6,
+   "why": "capital markets institute research",
+   "site": "kcmi.re.kr",
+   "queries": [
+    "연구 보고서 파생상품 시장 미시구조",
+    "외국인 수급 코스피 영향 연구"
+   ],
+   "market": "KR"
+  },
+  {
+   "name": "YouTube KR 매매기법",
+   "region": "kr",
+   "language": "ko",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata through the index; transcripts through the mirror rotation",
+   "queries": [
+    "해외선물 매매 기법 검증",
+    "금 선물 데이트레이딩 기법",
+    "원달러 환율 전망 수급"
+   ],
+   "transcripts": 4,
+   "market": "KR"
+  },
+  {
+   "name": "한국은행 경제통계시스템 ECOS",
+   "region": "kr",
+   "language": "ko",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BoK statistics portal",
+   "url": "https://ecos.bok.or.kr/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "KRX 정보데이터시스템",
+   "region": "kr",
+   "language": "ko",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "investor-type flows, derivatives OI",
+   "url": "http://data.krx.co.kr/",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "관세청 수출입 통계",
+   "region": "kr",
+   "language": "ko",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "trade releases: the KRW export channel",
+   "url": "https://unipass.customs.go.kr/ets/",
+   "dataset_class": "trade_data"
+  },
+  {
+   "name": "한국은행 통화정책방향",
+   "region": "kr",
+   "language": "ko",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "BoK decisions -> USDKRW",
+   "url": "https://www.bok.or.kr/portal/bbs/B0000245/list.do?menuNo=200761"
+  },
+  {
+   "name": "기획재정부 외환시장 동향",
+   "region": "kr",
+   "language": "ko",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "MoEF FX statements and smoothing operations -> USDKRW",
+   "url": "https://www.moef.go.kr/"
+  },
+  {
+   "name": "Telegram KR 시장",
+   "region": "kr",
+   "language": "ko",
+   "route": "telegram",
+   "kind": "social",
+   "weight": 0.5,
+   "why": "public channel previews; no account",
+   "channels": [
+    "kbs_economy",
+    "yonhapnews_economy"
+   ]
+  },
+  {
+   "name": "PTT Stock 板",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.2,
+   "why": "Taiwan's main equities board; 台指期 當沖 lore",
+   "url": "https://www.ptt.cc/bbs/Stock/index.html"
+  },
+  {
+   "name": "PTT Option 板",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.2,
+   "why": "options and futures writers; 結算 週選 mechanics",
+   "url": "https://www.ptt.cc/bbs/Option/index.html"
+  },
+  {
+   "name": "PTT Foreign_Inv 海外投資板",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.8,
+   "why": "overseas markets and FX threads",
+   "url": "https://www.ptt.cc/bbs/Foreign_Inv/index.html"
+  },
+  {
+   "name": "Mobile01 投資與理財",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.8,
+   "why": "large general forum; investment sub-board via the index",
+   "site": "mobile01.com",
+   "queries": [
+    "期貨 當沖 手法 分享",
+    "台指期 策略 回測",
+    "黃金 外匯 交易 策略 心得"
+   ],
+   "market": "TW"
+  },
+  {
+   "name": "CMoney 筆記",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.9,
+   "why": "retail strategy notes; 籌碼 mechanics",
+   "url": "https://www.cmoney.tw/notes/"
+  },
+  {
+   "name": "玩股網",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "community",
+   "weight": 0.9,
+   "why": "Taiwan retail quant community; 法人籌碼 lore",
+   "url": "https://www.wantgoo.com/"
+  },
+  {
+   "name": "玩股網 搜尋",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "search",
+   "kind": "community",
+   "weight": 0.6,
+   "why": "index search of the same ground",
+   "site": "wantgoo.com",
+   "queries": [
+    "台指期 策略 籌碼 回測",
+    "外資 期貨 未平倉 策略"
+   ],
+   "market": "TW"
+  },
+  {
+   "name": "財經M平方 部落格",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "column",
+   "weight": 1.0,
+   "why": "macro charts with stated mechanisms: rates, flows, commodities",
+   "url": "https://www.macromicro.me/blog"
+  },
+  {
+   "name": "鉅亨網 外匯 / 期貨",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.8,
+   "why": "FX and futures coverage",
+   "url": "https://news.cnyes.com/news/cat/forex",
+   "alt": [
+    "https://news.cnyes.com/news/cat/future"
+   ]
+  },
+  {
+   "name": "台灣期貨交易所 研究",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.6,
+   "why": "exchange research",
+   "site": "taifex.com.tw",
+   "queries": [
+    "研究 報告 台指 選擇權 波動率",
+    "期貨 市場 微結構 研究"
+   ],
+   "market": "TW"
+  },
+  {
+   "name": "Dcard 投資板 / 理財板",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "search",
+   "kind": "community",
+   "weight": 0.6,
+   "why": "younger retail register",
+   "site": "dcard.tw",
+   "queries": [
+    "台指期 當沖 心得 策略",
+    "黃金 期貨 策略 回測"
+   ],
+   "market": "TW"
+  },
+  {
+   "name": "YouTube TW 期貨教學",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata through the index; transcripts via mirrors",
+   "queries": [
+    "台指期 當沖 策略 教學",
+    "黃金 期貨 交易 策略 檢驗"
+   ],
+   "transcripts": 4,
+   "market": "TW"
+  },
+  {
+   "name": "台灣期交所 三大法人",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "institutional futures positioning: 外資 未平倉",
+   "url": "https://www.taifex.com.tw/cht/3/futContractsDate",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "台灣證交所 統計",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "investor-type flows",
+   "url": "https://www.twse.com.tw/zh/statistics/index.html",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "中央銀行 統計",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CBC statistics; TWD is a transfer note",
+   "url": "https://www.cbc.gov.tw/tw/lp-1194-1.html",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "中央銀行 新聞稿",
+   "region": "tw",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "CBC statements (TWD; transfer via TSMC and CNH)",
+   "url": "https://www.cbc.gov.tw/tw/lp-1095-1.html"
+  },
+  {
+   "name": "AAStocks 財經新聞",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.9,
+   "why": "HK market coverage: 北水, 期指 結算",
+   "url": "http://www.aastocks.com/tc/stocks/news/aafn/"
+  },
+  {
+   "name": "etnet 經濟通 評論",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.9,
+   "why": "columnists on HSI/HSCEI mechanics",
+   "url": "https://www.etnet.com.hk/www/tc/news/categorized_news.php?category=commentary"
+  },
+  {
+   "name": "信報 量化 專欄",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "paywalled; snippets only",
+   "site": "hkej.com",
+   "queries": [
+    "量化 策略 專欄 港股",
+    "恒指 期指 結算 效應",
+    "港股通 南下資金 效應"
+   ],
+   "snippets_only": true,
+   "market": "HK"
+  },
+  {
+   "name": "HKEX 研究報告",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.8,
+   "why": "exchange research: Connect flows, derivatives",
+   "url": "https://www.hkex.com.hk/News/Research-Reports?sc_lang=zh-HK",
+   "alt": [
+    "https://www.hkex.com.hk/News/Research-Reports?sc_lang=en"
+   ]
+  },
+  {
+   "name": "雪球 港股",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "search",
+   "kind": "social",
+   "weight": 0.8,
+   "why": "WAF direct; via the index",
+   "site": "xueqiu.com",
+   "queries": [
+    "港股 恒指 期指 策略 復盤",
+    "港股通 南下資金 效應 策略",
+    "牛熊證 街貨 分佈 策略"
+   ],
+   "market": "HK"
+  },
+  {
+   "name": "香港討論區 財經",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "the older HK forum",
+   "site": "discuss.com.hk",
+   "queries": [
+    "期指 策略 結算日",
+    "黃金 外匯 策略 分享"
+   ],
+   "market": "HK"
+  },
+  {
+   "name": "Google 財經 / 灼見名家 quant",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "columnists",
+   "site": "master-insight.com",
+   "queries": [
+    "量化 交易 專欄",
+    "恒指 波幅 策略"
+   ],
+   "market": "HK"
+  },
+  {
+   "name": "HKEX 市場數據",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "HSI futures OI, Connect turnover",
+   "url": "https://www.hkex.com.hk/Market-Data/Statistics?sc_lang=zh-HK",
+   "dataset_class": "futures_volume_oi"
+  },
+  {
+   "name": "金管局 統計",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "HKMA aggregate balance, HIBOR: the peg mechanics",
+   "url": "https://www.hkma.gov.hk/chi/data-publications-and-research/data-and-statistics/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "金管局 新聞稿",
+   "region": "hk",
+   "language": "zh-Hant",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "HKMA peg operations -> USDHKD",
+   "url": "https://www.hkma.gov.hk/chi/news-and-media/press-releases/"
+  },
+  {
+   "name": "HKMA press releases (en)",
+   "region": "hk",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "peg defence notices -> USDHKD",
+   "url": "https://www.hkma.gov.hk/eng/news-and-media/press-releases/"
+  },
+  {
+   "name": "HardwareZone Money Mind",
+   "region": "sg",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "Singapore's largest forum; trading threads",
+   "url": "https://forums.hardwarezone.com.sg/forums/money-mind.31/"
+  },
+  {
+   "name": "InvestingNote",
+   "region": "sg",
+   "language": "en",
+   "route": "http",
+   "kind": "social",
+   "weight": 0.8,
+   "why": "SG/MY social trading feed",
+   "url": "https://www.investingnote.com/"
+  },
+  {
+   "name": "Seedly Community",
+   "region": "sg",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "retail investing Q&A",
+   "url": "https://seedly.sg/community/"
+  },
+  {
+   "name": "SGX Research",
+   "region": "sg",
+   "language": "en",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.7,
+   "why": "exchange research and market updates",
+   "url": "https://www.sgx.com/research-education/market-updates"
+  },
+  {
+   "name": "Dollars and Sense / The Smart Investor",
+   "region": "sg",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "SG finance columnists",
+   "site": "dollarsandsense.sg",
+   "queries": [
+    "trading strategy sgd usd carry",
+    "sti index seasonal"
+   ],
+   "market": "SG"
+  },
+  {
+   "name": "MAS statistics",
+   "region": "sg",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "MAS statistics: S$NEER, reserves",
+   "url": "https://www.mas.gov.sg/statistics",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "SingStat",
+   "region": "sg",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "national statistics releases",
+   "url": "https://www.singstat.gov.sg/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "MAS monetary policy statements",
+   "region": "sg",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "MAS band decisions -> USDSGD",
+   "url": "https://www.mas.gov.sg/monetary-policy"
+  },
+  {
+   "name": "SGX derivatives statistics",
+   "region": "sg",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "SGX FX and index futures volume/OI",
+   "url": "https://www.sgx.com/research-education/derivatives",
+   "dataset_class": "futures_volume_oi"
+  },
+  {
+   "name": "F319",
+   "region": "vn",
+   "language": "vi",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.2,
+   "why": "Vietnam's main trading forum; VN30 phái sinh threads",
+   "url": "https://f319.com/"
+  },
+  {
+   "name": "CafeF Thị trường",
+   "region": "vn",
+   "language": "vi",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.9,
+   "why": "market coverage; khối ngoại, phái sinh",
+   "url": "https://cafef.vn/thi-truong-chung-khoan.chn"
+  },
+  {
+   "name": "VnDirect DTrading / research",
+   "region": "vn",
+   "language": "vi",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "broker research",
+   "site": "vndirect.com.vn",
+   "queries": [
+    "chiến lược giao dịch phái sinh VN30 kỹ thuật",
+    "báo cáo chiến lược vàng tỷ giá"
+   ],
+   "market": "VN"
+  },
+  {
+   "name": "Vietstock",
+   "region": "vn",
+   "language": "vi",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "market data and columns",
+   "site": "vietstock.vn",
+   "queries": [
+    "chiến lược phái sinh VN30 đáo hạn",
+    "tỷ giá can thiệp ngân hàng nhà nước"
+   ],
+   "market": "VN"
+  },
+  {
+   "name": "Tinh te tài chính",
+   "region": "vn",
+   "language": "vi",
+   "route": "foreign",
+   "kind": "community",
+   "weight": 1.0,
+   "why": "Vietnam's largest tech community",
+   "fn": "tinhte",
+   "queries": [
+    "chiến lược giao dịch vàng",
+    "phái sinh VN30 chiến lược"
+   ]
+  },
+  {
+   "name": "Voz / Webtretho đầu tư",
+   "region": "vn",
+   "language": "vi",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "general forums' trading boards",
+   "site": "voz.vn",
+   "queries": [
+    "chứng khoán phái sinh chiến lược",
+    "vàng giao dịch chiến lược"
+   ],
+   "market": "VN"
+  },
+  {
+   "name": "YouTube VN chứng khoán",
+   "region": "vn",
+   "language": "vi",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "chiến lược phái sinh VN30 kiểm định",
+    "giao dịch vàng chiến lược kiểm chứng"
+   ],
+   "transcripts": 4,
+   "market": "VN"
+  },
+  {
+   "name": "Ngân hàng Nhà nước tỷ giá",
+   "region": "vn",
+   "language": "vi",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "SBV central rate and reserves",
+   "url": "https://www.sbv.gov.vn/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Tổng cục Thống kê",
+   "region": "vn",
+   "language": "vi",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "GSO releases: exports, CPI",
+   "url": "https://www.gso.gov.vn/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "HOSE thống kê",
+   "region": "vn",
+   "language": "vi",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "foreign flows, derivatives OI",
+   "url": "https://www.hsx.vn/",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "SBV thông cáo",
+   "region": "vn",
+   "language": "vi",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "SBV notices: VND (transfer note)",
+   "url": "https://www.sbv.gov.vn/webcenter/portal/vi/menu/trangchu/ttsk/ttsk_chitiet"
+  },
+  {
+   "name": "Cà phê Việt Nam xuất khẩu",
+   "region": "vn",
+   "language": "vi",
+   "route": "search",
+   "kind": "macro",
+   "weight": 0.7,
+   "why": "coffee exporters' association: the robusta channel",
+   "site": "vicofa.org.vn",
+   "queries": [
+    "xuất khẩu cà phê robusta sản lượng",
+    "vụ thu hoạch cà phê"
+   ],
+   "market": "VN"
+  },
+  {
+   "name": "Pantip สินธร",
+   "region": "th",
+   "language": "th",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.2,
+   "why": "Thailand's main investing board",
+   "url": "https://pantip.com/forum/sinthorn"
+  },
+  {
+   "name": "stock2morrow",
+   "region": "th",
+   "language": "th",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.8,
+   "why": "investor community and articles",
+   "url": "https://stock2morrow.com/"
+  },
+  {
+   "name": "SET research",
+   "region": "th",
+   "language": "th",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.6,
+   "why": "exchange research",
+   "site": "set.or.th",
+   "queries": [
+    "research paper microstructure SET50 futures",
+    "งานวิจัย ตลาดอนุพันธ์ SET50"
+   ],
+   "market": "TH"
+  },
+  {
+   "name": "ThaiPVD / Settrade บทวิเคราะห์",
+   "region": "th",
+   "language": "th",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "broker strategy notes",
+   "site": "settrade.com",
+   "queries": [
+    "บทวิเคราะห์ กลยุทธ์ SET50 ฟิวเจอร์ส",
+    "ทองคำ กลยุทธ์ เทรด"
+   ],
+   "market": "TH"
+  },
+  {
+   "name": "Blockdit / Facebook เพจ เทรด",
+   "region": "th",
+   "language": "th",
+   "route": "search",
+   "kind": "blog",
+   "weight": 0.5,
+   "why": "Thai blogging platform",
+   "site": "blockdit.com",
+   "queries": [
+    "กลยุทธ์ เทรด ทองคำ พิสูจน์",
+    "SET50 ฟิวเจอร์ส กลยุทธ์"
+   ],
+   "market": "TH"
+  },
+  {
+   "name": "YouTube TH เทรด",
+   "region": "th",
+   "language": "th",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "กลยุทธ์ เทรด ทองคำ ทดสอบ",
+    "SET50 ฟิวเจอร์ส เทรด กลยุทธ์"
+   ],
+   "transcripts": 4,
+   "market": "TH"
+  },
+  {
+   "name": "ธนาคารแห่งประเทศไทย สถิติ",
+   "region": "th",
+   "language": "th",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BoT statistics: reserves, rates",
+   "url": "https://www.bot.or.th/th/statistics.html",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "SET market statistics",
+   "region": "th",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "investor-type flows",
+   "url": "https://www.set.or.th/en/market/statistics/investor-type",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "กนง ผลการประชุม",
+   "region": "th",
+   "language": "th",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "MPC decisions -> USDTHB",
+   "url": "https://www.bot.or.th/th/news-and-media/news/news-mpc.html"
+  },
+  {
+   "name": "กระทรวงพาณิชย์ ส่งออก",
+   "region": "th",
+   "language": "th",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "trade releases: the THB export channel",
+   "url": "https://www.moc.go.th/",
+   "dataset_class": "trade_data"
+  },
+  {
+   "name": "Stockbit stream",
+   "region": "id",
+   "language": "id",
+   "route": "search",
+   "kind": "social",
+   "weight": 1.0,
+   "why": "JS app; via the index",
+   "site": "stockbit.com",
+   "queries": [
+    "strategi trading saham breakout backtest",
+    "emas strategi scalping",
+    "IHSG asing net buy strategi"
+   ],
+   "market": "ID"
+  },
+  {
+   "name": "Kaskus forum saham/forex",
+   "region": "id",
+   "language": "id",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.8,
+   "why": "Indonesia's big forum",
+   "site": "kaskus.co.id",
+   "queries": [
+    "saham forex strategi trading breakout",
+    "emas trading strategi scalping"
+   ],
+   "market": "ID"
+  },
+  {
+   "name": "IDX research",
+   "region": "id",
+   "language": "id",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.5,
+   "why": "exchange research",
+   "site": "idx.co.id",
+   "queries": [
+    "riset pasar modal mikrostruktur",
+    "statistik investor asing"
+   ],
+   "market": "ID"
+  },
+  {
+   "name": "Kontan Investasi",
+   "region": "id",
+   "language": "id",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "market coverage; asing flows",
+   "url": "https://investasi.kontan.co.id/"
+  },
+  {
+   "name": "Bareksa / Bisnis.com market",
+   "region": "id",
+   "language": "id",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "financial press",
+   "site": "bisnis.com",
+   "queries": [
+    "rupiah intervensi bank indonesia strategi",
+    "emas strategi trading"
+   ],
+   "market": "ID"
+  },
+  {
+   "name": "YouTube ID trading",
+   "region": "id",
+   "language": "id",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "strategi trading emas terbukti backtest",
+    "strategi saham breakout backtest"
+   ],
+   "transcripts": 4,
+   "market": "ID"
+  },
+  {
+   "name": "Bank Indonesia statistik",
+   "region": "id",
+   "language": "id",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BI statistics: reserves, rates",
+   "url": "https://www.bi.go.id/id/statistik/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "BPS Statistik",
+   "region": "id",
+   "language": "id",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "national statistics releases",
+   "url": "https://www.bps.go.id/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Bank Indonesia siaran pers",
+   "region": "id",
+   "language": "id",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "BI decisions and intervention notices -> USDIDR",
+   "url": "https://www.bi.go.id/id/publikasi/ruang-media/news-release/default.aspx"
+  },
+  {
+   "name": "IDX statistik",
+   "region": "id",
+   "language": "id",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "market data: foreign flows",
+   "url": "https://www.idx.co.id/id/data-pasar/",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "GAPKI kelapa sawit",
+   "region": "id",
+   "language": "id",
+   "route": "search",
+   "kind": "macro",
+   "weight": 0.6,
+   "why": "palm oil association: the CPO channel",
+   "site": "gapki.id",
+   "queries": [
+    "ekspor minyak sawit produksi",
+    "stok cpo"
+   ],
+   "market": "ID"
+  },
+  {
+   "name": "i3investor blogs",
+   "region": "my",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 1.0,
+   "why": "Malaysia's retail investing hub",
+   "url": "https://klse.i3investor.com/web/blog/list"
+  },
+  {
+   "name": "Lowyat forum investments",
+   "region": "my",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "big general forum",
+   "site": "forum.lowyat.net",
+   "queries": [
+    "forex gold trading strategy backtest",
+    "fkli futures strategy"
+   ],
+   "market": "MY"
+  },
+  {
+   "name": "Bursa research",
+   "region": "my",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.5,
+   "why": "exchange research",
+   "site": "bursamalaysia.com",
+   "queries": [
+    "research market microstructure derivatives FKLI",
+    "foreign flows report"
+   ],
+   "market": "MY"
+  },
+  {
+   "name": "The Edge Markets",
+   "region": "my",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "financial press",
+   "site": "theedgemalaysia.com",
+   "queries": [
+    "ringgit outlook flows bnm",
+    "fcpo palm oil futures strategy"
+   ],
+   "market": "MY"
+  },
+  {
+   "name": "Bank Negara statistics",
+   "region": "my",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BNM statistics",
+   "url": "https://www.bnm.gov.my/statistics",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Bank Negara press releases",
+   "region": "my",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "BNM decisions (MYR transfer note)",
+   "url": "https://www.bnm.gov.my/press-releases"
+  },
+  {
+   "name": "MPOB palm oil statistics",
+   "region": "my",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "palm oil stocks and exports: the CPO channel",
+   "url": "https://bepi.mpob.gov.my/",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "PinoyInvestor",
+   "region": "ph",
+   "language": "en",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "PH retail investing site",
+   "url": "https://www.pinoyinvestor.com/"
+  },
+  {
+   "name": "PinoyMoneyTalk forum",
+   "region": "ph",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "the PH money forum",
+   "site": "pinoymoneytalk.com",
+   "queries": [
+    "stock trading strategy breakout",
+    "forex peso strategy"
+   ],
+   "market": "PH"
+  },
+  {
+   "name": "PSE research",
+   "region": "ph",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "exchange research",
+   "site": "pse.com.ph",
+   "queries": [
+    "research market report foreign flows"
+   ],
+   "market": "PH"
+  },
+  {
+   "name": "BSP statistics",
+   "region": "ph",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BSP statistics: remittances, reserves",
+   "url": "https://www.bsp.gov.ph/SitePages/Statistics/Statistics.aspx",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "BSP media releases",
+   "region": "ph",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "BSP decisions (PHP transfer note)",
+   "url": "https://www.bsp.gov.ph/SitePages/MediaAndResearch/MediaReleases.aspx"
+  },
+  {
+   "name": "TradingQnA",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "qa",
+   "weight": 1.2,
+   "why": "Zerodha's Q&A; expiry-day and option-writing mechanics",
+   "url": "https://tradingqna.com/latest"
+  },
+  {
+   "name": "ValuePickr",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.8,
+   "why": "India's investor forum",
+   "url": "https://forum.valuepickr.com/latest"
+  },
+  {
+   "name": "QuantInsti blog",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 1.2,
+   "why": "explicit strategy write-ups with code",
+   "url": "https://blog.quantinsti.com/"
+  },
+  {
+   "name": "QuantInsti feed",
+   "region": "in",
+   "language": "en",
+   "route": "rss",
+   "kind": "blog",
+   "weight": 0.7,
+   "why": "the same ground as a feed",
+   "feeds": [
+    "https://blog.quantinsti.com/rss/"
+   ],
+   "fetch_items": 3
+  },
+  {
+   "name": "Zerodha Varsity",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.9,
+   "why": "mechanism articles: futures, options, currency",
+   "url": "https://zerodha.com/varsity/"
+  },
+  {
+   "name": "Moneycontrol message boards",
+   "region": "in",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.9,
+   "why": "retail boards via the index",
+   "site": "mmb.moneycontrol.com",
+   "queries": [
+    "nifty option strategy intraday backtest",
+    "bank nifty expiry day strategy",
+    "mcx gold crude strategy"
+   ],
+   "market": "IN"
+  },
+  {
+   "name": "NSE research",
+   "region": "in",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.5,
+   "why": "NSE blocks datacenter fetches; index snippets",
+   "site": "nseindia.com",
+   "queries": [
+    "research paper market microstructure derivatives",
+    "working paper index options expiry"
+   ],
+   "snippets_only": true,
+   "market": "IN"
+  },
+  {
+   "name": "SEBI research",
+   "region": "in",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.5,
+   "why": "regulator studies",
+   "site": "sebi.gov.in",
+   "queries": [
+    "research study derivatives retail loss futures options",
+    "study intraday traders equity"
+   ],
+   "market": "IN"
+  },
+  {
+   "name": "r/IndianStreetBets and r/IndiaInvestments",
+   "region": "in",
+   "language": "en",
+   "route": "reddit",
+   "kind": "community",
+   "weight": 1.0,
+   "why": "Indian retail register via public feeds",
+   "subs": [
+    "IndianStreetBets",
+    "IndiaInvestments"
+   ]
+  },
+  {
+   "name": "Hindi trading blogs and boards",
+   "region": "in",
+   "language": "hi",
+   "route": "search",
+   "kind": "blog",
+   "weight": 0.8,
+   "why": "site-less Hindi search: the Hindi forest has no single home",
+   "queries": [
+    "निफ्टी इंट्राडे रणनीति ब्रेकआउट",
+    "सोना चांदी ट्रेडिंग रणनीति एमसीएक्स",
+    "बैंक निफ्टी एक्सपायरी रणनीति"
+   ],
+   "market": "IN"
+  },
+  {
+   "name": "RBI working papers",
+   "region": "in",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.5,
+   "why": "RBI research",
+   "site": "rbi.org.in",
+   "queries": [
+    "working paper exchange rate intervention rupee volatility",
+    "working paper fii flows"
+   ],
+   "market": "IN"
+  },
+  {
+   "name": "YouTube IN trading",
+   "region": "in",
+   "language": "en",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "nifty intraday strategy backtested",
+    "gold mcx trading strategy tested",
+    "बैंक निफ्टी रणनीति बैकटेस्ट"
+   ],
+   "transcripts": 4,
+   "market": "IN"
+  },
+  {
+   "name": "X (nitter) India traders",
+   "region": "in",
+   "language": "en",
+   "route": "nitter",
+   "kind": "social",
+   "weight": 0.6,
+   "why": "public tweets via a mirror when one is up",
+   "queries": [
+    "nifty expiry strategy backtest",
+    "usdinr rbi intervention"
+   ],
+   "mirrors": [
+    "nitter.net",
+    "nitter.privacydev.net",
+    "nitter.poast.org"
+   ]
+  },
+  {
+   "name": "RBI DBIE statistics",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "RBI database: reserves, intervention",
+   "url": "https://dbie.rbi.org.in/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "NSDL FPI statistics",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "foreign portfolio flows: the INR flow channel",
+   "url": "https://www.fpi.nsdl.co.in/web/Reports/Latest.aspx",
+   "dataset_class": "fund_etf_flows"
+  },
+  {
+   "name": "MOSPI statistics",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "national statistics releases",
+   "url": "https://mospi.gov.in/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "MCX market data",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "gold/silver/crude futures OI",
+   "url": "https://www.mcxindia.com/market-data",
+   "dataset_class": "futures_volume_oi"
+  },
+  {
+   "name": "RBI press releases",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "RBI policy and intervention notices -> USDINR",
+   "url": "https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx"
+  },
+  {
+   "name": "DGCI&S trade statistics",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "gold imports: the physical-premium channel into XAUUSD",
+   "url": "https://www.dgciskol.gov.in/",
+   "dataset_class": "trade_data"
+  },
+  {
+   "name": "PSX research and boards",
+   "region": "pk",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "exchange research",
+   "site": "psx.com.pk",
+   "queries": [
+    "research report kse-100 flows",
+    "market report foreign investors"
+   ],
+   "market": "PK"
+  },
+  {
+   "name": "Pakistan trading forums",
+   "region": "pk",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "site-less search",
+   "queries": [
+    "kse 100 trading strategy backtest pakistan",
+    "usd pkr sbp intervention strategy"
+   ],
+   "market": "PK"
+  },
+  {
+   "name": "State Bank of Pakistan statistics",
+   "region": "pk",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "SBP data",
+   "url": "https://www.sbp.org.pk/ecodata/index2.asp",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "SBP monetary policy",
+   "region": "pk",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "SBP decisions (PKR transfer note)",
+   "url": "https://www.sbp.org.pk/m_policy/index.asp"
+  },
+  {
+   "name": "DSE and Bangladesh boards",
+   "region": "bd",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.4,
+   "why": "site-less search",
+   "queries": [
+    "dse index trading strategy bangladesh",
+    "bangladesh bank taka devaluation"
+   ],
+   "market": "BD"
+  },
+  {
+   "name": "Bangladesh Bank statistics",
+   "region": "bd",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BB economic data",
+   "url": "https://www.bb.org.bd/en/index.php/econdata/index",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "CSE and Sri Lanka boards",
+   "region": "lk",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.4,
+   "why": "site-less search",
+   "queries": [
+    "cse all share trading strategy sri lanka",
+    "cbsl rate decision rupee"
+   ],
+   "market": "LK"
+  },
+  {
+   "name": "Central Bank of Sri Lanka statistics",
+   "region": "lk",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CBSL data",
+   "url": "https://www.cbsl.gov.lk/en/statistics",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "HotCopper",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "Australia's largest stock forum",
+   "url": "https://hotcopper.com.au/"
+  },
+  {
+   "name": "HotCopper forex/commodities",
+   "region": "au",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "board search via the index",
+   "site": "hotcopper.com.au",
+   "queries": [
+    "gold trading strategy asx spi futures",
+    "aud usd strategy rba",
+    "iron ore price aud strategy"
+   ],
+   "market": "AU"
+  },
+  {
+   "name": "Aussie Stock Forums",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "trading systems sub-forum",
+   "url": "https://www.aussiestockforums.com/forums/"
+  },
+  {
+   "name": "r/ASX_Bets and r/AusFinance",
+   "region": "au",
+   "language": "en",
+   "route": "reddit",
+   "kind": "community",
+   "weight": 0.7,
+   "why": "Australian retail register via feeds",
+   "subs": [
+    "ASX_Bets",
+    "AusFinance"
+   ]
+  },
+  {
+   "name": "RBA Research Discussion Papers",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.8,
+   "why": "AUD, commodity currency and intervention papers",
+   "url": "https://www.rba.gov.au/publications/rdp/"
+  },
+  {
+   "name": "ASX research",
+   "region": "au",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "exchange research",
+   "site": "asx.com.au",
+   "queries": [
+    "research report spi futures",
+    "asx 24 derivatives report"
+   ],
+   "market": "AU"
+  },
+  {
+   "name": "Macrobusiness",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "AUD/iron-ore/housing macro columns",
+   "url": "https://www.macrobusiness.com.au/"
+  },
+  {
+   "name": "RBA statistics",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "RBA tables: rates, FX turnover",
+   "url": "https://www.rba.gov.au/statistics/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "ABS statistics",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "ABS releases",
+   "url": "https://www.abs.gov.au/statistics",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "ABARES commodities",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "agricultural outlook: the AUD bulk-export channel",
+   "url": "https://www.agriculture.gov.au/abares/research-topics/agricultural-outlook",
+   "dataset_class": "weather_energy"
+  },
+  {
+   "name": "Port Hedland / Pilbara Ports statistics",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "iron ore shipments -> AUD",
+   "url": "https://www.pilbaraports.com.au/",
+   "dataset_class": "shipping_freight"
+  },
+  {
+   "name": "RBA media releases",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "RBA decisions -> AUDUSD",
+   "url": "https://www.rba.gov.au/media-releases/"
+  },
+  {
+   "name": "AOFM tender results",
+   "region": "au",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "ACGB auctions",
+   "url": "https://www.aofm.gov.au/securities/tender-results",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "ShareTrader NZ",
+   "region": "nz",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "NZ's investor forum",
+   "url": "https://www.sharetrader.co.nz/"
+  },
+  {
+   "name": "RBNZ statistics",
+   "region": "nz",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "RBNZ tables",
+   "url": "https://www.rbnz.govt.nz/statistics",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "RBNZ monetary policy",
+   "region": "nz",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "RBNZ decisions -> NZDUSD",
+   "url": "https://www.rbnz.govt.nz/monetary-policy"
+  },
+  {
+   "name": "Global Dairy Trade results",
+   "region": "nz",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "dairy auction -> NZD",
+   "url": "https://www.globaldairytrade.info/en/product-results/",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "Argaam",
+   "region": "sa",
+   "language": "ar",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.8,
+   "why": "Saudi financial press",
+   "site": "argaam.com",
+   "queries": [
+    "استراتيجية تداول تاسي اختراق",
+    "تحليل فني الذهب استراتيجية",
+    "تدفقات الأجانب تاسي"
+   ],
+   "market": "SA"
+  },
+  {
+   "name": "Mubasher",
+   "region": "sa",
+   "language": "ar",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "regional press",
+   "site": "mubasher.info",
+   "queries": [
+    "استراتيجية تداول الذهب مضاربة يومية",
+    "تاسي استراتيجية اختراق"
+   ],
+   "market": "SA"
+  },
+  {
+   "name": "ArabicTrader forum",
+   "region": "sa",
+   "language": "ar",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "the Arabic FX/gold forum",
+   "url": "https://www.arabictrader.com/"
+  },
+  {
+   "name": "Saudi Exchange research",
+   "region": "sa",
+   "language": "ar",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "exchange research",
+   "site": "saudiexchange.sa",
+   "queries": [
+    "research report market liquidity",
+    "foreign ownership report"
+   ],
+   "market": "SA"
+  },
+  {
+   "name": "Hawamer / Arabic trading boards",
+   "region": "sa",
+   "language": "ar",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "Gulf retail board",
+   "site": "hawamer.com",
+   "queries": [
+    "استراتيجية مضاربة الذهب",
+    "تاسي توصيات استراتيجية"
+   ],
+   "market": "SA"
+  },
+  {
+   "name": "SAMA statistics",
+   "region": "sa",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "SAMA monthly statistics",
+   "url": "https://www.sama.gov.sa/en-US/EconomicReports/Pages/MonthlyStatistics.aspx",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "SAMA announcements",
+   "region": "sa",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "SAMA notices (SAR peg; oil channel)",
+   "url": "https://www.sama.gov.sa/en-US/News/Pages/default.aspx"
+  },
+  {
+   "name": "OPEC and Saudi output",
+   "region": "sa",
+   "language": "ar",
+   "route": "search",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "OPEC communications -> oil CFDs, CAD, NOK",
+   "site": "opec.org",
+   "queries": [
+    "monthly oil market report production",
+    "opec+ decision output cut"
+   ],
+   "market": "SA"
+  },
+  {
+   "name": "ADX / DFM / QSE research",
+   "region": "ae",
+   "language": "ar",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "Gulf exchanges",
+   "site": "adx.ae",
+   "queries": [
+    "market report foreign investors",
+    "research report liquidity"
+   ],
+   "market": "AE"
+  },
+  {
+   "name": "Gulf trader boards (Arabic)",
+   "region": "ae",
+   "language": "ar",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "site-less Arabic search",
+   "queries": [
+    "استراتيجية تداول الذهب دبي مضاربة",
+    "سوق دبي استراتيجية اختراق"
+   ],
+   "market": "AE"
+  },
+  {
+   "name": "CBUAE statistics",
+   "region": "ae",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CBUAE data",
+   "url": "https://www.centralbank.ae/en/statistics/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Qatar Central Bank statistics",
+   "region": "ae",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "QCB data",
+   "url": "https://www.qcb.gov.qa/en/pages/statistics.aspx",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Bloomberg HT piyasa",
+   "region": "tr",
+   "language": "tr",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.8,
+   "why": "Turkish financial TV site",
+   "site": "bloomberght.com",
+   "queries": [
+    "dolar tl strateji merkez bankası faiz",
+    "altın ons strateji kırılım",
+    "bist 100 strateji"
+   ],
+   "market": "TR"
+  },
+  {
+   "name": "KAP bildirimleri",
+   "region": "tr",
+   "language": "tr",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "public disclosure platform",
+   "site": "kap.org.tr",
+   "queries": [
+    "özel durum açıklaması",
+    "finansal rapor"
+   ],
+   "market": "TR"
+  },
+  {
+   "name": "Ekşi Sözlük piyasa",
+   "region": "tr",
+   "language": "tr",
+   "route": "foreign",
+   "kind": "community",
+   "weight": 1.0,
+   "why": "Turkey's collaborative dictionary; the country's public square",
+   "fn": "eksisozluk",
+   "queries": [
+    "altın ons strateji",
+    "dolar tl carry trade",
+    "bist 100 strateji"
+   ]
+  },
+  {
+   "name": "Turkish trader forums",
+   "region": "tr",
+   "language": "tr",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "site-less Turkish search",
+   "queries": [
+    "altın ons trade stratejisi test edildi",
+    "dolar tl carry trade stratejisi",
+    "vadeli işlem viop strateji"
+   ],
+   "market": "TR"
+  },
+  {
+   "name": "YouTube TR trade",
+   "region": "tr",
+   "language": "tr",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "altın ons trade stratejisi test",
+    "dolar tl merkez bankası kararı analiz"
+   ],
+   "transcripts": 4,
+   "market": "TR"
+  },
+  {
+   "name": "X (nitter) Türkiye piyasa",
+   "region": "tr",
+   "language": "tr",
+   "route": "nitter",
+   "kind": "social",
+   "weight": 0.6,
+   "why": "public tweets via a mirror when one is up",
+   "queries": [
+    "dolar tl merkez bankası faiz",
+    "altın ons strateji"
+   ],
+   "mirrors": [
+    "nitter.net",
+    "nitter.privacydev.net",
+    "nitter.poast.org"
+   ]
+  },
+  {
+   "name": "TCMB EVDS",
+   "region": "tr",
+   "language": "tr",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "TCMB data portal: reserves, KKM, rates",
+   "url": "https://evds2.tcmb.gov.tr/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "TÜİK istatistik",
+   "region": "tr",
+   "language": "tr",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "national statistics releases",
+   "url": "https://data.tuik.gov.tr/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "TCMB basın duyuruları",
+   "region": "tr",
+   "language": "tr",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "TCMB decisions -> USDTRY",
+   "url": "https://www.tcmb.gov.tr/wps/wcm/connect/TR/TCMB+TR/Main+Menu/Duyurular/Basin"
+  },
+  {
+   "name": "Borsa Istanbul verileri",
+   "region": "tr",
+   "language": "tr",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BIST data: foreign share, VIOP OI",
+   "url": "https://www.borsaistanbul.com/tr/sayfa/2986/veriler",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "Hazine ihale sonuçları",
+   "region": "tr",
+   "language": "tr",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "treasury auctions",
+   "url": "https://www.hmb.gov.tr/kamu-finansmani-istatistikleri",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "Globes שוק ההון",
+   "region": "il",
+   "language": "he",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.8,
+   "why": "Israeli financial press",
+   "site": "globes.co.il",
+   "queries": [
+    "אסטרטגיית מסחר זהב",
+    "בנק ישראל ריבית שקל דולר",
+    "תא-35 אסטרטגיה"
+   ],
+   "market": "IL"
+  },
+  {
+   "name": "Bizportal / Sponser forums",
+   "region": "il",
+   "language": "he",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "Israeli retail boards",
+   "site": "bizportal.co.il",
+   "queries": [
+    "אסטרטגיית מסחר יומי",
+    "דולר שקל תחזית"
+   ],
+   "market": "IL"
+  },
+  {
+   "name": "TASE research",
+   "region": "il",
+   "language": "he",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "exchange research",
+   "site": "tase.co.il",
+   "queries": [
+    "research report market liquidity",
+    "מחקר שוק ההון נזילות"
+   ],
+   "market": "IL"
+  },
+  {
+   "name": "Bank of Israel statistics",
+   "region": "il",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BoI data: intervention, reserves",
+   "url": "https://www.boi.org.il/en/economic-roles/statistics/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Bank of Israel press releases",
+   "region": "il",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "BoI decisions and FX purchases -> USDILS",
+   "url": "https://www.boi.org.il/en/communication-and-publications/press-releases/"
+  },
+  {
+   "name": "Mubasher مصر",
+   "region": "eg",
+   "language": "ar",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Egyptian market press",
+   "site": "mubasher.info",
+   "queries": [
+    "استراتيجية تداول البورصة المصرية",
+    "الجنيه المصري تعويم"
+   ],
+   "market": "EG"
+  },
+  {
+   "name": "EGX research",
+   "region": "eg",
+   "language": "ar",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "exchange research",
+   "site": "egx.com.eg",
+   "queries": [
+    "research report market liquidity",
+    "foreign investors report"
+   ],
+   "market": "EG"
+  },
+  {
+   "name": "Central Bank of Egypt statistics",
+   "region": "eg",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CBE data",
+   "url": "https://www.cbe.org.eg/en/economic-research/statistics",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "CBE press releases",
+   "region": "eg",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "CBE decisions (EGP transfer note)",
+   "url": "https://www.cbe.org.eg/en/news-publications/news"
+  },
+  {
+   "name": "Moneyweb",
+   "region": "za",
+   "language": "en",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.8,
+   "why": "SA financial press: rand, mining, Eskom",
+   "url": "https://www.moneyweb.co.za/"
+  },
+  {
+   "name": "Sharenet / JSE boards",
+   "region": "za",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "SA retail",
+   "site": "sharenet.co.za",
+   "queries": [
+    "rand trading strategy sarb",
+    "jse top40 futures strategy"
+   ],
+   "market": "ZA"
+  },
+  {
+   "name": "JSE research",
+   "region": "za",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "exchange research",
+   "site": "jse.co.za",
+   "queries": [
+    "research paper derivatives market liquidity rand",
+    "market statistics foreign flows"
+   ],
+   "market": "ZA"
+  },
+  {
+   "name": "SARB working papers",
+   "region": "za",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.5,
+   "why": "SARB research",
+   "site": "resbank.co.za",
+   "queries": [
+    "working paper rand exchange rate carry",
+    "working paper capital flows"
+   ],
+   "market": "ZA"
+  },
+  {
+   "name": "Fin24 / BusinessTech markets",
+   "region": "za",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "SA press",
+   "site": "businesstech.co.za",
+   "queries": [
+    "rand strategy eskom load shedding",
+    "gold platinum exports rand"
+   ],
+   "market": "ZA"
+  },
+  {
+   "name": "SARB statistics",
+   "region": "za",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "SARB data",
+   "url": "https://www.resbank.co.za/en/home/what-we-do/statistics",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Statistics South Africa",
+   "region": "za",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Stats SA releases",
+   "url": "https://www.statssa.gov.za/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "JSE market statistics",
+   "region": "za",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "JSE data: foreign flows, derivatives",
+   "url": "https://www.jse.co.za/market-data",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "SARB media statements",
+   "region": "za",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "SARB decisions -> USDZAR",
+   "url": "https://www.resbank.co.za/en/home/publications/publication-detail-pages/statements"
+  },
+  {
+   "name": "Minerals Council South Africa",
+   "region": "za",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "PGM/gold production: the ZAR mining channel",
+   "url": "https://www.mineralscouncil.org.za/industry-news",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "Nairametrics",
+   "region": "ng",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "Nigerian financial press",
+   "site": "nairametrics.com",
+   "queries": [
+    "naira trading strategy cbn",
+    "ngx trading strategy breakout"
+   ],
+   "market": "NG"
+  },
+  {
+   "name": "Nairaland investment board",
+   "region": "ng",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "Nigeria's big forum",
+   "site": "nairaland.com",
+   "queries": [
+    "forex trading strategy gold naira",
+    "stock trading strategy ngx"
+   ],
+   "market": "NG"
+  },
+  {
+   "name": "NGX research",
+   "region": "ng",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "exchange research",
+   "site": "ngxgroup.com",
+   "queries": [
+    "market report foreign flows",
+    "research report"
+   ],
+   "market": "NG"
+  },
+  {
+   "name": "Central Bank of Nigeria statistics",
+   "region": "ng",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CBN rates and reserves",
+   "url": "https://www.cbn.gov.ng/rates/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "CBN press releases",
+   "region": "ng",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "CBN notices (NGN transfer note)",
+   "url": "https://www.cbn.gov.ng/Out/"
+  },
+  {
+   "name": "Business Daily Africa markets",
+   "region": "ke",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Kenyan press",
+   "site": "businessdailyafrica.com",
+   "queries": [
+    "shilling trading cbk intervention",
+    "nse 20 trading strategy"
+   ],
+   "market": "KE"
+  },
+  {
+   "name": "Kenya Swahili market press",
+   "region": "ke",
+   "language": "sw",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "site-less Swahili search",
+   "queries": [
+    "soko la hisa mkakati wa biashara",
+    "shilingi benki kuu riba"
+   ],
+   "market": "KE"
+  },
+  {
+   "name": "Central Bank of Kenya statistics",
+   "region": "ke",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CBK data",
+   "url": "https://www.centralbank.go.ke/statistics/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "CBK press releases",
+   "region": "ke",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "CBK decisions (KES transfer note)",
+   "url": "https://www.centralbank.go.ke/press/"
+  },
+  {
+   "name": "Kenya National Bureau of Statistics",
+   "region": "ke",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "KNBS releases",
+   "url": "https://www.knbs.or.ke/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Boursenews / LesEco Maroc",
+   "region": "ma",
+   "language": "fr",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "Moroccan press",
+   "site": "boursenews.ma",
+   "queries": [
+    "stratégie trading masi",
+    "dirham bank al-maghrib intervention"
+   ],
+   "market": "MA"
+  },
+  {
+   "name": "Casablanca exchange research",
+   "region": "ma",
+   "language": "fr",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.4,
+   "why": "exchange research",
+   "site": "casablanca-bourse.com",
+   "queries": [
+    "rapport recherche liquidité",
+    "statistiques"
+   ],
+   "market": "MA"
+  },
+  {
+   "name": "Bank Al-Maghrib statistiques",
+   "region": "ma",
+   "language": "fr",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BAM data",
+   "url": "https://www.bkam.ma/Statistiques",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "OCP / phosphate exports",
+   "region": "ma",
+   "language": "fr",
+   "route": "search",
+   "kind": "macro",
+   "weight": 0.4,
+   "why": "phosphate exports (MAD transfer note)",
+   "site": "ocpgroup.ma",
+   "queries": [
+    "exportations phosphate résultats",
+    "prix engrais"
+   ],
+   "market": "MA"
+  },
+  {
+   "name": "Elite Trader",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.2,
+   "why": "trading systems and journals sub-forums",
+   "url": "https://www.elitetrader.com/et/"
+  },
+  {
+   "name": "Elite Trader systems",
+   "region": "us",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.8,
+   "why": "thread search via the index",
+   "site": "elitetrader.com",
+   "queries": [
+    "trading system rules gold futures backtest",
+    "es futures open range breakout results",
+    "currency futures carry rollover strategy"
+   ],
+   "market": "US"
+  },
+  {
+   "name": "r/algotrading r/quant r/Forex",
+   "region": "us",
+   "language": "en",
+   "route": "reddit",
+   "kind": "community",
+   "weight": 1.2,
+   "why": "the English retail-quant register via feeds",
+   "subs": [
+    "algotrading",
+    "quant",
+    "Forex",
+    "Daytrading",
+    "FuturesTrading"
+   ]
+  },
+  {
+   "name": "r/options r/thetagang r/wallstreetbets",
+   "region": "us",
+   "language": "en",
+   "route": "reddit",
+   "kind": "community",
+   "weight": 0.6,
+   "why": "options and retail flow register",
+   "subs": [
+    "options",
+    "thetagang",
+    "wallstreetbets"
+   ]
+  },
+  {
+   "name": "QuantConnect forum",
+   "region": "us",
+   "language": "en",
+   "route": "render",
+   "kind": "community",
+   "weight": 1.0,
+   "why": "JS shell; strategy discussions with code",
+   "url": "https://www.quantconnect.com/forum"
+  },
+  {
+   "name": "QuantConnect forum search",
+   "region": "us",
+   "language": "en",
+   "route": "search",
+   "kind": "community",
+   "weight": 0.6,
+   "why": "index search of the same forum",
+   "site": "quantconnect.com",
+   "queries": [
+    "forum strategy gold mean reversion backtest",
+    "forum forex carry strategy results"
+   ],
+   "market": "US"
+  },
+  {
+   "name": "Quantopian forum archive",
+   "region": "us",
+   "language": "en",
+   "route": "wayback",
+   "kind": "archive",
+   "weight": 1.0,
+   "why": "the dead forum's posts through the Wayback Machine",
+   "url": "https://www.quantopian.com/posts",
+   "timestamp": "20200601"
+  },
+  {
+   "name": "Wilmott forums",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.9,
+   "why": "quant practitioners; numerical and trading threads",
+   "url": "https://forum.wilmott.com/"
+  },
+  {
+   "name": "NuclearPhynance",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "professional quant forum; often offline, recorded when so",
+   "url": "https://www.nuclearphynance.com/"
+  },
+  {
+   "name": "Quantitative Finance Stack Exchange",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "qa",
+   "weight": 1.0,
+   "why": "top-voted questions state mechanisms",
+   "url": "https://quant.stackexchange.com/questions?tab=votes&pagesize=50"
+  },
+  {
+   "name": "TradingView ideas and scripts",
+   "region": "us",
+   "language": "en",
+   "route": "search",
+   "kind": "social",
+   "weight": 0.9,
+   "why": "Cloudflare-fenced; via the index",
+   "site": "tradingview.com",
+   "queries": [
+    "XAUUSD idea mean reversion london session",
+    "pine script strategy backtest results gold",
+    "EURUSD breakout strategy tested",
+    "script strategy results nas100"
+   ],
+   "market": "US"
+  },
+  {
+   "name": "Medium quant tags",
+   "region": "us",
+   "language": "en",
+   "route": "rss",
+   "kind": "blog",
+   "weight": 0.9,
+   "why": "Medium's tag feeds",
+   "feeds": [
+    "https://medium.com/feed/tag/algorithmic-trading",
+    "https://medium.com/feed/tag/quantitative-finance",
+    "https://medium.com/feed/tag/forex-trading"
+   ],
+   "fetch_items": 3
+  },
+  {
+   "name": "Substack quant writers",
+   "region": "us",
+   "language": "en",
+   "route": "search",
+   "kind": "blog",
+   "weight": 0.8,
+   "why": "newsletters via the index",
+   "site": "substack.com",
+   "queries": [
+    "quant strategy backtest gold fx mechanism",
+    "systematic macro carry trade explained",
+    "commodity trading advisor trend following results"
+   ],
+   "market": "US"
+  },
+  {
+   "name": "Kaggle finance notebooks",
+   "region": "us",
+   "language": "en",
+   "route": "search",
+   "kind": "notebook",
+   "weight": 0.6,
+   "why": "code notebooks with stated results",
+   "site": "kaggle.com",
+   "queries": [
+    "forex gold strategy backtest notebook",
+    "time series momentum futures notebook",
+    "fx carry notebook"
+   ],
+   "market": "US"
+  },
+  {
+   "name": "CME Group economic research",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.8,
+   "why": "exchange research: metals, FX, rates",
+   "url": "https://www.cmegroup.com/insights/economic-research.html"
+  },
+  {
+   "name": "Cboe insights",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.7,
+   "why": "volatility and options mechanics",
+   "url": "https://www.cboe.com/insights/"
+  },
+  {
+   "name": "ICE research",
+   "region": "us",
+   "language": "en",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.5,
+   "why": "ICE research",
+   "site": "ice.com",
+   "queries": [
+    "research report brent cocoa coffee",
+    "market report sugar cotton"
+   ],
+   "market": "US"
+  },
+  {
+   "name": "Bloomberg opinion and markets columns",
+   "region": "us",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "paywalled; snippets only",
+   "site": "bloomberg.com",
+   "queries": [
+    "quant strategy column carry trade mechanism",
+    "matt levine market structure",
+    "john authers markets"
+   ],
+   "snippets_only": true,
+   "market": "US"
+  },
+  {
+   "name": "WSJ markets columns",
+   "region": "us",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "paywalled; snippets only",
+   "site": "wsj.com",
+   "queries": [
+    "heard on the street currency",
+    "streetwise column commodities"
+   ],
+   "snippets_only": true,
+   "market": "US"
+  },
+  {
+   "name": "MQL5 codebase experts",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "code",
+   "weight": 1.0,
+   "why": "EA sources name their entry conditions",
+   "url": "https://www.mql5.com/en/code/mt5/experts"
+  },
+  {
+   "name": "MQL5 articles and forum",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "community",
+   "weight": 1.0,
+   "why": "MT5-native articles and the trading forum",
+   "url": "https://www.mql5.com/en/articles",
+   "alt": [
+    "https://www.mql5.com/en/forum/trading"
+   ]
+  },
+  {
+   "name": "ForexPeaceArmy forums",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "broker-adjacent retail register",
+   "url": "https://www.forexpeacearmy.com/community/forums/"
+  },
+  {
+   "name": "BabyPips forums",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.9,
+   "why": "retail FX systems threads",
+   "url": "https://forums.babypips.com/latest"
+  },
+  {
+   "name": "Investopedia mechanism articles",
+   "region": "us",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "textbook mechanism statements",
+   "site": "investopedia.com",
+   "queries": [
+    "carry trade how it works",
+    "london fix gold explained",
+    "mean reversion strategy example"
+   ],
+   "market": "US"
+  },
+  {
+   "name": "X (nitter) FX/quant",
+   "region": "us",
+   "language": "en",
+   "route": "nitter",
+   "kind": "social",
+   "weight": 0.6,
+   "why": "public tweets via a mirror when one is up",
+   "queries": [
+    "XAUUSD mean reversion london fix",
+    "EURUSD carry positioning cot",
+    "fintwit systematic strategy backtest"
+   ],
+   "mirrors": [
+    "nitter.net",
+    "nitter.privacydev.net",
+    "nitter.poast.org"
+   ]
+  },
+  {
+   "name": "Quantocracy",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.9,
+   "why": "the aggregator of quant blogs",
+   "url": "https://quantocracy.com/"
+  },
+  {
+   "name": "Quantpedia blog",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 1.3,
+   "why": "strategy encyclopaedia with stated mechanisms and horizons",
+   "url": "https://quantpedia.com/blog/"
+  },
+  {
+   "name": "Alpha Architect blog",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.8,
+   "why": "factor and momentum research summaries",
+   "url": "https://alphaarchitect.com/blog/"
+  },
+  {
+   "name": "Macrosynergy research",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 1.0,
+   "why": "systematic macro mechanisms with data",
+   "url": "https://macrosynergy.com/research/"
+  },
+  {
+   "name": "Robot Wealth blog",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.8,
+   "why": "practitioner research notes",
+   "url": "https://robotwealth.com/blog/"
+  },
+  {
+   "name": "Flirting with Models",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.7,
+   "why": "trend, carry, rebalance timing",
+   "url": "https://blog.thinknewfound.com/"
+  },
+  {
+   "name": "AQR insights",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.7,
+   "why": "factor mechanisms",
+   "url": "https://www.aqr.com/Insights/Research"
+  },
+  {
+   "name": "Man Institute",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.7,
+   "why": "systematic macro and trend",
+   "url": "https://www.man.com/insights"
+  },
+  {
+   "name": "QuantStart articles",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.7,
+   "why": "explicit strategy write-ups",
+   "url": "https://www.quantstart.com/articles/"
+  },
+  {
+   "name": "Rob Carver qoppac",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.8,
+   "why": "systematic futures practitioner",
+   "url": "https://qoppac.blogspot.com/"
+  },
+  {
+   "name": "YouTube EN trading",
+   "region": "us",
+   "language": "en",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "gold trading strategy backtested results",
+    "forex carry trade strategy explained tested",
+    "futures open range breakout backtest"
+   ],
+   "transcripts": 4,
+   "market": "US"
+  },
+  {
+   "name": "BLS release schedule and data",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CPI, NFP releases: the US macro vintage clock",
+   "url": "https://www.bls.gov/schedule/news_release/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "US Census foreign trade",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "US trade releases",
+   "url": "https://www.census.gov/foreign-trade/data/index.html",
+   "dataset_class": "trade_data"
+  },
+  {
+   "name": "BEA releases",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "GDP, PCE",
+   "url": "https://www.bea.gov/data",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "US Treasury press releases",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "Treasury FX report and refunding statements -> USDX, UST10Y",
+   "url": "https://home.treasury.gov/news/press-releases"
+  },
+  {
+   "name": "Trade2Win",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.8,
+   "why": "UK trading forum",
+   "url": "https://www.trade2win.com/"
+  },
+  {
+   "name": "FT Alphaville and markets",
+   "region": "gb",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "paywalled; snippets only",
+   "site": "ft.com",
+   "queries": [
+    "alphaville quant",
+    "markets column sterling gilts"
+   ],
+   "snippets_only": true,
+   "market": "GB"
+  },
+  {
+   "name": "Bank of England working papers",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.7,
+   "why": "sterling, gilts, FX microstructure",
+   "url": "https://www.bankofengland.co.uk/working-paper/working-papers"
+  },
+  {
+   "name": "BoE statistics",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BoE database",
+   "url": "https://www.bankofengland.co.uk/statistics",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "ONS",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "ONS releases",
+   "url": "https://www.ons.gov.uk/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "DMO gilt auction results",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "gilt auctions -> UKGILT",
+   "url": "https://www.dmo.gov.uk/data/",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "BoE monetary policy summaries",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "MPC decisions -> GBPUSD",
+   "url": "https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes"
+  },
+  {
+   "name": "LBMA prices and data",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "the London fixes",
+   "url": "https://www.lbma.org.uk/prices-and-data",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "LME reports and data",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "LME stocks -> copper, aluminium, nickel, zinc",
+   "url": "https://www.lme.com/en/market-data/reports-and-data",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "Bank of Canada staff working papers",
+   "region": "ca",
+   "language": "en",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.6,
+   "why": "CAD and oil research",
+   "url": "https://www.bankofcanada.ca/research/staff-working-papers/"
+  },
+  {
+   "name": "Canadian Money Forum / RedFlagDeals investing",
+   "region": "ca",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "Canadian retail",
+   "site": "redflagdeals.com",
+   "queries": [
+    "trading strategy tsx futures",
+    "usd cad strategy oil"
+   ],
+   "market": "CA"
+  },
+  {
+   "name": "Bank of Canada statistics",
+   "region": "ca",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BoC rates and FX",
+   "url": "https://www.bankofcanada.ca/rates/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Statistics Canada",
+   "region": "ca",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "StatCan releases",
+   "url": "https://www150.statcan.gc.ca/n1/en/type/data",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "BoC press releases",
+   "region": "ca",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "BoC decisions -> USDCAD",
+   "url": "https://www.bankofcanada.ca/press/press-releases/"
+  },
+  {
+   "name": "arXiv q-fin",
+   "region": "global",
+   "language": "en",
+   "route": "papers",
+   "kind": "academic",
+   "weight": 1.0,
+   "why": "mechanism claims from abstracts; newest first",
+   "fn": "arxiv",
+   "queries": [
+    "",
+    "gold",
+    "exchange rate",
+    "carry",
+    "intraday",
+    "momentum"
+   ],
+   "categories": [
+    "q-fin.TR",
+    "q-fin.ST",
+    "q-fin.PM"
+   ]
+  },
+  {
+   "name": "SSRN financial economics",
+   "region": "global",
+   "language": "en",
+   "route": "papers",
+   "kind": "academic",
+   "weight": 0.8,
+   "why": "abstracts by binding; the ranker filters",
+   "fn": "ssrn",
+   "bindings": [
+    204
+   ]
+  },
+  {
+   "name": "OpenReview finance",
+   "region": "global",
+   "language": "en",
+   "route": "papers",
+   "kind": "academic",
+   "weight": 0.4,
+   "why": "ML-finance papers",
+   "fn": "openreview",
+   "queries": [
+    "quantitative trading",
+    "financial time series forecasting"
+   ]
+  },
+  {
+   "name": "arXiv q-fin RSS",
+   "region": "global",
+   "language": "en",
+   "route": "rss",
+   "kind": "academic",
+   "weight": 0.5,
+   "why": "arXiv's own feeds",
+   "feeds": [
+    "https://rss.arxiv.org/rss/q-fin.TR",
+    "https://rss.arxiv.org/rss/q-fin.ST"
+   ],
+   "fetch_items": 0
+  },
+  {
+   "name": "GitHub topics algorithmic-trading",
+   "region": "global",
+   "language": "en",
+   "route": "http",
+   "kind": "code",
+   "weight": 0.7,
+   "why": "README claims; repo_miner reads the watchlist deeper",
+   "url": "https://github.com/topics/algorithmic-trading",
+   "alt": [
+    "https://github.com/topics/metatrader5",
+    "https://github.com/topics/mql5"
+   ]
+  },
+  {
+   "name": "Twitter/X via nitter mirrors (search index)",
+   "region": "global",
+   "language": "en",
+   "route": "search",
+   "kind": "social",
+   "weight": 0.3,
+   "why": "the index's copy of a mirror; the nitter route reads live",
+   "site": "nitter.net",
+   "queries": [
+    "XAUUSD strategy backtest",
+    "carry trade positioning"
+   ],
+   "market": "US"
+  },
+  {
+   "name": "Hacker News finance threads",
+   "region": "global",
+   "language": "en",
+   "route": "search",
+   "kind": "community",
+   "weight": 0.4,
+   "why": "HN via the index",
+   "site": "news.ycombinator.com",
+   "queries": [
+    "algorithmic trading strategy results",
+    "quant trading what works"
+   ],
+   "market": "US"
+  },
+  {
+   "name": "Trading Economics calendar and indicators",
+   "region": "global",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "every country's release calendar on one page",
+   "url": "https://tradingeconomics.com/calendar",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Central bank rate decision calendar",
+   "region": "global",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "every central bank's decisions and dates -> the pair each sets",
+   "url": "https://www.cbrates.com/"
+  },
+  {
+   "name": "Investing.com economic calendar",
+   "region": "global",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "consensus and surprise columns per release",
+   "url": "https://www.investing.com/economic-calendar/",
+   "dataset_class": "sentiment_news"
+  },
+  {
+   "name": "BIS working papers",
+   "region": "institutional",
+   "language": "en",
+   "route": "rss",
+   "kind": "academic",
+   "weight": 0.8,
+   "why": "FX and rates mechanisms; BIS feed",
+   "cluster": "institutional",
+   "feeds": [
+    "https://www.bis.org/doclist/wppubls.rss"
+   ],
+   "fetch_items": 2
+  },
+  {
+   "name": "IMF working papers",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.7,
+   "why": "FX intervention, capital flows, commodity exporters",
+   "cluster": "institutional",
+   "url": "https://www.imf.org/en/Publications/WP"
+  },
+  {
+   "name": "ECB working papers",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.7,
+   "why": "EUR, rates, microstructure",
+   "cluster": "institutional",
+   "url": "https://www.ecb.europa.eu/pub/research/working-papers/html/index.en.html"
+  },
+  {
+   "name": "Federal Reserve FEDS papers",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.7,
+   "why": "dollar, rates, positioning",
+   "cluster": "institutional",
+   "url": "https://www.federalreserve.gov/econres/feds/index.htm"
+  },
+  {
+   "name": "NY Fed staff reports",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.7,
+   "why": "treasury market structure, FX",
+   "cluster": "institutional",
+   "url": "https://www.newyorkfed.org/research/staff_reports/index.html"
+  },
+  {
+   "name": "NBER working papers",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.5,
+   "why": "asset pricing and FX",
+   "cluster": "institutional",
+   "url": "https://www.nber.org/papers"
+  },
+  {
+   "name": "BIS statistics",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BIS: FX turnover, EER, credit",
+   "cluster": "institutional",
+   "url": "https://www.bis.org/statistics/index.htm",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "IMF data",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "IFS, COFER, reserves",
+   "cluster": "institutional",
+   "url": "https://data.imf.org/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "World Bank data",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "indicators, commodity prices (Pink Sheet)",
+   "cluster": "institutional",
+   "url": "https://data.worldbank.org/indicator",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "OECD data",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "OECD explorer",
+   "cluster": "institutional",
+   "url": "https://data-explorer.oecd.org/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "FRED",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "the largest free macro archive",
+   "cluster": "institutional",
+   "url": "https://fred.stlouisfed.org/categories",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "ALFRED vintages",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "point-in-time vintages of FRED series",
+   "cluster": "institutional",
+   "url": "https://alfred.stlouisfed.org/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "CFTC COT",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "COT and TFF archives",
+   "cluster": "institutional",
+   "url": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "CME volume and open interest",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CME daily OI",
+   "cluster": "institutional",
+   "url": "https://www.cmegroup.com/market-data/volume-open-interest.html",
+   "dataset_class": "futures_volume_oi"
+  },
+  {
+   "name": "Cboe options data",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "put/call, VIX term structure",
+   "cluster": "institutional",
+   "url": "https://www.cboe.com/us/options/market_statistics/",
+   "dataset_class": "options_surfaces"
+  },
+  {
+   "name": "EIA open data",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "petroleum status, natural gas storage",
+   "cluster": "institutional",
+   "url": "https://www.eia.gov/opendata/",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "JODI oil data",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "joint oil data initiative",
+   "cluster": "institutional",
+   "url": "https://www.jodidata.org/oil/",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "OPEC monthly reports",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "OPEC MOMR",
+   "cluster": "institutional",
+   "url": "https://www.opec.org/opec_web/en/publications/338.htm",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "USDA WASDE and reports",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "WASDE; crop reports -> grains, BRL",
+   "cluster": "institutional",
+   "url": "https://www.usda.gov/oce/commodity/wasde",
+   "alt": [
+    "https://www.ers.usda.gov/data-products/"
+   ],
+   "dataset_class": "weather_energy"
+  },
+  {
+   "name": "FAO data and price index",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "FAO food price index and trade",
+   "cluster": "institutional",
+   "url": "https://www.fao.org/faostat/en/",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "International Cocoa Organization",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "cocoa statistics -> cocoa CFDs",
+   "cluster": "institutional",
+   "url": "https://www.icco.org/statistics/",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "International Coffee Organization",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "coffee statistics -> coffee CFDs",
+   "cluster": "institutional",
+   "url": "https://www.ico.org/new_historical.asp",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "International Copper Study Group",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "copper balance",
+   "cluster": "institutional",
+   "url": "https://icsg.org/",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "World Gold Council data",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "gold ETF flows, central bank buying -> XAUUSD",
+   "cluster": "institutional",
+   "url": "https://www.gold.org/goldhub/data",
+   "dataset_class": "fund_etf_flows"
+  },
+  {
+   "name": "Silver Institute",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "silver balance",
+   "cluster": "institutional",
+   "url": "https://www.silverinstitute.org/silver-supply-demand/",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "Baltic Exchange",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Baltic indices",
+   "cluster": "institutional",
+   "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+   "dataset_class": "shipping_freight"
+  },
+  {
+   "name": "Drewry World Container Index",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "container rates",
+   "cluster": "institutional",
+   "url": "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
+   "dataset_class": "shipping_freight"
+  },
+  {
+   "name": "Freightos Baltic Index",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "FBX",
+   "cluster": "institutional",
+   "url": "https://fbx.freightos.com/",
+   "dataset_class": "shipping_freight"
+  },
+  {
+   "name": "US Treasury auction results",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "treasury auctions -> UST10Y",
+   "cluster": "institutional",
+   "url": "https://www.treasurydirect.gov/auctions/announcements-data-results/",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "SEC EDGAR full-text search",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "13F and filings",
+   "cluster": "institutional",
+   "url": "https://efts.sec.gov/LATEST/search-index?q=%22gold%22&dateRange=custom",
+   "dataset_class": "public_filings"
+  },
+  {
+   "name": "ECB statistical data warehouse",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "ECB data portal",
+   "cluster": "institutional",
+   "url": "https://data.ecb.europa.eu/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Federal Reserve data releases",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "H.4.1, H.8, H.10 FX",
+   "cluster": "institutional",
+   "url": "https://www.federalreserve.gov/data.htm",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "NY Fed markets data hub",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "SOFR, repo, primary dealer positioning",
+   "cluster": "institutional",
+   "url": "https://www.newyorkfed.org/markets/data-hub",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "AAII sentiment survey",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "retail sentiment series",
+   "cluster": "institutional",
+   "url": "https://www.aaii.com/sentimentsurvey",
+   "dataset_class": "sentiment_news"
+  },
+  {
+   "name": "GDELT",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "global news event database",
+   "cluster": "institutional",
+   "url": "https://www.gdeltproject.org/data.html",
+   "dataset_class": "sentiment_news"
+  },
+  {
+   "name": "NOAA ENSO and climate",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "ENSO advisories -> grains, softs",
+   "cluster": "institutional",
+   "url": "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/",
+   "dataset_class": "weather_energy"
+  },
+  {
+   "name": "Federal Reserve FOMC statements",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "FOMC decisions -> USDX, US500, UST10Y",
+   "cluster": "institutional",
+   "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+  },
+  {
+   "name": "ECB monetary policy decisions",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "ECB decisions -> EURUSD",
+   "cluster": "institutional",
+   "url": "https://www.ecb.europa.eu/press/pr/html/index.en.html"
+  },
+  {
+   "name": "BIS central bank speeches",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "every central bank's speeches, one archive",
+   "cluster": "institutional",
+   "url": "https://www.bis.org/cbspeeches/index.htm"
+  },
+  {
+   "name": "IMF Article IV and capital flow measures",
+   "region": "institutional",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "capital-control and FX regime notes per country",
+   "cluster": "institutional",
+   "url": "https://www.imf.org/en/Publications/CR"
+  },
+  {
+   "name": "Central bank RSS bundle",
+   "region": "institutional",
+   "language": "en",
+   "route": "rss",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "press feeds of the G4 plus SNB",
+   "cluster": "institutional",
+   "feeds": [
+    "https://www.federalreserve.gov/feeds/press_all.xml",
+    "https://www.ecb.europa.eu/rss/press.html",
+    "https://www.bankofengland.co.uk/rss/news",
+    "https://www.snb.ch/en/rss/press"
+   ],
+   "fetch_items": 2
+  },
+  {
+   "name": "wallstreet-online Diskussion",
+   "region": "de",
+   "language": "de",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "Germany's largest stock board",
+   "url": "https://www.wallstreet-online.de/diskussion/"
+  },
+  {
+   "name": "finanzen.net Forum",
+   "region": "de",
+   "language": "de",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "board search via the index",
+   "site": "finanzen.net",
+   "queries": [
+    "DAX Strategie Backtest Saisonalität",
+    "Gold Handelsstrategie Ausbruch",
+    "EUR USD Strategie EZB Zinsentscheid"
+   ],
+   "market": "DE"
+  },
+  {
+   "name": "stock3 (Godmode) Analysen",
+   "region": "de",
+   "language": "de",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.8,
+   "why": "technical analysis columns; DAX mechanics",
+   "url": "https://stock3.com/"
+  },
+  {
+   "name": "Aktienboard / Trader-Forum",
+   "region": "de",
+   "language": "de",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "trader boards",
+   "site": "aktienboard.com",
+   "queries": [
+    "Handelssystem Regeln DAX Backtest",
+    "Gold Strategie Verfallstag"
+   ],
+   "market": "DE"
+  },
+  {
+   "name": "Tradesignal / Aktien mit Kopf blogs",
+   "region": "de",
+   "language": "de",
+   "route": "search",
+   "kind": "blog",
+   "weight": 0.5,
+   "why": "German blogs",
+   "site": "aktienmitkopf.de",
+   "queries": [
+    "Saisonalität DAX Strategie",
+    "Momentum Strategie Backtest"
+   ],
+   "market": "DE"
+  },
+  {
+   "name": "Bundesbank Diskussionspapiere",
+   "region": "de",
+   "language": "de",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.6,
+   "why": "EUR, Bund, positioning",
+   "url": "https://www.bundesbank.de/de/publikationen/forschung/diskussionspapiere"
+  },
+  {
+   "name": "YouTube DE Trading",
+   "region": "de",
+   "language": "de",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "DAX Handelsstrategie getestet Backtest",
+    "Gold Strategie getestet"
+   ],
+   "transcripts": 4,
+   "market": "DE"
+  },
+  {
+   "name": "Bundesbank Statistiken",
+   "region": "de",
+   "language": "de",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Bundesbank data",
+   "url": "https://www.bundesbank.de/de/statistiken",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Destatis",
+   "region": "de",
+   "language": "de",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "German statistics releases",
+   "url": "https://www.destatis.de/DE/Home/_inhalt.html",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Finanzagentur Auktionsergebnisse",
+   "region": "de",
+   "language": "de",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Bund auctions",
+   "url": "https://www.deutsche-finanzagentur.de/bundeswertpapiere/factsheets-und-daten/auktionsergebnisse",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "SNB data portal",
+   "region": "de",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "SNB sight deposits: the intervention series -> USDCHF",
+   "url": "https://data.snb.ch/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "SNB press releases",
+   "region": "de",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "SNB decisions -> USDCHF",
+   "url": "https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/monetary-policy-decisions"
+  },
+  {
+   "name": "Eurex volume and OI",
+   "region": "de",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Bund, DAX futures OI",
+   "url": "https://www.eurex.com/ex-en/data/statistics",
+   "dataset_class": "futures_volume_oi"
+  },
+  {
+   "name": "Boursorama forums",
+   "region": "fr",
+   "language": "fr",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "France's main investor boards",
+   "url": "https://www.boursorama.com/bourse/forum/"
+  },
+  {
+   "name": "ABC Bourse forums",
+   "region": "fr",
+   "language": "fr",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "trader forum",
+   "site": "abcbourse.com",
+   "queries": [
+    "stratégie trading or backtest",
+    "cac 40 stratégie clôture",
+    "forex carry stratégie"
+   ],
+   "market": "FR"
+  },
+  {
+   "name": "Zonebourse / Café de la Bourse",
+   "region": "fr",
+   "language": "fr",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "French press",
+   "site": "zonebourse.com",
+   "queries": [
+    "stratégie saisonnalité cac",
+    "or once stratégie fixing"
+   ],
+   "market": "FR"
+  },
+  {
+   "name": "Banque de France working papers",
+   "region": "fr",
+   "language": "fr",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.5,
+   "why": "EUR, OAT",
+   "url": "https://publications.banque-france.fr/en/economic-and-financial-publications-working-papers"
+  },
+  {
+   "name": "YouTube FR trading",
+   "region": "fr",
+   "language": "fr",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "stratégie trading or testée backtest",
+    "stratégie cac 40 testée"
+   ],
+   "transcripts": 4,
+   "market": "FR"
+  },
+  {
+   "name": "Banque de France statistiques",
+   "region": "fr",
+   "language": "fr",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BdF data",
+   "url": "https://www.banque-france.fr/fr/statistiques",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "INSEE",
+   "region": "fr",
+   "language": "fr",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "INSEE releases",
+   "url": "https://www.insee.fr/fr/statistiques",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Agence France Trésor adjudications",
+   "region": "fr",
+   "language": "fr",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "OAT auctions",
+   "url": "https://www.aft.gouv.fr/fr/adjudications-resultats",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "FinanzaOnline forum",
+   "region": "it",
+   "language": "it",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "Italy's main trading forum",
+   "url": "https://forum.finanzaonline.com/"
+  },
+  {
+   "name": "Investire.biz / Milano Finanza",
+   "region": "it",
+   "language": "it",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Italian press",
+   "site": "milanofinanza.it",
+   "queries": [
+    "strategia trading oro backtest",
+    "ftse mib stagionalità strategia",
+    "btp spread strategia"
+   ],
+   "market": "IT"
+  },
+  {
+   "name": "Banca d'Italia temi di discussione",
+   "region": "it",
+   "language": "it",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.5,
+   "why": "BTP, EUR",
+   "url": "https://www.bancaditalia.it/pubblicazioni/temi-discussione/"
+  },
+  {
+   "name": "YouTube IT trading",
+   "region": "it",
+   "language": "it",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "strategia trading oro testata backtest",
+    "strategia ftse mib testata"
+   ],
+   "transcripts": 4,
+   "market": "IT"
+  },
+  {
+   "name": "Banca d'Italia statistiche",
+   "region": "it",
+   "language": "it",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BdI data",
+   "url": "https://www.bancaditalia.it/statistiche/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "MEF aste titoli di Stato",
+   "region": "it",
+   "language": "it",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BTP auctions",
+   "url": "https://www.dt.mef.gov.it/it/debito_pubblico/emissioni_titoli_di_stato_interni/risultati_aste/",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "Rankia foros bolsa",
+   "region": "es",
+   "language": "es",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "Spain's largest finance community",
+   "url": "https://www.rankia.com/foros/bolsa"
+  },
+  {
+   "name": "Rankia trading",
+   "region": "es",
+   "language": "es",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "board search via the index",
+   "site": "rankia.com",
+   "queries": [
+    "estrategia trading oro backtest",
+    "ibex estrategia cierre sesión",
+    "forex carry estrategia resultados"
+   ],
+   "market": "ES"
+  },
+  {
+   "name": "X-Trader.net",
+   "region": "es",
+   "language": "es",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.9,
+   "why": "Spanish systems traders",
+   "url": "https://www.x-trader.net/"
+  },
+  {
+   "name": "Bolsamania / Estrategias de Inversión",
+   "region": "es",
+   "language": "es",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "Spanish press",
+   "site": "estrategiasdeinversion.com",
+   "queries": [
+    "estrategia estacionalidad ibex",
+    "oro estrategia fixing"
+   ],
+   "market": "ES"
+  },
+  {
+   "name": "Banco de España documentos de trabajo",
+   "region": "es",
+   "language": "es",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.5,
+   "why": "EUR, sovereign",
+   "url": "https://www.bde.es/wbe/en/publicaciones/analisis-economico-investigacion/documentos-trabajo/"
+  },
+  {
+   "name": "YouTube ES trading",
+   "region": "es",
+   "language": "es",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "estrategia trading oro probada backtest",
+    "estrategia ibex probada"
+   ],
+   "transcripts": 4,
+   "market": "ES"
+  },
+  {
+   "name": "Banco de España estadísticas",
+   "region": "es",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BdE data",
+   "url": "https://www.bde.es/wbe/es/estadisticas/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "INE",
+   "region": "es",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "INE releases",
+   "url": "https://www.ine.es/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "IEX.nl forum",
+   "region": "nl",
+   "language": "nl",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "the Dutch investor forum",
+   "url": "https://www.iex.nl/forum/"
+  },
+  {
+   "name": "Belegger.nl / De Aandeelhouder",
+   "region": "nl",
+   "language": "nl",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "Dutch boards",
+   "site": "belegger.nl",
+   "queries": [
+    "strategie beleggen goud backtest",
+    "aex strategie slot"
+   ],
+   "market": "NL"
+  },
+  {
+   "name": "DNB working papers",
+   "region": "nl",
+   "language": "nl",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.5,
+   "why": "EUR, pension flows",
+   "url": "https://www.dnb.nl/en/publications/research-publications/"
+  },
+  {
+   "name": "DNB statistieken",
+   "region": "nl",
+   "language": "nl",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "DNB data",
+   "url": "https://www.dnb.nl/statistieken/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "CBS StatLine",
+   "region": "nl",
+   "language": "nl",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CBS open data",
+   "url": "https://opendata.cbs.nl/statline/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "DSTA auction results",
+   "region": "nl",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "DSL auctions",
+   "url": "https://www.dsta.nl/english/topics/auctions",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "Rotterdam port statistics",
+   "region": "nl",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "throughput: the European trade channel",
+   "url": "https://www.portofrotterdam.com/en/news-and-press-releases",
+   "dataset_class": "shipping_freight"
+  },
+  {
+   "name": "Avanza forum / Placera",
+   "region": "se",
+   "language": "sv",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.8,
+   "why": "Sweden's retail hub",
+   "site": "avanza.se",
+   "queries": [
+    "strategi guld backtest",
+    "omxs30 strategi stängning",
+    "kronan riksbanken strategi"
+   ],
+   "market": "SE"
+  },
+  {
+   "name": "Nordnet Shareville",
+   "region": "se",
+   "language": "sv",
+   "route": "search",
+   "kind": "social",
+   "weight": 0.5,
+   "why": "social trading feed",
+   "site": "shareville.se",
+   "queries": [
+    "strategi trading guld",
+    "omx strategi"
+   ],
+   "market": "SE"
+  },
+  {
+   "name": "Börssnack / Flashback ekonomi",
+   "region": "se",
+   "language": "sv",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "Swedish general forum",
+   "site": "flashback.org",
+   "queries": [
+    "trading strategi guld backtest",
+    "omxs30 terminer strategi"
+   ],
+   "market": "SE"
+  },
+  {
+   "name": "Riksbank staff papers",
+   "region": "se",
+   "language": "sv",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.4,
+   "why": "SEK, rates",
+   "url": "https://www.riksbank.se/en-gb/press-and-published/publications/"
+  },
+  {
+   "name": "Riksbank statistics",
+   "region": "se",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Riksbank data",
+   "url": "https://www.riksbank.se/en-gb/statistics/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "SCB",
+   "region": "se",
+   "language": "sv",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Statistics Sweden",
+   "url": "https://www.scb.se/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Riksbank press releases",
+   "region": "se",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "Riksbank decisions -> USDSEK",
+   "url": "https://www.riksbank.se/en-gb/press-and-published/notices-and-press-releases/"
+  },
+  {
+   "name": "Riksgälden auction results",
+   "region": "se",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "SGB auctions",
+   "url": "https://www.riksgalden.se/en/our-operations/central-government-borrowing/auctions/",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "Nordnet / Euroinvestor forum",
+   "region": "dk",
+   "language": "da",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "Danish boards",
+   "site": "euroinvestor.dk",
+   "queries": [
+    "strategi guld backtest",
+    "omxc25 strategi",
+    "kronen nationalbanken"
+   ],
+   "market": "DK"
+  },
+  {
+   "name": "Danmarks Nationalbank statistik",
+   "region": "dk",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "DN data",
+   "url": "https://www.nationalbanken.dk/en/what-we-do/statistics",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Danmarks Statistik",
+   "region": "dk",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "DST releases",
+   "url": "https://www.dst.dk/en",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Nationalbanken press",
+   "region": "dk",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "DN peg operations -> USDDKK",
+   "url": "https://www.nationalbanken.dk/en/news-and-knowledge"
+  },
+  {
+   "name": "Nordnet / Hegnar forum",
+   "region": "no",
+   "language": "no",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "Norwegian boards",
+   "site": "finansavisen.no",
+   "queries": [
+    "strategi gull backtest",
+    "obx strategi",
+    "kronen norges bank oljefondet"
+   ],
+   "market": "NO"
+  },
+  {
+   "name": "Shareville NO / Xtrainvestor",
+   "region": "no",
+   "language": "no",
+   "route": "search",
+   "kind": "social",
+   "weight": 0.4,
+   "why": "Norwegian social feeds",
+   "site": "xtrainvestor.com",
+   "queries": [
+    "strategi trading olje",
+    "obx terminer strategi"
+   ],
+   "market": "NO"
+  },
+  {
+   "name": "Norges Bank statistics",
+   "region": "no",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Norges Bank data; FX purchases for the oil fund",
+   "url": "https://www.norges-bank.no/en/topics/Statistics/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "SSB",
+   "region": "no",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Statistics Norway",
+   "url": "https://www.ssb.no/en",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Norges Bank press releases",
+   "region": "no",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "Norges Bank decisions and FX transactions -> USDNOK",
+   "url": "https://www.norges-bank.no/en/news-events/news-publications/Press-releases/"
+  },
+  {
+   "name": "NPD petroleum data",
+   "region": "no",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Norwegian petroleum production -> NOK, gas",
+   "url": "https://www.sodir.no/en/",
+   "dataset_class": "weather_energy"
+  },
+  {
+   "name": "Kauppalehti keskustelu",
+   "region": "fi",
+   "language": "fi",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "Finland's investor forum",
+   "site": "kauppalehti.fi",
+   "queries": [
+    "strategia kulta backtest",
+    "omxh strategia",
+    "sijoitusstrategia trendi"
+   ],
+   "market": "FI"
+  },
+  {
+   "name": "Inderes / Sijoitustieto",
+   "region": "fi",
+   "language": "fi",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "Finnish research and community",
+   "site": "inderes.fi",
+   "queries": [
+    "strategia kausiluonteisuus omxh",
+    "kulta strategia"
+   ],
+   "market": "FI"
+  },
+  {
+   "name": "Suomen Pankki tilastot",
+   "region": "fi",
+   "language": "fi",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Bank of Finland data",
+   "url": "https://www.suomenpankki.fi/fi/tilastot/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Tilastokeskus",
+   "region": "fi",
+   "language": "fi",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Statistics Finland",
+   "url": "https://www.stat.fi/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Bankier forum",
+   "region": "pl",
+   "language": "pl",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.9,
+   "why": "Poland's main finance boards",
+   "site": "bankier.pl",
+   "queries": [
+    "strategia tradingowa złoto backtest",
+    "wig20 strategia zamknięcie sesji",
+    "złoty nbp strategia carry"
+   ],
+   "market": "PL"
+  },
+  {
+   "name": "StockWatch.pl",
+   "region": "pl",
+   "language": "pl",
+   "route": "http",
+   "kind": "community",
+   "weight": 0.8,
+   "why": "Polish stock community and analyses",
+   "url": "https://www.stockwatch.pl/"
+  },
+  {
+   "name": "Forsal / Parkiet / Puls Biznesu",
+   "region": "pl",
+   "language": "pl",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "Polish press",
+   "site": "parkiet.com",
+   "queries": [
+    "strategia sezonowość wig20",
+    "złoto strategia analiza"
+   ],
+   "market": "PL"
+  },
+  {
+   "name": "Trading forums PL (Forex Nawigator)",
+   "region": "pl",
+   "language": "pl",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.7,
+   "why": "Polish FX forum",
+   "site": "forexnawigator.pl",
+   "queries": [
+    "strategia forex backtest wyniki",
+    "złoto strategia intraday"
+   ],
+   "market": "PL"
+  },
+  {
+   "name": "NBP working papers",
+   "region": "pl",
+   "language": "pl",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.4,
+   "why": "PLN, rates",
+   "url": "https://nbp.pl/en/publications/nbp-working-papers/"
+  },
+  {
+   "name": "YouTube PL trading",
+   "region": "pl",
+   "language": "pl",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "strategia tradingowa złoto przetestowana",
+    "strategia wig20 backtest"
+   ],
+   "transcripts": 4,
+   "market": "PL"
+  },
+  {
+   "name": "NBP statystyka",
+   "region": "pl",
+   "language": "pl",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "NBP data",
+   "url": "https://nbp.pl/statystyka-i-sprawozdawczosc/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "GUS",
+   "region": "pl",
+   "language": "pl",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "GUS releases",
+   "url": "https://stat.gov.pl/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "NBP komunikaty RPP",
+   "region": "pl",
+   "language": "pl",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "MPC decisions -> USDPLN",
+   "url": "https://nbp.pl/polityka-pieniezna/decyzje-rpp/"
+  },
+  {
+   "name": "GPW statystyki",
+   "region": "pl",
+   "language": "pl",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "GPW data",
+   "url": "https://www.gpw.pl/statystyki-gpw",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "Czech investing boards (Patria, Kurzy)",
+   "region": "cz",
+   "language": "en",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.4,
+   "why": "Czech boards; Czech text rides the English vocab",
+   "site": "kurzy.cz",
+   "queries": [
+    "trading strategie zlato backtest",
+    "koruna cnb intervence"
+   ],
+   "market": "CZ"
+  },
+  {
+   "name": "CNB ARAD data",
+   "region": "cz",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CNB data",
+   "url": "https://www.cnb.cz/en/statistics/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "CNB press releases",
+   "region": "cz",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "CNB decisions and interventions -> USDCZK",
+   "url": "https://www.cnb.cz/en/cnb-news/press-releases/"
+  },
+  {
+   "name": "Portfolio.hu",
+   "region": "hu",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.4,
+   "why": "Hungarian finance press; Hungarian text rides the English vocab",
+   "site": "portfolio.hu",
+   "queries": [
+    "forint mnb kamatdöntés stratégia",
+    "arany stratégia"
+   ],
+   "market": "HU"
+  },
+  {
+   "name": "MNB statistics",
+   "region": "hu",
+   "language": "en",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "MNB data",
+   "url": "https://www.mnb.hu/en/statistics",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "MNB press releases",
+   "region": "hu",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "MNB decisions -> USDHUF",
+   "url": "https://www.mnb.hu/en/pressroom/press-releases"
+  },
+  {
+   "name": "Minfin.com.ua / Finance.ua форуми",
+   "region": "ua",
+   "language": "uk",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.6,
+   "why": "Ukrainian finance community",
+   "site": "minfin.com.ua",
+   "queries": [
+    "стратегія торгівлі золото",
+    "курс долара нбу інтервенції"
+   ],
+   "market": "UA"
+  },
+  {
+   "name": "НБУ статистика",
+   "region": "ua",
+   "language": "uk",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "NBU data",
+   "url": "https://bank.gov.ua/ua/statistic",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "НБУ прес-релізи",
+   "region": "ua",
+   "language": "uk",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "NBU decisions and interventions (UAH transfer note)",
+   "url": "https://bank.gov.ua/ua/news/all"
+  },
+  {
+   "name": "smart-lab (index)",
+   "region": "ru",
+   "language": "ru",
+   "route": "search",
+   "kind": "forum",
+   "weight": 1.2,
+   "why": "the Russian retail-algo forum via the index",
    "site": "smart-lab.ru",
    "queries": [
     "золото стратегия внутридневная правила",
     "торговая система форекс правила входа выхода",
-    "фьючерс нефть стратегия пробой"
+    "фьючерс нефть стратегия пробой",
+    "си фьючерс доллар стратегия",
+    "ртс фьючерс стратегия экспирация",
+    "ЛЧИ победитель стратегия"
    ],
-   "why": "Russian trader forum; era archaeology of ru-forex"
+   "market": "RU"
+  },
+  {
+   "name": "smart-lab search",
+   "region": "ru",
+   "language": "ru",
+   "route": "foreign",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "the same ground natively",
+   "fn": "smartlab",
+   "queries": [
+    "алготрейдинг стратегия бэктест",
+    "золото фьючерс стратегия",
+    "нефть стратегия пробой"
+   ]
+  },
+  {
+   "name": "mfd.ru forum",
+   "region": "ru",
+   "language": "ru",
+   "route": "http",
+   "kind": "forum",
+   "weight": 1.0,
+   "why": "the other big Russian trader forum",
+   "url": "https://forum.mfd.ru/forum/"
+  },
+  {
+   "name": "mfd.ru search",
+   "region": "ru",
+   "language": "ru",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "index search",
+   "site": "mfd.ru",
+   "queries": [
+    "торговая система правила золото",
+    "фьючерс стратегия пробой"
+   ],
+   "market": "RU"
+  },
+  {
+   "name": "Habr quant",
+   "region": "ru",
+   "language": "ru",
+   "route": "foreign",
+   "kind": "blog",
+   "weight": 1.0,
+   "why": "Habr via RSS; the engineering register",
+   "fn": "habr",
+   "queries": [
+    "алготрейдинг стратегия бэктест",
+    "торговая система правила золото",
+    "машинное обучение трейдинг бэктест"
+   ]
+  },
+  {
+   "name": "vc.ru финансы",
+   "region": "ru",
+   "language": "ru",
+   "route": "foreign",
+   "kind": "blog",
+   "weight": 1.0,
+   "why": "long-form tech/finance",
+   "fn": "vcru",
+   "queries": [
+    "алготрейдинг стратегия",
+    "торговая стратегия золото"
+   ]
+  },
+  {
+   "name": "Tinkoff Pulse / БКС Экспресс",
+   "region": "ru",
+   "language": "ru",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "broker communities via the index",
+   "site": "bcs-express.ru",
+   "queries": [
+    "стратегия торговли золото",
+    "фьючерс нефть стратегия",
+    "интервенции минфин рубль"
+   ],
+   "market": "RU"
+  },
+  {
+   "name": "Finam / Comon",
+   "region": "ru",
+   "language": "ru",
+   "route": "search",
+   "kind": "community",
+   "weight": 0.6,
+   "why": "broker platform",
+   "site": "finam.ru",
+   "queries": [
+    "торговая стратегия правила бэктест",
+    "автоследование стратегия результаты"
+   ],
+   "market": "RU"
+  },
+  {
+   "name": "ЛЧИ конкурс Московской биржи",
+   "region": "ru",
+   "language": "ru",
+   "route": "search",
+   "kind": "competition",
+   "weight": 1.3,
+   "why": "the MOEX trading competition: numbers plus a stated method",
+   "site": "moex.com",
+   "queries": [
+    "ЛЧИ победитель стратегия",
+    "лучший частный инвестор стратегия"
+   ],
+   "market": "RU"
+  },
+  {
+   "name": "МФД / Elliottwave RU",
+   "region": "ru",
+   "language": "ru",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.4,
+   "why": "older forums; era archaeology",
+   "site": "elliottwave.su",
+   "queries": [
+    "стратегия правила золото",
+    "фьючерс стратегия"
+   ],
+   "market": "RU"
+  },
+  {
+   "name": "Telegram RU markets",
+   "region": "ru",
+   "language": "ru",
+   "route": "telegram",
+   "kind": "social",
+   "weight": 1.2,
+   "why": "public channel previews (t.me/s), no account; where the RU market conversation lives",
+   "channels": [
+    "markettwits",
+    "russianmacro",
+    "bitkogan",
+    "centralbank_russia",
+    "smartlabnews"
+   ]
+  },
+  {
+   "name": "YouTube RU трейдинг",
+   "region": "ru",
+   "language": "ru",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "стратегия торговли золотом проверка бэктест",
+    "фьючерс стратегия проверенная"
+   ],
+   "transcripts": 4,
+   "market": "RU"
+  },
+  {
+   "name": "X (nitter) RU трейдеры",
+   "region": "ru",
+   "language": "ru",
+   "route": "nitter",
+   "kind": "social",
+   "weight": 0.6,
+   "why": "public tweets via a mirror when one is up",
+   "queries": [
+    "золото стратегия бэктест",
+    "рубль интервенции минфин"
+   ],
+   "mirrors": [
+    "nitter.net",
+    "nitter.privacydev.net",
+    "nitter.poast.org"
+   ]
+  },
+  {
+   "name": "MOEX research",
+   "region": "ru",
+   "language": "ru",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.6,
+   "why": "exchange research and market studies",
+   "url": "https://www.moex.com/s2126"
+  },
+  {
+   "name": "НИУ ВШЭ working papers",
+   "region": "ru",
+   "language": "ru",
+   "route": "search",
+   "kind": "academic",
+   "weight": 0.5,
+   "why": "HSE working papers",
+   "site": "hse.ru",
+   "queries": [
+    "working paper финансовые рынки волатильность",
+    "препринт рубль курс интервенции"
+   ],
+   "market": "RU"
+  },
+  {
+   "name": "ЦБ РФ исследования",
+   "region": "ru",
+   "language": "ru",
+   "route": "search",
+   "kind": "academic",
+   "weight": 0.5,
+   "why": "CBR research",
+   "site": "cbr.ru",
+   "queries": [
+    "аналитическая записка валютный рынок",
+    "доклад денежно-кредитная политика"
+   ],
+   "market": "RU"
+  },
+  {
+   "name": "ЦБ РФ статистика",
+   "region": "ru",
+   "language": "ru",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "CBR statistics: reserves, rates, FX",
+   "url": "https://www.cbr.ru/statistics/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Росстат",
+   "region": "ru",
+   "language": "ru",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Rosstat releases",
+   "url": "https://rosstat.gov.ru/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "MOEX data and indices",
+   "region": "ru",
+   "language": "ru",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "MOEX market data: futures OI, positions",
+   "url": "https://www.moex.com/ru/marketdata/",
+   "dataset_class": "futures_volume_oi"
+  },
+  {
+   "name": "Минфин ОФЗ аукционы",
+   "region": "ru",
+   "language": "ru",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "OFZ auctions",
+   "url": "https://minfin.gov.ru/ru/perfomance/public_debt/internal/operations/ofz/auction",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "ЦБ РФ пресс-релизы",
+   "region": "ru",
+   "language": "ru",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "CBR decisions and FX operations -> USDRUB",
+   "url": "https://www.cbr.ru/press/"
+  },
+  {
+   "name": "Минфин бюджетное правило",
+   "region": "ru",
+   "language": "ru",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "MinFin FX purchases/sales notices -> USDRUB",
+   "url": "https://minfin.gov.ru/ru/press-center/"
+  },
+  {
+   "name": "Clube do Valor blog",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.9,
+   "why": "systematic investing articles",
+   "url": "https://clubedovalor.com.br/blog/"
+  },
+  {
+   "name": "InfoMoney mercados",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.9,
+   "why": "Brazil's main financial site",
+   "url": "https://www.infomoney.com.br/mercados/"
+  },
+  {
+   "name": "InfoMoney feed",
+   "region": "br",
+   "language": "pt",
+   "route": "rss",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "the same ground as a feed",
+   "feeds": [
+    "https://www.infomoney.com.br/feed/"
+   ],
+   "fetch_items": 2
+  },
+  {
+   "name": "Suno / Bastter / Bastter fórum",
+   "region": "br",
+   "language": "pt",
+   "route": "search",
+   "kind": "community",
+   "weight": 0.7,
+   "why": "Brazilian retail register",
+   "site": "suno.com.br",
+   "queries": [
+    "estratégia trading ouro backtest",
+    "índice futuro estratégia fechamento",
+    "dólar futuro estratégia copom"
+   ],
+   "market": "BR"
+  },
+  {
+   "name": "Quantbrasil",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "blog",
+   "weight": 1.0,
+   "why": "Brazilian quant community",
+   "url": "https://quantbrasil.com.br/"
+  },
+  {
+   "name": "ADVFN Brasil fórum",
+   "region": "br",
+   "language": "pt",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "boards via the index",
+   "site": "br.advfn.com",
+   "queries": [
+    "estratégia trading mini índice",
+    "dólar futuro estratégia"
+   ],
+   "market": "BR"
+  },
+  {
+   "name": "r/investimentos r/farialimabets",
+   "region": "br",
+   "language": "pt",
+   "route": "reddit",
+   "kind": "community",
+   "weight": 0.6,
+   "why": "Brazilian retail register via feeds",
+   "subs": [
+    "investimentos",
+    "farialimabets"
+   ]
+  },
+  {
+   "name": "B3 estudos",
+   "region": "br",
+   "language": "pt",
+   "route": "search",
+   "kind": "research",
+   "weight": 0.5,
+   "why": "exchange research",
+   "site": "b3.com.br",
+   "queries": [
+    "estudo mercado derivativos liquidez",
+    "relatório investidores estrangeiros"
+   ],
+   "market": "BR"
+  },
+  {
+   "name": "Banco Central do Brasil working papers",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "academic",
+   "weight": 0.6,
+   "why": "BRL, intervention, carry",
+   "url": "https://www.bcb.gov.br/publicacoes/wps"
+  },
+  {
+   "name": "YouTube BR trading",
+   "region": "br",
+   "language": "pt",
+   "route": "youtube",
+   "kind": "video",
+   "weight": 0.7,
+   "why": "metadata; transcripts via mirrors",
+   "queries": [
+    "estratégia trading ouro testada backtest",
+    "mini índice estratégia testada"
+   ],
+   "transcripts": 4,
+   "market": "BR"
+  },
+  {
+   "name": "X (nitter) BR mercado",
+   "region": "br",
+   "language": "pt",
+   "route": "nitter",
+   "kind": "social",
+   "weight": 0.6,
+   "why": "public tweets via a mirror when one is up",
+   "queries": [
+    "dólar copom selic estratégia",
+    "mini índice estratégia backtest"
+   ],
+   "mirrors": [
+    "nitter.net",
+    "nitter.privacydev.net",
+    "nitter.poast.org"
+   ]
+  },
+  {
+   "name": "BCB SGS time series",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BCB series: swaps, reserves, Selic",
+   "url": "https://www3.bcb.gov.br/sgspub/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "IBGE",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "IBGE releases",
+   "url": "https://www.ibge.gov.br/estatisticas/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "B3 dados de mercado",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "B3 data: foreign flows, futures OI",
+   "url": "https://www.b3.com.br/pt_br/market-data-e-indices/",
+   "dataset_class": "positioning"
+  },
+  {
+   "name": "CONAB safras",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "crop estimates: the soy channel into BRL",
+   "url": "https://www.conab.gov.br/info-agro/safras",
+   "dataset_class": "weather_energy"
+  },
+  {
+   "name": "Comex Stat exportações",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "trade data: soy, iron ore exports -> USDBRL",
+   "url": "http://comexstat.mdic.gov.br/",
+   "dataset_class": "trade_data"
+  },
+  {
+   "name": "Tesouro leilões",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "treasury auctions",
+   "url": "https://www.tesourotransparente.gov.br/publicacoes/resultados-dos-leiloes",
+   "dataset_class": "auction_fixing"
+  },
+  {
+   "name": "BCB Copom comunicados",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "Copom decisions -> USDBRL",
+   "url": "https://www.bcb.gov.br/controleinflacao/copom"
+  },
+  {
+   "name": "BCB leilões de swap cambial",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "swap auctions: intervention -> USDBRL",
+   "url": "https://www.bcb.gov.br/estabilidadefinanceira/leiloes"
+  },
+  {
+   "name": "El Economista mercados",
+   "region": "mx",
+   "language": "es",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.7,
+   "why": "Mexican press",
+   "site": "eleconomista.com.mx",
+   "queries": [
+    "estrategia trading peso banxico",
+    "estrategia ipc bmv",
+    "remesas peso estrategia"
+   ],
+   "market": "MX"
+  },
+  {
+   "name": "Rankia México",
+   "region": "mx",
+   "language": "es",
+   "route": "search",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "Mexican boards",
+   "site": "rankia.mx",
+   "queries": [
+    "estrategia trading divisas peso backtest",
+    "oro estrategia"
+   ],
+   "market": "MX"
+  },
+  {
+   "name": "Banxico SIE",
+   "region": "mx",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Banxico data: reserves, remittances",
+   "url": "https://www.banxico.org.mx/SieInternet/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "INEGI",
+   "region": "mx",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "INEGI releases",
+   "url": "https://www.inegi.org.mx/",
+   "dataset_class": "macro_vintages"
+  },
+  {
+   "name": "Banxico comunicados",
+   "region": "mx",
+   "language": "es",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "Banxico decisions -> USDMXN",
+   "url": "https://www.banxico.org.mx/publicaciones-y-prensa/anuncios-de-las-decisiones-de-politica-monetaria/"
+  },
+  {
+   "name": "BMV / MexDer datos",
+   "region": "mx",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "MexDer OI",
+   "url": "https://www.mexder.com.mx/",
+   "dataset_class": "futures_volume_oi"
+  },
+  {
+   "name": "Chilean boards and press",
+   "region": "cl",
+   "language": "es",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "Diario Financiero",
+   "site": "df.cl",
+   "queries": [
+    "estrategia trading cobre peso chileno",
+    "ipsa estrategia"
+   ],
+   "market": "CL"
+  },
+  {
+   "name": "Banco Central de Chile estadísticas",
+   "region": "cl",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BCCh data",
+   "url": "https://si3.bcentral.cl/Siete/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Cochilco cobre",
+   "region": "cl",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "Chilean copper statistics -> XCUUSD",
+   "url": "https://www.cochilco.cl/",
+   "dataset_class": "commodity_inventories"
+  },
+  {
+   "name": "BCCh comunicados",
+   "region": "cl",
+   "language": "es",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "BCCh decisions and intervention (CLP transfer note)",
+   "url": "https://www.bcentral.cl/comunicados"
+  },
+  {
+   "name": "Colombian boards and press",
+   "region": "co",
+   "language": "es",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.4,
+   "why": "La República",
+   "site": "larepublica.co",
+   "queries": [
+    "estrategia trading peso colombiano banrep",
+    "colcap estrategia"
+   ],
+   "market": "CO"
+  },
+  {
+   "name": "Banco de la República estadísticas",
+   "region": "co",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BanRep data",
+   "url": "https://www.banrep.gov.co/es/estadisticas",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Peruvian boards and press",
+   "region": "pe",
+   "language": "es",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.4,
+   "why": "Gestión",
+   "site": "gestion.pe",
+   "queries": [
+    "estrategia trading sol bcrp intervención",
+    "bvl estrategia"
+   ],
+   "market": "PE"
+  },
+  {
+   "name": "BCRP estadísticas",
+   "region": "pe",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BCRP series: intervention, copper",
+   "url": "https://estadisticas.bcrp.gob.pe/estadisticas/series/",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "Rava Bursátil / Rankia AR",
+   "region": "ar",
+   "language": "es",
+   "route": "search",
+   "kind": "community",
+   "weight": 0.6,
+   "why": "Argentine boards",
+   "site": "rava.com",
+   "queries": [
+    "estrategia trading merval cepo",
+    "dólar blue brecha estrategia"
+   ],
+   "market": "AR"
+  },
+  {
+   "name": "Ámbito / El Cronista mercados",
+   "region": "ar",
+   "language": "es",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.5,
+   "why": "Argentine press",
+   "site": "ambito.com",
+   "queries": [
+    "dólar blue brecha estrategia",
+    "merval estrategia cierre"
+   ],
+   "market": "AR"
+  },
+  {
+   "name": "r/merval",
+   "region": "ar",
+   "language": "es",
+   "route": "reddit",
+   "kind": "community",
+   "weight": 0.5,
+   "why": "Argentine retail register via feeds",
+   "subs": [
+    "merval"
+   ]
+  },
+  {
+   "name": "BCRA estadísticas",
+   "region": "ar",
+   "language": "es",
+   "route": "http",
+   "kind": "dataset",
+   "weight": 0.9,
+   "why": "BCRA variables",
+   "url": "https://www.bcra.gob.ar/PublicacionesEstadisticas/Principales_variables.asp",
+   "dataset_class": "central_bank_data"
+  },
+  {
+   "name": "BCRA comunicados",
+   "region": "ar",
+   "language": "es",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "BCRA decisions and controls (ARS transfer note)",
+   "url": "https://www.bcra.gob.ar/Noticias/"
   }
  ],
  "engines": [
   "bing",
   "duckduckgo"
  ],
- "policy": "every claim -> deepening queue kind=story_mechanism with provenance; the worker seat extracts an exact MT5 recipe or rejects; nothing bypasses the gauntlet; discovered URLs feed the world crawler's frontier so the forest keeps growing"
+ "policy": "every claim -> deepening queue kind=story_mechanism under its cluster's source with PIT provenance; one task per mechanism key with every telling attached; the worker seat extracts an exact MT5 recipe or rejects; nothing bypasses the gauntlet; discovered URLs feed the world crawler's frontier and dataset endpoints feed acquire_datasets so the forest keeps growing"
 }

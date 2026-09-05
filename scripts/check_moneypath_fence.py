@@ -34,6 +34,10 @@ CANON_COMMIT = "6fed406d"  # verified 2026-08-26 (4th advance): every PROTECTED 
 #: revert one property while keeping another (measured 2026-08-26 on shadow_forward.py).
 PROTECTED: dict[str, str | tuple[str, ...]] = {
     "desks/mt5/mt5desk/gateway.py": "run_family_sleeves",
+    # THE SIZING, HEAT AND ADMISSION LAWS MOVED OUT FROM UNDER THE GATEWAY'S MARKER
+    # (2026-09-05 split). They are the properties a trample would revert, so they are fenced
+    # where they now live rather than where they used to.
+    "desks/mt5/mt5desk/decision_core.py": ("promoted_lot", "cap_by_heat", "ramped_fraction"),
     "desks/mt5/mt5desk/sizing.py": "BASE_RISK_FRAC",
     "desks/mt5/research/promoter.py": "authorized_specs",
     # THE ADMISSION DOOR ITSELF was unprotected: `authorized_runs` (params-as-identity, the

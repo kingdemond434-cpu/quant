@@ -1,5 +1,20 @@
 # VPS DEPLOY + REVIEW PROMPT — branch `claude/quant-repo-review-9po4g5`
 
+> **SUPERSEDED 2026-09-05 — DO NOT EXECUTE. Historical record only.**
+>
+> This is a one-off deploy/review prompt for branch `claude/quant-repo-review-9po4g5`, written for
+> the crypto-exchange desk that was RETIRED on 2026-08-18 by standing principal order. Several of
+> its instructions are now forbidden, not merely stale: it asks the brain to widen
+> `ingest_crypto_enriched.py --top`, to consider raising `run_crypto_target top_n`, and it reports
+> `binance_live` credential typing as a green gate. Those scripts are deleted and that venue may
+> never be hunted or traded again.
+>
+> It is kept because the REVIEW METHOD it describes is the desk's, and it is good: verify the
+> premise before trusting the document, argue the change is wrong before agreeing with it, deploy
+> only what you accept, then re-read the box to confirm each item is actually live. Read it for
+> that. The live desk is `desks/mt5/`; the current deploy path is `ops/deploy_vps.sh` and
+> `deploy/finish_setup.sh`.
+
 **To the desk brain (daily CRO cycle):** an external review + hardening branch is ready. Your job:
 (1) read every change **fresh this cycle** (VERIFY-THEN-CLAIM — never assert from this doc alone),
 (2) review it adversarially — argue where it's wrong before you agree, (3) deploy what you accept to

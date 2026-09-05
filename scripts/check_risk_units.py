@@ -54,6 +54,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -62,7 +63,10 @@ from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard  # noqa: E402
 
 DESK = ROOT / "desks" / "mt5"
-GATEWAY = DESK / "mt5desk" / "gateway.py"
+#: BOTH HALVES OF THE SPLIT (2026-09-05). `auto_lot`/`realised_q`/`promoted_lot` are one-line
+#: delegates in gateway.py now; the executable sizing statements this fence exists to walk are in
+#: decision_core.py. Walking the gateway alone would report OK on a stub forever.
+GATEWAY = (DESK / "mt5desk" / "gateway.py", DESK / "mt5desk" / "decision_core.py")
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
 OUT = ROOT / "data" / "risk_units.json"
 
@@ -145,22 +149,33 @@ def audit_sizing_path() -> tuple[list[str], list[str], int]:
     """Constants in executable sizing code, and call sites that omit the symbol."""
     constants: list[str] = []
     omissions: list[str] = []
-    try:
-        src = GATEWAY.read_text(encoding="utf-8")
-        tree = ast.parse(src)
-    except (OSError, SyntaxError) as exc:
-        return [f"gateway unparseable: {exc}"], [], 0
-    fns = _fn_nodes(tree)
+    # BOTH HALVES, ONE AUDIT. A sizing function now lives in whichever file the split put it in,
+    # and a delegate in the other; the union of their function tables is the sizing path, and a
+    # name missing from BOTH is the defect this reports.
+    fns: dict[str, Any] = {}
+    trees: list[ast.AST] = []
+    for path in GATEWAY:
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError) as exc:
+            return [f"{path.name} unparseable: {exc}"], [], 0
+        trees.append(tree)
+        for fname, node in _fn_nodes(tree).items():
+            # The file that EXECUTES the arithmetic wins over the one that delegates: a
+            # one-line delegate has no banned constant in it and would mask the real body.
+            if fname not in fns or len(ast.dump(node)) > len(ast.dump(fns[fname])):
+                fns[fname] = node
     for name in SIZING_FUNCTIONS:
         fn = fns.get(name)
         if fn is None:
-            constants.append(f"{name}: NOT FOUND in gateway.py -- renamed or deleted")
+            constants.append(f"{name}: NOT FOUND in gateway.py or decision_core.py -- "
+                             f"renamed or deleted")
             continue
         used = _executable_names(fn) & set(BANNED_ON_SIZING_PATH)
         if used:
             constants.append(f"{name}() line {fn.lineno}: sizes from {sorted(used)}")
     calls = 0
-    for node in ast.walk(tree):
+    for node in [n for t in trees for n in ast.walk(t)]:
         if not isinstance(node, ast.Call):
             continue
         fname = getattr(node.func, "id", "")

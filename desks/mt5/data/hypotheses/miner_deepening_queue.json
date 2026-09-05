@@ -8378,10 +8378,30 @@
    "sleeve": "EURGBP_discovered_asia",
    "status": null,
    "consumer": "exit_sweep / research brains"
+  },
+  {
+   "source": "alpha_evolution",
+   "kind": "alpha_expression",
+   "symbols": [
+    "AUDCAD"
+   ],
+   "title": "AUDCAD: one formulaic alpha the grammar search has not found",
+   "url": "",
+   "description": "Available terminals: ['close', 'open', 'high', 'low', 'ret', 'range', 'body', 'activity', 'spread', 'atr', 'vol', 'flow', 'usd']. Best expressions already tried (do not return these): ['scale(div(decay(range, 5), max2(spread, spread)), 12)', 'scale(div(decay(range, 5), max2(spread, spread)), 5)', 'scale(div(decay(range, 5), max2(spread, spread)), 24)', 'scale(div(vol, max2(spread, spread)), 24)', 'scale(div(decay(range, 2), max2(spread, spread)), 12)']. Windows: [2, 3, 5, 8, 12, 24, 48, 120, 240]. Return family 'formula' with a well-typed expression, side_mode, entry_z and hold_bars, and the economic mechanism it expresses.",
+   "tried": [
+    "scale(div(decay(range, 5), max2(spread, spread)), 12)",
+    "scale(div(decay(range, 5), max2(spread, spread)), 5)",
+    "scale(div(decay(range, 5), max2(spread, spread)), 24)",
+    "scale(div(vol, max2(spread, spread)), 24)",
+    "scale(div(decay(range, 2), max2(spread, spread)), 12)"
+   ],
+   "status": null,
+   "consumer": "deepening_worker (alpha_expression) -> compiler -> gauntlet"
   }
  ],
  "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
  "opportunity_curve_tasks_at": "2026-09-04T21:08:53.457331+00:00",
  "regime_coverage_tasks_at": "2026-09-04T21:09:16.489653+00:00",
- "excursions_tasks_at": "2026-09-04T21:09:17.554744+00:00"
+ "excursions_tasks_at": "2026-09-04T21:09:17.554744+00:00",
+ "alpha_evolution_tasks_at": "2026-09-05T12:39:13.531183+00:00"
 }

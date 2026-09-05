@@ -31,9 +31,10 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from libs.research import mechanism_claims as mc  # noqa: E402
 from research import deep_forest_miner as dfm  # noqa: E402
 from research import proposer_common as pc  # noqa: E402
+
+from libs.research import mechanism_claims as mc  # noqa: E402
 
 _STORY = ("我做沪金日内交易七年。夜盘开盘后前30分钟如果放量突破日内高点，顺势做多持有到收盘前平仓，"
           "胜率62%，年化收益率85%，最大回撤18%。螺纹钢在换月前一周基差收敛，做空近月效果明显，"
@@ -115,6 +116,8 @@ def _isolate(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(dfm, "SEEN", tmp_path / "seen.json")
     monkeypatch.setattr(dfm, "REPORT", tmp_path / "DEEP_FOREST.json")
     monkeypatch.setattr(dfm, "PROVENANCE", tmp_path / "mined_sources.jsonl")
+    monkeypatch.setattr(dfm, "DATASETS", tmp_path / "datasets.jsonl")
+    monkeypatch.setattr(dfm, "WORLD", tmp_path / "world")
     monkeypatch.setattr(dfm, "_feed_frontier", lambda urls: len(urls))
     queued: list = []
     import research.regime_coverage as rc
@@ -209,9 +212,17 @@ def test_no_ground_query_or_seed_names_a_forbidden_venue() -> None:
 
 
 def test_the_bandit_routes_story_and_repo_claims_to_the_external_arm() -> None:
-    from libs.research.bandit import arm_of
+    from libs.research.bandit import ARMS, SOURCE_ARM, arm_of
     assert arm_of("deep_forest") == "external_screen" == arm_of("repo_miner")
     assert arm_of("x", "story_mechanism") == "external_screen"
+    # ONE SOURCE PER REGION CLUSTER, every one declared (not the unknown-source default) so the
+    # research P&L can census each forest and the arm is the external one for all of them.
+    src = json.loads((_DESK / "data" / "deep_forest_sources.json").read_text("utf-8"))
+    for g in src["grounds"]:
+        source = dfm.source_of(dfm.cluster_of(g))
+        assert source in SOURCE_ARM, f"{g['name']}: {source} is not a declared bandit source"
+        assert arm_of(source) in ARMS and arm_of(source) == "external_screen"
+    assert dfm.source_of("cn") == "deep_forest" and dfm.source_of("jp") == "deep_forest_jp"
 
 
 def test_the_world_crawler_keeps_story_claims_as_story_rows() -> None:
@@ -321,3 +332,308 @@ def test_alpha_evolution_asks_the_seat_for_what_the_search_did_not_find(monkeypa
     tasks = ae._expression_tasks({"XAUUSD": {"drivers": ["usd"]}}, rows)
     assert len(tasks) == 1 and queued and tasks[0]["kind"] == "alpha_expression"
     assert "usd" in tasks[0]["description"] and "zscore(delta(close,24),240)" in tasks[0]["tried"]
+
+
+# ================================================================== the world forest (2026-09-05)
+_SRC = json.loads((_DESK / "data" / "deep_forest_sources.json").read_text("utf-8"))
+_UNIVERSE = {str(k).upper() for k in
+             json.loads((_DESK / "data" / "universe" / "universe.json").read_text("utf-8"))}
+_STORY_EN = ("Gold usually mean reverts after the London fix within two hours when the daily range "
+             "is already wide. EURUSD tends to rally for a week after the ECB rate decision when "
+             "positioning is short. Brazilian soy exports usually weaken the real over the month.")
+_PAGE_EN = ("<html><head><title>Systems thread</title>"
+            "<meta property=\"article:published_time\" content=\"2026-08-30T10:00:00Z\"></head>"
+            "<body><p>" + _STORY_EN + "</p><a href='/thread/2'>trading strategy thread</a>"
+            "<a href='/data/cot.csv'>download csv</a></body></html>")
+_BING_JA = """<ol id="b_results"><li class="b_algo"><h2><a href="https://note.com/x/n/1">
+ドル円 仲値 手法</a></h2><p>ドル円は五十日の仲値にかけて日中ドル高になりやすく、仲値後に反落する。</p></li></ol>"""
+_BING_YT = """<ol id="b_results"><li class="b_algo"><h2><a href="https://www.youtube.com/watch?v=abcdefghijk">
+ドル円 仲値 トレード解説</a></h2><p>ドル円は五十日の仲値にかけて日中ドル高になりやすく、仲値後に反落する。</p></li></ol>"""
+_RSS = """<?xml version="1.0"?><rss><channel><item><title>Carry note</title>
+<link>https://blog.test/carry</link><pubDate>Mon, 01 Sep 2026 10:00:00 GMT</pubDate>
+<description><![CDATA[<p>USDTRY usually falls for a week after the CBRT hikes when positioning is long.</p>]]></description>
+</item></channel></rss>"""
+_ATOM = """<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>gold fix fade</title>
+<link href="https://www.reddit.com/r/algotrading/comments/1/gold_fix/"/><updated>2026-09-01T00:00:00Z</updated>
+<content type="html">&lt;p&gt;Gold tends to mean revert after the London fix within two hours daily.&lt;/p&gt;</content>
+</entry></feed>"""
+_PAGE_EN2 = ("<html><title>Another thread</title><body><p>Gold typically reverts after the London fix within "
+             "two hours once the daily range is wide. EURUSD usually rallies for a week after an ECB rate "
+             "decision when positioning is short. Soy exports from Brazil tend to weaken the real over the "
+             "month.</p></body></html>")
+_NITTER = """<div class="timeline-item"><a class="tweet-link" href="/trader/status/123#m"></a>
+<div class="tweet-content media-body" dir="auto">XAUUSD fades the London fix within an hour most days, positioning is long.</div></div>"""
+_WAYBACK = json.dumps({"archived_snapshots": {"closest": {"available": True,
+                       "url": "https://web.archive.org/web/20200601000000/https://www.quantopian.com/posts",
+                       "timestamp": "20200601000000"}}})
+_DATA_PAGE = ("<html><title>Statistics</title><body><p>Monthly reserves and intervention statistics.</p>"
+              "<a href='/statistics/reserves.csv'>reserves csv</a><a href='/api/series?id=fx'>api</a></body></html>")
+
+
+def _dispatch(url: str, **kw) -> str:
+    """One fake transport for every route: the URL says which fixture answers."""
+    if "bing.com" in url:
+        return _BING_YT if "youtube" in url else _BING_JA
+    if "duckduckgo" in url:
+        return ""
+    if "archive.org/wayback/available" in url:
+        return _WAYBACK
+    if url.endswith(".rss") or "/feed" in url or "rss" in url:
+        return _ATOM if "reddit" in url else _RSS
+    if "/search?f=tweets" in url:
+        return _NITTER if "nitter.net" in url else ""
+    if "gitee.com/api/v5/search" in url:
+        return json.dumps([{"full_name": "quant/cta", "html_url": "https://gitee.com/quant/cta",
+                            "description": "CTA 策略", "license": "MIT", "stargazers_count": 3}])
+    if "gitee.com/api/v5/repos" in url:
+        import base64
+        return json.dumps({"content": base64.b64encode(_STORY.encode("utf-8")).decode("ascii")})
+    if "web.archive.org" in url:
+        return _PAGE_EN2
+    if "statistics" in url.lower() or "/data" in url.lower():
+        return _DATA_PAGE
+    if "babypips" in url:
+        return _PAGE_EN2
+    return _PAGE_EN
+
+
+class _Vid:
+    bvid, title = "BV1fixture", "期货高手访谈"
+    url, searchable = "https://www.bilibili.com/video/BV1fixture", "期货高手访谈 " + _STORY
+
+
+class _Art:
+    def __init__(self, title: str, url: str, snippet: str) -> None:
+        self.title, self.url, self.snippet, self.published = title, url, snippet, "2026-09-01"
+
+    @property
+    def searchable(self) -> str:
+        return f"{self.title} {self.snippet}"
+
+
+def _offline(monkeypatch, tmp_path: Path) -> list:
+    """Every network-touching seam replaced by a fixture; nothing leaves the box."""
+    queued = _isolate(monkeypatch, tmp_path)
+    monkeypatch.setattr(dfm, "_universe", lambda: _UNIVERSE)      # the real Fusion universe
+    monkeypatch.setattr(dfm, "_http", _dispatch)
+    monkeypatch.setattr(dfm.time, "sleep", lambda s: None)
+    monkeypatch.setattr(dfm, "youtube_transcript", lambda vid, lang="en": ("", "mirror rotation dead (measured)"))
+    monkeypatch.setattr(dfm._Run, "rendered", lambda self, url: "")     # no browser off-box
+    art = [_Art("ゴールド 逆張り 検証", "https://p.test/1", "ゴールドはロンドン仲値の後、1時間で逆張りの反発が出やすい。")]
+    from libs.data import bilibili, cn_sources, foreign_sources, papers
+    for name in dfm.FOREIGN_FNS:
+        monkeypatch.setattr(foreign_sources, name, lambda q, **kw: (art, None))
+    monkeypatch.setattr(cn_sources, "juejin", lambda q, **kw: (art, None))
+    monkeypatch.setattr(cn_sources, "sogou_weixin", lambda q, **kw: (art, None))
+    monkeypatch.setattr(bilibili, "search", lambda q, **kw: ([_Vid()], None))
+    paper = _Art("Carry and the fix", "https://arxiv.org/abs/1", "The carry trade usually gains for a month "
+                 "after the Fed cuts when positioning is short.")
+    monkeypatch.setattr(papers, "arxiv", lambda q, **kw: ([paper], None))
+    monkeypatch.setattr(papers, "ssrn", lambda b, **kw: ([paper], None))
+    monkeypatch.setattr(papers, "openreview", lambda q, **kw: ([paper], None))
+    return queued
+
+
+def _run_grounds(monkeypatch, tmp_path: Path, grounds: list, budget: float = 60) -> dict:
+    monkeypatch.setattr(dfm, "SOURCES", tmp_path / "src.json")
+    (tmp_path / "src.json").write_text(json.dumps({"grounds": grounds}, ensure_ascii=False), "utf-8")
+    return dfm.run(budget_s=budget, fetch=True)
+
+
+def test_the_grounds_file_is_a_world_with_a_regions_index_and_every_ground_is_routable() -> None:
+    regions = _SRC["regions"]
+    assert len(regions) >= 45 and all(v.get("cluster") and v.get("languages") for v in regions.values())
+    seen: set = set()
+    langs: set = set()
+    for g in _SRC["grounds"]:
+        assert g.get("name") and g.get("region") in regions and g.get("language") and g.get("route")
+        assert g["route"] in dfm.ROUTES, f"{g['name']}: unknown route {g['route']}"
+        assert g["language"] in (*mc.LANGUAGES, "ms"), f"{g['name']}: no vocabulary for {g['language']}"
+        if g["route"] == "foreign":
+            assert g.get("fn") in dfm.FOREIGN_FNS
+        if g["route"] == "papers":
+            assert g.get("fn") in dfm.PAPER_FNS
+        if g.get("kind") == "dataset":
+            assert g.get("dataset_class") in dfm.DATASET_CLASSES, f"{g['name']}: dataset class"
+        if g["route"] != "unreachable":
+            assert any(g.get(k) for k in ("url", "queries", "feeds", "subs", "channels", "bindings")), \
+                f"{g['name']} declares no seeds"
+        target = g.get("site") or g.get("fn") or g["route"]
+        for seed in [g.get("url"), *g.get("alt", []), *g.get("feeds", []),
+                     *[f"{target}|{q}" for q in g.get("queries", [])], *[f"sub:{x}" for x in g.get("subs", [])],
+                     *[f"tg:{x}" for x in g.get("channels", [])]]:
+            if seed:
+                assert seed not in seen, f"duplicate seed {seed}"
+                seen.add(seed)
+        langs.add(g["language"])
+    assert len({g["name"] for g in _SRC["grounds"]}) == len(_SRC["grounds"])
+    assert len(_SRC["grounds"]) >= 400 and len(langs) >= 24
+    # every region has story ground AND dataset/macro ground: coverage is measured per kind
+    by_region = {}
+    for g in _SRC["grounds"]:
+        by_region.setdefault(g["region"], set()).add("dataset" if g.get("kind") in ("dataset", "macro") else "story")
+    thin = [r for r, kinds in by_region.items() if kinds != {"story", "dataset"}]
+    assert not thin, f"regions without both story and dataset/macro ground: {thin}"
+
+
+def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credited_for_labels(
+        monkeypatch, tmp_path) -> None:
+    """NO REGION GETS CREDIT FOR COVERAGE, ONLY FOR CONVERSION: run the WHOLE real grounds file
+    against fixtures. Every ground must reach its route (PRODUCTIVE or REACHED_NO_CLAIMS) or be a
+    recorded UNREACHABLE gap; BLOCKED means a route that does not resolve, which is a label."""
+    _offline(monkeypatch, tmp_path)
+    doc = _run_grounds(monkeypatch, tmp_path, _SRC["grounds"], budget=3000)
+    statuses = {g["ground"]: g for g in doc["grounds"]}
+    assert len(statuses) == len(_SRC["grounds"])
+    bad = {k: (v["status"], v.get("errors") or v.get("error")) for k, v in statuses.items()
+           if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")}
+    assert not bad, bad
+    # The fixture world serves the same page everywhere, so most grounds see claims already
+    # banked (REACHED_NO_CLAIMS); the first of each route converts and every route resolves.
+    assert doc["productive"] >= 5 and doc["counts"]["claims_seen_before"] > 100
+    for reg, b in doc["by_region"].items():
+        assert b["worked"] == b["grounds"], reg
+    assert doc["datasets_new"] >= 100 and doc["counts"]["dataset_endpoints"] >= 100
+    assert doc["claims_by_channel"]["direct"] > 0 and doc["claims_by_channel"]["indirect"] > 0
+    assert set(doc["ledger_schema"]) >= {"claims (data/deep_forest_claims.jsonl)"}
+
+
+def test_scheduling_rotates_across_clusters_and_resumes_from_the_cursor() -> None:
+    grounds = [{"name": f"cn{i}", "region": "cn", "route": "http", "url": f"https://c/{i}", "weight": 1.0 + i}
+               for i in range(3)] + [{"name": f"jp{i}", "region": "jp", "route": "http", "url": f"https://j/{i}"}
+                                     for i in range(2)] + [{"name": "br0", "region": "br", "route": "http",
+                                                            "url": "https://b/0"}]
+    order = [g["name"] for g in dfm.schedule(grounds, 0)]
+    assert order[:3] == ["cn2", "jp0", "br0"], order          # round-robin, heaviest first
+    assert order[3:5] == ["cn1", "jp1"]
+    assert next(g["name"] for g in dfm.schedule(grounds, 2)) == "br0"   # cursor rotates the start
+    assert [g["name"] for g in dfm.schedule(grounds, 0, region="jp")] == ["jp0", "jp1"]
+    assert [g["name"] for g in dfm.schedule(grounds, 0, only={"latam"})] == ["br0"]
+
+
+def test_search_runs_in_the_ground_s_locale_and_snippets_only_never_fetches_the_site(monkeypatch,
+                                                                                   tmp_path) -> None:
+    queued = _offline(monkeypatch, tmp_path)
+    urls: list[str] = []
+
+    def spy(url, **kw):
+        urls.append(url)
+        return _dispatch(url, **kw)
+    monkeypatch.setattr(dfm, "_http", spy)
+    doc = _run_grounds(monkeypatch, tmp_path, [
+        {"name": "note (JP)", "region": "jp", "language": "ja", "route": "search", "site": "note.com",
+         "queries": ["ドル円 仲値 手法"], "kind": "blog", "snippets_only": True}])
+    assert any("setlang=ja" in u and "cc=JP" in u for u in urls)
+    from urllib.parse import urlparse
+    assert not any(urlparse(u).netloc.endswith("note.com") for u in urls), \
+        "snippets_only must not fetch the site"
+    assert doc["claims_new"] >= 1 and queued
+    task = queued[0]
+    assert task["source"] == "deep_forest_jp" and task["symbols"] == ["USDJPY"] and task["lang"] == "ja"
+    assert task["region"] == "jp" and task["mechanism_class"] == "calendar"
+
+
+def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_resolve(monkeypatch,
+                                                                                       tmp_path) -> None:
+    queued = _offline(monkeypatch, tmp_path)
+    grounds = [
+        {"name": "Medium", "region": "us", "language": "en", "route": "rss", "kind": "blog",
+         "feeds": ["https://medium.com/feed/tag/quant"], "fetch_items": 1},
+        {"name": "reddit", "region": "us", "language": "en", "route": "reddit", "kind": "community",
+         "subs": ["algotrading"]},
+        {"name": "Qiita", "region": "jp", "language": "ja", "route": "foreign", "fn": "qiita",
+         "queries": ["システムトレード"], "kind": "blog"},
+        {"name": "arXiv", "region": "institutional", "language": "en", "route": "papers", "fn": "arxiv",
+         "queries": ["carry"], "categories": ["q-fin.TR"], "kind": "academic"},
+        {"name": "Quantopian", "region": "us", "language": "en", "route": "wayback", "kind": "archive",
+         "url": "https://www.quantopian.com/posts", "timestamp": "20200601"},
+        {"name": "nitter", "region": "us", "language": "en", "route": "nitter", "kind": "social",
+         "queries": ["XAUUSD fix"], "mirrors": ["dead.mirror", "nitter.net"]},
+        {"name": "YouTube JP", "region": "jp", "language": "ja", "route": "youtube", "kind": "video",
+         "queries": ["ドル円 仲値"], "transcripts": 2},
+        {"name": "Telegram RU", "region": "ru", "language": "ru", "route": "telegram", "kind": "social",
+         "channels": ["markettwits"]},
+        {"name": "coinpan never", "region": "kr", "language": "ko", "route": "foreign", "fn": "coinpan",
+         "queries": ["x"], "kind": "forum"},
+    ]
+    doc = _run_grounds(monkeypatch, tmp_path, grounds)
+    st = {g["ground"]: g for g in doc["grounds"]}
+    assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
+    assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
+    assert st["Qiita"]["status"] == "PRODUCTIVE"
+    assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
+    assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]
+    assert st["nitter"]["status"] == "PRODUCTIVE" and st["nitter"]["mirror"] == "nitter.net"
+    # The YouTube route generalises the Bilibili one: metadata converts, the transcript gap is SAID.
+    assert st["YouTube JP"]["status"] == "PRODUCTIVE" and st["YouTube JP"]["transcripts"] == 0
+    assert any("mirror rotation dead" in e for e in st["YouTube JP"]["errors"])
+    assert st["Telegram RU"]["status"] == "PRODUCTIVE" and st["Telegram RU"]["channels"] == 1
+    # The fenced foreign function is refused by the allowlist, not by luck.
+    assert st["coinpan never"]["status"] == "BLOCKED" and "allowlist" in st["coinpan never"]["error"]
+    sources = {t["source"] for t in queued}
+    assert {"deep_forest_west", "deep_forest_jp", "deep_forest_institutional", "deep_forest_ru"} <= sources
+    # papers carry the abstract's published date as published_time
+    arx = next(r for r in dfm._claims_rows() if r["ground"] == "arXiv")
+    assert arx["published_time"] == "2026-09-01" and arx["evidence_grade"] == "PAPER"
+
+
+def test_a_dataset_ground_yields_discovery_rows_the_acquirer_reads(monkeypatch, tmp_path) -> None:
+    _offline(monkeypatch, tmp_path)
+    doc = _run_grounds(monkeypatch, tmp_path, [
+        {"name": "SARB statistics", "region": "za", "language": "en", "route": "http", "kind": "dataset",
+         "url": "https://www.resbank.co.za/en/home/what-we-do/statistics", "dataset_class": "central_bank_data"}])
+    assert doc["datasets_new"] == 1 and doc["counts"]["dataset_pages"] == 1
+    assert doc["counts"]["dataset_endpoints"] >= 2
+    files = list((tmp_path / "world").glob("discoveries_deepforest_*.json"))
+    assert len(files) == 1
+    row = json.loads(files[0].read_text("utf-8"))[0]
+    # EXACTLY the row shape acquire_datasets._endpoints reads: endpoints + host, kind dataset.
+    assert row["kind"] == "dataset" and row["host"] == "www.resbank.co.za"
+    assert any(u.endswith("reserves.csv") for u in row["endpoints"]) and row["n_endpoints"] >= 2
+    assert row["dataset_class"] == "central_bank_data" and row["region"] == "za"
+    assert (tmp_path / "datasets.jsonl").exists()
+    st = doc["grounds"][0]
+    assert st["datasets"] == 1
+
+
+def test_claims_carry_pit_provenance_channel_class_and_fold_on_the_mechanism_key(monkeypatch,
+                                                                                   tmp_path) -> None:
+    queued = _offline(monkeypatch, tmp_path)
+    doc = _run_grounds(monkeypatch, tmp_path, [
+        {"name": "Elite Trader", "region": "us", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://www.elitetrader.com/et/"},
+        {"name": "BabyPips", "region": "us", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://forums.babypips.com/latest"}])
+    rows = dfm._claims_rows()
+    gold = next(r for r in rows if "Gold usually mean reverts" in r["claim"])
+    assert gold["published_time"] == "2026-08-30T10:00:00Z" and gold["available_time"]
+    assert gold["ingested_time"] and len(gold["source_hash"]) == 64 and gold["event_time"] is None
+    assert gold["channel"] == "direct" and gold["mechanism_class"] == "calendar"   # the fix
+    soy = next(r for r in rows if "soy exports" in r["claim"])
+    assert soy["channel"] == "indirect" and soy["instruments"]["indirect"] == ["USDBRL"]
+    assert soy["mechanism_class"] == "flow"
+    # The same three claims told on the second ground fold: one task per mechanism, two tellings.
+    assert doc["counts"]["duplicate_mechanisms"] >= 3
+    task = next(t for t in queued if t["mechanism_key"] == gold["mechanism_key"])
+    assert task["n_tellings"] >= 2 and {p["ground"] for p in task["provenance"]} == {"Elite Trader", "BabyPips"}
+    assert task["source"] == "deep_forest_west" and task["mechanism_key"] == gold["mechanism_key"]
+    assert "channel=direct" in task["description"] and "Told" in task["description"]
+    # unmappable claims are counted, never queued as summaries
+    assert "dropped_unmappable" in doc["counts"]
+
+
+def test_an_unmappable_sentence_is_dropped_and_counted_not_queued() -> None:
+    r = mc.extract("The index usually rallies for a week after a breakout when volume expands.")
+    assert r["claims"] == [] and r["dropped_unmappable"] == 1
+
+
+def test_a_ground_that_yields_only_momentum_says_so(monkeypatch, tmp_path) -> None:
+    _offline(monkeypatch, tmp_path)
+    page = ("<html><title>t</title><body><p>Gold breakout momentum usually continues for a week after the "
+            "daily high is taken. Silver trend follows gold intraday after a breakout.</p></body></html>")
+    monkeypatch.setattr(dfm, "_http", lambda url, **kw: page)
+    doc = _run_grounds(monkeypatch, tmp_path, [
+        {"name": "Momentum only", "region": "us", "language": "en", "route": "http", "kind": "blog",
+         "url": "https://m.test/"}])
+    assert doc["momentum_only_grounds"] == ["Momentum only"]
+    assert doc["grounds"][0]["classes"] == {"momentum": doc["grounds"][0]["claims"]}

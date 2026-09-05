@@ -11,6 +11,7 @@ could hold 898,560 candidates against 0 executed trials for weeks without anythi
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 CYCLE = Path("ops/run_research_cycle.sh")
@@ -129,58 +130,116 @@ def test_THE_TRAP_KEEPS_THE_CONTINUATION_THAT_MASKING_BOUGHT() -> None:
             f"{ln!r} aborts the cycle on the first failure; the ERR trap records and continues")
 
 
-def test_THE_LEADERBOARD_PANEL_ACCUMULATES_ON_A_SCHEDULE() -> None:
-    """III.15 needs CALENDAR SEPARATION and nothing else can manufacture it.
+def test_A_SNAPSHOT_SCREEN_IS_NEVER_LEFT_UNSCHEDULED() -> None:
+    """RETARGETED 2026-09-05. This fence required `screen_copytrading.py` to be scheduled in the
+    cycle. That screen read an exchange copytrading leaderboard, it is deleted with the retired
+    crypto-exchange desk, and after the retirement its name survived only inside the comment that
+    retired it -- so the fence PASSED off a comment while the screen ran nowhere. That is the
+    failure mode it existed to catch, wearing the fence's own clothes.
 
-    screen_copytrading refuses to publish a persistence number until it holds two cohort snapshots
-    at least five days apart, with exits counted as failures -- the only unbiased design against a
-    leaderboard, which is by construction the maximum of a very large number of draws. It was
-    written 2026-07-31 with ZERO schedulers, so the panel accumulated nothing and its NO-DATA was a
-    statement about the cron table rather than about copy traders (III.16, L1.28a).
-
-    A screen whose verdict depends on repeated snapshots and which nothing repeats is not a screen.
+    THE RULE IT ENCODES IS KEPT because it is not about copy traders. III.15 needs CALENDAR
+    SEPARATION and nothing else can manufacture it: a screen that refuses to publish until it
+    holds two cohort snapshots days apart accumulates NOTHING if nothing repeats it, and then
+    reports NO-DATA -- a statement about the cron table rather than about the world (III.16,
+    L1.28a). So: every snapshot-cadence screen the cycle names must be a script that EXISTS, and
+    must be named on a line that actually runs.
     """
-    assert "screen_copytrading.py" in CYCLE.read_text("utf-8"), (
-        "the copytrading/leaderboard forward panel is not scheduled -- it will report NO-DATA "
-        "forever, and the reason will be the scheduler rather than the evidence")
+    src = _active(CYCLE.read_text("utf-8"))
+    for script in re.findall(r"scripts/(screen_[a-z0-9_]+\.py)", src):
+        assert Path("scripts", script).exists(), (
+            f"the cycle schedules scripts/{script}, which does not exist -- the panel will report "
+            "NO-DATA forever and the reason will be the scheduler rather than the evidence")
 
 
-def test_THE_ORDER_PATH_IS_SCHEDULED() -> None:
-    """III.16 on the one capability that touches money. Everything else in the cycle computes what
-    the book SHOULD be; without this line the desk publishes a correct target every night and holds
-    yesterday's positions forever."""
-    src = CYCLE.read_text("utf-8")
-    assert "run_spot_executor.py" in src, "the book is computed daily and never placed"
-    assert "--place" in src, "a scheduled executor without --place is a nightly dry run"
+#: The retired crypto-exchange order path. These scripts are deleted; naming them here is how the
+#: fence below stays specific about what must never come back.
+_RETIRED_ORDER_PATH = (
+    "run_spot_executor.py", "run_margin_executor.py", "run_discretionary_live.py",
+    "run_spot_momentum.py", "run_mechanism_sleeves.py", "run_cashcarry_executor.py",
+)
 
 
-def test_THE_SCHEDULED_EQUITY_IS_READ_NOT_TYPED() -> None:
-    """A hand-typed denominator is right when it is typed and wrong when it is used. 2026-08-15:
-    sized at $198 against a balance that had already lost the conversion spread -- two legs filled,
-    the third refused for insufficient balance, account left two-thirds invested."""
-    src = CYCLE.read_text("utf-8")
-    i = src.index("run_spot_executor.py")
-    assert "--equity auto" in src[i:i + 200], (
-        "the scheduled run must read equity from the venue; a literal would go stale on the first "
-        "fill and nobody would be watching")
+def _active(text: str) -> str:
+    """The lines that actually run: comments stripped, in a .sh or a .py alike.
+
+    Without this the fences below would be satisfied by a retirement NOTE that merely mentions a
+    script -- which is exactly what happened on 2026-09-05, when commenting the crypto executors
+    out of the cycle left `"run_spot_executor.py" in src` passing off the comment that retired it.
+    A fence a comment can satisfy is not a fence.
+    """
+    return "\n".join(ln for ln in text.split("\n") if not ln.strip().startswith("#"))
+
+
+def test_NO_CRYPTO_EXCHANGE_ORDER_PATH_IS_SCHEDULED_ON_THIS_BOX() -> None:
+    """REPLACES `test_THE_ORDER_PATH_IS_SCHEDULED` and `test_THE_SCHEDULED_EQUITY_IS_READ_NOT_TYPED`
+    (2026-09-05), which required the opposite and were measuring retired ground.
+
+    Those fences were right for the desk that existed when they were written: a book computed
+    nightly and never placed holds yesterday's positions forever, so the order path had to be
+    SCHEDULED. The 2026-08-18 universe mandate retired the venue they placed on, and every one of
+    those scripts is now deleted -- so a fence demanding they be scheduled is a fence arguing for
+    the return of a book the principal closed.
+
+    The invariant that replaces it is stronger and is the desk's actual topology: THIS LINUX BOX
+    HAS NO ORDER PATH AT ALL. The money path is desks/mt5/ on the Windows host, behind the MT5
+    terminal's own broker session. A research box that cannot place an order cannot place a wrong
+    one, however badly its code fails.
+    """
+    for path in (CYCLE, CRON):
+        src = _active(path.read_text("utf-8"))
+        back = [s for s in _RETIRED_ORDER_PATH if s in src]
+        assert back == [], (
+            f"{path} schedules {back} -- the retired crypto-exchange order path. The universe "
+            "mandate (2026-08-18) closed that venue and these scripts are deleted; this box "
+            "executes nothing. The MT5 money path is desks/mt5/mt5desk/gateway.py.")
+        assert "--place" not in src, (
+            f"{path} carries a live order-placing flag. Nothing scheduled on this host may place "
+            "an order.")
+
+
+def test_ANY_SCHEDULED_SPENDER_READS_ITS_DENOMINATOR_RATHER_THAN_TYPING_IT() -> None:
+    """THE LESSON OUTLIVES THE VENUE, so it is kept as a rule about any future spender rather than
+    deleted with the crypto executors it was written for.
+
+    A hand-typed denominator is right when it is typed and wrong when it is used. 2026-08-15:
+    sized at `--equity 198` against a balance that had already lost the conversion spread -- two
+    legs filled, the third refused for insufficient balance, the account left two-thirds invested.
+    So: a literal `--equity`/`--balance` figure may never appear on a scheduled line. `auto` is the
+    only accepted value, because it is read from the venue at the moment it is used.
+
+    SCOPE, DELIBERATELY NARROW. This pins the ORDER-SIZING denominator, not every number that
+    happens to be money-shaped. A first draft also matched `--capital` and immediately fired on
+    `scripts/run_auto_promotion.py --capital 200` in the cron pipeline -- which is a promotion
+    THRESHOLD, not a size sent to a venue, and reads from no balance. Widening a fence until it
+    catches the wrong thing is how a real rule gets diluted into an ignored one. (That literal is
+    still worth a look on its own terms; it is simply not this fence's finding.)
+    """
+    bad_literal = re.compile(r"--(?:equity|balance)[= ]+[0-9]")
+    for path in (CYCLE, CRON):
+        for ln in _active(path.read_text("utf-8")).split("\n"):
+            assert not bad_literal.search(ln), (
+                f"{path}: a scheduled line types its own denominator -- {ln.strip()[:90]!r}. It "
+                "is correct when typed and wrong when used; read it from the venue (`auto`).")
 
 
 CRON = Path("scripts/daily_research_cycle.py")
 
 
-def test_THE_MONEY_PATH_IS_IN_THE_PIPELINE_THAT_ACTUALLY_FIRES() -> None:
-    """MEASURED 2026-08-15. Two daily pipelines exist on the box: the 2am root crontab runs
-    scripts/daily_research_cycle.py, and ops/run_research_cycle.sh is driven by a USER systemd unit
-    -- which does not fire at all unless lingering is enabled for the account.
+def test_THE_SURVIVING_STAGES_ARE_IN_THE_PIPELINE_THAT_ACTUALLY_FIRES() -> None:
+    """MEASURED 2026-08-15, and the finding still binds. Two daily pipelines exist on the box: the
+    2am root crontab runs scripts/daily_research_cycle.py, and ops/run_research_cycle.sh is driven
+    by a USER systemd unit -- which does not fire at all unless lingering is enabled for the
+    account. Work wired only into the shell cycle was scheduled in a file whose scheduler could
+    not be demonstrated: III.16 wearing a cron entry's clothes.
 
-    Everything touching capital had been wired into the shell cycle alone. `systemctl list-timers`
-    showed no unit for it. So the order path, the promotion verb and the leaderboard panel were
-    scheduled in a file whose scheduler could not be demonstrated, which is III.16 wearing a cron
-    entry's clothes.
+    NARROWED 2026-09-05. The original list was the crypto order path -- run_spot_momentum,
+    run_spot_executor, run_discretionary_live -- and those are deleted with the retired venue, so
+    demanding them here would demand the book's return. What remains of the list is the part that
+    was never venue-specific: promotion must run, and the ladder that feeds it must run, in the
+    pipeline whose scheduler is demonstrable.
     """
-    src = CRON.read_text("utf-8")
-    for stage in ("run_spot_momentum.py", "run_spot_executor.py", "run_auto_promotion.py",
-                  "run_live_ladder.py", "run_discretionary_live.py"):
+    src = _active(CRON.read_text("utf-8"))
+    for stage in ("run_auto_promotion.py", "run_live_ladder.py"):
         assert stage in src, (
             f"{stage} is not in the pipeline the crontab runs -- it fires only if a user timer "
             "happens to be enabled, and nobody would notice the day it is not")
@@ -197,11 +256,12 @@ def test_THE_LADDER_RUNS_BEFORE_PROMOTION_IN_BOTH_PIPELINES() -> None:
             f"{path}: promotion runs before the ladder that produces its inputs")
 
 
-def test_THE_SCHEDULED_DENOMINATORS_ARE_READ_NOT_TYPED() -> None:
-    """The literal that broke the first live book was `--equity 198`. Anything spending money on a
-    schedule reads its denominator from the venue."""
-    src = CRON.read_text("utf-8")
-    i = src.index("run_spot_executor.py")
-    assert "--equity auto" in src[i:i + 120]
-    j = src.index("run_discretionary_live.py")
-    assert "--equity auto" in src[j:j + 120]
+# RETIRED 2026-09-05: `test_THE_SCHEDULED_DENOMINATORS_ARE_READ_NOT_TYPED` asserted that
+# `run_spot_executor.py` and `run_discretionary_live.py` in scripts/daily_research_cycle.py each
+# carried `--equity auto`. Both scripts are deleted with the crypto-exchange desk, so the fence
+# indexed for a substring that no longer exists and raised ValueError rather than failing an
+# assertion -- a fence that errors instead of asserting is a fence nobody can read the verdict of.
+# Its rule was not lost: `test_ANY_SCHEDULED_SPENDER_READS_ITS_DENOMINATOR_RATHER_THAN_TYPING_IT`
+# above now enforces it across BOTH pipelines and against ANY future spender, rather than against
+# two named crypto scripts -- which is the form the 2026-08-15 `--equity 198` incident actually
+# argues for.

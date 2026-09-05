@@ -1,5 +1,15 @@
 # The data-universe taxonomy — the hunting map, not a checklist
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** The THIRTY DOMAINS below are the
+> standing hunting map and remain live -- they are domains of information (price action,
+> microstructure, positioning, macro, sentiment...), not instruments, and they apply to any book.
+> **THE `desk coverage today` COLUMN DOES NOT.** Every coverage cell was measured on the retired
+> crypto-exchange desk and is a HISTORICAL RECORD as of 2026-08-19. A domain's coverage must be
+> re-measured against the MT5/Fusion book before it is claimed; a crypto-era cell is evidence of
+> what was once built, never evidence that this desk covers that domain today, and NEVER a
+> licence to hunt a crypto-exchange venue to 'close the gap'. Diff against the DOMAINS; treat the
+> coverage column as an archive.
+
 **Installed 2026-08-04 by principal order.** Thirty domains and the bulk name-list below are the
 STANDING UNIVERSE every breadth organ hunts against, every day. The order is explicit that this is
 "an ongoing discovery process rather than a checklist you eventually finish": new features and

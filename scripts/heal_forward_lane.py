@@ -347,6 +347,8 @@ def _idle_certificates() -> dict:
     untradeable: dict[str, str] = {}
     idle_real: list[str] = []
     for key in sorted(k for k in expected if k not in clocked):
+        if str(key).startswith("scalp."):
+            continue                      # accrues on scalp_shadow's clock, not this lane's
         sym = str(key).split(".")[0].split("#")[0]
         ok, why = _tradeable(sym)
         if ok:

@@ -180,8 +180,18 @@ def test_nothing_scores_a_delta_neutral_spec_on_the_price_path():
         "scripts/run_rejection_rescore.py",
         "scripts/measure_cross_mechanism_corr.py",
     ]
-    for rel in scorers:
-        for i, line in enumerate(( root / rel).read_text("utf-8").splitlines(), 1):
+    # A NAMED SCORER THAT NO LONGER EXISTS IS SKIPPED, NOT FAILED (2026-09-05): the crypto desk's
+    # campaign runners were deleted, and a fence that dies on a missing path gets deleted with it.
+    # But the skip is BOUNDED -- the assertion below refuses a vacuous pass, so the day the last
+    # scorer disappears this fails loudly instead of quietly protecting nothing.
+    present = [rel for rel in scorers if (root / rel).is_file()]
+    assert present, (
+        "no scorer in the list exists any more -- this fence is protecting nothing. Re-point it at "
+        "whatever scores generators today before deleting it.")
+    assert "libs/autodiscovery/orchestrator.py" in present, (
+        "the library's own scorer must always be covered; a scripts-only fence is not a fence")
+    for rel in present:
+        for i, line in enumerate((root / rel).read_text("utf-8").splitlines(), 1):
             code = line.split("#")[0]
             assert "net_returns(" not in code, (
                 f"{rel}:{i} scores generators with net_returns directly; use returns_for(spec)")

@@ -53,14 +53,27 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from libs.regime.asset_state import CLOCKS, FitCache, fit_asset_state       # noqa: E402
+from libs.regime.asset_state import CLOCKS, AssetState, FitCache, fit_asset_state  # noqa: E402
 from libs.regime.state_vector import StateVector                            # noqa: E402
+from libs.research.information_decay import (                               # noqa: E402
+    REGISTRY, STALE_WEIGHT, decay, state_freshness,
+)
 from mt5desk.economic_drivers import ROLES                                  # noqa: E402
 
 UNI = BASE / "data" / "universe"
 OUT = BASE / "data" / "state_vector.json"
 CACHE = BASE / "data" / "state_fits.json"
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+#: The world causal graph and the hints derived from it. The REPORT is read first because it is
+#: the organ's own answer; the GRAPH is the fallback because `reports/` is gitignored and the
+#: graph file is not -- a box that only ever receives the synced graph still gets its hints.
+WORLD_REPORT = BASE / "reports" / "WORLD_CAUSAL_GRAPH.json"
+WORLD_GRAPH = BASE / "data" / "world_causal_graph.json"
+#: A fit's clock -> the information class that ages it (`libs.research.information_decay`). A
+#: daily fit is a daily object: half its information is gone one day later, because the next
+#: daily close is the only thing that can replace it.
+CLOCK_CLASS = {"weekly": "bar_W1", "daily": "bar_D1", "H4": "bar_H4", "H1": "bar_H1",
+               "M15": "bar_M15", "M5": "bar_M5"}
 
 #: Clocks each scope is fitted on. Factors are daily because a dollar or real-rate regime is a
 #: daily object; asking USDX what it is doing this hour is a different question and a noisier one.
@@ -268,6 +281,90 @@ def liquidity_state(symbols: list[str], now: datetime,
         return {}, f"liquidity: {type(exc).__name__}: {exc}"
 
 
+def _age_s(last_bar: str, now: datetime) -> float:
+    """Seconds since the bar this fit last saw. NaN when the fit does not say -- an input with
+    no stamp is reported at weight zero, because absence is not freshness. NEGATIVE is returned
+    as it is: a bar stamped after `now` is a point-in-time violation for the caller to record,
+    never something to clip to zero and read at full weight."""
+    try:
+        t = datetime.fromisoformat(str(last_bar))
+    except (TypeError, ValueError):
+        return float("nan")
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (now - t).total_seconds()
+
+
+def input_freshness(now: datetime, states: dict[str, AssetState],
+                    gaps: dict[str, str]) -> dict[str, dict]:
+    """Per input of X_t: its information class, its TRUE age, and how much of it is still
+    information (`Information_j = Value_j x Decay_j(age_j)`).
+
+    THE DEFECT THIS CLOSES. The vector carries one `at` stamp for the whole of itself and
+    `pf_allocator` refuses it when THAT stamp is older than two hours. Inside it a weekly COT
+    read, a daily regime fit and an H1 fit all wore the age of the file, so a consumer could not
+    tell a fresh state from a stale one. Now every input says when it was last true, and the
+    allocator can weight what it reads instead of trusting a file's mtime.
+    """
+    ages: dict[str, tuple[str, float]] = {}
+    for tag, st in states.items():
+        cls = CLOCK_CLASS.get(st.clock, "bar_H1")
+        age = _age_s(st.last_bar, now)
+        if age < 0:
+            gaps[f"freshness:{tag}"] = (
+                f"{st.symbol}@{st.clock} last bar {st.last_bar} is {-age:.0f}s after the build "
+                "-- refused as a PIT violation, not clipped")
+            age = float("nan")
+        ages[tag] = (cls, age)
+    return state_freshness(ages)
+
+
+def _hint_weight(row: dict) -> float:
+    """How much of an upstream node's information survives to the moment it is acted on.
+
+    A chain that leads by two hourly bars is two hours old BY CONSTRUCTION when the desk uses
+    it, so the hint is aged by its own lag on its own clock rather than presented at full weight.
+    """
+    reg = REGISTRY.get(str(row.get("decay_cls") or ""))
+    lag = row.get("lag")
+    if reg is None or lag is None:
+        return 0.0
+    return round(decay(reg.name, float(lag) * reg.cadence_s), 6)
+
+
+def world_conditioning(symbols: list[str]) -> tuple[dict[str, list[dict]], str]:
+    """Per book instrument, the ADMITTED upstream nodes `world_causal_graph` found, each with
+    the lag it acts at, its information class and the weight that information still carries at
+    that lag.
+
+    INFORMATION, NEVER AUTHORITY. These rows are recorded on the vector so the solve CAN
+    condition on them; nothing here makes it, and a dimension the state-admission gauntlet has
+    not judged may not condition capital (`libs.ops.capability_graph`'s UNMEASURED_AUTHORITY).
+    """
+    hints: dict = {}
+    try:
+        doc = json.loads(WORLD_REPORT.read_text("utf-8"))
+        hints = doc.get("conditioning_hints") or {}
+    except (OSError, ValueError):
+        hints = {}
+    if not hints:
+        try:
+            from libs.research.causal_graph import CausalGraph
+            from research.world_causal_graph import conditioning_hints
+            hints = conditioning_hints(CausalGraph.load(WORLD_GRAPH))
+        except Exception as exc:                                # noqa: BLE001
+            return {}, f"world causal graph: {type(exc).__name__}: {exc}"
+    out: dict[str, list[dict]] = {}
+    for sym in symbols:
+        rows = [dict(r) for r in (hints.get(sym) or []) if isinstance(r, dict)]
+        for r in rows:
+            r["weight"] = _hint_weight(r)
+            r["stale"] = bool(r["weight"] < STALE_WEIGHT)
+        if rows:
+            out[sym] = rows
+    return out, ""
+
+
 def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVector:
     now = datetime.now(tz=UTC)
     cache = FitCache(path=CACHE)
@@ -323,10 +420,22 @@ def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVec
     if why:
         gaps["liquidity"] = why
 
+    # EVERY INPUT CARRIES ITS TRUE AGE. The fits are stamped by the bar they last saw, the
+    # conditioning hints by the lag they act at; both go on the vector so the allocator sees
+    # freshness rather than inferring it from one file stamp.
+    stamped: dict[str, AssetState] = {f"asset:{k}": v for k, v in assets.items()}
+    stamped.update({f"factor:{k}": v for k, v in factors.items()})
+    if global_state is not None:
+        stamped["global"] = global_state
+    fresh = input_freshness(now, stamped, gaps)
+    conditioning, why = world_conditioning(book)
+    if why:
+        gaps["conditioning"] = why
+
     cache.flush()
     return StateVector(at=now.isoformat(), global_state=global_state, assets=assets,
                        factors=factors, session=session, event=event, liquidity=liquidity,
-                       gaps=gaps)
+                       gaps=gaps, freshness=fresh, conditioning=conditioning)
 
 
 def load(max_age_s: float = 7200.0) -> tuple[StateVector | None, str]:
@@ -365,6 +474,12 @@ def main() -> int:
               f"conf={st.engine_confidence:.2f}")
     print(f"  SESSION  {sv.session.get('phase')}   EVENT {sv.event.get('phase')}   "
           f"LIQUIDITY {sv.liquidity.get('state')}")
+    stale = sorted(k for k, v in sv.freshness.items() if v["stale"])
+    print(f"  FRESH    {len(sv.freshness) - len(stale)}/{len(sv.freshness)} inputs still above "
+          f"weight {STALE_WEIGHT}; stale: {', '.join(stale[:6]) or 'none'}")
+    for sym, rows in sorted(sv.conditioning.items())[:6]:
+        print(f"  UPSTREAM {sym}: " + ", ".join(
+            f"{r['src']}@{r['lag']}{r['clock']} w={r['weight']:.2f}" for r in rows[:3]))
     for k, v in sorted(sv.gaps.items()):
         print(f"  GAP      {k}: {v}")
     print(f"written: {OUT}")

@@ -57,18 +57,18 @@ class MarketSeries:
     # ref_close because a close-only reference is still enough for the older sign-of-move rule.
     ref_high: np.ndarray | None = None
     ref_low: np.ndarray | None = None
-    funding: np.ndarray | None = None    # per-bar perp funding rate (Level-3), for crypto signals
-    # PRODUCER ECONOMICS, for treasury_cost_base_liquidation. Both optional and both None by
-    # default: a generator that needs them degrades to FLAT rather than to a guess, exactly as the
-    # funding signals do. Miner data is free but not universal, and a fabricated hashprice would
-    # invent the compelled seller the whole mechanism is about.
-    hashprice: np.ndarray | None = None   # revenue per unit hashrate ($/PH/day), producer margin
-    difficulty: np.ndarray | None = None  # network difficulty; its DOWNWARD adjustments mark exit
-    # CFTC COT positioning (weekly, per-asset: BTC/ETH CME+CB futures). Attached like funding:
-    # present when data/cot/{asset}.parquet carries the column and the symbol is that asset,
-    # None otherwise, NEVER synthesised. Speculative net positioning is the crowding meter: the
-    # COT report is published every Friday and non-commercial net positions are the levered
-    # crowd's stance. Shares of open interest normalise across contract sizes.
+    # PER-BAR FINANCING accrued by holding the instrument overnight -- on MT5/Fusion the broker's
+    # SWAP, stamped once per trading day at rollover and triple-charged on the day that carries the
+    # weekend. Sign convention: POSITIVE means a long pays. None when the lake carries no swap
+    # series for the symbol; a generator that needs it degrades to FLAT rather than to a guess,
+    # because a fabricated financing rate invents the payer the whole mechanism is about.
+    funding: np.ndarray | None = None
+    # CFTC COT positioning (weekly, per-asset). Attached like funding: present when
+    # data/cot/{asset}.parquet carries the column and the symbol is that asset, None otherwise,
+    # NEVER synthesised. Speculative net positioning is the crowding meter: the COT report is
+    # published every Friday and non-commercial net positions are the levered crowd's stance.
+    # Shares of open interest normalise across contract sizes. The report covers FX, the metals,
+    # the energies and the equity indices -- the MT5 universe's own instruments.
     cot_spec_share: np.ndarray | None = None  # (noncomm_long - noncomm_short) / oi
     cot_comm_share: np.ndarray | None = None  # (comm_long - comm_short) / oi
 

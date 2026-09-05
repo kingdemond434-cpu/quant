@@ -1,7 +1,7 @@
-"""R0333 -- the four readers of the executor's book state read the file that EXISTS.
+"""R0333 -- the readers of the executor's book state read the file that EXISTS.
 
 WHAT THIS FENCES. `record_capital_event.py`, `check_change_window.py`,
-`check_mechanism_attribution.py` and `check_gate0_ready.py` all read
+`check_mechanism_attribution.py` and (until 2026-09-05) `check_gate0_ready.py` all read
 `data/cashcarry_state.json`. No organ has ever written that path. The executor publishes to
 `data/cashcarry_positions.json` (`run_cashcarry_executor.py:43`), so every one of those reads
 failed on every box -- and each failure was swallowed by a broad `except` that reported a single
@@ -17,6 +17,13 @@ Two properties are pinned here, and the second matters as much as the first:
      unparseable and schema-missing-key are three different facts about the box; collapsing them
      is what let UNMEASURED read as OK.
 
+NARROWED 2026-09-05 (universe mandate). `check_gate0_ready.py` was the fourth reader and it was
+deleted with the retired book -- Gate 0 was the launch gate for the cash-and-carry sleeve. Its
+assertions are gone with it; the other three readers still exist, still read this path, and are
+still fenced here exactly as before. The two properties below are unchanged, and the second
+(absent / unparseable / schema-missing-key stay three distinguishable facts) is the one that
+carries the weight.
+
 Import-light by construction: the small `_load_state`/`_rail_live` helpers are invoked directly,
 never a `main()`.
 """
@@ -29,7 +36,6 @@ from typing import Any
 
 import pytest
 import scripts.check_change_window as cw
-import scripts.check_gate0_ready as g0
 import scripts.check_mechanism_attribution as ma
 import scripts.record_capital_event as rce
 
@@ -75,9 +81,12 @@ def _write(root: Path, blob: dict[str, Any] | str) -> Path:
 
 @pytest.fixture
 def state_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A tmp root every reader is repointed at (two of them hold absolute module-level paths)."""
+    """A tmp root every reader is repointed at (one of them holds an absolute module-level path).
+
+    `check_gate0_ready._ROOT` was the second, repointed here until that reader was deleted
+    2026-09-05 with the retired book.
+    """
     monkeypatch.setattr(rce, "_STATE", tmp_path / _REL)
-    monkeypatch.setattr(g0, "_ROOT", tmp_path)
     return tmp_path
 
 
@@ -87,9 +96,8 @@ def test_every_reader_names_the_written_path_not_the_phantom() -> None:
     # The defect in one line: all four pointed at a file nothing writes.
     assert str(rce._STATE).endswith(_REL)
     assert cw._STATE_REL == _REL
-    assert g0._STATE_REL == _REL
     assert _REL in ma._STATE_CANDIDATES
-    for mod in (rce, cw, g0, ma):
+    for mod in (rce, cw, ma):
         src = Path(mod.__file__ or "").read_text("utf-8")
         # the quoted literal, so the prose explaining the defect may still name it
         assert '"data/cashcarry_state.json"' not in src, \
@@ -108,17 +116,6 @@ def test_record_capital_event_parses_the_real_schema(state_root: Path) -> None:
     eq, src = rce._live_equity(st)
     assert eq == 8687.0
     assert "executor venue-truth persist" in src
-
-
-def test_gate0_parses_the_real_schema_and_can_reach_ready(state_root: Path) -> None:
-    _write(state_root, _state_blob())
-    st, verdict = g0._load_state()
-    assert verdict == "ok"
-    assert st is not None and st["last_combined_equity"] == 8687.0
-    row = g0._ruin_rail()
-    # THE POINT OF R0333: before the repoint this row was BLOCKED-UNKNOWN on every box.
-    assert row["status"] == "READY"
-    assert row["artifact"] != "data/cashcarry_state.json"
 
 
 def test_change_window_reads_the_latched_rail_action(state_root: Path) -> None:
@@ -148,9 +145,6 @@ def test_absent_state_is_the_absent_verdict_not_a_crash(state_root: Path) -> Non
     st, verdict = rce._load_state()
     assert st is None and verdict.startswith("absent")
 
-    st, verdict = g0._load_state()
-    assert st is None and verdict.startswith("absent")
-
     live, why = cw._rail_live(state_root)
     assert live is None and why.startswith("absent")   # UNMEASURED, not "no rail is live"
 
@@ -159,10 +153,6 @@ def test_absent_state_is_the_absent_verdict_not_a_crash(state_root: Path) -> Non
 
 
 def test_absent_state_never_reads_as_a_clear_rail(state_root: Path) -> None:
-    row = g0._ruin_rail()
-    assert row["status"] == "BLOCKED-UNKNOWN"
-    assert "absent" in row["detail"]
-
     # post-launch, so the pre-launch "nothing live can be harmed" branch does not clear it
     (state_root / "data").mkdir(parents=True, exist_ok=True)
     (state_root / "data/capital_events.jsonl").write_text(
@@ -176,7 +166,7 @@ def test_absent_state_never_reads_as_a_clear_rail(state_root: Path) -> None:
 
 def test_unparseable_is_not_absent(state_root: Path) -> None:
     _write(state_root, '{"last_risk_action": "flat')       # torn write
-    for verdict in (rce._load_state()[1], g0._load_state()[1],
+    for verdict in (rce._load_state()[1],
                     cw._rail_live(state_root)[1], ma._load_state(state_root, _REL)[1]):
         assert "unparseable" in verdict
         assert "absent" not in verdict
@@ -191,28 +181,7 @@ def test_schema_missing_key_is_not_absent_and_is_not_ok(state_root: Path) -> Non
     live, why = cw._rail_live(state_root)
     assert live is None and "schema-missing-key" in why
 
-    row = g0._ruin_rail()
-    assert row["status"] == "BLOCKED-UNKNOWN"
-    assert "schema-missing-key" in row["detail"] and "last_combined_equity" in row["detail"]
-
     # a positions file with no sleeve terms at all is not a deployed-state artifact
     _write(state_root, _state_blob())
     _, verdict = ma._load_state(state_root, _REL)
     assert "schema-missing-key" in verdict
-
-
-def test_gate0_uses_the_published_peak_not_the_inception(state_root: Path) -> None:
-    """SAME-RULER: `peak_combined_equity` is the high-water mark of `last_combined_equity`.
-
-    Passing the inception as the peak understates every drawdown the book already took, so a
-    book down 40% from a real peak read as merely up-from-inception.
-    """
-    _write(state_root, _state_blob(last_combined_equity=5200.0, peak_combined_equity=9000.0))
-    row = g0._ruin_rail()
-    assert "from peak $9,000" in row["detail"]
-    # inception $5,000 -> equity $5,200 is +4%: on the old fabricated peak (max(eff, eq) = equity)
-    # the rail read a flat OK. Against the peak the executor actually published it is -42%.
-    assert "PAUSE_OPENS" in row["detail"]
-
-    _write(state_root, _state_blob(last_combined_equity=5200.0, peak_combined_equity=5200.0))
-    assert "PAUSE_OPENS" not in g0._ruin_rail()["detail"]

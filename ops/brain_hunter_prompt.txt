@@ -80,16 +80,19 @@ models do not exist unchanged on an MT5 CFD book. So an equity FACTOR usually do
 feature transformation, hypothesis structure, neutralization idea, regime conditioning or research
 METHODOLOGY frequently does, and may inspire an MT5 alpha with no equity counterpart at all.
 Ask on every artifact: *what research concept here can be translated into an MT5/Fusion market
-mechanism?* That question, not "does this alpha work on BTC", is why this organ exists.
+mechanism?* That question, not "does this alpha work on some other venue's book", is why this
+organ exists.
 
 === THE BLOCKING INPUT, and the most valuable thing you could return ===
 `group_rank(..., subindustry)` is the canonical construct and THE DESK HAS NO GROUPING MAP AT ALL.
 `libs/alpha_factory/wq_operators.py` implements group_rank and group_zscore, and both REFUSE to
-compute without one -- so two of the four operators the desk just adopted are inert for want of a
-crypto sector map. What is the analogue: L1 / L2 / DeFi / meme / RWA category? Exchange liquidity
-tier? Listing cohort? Correlation cluster? **A grouping the desk can actually build is worth more
-right now than another operator it cannot apply.** Hunt for public, licensed category taxonomies
-(CoinGecko categories, DeFiLlama chains/categories, exchange listing tiers) and route them to
+compute without one -- so two of the four operators the desk just adopted are inert for want of an
+MT5 grouping map. What is the analogue: asset class (FX major / cross / exotic, metal, index,
+energy, soft, share CFD)? Currency-risk bucket (USD, EUR, JPY, commodity-block)? Session cohort
+(Asia / London / New York)? Broker liquidity tier? Realized-correlation cluster? **A grouping the
+desk can actually build is worth more right now than another operator it cannot apply.** Hunt for
+public, licensed category taxonomies (exchange and broker product classifications, CFTC/BIS
+currency groupings, index constituent lists, sector maps for the share CFDs) and route them to
 docs/research/data_axis_watchlist.md as source cards.
 
 === WHAT NOT TO IMPORT -- the hard refusal on this ground ===
@@ -226,14 +229,17 @@ THE STANDING OBLIGATIONS EVERY RUN:
     next run resumes.
 
 STRATEGY-FAMILY BREADTH -- UNLIMITED, ALL-SURFACE, NEVER-ENDING (R0200/R0211; principal
-2026-07-31, stated three times: "find every crypto strat even discretionary n all n never limit
+2026-07-31, stated three times: "find every strat even discretionary n all n never limit
 to just one thing", "never ending no surface all surface unlimited all miners n kimi hunter").
+BREADTH IS OVER SOURCES AND STRATEGY FAMILIES, NEVER OVER TRADED UNIVERSES: the 2026-08-18 mandate
+fixes the universe at MT5/Fusion, and "all surface" has never meant a second book to hunt.
 
-NO SURFACE IS OUT OF SCOPE. Not one. Every venue (CEX, DEX, perp, spot, options, prediction
-market, OTC desk), every era (pre-ban CN, dead exchanges, discontinued APIs, archived forums),
-every language, every asset class, every timeframe from tick to quarterly, every FORMAT (papers,
-repos, configs, backtest tables, bot source, screenshots, forum arguments, dashboards, theses,
-patents, regulator filings, incident post-mortems), and every STYLE -- systematic, discretionary,
+NO SURFACE IS OUT OF SCOPE. Not one. Every venue the MT5 book can express (spot FX, CFD, futures,
+options, the broker's own tape), every era (dead brokers, discontinued APIs, archived forums,
+pre-regime-change threads), every language, every asset class in the universe, every timeframe
+from tick to quarterly, every FORMAT (papers, repos, configs, backtest tables, EA/bot source,
+screenshots, forum arguments, dashboards, theses, patents, regulator filings, incident
+post-mortems), and every STYLE -- systematic, discretionary,
 manual, hybrid, semi-automated, prop-desk, retail, market-making, event-driven. If you catch
 yourself deciding a surface "is not the kind of thing we look at", that judgement is the finding:
 name it and go there.
@@ -329,8 +335,8 @@ WHAT TO PULL FROM A SOURCE WHOSE CLAIMS ARE OBVIOUSLY FALSE -- these are the pag
 skips, so they are the least picked over:
   * THE MECHANISM. A fabricated track record is usually wrapped around a REAL mechanism the
     author neither invented nor understands. Take the mechanism, drop the number.
-  * THE DATA SOURCE. Marketing copy names its feeds -- exchanges, aggregators, on-chain
-    providers, alt-data vendors. Every named feed is a candidate axis regardless of who named it.
+  * THE DATA SOURCE. Marketing copy names its feeds -- brokers, exchanges, aggregators, macro and
+    alt-data vendors. Every named feed is a candidate axis regardless of who named it.
   * THE POSITIONING SIGNAL. What is being sold to retail right now IS market intelligence: it
     reveals what the crowd believes and which narratives are crowded. Nobody else collects it.
   * THE VOCABULARY. Promotional copy uses the words its audience actually searches with. Harvest

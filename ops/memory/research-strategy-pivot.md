@@ -7,6 +7,7 @@ metadata:
   originSessionId: 4af772ee-24a6-45c2-aa20-7c72e83a9443
 ---
 
+> **ARCHIVED 2026-09-05 — the retired crypto-exchange era.** This memory node records a pivot made on the crypto-exchange desk, which was RETIRED on 2026-08-18 by standing principal order. Its "NEXT:" lines are a snapshot of what that desk intended, NOT a plan this desk is executing — the live desk is `desks/mt5/` on the MT5/Fusion universe. Kept because the FINDING it records is universe-independent and expensive: the binding constraint was DATA, not code, and a 0-survivor result was the honest output of a real screen. Read it for that.
 Investment-committee review (2026-06-20) of the solo quant platform concluded: the binding
 constraint is **data and edge, not software**. Engineering/validation are near-institutional; the
 honest probability of a durable, net-of-cost edge **on the current price-only path is <5%**.

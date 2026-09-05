@@ -36,6 +36,33 @@ class Choice:
     max_hold: int
 
 
+#: THE SESSIONS THIS LANE ACTUALLY SWEEPS. Named here, beside the mask that implements them,
+#: because `mt5desk.scalp_families` derives BOTH the executor's mask (it calls `_session_mask`
+#: below, so there is only one implementation and the two cannot disagree) AND the multiplicity
+#: census `swept_grid()` charges to the deflated-Sharpe gate. Those must move together or the
+#: charge falls behind the search and the bar silently drops.
+SESSIONS: tuple[str, ...] = ("all", "london", "new_york", "overlap")
+
+#: IMPLEMENTED AND DELIBERATELY NOT SWEPT YET (measured 2026-09-05,
+#: `research/conversion_ledger.py`). Three of the four swept sessions are London/NY-centric and
+#: the fourth is unconditional, so the lane has no Asia session at all -- while
+#: `reports/OPPORTUNITY_CURVE.json` measures its best forward sleeve, `xau_m15_anti_breakout`,
+#: earning 0.2562R shrunk over 8 trades in ASIA_MID (hours 02-05), reaching those hours ONLY
+#: because its session happens to be `all`. The lane has never once asked whether an
+#: Asia-conditioned version of any family works: a conversion rate of zero on a state the
+#: generator cannot express, which no funnel measurement starting at "candidate" can see.
+#:
+#: WHY IT IS NOT SWEPT IN THIS COMMIT. Widening a sweep is NOT loosening a gate -- an Asia
+#: candidate faces every gate the others face, and limiting the desk to one family is forbidden
+#: outright. But it multiplies the search space by 5/4, and `mt5desk.scalp_families.swept_grid`
+#: computes the trial count the deflated-Sharpe hurdle is charged as
+#: `families x len(SWEPT_SESSIONS) x geometry`. Adding a session HERE without raising the census
+#: THERE would charge a five-arm search at four arms -- a quieter, worse version of moving the
+#: bar, and the one repair this desk forbids outright. The mask is implemented and tested so
+#: that landing it is a single word in each of the two rosters, in ONE commit.
+PROPOSED_SESSIONS: tuple[str, ...] = ("asia",)
+
+
 def _session_mask(index: pd.DatetimeIndex, session: str) -> np.ndarray:
     if session == "all":
         return np.ones(len(index), dtype=bool)
@@ -48,8 +75,18 @@ def _session_mask(index: pd.DatetimeIndex, session: str) -> np.ndarray:
         local = index.tz_convert("America/New_York")
         minutes = local.hour * 60 + local.minute
         return np.asarray((minutes >= 9 * 60 + 30) & (minutes < 13 * 60))
+    if session == "asia":
+        # Tokyo cash hours, expressed in UTC for the same reason the overlap is: Japan observes
+        # no DST, so 00:00-07:00 UTC is the Tokyo session all year and needs no local clock. The
+        # window spans the ASIA_OPEN, ASIA_MID and ASIA_CLOSE phases the opportunity curve
+        # measures (hours 00-07), which is the state this lane cannot currently target.
+        minutes = utc.hour * 60 + utc.minute
+        return np.asarray(minutes < 7 * 60)
     # The liquid London/New-York overlap, expressed in UTC and therefore not silently tied to
-    # either country's DST transition week.
+    # either country's DST transition week. THIS IS ALSO THE FALL-THROUGH for any unknown
+    # session name, which is why `tests/test_conversion_ledger.py` asserts that every name in
+    # SESSIONS + PROPOSED_SESSIONS has a mask distinguishable from an unknown name's: a session
+    # added to a roster without a branch here would be silently traded as the overlap.
     minutes = utc.hour * 60 + utc.minute
     return np.asarray((minutes >= 13 * 60) & (minutes < 16 * 60))
 
@@ -165,7 +202,7 @@ def run() -> dict:
         selected: list[dict] = []
         for family in train_signals:
             ranked: list[tuple[float, Choice]] = []
-            for session in ("all", "london", "new_york", "overlap"):
+            for session in SESSIONS:
                 sig = train_signals[family].copy()
                 sig[~_session_mask(train.index, session)] = 0
                 for stop, target, hold in _geometry(tf):

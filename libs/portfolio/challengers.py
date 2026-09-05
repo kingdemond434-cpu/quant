@@ -7,7 +7,10 @@ not the libraries, so they are reimplemented here in numpy from `SleeveEvidence.
 
     hrp             hierarchical risk parity (correlation-distance tree, recursive bisection)
     herc            hierarchical equal-risk contribution, variance version
+    nco             nested clustered optimization: min-variance within clusters, then across
     min_variance    long-only minimum variance on a shrunk covariance
+    max_diversification  maximises the diversification ratio w'sigma / sqrt(w' Sigma w)
+    mean_variance   Markowitz frontier point at the book's own budget, risk aversion stated
     mean_cvar       weights by mean return per unit of conditional value-at-risk
     kelly           unconstrained Kelly  Sigma^-1 mu, long-only, scaled
     robust_kelly    Kelly on mu shrunk by one standard error
@@ -25,6 +28,12 @@ import numpy as np
 
 SHRINK = 0.20
 BAYES_K = 250.0
+#: Risk aversion for the mean-variance challenger. STATED, not fitted: every book here is
+#: rescaled to the same total heat, so lambda changes only the DIRECTION -- how hard the frontier
+#: point leans toward return against variance -- and 5 is the textbook moderate value. Fitting it
+#: to whatever beats the incumbent would make the baseline a second optimiser rather than the
+#: obvious thing a competent person would have written.
+MV_RISK_AVERSION = 5.0
 
 
 def _matrix(ev: Sequence[Any]) -> tuple[np.ndarray, list[str]]:
@@ -130,19 +139,127 @@ def herc(ev: Sequence[Any], total: float) -> dict[str, float]:
     return _scale(w, names, total)
 
 
-# --------------------------------------------------------------------------- classical
-def min_variance(ev: Sequence[Any], total: float) -> dict[str, float]:
+def _clusters(order: list[int], k: int) -> list[list[int]]:
+    """Cut the quasi-diagonalised order into `k` contiguous blocks.
+
+    Legitimate because of what the ordering IS: single-linkage quasi-diagonalisation puts
+    correlated names next to each other, so a contiguous block of it is a correlation cluster.
+    This is the cut HRP already relies on implicitly at every bisection; NCO just needs it named.
+    """
+    k = max(1, min(int(k), len(order)))
+    return [list(b) for b in np.array_split(np.asarray(order, dtype=int), k) if len(b)]
+
+
+def nco(ev: Sequence[Any], total: float) -> dict[str, float]:
+    """Nested clustered optimization: min-variance INSIDE each cluster, then ACROSS clusters.
+
+    Lopez de Prado's answer to the instability of a single big optimisation: the covariance
+    matrix's smallest eigenvalues are the noisiest, and inverting the whole thing at once lets
+    that noise set the weights. Solving inside clusters and then between the cluster portfolios
+    only ever inverts well-conditioned blocks. sqrt(n) clusters is the standard rule of thumb and
+    is stated here rather than searched, for the same reason the other baselines are textbook.
+    """
     m, names = _matrix(ev)
+    if len(names) == 1:
+        return {names[0]: total}
     cov = _cov(m)
-    w = np.linalg.solve(cov, np.ones(len(names)))
-    for _ in range(10):                                  # long-only by iterative clipping
+    groups = _clusters(_linkage_order(_corr(cov)), int(np.sqrt(len(names))))
+    w = np.zeros(len(names))
+    inner: list[np.ndarray] = []
+    for g in groups:
+        sub = cov[np.ix_(g, g)]
+        wi = _long_only_min_var(sub)
+        inner.append(wi)
+        w[g] = wi
+    # The reduced problem: each cluster is one asset whose returns are its own min-var portfolio.
+    red = np.zeros((len(groups), len(groups)))
+    for a, ga in enumerate(groups):
+        for b, gb in enumerate(groups):
+            red[a, b] = float(inner[a] @ cov[np.ix_(ga, gb)] @ inner[b])
+    red += 1e-12 * np.eye(len(groups))
+    across = _long_only_min_var(red)
+    for a, g in enumerate(groups):
+        w[g] *= across[a]
+    return _scale(w, names, total)
+
+
+# --------------------------------------------------------------------------- classical
+def _long_only_min_var(cov: np.ndarray) -> np.ndarray:
+    """Minimum-variance weights summing to 1, long-only by iterative clipping."""
+    n = cov.shape[0]
+    if n == 1:
+        return np.ones(1)
+    w = np.linalg.solve(cov, np.ones(n))
+    for _ in range(10):
         neg = w < 0
         if not neg.any():
             break
         keep = ~neg
+        if not keep.any():
+            return np.full(n, 1.0 / n)
         w = np.zeros_like(w)
         sub = cov[np.ix_(keep, keep)]
         w[keep] = np.linalg.solve(sub, np.ones(int(keep.sum())))
+    s = float(w.sum())
+    out: np.ndarray = w / s if s > 0 else np.full(n, 1.0 / n)
+    return out
+
+
+def min_variance(ev: Sequence[Any], total: float) -> dict[str, float]:
+    m, names = _matrix(ev)
+    return _scale(_long_only_min_var(_cov(m)), names, total)
+
+
+def max_diversification(ev: Sequence[Any], total: float) -> dict[str, float]:
+    """Maximise the diversification ratio DR(w) = w'sigma / sqrt(w' Sigma w).
+
+    Choueifaty's portfolio, and the one baseline that asks the desk's own question directly: it
+    maximises the ratio of the weighted-average volatility the book PAYS for to the volatility it
+    actually RUNS, which is precisely "how much of this nominal heat is real independent risk".
+    Solved as min-variance on the correlation matrix (the standard equivalence), then divided
+    back by each sleeve's own volatility.
+    """
+    m, names = _matrix(ev)
+    cov = _cov(m)
+    sd = np.sqrt(np.clip(np.diag(cov), 1e-18, None))
+    w = _long_only_min_var(_corr(cov)) / sd
+    return _scale(w, names, total)
+
+
+def mean_variance(ev: Sequence[Any], total: float, lam: float = MV_RISK_AVERSION,
+                  ) -> dict[str, float]:
+    """Markowitz: max mu'w - (lam/2) w' Sigma w at the book's own budget, long-only.
+
+    NOT the same book as `kelly`. Kelly here is the unconstrained tangency direction
+    Sigma^-1 mu; this is the frontier point under a BUDGET constraint, w = Sigma^-1(mu - g 1)/lam
+    with g set so the weights sum to the budget -- so it mixes Sigma^-1 mu with the minimum
+    variance leg Sigma^-1 1, and the two books differ whenever the sleeves' Sharpes differ from
+    their inverse variances. That difference is the whole point of entering both.
+    """
+    m, names = _matrix(ev)
+    cov = _cov(m)
+    mu = m.mean(axis=0)
+    n = len(names)
+    ones = np.ones(n)
+    a = np.linalg.solve(cov, mu)
+    b = np.linalg.solve(cov, ones)
+    budget = max(float(total), 1e-9)
+    g = (float(a.sum()) - lam * budget) / max(float(b.sum()), 1e-12)
+    w = (a - g * b) / max(lam, 1e-9)
+    if not np.all(w >= 0):                                # long-only by iterative clipping
+        keep = w > 0
+        for _ in range(10):
+            if not keep.any():
+                return _scale(np.clip(mu, 0.0, None), names, total)
+            sub = cov[np.ix_(keep, keep)]
+            a2 = np.linalg.solve(sub, mu[keep])
+            b2 = np.linalg.solve(sub, np.ones(int(keep.sum())))
+            g2 = (float(a2.sum()) - lam * budget) / max(float(b2.sum()), 1e-12)
+            w = np.zeros(n)
+            w[keep] = (a2 - g2 * b2) / max(lam, 1e-9)
+            if np.all(w >= -1e-15):
+                break
+            keep = w > 0
     return _scale(w, names, total)
 
 
@@ -181,7 +298,9 @@ def bayesian_kelly(ev: Sequence[Any], total: float, k: float = BAYES_K) -> dict[
 
 
 CHALLENGERS: dict[str, Callable[[Sequence[Any], float], dict[str, float]]] = {
-    "hrp": hrp, "herc": herc, "min_variance": min_variance, "mean_cvar": mean_cvar,
+    "hrp": hrp, "herc": herc, "nco": nco, "min_variance": min_variance,
+    "max_diversification": max_diversification, "mean_variance": mean_variance,
+    "mean_cvar": mean_cvar,
     "kelly": kelly, "robust_kelly": robust_kelly, "bayesian_kelly": bayesian_kelly,
 }
 

@@ -57,12 +57,16 @@ FLOORS: dict[str, tuple[float, str, str]] = {
         2.0, "quant-cadence.timer",
         "the cadence engine has not run: the panel, the moat screen, survivor promotion and the "
         "forward-clock review all hang off this tick, and every one of them is owed"),
-    "data/moat_mine.json": (
-        6.0, "quant-moat-miner.service",
-        "the moat miner is not converting tape into coverage"),
-    "data/moat_screen.json": (
-        6.0, "quant-moat-screen.service",
-        "the survivor hunt is not running -- the archive is being recorded and never asked"),
+    # THE TWO MOAT FLOORS WERE REMOVED 2026-09-05 (universe mandate). `data/moat_mine.json` and
+    # `data/moat_screen.json` were held to 6h floors by quant-moat-miner.service and
+    # quant-moat-screen.service. The miner (scripts/mine_moat.py), the screen
+    # (scripts/screen_moat.py) and both unit files went with the crypto-exchange desk whose
+    # self-recorded L2 tape they read.
+    #
+    # This is the one file where a stale entry does REAL damage rather than sitting inert: the
+    # header above promises "every entry names a producer that exists in the repository", and a
+    # floor whose producer is gone reports MISSING on every deploy for ever -- exit code 1, a
+    # deploy gate that can never go green, and therefore a gate somebody switches off.
     "data/max_audit_report.json": (
         30.0, "quant-daily-max.timer",
         "the daily maximisation sweep has not run, so nothing is auditing the desk"),
@@ -87,7 +91,9 @@ REQUIRED_UNITS = (
     # nothing that trades. Their obligation transferred to mt5desk.tape -- see constitution
     # section 224. Expecting them here reported a healthy desk as broken.
 
-    "quant-moat-miner.service", "quant-moat-screen.service",
+    # quant-moat-miner.service and quant-moat-screen.service removed 2026-09-05 with the moat
+    # pipeline, for the same reason the recorders were removed above: requiring a unit that no
+    # longer exists reports a healthy desk as broken.
     "quant-watchdog.timer", "quant-alerts.timer", "quant-cadence.timer", "quant-daily-max.timer",
     "quant-midnight-frontier.timer",
 )

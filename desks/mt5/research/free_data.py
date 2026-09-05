@@ -3,7 +3,6 @@
 Sources (all lawful, public, first-party):
   - FRED / ALFRED fredgraph.csv (rates, policy, macro, gold, oil, DXY, VIX)
     vintage_date param => point-in-time history (no API key needed)
-  - Deribit public REST (crypto options implied vols; no key)
   - Yahoo Finance via yfinance (DXY, VIX, TNX, GC=F, CL=F, indices; no key)
   - Official government RSS feeds (Fed, BLS, ...; parsed with stdlib)
   - GitHub search + Reddit JSON (crowding/adoption proxies; no key)
@@ -137,47 +136,6 @@ def fred_vintage_series(series_id: str, vintage_dates: list[str],
     return out
 
 
-# ------------------------------------------------------------- DERIBIT ----
-def deribit_book_summary(currency: str = "BTC") -> list[dict] | None:
-    """All option contracts with mark_iv for a currency (one public call)."""
-    url = (f"https://www.deribit.com/api/v2/public/get_book_summary_by_currency"
-           f"?currency={currency}&kind=option")
-    key = f"deribit_{currency}"
-    hit = _cache_get(key)
-    if hit:
-        return hit
-    try:
-        data = json.loads(_get(url))
-        res = data.get("result", []) if data.get("result") is not None else []
-        if res:
-            _cache_put(key, res)
-        return res
-    except Exception:
-        return None
-
-
-def deribit_index(currency: str = "BTC") -> float | None:
-    try:
-        url = f"https://www.deribit.com/api/v2/public/get_index_price?index_name={currency.lower()}_usd"
-        data = json.loads(_get(url))
-        return float(data["result"]["index_price"])
-    except Exception:
-        return None
-
-
-def deribit_vol_index(currency: str = "BTC") -> float | None:
-    try:
-        url = (f"https://www.deribit.com/api/v2/public/get_volatility_index_data"
-               f"?currency={currency}&start_timestamp=0&end_timestamp=9999999999999&resolution=3600")
-        data = json.loads(_get(url))
-        rows = data.get("result", {}).get("data", [])
-        if rows:
-            return float(rows[-1][1]) / 100.0
-        return None
-    except Exception:
-        return None
-
-
 # ---------------------------------------------------------------- YAHOO ----
 YAHOO_TICKERS = {"DX-Y.NYB": "DXY", "^VIX": "VIX", "^TNX": "TNX", "^GSPC": "SPX",
                  "GC=F": "GC", "CL=F": "CL", "^N225": "NKY", "EURUSD=X": "EURUSD",
@@ -251,7 +209,7 @@ def rss_fetch(url: str) -> list[dict]:
 # -------------------------------------------------------- CROWDING (free) --
 GITHUB_QUERIES = [
     "quant trading strategy", "trading bot forex", "gold trading algorithm",
-    "crypto options implied volatility", "mean reversion forex", "breakout trading",
+    "mean reversion forex", "breakout trading", "xauusd strategy",
 ]
 
 

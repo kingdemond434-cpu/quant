@@ -58,52 +58,33 @@ _GOVERNED: tuple[str, ...] = (
     "check_conversion.py", "check_calibration.py", "check_replacement_rate.py",
     "check_exploration.py", "check_law_families.py", "check_change_window.py",
     "run_law_gate.py", "run_moat_backup.py", "run_capability_hunt.py",
-    "screen_funding_spread.py", "screen_collateral_allocation.py",
     "check_build_standard.py",                              # this fence holds itself to it
     "check_input_provenance.py",                            # L1.55 transitive freshness
     "check_denominators.py",                                # L1.57 the denominator of a verdict
     "check_denominator_attrition.py",                       # L1.60 what that denominator LOST
     "check_claim_consistency.py",                           # L1.61 does the desk contradict itself
-    "check_partition_power.py",                              # L1.63 can the certificate say NO
     "check_panel_breadth.py",                               # L1.62 was that power denominator measured
-    "check_margin_topology.py",                             # L1.64 was the capital structure decided
     "check_risk_units.py",                                  # L1.67 is the lot in the account's units
     "check_citation_integrity.py",                          # R0369 can the proof-of-work be cashed
     "check_birth_properties.py",                            # §36/L2.9 born with its properties
     "check_capital_basis.py",                               # R0287 return-denominator invariant
-    "collect_unlock_calendar.py",                           # R0288 point-in-time unlock calendar
-    "run_fee_attribution.py",                               # R0371 who paid the fee bill
     "check_fence_yield.py",
     "ship_restart.py",                                      # the actuator for stale-code daemons
     "run_stale_daemon_repair.py",                           # detect->repair loop closed (L1.28b)
     "derive_walcl_clock.py",                                # R0031 forward clock (2026-07-31)
-    "run_llm_trader.py",
-    "collect_announcements.py",
-    "run_upbit_snapshot.py",                                # R0303 purge-proof candle archive
-    "run_conviction_trader.py",
-    "resolve_paper_book.py",
-    "build_chart_context.py",
     "check_sizing_derivation.py",
     "check_mechanism_attribution.py",
-    "run_trade_review.py",
-    "screen_copytrading.py",
-    "run_sleeve_allocator.py",
     "run_calibration_probe.py",
     "check_return_targeting.py",
     "check_organ_liveness.py",
     "check_freshness.py",                                   # L1.44 fence (capability hunt s5)
     "check_excitation.py",                                  # L1.45 fence (capability hunt s4)
     "check_clock_provenance.py",                            # L1.46 fence (capability hunt s0)
-    "check_funding_capture.py",                             # L1.47 fence (capability hunt s1)
     "check_idle_cost.py",                                   # L1.51 fence (capability hunt s1)
     "run_cost_identification.py",                           # L1.45 producer (capability hunt s4)
     "fit_print_impact.py",                                  # L1.45 third cost basis (hunt s1)
     "check_free_roster.py",                                 # R0344 degraded-fallback canary
-    "screen_carry_basis_path.py",                           # R0206 carry attribution (2026-07-31)
     "check_promotion_gate.py",
-    "run_discretionary_max.py",
-    "run_discretionary_hunt.py",
-    "run_cost_hunt.py",
     "run_strategy_coverage.py",
     "check_strategy_breadth.py",
     "run_principal_benchmark.py",
@@ -113,26 +94,26 @@ _GOVERNED: tuple[str, ...] = (
     "build_event_calendar.py",              # R0276 scheduled-event calendar the guard reads
     "check_doctrine_diff.py",               # R0093: doctrine order -> blind-spot row (L2.5)
     "run_paper_sleeve_spawner.py",          # R0102 paper-sleeve auto-spawn (2026-08-05)
-    "collect_dexscreener.py",               # R0100 axis 3 (2026-08-05)
-    "collect_geckoterminal_trades.py",      # R0291 signed DEX flow (2026-08-12)
-    "collect_holder_concentration.py",      # R0100 axis 4 (2026-08-05)
-    "collect_perpdex_funding.py",           # R0100 axis 5 + screen-on-discovery (2026-08-05)
     "retire_unfillable_candidates.py",      # §42 capacity retirement (2026-08-05)
-    "check_crowding.py",                    # R0119 residual crowding fence (2026-08-05)
-    "collect_funding_cross_section.py",     # R0119 producer: the crowding denominator
-    "screen_funding_interval_mismatch.py",  # R0121 Stage-A settlement-calendar screen (2026-08-05)
-    "resolve_llm_trader_book.py",           # R0123 decline grader (2026-08-05)
-    "run_natural_experiment.py",            # R0207 first causal study, DiD (2026-08-05)
-    "probe_bybit_archive.py",               # R0243 T7 retention alarm (2026-08-05)
     "fit_passive_impact.py",                # R0267 passive-fill impact model (2026-08-06)
-    "collect_kr_venue_flags.py",            # R0299 KR flag surface, snapshot-only (2026-08-12)
-    "probe_delisted_instruments.py",        # R0313 venue-side dead rosters (2026-08-12)
     "read_xls.py",                          # R0317 stdlib .xls extraction, L1.11a (2026-08-12)
     "check_extractor_invariants.py",        # R0318 OP-024 in-data invariants (2026-08-12)
     "check_repair_capacity.py",             # R0330 L1.28b repair service rate (2026-08-12)
-    "run_execution_quality.py",             # R0334 six-component exec quality (2026-08-12)
-    "collect_lending_risk_base_rates.py",   # R0375 the evidence under the haircut (2026-08-12)
     "harvest_rfb_vintages.py",              # R0472 RFB vintage-stack backfill+capture (2026-08-18)
+
+    # RETIRED 2026-09-05 (universe mandate). Thirty-four organs left this list because their FILES
+    # left the repo: the Stage-A screens and collectors of the crypto-exchange universe (funding
+    # spread, funding-interval mismatch, carry-basis path, collateral allocation, copytrading,
+    # crowding, the unlock/lending/KR-flag/DEX/perp-DEX/leaderboard feeds), the paper trading
+    # sleeves and their resolvers, the spot/margin order paths and the fee organs that priced
+    # them, and the two law fences whose only subject was a perp construction -- L1.47 funding
+    # capture, L1.63 partition power over the carry sleeve, L1.64 margin topology.
+    #
+    # A NAME LEFT HERE WOULD NOT BE HARMLESS. `audit_organ` reports "MISSING -- declared but not
+    # present" for a governed organ with no file, so leaving them would hold this fence red
+    # forever on work that is finished, and a permanently-red fence is one everybody learns to
+    # skip. They are removed rather than exempted because an exemption asserts the organ still
+    # exists and owes something; these do not exist.
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.

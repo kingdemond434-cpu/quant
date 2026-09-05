@@ -1,6 +1,31 @@
 # quant-platform
 
-**Autonomous MT5 Quantitative Research & Trading Desk**
+**An autonomous quantitative research and trading desk that trades the MT5 / Fusion Markets
+universe through a single broker connection.**
+
+## Read this first — what this desk trades, and what it does not
+
+- **The universe is MT5/Fusion Markets, and only that:** FX majors, crosses and exotics; gold
+  (XAUUSD) and silver and the other metals; equity indices; energy; soft commodities; US share
+  CFDs; and the crypto CFDs Fusion itself lists. One broker connection, one book.
+- **The live desk is `desks/mt5/`.** That directory is the money path: `desks/mt5/mt5desk/`
+  executes (gateway, risk units, heat budget), `desks/mt5/research/` discovers and validates, and
+  `desks/mt5/reports/` is where gate outputs, shadow ledgers and allocation decisions land. If you
+  are looking for the code that can move real money, it is `desks/mt5/mt5desk/gateway.py`.
+- **The crypto-exchange desk that used to live in this repository was RETIRED on 2026-08-18** by
+  standing principal order. No Binance, Bybit, OKX, Deribit or Hyperliquid venue is traded,
+  hunted, screened or scored, and none may be again. Crypto reference data is admissible only
+  where a specific reading informs a Fusion-executable MT5 instrument — never as a universe of
+  its own.
+- **The crypto era's records are kept on purpose, and they are archived, not active.**
+  `docs/graveyard.md`, `docs/institutional_knowledge.md`, `docs/research/negative_knowledge.md`,
+  `docs/research/blind_rediscovery_log.md`, `docs/research/deep_sweep/`, `docs/audit_shards/` and
+  `docs/research/archive_crypto_era/` are the record of what was tried and what failed. They are
+  the most valuable thing in this repository. Read them as a lab notebook from a discontinued
+  programme: the protocols and the measured negatives transfer, the venues do not.
+
+> If a file anywhere in this repository reads as a live mandate to hunt a crypto exchange, it is
+> stale and it is a defect — the mandate in `CLAUDE.md` and `docs/LAWS.md` overrides it.
 
 One codebase, multiple run modes (`research` / `trade` / `ops`), embedded stores
 (SQLite for ACID state, Parquet/DuckDB for analytics). No microservices.
@@ -38,7 +63,7 @@ desks/mt5/
 | `gateway.py` | Live MT5 execution, risk-unit sizing, CANARY ramp, heat budget |
 | `research_supervisor.py` | Self-healing watchdog for research processes |
 | `macro_desk.py` | Macro regime state (FRED, CPI, yields, DXY) |
-| `options_desk.py` | Deribit options intelligence (IV/RV, skew, term) |
+| `options_desk.py` | Options intelligence (IV/RV, skew, term structure) on the MT5 book's underlyings |
 | `meta_desk.py` | Cross-asset impact network, participant inference, drawdown forecaster |
 
 ## Run Modes

@@ -41,6 +41,13 @@ from typing import Any
 import pandas as pd
 
 DESK = Path(__file__).resolve().parents[1]
+_ROOT = DESK.parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.data.pit_certificate import certify  # noqa: E402
+from libs.data.pit_certificate import write as write_certificate  # noqa: E402
+
 WORLD = DESK / "data" / "intelligence" / "world"
 STORE = DESK / "data" / "acquired"
 REGISTRY = STORE / "registry.json"
@@ -88,6 +95,15 @@ _KEYED = re.compile(r"(api[_-]?key|apikey|token=|access_key|client_id|subscripti
 #: A SEED, NEVER A LIMIT. Crawler-found endpoints are acquired alongside these.
 _ECB_CROSSES = ("USD", "JPY", "GBP", "CHF", "AUD", "CAD", "NZD", "SEK", "NOK",
                 "PLN", "HUF", "TRY", "ZAR", "MXN", "CNY", "SGD", "HKD", "CZK", "DKK")
+
+#: What the acquirer KNOWS about a source. Anything absent reads UNMEASURED in the certificate
+#: rather than being guessed at: a crawler-found URL has told the desk nothing about how its rows
+#: were selected or whether its publisher restates them, and UNMEASURED is not authority.
+_SELECTION: dict[str, str] = {}
+#: The CFTC restates prior weeks. Declared so the revision check FAILS a series carrying no
+#: vintage column -- which is the correct verdict, not a defect in the acquirer.
+_REVISED: dict[str, bool] = {}
+_PUBLICATION_LAG_S: dict[str, int] = {}
 
 _SEED_ENDPOINTS: tuple[str, ...] = (
     # CFTC positioning -- weekly, dated, the only free source of who is actually long what.
@@ -282,11 +298,38 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
             except Exception:
                 _refuse("could not persist")
                 continue
+            # EVERY ACQUIRED SERIES IS CERTIFIED, at the only moment the desk holds both the
+            # frame and what the acquirer knows about it. `authority: false` is not a refusal to
+            # STORE -- the series stays, priced honestly -- it is a refusal of PROMOTION
+            # authority, and `acquired_series` is what enforces that downstream.
+            prior = reg["series"].get(name) or {}
+            try:
+                cert = certify({"dataset": name, "url": url, "host": host, "provider": host,
+                                "selection": _SELECTION.get(url),
+                                "revised": _REVISED.get(url),
+                                "publication_lag_s": _PUBLICATION_LAG_S.get(url),
+                                "history_starts": prior.get("first"),
+                                "schema_hash": prior.get("schema_hash")},
+                               s.rename("value").to_frame(), now=datetime.now(UTC))
+                write_certificate(cert)
+                blocking = sorted(set(cert.failures()) | set(cert.unmeasured()))
+                authority, cert_id = bool(cert.authority), cert.certificate_id
+                schema_hash = cert.span.get("schema_hash")
+            except Exception as exc:                                        # noqa: BLE001
+                # A certifier that cannot run withholds authority; it never grants it.
+                blocking = [f"certify failed: {type(exc).__name__}: {exc}"]
+                authority, cert_id, schema_hash = False, "", prior.get("schema_hash")
+            if not authority:
+                _refuse("no PIT authority: " + ", ".join(blocking))
             reg["series"][name] = {
                 "path": str(path), "url": url, "host": host,
                 "rows": int(s.notna().sum()),
                 "first": str(s.index.min()), "last": str(s.index.max()),
                 "acquired_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                "schema_hash": schema_hash,
+                "pit_certificate": cert_id,
+                "pit_authority": authority,
+                "pit_blocking": blocking,
             }
             new_series.append(name)
         reg["by_url"][url] = {"host": host, "series": list(series),
@@ -310,7 +353,8 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
     return report
 
 
-def acquired_series(index: pd.Index | None = None) -> dict[str, pd.Series]:
+def acquired_series(index: pd.Index | None = None, *,
+                    require_authority: bool = True) -> dict[str, pd.Series]:
     """Every acquired series, for `build_primitives(extra=...)`.
 
     THE SHARED VOCABULARY IS THE POINT. The miner ranks conditions on `ext_<name>` and
@@ -326,6 +370,13 @@ def acquired_series(index: pd.Index | None = None) -> dict[str, pd.Series]:
         return {}
     out: dict[str, pd.Series] = {}
     for name, meta in (reg.get("series") or {}).items():
+        # NO CERTIFICATE -> NO PROMOTION AUTHORITY (principal 2026-09-05). A series without one
+        # is still on disk and still in the registry; it is simply not in the vocabulary a cell
+        # can be built from. Series acquired before certification existed carry no flag and are
+        # therefore withheld until the next acquisition run certifies them -- which is the
+        # fail-closed direction, and the reason the registry keeps `pit_blocking` per series.
+        if require_authority and not meta.get("pit_authority"):
+            continue
         try:
             df = pd.read_parquet(meta["path"])
             s = df["value"].astype(float)

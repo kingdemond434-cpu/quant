@@ -89,12 +89,32 @@ def test_A_DETACHED_RUN_MUST_NOT_BUFFER_ITS_OWN_PROGRESS(src: str) -> None:
     assert "PYTHONUNBUFFERED=1" in src
 
 
-def test_THE_SWEEPS_FIRST_PROGRESS_LINE_IS_FLUSHED() -> None:
+def test_EVERY_REGISTERED_STUDY_FLUSHES_ITS_FIRST_PROGRESS_LINE() -> None:
     """It is the only proof the run got past loading bars. A progress line that arrives after the
-    work is not progress reporting."""
-    sweep = Path("scripts/run_full_sweep.py").read_text("utf-8")
-    header = sweep.split("full-sweep: {PREREGISTERED_UNIVERSE} candidates")[1][:400]
-    assert "flush=True" in header, "the header print lost its flush -- a detached run goes silent"
+    work is not progress reporting.
+
+    GENERALISED 2026-09-05. This pinned `scripts/run_full_sweep.py` by name, and that script was
+    deleted with the retired crypto-exchange desk -- so the fence raised FileNotFoundError rather
+    than asserting anything, which tells a reader nothing about the rule it was defending. The
+    rule is about DETACHED STUDIES, not about one sweep: it now reads the registry in
+    ops/run_study_on_vps.sh and holds every study actually registered there to it. The registry is
+    currently empty under the MT5 mandate, so this passes vacuously TODAY -- and it starts biting
+    again by itself the moment a study is registered, which is exactly when it is needed.
+    """
+    # Only ACTIVE registry lines count. The retired entries stay in the file as commented rows so
+    # the shape of the retired registry is still readable, and a fence that read those would be
+    # asserting against studies the desk deliberately unscheduled.
+    runner = "\n".join(ln for ln in Path("ops/run_study_on_vps.sh").read_text("utf-8").split("\n")
+                       if not ln.strip().startswith("#"))
+    registered = re.findall(r'\["[a-z0-9_]+"\]="(scripts/[a-z0-9_]+\.py)', runner)
+    for rel in registered:
+        script = Path(rel)
+        assert script.exists(), f"{rel} is registered as a study but does not exist"
+        src = script.read_text("utf-8")
+        first_print = src.find("print(")
+        assert first_print != -1 and "flush=True" in src[first_print:first_print + 400], (
+            f"{rel}'s first progress print lost its flush -- a detached run goes silent and a "
+            "log containing only STARTED is indistinguishable from a hang")
 
 
 def test_A_FAILED_STUDY_CANNOT_BE_REPORTED_AS_FINISHED(src: str) -> None:

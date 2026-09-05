@@ -200,9 +200,10 @@ def prediction_premium(returns: np.ndarray, *, n: int = 21,
 
     That upgrade turns this from a statistical artefact into the VARIANCE RISK PREMIUM, which is
     one of the most durable documented premia in any asset class and shares its economics with the
-    funding carry this desk already knows works: both pay for bearing a risk that usually does not
-    arrive. Deribit publishes DVOL free for BTC and ETH and libs/data/deribit.py already fetches
-    it, so the input exists -- it is a wiring job, not a data acquisition.
+    financing carry this desk already knows works: both pay for bearing a risk that usually does
+    not arrive. On the MT5 universe the implied leg is a quoted volatility index CFD (the VIX
+    complex) or an option-implied series for an index the desk already trades, so the upgrade is a
+    DATA ACQUISITION and is named as one here rather than assumed to be a wiring job.
 
     EWMA REMAINS THE DEFAULT ON PURPOSE. It is the baseline any implied-vol version must BEAT to
     justify the dependency, so a null result here needs no feed at all, and a positive one makes

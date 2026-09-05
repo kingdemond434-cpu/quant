@@ -6,15 +6,38 @@ and the quant-platform lake D1 history for long-horizon context.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
+from mt5desk.config import DATA, desk_root
 
-_VANTAGE = r"C:\Users\dell\gold-desk\data\bars_vantage"
-_LAKE = r"C:\Users\dell\quant-platform\data\lake"
-_COT = Path(r"C:\Users\dell\mt5-research\data\cot")
-_COT_LEGACY = Path(r"C:\Users\dell\mt5-research\data\cot_gold.parquet")
+# EVERY PATH HERE POINTED AT A RETIRED LAPTOP, AND TWO OF THEM FAILED SILENTLY.
+#
+# `_COT` and `_COT_LEGACY` read `C:\Users\dell\mt5-research\data\cot*`, while the fetchers that
+# fill them wrote to the same dead root and `research/edge_search.py` and
+# `research/orthogonal_sweep.py` read COT from the DESK'S OWN tree. Writer and reader never
+# agreed, so the SEARCH and SWEEP legs found no COT at all.
+#
+# `_LAKE` is this repository's own parquet lake, addressed through the laptop's checkout path.
+# `_load_lake_d1` and `load_fx_h4` return None on "no files found", which is indistinguishable
+# from "the lake is empty" -- so a wrong root reads as an empty market rather than an error.
+#
+# The globs were also backslash-joined f-strings, which cannot match on the Linux VPS that runs
+# the research half. Resolved from the repo root through pathlib instead, so one code path
+# serves both machines.
+_REPO_ROOT = Path(os.environ.get("QUANT_ROOT") or desk_root().parents[1])
+_LAKE = Path(os.environ.get("QUANT_LAKE") or _REPO_ROOT / "data" / "lake")
+
+#: A DIFFERENT DESK'S read-only cache, not this repo's. It has no in-tree location to fall back
+#: to, so it stays an absolute path and is overridable; `load_gold` reports its absence by name
+#: rather than surfacing a bare pandas error about a file nobody named.
+_VANTAGE = Path(os.environ.get("MT5_VANTAGE_BARS")
+                or r"C:\Users\dell\gold-desk\data\bars_vantage")
+
+_COT = DATA / "cot"
+_COT_LEGACY = DATA / "cot_gold.parquet"
 
 # MT5 symbol -> cot slug (base-currency future; JPY crosses use the yen)
 _SYMBOL_SLUG = {
@@ -56,7 +79,16 @@ class GoldData:
 
 def load_gold() -> GoldData:
     def read(tf: str) -> pd.DataFrame:
-        df = pd.read_parquet(rf"{_VANTAGE}\XAUUSD_{tf}.parquet")
+        p = _VANTAGE / f"XAUUSD_{tf}.parquet"
+        if not p.exists():
+            # NAME THE ROOT AND THE OVERRIDE. This raised a bare pandas error about a path the
+            # reader had no way to trace to a setting, on a box where the separate gold desk
+            # this cache belongs to was never installed.
+            raise FileNotFoundError(
+                f"{p} is missing. This is the SEPARATE gold desk's Vantage bar cache, not this "
+                f"repo's data. Point MT5_VANTAGE_BARS at it, or run the desk on a machine that "
+                f"has it (current root: {_VANTAGE}).")
+        df = pd.read_parquet(p)
         df.index = pd.to_datetime(df.index, utc=True)
         df = df.sort_index()
         return df
@@ -75,7 +107,8 @@ def _load_lake_d1() -> pd.DataFrame | None:
     import glob
 
     files = sorted(
-        glob.glob(rf"{_LAKE}\bronze\metal\XAUUSD\D1\**\part-*.parquet", recursive=True)
+        glob.glob(str(_LAKE / "bronze" / "metal" / "XAUUSD" / "D1" / "**" / "part-*.parquet"),
+                  recursive=True)
     )
     if not files:
         return None
@@ -89,9 +122,8 @@ def load_fx_h4(symbol: str = "EURUSD") -> pd.DataFrame | None:
     import glob
 
     files = sorted(
-        glob.glob(
-            rf"{_LAKE}\bronze\fx\{symbol}\H4\**\part-*.parquet", recursive=True
-        )
+        glob.glob(str(_LAKE / "bronze" / "fx" / symbol / "H4" / "**" / "part-*.parquet"),
+                  recursive=True)
     )
     if not files:
         return None

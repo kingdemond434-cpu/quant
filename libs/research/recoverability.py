@@ -3,12 +3,12 @@
 THE QUESTION NO INSTRUMENT ON THIS DESK ASKS. Every data metric here is computed from what is on
 disk RIGHT NOW, so all of them get BETTER when data is destroyed:
 
-  * ``mine_moat.py`` publishes ``cells_filled / cells_total`` where ``cells_total`` counts the
-    hours that EXIST. Delete the tape and both collapse together; the ratio is unmoved.
-  * ``moat_utilisation.measure_hour_gaps`` measures holes BETWEEN the first and last observed
-    hour. A left-truncation moves ``first_hour_utc``, so destroying history reads as PERFECT
-    CONTINUITY rather than as a gap. That module's own docstring warns "first..last is not
-    evidence of coverage" and then frames itself in exactly those endpoints.
+  * A coverage gauge publishing ``cells_filled / cells_total`` counts the hours that EXIST.
+    Delete the tape and both collapse together; the ratio is unmoved.
+  * A gap gauge measuring holes BETWEEN the first and last observed hour is worse: a
+    left-truncation moves the first hour, so destroying history reads as PERFECT CONTINUITY
+    rather than as a gap. "first..last" is not evidence of coverage, and any gauge framed in
+    those endpoints inherits the defect however carefully its docstring warns about it.
   * L1.44 ``read_fresh``, L1.55 provenance, L1.57 denominators and L1.60 attrition all ask
     IS THIS DATA RECENT ENOUGH. None asks IS THIS DATA DEEP ENOUGH. For a self-recorded tape
     those are OPPOSITE quantities: a freshness contract is maximally green on a tape deleted five
@@ -21,30 +21,29 @@ L1.0 NAMES "DATA SPAN" AS A RATCHET, BY NAME. It is the only metric in that list
 artifact, and the only one where a fall CANNOT BE RE-EARNED BY WORKING HARDER. An hour not
 recorded is not recoverable by trying harder tomorrow.
 
-THE PROVING INSTANCE, FROM THE DESK'S OWN LEDGER. ``data/moat_coverage_history.jsonl``, three
-consecutive rows around 2026-08-17T22:01::
+THE PROVING INSTANCE, FROM THE DESK'S OWN LEDGER. A coverage history carried three consecutive
+rows around 2026-08-17T22:01::
 
     22:01:11  coverage_pct 100.0  cells_total 12852  tape_bytes 19,462,669,049  files 40720
     22:01:35  coverage_pct 100.0  cells_total  2212  tape_bytes             0   files     0
-    (now)     coverage_pct  99.75 cells_total  1631  tape_bytes    819,373,346  files  1644
+    (later)   coverage_pct  99.75 cells_total  1631  tape_bytes    819,373,346  files  1644
 
 THE METRIC PRINTED A PERFECT SCORE ON AN EMPTY DIRECTORY, 24 seconds after 19.46 GB of tape was
-destroyed, and it reads 99.75% today on 4.2% of the bytes. ``grep -c`` over
-``data/alert_delivery.jsonl``: ZERO alerts have ever carried a moat/tape/data-loss title. The
-second row also carries ``cells_filled: 2212`` beside ``tape_files: 0`` IN THE SAME RECORD -- an
-L1.61 contradiction inside a single artifact, which that law's hand-built money-path registry
-cannot reach.
+destroyed, and it read 99.75% afterwards on 4.2% of the bytes. ``grep -c`` over
+``data/alert_delivery.jsonl``: ZERO alerts had ever carried a tape/data-loss title. The second row
+also carries ``cells_filled: 2212`` beside ``tape_files: 0`` IN THE SAME RECORD -- an L1.61
+contradiction inside a single artifact, which that law's hand-built money-path registry cannot
+reach. The tape in that incident is gone for other reasons now, and the LAW is not: an MT5 tick
+tape accrues in calendar time exactly the same way, and an hour of ticks not recorded is not
+recoverable by trying harder tomorrow.
 
-AND THE HALF THAT MAKES IT ACTIONABLE. ``moat_utilisation.py`` opens by calling the tape "the only
-dataset on this desk that cannot be bought, re-fetched, scraped or replicated".
-``data/bybit_archive_retention.json`` says Bybit publishes its OWN L2 book, unauthenticated, at
-200 levels and event-level resolution, ``span_days 363``, ``status FIXED``, ``n_unreachable 0``.
-THOSE TWO ARTIFACTS CONTRADICT EACH OTHER AND NOTHING COMPARES THEM. Verified by fetch on
-2026-08-19: one day of BTCUSDT is 938.9 MB uncompressed carrying ``topic/type/ts/cts/data.u/
-data.seq/b/a`` -- a strict SUPERSET of the market state we record at 25 levels and ~4s sampling.
-The only field it lacks is our own receipt clock ``t``/``c``, which is desk-private latency
-metadata (L1.46) and genuinely irreplaceable. So the market-state half of the lost 19.46 GB is
-RE-BUYABLE, free, today -- and it sat unfetched because NO ARTIFACT ANYWHERE SAID A BYTE WAS LOST.
+AND THE HALF THAT MAKES IT ACTIONABLE. A stream is only IRREPLACEABLE if someone LOOKED for a
+source and failed. Doctrine routinely calls a self-recorded tape irreplaceable while a first-party
+archive republishes the same market state for free; that has happened on this desk before, and the
+two artifacts contradicted each other for months because nothing compared them. So the recovery
+class here is READ FROM A PROBE and never asserted, and ``detect_contradictions`` exists to fire
+the moment doctrine and probe disagree. What stays genuinely irreplaceable in every case is the
+desk's OWN RECEIPT CLOCK -- private latency metadata (L1.46) that no republisher carries.
 
 WHAT THIS MODULE PUBLISHES. Per stream: ``span_now``, ``span_high_water``, a RECOVERY class read
 from probe artifacts rather than asserted, and a status. The statuses are the deliverable:
@@ -67,7 +66,7 @@ HONESTY RAILS, AND THE FIRST TWO ARE THE WHOLE POINT.
     it; a fall is a FENCE FAILURE, not a new baseline. A floor edited to fit a measurement is not
     a floor.
   * THE LEDGER IS APPEND-ONLY and bootstraps from evidence the desk already holds
-    (``moat_coverage_history.jsonl``), so the first run is informative rather than blind.
+    (``tape_coverage_history.jsonl``), so the first run is informative rather than blind.
 
 ANTI-TIMIDITY READING, THE ENTIRE PURPOSE. This is a MEASUREMENT duty and a SCOPE EXPANSION. It
 lifts nothing, sizes nothing, promotes nothing, opens no gate, loosens no statistical bar and has
@@ -80,6 +79,7 @@ emits points at data to go and get.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -90,9 +90,20 @@ from libs.ops.box_state import data_root, describe, resolved
 
 _ROOT = Path(__file__).resolve().parents[2]
 
-MOAT = _ROOT / "data/moat"
-HISTORY = _ROOT / "data/moat_coverage_history.jsonl"
-RETENTION = _ROOT / "data/bybit_archive_retention.json"
+#: Root of the desk's own recorded tape. The MT5 tick recorder
+#: (``desks/mt5/recorders/tick_recorder.py``) writes under ``MT5_TAPE_ROOT`` when set and under
+#: ``desks/mt5/data/tape_bronze`` otherwise, so that is what this module measures.
+#:
+#: UNFINISHED, AND SAID OUT LOUD RATHER THAN HIDDEN: ``measure_tape`` below still walks the
+#: hour-partitioned ``<root>/<source>/<symbol>/<YYYYMMDD_HH>.jsonl.gz`` convention of the retired
+#: recorder, while ``desks/mt5/recorders/tape_store.TapeStore`` lays its tape out as
+#: ``<root>/ticks/<symbol>/<day>/``. Until the walker is re-fitted to that layout it will find no
+#: streams and report NOT-READABLE-HERE -- which is the module's honest status for "no measurement
+#: was taken", never a zero and never an OK, so it cannot fabricate health. Re-fitting it is the
+#: tape recorder owner's call, because only they can say which layout is final.
+TAPE_ROOT = Path(os.environ.get("MT5_TAPE_ROOT", "")
+                 or str(_ROOT / "desks/mt5/data/tape_bronze"))
+HISTORY = _ROOT / "data/tape_coverage_history.jsonl"
 HIGH_WATER = _ROOT / "data/span_high_water.jsonl"
 
 #: Recovery classes. UNMEASURED is the default and the only honest one absent a probe.
@@ -173,16 +184,20 @@ class Report:
 # -- measurement -----------------------------------------------------------------------------
 
 def measure_tape(root: Path | None = None) -> list[Stream]:
-    """Walk ``data/moat/<venue>/<symbol>/<YYYYMMDD_HH>.jsonl.gz`` into per-venue streams.
+    """Walk ``<tape>/<source>/<symbol>/<YYYYMMDD_HH>.jsonl.gz`` into per-source streams.
 
     SPAN IS DISTINCT SYMBOL-HOURS PRESENT, never last-minus-first. Endpoint arithmetic is exactly
     what lets a left-truncation read as health, which is the defect this module exists for.
+
+    SEE ``TAPE_ROOT``: the hour-partition convention below is the retired recorder's, and the MT5
+    tick tape is laid out differently. An absent or differently-shaped root yields NO STREAMS,
+    which ``build_report`` turns into NOT-READABLE-HERE -- never a zero and never an OK.
     """
-    moat = (root or _ROOT) / "data/moat"
+    tape = (root or _ROOT) / "data/tape"
     out: list[Stream] = []
-    if not moat.is_dir():
+    if not tape.is_dir():
         return out
-    for venue_dir in sorted(p for p in moat.iterdir() if p.is_dir()):
+    for venue_dir in sorted(p for p in tape.iterdir() if p.is_dir()):
         hours: set[tuple[str, str]] = set()
         nbytes = 0
         symbols = 0
@@ -203,7 +218,7 @@ def measure_tape(root: Path | None = None) -> list[Stream]:
                 hours.add((sym_dir.name, f"{m.group(1)}{m.group(2)}"))
         stamps = sorted(h for _, h in hours)
         out.append(Stream(
-            key=f"moat/{venue_dir.name}", kind="l2_depth_tape",
+            key=f"tape/{venue_dir.name}", kind="l2_depth_tape",
             span_now=len(hours), unit="symbol-hours", bytes_now=nbytes, symbols=symbols,
             earliest=stamps[0] if stamps else None, latest=stamps[-1] if stamps else None,
             attempted=attempted, skipped=skipped,
@@ -266,25 +281,20 @@ def _parquet_rows(p: Path) -> tuple[int, str]:
 # -- recovery classification, read from probes and never asserted ----------------------------
 
 def classify_recovery(stream: Stream, root: Path | None = None) -> None:
-    """Attach a recovery class READ FROM A PROBE ARTIFACT. Absent a probe: UNMEASURED."""
-    r = (root or _ROOT) / "data/bybit_archive_retention.json"
-    if stream.key.startswith("moat/bybit"):
-        try:
-            doc = json.loads(r.read_text("utf-8"))
-        except Exception:
-            stream.recovery = UNMEASURED_RECOVERY
-            stream.recovery_detail = "no reachability probe has run for this venue"
-            return
-        syms = doc.get("symbols") or {}
-        if doc.get("n_unreachable") == 0 and syms:
-            span = max(int(v.get("span_days") or 0) for v in syms.values())
-            stream.recovery = RE_BUYABLE
-            stream.recovery_source = str(doc.get("source") or "")
-            stream.recovery_detail = (
-                f"first-party archive verified reachable, span {span}d, status "
-                f"{doc.get('status')}; 200 levels and event-level vs our 25 levels at ~4s. "
-                "Our receipt clock t/c is NOT in the archive and stays irreplaceable (L1.46).")
-        return
+    """Attach a recovery class READ FROM A PROBE ARTIFACT. Absent a probe: UNMEASURED.
+
+    THE ONE VENUE-SPECIFIC BRANCH WAS REMOVED 2026-09-05 with the crypto desk: it read
+    ``data/bybit_archive_retention.json``, an artifact that no longer exists and that nothing
+    writes -- the READ-WITHOUT-WRITER class this desk calls its most prolific. Removing it moves
+    every stream to UNMEASURED, and UNMEASURED adjudicates to LOSS-PERMANENT rather than
+    LOSS-RECOVERABLE, which is the STRICTER direction. Nothing was relaxed by taking it out.
+
+    RE-BUYABLE remains a real class and is what a future probe SETS. To restore it for an MT5
+    stream, write a probe artifact recording a verified reachable first-party archive and read it
+    here -- never assert the class from doctrine, which is exactly the mistake
+    ``detect_contradictions`` below exists to catch.
+    """
+    _ = root                                    # kept for signature stability across callers
     stream.recovery = UNMEASURED_RECOVERY
     stream.recovery_detail = (
         "no reachability probe exists for this stream -- UNMEASURED, never IRREPLACEABLE. "
@@ -319,21 +329,21 @@ def load_high_water(path: Path | None = None) -> dict[str, tuple[int, str]]:
 def bootstrap_marks(root: Path | None = None) -> dict[str, int]:
     """Seed the tape's high-water from evidence the desk ALREADY HOLDS.
 
-    ``moat_coverage_history.jsonl`` has recorded ``tape_files`` every ~20s for months, so the
+    ``tape_coverage_history.jsonl`` records ``tape_files`` on every recorder cycle, so the
     deepest span this desk ever held is already on disk. Starting blind would make the first run
     report UNMEASURED everywhere and see nothing -- and the 19.46 GB event would go unnoticed a
     second time, by the very instrument built to catch it.
 
     THE FIELD IS ``tape_files`` AND THE CHOICE IS LOAD-BEARING. The first version of this function
-    read ``cells_total``, which ``mine_moat._cells_on_disk`` documents as ``(venue/symbol, day)``
-    -- symbol-DAYS. ``span_now`` here counts symbol-HOURS. Comparing them yielded a real-looking
+    read ``cells_total``, which the coverage gauge defines as ``(source/symbol, day)`` --
+    symbol-DAYS. ``span_now`` here counts symbol-HOURS. Comparing them yielded a real-looking
     "1644 below 23436" from two different questions sharing one name: the exact L1.61 defect this
     module cites in its own header, committed by the instrument built to catch it. ``tape_files``
     counts hourly tape files, one per symbol-hour, so it is the unit-matched series.
     ``cells_total`` is additionally unusable as a ratchet because its definition FLAPS -- the
     08-12T06:33 rows step 23436 -> 12432 -> 23436 in thirteen seconds with the bytes unchanged.
     """
-    h = (root or _ROOT) / "data/moat_coverage_history.jsonl"
+    h = (root or _ROOT) / "data/tape_coverage_history.jsonl"
     best = 0
     if not h.exists():
         return {}
@@ -348,7 +358,7 @@ def bootstrap_marks(root: Path | None = None) -> dict[str, int]:
         files = row.get("tape_files")
         if isinstance(files, int) and files > best:
             best = files
-    return {"moat/__desk_total__": best} if best else {}
+    return {"tape/__desk_total__": best} if best else {}
 
 
 def record_marks(streams: list[Stream], path: Path | None = None) -> int:
@@ -410,7 +420,9 @@ def adjudicate(stream: Stream, marks: dict[str, tuple[int, str]]) -> None:
         stream.status = LOSS_RECOVERABLE
         stream.why = (f"span fell {lost} {stream.unit} ({pct:.1f}%) below high-water {mark[0]} "
                       f"set {mark[1]}; a verified free path exists -- GO AND FETCH IT.")
-        stream.fetch_command = "python scripts/probe_bybit_archive.py  # then the bulk ingest"
+        stream.fetch_command = (
+            f"{stream.recovery_source or 'the probe that set RE-BUYABLE'}"
+            "  # re-fetch from the verified archive, then bulk-ingest")
     else:
         stream.status = LOSS_PERMANENT
         stream.why = (f"span fell {lost} {stream.unit} ({pct:.1f}%) below high-water {mark[0]} "
@@ -424,10 +436,11 @@ def detect_contradictions(streams: list[Stream]) -> list[str]:
     for s in streams:
         if s.kind == "l2_depth_tape" and s.recovery == RE_BUYABLE:
             out.append(
-                f"{s.key}: moat_utilisation.py calls the tape 'the only dataset on this desk that "
-                f"cannot be bought, re-fetched, scraped or replicated', while {s.recovery_source} "
-                "is verified reachable and RICHER. Both artifacts are honest; nothing compared "
-                "them. The doctrine holds for our RECEIPT CLOCK only, not for market state.")
+                f"{s.key}: desk doctrine calls the recorded tape 'the only dataset on this desk "
+                f"that cannot be bought, re-fetched, scraped or replicated', while "
+                f"{s.recovery_source} is verified reachable and at least as rich. Both artifacts "
+                "are honest; nothing compared them. The doctrine holds for our RECEIPT CLOCK "
+                "only, not for market state.")
     return out
 
 
@@ -444,9 +457,9 @@ def build_report(root: Path | None = None) -> Report:
         return Report(generated=now, status=NOT_READABLE_HERE, n_streams=0, notes=[
             f"{describe(base, basis)} -- the box's data root could not be established, so span "
             "cannot be measured. NOT-READABLE-HERE is not 0% and is not OK."])
-    if not (base / "data/moat").is_dir():
+    if not (base / "data/tape").is_dir():
         return Report(generated=now, status=NOT_READABLE_HERE, n_streams=0, notes=[
-            f"{base / 'data/moat'} is absent -- data/ is gitignored and VPS-only, so span cannot "
+            f"{base / 'data/tape'} is absent -- data/ is gitignored and VPS-only, so span cannot "
             f"be measured from this host ({describe(base, basis)}). NOT-READABLE-HERE is not 0% "
             "and is not OK."])
 
@@ -460,10 +473,10 @@ def build_report(root: Path | None = None) -> Report:
     marks = load_high_water(base / "data/span_high_water.jsonl")
     for key, span in bootstrap_marks(base).items():
         if key not in marks:
-            marks[key] = (span, "bootstrapped from moat_coverage_history.jsonl")
+            marks[key] = (span, "bootstrapped from tape_coverage_history.jsonl")
     # The desk-total bootstrap is the only mark that can speak for the tape as a whole.
     total = sum(s.span_now for s in streams if s.kind == "l2_depth_tape" and s.span_now > 0)
-    desk = marks.get("moat/__desk_total__")
+    desk = marks.get("tape/__desk_total__")
     for s in streams:
         adjudicate(s, marks)
 

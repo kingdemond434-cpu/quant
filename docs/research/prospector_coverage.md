@@ -1,5 +1,11 @@
 # Prospector coverage map
 
+> **UNIVERSE RETARGETED 2026-08-18, header added 2026-09-05.** Coverage rows and session notes
+> dated before 2026-08-18 record digs against the retired crypto-exchange universe. They are kept
+> as the desk's coverage memory -- an archive marked EXHAUSTED still means nobody needs to
+> re-scan it -- but they are NOT a queue. Every new dig runs against the MT5/Fusion universe and
+> the grounds named in `ops/frontier_<region>_prompt.txt`.
+
 _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotation rule (>=40% of query budget to least-recently-covered). Log per session: family, date, queries spent, notable sources._
 
 | Family | Last visited | Sessions | Notes |

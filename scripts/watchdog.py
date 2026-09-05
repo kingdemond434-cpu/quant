@@ -87,9 +87,11 @@ def _fresh(p: Path, max_sec: float) -> bool:
 
 
 _UNITS = {                                   # script -> the systemd unit that owns it on the VPS
-    "scripts/run_cashcarry_executor.py": "quant-cashcarry.service",
+    # run_cashcarry_executor.py and liquidation_listener.py were removed 2026-09-05 (universe
+    # mandate) along with their scripts. Their units may still exist on the box; that is an OPS
+    # cleanup, and leaving the mapping here would not help -- `_systemd_owns` is only consulted
+    # before spawning a script this watchdog still supervises, and it supervises neither now.
     "scripts/run_deadman_switch.py": "quant-deadman.service",
-    "scripts/liquidation_listener.py": "quant-liquidations.service",
     "scripts/serve_dashboard.py": "quant-dashboard.service",
 }
 
@@ -269,35 +271,27 @@ def main() -> None:
     if not _port_up(8080):
         _spawn(["scripts/serve_dashboard.py", "--port", "8080"], "dashboard")
         acted.append("dashboard")
+    # `_banned_universe_block()` is still called: it is the fence that REFUSES to start anything
+    # trading the retired universe, and tests/scripts/test_watchdog_banned_universe.py pins it.
+    # What is gone (2026-09-05) is the cash-carry executor branch it used to gate -- that script
+    # was deleted with the universe, so the refusal now has nothing left to refuse here and the
+    # block is reported rather than acted on.
     blocked = _banned_universe_block()
-    if not _fresh(_CC_HB, 240) and blocked:
-        refused.append(f"cashcarry-exec ({blocked})")
-    elif not _fresh(_CC_HB, 240):
-        # PRIMARY book = cash-and-carry EXECUTED (long spot + short perp, delta-neutral funding
-        # harvest). 60s heartbeat + single-instance lock -> no double book. The structural survivor.
-        # MAX-before-diminishing deployment of the delta-neutral book (bounded risk, NOT leverage):
-        # capital ~= 80% of spot capacity (~$5.6k legs+USDT), over top-10 funding names so the
-        # extra capital deploys into NEW carries WITHOUT churning the held ones (hysteresis). Leaves
-        # ~$1.1k USDT buffer for reconcile/slippage; futures margin far from binding. >10 names or a
-        # forced resize = diminishing (lower funding names / churn fees).
-        # hold-top 3000 = hold while funding stays POSITIVE (a rate cut like top-60 slices through
-        # the venue's huge same-rate tie groups -> lottery membership -> 159 closes in week one,
-        # fee drag ~= the entire funding harvest). Funding pays 8-hourly; sub-8h churn is pure cost.
-        _spawn(["scripts/run_cashcarry_executor.py", "--live", "--top", "10", "--hold-top", "3000",
-                "--capital", "4500", "--interval", "600"], "cashcarry-executor")
-        acted.append("cashcarry-exec")
+    if blocked:
+        refused.append(f"crypto-exchange execution ({blocked})")
     if not _fresh(_DM_HB, 300):
         # DEAD-MAN'S SWITCH: isolated ruin rail (no LLM, no configs, no libs imports) --
         # 5 consecutive minutes of combined equity < 65% of high-water -> kill file +
         # flatten everything + page. TIER-3 never-touch; see scripts/run_deadman_switch.py.
         _spawn(["scripts/run_deadman_switch.py"], "deadman-switch")
         acted.append("deadman")
-    # perp L/S book is now SHADOW only (run_crypto_shadow in the flywheel); its executor is retired.
-    if not _fresh(_LIQ_HB, 600) and blocked:
-        refused.append(f"liquidation-listener ({blocked})")
-    elif not _fresh(_LIQ_HB, 600):
-        _spawn(["scripts/liquidation_listener.py"], "liquidation-listener")
-        acted.append("liquidations")
+    # THE CARRY EXECUTOR AND THE LIQUIDATION LISTENER ARE NO LONGER SUPERVISED (2026-09-05,
+    # universe mandate). Both scripts were deleted with the crypto-exchange desk, and a watchdog
+    # that Popen's a missing file does not fail loudly -- it logs a spawn, records the action, and
+    # reports a healthy tick having started nothing. That is the "supervisor believes it is
+    # supervising" failure this organ exists to prevent, so the branches are removed rather than
+    # left to fire against absent scripts. The dead-man switch above is untouched: it is Tier-3
+    # and it is the one process that still protects real money.
     if not _fresh(_TUN_HB, 120) and blocked:
         # the crypto dashboard this tunnel published is retired and the cloudflared ingress was
         # emptied; opening a public tunnel to it is an outward-facing act with nothing behind it.
@@ -311,7 +305,8 @@ def main() -> None:
     # recompute dynamic leverage (cheap) so executor + dashboard use fresh growth-optimal sizing,
     # then refresh the molded headline feed (reads JSON + one futures call).
     _run_logged(["scripts/run_leverage_opt.py"], "leverage-opt", 60)
-    _run_logged(["scripts/run_live_combined.py"], "live-combined", 60)
+    # `run_live_combined.py` (the molded crypto book feed) was deleted 2026-09-05; its tick is
+    # gone rather than run against a missing file.
     # data-pipeline health check: refresh web/health.json each watchdog tick so the dashboard
     # surfaces archive staleness and executor liveness without a separate scheduled task.
     _run_logged(["scripts/data_health.py"], "data-health", 30)

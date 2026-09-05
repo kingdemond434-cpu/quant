@@ -23,7 +23,7 @@ _PAGE = b"""<html lang="zh-CN"><head><title>EURUSD \xe7\xaa\x81\xe7\xa0\xb4\xe7\
 <a href="/zh/code/mt5">\xe4\xba\xa4\xe6\x98\x93\xe7\xad\x96\xe7\x95\xa5</a>
 <a href="/login">login</a>
 <script>var x = "GBPUSD momentum";</script>
-</body></html>"""
+</body></html>"""  # noqa: E501
 
 
 # --------------------------------------------------------------------------- language neutrality

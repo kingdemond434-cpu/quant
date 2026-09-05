@@ -97,16 +97,6 @@ _MANUAL: dict[str, str] = {
     "it, so there is no state for a cadence to sample. Built for the "
     "research-frozen digger seats, which cannot write to scripts/ and so "
     "need a reachable surface rather than a library (R0317).",
-    "scripts/screen_oi_ls_axes.py": "a Stage-A screen over a PRE-DECLARED trial grid. It is run "
-    "once per campaign against a named panel, and a cadence would "
-    "re-run the same pre-registered cells against unchanged data "
-    "-- multiplicity budget spent for no new evidence, which is "
-    "the garden-of-forking-paths failure the grid exists to stop.",
-    "scripts/falsify_funding_state_axis.py": "a ONE-SHOT falsifier, run BEFORE the L1.63 build it "
-    "tests (capability hunt 2026-08-13 s0). Its whole "
-    "purpose is to execute once against a standing claim; "
-    "re-running it on a timer would re-answer a question "
-    "already answered and recorded in the law's own text.",
 }
 
 #: Verdicts that mean the cited enforcement cannot be cashed. MENTIONED and DECORATIVE are both
@@ -141,13 +131,20 @@ def _resolve(cite: str) -> tuple[str, Path | None]:
     if s.startswith(_STANDING_ROOTS) or (s.endswith(_STANDING_SUFFIXES) and "/" in s):
         return "standing", _ROOT / s
     if s.endswith(".py"):
+        # A file under desks/<desk>/ is a MODULE like one under libs/: it is imported by symbol
+        # (`from mt5desk import risk_units`, `research.cost_surface`) by the desk's own code, and
+        # some of them are ALSO scheduled by path. Read as a script, every desk citation was
+        # matched against `scripts/<name>` patterns it can never satisfy and reported
+        # DECORATIVE (cost_surface, carry_state, risk_units on 2026-09-05) while the manifest
+        # ran two of them daily and the gateway imported the third on every sizing call.
+        kind = "module" if s.startswith(("libs/", "desks/")) else "script"
         p = _ROOT / s
         if p.exists():
-            return ("module" if s.startswith("libs/") else "script"), p
+            return kind, p
         alt = _ROOT / "scripts" / s  # bare 'revalidate_clocks.py'
         if alt.exists():
             return "script", alt
-        return ("module" if s.startswith("libs/") else "script"), p
+        return kind, p
     if "/" not in s and "." not in s:
         return "fence", _AUDIT  # a max_audit fence function name
     return "unknown", _ROOT / s
@@ -257,8 +254,12 @@ class _Corpus:
         # reported the tool as INVOKED. A checker that cites itself as evidence launders any
         # mention -- a docstring, a registry key -- into proof of execution.
         _self = Path(__file__).resolve()
-        for f in _py_files("scripts", "libs"):
-            if f.resolve() == _self:
+        # desks/ is production code too -- the MT5 gateway imports mt5desk.risk_units on every
+        # sizing call, and a corpus of scripts/ + libs/ could not see that importer, so the
+        # module the sizing law cites read as executed by nothing. Its tests are excluded like
+        # everyone else's: a test caller proves the code works, never that it runs.
+        for f in _py_files("scripts", "libs", "desks"):
+            if f.resolve() == _self or "tests" in f.relative_to(_ROOT).parts:
                 continue
             try:
                 text = f.read_text("utf-8", errors="ignore")
@@ -311,12 +312,24 @@ class _Corpus:
         return None
 
     def _patterns(self, script: Path) -> list[re.Pattern[str]]:
-        """A script is named three ways in the wild, and all three are legitimate."""
-        return [
+        """A script is named three ways in the wild, and all three are legitimate.
+
+        A fourth for anything outside scripts/: its own repo-relative path, which is exactly how
+        the manifest schedules `desks/mt5/research/cost_surface.py` -- the bare-name pattern's
+        lookbehind refuses the `/` in front of it, and the `scripts/` forms cannot apply.
+        """
+        pats = [
             re.compile(rf"\b{re.escape(f'scripts/{script.name}')}"),   # 'scripts/foo.py'
             re.compile(rf"(?<![\w/.]){re.escape(script.name)}\b"),      # bare 'foo.py'
             re.compile(rf"\bscripts\.{re.escape(script.stem)}\b"),      # 'scripts.foo'
         ]
+        try:
+            rel = script.resolve().relative_to(_ROOT).as_posix()
+        except ValueError:
+            return pats
+        if not rel.startswith("scripts/"):
+            pats.append(re.compile(rf"(?<![\w/.]){re.escape(rel)}\b"))  # 'desks/x/y/foo.py'
+        return pats
 
     def invoked(self, script: Path) -> tuple[str, str] | None:
         """A PROVEN path to execution -> (where, how). Mention alone is never proof."""
@@ -453,8 +466,14 @@ def evaluate() -> dict[str, Any]:
                 syms = _public_symbols(path)
                 init = path.parent / "__init__.py"
                 pkg = init if init.exists() else None
+                # A module can also BE the scheduled entry point (the manifest runs
+                # desks/mt5/research/cost_surface.py by path); a proven invocation is the
+                # stronger evidence and is asked first, in the over-admitting direction.
+                ran = corpus.invoked(path)
                 used = corpus.references(syms, exclude=path, package_init=pkg)
-                if not syms:
+                if ran:
+                    row |= {"verdict": "EXECUTED", "evidence": f"{ran[1]} {ran[0]}"}
+                elif not syms:
                     row |= {
                         "verdict": "EXECUTED",
                         "evidence": "no public symbols to trace (conservative pass)",

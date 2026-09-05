@@ -43,6 +43,23 @@ transforms takes the universe from 898,560 to 1,698,840 and would silently inval
 FULL_SWEEP_PREREGISTRATION.md's declared count -- the hurdle IS the universe size. They must be
 declared in a NEW pre-registered family before any sweep uses them, and `run_full_sweep.py` will
 refuse to start if the two disagree. That refusal is the fence working, not a bug.
+
+**THE SINGLE-SERIES READING OF THE GROUP OPERATORS (2026-09-05).** `group_rank` needs a PANEL,
+and the MT5 desk trades one instrument per cell -- so on that desk the panel form is unusable and
+the idea would have been lost. It is not the panel that carries the insight, it is the QUESTION:
+"is this extreme against its PEERS, not against everything?" `ts_group_rank` and `ts_group_zscore`
+below ask it of one series by making the peer group a STATE rather than a sector -- the past `w`
+bars on the same side of a conditioning series' own window mean. A gold bar in a high-volatility
+regime is then ranked against high-volatility bars, which is the same correction the sector rank
+makes for a small-cap L1 in a universe of majors.
+
+They live HERE, beside the panel forms, so the two readings of one idea cannot drift apart, and
+`libs.research.alpha_grammar` carries typed operators of the same names whose values are pinned
+equal to these by test (`tests/alpha_factory/test_wq_operators.py`). The grammar reimplements
+rather than imports them for one reason: `alpha_grammar` is on the LIVE signal path through
+`family_formula`, and importing this package pulls the whole Alpha Factory -- a second of import
+and a large surface -- into every signal evaluation. The equivalence test is what keeps the
+reimplementation honest.
 """
 
 from __future__ import annotations
@@ -54,18 +71,25 @@ import pandas as pd
 
 __all__ = [
     "GROUP_TRANSFORMS",
+    "TS_GROUP_TRANSFORMS",
     "UNIVERSE_IF_ADOPTED",
     "fitness",
     "group_rank",
     "group_zscore",
     "trade_when",
     "ts_backfill",
+    "ts_group_rank",
+    "ts_group_zscore",
 ]
 
 #: The new transforms, kept SEPARATE from `combination_engine.TRANSFORMS` until a pre-registration
 #: declares the enlarged universe. Listing them here makes them usable and reviewable without
 #: changing the hurdle of a family that is already declared.
 GROUP_TRANSFORMS: tuple[str, ...] = ("group_rank", "group_zscore", "ts_backfill")
+#: The single-series peer-group forms. Also NOT in any declared cross-sectional family: they are
+#: operators of the MT5 expression grammar, where each is charged as part of the expression
+#: search's own multiplicity, not as an extra arm of a pre-registered sweep.
+TS_GROUP_TRANSFORMS: tuple[str, ...] = ("ts_group_rank", "ts_group_zscore")
 
 #: What the declared universe becomes if all three are adopted, at 13 features. Written down so the
 #: cost of adoption is visible BEFORE it is paid: the bar moves from 5.236 to 5.356.
@@ -132,6 +156,68 @@ def ts_backfill(x: pd.Series, *, limit: int = 5) -> pd.Series:
     construction and would be invisible in every result it contaminated.
     """
     return x.ffill(limit=max(0, limit))
+
+
+def _ts_peers(x: pd.Series, by: pd.Series, window: int) -> tuple[np.ndarray, np.ndarray] | None:
+    """Sliding windows of `x` and the mask of the bars that are the LAST bar's peers.
+
+    A peer is a bar in the trailing window on the same side of `by`'s own window mean as the
+    current bar. The mean is taken INSIDE the window, so the bucket is "unusual for this
+    stretch" rather than "unusual for a sample that includes the future" -- the split point
+    never sees a bar the current one could not have seen.
+    """
+    w = int(window)
+    if w < 2 or x.size < w or by.size != x.size:
+        return None
+    xv = x.to_numpy(dtype=float)
+    gv = by.to_numpy(dtype=float)
+    xw = np.lib.stride_tricks.sliding_window_view(xv, w)
+    gw = np.lib.stride_tricks.sliding_window_view(gv, w)
+    with np.errstate(invalid="ignore"):
+        side = np.sign(gw - np.nanmean(gw, axis=1, keepdims=True))
+    peers = (side == side[:, -1:]) & np.isfinite(xw) & np.isfinite(gw)
+    return xw, peers
+
+
+def ts_group_rank(x: pd.Series, by: pd.Series, window: int) -> pd.Series:
+    """Percentile of `x` among the trailing-window bars that share its STATE under `by`.
+
+    The single-series reading of `group_rank`: the peer group is a state bucket rather than a
+    sector, because the desk has one instrument per cell and no panel to rank within. NaN until
+    the window fills and wherever the bucket has fewer than two members -- a group of one has no
+    rank to compute, exactly as in the panel form.
+    """
+    out = pd.Series(np.nan, index=x.index, dtype=float)
+    got = _ts_peers(x, by, window)
+    if got is None:
+        return out
+    xw, peers = got
+    n = peers.sum(axis=1)
+    with np.errstate(invalid="ignore"):
+        share = np.where(peers, xw <= xw[:, -1:], False).sum(axis=1) / np.maximum(n, 1)
+    out.iloc[int(window) - 1:] = np.where(n > 1, share, np.nan)
+    return out
+
+
+def ts_group_zscore(x: pd.Series, by: pd.Series, window: int) -> pd.Series:
+    """Standardise `x` against the trailing-window bars that share its state under `by`.
+
+    NaN where the bucket has fewer than three members or no dispersion: a z-score over two
+    points is a sign, and a z-score over a constant is a division by zero wearing a number.
+    """
+    out = pd.Series(np.nan, index=x.index, dtype=float)
+    got = _ts_peers(x, by, window)
+    if got is None:
+        return out
+    xw, peers = got
+    n = peers.sum(axis=1)
+    with np.errstate(invalid="ignore"):
+        xs = np.where(peers, xw, np.nan)
+        mu = np.nanmean(xs, axis=1)
+        sd = np.nanstd(xs, axis=1)
+        z = (xw[:, -1] - mu) / np.where(sd > 1e-12, sd, np.nan)
+    out.iloc[int(window) - 1:] = np.where((n > 2) & (sd > 1e-12), z, np.nan)
+    return out
 
 
 def trade_when(condition: pd.Series, signal: pd.Series) -> pd.Series:

@@ -46,6 +46,12 @@ OUT = BASE / "reports" / "MISSED_GROWTH.json"
 ALLOC = BASE / "reports" / "pf_allocation.json"
 PROOF = BASE / "reports" / "ALLOCATOR_PROOF.json"
 FILTER_VALUE = BASE / "reports" / "FILTER_VALUE.json"
+#: The counterfactual world's veto table. It carries the SAME field names FILTER_VALUE does
+#: (n_vetoed_and_triggered, mean_avoided_r, filter_value_r, t, verdict), and it prices every
+#: decision minute on ONE axis with the desk's own cost posterior rather than only the not-taken
+#: brackets a replay could reach. So where both exist this one wins, and FILTER_VALUE stays the
+#: fallback for a box that has not replayed yet.
+COUNTERFACTUAL = BASE / "reports" / "COUNTERFACTUAL_WORLD.json"
 STATE_ADM = BASE / "reports" / "STATE_ADMISSION.json"
 EARNS, COSTS, NOT_BINDING, UNMEASURED = ("EARNS_ITS_PLACE", "COSTS_GROWTH", "NOT_BINDING",
                                          "UNMEASURED")
@@ -58,6 +64,40 @@ def _json(p: Path) -> dict:
         return json.loads(p.read_text("utf-8"))
     except (OSError, ValueError):
         return {}
+
+
+def _veto_evidence() -> dict:
+    """The per-reason veto table the rails are judged on: the counterfactual world's VETO_ALPHA
+    where it has measured a reason, FILTER_VALUE's row where it has not.
+
+    WHY A MERGE AND NOT A SWAP. `counterfactual_markout` replays only the not-taken brackets it
+    can reach; the counterfactual world prices every decision minute, both sides, against every
+    alternative, on one axis. A reason the world has measured is therefore the better evidence --
+    but a box that has not run the replay must not lose the veto verdicts it already had.
+    """
+    fv = _json(FILTER_VALUE)
+    filters = dict(fv.get("filters") or {})
+    arms = (((_json(COUNTERFACTUAL).get("alphas") or {}).get("VETO_ALPHA") or {})
+            .get("arms") or {})
+    for reason, row in arms.items():
+        if not isinstance(row, dict) or row.get("n_vetoed_and_triggered") is None:
+            continue
+        filters[str(reason)] = {**row, "source": "COUNTERFACTUAL_WORLD.VETO_ALPHA",
+                                "d_elog_per_veto": row.get("mean")}
+    return {**fv, "filters": filters,
+            "source": "FILTER_VALUE + COUNTERFACTUAL_WORLD.VETO_ALPHA"}
+
+
+def _num(v: Any) -> float | None:
+    """A finite float or None. A rail priced from a string, a NaN or a None is UNMEASURED, and
+    saying so is the whole discipline: a rail that cannot be measured must not read as free."""
+    if isinstance(v, bool) or v is None:
+        return None
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if math.isfinite(f) else None
 
 
 def _curve(alloc: dict) -> dict[float, float]:
@@ -150,6 +190,30 @@ def measure_ceiling(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     return {"verdict": "SAMPLE", "value_logw_per_day": round(g_cap - g_free, 8), "sample": True}
 
 
+def measure_effective_ceiling(r, alloc: dict, _fv: dict) -> dict[str, Any]:
+    """What the four-heat ceiling cost: growth at the earned cap vs growth at what was wanted.
+
+    `heat_policy.effective_ceiling` caps NOMINAL heat at target * sqrt(N_eff / 2.26), N_eff from
+    max(covariance, factor, tail). It binds only ABOVE the floor, so a pass that ran the floor
+    anyway paid nothing and says NOT_BINDING rather than a silent zero.
+    """
+    heat = alloc.get("heat") or {}
+    if not heat:
+        return {"verdict": UNMEASURED, "why": "no allocator pass on this host"}
+    if heat.get("binding") != "effective_ceiling":
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True}
+    curve = _curve(alloc)
+    # What growth WANTED: the free optimum, or the state curve's argmax when that was higher.
+    wanted = min(max(float(heat.get("free_optimum", 0.0)),
+                     float(heat.get("state_optimum", 0.0))),
+                 float(heat.get("hard_ceiling", 0.30)))
+    g_want = _growth_at(curve, wanted)
+    g_cap = _growth_at(curve, float(heat.get("effective_ceiling", 0.0)))
+    if g_want is None or g_cap is None:
+        return {"verdict": UNMEASURED, "why": "curve does not cover the wanted heat"}
+    return {"verdict": "SAMPLE", "value_logw_per_day": round(g_cap - g_want, 8), "sample": True}
+
+
 def measure_floor(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     heat = alloc.get("heat") or {}
     if not heat:
@@ -204,6 +268,55 @@ def measure_factor_floor(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     return {"verdict": UNMEASURED, "why": "needs the live ledger's factor exposures (box)"}
 
 
+def measure_hazard_shrink(r, alloc: dict, _fv: dict) -> dict[str, Any]:
+    """The PRE-RETIREMENT SHRINK: the book scored with the hazard tilt against without it.
+
+        "allocation changes BEFORE the formal retirement threshold"      -- the principal
+
+    `drift_monitor.hazard_by_sleeve` publishes P(edge breaks next horizon | history) per sleeve
+    into reports/DRIFT.json, and the allocator shrinks a sleeve's posterior mean by (1 - hazard)
+    before any retirement rule fires. That is a RAIL by this desk's definition -- a mechanism
+    that reduces exposure -- so it is billed like every other one: growth of the book WITH the
+    tilt minus growth WITHOUT, on the same sampled worlds, in log-wealth per day.
+
+    THE ONLY HONEST WAY TO BILL IT. Scoring the two books on the same world population at the
+    same total heat is the comparison in which the difference is the TILT and not the sizing;
+    anything else would charge the shrink for a heat change it did not make. Until the allocator
+    writes that pair the rail is UNMEASURED with the exact field names it needs -- a shrink that
+    cannot be measured must not read as free.
+
+    A SHRINK THAT DID NOT FIRE COST NOTHING. When no sleeve carried a hazard above the tilt's
+    line the rail is NOT_BINDING, which is a real zero and not a missing measurement.
+
+    NOT YET REGISTERED. `run()` bills the rails in `libs.portfolio.rails.RAILS`, and the tilt's
+    Rail entry lands with the allocator patch that applies it -- the measurement is here first so
+    the mechanism cannot reach the book ahead of the ledger that bills it, which is the order
+    every other rail on this desk was built in.
+    """
+    hs = alloc.get("hazard_shrink") or {}
+    if not alloc:
+        return {"verdict": UNMEASURED, "why": "no allocator pass on this host"}
+    if not hs:
+        return {"verdict": UNMEASURED,
+                "why": ("pf_allocation.json carries no hazard_shrink block; needs "
+                        "hazard_shrink.growth_with and hazard_shrink.growth_without (mean log "
+                        "per day of the same book on the same sampled worlds, with and without "
+                        "the (1 - hazard) tilt) plus hazard_shrink.applied {sleeve: hazard}")}
+    applied = hs.get("applied") or {}
+    if not applied:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
+                "why": "no sleeve carried a hazard above the tilt's line this pass"}
+    with_, without = _num(hs.get("growth_with")), _num(hs.get("growth_without"))
+    if with_ is None or without is None:
+        return {"verdict": UNMEASURED, "n_shrunk": len(applied),
+                "why": ("hazard_shrink names the shrunk sleeves but carries no with/without "
+                        "growth pair to price them")}
+    return {"verdict": "SAMPLE", "value_logw_per_day": round(with_ - without, 8), "sample": True,
+            "n_shrunk": len(applied),
+            "max_hazard": max((_num(v) or 0.0) for v in applied.values()),
+            "why": "growth of the tilted book minus the untilted one, same worlds, same heat"}
+
+
 def measure_ruin_guard(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     note = str((alloc.get("growth") or {}).get("annual_growth_pct", ""))
     heat = alloc.get("heat") or {}
@@ -239,7 +352,7 @@ def _verdict_from_samples(samples: list[float]) -> tuple[str, dict[str, Any]]:
 
 def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     alloc = _json(ALLOC)
-    fv = _json(FILTER_VALUE)
+    fv = _veto_evidence()
     day = today or datetime.now(tz=UTC).date().isoformat()
     # 1. today's samples, appended once per day per rail
     existing = _rows()
@@ -250,7 +363,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
         m = MEASURES[r.measure](r, alloc, fv)
         live[r.name] = m
         if m.get("sample") and (r.name, day) not in have_today:
-            new.append({"day": day, "rail": r.name, "value": float(m.get("value_logw_per_day", 0.0)),
+            new.append({"day": day, "rail": r.name,
+                        "value": float(m.get("value_logw_per_day", 0.0)),
                         "at": datetime.now(tz=UTC).isoformat()})
     if new and write:
         LEDGER.parent.mkdir(parents=True, exist_ok=True)
@@ -311,6 +425,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     aggression = alloc.get("aggression") or {}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "day": day,
            "ledger_rows": len(rows), "new_samples": len(new), "rails": verdicts,
+           "veto_evidence_source": fv.get("source"),
            "costs_growth": sorted(k for k, v in verdicts.items() if v.get("verdict") == COSTS),
            "earns": sorted(k for k, v in verdicts.items() if v.get("verdict") == EARNS),
            "unmeasured": sorted(k for k, v in verdicts.items() if v.get("verdict") == UNMEASURED),

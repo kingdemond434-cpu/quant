@@ -22,6 +22,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from libs.data.feature_lifecycle import withdraw
 from libs.data.feature_store import FeatureStore
 from libs.models.zoo import TAX, compete
 
@@ -60,15 +61,46 @@ def target(df: pd.DataFrame, horizon: int) -> np.ndarray:
     return fwd
 
 
+def live_vocab(store: FeatureStore | None = None
+               ) -> tuple[tuple[tuple[str, dict[str, Any]], ...], list[str]]:
+    """VOCAB minus every feature the ledger has withdrawn effort from, and the names dropped.
+
+    CO-EVOLUTION IS WHERE FEATURE EFFORT IS ACTUALLY SPENT: every pairing bred here computes the
+    whole feature set, so a DEAD or REDUNDANT column costs that compute on every generation while
+    contributing a column `research/feature_roi.py` has already measured as worthless or as a
+    duplicate of one already in the matrix. The vocabulary is therefore filtered BEFORE the search
+    starts rather than the results filtered after it. A feature the ledger has never judged is NEW
+    and stays in -- an unmeasured feature is UNMEASURED, not dead.
+    """
+    status: dict[str, str] = {}
+    try:
+        for doc in (store or FeatureStore()).sidecars():
+            st = str(doc.get("status") or "")
+            if st:
+                status[str(doc.get("name"))] = st
+    except Exception:
+        return VOCAB, []                                     # no ledger is not a dead vocabulary
+    keep: list[tuple[str, dict[str, Any]]] = []
+    dropped: list[str] = []
+    for name, params in VOCAB:
+        if withdraw(status.get(name, "NEW")).may_spend:
+            keep.append((name, params))
+        else:
+            dropped.append(f"{name} ({status.get(name)})")
+    return tuple(keep), sorted(set(dropped))
+
+
 def _key(fset: list[int], model: str) -> str:
     return json.dumps({"f": sorted(fset), "m": model})
 
 
-def _specs(fset: list[int], symbol: str | None) -> list[tuple[str, dict[str, Any]]]:
+def _specs(fset: list[int], symbol: str | None,
+           vocab: tuple[tuple[str, dict[str, Any]], ...] = VOCAB
+           ) -> list[tuple[str, dict[str, Any]]]:
     """The feature specs, with the instrument substituted into any symbol-bearing entry."""
     out: list[tuple[str, dict[str, Any]]] = []
     for i in sorted(fset):
-        name, params = VOCAB[i]
+        name, params = vocab[i]
         if symbol and "symbol" in params:
             params = {**params, "symbol": symbol}
         out.append((name, params))
@@ -76,8 +108,9 @@ def _specs(fset: list[int], symbol: str | None) -> list[tuple[str, dict[str, Any
 
 
 def evaluate(df: pd.DataFrame, fset: list[int], model: str, store: FeatureStore,
-             horizon: int = 6, symbol: str | None = None) -> dict[str, Any]:
-    specs = _specs(fset, symbol)
+             horizon: int = 6, symbol: str | None = None,
+             vocab: tuple[tuple[str, dict[str, Any]], ...] = VOCAB) -> dict[str, Any]:
+    specs = _specs(fset, symbol, vocab)
     x = store.matrix(df, [(n, p) for n, p in specs])
     y_raw = target(df, horizon)
     ok = np.isfinite(x).all(axis=1) & np.isfinite(y_raw)
@@ -96,7 +129,13 @@ def evolve(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: int = 12
            models: tuple[str, ...] = tuple(TAX), symbol: str | None = None) -> dict[str, Any]:
     rng = np.random.default_rng(seed)
     store = store or FeatureStore()
-    n_v = len(VOCAB)
+    vocab, dropped = live_vocab(store)
+    if not vocab:
+        return {"pairings_evaluated": 0, "best": [], "trials": 0, "n_earning": 0,
+                "best_by_model": dict.fromkeys(models),
+                "vocab_size": 0, "vocab_dropped": dropped,
+                "why": "every vocabulary entry has had its effort withdrawn by the feature ledger"}
+    n_v = len(vocab)
     seen: dict[str, dict[str, Any]] = {}
 
     def _rand_set() -> list[int]:
@@ -113,7 +152,7 @@ def evolve(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: int = 12
             k = _key(fset, model)
             if k not in seen:
                 try:
-                    seen[k] = evaluate(df, fset, model, store, horizon, symbol)
+                    seen[k] = evaluate(df, fset, model, store, horizon, symbol, vocab)
                 except Exception as exc:
                     seen[k] = {"features": [str(i) for i in fset], "model": model,
                                "verdict": "FAILED", "why": f"{type(exc).__name__}: {exc}",
@@ -140,6 +179,7 @@ def evolve(df: pd.DataFrame, *, store: FeatureStore | None = None, pop: int = 12
     ranked = sorted((v for v in seen.values() if v.get("net_gain") is not None),
                     key=lambda v: -float(v["net_gain"]))
     return {"pairings_evaluated": len(seen), "best": ranked[:5],
+            "vocab_size": n_v, "vocab_dropped": dropped,
             "best_by_model": {m: next((v for v in ranked if v["model"] == m), None)
                               for m in models},
             "n_earning": sum(1 for v in ranked if v.get("verdict") == "EARNS_ITS_PLACE"),

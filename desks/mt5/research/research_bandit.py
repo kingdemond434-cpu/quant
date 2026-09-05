@@ -13,9 +13,31 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 from libs.research import bandit  # noqa: E402
 
+#: The growth attribution's per-source verdict. `allocator_attribution` names a source DEAD
+#: INFORMATION when it has burned trials past the exploration floor and bought no growth in the
+#: funded book; that naming only becomes a decision where the budget is set, which is here.
+ATTRIBUTION = _DESK / "reports" / "allocator_attribution.json"
+
+
+def dead_information() -> list[str]:
+    """Sources the growth attribution named DEAD INFORMATION.
+
+    A dead SOURCE does not stop the ARM -- an arm is many sources, and killing an arm for one
+    exhausted feed would throw away the others with it. It stops being a REASON to fund the arm,
+    which is what the share is computed from.
+    """
+    import json
+    try:
+        doc = json.loads(ATTRIBUTION.read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    return sorted(str(s) for s in ((doc.get("information") or {}).get("dead_information") or []))
+
 
 def run(seed: int = 0) -> dict:
-    return bandit.run(seed=seed)
+    d = bandit.run(seed=seed)
+    d["dead_information"] = dead_information()
+    return d
 
 
 def main() -> int:

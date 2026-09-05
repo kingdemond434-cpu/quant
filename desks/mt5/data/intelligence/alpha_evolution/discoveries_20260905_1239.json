@@ -1,0 +1,92 @@
+{
+ "source": "alpha_evolution",
+ "generated_at": "2026-09-05T12:39:13.529086+00:00",
+ "tests_run": 136,
+ "discoveries": [
+  {
+   "source": "alpha_evolution",
+   "kind": "alpha_evolution",
+   "symbol": "AUDCAD",
+   "family": "formula",
+   "params": {
+    "norm": 240,
+    "entry_z": 1.5,
+    "hold_bars": 8,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "rr": 1.5,
+    "expr": [
+     "scale",
+     [
+      "div",
+      [
+       "decay",
+       "range",
+       5
+      ],
+      [
+       "max2",
+       "spread",
+       "spread"
+      ]
+     ],
+     2
+    ],
+    "side_mode": "fade"
+   },
+   "mechanism": "scale(div(decay(range, 5), max2(spread, spread)), 2): a momentum-type measure of range, spread, z-scored on its own history and faded against its direction when it is extreme",
+   "title": "AUDCAD.formula.fade scale(div(decay(range, 5), max2(spread, spread)), 2)",
+   "url": "",
+   "evidence": {
+    "n_independent": 1802,
+    "gross_per_trade": 0.00047556,
+    "net_per_trade": 0.00038301,
+    "cost_frac": 9.255e-05,
+    "t_gross": 7.418,
+    "t_deflated_sweep": 4.941,
+    "n_tests_sweep": 136,
+    "stability": 0.505,
+    "corr_survivors": 0.0,
+    "novelty": 0.553,
+    "fitness": 2.1363,
+    "fitness_legacy": 5.6477,
+    "terms": {
+     "delta_elog": 0.0,
+     "oos": 4.2543,
+     "novelty": 0.29102,
+     "tail": 0.0,
+     "state_breadth": 0.2,
+     "capacity": 0.81209,
+     "cost": 0.19462,
+     "fragility": 0.07706,
+     "complexity": 7.0,
+     "multiplicity": 0.32148
+    },
+    "unmeasured": [
+     "delta_elog",
+     "tail"
+    ],
+    "tail": {
+     "q": 0.1,
+     "tail_days": 0,
+     "tail_contribution": null,
+     "tail_novelty": null
+    },
+    "generator": "mutate",
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   },
+   "event_time": null,
+   "available_time": "2026-09-05T12:39:13.525771+00:00",
+   "ingested_time": "2026-09-05T12:39:13.525771+00:00",
+   "source_version": "1716ec83",
+   "payload_hash": "3d71f6b32092bad3fb5e8f62",
+   "prereg_hash": "7259fcc0afc830f9"
+  }
+ ],
+ "counts": {
+  "donated": 1,
+  "refused_unstamped": 0
+ },
+ "refusals": [],
+ "rule": "a candidate without a point-in-time stamp is refused here and counted, never written: absence of an available_time is not permission to use the row"
+}

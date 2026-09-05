@@ -378,8 +378,8 @@ def test_the_cap_holds_and_a_long_outage_is_not_bridged_in_hops():
     """Age is counted from the last OBSERVED value, not the last filled one. If it were counted
     from the filled value, a `d`-period cap would reconstruct an outage of any length in `d`-length
     hops -- an uncapped fill wearing a cap's name. That matters because a frozen constant is the
-    lowest-volatility series in any universe, and every inverse-volatility scheme downstream, this
-    repo's `crypto_xsec` included, hands the lowest-volatility name the largest weight."""
+    lowest-volatility series in any universe, and EVERY inverse-volatility scheme downstream hands
+    the lowest-volatility name the largest weight -- so a stale price becomes the biggest bet."""
     x = np.array([1.0, np.nan, np.nan, np.nan, np.nan, np.nan, 7.0])
     out = ts_backfill(x, 2)
     assert np.allclose(out[:3], [1.0, 1.0, 1.0])

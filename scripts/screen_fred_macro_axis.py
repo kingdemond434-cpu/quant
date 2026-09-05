@@ -85,8 +85,6 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from scripts.screen_idle_axes import _graveyard_priors, block_idx  # noqa: E402
-
 from libs.alpha_factory.hypothesis_novelty import PriorIdea, hypothesis_novelty  # noqa: E402
 from libs.research.alpha_economics import Idea, ev_score  # noqa: E402
 from libs.research.axis_screen import stage_a_screen  # noqa: E402
@@ -174,6 +172,51 @@ NOT_SCREENED = {
 
 
 # ------------------------------------------------------------------------------------- priors ---
+def block_idx(n: int, h: int) -> np.ndarray:
+    """Right-aligned non-overlapping sample points so the LAST observation is always included.
+
+    Inlined from `screen_idle_axes.py`, deleted 2026-09-05 with the crypto-exchange desk. The
+    function is arithmetic over an index and carried nothing venue-specific, so it moved rather
+    than died -- the alternative was a wrapper module existing only to hold three tokens.
+    """
+    return np.arange(n - 1, -1, -h)[::-1]
+
+
+def _graveyard_priors() -> list[PriorIdea]:
+    """Every graveyard table row, as priors for the novelty gate.
+
+    ALSO INLINED FROM THE DELETED `screen_idle_axes.py`, AND DELIBERATELY SHORTER THAN THE
+    ORIGINAL. That version appended four hardcoded "live sleeve" priors -- taker-flow, basis
+    carry, funding carry, on-chain throughput -- so a candidate would be called REDUNDANT for
+    resembling a book this desk was still trading. Those sleeves were retired with the
+    crypto-exchange universe, so keeping them would fail candidates for duplicating something
+    that no longer exists, which is a novelty gate rejecting on a fiction.
+
+    The graveyard TABLE stays and is the valuable half: it is the desk's record of what was tried
+    and what it cost, and a macro axis is still novel-or-not against that record whichever market
+    the desk trades. `docs/graveyard.md` is memory, not a live mandate (see check_mt5_purity).
+    """
+    priors: list[PriorIdea] = []
+    try:
+        txt = (ROOT / "docs/graveyard.md").read_text("utf-8")
+    except OSError:
+        # NOT a silent pass: an unreadable graveyard means the novelty gate is running on a
+        # smaller prior set than it claims, and a candidate can only look MORE novel for it.
+        # Returning [] surfaces as n_priors in the report the caller writes.
+        return priors
+    for line in txt.splitlines():
+        if not line.startswith("|") or line.startswith("|---") or "Hypothesis |" in line:
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        name, verdict, tag = cells[0], cells[1], cells[2]
+        lesson = cells[3] if len(cells) > 3 else ""
+        priors.append(PriorIdea(id=name[:60], category=tag,
+                                statement=f"{name} {verdict} {lesson}"[:1500], lesson=lesson[:300]))
+    return priors
+
+
 def _prereg_priors() -> list[PriorIdea]:
     """The EV-rejected pre-registration cards -- the NEAREST priors to anything macro->crypto.
 

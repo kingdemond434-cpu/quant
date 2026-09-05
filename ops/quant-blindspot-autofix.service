@@ -21,6 +21,6 @@ ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/blindspot_autofix.
 StandardOutput=journal
 StandardError=journal
 TimeoutSec=1800
-
-[Install]
-WantedBy=multi-user.target
+# No [Install]: timer-driven (see the .timer beside this file) and enabled THROUGH the timer;
+# a WantedBy here let `systemctl enable` arm a boot-time one-shot that ran once while
+# `is-enabled` said "enabled" -- the convention tests/scripts/test_enforcement.py pins.

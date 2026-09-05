@@ -266,10 +266,14 @@ def _exec_script_of(service_text: str) -> str | None:
     """Last .py/.sh token of the service's ExecStart line, or None when there is none."""
     for line in service_text.splitlines():
         if line.strip().startswith("ExecStart="):
-            tokens = line.strip().removeprefix("ExecStart=").split()
+            # A unit written as `/bin/bash -c './ops/gates.sh --full ...'` hands whitespace
+            # tokenisation the QUOTE as part of the path, and `./ops/gates.sh` then failed both
+            # the exists check and the manifest lookup for a script that is right there --
+            # the same stripping _unit_scripts already does for installed units.
+            tokens = [t.strip("'\"") for t in line.strip().removeprefix("ExecStart=").split()]
             hits = [t for t in tokens if t.endswith((".py", ".sh"))]
             if hits:
-                return hits[-1]
+                return hits[-1].removeprefix("./")
     return None
 
 

@@ -86,8 +86,22 @@ def test_single_candidate_is_honestly_uninformative() -> None:
 
 
 def test_discovery_surfaces_this_rather_than_reporting_a_bare_zero() -> None:
+    """The runner that reports a zero-survivor campaign must say WHY, and say who may rule on it.
+
+    2026-09-05: `scripts/run_discovery.py` went with the crypto desk. The claim is not withdrawn --
+    it is about whatever runner reports a campaign result -- so this SKIPS rather than passing
+    silently, and names the file the MT5 runner must satisfy when it takes over.
+    """
     from pathlib import Path
-    src = (Path(__file__).resolve().parents[2] / "scripts/run_discovery.py").read_text("utf-8")
+
+    import pytest
+    src_path = Path(__file__).resolve().parents[2] / "scripts/run_discovery.py"
+    if not src_path.is_file():
+        pytest.skip(
+            "scripts/run_discovery.py is absent (deleted with the crypto desk). The MT5 campaign "
+            "runner must still surface gate_discrimination + blocking_constant_gates and name the "
+            "PRINCIPAL as the owner of any relaxation; re-point this fence at it.")
+    src = src_path.read_text("utf-8")
     assert "gate_discrimination" in src and "blocking_constant_gates" in src
     assert "PRINCIPAL ruling" in src, (
         "the output must say who owns the decision; silently relaxing the bar is forbidden")

@@ -63,7 +63,7 @@ _MAP: dict[str, list[str]] = {
     # deliberately NOT a new law number. An hour-conditioned cost model is an INSTRUMENT for
     # L1.5, not a new duty, and minting a law for it would be the governance inflation LAWS
     # section 0 forbids.
-    "L1.5": ["run_cost_model.py", "check_carry_funding_measured", "run_execution_intel.py",
+    "L1.5": ["check_carry_funding_measured", "run_execution_intel.py",
              "scripts/build_event_calendar.py", "libs/execution/event_guard.py",
              # BY PATH, not by bare name. A bare `check_foo` ref is resolved as a max_audit
              # FUNCTION; this fence is a standalone script, so the bare form lands in
@@ -106,7 +106,7 @@ _MAP: dict[str, list[str]] = {
     # buy back. Measured on the RFB Brazil panel: 42/42 months revised between vintages, worst
     # +40.9%, systematically upward. The store makes the daily overwrite lossless and turns "this
     # source is revised" from a disqualification into a dataset.
-    "L1.11": ["moat_audit.py", "check_vendor_replacement", "run_recorder.py",
+    "L1.11": ["check_vendor_replacement",
               "libs/research/vintage.py", "scripts/collect_fred_macro.py",
               "scripts/harvest_rfb_vintages.py",
               "tests/research/test_vintage.py"],
@@ -124,8 +124,7 @@ _MAP: dict[str, list[str]] = {
     # are two documented byte-level layers and the stdlib ships `struct`, so the moat here is made
     # of tedium rather than secrecy -- maximum reverse-engineering cost per unit of effort.
     "L1.11a": ["ops/run_frontier_rotation.sh", "kimi_hunter.py",
-               "scripts/probe_delisted_instruments.py",
-               "tests/scripts/test_probe_delisted_instruments.py",
+
                "scripts/read_xls.py", "libs/data/xls_reader.py",
                "tests/data/test_xls_reader.py"],
     "L1.12": ["check_orphan_code", "check_idle_capability", "libs/self_improvement/dormancy.py"],
@@ -137,7 +136,7 @@ _MAP: dict[str, list[str]] = {
     # measures whether the funding-rank entry selects into a widening or converging basis, which
     # is what decides whether the carry harvest is a cashflow or compensation for a basis loss.
     "L1.16": ["mechanism_board.py", "check_gate_optimality",
-              "scripts/screen_carry_basis_path.py"],
+              ],
     "L1.17": ["negative_knowledge.py", "check_findings_ratchet", "docs/graveyard.md"],
     "L1.18": ["tests/validation/test_capacity_parity.py"],
     "L1.18a": ["tests/validation/test_capacity_parity.py",
@@ -149,14 +148,14 @@ _MAP: dict[str, list[str]] = {
     # or may not be on rolling retention. Whether free history is expiring is a decay question,
     # and it was answered by INFERENCE in a sweep doc until the probe measured it (FIXED, boundary
     # 2025-08-21 unmoved 08-01 -> 08-05 while the span grew 345 -> 349 days).
-    "L1.19": ["revalidate_clocks.py", "libs/research/dist_shift.py",
-              "scripts/probe_bybit_archive.py",
-              "tests/scripts/test_bybit_archive_probe.py"],
+    "L1.19": ["libs/research/dist_shift.py",
+
+              ],
     "L1.20": ["check_post_gate0_activation", "check_production"],
     "L1.21": ["check_depth_parity", "check_coverage"],
     "L1.22": ["run_intelligence_cycle.py", "check_self_application", "check_self_sufficiency"],
     "L1.23": ["run_deadman_switch.py (Tier-3)", "libs/risk/gate.py", "check_production",
-              "scripts/run_drills.py", "libs/risk/capital_events.py",
+              "libs/risk/capital_events.py",
               # the moat is capital in information form: replicas drilled on every run, disk
               # fuse fails loud ~14 days before the 80% guard would start eating the moat
               "scripts/run_moat_backup.py"],
@@ -276,11 +275,13 @@ _MAP: dict[str, list[str]] = {
               "scripts/run_mutation.py"],
     # L1.41: nothing enters below the build standard -- prevention at the build boundary rather
     # than detection days later. The two Stage-A screens are its first governed non-fence organs.
-    "L1.41": ["scripts/check_build_standard.py", "scripts/screen_funding_spread.py",
-              "scripts/screen_collateral_allocation.py"],
+    "L1.41": ["scripts/check_build_standard.py",
+              ],
     # L1.42: the boundary for the 60 python entry points that sourced no shell gate.
-    "L1.42": ["libs/ops/lawful.py", "scripts/check_build_standard.py",
-              "scripts/run_cashcarry_executor.py"],
+    # scripts/run_cashcarry_executor.py was the proving entry point here until the MT5 mandate
+    # (2026-08-18) retired the crypto-venue executor outright; a citation to a deleted file is a
+    # BROKEN-REF, and the law is carried by the boundary itself plus the fence that audits it.
+    "L1.42": ["libs/ops/lawful.py", "scripts/check_build_standard.py"],
     # L1.43: governance measured like everything else -- has each fence ever caught anything?
     # check_free_roster is the same logic pointed at a governance CAPABILITY rather than a fence:
     # the degraded free-seat fallback is only ever exercised while unfunded, so its health was
@@ -322,11 +323,27 @@ _MAP: dict[str, list[str]] = {
     # This one asks whether the TIMESTAMPS MEAN WHAT THE SCHEMA IMPLIES, which is the defect class
     # behind kimchi_premium, coinbase_premium_timing and R0060 alike.
     "L1.46": ["scripts/check_clock_provenance.py", "libs/research/clock_provenance.py"],
+    # L1.47 AND L1.64 ARE DELIBERATELY ABSENT FROM THIS MAP, 2026-09-05 (universe mandate), and
+    # this generator will therefore report both UNENFORCED. That is the honest state, not an
+    # oversight to be papered over with a _STANDING or _HUMAN_ONLY entry -- neither law is being
+    # upheld by a human or a runtime mechanism, because neither law has a subject any more:
+    #
+    #   L1.47 FUNDING CAPTURE  -- "where in the PERP FUNDING CYCLE was the position opened and
+    #                             closed". Its fence (check_funding_capture.py) and its library
+    #                             (libs/research/funding_clock.py) are deleted; funding settlement
+    #                             stamps are a crypto-exchange mechanic with no MT5 analogue that
+    #                             this map could point at today.
+    #   L1.64 MARGIN TOPOLOGY  -- "was the book's capital structure DECIDED", where the structures
+    #                             compared were spot + separately-margined USDT-M perp. Its fence,
+    #                             its library and its consumer (run_capital_plan.py) are deleted.
+    #
+    # The correct repair is a DOCTRINE edit -- retire or rewrite both laws in docs/ -- not a map
+    # entry here. Claiming enforcement this map cannot demonstrate is the exact failure L2.0 was
+    # written to catch, so the hole is left visible and named until doctrine catches up.
     # L1.47: funding capture. Funding is a DISCRETE payment booked as a CONTINUOUS accrual, and
     # the accrual is UNBIASED IN EXPECTATION -- which is why it survived every review while being
     # wrong on 41.5% of individual closes. The fence differences the two models, measures the
     # PHASE coordinate the desk has never used, and refuses to call an undifferenced estimate OK.
-    "L1.47": ["scripts/check_funding_capture.py", "libs/research/funding_clock.py"],
     # R0119 crowding: the desk's capacity assumption is that its carry names are too small for
     # funds to bother with, and that assumption had never been INSTRUMENTED. The incumbent organ
     # (run_carry_crowding.py) measures the top-20 AVERAGE, which contains our own names -- so a
@@ -334,8 +351,8 @@ _MAP: dict[str, list[str]] = {
     # benchmark, and a regime is indistinguishable from an adversary. This measures the RESIDUAL.
     # The collector ships with the fence because premiumIndex serves no history: an uncollected
     # hour of cross-section is permanently unbuyable (L1.28b(f)).
-    "L1.19-r0119": ["scripts/check_crowding.py", "libs/research/crowding.py",
-                    "scripts/collect_funding_cross_section.py"],
+    "L1.19-r0119": ["libs/research/crowding.py",
+                    ],
     # R0118 event-density promotion clock: L1.48 says evidence is the clock, and evidence_clock
     # reached exactly ONE promotion-path file while a `fwd_days >= 30` gate scaled DEPLOYABLE
     # CAPITAL on a bare positive Sharpe (measured 2026-08-05: validated=True at t=0.105). The
@@ -393,7 +410,7 @@ _MAP: dict[str, list[str]] = {
     # constant and six never-evaluated conditions as a measurement, from a path that has never
     # existed, and every gate in the chain reported green. Freshness does not compose.
     "L1.55": ["scripts/check_input_provenance.py", "libs/ops/input_provenance.py",
-              "scripts/run_live_guard.py"],
+              ],
     # L1.56: a screen may not gate its own promotion. The proving instance is the whole point --
     # 120 scored cells, 12 forward slots, ZERO clocks ever started, four breaks each failing
     # CLOSED and each silent, and the accumulated silence read as "no edges exist". The fence is
@@ -409,14 +426,14 @@ _MAP: dict[str, list[str]] = {
               "libs/ops/fence_exit.py", "tests/governance/test_denominators.py",
               "scripts/check_exploration.py", "scripts/check_calendar_gates.py"],
     # L1.58 is the executable edge/P&L waterfall and loss investigation loop.
-    "L1.58": ["scripts/run_trade_forensics.py", "scripts/run_trade_review.py",
+    "L1.58": ["scripts/run_trade_forensics.py",
               "libs/execution/execution_tape.py", "check_forensics_fresh",
               # R0334 (principal 2026-08-01): the sleeve's only scoreboard was a blended win_rate
               # and mean_R, which cannot separate a good thesis exited badly from a bad thesis
               # rescued by the ladder. Six components, each with its own denominator and its own
               # refusal -- target quality is UNMEASURABLE-BY-DESIGN on a sleeve that forbids
               # take-profits, and the stop check reports itself as a constant-pass gate (L1.49).
-              "scripts/run_execution_quality.py", "libs/research/execution_quality.py"],
+              "libs/research/execution_quality.py"],
     # L1.59 freezes doctrine growth and makes the mandate answerable to measured value.
     "L1.59": ["scripts/build_enforcement_matrix.py", "scripts/module_justification.py",
               "scripts/check_denominators.py", "scripts/check_ratchets.py",
@@ -460,15 +477,15 @@ _MAP: dict[str, list[str]] = {
     # six names. Measured 2026-08-13: 12 of 311 dates carried 98.1% of a lag-1 statistic, reading
     # rho=+0.856 against a floored truth of -0.06. run_derivative_shadow is a regression site --
     # it is the declared locked mirror of backfill_oi_ls_oos and was the unfloored half.
-    "L1.63": ["scripts/check_partition_power.py", "libs/validation/partition_power.py",
+    "L1.63": ["libs/validation/partition_power.py",
               "libs/autodiscovery/regime.py", "libs/risk/sleeve_allocation.py",
-              "scripts/check_promotion_gate.py", "libs/research/crypto_regime.py",
-              "scripts/falsify_funding_state_axis.py"],
+              "scripts/check_promotion_gate.py",
+              ],
     "L1.62": ["scripts/check_panel_breadth.py", "libs/research/panel_breadth.py",
               "libs/research/axis_screen.py", "libs/validation/type2_cost.py",
-              "scripts/screen_oi_ls_axes.py",
+
               "scripts/check_cross_section_floor.py", "libs/research/cross_section_floor.py",
-              "scripts/run_derivative_shadow.py"],
+              ],
     # L1.64: the only deployed sleeve's margin construction (spot wallet + separately-margined
     # USDT-M short) was INHERITED from connector order, never decided. The one place capital
     # efficiency was modelled hardcoded _PM_EFFICIENCY=1.8 and applied it at every equity level
@@ -481,8 +498,6 @@ _MAP: dict[str, list[str]] = {
     # is refused as paperwork (L1.28a). run_capital_plan is a regression site -- it now imports
     # CAPITAL_LEVELS + split_wallet_npe from the comparator, and the AST test that pins the
     # deleted constant turns red if the fork returns.
-    "L1.64": ["scripts/check_margin_topology.py", "libs/portfolio/margin_topology.py",
-              "scripts/run_capital_plan.py"],
     # L1.67: every sizing function on the MT5 money path priced a stop as `dist * CONTRACT_OZ *
     # FX_EUR` -- gold's contract size times a frozen EUR/USD rate, 92.00 -- for whatever symbol
     # the sleeve named. The venue's own tick economics say 0.86 EUR per price unit per lot on
@@ -515,9 +530,9 @@ _MAP: dict[str, list[str]] = {
     # with POINT-IN-TIME pct-of-float (the snapshot's pct_circ_now was a look-ahead in the
     # conditioning variable), the reader gives the snapshot its first consumer, and forward
     # events route through the event-study gate once enough accrue.
-    "L1.8-r0288": ["scripts/collect_unlock_calendar.py", "libs/research/unlock_calendar.py",
+    "L1.8-r0288": ["libs/research/unlock_calendar.py",
                    "tests/research/test_unlock_calendar.py",
-                   "scripts/collect_circulating_supply.py"],
+                   ],
     # R0371 fee attribution (L1.58 edge preservation / P&L forensics): futures commission is
     # 88.7% of the sleeve's non-funding loss and 0 of 500 trade-tape rows carry a fee field, so
     # the desk could see the dominant loss and not attribute it. binance_testnet.commission_events
@@ -525,14 +540,14 @@ _MAP: dict[str, list[str]] = {
     # to the cent ($1,750.878 vs the dashboard's $1,750.88) and four names carry 85.9% of it.
     # Per-round-trip attribution stays REFUSED and the spot leg UNMEASURED -- both are published
     # as refusals rather than zeros, and the 7.1% tape coverage is the defect the surface reports.
-    "L1.58-r0371": ["scripts/run_fee_attribution.py", "libs/research/fee_attribution.py",
+    "L1.58-r0371": ["libs/research/fee_attribution.py",
                     "tests/test_fee_attribution.py", "scripts/run_execution_intel.py"],
     # R0303 Upbit purge-proof snapshot (L1.46 unrecoverable-series duty): the venue erases a
     # market's candle history at delisting (~11.4 KRW markets/yr; AQT/AERGO lost 2026-08-03),
     # and the desk's own >=120-aligned-day panel filter stacks a second survivorship bias on
     # top. The collector holds full daily history for every market plus flagged-market 1m,
     # and its manifest's delist ledger is the treatment group the purge erases.
-    "L1.46-r0303": ["scripts/run_upbit_snapshot.py", "libs/research/upbit_data.py",
+    "L1.46-r0303": [
                     "tests/research/test_upbit_snapshot.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
@@ -540,12 +555,11 @@ _MAP: dict[str, list[str]] = {
     # PASSes, zero scoreable forecasts. The grader ships with the logging because check_calibration
     # fails on any forecast past its deadline: logging without grading would turn a green survival
     # fence permanently red.
-    "L1.29-r0123": ["libs/research/decline_value.py", "scripts/resolve_llm_trader_book.py",
+    "L1.29-r0123": ["libs/research/decline_value.py",
                     "scripts/check_calibration.py"],
     # R0121 settlement-calendar screen (§42 capacity lens, L1.6 zero promotion authority). Tests
     # the PREMISE before the economics: nested grids make the trade geometrically impossible at
     # any funding level, and only a genuine phase offset creates a capture window.
-    "L1.6-r0121": ["scripts/screen_funding_interval_mismatch.py"],
     # R0207 the desk's first CAUSAL study. L1.16 (an edge is durable only when its MECHANISM is
     # understood) is the law this serves: every prior hypothesis was observational, and
     # de-contamination plus multiplicity control establish that a relationship is not an ARTIFACT,
@@ -553,27 +567,22 @@ _MAP: dict[str, list[str]] = {
     # a first-class result. The rails (parallel trends, placebo, SUTVA) are what separate
     # identification from a correlation with better vocabulary.
     "L1.16-r0207": ["libs/research/natural_experiment.py",
-                    "scripts/run_natural_experiment.py"],
+                    ],
     # R0100 axis collectors (2026-08-05): three free, keyless raw-information axes the desk did
     # not hold. Under L1.11 (the moat is the transformation pipeline, never the purchased dataset)
     # and L1.8 (acquisition runs at maximum). collect_perpdex_funding carries the screen-on-
     # discovery duty in-organ -- it screens what it ingests in the SAME run, so an axis cannot be
     # catalogued and abandoned, and it declares clock provenance per L1.46 (venue stamp + receipt).
-    "L1.11-r0100": ["scripts/collect_dexscreener.py",
-                    "scripts/collect_holder_concentration.py",
-                    "scripts/collect_perpdex_funding.py"],
     # R0291 (2026-08-12): wallet-resolved signed DEX flow, the one axis where waiting IS the
     # loss -- venue retention ~300 trades/pool, so capture is forward-only-unrecoverable
     # (L1.28b(f): acquisition never throttled). Dual clocks per L1.46 (chain stamp + receipt),
     # per-pool window-overflow flagged so sampling truncation is measured, never silent.
-    "L1.11-r0291": ["scripts/collect_geckoterminal_trades.py"],
     # R0299 (2026-08-12, KR-s1 B): the KR venue flag surface -- Upbit warning + 5 caution flags
     # and Bithumb market_warning + per-asset deposit/withdrawal rails. All three surfaces are
     # SNAPSHOT-ONLY with no history endpoint, so this recorder is the only source of the series
     # (L1.46: recv_only clock declared, unrecorded transitions permanently lost). Bithumb rail
     # state is the independent barrier-height regressor that breaks the KR-premium circularity.
     # A failed fetch is never diffed -- absence must not read as 'all flags cleared' (L1.51).
-    "L1.46-r0299": ["scripts/collect_kr_venue_flags.py"],
     # R0375 (2026-08-12): the haircut that decides whether idle dollars may earn was
     # `DEFAULT_HAIRCUT_BPS = 300.0` with no derivation anywhere in the repo, against a measured
     # 5.5bps breakeven -- L1.51's own defect class (a clamp nobody could argue with because
@@ -582,7 +591,7 @@ _MAP: dict[str, list[str]] = {
     # bound, plus the measured depeg shortfall: 41.7bps. The refusal value is still 300, so an
     # unreadable input keeps the band SHUT rather than opening it on a fabricated small number
     # (L1.55). Risks measured but deliberately unpriced are named, never inferred as zero.
-    "L1.51-r0375": ["scripts/collect_lending_risk_base_rates.py",
+    "L1.51-r0375": [
                     "libs/research/lending_haircut.py",
                     "tests/research/test_lending_haircut.py"],
     # R0102 paper-sleeve auto-spawn: converts corrected Stage-A survivors into costless paper
@@ -598,22 +607,17 @@ _MAP: dict[str, list[str]] = {
                         "libs/autodiscovery/capacity_screen.py"],
     # R0122 LLM discretionary sleeve: paper-only candidate generator whose calls are scored
     # forecasts. Governed by L1.6 (zero promotion authority) and L1.29 (it grades itself).
-    "L1.6-llm": ["scripts/run_llm_trader.py"],
     # R0122b: the unstructured feed the sleeve trades. Under L1.11a (information asymmetry as a
     # search dimension) -- its latency measurement IS the asymmetry test.
-    "L1.11a-events": ["scripts/collect_announcements.py"],
     # R0125 conviction sleeve: aggression is L1.28 (uncapped conviction), the rail is L1.23
     # (stop on every trade, leverage cap, inside the ruin rail).
-    "L1.23-conviction": ["scripts/run_conviction_trader.py"],
     # R0133: the marker. Both paper sleeves wrote books nobody ever read -- the purest L1.28a
     # defect, since an unmarked book accumulates confident rows and reports no failure. This organ
     # walks the recorded ladder against real bars, benchmarks against buy-and-hold (L1.6) and
     # feeds the outcome to calibration (L1.29), which is what makes over-confidence self-shrinking.
-    "L1.28a-paper-marks": ["scripts/resolve_paper_book.py"],
     # R0134: the discretionary sleeve was asked to read charts it had never been shown -- an
     # unused information source sitting under a strategy that needs it (L2.9), and a ceiling
     # reported as fine while unmeasured (L1.28a). Multi-timeframe structure, per instrument.
-    "L2.9-chart-context": ["scripts/build_chart_context.py"],
     # R0135: four money-path constants were found defective in one session, all round numbers
     # picked by analogy rather than computed. Four of four is a missing mechanism, not bad luck.
     "L1.41-sizing": ["scripts/check_sizing_derivation.py"],
@@ -624,15 +628,13 @@ _MAP: dict[str, list[str]] = {
     # R0139: the discretionary desk's learning loop. Lessons climb an evidence ladder before they
     # reach the trader and are retired by their own falsifier -- the same standard L1.6 applies to
     # alpha, applied to the desk's beliefs about its own method.
-    "L1.6-playbook": ["scripts/run_trade_review.py", "docs/DISCRETIONARY_DESK.md"],
+    "L1.6-playbook": ["docs/DISCRETIONARY_DESK.md"],
     # R0140: copytrading, screened. The naive read (copy the leaderboard's best) is the 420/0
     # selection failure in a new costume; the screen computes the tempting number AND disqualifies
     # it, archives the only unbiased design (a forward panel counting exits as failures), and
     # measures the derivative that does not require picking a winner.
-    "L1.6-copytrading": ["scripts/screen_copytrading.py"],
     # R0141: more sleeves multiply growth only if INDEPENDENT. Correlated sleeves draw down
     # together -- risk scales with N, growth with 1, and the desk pays N sets of costs for one bet.
-    "L1.28b-sleeves": ["scripts/run_sleeve_allocator.py"],
     # R0142: the load-bearing assumption under the whole sizer -- that a stated probability means
     # anything. Zero resolved forecasts existed when this was checked. L1.29 scores it; this poses
     # the questions that give L1.29 something to score without needing capital or venue keys.
@@ -652,16 +654,13 @@ _MAP: dict[str, list[str]] = {
     # R0151: the constitution's ceiling-pushing family applied to the discretionary desk. A HIT
     # RATE is a legal target where a return figure is not -- it cannot be reached by sizing, only
     # by selection, information and filtering, which are exactly the levers to push.
-    "L1.28c-discretionary": ["scripts/run_discretionary_max.py"],
     # R0152: the desk had an optimiser and a learner for ONE discretionary edge and nothing that
     # hunted for a SECOND. A single hypothesis is one regime change away from none, and the
     # allocator's own arithmetic says an independent second edge beats improving the first.
-    "L1.31-discretionary-hunt": ["scripts/run_discretionary_hunt.py"],
     # R0198: costs are the one growth lever available before any edge is proven -- known BEFORE
     # the trade, and near breakeven a third of the cost stack is worth more than a point of hit
     # rate. Funding is SIGNED and public; the sleeve was blind to which sides get PAID to hold.
     # Selection uses the sign; marking stays always-adverse -- different jobs, different signs.
-    "L1.41-cost-hunt": ["scripts/run_cost_hunt.py"],
     # R0200: every coverage organ mapped WHERE the miners look (source families, regions,
     # languages) and none mapped WHAT KIND of edge came back. 42 buried strategies cluster into
     # families, and twelve candidates from one family are correlated by construction -- they die
@@ -782,8 +781,10 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_review_risks_tracked": "L2.3",
     "check_decision_ledger_matures": "L2.3",
     # --- execution physics (L1.5): the costs that quietly eat a carry.
-    "check_bnb_funded": "L1.5",          # fee-burn discount only applies while BNB is held
-    "check_fee_carry_ratio": "L1.5",
+    # RETIRED 2026-09-05 with their checks (universe mandate): `check_bnb_funded` (Binance
+    # BNB fee-burn funding) and `check_fee_carry_ratio` (the §40 commission-over-perp-funding
+    # ratchet). Both were L1.5 execution-physics rows whose subject was a crypto-exchange
+    # account setting and a perp revenue line. L1.5 itself stands and keeps its other fences.
     "check_close_retry_loop": "L1.5",    # a carry that cannot close is a churn engine
     # --- survival rails (L1.23): states that read HEALTHY while being terminal.
     "check_book_collapse": "L1.23",
@@ -860,6 +861,21 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_triage_disposition": "L1.17",      # self-dispositioning registers stay honest or lose the exclusion
     "check_under_exploration": "L1.32",       # under-exploration is a breach, not a preference
     "check_unwired_modules": "L2.9",          # built-but-unreachable, the third shape of dormancy
+    # --- claimed 2026-09-05: eleven max_audit fences born 2026-08-26..28 (the cron-death and
+    # consolidation repairs) landed without a row here, so the matrix reported them as complexity
+    # nobody voted for and the law gate was red on every push. Each is keyed by the law its own
+    # docstring describes; none needed a new principle.
+    "check_unit_deaths": "L1.28c",            # an organ that died abnormally is not producing
+    "check_manifest_backlog": "L1.28c",       # a schedule nobody is checking is not a cadence
+    "check_authority_writers_scheduled": "L1.49",  # an authority artifact nobody writes is uncashable
+    "check_launcher_seal": "L1.41",           # a launcher bash can rewrite mid-run is below standard
+    "check_sync_launder": "L1.38",            # a sync reverting money-path code is an uncaught change
+    "check_verifier_reads_injection": "L2.1", # the verifier reads what the injection actually carries
+    "check_route_shaped_identity": "L1.25",   # an identity that breaks on every outage is a welded gate
+    "check_one_way_flags": "L1.45",           # a flag nothing clears is an absorbing state
+    "check_worktree_on_tmpfs": "L2.2",        # a checkout in RAM is a verdict the box cannot afford
+    "check_page_before_spawn": "L2.2",        # a suppressed page must not cost an interpreter
+    "check_recursion_rule_applied": "L2.2",   # a FIXED row without a fence is a lesson paid twice
 }
 for _fence, _pid in _FENCE_OWNERS.items():
     _MAP.setdefault(_pid, []).append(_fence)
