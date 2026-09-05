@@ -38,7 +38,10 @@ def main() -> None:
         if datetime.now(timezone.utc).weekday() == 0 and datetime.now(timezone.utc).hour == 23:
             import json as _json  # noqa: PLC0415
             from pathlib import Path as _Path  # noqa: PLC0415
-            stfile = _Path(r"C:\Users\dell\mt5-research\data\hunt7_state.json")
+            # WAS the retired laptop's absolute path (C:\Users\dell\mt5-research), which does
+            # not exist on Contabo: the weekly sweep read "never swept" every Monday and
+            # re-ran hunts 7-12 from scratch. The desk root is where the state lives.
+            stfile = _Path(__file__).resolve().parents[1] / "data" / "hunt7_state.json"
             last = 0
             if stfile.exists():
                 try:

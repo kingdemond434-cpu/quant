@@ -94,6 +94,23 @@ def _execution() -> None:
     shadow_execution.main()
 
 
+def _recertify() -> None:
+    """Re-judge every standing certificate under the CURRENT cost model, before the promoter
+    reads the shadow verdicts. The audit never shrinks canon; the promoter refuses to fund a
+    certificate the audit fails (BLOCKED_COST_REGRADE). Unscheduled until 2026-09-05 -- the
+    audit existed, ran by hand once, and nothing read it."""
+    import importlib.util
+    path = BASE / "scripts" / "recertify_canon.py"
+    spec = importlib.util.spec_from_file_location("recertify_canon", path)
+    if spec is None or spec.loader is None:
+        dlog("recertify: scripts/recertify_canon.py not present on this tree")
+        return
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    rc = mod.main()
+    dlog(f"recertify: rc={rc} -> reports/recertification_audit.json")
+
+
 def _promote() -> None:
     import promoter
     promoter.main()
@@ -395,7 +412,8 @@ STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
          ("state_admission", _state_admission),
          ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
-         ("execution", _execution), ("promoter", _promote), ("markout", _markout),
+         ("execution", _execution), ("recertify", _recertify),
+         ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("decay", _decay),
          ("state_research_feedback", _state_research_feedback),
          ("zentech", _zentech), ("conservation", _conservation),
