@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -58,10 +59,34 @@ def hunt_name(raw: object) -> str:
 
 
 def _shadow_spec(row: dict[str, Any]) -> dict[str, Any] | None:
+    """The runnable identity of a certified cell -- INCLUDING the parameters that passed.
+
+    THE PARAMS WERE BEING DELETED AT PUBLICATION, and that is how a certificate becomes a zombie:
+    it passes all ten gates, gets sealed into the canon, is counted in every survivor total, and
+    can never be enrolled or funded because nothing knows how to run it. `shadow_admission` refuses
+    it -- correctly, since guessing a parameterization is running a DIFFERENT strategy than the one
+    that was certified -- and the refusal reads like an admission bug rather than a publication one.
+
+    This function used to rebuild the spec from the cell-ID string alone, and the ID does not carry
+    parameters. The sweep had them all along: `full_pipeline` writes `"params": c["params"]` onto
+    every verdict row, three lines from where the gates are scored. They were dropped one step
+    later, here.
+
+    Measured on the sealed canon 2026-09-05: 6 of 66 certificates carry `params: None` and are
+    refused at enrolment. `session_range_breakout` proves the params are load-bearing rather than
+    decorative -- 15 of its certificates carry parameters and 5 do not, same family, so the missing
+    five are a lost parameterization and not a parameterless strategy.
+
+    `{}` AND `None` ARE DIFFERENT ANSWERS. An empty mapping is a family that genuinely takes no
+    parameters (`overnight_gap_decay`, which enrols and funds fine); `None` is a parameterization
+    that was never recorded. Only the second is a defect, and `publish_qquant_survivors` refuses it
+    rather than sealing another zombie.
+    """
     parts = str(row.get("id") or "").split()
     if len(parts) != 5:
         return None
     symbol, family, side, selector, condition = parts
+    params = row.get("params")
     return {
         "symbol": symbol,
         "family": family,
@@ -71,6 +96,7 @@ def _shadow_spec(row: dict[str, Any]) -> dict[str, Any] | None:
         else condition,
         "is_universe": True,
         "hunt": row.get("hunt"),
+        "params": params if isinstance(params, dict) else None,
     }
 
 
@@ -91,6 +117,17 @@ def publish_qquant_survivors(report: dict[str, Any], reports: Path) -> dict[str,
             continue
         spec = _shadow_spec(row)
         if spec is None:
+            continue
+        if spec.get("params") is None:
+            # REFUSED RATHER THAN SEALED. A certificate with no parameterization is unrunnable
+            # for ever: enrolment cannot guess it, the allocator cannot fund it, and it spends the
+            # rest of its life inflating the survivor count while reaching no capital. Publishing
+            # it is strictly worse than not publishing it, because the desk then believes it holds
+            # an edge it cannot express. Named on stderr so the sweep that produced it can be
+            # fixed, rather than dropped in silence.
+            print(f"REFUSED-UNRUNNABLE: {row.get('id')} passed all ten gates but its sweep "
+                  f"recorded no `params`; sealing it would mint a certificate nothing can run",
+                  file=sys.stderr)
             continue
         hunt = hunt_name(row.get("hunt"))
         key = f"qquant.{hunt}.{row['id']}"
