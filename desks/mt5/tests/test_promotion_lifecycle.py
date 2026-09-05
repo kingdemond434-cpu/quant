@@ -101,16 +101,52 @@ def desk(tmp_path, monkeypatch):
 _GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0}
 
 
-def test_an_uncertified_candidate_is_blocked_not_promoted(desk, monkeypatch):
-    """The strengthened door: meeting every forward criterion promotes NOTHING without the
-    canonical ten-gate certificate -- the refusal is recorded, never silent."""
-    monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set())
+def test_the_authority_set_is_recorded_as_drift_never_a_block(desk, monkeypatch):
+    """UNIVERSAL PROMOTION (principal 2026-09-05). The ten gates gate ENROLMENT: a forward clock
+    exists only because a certificate started it (grandfathering ended 2026-08-26), so a spec
+    missing from TODAY's authority set is registry drift -- a renamed, re-keyed or trampled
+    certificate -- and re-checking it at promotion time held matured clocks out of the book.
+    Drift is written on the row and the sleeve promotes on its own enrolment. An EMPTY authority
+    set (an unreadable canon) is no opinion at all and records nothing."""
+    monkeypatch.setattr(promoter, "authorized_specs",
+                        lambda base=None: {("XAUUSD", "asia", None, "session_range_breakout",
+                                            False)})
     desk.shadow({"CADJPY.asia": dict(_GOOD)})
     promoter.main()
-    assert desk.sleeves() == []
-    st = desk.read_shadow()["CADJPY.asia"]
-    assert st["status"] == "BLOCKED_UNIVERSAL_GATES"
-    assert st["promotion_authority"] is False
+    (s,) = desk.sleeves()
+    assert s["name"] == "CADJPY.asia" and s["status"] == "LIVE"
+    assert s["certificate_drift"] is True
+    assert desk.read_shadow()["CADJPY.asia"]["certificate_drift"] is True
+    monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set())
+    desk.shadow({"CADJPY.london_am": dict(_GOOD)})
+    promoter.main()
+    assert {x["name"] for x in desk.sleeves()} == {"CADJPY.asia", "CADJPY.london_am"}
+    assert desk.read_shadow()["CADJPY.london_am"]["certificate_drift"] is False
+
+
+def test_a_family_clock_promotes_as_family_market_or_names_its_executor_gap(desk, monkeypatch):
+    """Every lane, every family. A matured clock of a family the gateway's executor runs is
+    written LIVE with exec=family_market and its exact identity; one the executor cannot run
+    yet is NOT written as a row the book would fund and hold as air -- the gap is named on the
+    clock (`executor_gap`) and the candidate promotes on the run the executor widens."""
+    ids = {
+        "AUDNZD.dav_range_filter_adx.afternoon": {
+            "symbol": "AUDNZD", "selector": "afternoon", "family": "dav_range_filter_adx",
+            "params": {"adx": 20}, "side": "SHORT"},
+        "EURZAR.overnight_gap_decay.asia": {
+            "symbol": "EURZAR", "selector": "asia", "family": "overnight_gap_decay",
+            "params": {}, "side": "LONG"},
+    }
+    monkeypatch.setattr(promoter, "clock_identities", lambda: ids)
+    desk.shadow({k: dict(_GOOD) for k in ids})
+    promoter.main()
+    (s,) = desk.sleeves()
+    assert s["name"] == "AUDNZD.dav_range_filter_adx.afternoon"
+    assert s["exec"] == "family_market" and s["family"] == "dav_range_filter_adx"
+    assert s["side"] == "SHORT" and s["selector"] == "afternoon" and s["params"] == {"adx": 20}
+    gap = desk.read_shadow()["EURZAR.overnight_gap_decay.asia"]
+    assert gap["status"] == "PROMOTION CANDIDATE"          # still a candidate, never blocked
+    assert "orthogonal" in gap["executor_gap"]
 
 
 # --------------------------------------------------------------------- promote
@@ -129,14 +165,6 @@ def test_an_unconditioned_candidate_promotes_with_a_null_state(desk):
     promoter.main()
     (s,) = desk.sleeves()
     assert s["state"] is None
-
-
-def test_candidate_without_original_ten_gate_certificate_is_blocked(desk, monkeypatch):
-    monkeypatch.setattr(promoter, "authorized_specs", lambda _base: set())
-    desk.shadow({"CADJPY.asia": dict(_GOOD)})
-    promoter.main()
-    assert desk.sleeves() == []
-    assert desk.read_shadow()["CADJPY.asia"]["status"] == "BLOCKED_UNIVERSAL_GATES"
 
 
 def test_promotion_is_idempotent(desk):

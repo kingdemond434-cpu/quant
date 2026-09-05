@@ -7,9 +7,9 @@ reach capital, the exact gap the growth rules forbid.
 
 What is pinned:
 
-  * a matured, certified, Fusion-fed scalp candidate is written LIVE with its exact recipe on the
-    promoter's next run, idempotently; an uncertified one is BLOCKED_UNIVERSAL_GATES; a
-    proxy-fed clock carries no capital authority;
+  * a matured, Fusion-fed scalp candidate is written LIVE with its exact recipe on the
+    promoter's next run, idempotently; the lane's own forward clock is its certificate (no
+    ten-gate path exists for a scalp spec); a proxy-fed clock carries no capital authority;
   * retirement kills the row in the scalp lane itself, so it is never re-promoted;
   * the planner computes the anti-breakout short with the replay's geometry, refuses when there
     is no signal, adds slices only on the replay's conditions, and quarters lots honestly;
@@ -102,11 +102,17 @@ def test_a_matured_certified_scalp_candidate_goes_live_immediately_and_idempoten
     assert len(desk.sleeves()) == 1
 
 
-def test_an_uncertified_scalp_candidate_is_blocked_not_promoted(desk):
-    desk.scalp({_NAME: dict(_CAND)})
+def test_the_forward_clock_is_the_scalp_lanes_certificate(desk):
+    """No ten-gate certificate can exist for an M5/M15 scalp spec, so the lane's own matured
+    forward clock is what promotes it -- and a row that is not a matured candidate does not."""
+    desk.scalp({_NAME: dict(_CAND)})                              # nothing certified by name
     promoter.main()
-    assert desk.sleeves() == []
-    assert desk.read_scalp()["sleeves"][_NAME]["status"] == "BLOCKED_UNIVERSAL_GATES"
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE" and s["certificate"] == "forward_clock"
+    desk.scalp({"other": {**_CAND, "status": "ACCUMULATING"},
+                "immature": {**_CAND, "matured": False}})
+    promoter.main()
+    assert {x["name"] for x in desk.sleeves()} == {_NAME}
 
 
 def test_a_proxy_fed_scalp_clock_carries_no_capital_authority(desk):
@@ -256,12 +262,20 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
     enable = tmp_path / "GENERIC_EXEC_ENABLED"
     if armed_file:
         enable.write_text("", "utf-8")
+    book: list[tuple] = []
     ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "GENERIC_EXEC_ENABLED": enable,
           "datetime": datetime, "UTC": UTC, "pd": pd,
           "promoted_lot": lambda *a, **k: 0.12, "sleeve_live_n": lambda name: 0,
           "margin_ok": lambda *a, **k: True, "_record_intent": lambda **row: intents.append(row),
           "_policy_advice": lambda *a, **k: {"policy": "MARKET"}, "diagnose": lambda *a: "",
-          "_logs": logs, "_intents": intents}
+          # The theoretical-position book and the registry's outcome ledger are measured
+          # beside the executor on the batch that follows; here they record into a list so
+          # the executor's calls are pinned either way.
+          "_book_target": lambda *a, **k: book.append(("target", *a)),
+          "_book_fill": lambda *a, **k: book.append(("fill", *a)),
+          "_record_exec_outcome": lambda *a, **k: book.append(("outcome", *a)),
+          "NEW_RISK_OK": True,
+          "_logs": logs, "_intents": intents, "_book": book}
     return _exec(("run_scalp_sleeves", "close_sleeve_positions", "_retarget_sleeve_positions",
                   "_sleeve_positions"), ns)
 

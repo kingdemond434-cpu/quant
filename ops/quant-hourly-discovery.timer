@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly discovery pass (principal 2026-09-05: every miner hourly, minimum)
+
+[Timer]
+# :35 sits between the external pipeline (:05, compiles the intake) and the seed miners (:22).
+OnCalendar=*:35
+Persistent=true
+
+[Install]
+WantedBy=timers.target
