@@ -46,6 +46,16 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 LOGS = ROOT / "data" / "cro_ai_logs"
 OUT = ROOT / "data" / "seat_launch_yield.json"
+
+#: Per-seat admission floors LEARNED from launches that died. Read by `brain_mem_gate` in
+#: ops/brain_env.sh before every seat launch. Written here and nowhere else -- this file is the
+#: writer the gate's reader needs, and adding the reader without it would have been one more
+#: artifact read by production code with no producer (166 of those are already counted by
+#: scripts/check_read_without_writer.py).
+MEM_FLOOR = ROOT / "data" / "seat_memory_floor.json"
+
+#: What `brain_mem_gate` prints when it admits a launch: "N MB available >= M MB floor -- go".
+_ADMITTED_RE = re.compile(r"brain_mem_gate:\s*(\d+)\s*MB available")
 FLOOR = ROOT / "data" / "seat_launch_yield_floor.json"
 QUOTA_LOG = ROOT / "data" / "brain_quota_windows.jsonl"
 
@@ -153,8 +163,14 @@ def scan(days: float) -> dict[str, object]:
         outcome = classify(text, stat.st_size)
         if outcome.startswith("DIED") and age_h * 3600.0 < SETTLE_SECONDS:
             outcome = "IN_FLIGHT"
+        # THE LEVEL THE GATE ADMITTED THIS LAUNCH AT. `brain_mem_gate` prints
+        # "N MB available >= M MB floor -- go" into the seat's own log, so a launch that later
+        # DIES carries the evidence of how much room the box claimed to have when it was let in.
+        # That is the only measurement of "what this seat needed and did not get" the desk has.
+        _adm = _ADMITTED_RE.search(text)
         launches.append({
             "age_h": age_h,
+            "admitted_mb": int(_adm.group(1)) if _adm else None,
             "seat": m.group(1),
             "hour": int(stamp.group(2)) if (stamp := _STAMP_RE.search(path.name)) else None,
             "outcome": outcome,
@@ -230,6 +246,17 @@ def scan(days: float) -> dict[str, object]:
         "died_recent_24h": sum(1 for x in launches
                                if str(x["outcome"]).startswith("DIED")
                                and float(x.get("age_h") or 999) <= 24),
+        # PER-SEAT FATAL ADMISSION LEVELS: the highest memory reading at which each seat was
+        # admitted and then DIED. Published rather than left inside scan(), because the floor
+        # written from it is a decision and the number behind a decision has to be readable.
+        "fatal_admission_mb": {
+            seat: max(int(x["admitted_mb"]) for x in launches
+                      if x.get("seat") == seat and isinstance(x.get("admitted_mb"), int)
+                      and str(x["outcome"]).startswith("DIED"))
+            for seat in {str(x.get("seat")) for x in launches
+                         if str(x["outcome"]).startswith("DIED")
+                         and isinstance(x.get("admitted_mb"), int)}
+        },
         "dead_seats": dead_seats,
         "not_expected_to_launch": not_expected,
         "not_expected_note": ("regional grounds merged into the unified dig (principal "
@@ -324,6 +351,35 @@ def main() -> int:
         FLOOR.write_text(json.dumps({
             "yield_pct_floor": float(y),
             "raised_at": rep["measured_at"],
+            "measured_by": f"scripts/check_seat_launch_yield.py --days {args.days}",
+        }, indent=1) + "\n", encoding="utf-8")
+
+    # THE FLOOR THAT KILLED A SEAT IS NOW FORBIDDEN FOR THAT SEAT.
+    #
+    # 1500MB was itself the second guess -- 500MB was chosen as "enough that the launch does not
+    # immediately die" and seats died anyway (six gap-wirer OOM kills on 2026-08-28, three more
+    # in the 24h to 2026-09-05, gap-wirer and video-hunter at ZERO produced in seven days).
+    # Raising a guess to a bigger guess is the move that already failed, so this raises it to
+    # something MEASURED: a level at which this seat has been observed to be killed.
+    #
+    # THE RULE IS MINIMAL ON PURPOSE. The floor must merely EXCEED every level proven fatal --
+    # no headroom constant, no multiplier, nothing invented. If the seat dies again higher up,
+    # the floor rises again on the next pass. It only ever rises, like every other ratchet here,
+    # so a quiet box cannot lower a bar a busy one has already broken.
+    deaths = {str(k): int(v) for k, v in (rep.get("fatal_admission_mb") or {}).items()}
+    if deaths:
+        try:
+            prior = json.loads(MEM_FLOOR.read_text("utf-8")).get("floors") or {}
+        except (OSError, ValueError, TypeError):
+            prior = {}
+        floors = {k: int(v) for k, v in prior.items() if isinstance(v, (int, float))}
+        for seat, level in deaths.items():
+            floors[seat] = max(floors.get(seat, 0), level + 1)
+        MEM_FLOOR.write_text(json.dumps({
+            "floors": floors,
+            "rule": ("a seat may not be admitted at a level it has been observed to die at; "
+                     "raised to the fatal level + 1MB, never by a guessed headroom"),
+            "measured_at": rep["measured_at"],
             "measured_by": f"scripts/check_seat_launch_yield.py --days {args.days}",
         }, indent=1) + "\n", encoding="utf-8")
 
