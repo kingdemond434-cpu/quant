@@ -125,10 +125,26 @@ def main() -> int:
         sym = spec.get("symbol") or ""
         sel = spec.get("selector") or ""
         # a clock counts if any forward row names this symbol+selector, however keyed
-        enrolled = any(sym and sym in k and (not sel or sel in k) for k in live_rows)
+        matching = [k for k in live_rows if sym and sym in k and (not sel or sel in k)]
+        enrolled = bool(matching)
         if enrolled:
+            # ENROLLED AND STARVED IS ITS OWN FINDING. A row whose status is BLOCKED_* exists
+            # because the forward engine tried and could not evaluate it (no bars from the
+            # terminal, runtime inputs missing, an evaluation error). That is still forward
+            # evidence not collected, and the row carries the cure; reporting it as "enrolled"
+            # would hide exactly the certificates that need a hand.
+            blocked = [k for k in matching
+                       if str(live_rows[k].get("status") or "").upper().startswith("BLOCKED")]
+            if blocked and len(blocked) == len(matching):
+                k = blocked[0]
+                findings.append(
+                    f"CERTIFIED-BLOCKED: {name} is on a clock that cannot accrue -- "
+                    f"{live_rows[k].get('status')}: "
+                    f"{live_rows[k].get('last_error') or 'no reason recorded'}. The certificate "
+                    f"stands; the cure is on the trading box (bars, inputs), not in the gate.")
             continue
-        stamp = cert.get("certified_at") or cert.get("at") or ""
+        # The external gauntlet stamps `gated_at`; older writers used `certified_at` / `at`.
+        stamp = (cert.get("certified_at") or cert.get("gated_at") or cert.get("at") or "")
         age_h = 999.0
         with contextlib.suppress(ValueError):
             age_h = (now - datetime.fromisoformat(stamp)).total_seconds() / 3600

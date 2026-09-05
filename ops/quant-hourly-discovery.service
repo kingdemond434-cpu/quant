@@ -1,0 +1,17 @@
+[Unit]
+Description=Hourly discovery pass: every miner, proposer and data organ on a bandit-weighted budget
+
+[Service]
+# The proposer sweeps need more than the seed miners' 600M (alpha_evolution and the
+# co-evolution loop hold a feature frame per symbol). MemoryHigh throttles before MemoryMax
+# kills, and every organ runs behind scripts/memory_guard.py so a pass on a crowded box defers
+# with a reason instead of being OOM-killed mid-sweep.
+MemoryHigh=1200M
+MemoryMax=1600M
+MemorySwapMax=0
+CPUWeight=40
+Nice=10
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_hourly_discovery.sh
+TimeoutStartSec=55m

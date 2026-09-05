@@ -6,7 +6,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from desks.mt5.research import scalp_family_expansion as families
 from desks.mt5.research import scalp_shadow
 
@@ -30,8 +29,6 @@ def test_shadow_replay_preserves_frozen_clock_and_records_first_trade(
     monkeypatch.setattr(scalp_shadow, "SHADOW", shadow)
     monkeypatch.setattr(scalp_shadow, "STATE", state)
     monkeypatch.setattr(scalp_shadow, "CANDIDATES", {"candidate": ("M5", choice)})
-    monkeypatch.setattr(scalp_shadow, "authorized_specs", lambda _desk: {
-        ("XAUUSD", "candidate", None, "gold_scalp", False)})
     monkeypatch.setattr(scalp_shadow, "_broker_offset_h", lambda: 0.0)
     monkeypatch.setattr(scalp_shadow, "_trading_lag_hours", lambda *_: 0.0)
     monkeypatch.setattr(scalp_shadow.families, "_base_signals", lambda df: {
