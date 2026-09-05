@@ -14,9 +14,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import gateway  # noqa: E402
-from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
-LOCK = DATA / "gateway.lock"
+# LATENT ON THIS BRANCH, ALREADY CORRECT ON THE BOX'S -- which is the dangerous shape.
+#
+# The live branch fixed this to the desk root; desk-sync-clean and this branch still carried
+# the retired laptop's path. Nothing breaks here because the VPS has no MT5 terminal and never
+# runs this file, so the defect is invisible on the machine that holds it -- and would have
+# been reinstated on the box by the first merge that resolved this file the other way.
+#
+# It matters because of WHERE it sits: `LOCK.write_text()` runs BEFORE `gateway.main()`, so a
+# missing parent directory raises FileNotFoundError before any trading logic is reached, and
+# `LOCK.exists()` being permanently False also disables the overlap guard the lock exists for.
+# Same resolution as the hunt7 sweep below and as `mt5desk.config.desk_root()`.
+LOCK = Path(__file__).resolve().parents[1] / "data" / "gateway.lock"
+LOCK.parent.mkdir(parents=True, exist_ok=True)
 
 
 def main() -> None:
@@ -42,7 +53,7 @@ def main() -> None:
             # WAS the retired laptop's absolute path (C:\Users\dell\mt5-research), which does
             # not exist on Contabo: the weekly sweep read "never swept" every Monday and
             # re-ran hunts 7-12 from scratch. The desk root is where the state lives.
-            stfile = DATA / "hunt7_state.json"
+            stfile = _Path(__file__).resolve().parents[1] / "data" / "hunt7_state.json"
             last = 0
             if stfile.exists():
                 try:
