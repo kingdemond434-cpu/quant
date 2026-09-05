@@ -106,3 +106,27 @@ def test_every_forbidden_entry_carries_a_reason_and_none_is_protected() -> None:
 @pytest.mark.parametrize("bad", ["", "   ", "[kworker/0:1]"])
 def test_a_useless_command_line_matches_nothing(bad: str) -> None:
     assert em.classify(bad) is None
+
+
+def test_it_runs_from_a_copy_outside_the_checkout(tmp_path, monkeypatch) -> None:
+    """THE EMERGENCY PATH. When the checkout cannot merge, the fastest way to free memory is to
+    copy this script to /tmp and run it there. `parents[1]` then resolved to "/" and the script
+    died with PermissionError on /data before stopping a single organ (measured on the VPS,
+    2026-09-05). Pinned: QUANT_ROOT wins, and an unwritable report never costs the enforcement.
+    """
+    repo = tmp_path / "quant-platform"
+    (repo / "scripts").mkdir(parents=True)
+    monkeypatch.setenv("QUANT_ROOT", str(repo))
+    assert em._root() == repo
+
+    monkeypatch.setattr(em, "OUT", Path("/proc/version/nope/mandate.json"))
+    monkeypatch.setattr(em, "installed_units", list)
+    monkeypatch.setattr(em, "_procs", lambda: [
+        {"pid": 31, "rss_mb": 9.0, "etime_s": 5, "cmd": "python scripts/run_crypto_research.py"}])
+    killed: list[int] = []
+    monkeypatch.setattr(em.os, "kill", lambda pid, sig: killed.append(pid))
+    monkeypatch.setattr(em, "TERM_GRACE_S", 0.0)
+    doc = em.enforce(dry_run=False, top=1)
+    # SIGTERM, then the liveness probe, then SIGKILL -- all on the one offending pid
+    assert killed and set(killed) == {31}, "the organ is stopped even when the report fails"
+    assert "report_unwritten" in doc

@@ -48,7 +48,32 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
+
+def _root() -> Path:
+    """The repo this report belongs to, whichever copy of the script is running.
+
+    `parents[1]` alone is wrong for the way this script is actually reached in an emergency:
+    copied to /tmp and run from there (the fastest path to freeing memory when the checkout
+    cannot merge), it resolved ROOT to "/" and died with PermissionError on /data before it had
+    stopped a single organ. A memory fixer that only works from inside a healthy checkout is
+    not a fixer. Order: an explicit QUANT_ROOT, then the script's own repo, then the working
+    directory's repo, then the standard VPS path, then the working directory itself.
+    """
+    env = os.environ.get("QUANT_ROOT")
+    if env and (Path(env) / "scripts").is_dir():
+        return Path(env)
+    here = Path(__file__).resolve().parents[1]
+    if (here / "scripts").is_dir():
+        return here
+    cwd = Path.cwd()
+    for cand in (cwd, *cwd.parents):
+        if (cand / "scripts" / "enforce_mt5_mandate.py").exists():
+            return cand
+    vps = Path("/home/quant/quant-platform")
+    return vps if (vps / "scripts").is_dir() else cwd
+
+
+ROOT = _root()
 OUT = ROOT / "data" / "mandate_enforcement.json"
 
 #: Crypto-exchange HUNTERS: scripts whose purpose is to discover, screen or collect
@@ -262,8 +287,13 @@ def enforce(*, dry_run: bool = False, top: int = 15) -> dict[str, Any]:
         "mandate": ("MT5/Fusion universe only (principal 2026-08-18). Fusion-executable crypto "
                     "CFDs are in scope; crypto-exchange-native hunting is not."),
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    # THE REPORT MUST NEVER COST THE ENFORCEMENT. Note-taking that fails is worth strictly less
+    # than memory that was freed; the document is returned and printed either way.
+    try:
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    except OSError as exc:
+        doc["report_unwritten"] = f"{OUT}: {type(exc).__name__}: {exc}"
     return doc
 
 
