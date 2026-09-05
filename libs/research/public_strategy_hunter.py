@@ -146,7 +146,17 @@ def discover(source: Source, getter: Callable[[str], bytes] = fetch) -> list[dic
     # item-level strategy claims. Specialized feeds discovered in its links can be added later.
     payload = getter(source.url)
     digest = hashlib.sha256(payload).hexdigest()
-    text = re.sub(r"<[^>]+>", " ", payload.decode("utf-8", errors="ignore"))
+    raw = payload.decode("utf-8", errors="ignore")
+    # STRIP EXECUTABLE BODIES BEFORE THE TAG STRIP (defect measured 2026-08-30, frontier).
+    # `<[^>]+>` removes the <script>/<style> TAGS and keeps everything BETWEEN them, so the
+    # extractor was being handed JavaScript: 75.3% of the 3.65M description chars in
+    # gpt_practitioner_corpus.jsonl were JS-shaped, and because head-of-document scripts come
+    # FIRST, 51 of 183 rows hit the 50,000-char cap on JS alone -- the prose was truncated away
+    # while the noise was kept. This is not a cosmetic clean-up: it is the difference between
+    # feeding the extractor a page and feeding it a bundle.
+    raw = re.sub(r"(?is)<(script|style|noscript|template)\b[^>]*>.*?</\1\s*>", " ", raw)
+    raw = re.sub(r"(?s)<!--.*?-->", " ", raw)
+    text = re.sub(r"<[^>]+>", " ", raw)
     text = re.sub(r"\s+", " ", html.unescape(text)).strip()
     return [
         {

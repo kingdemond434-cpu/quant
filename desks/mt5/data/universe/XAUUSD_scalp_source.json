@@ -1,13 +1,13 @@
 {
-  "fetched_at": "2026-08-23T04:15:19+00:00",
-  "source_server": "FusionMarkets-Live",
-  "source_company": "Fusion Markets Pty Ltd",
-  "account_trade_allowed": true,
+  "fetched_at": "2026-08-22T22:00:11+00:00",
+  "source_server": "VantageMarkets-Live 14",
+  "source_company": "VIG Group Ltd.",
+  "account_trade_allowed": false,
   "symbol": "XAUUSD",
   "rows": {
     "M1": 20000,
     "M5": 20000,
     "M15": 20000
   },
-  "promotion_authority": true
+  "promotion_authority": false
 }

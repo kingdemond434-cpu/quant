@@ -52,6 +52,7 @@ def test_overnight_contract_names_the_authority_and_collision_free_units() -> No
     assert contract["venue_scope"] == "MT5_FUSION_ONLY"
     assert contract["pipeline"] == [
         "ops/run_midnight_frontier.sh",
+        "scripts/run_midnight_completion.py",
         "scripts/build_mt5_midnight_state.py",
         "ops/run_midnight_codex_controller.sh",
     ]
@@ -64,6 +65,7 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
         "check_constitution_core.py",
         "codex login status",
         "--sandbox danger-full-access",
+        "--dangerously-bypass-approvals-and-sandbox",
         "controller_checkpoint.py claim",
         "controller_checkpoint.py heartbeat",
         "controller_checkpoint.py checkpoint",
@@ -92,7 +94,11 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     service = SERVICE.read_text("utf-8")
     assert "CODEX_NIGHTLY_MODEL=gpt-5.6-terra" in service
     assert "CODEX_NIGHTLY_REASONING_EFFORT=medium" in service
-    assert "--dangerously-bypass-approvals-and-sandbox" not in source
+    for resource_control in ("MemoryHigh=1200M", "MemoryMax=1500M", "CPUWeight=25",
+                             "IOSchedulingClass=idle", "OOMPolicy=stop"):
+        assert resource_control in Path("ops/quant-external-pipeline.service").read_text("utf-8")
+    assert "CODEX_GLOBAL_ARGS=(--dangerously-bypass-approvals-and-sandbox)" in source
+    assert "CODEX_EXECUTION_ARGS=(--sandbox danger-full-access)" in source
     assert source.index("check_constitution_core.py") < source.index(
         "controller_checkpoint.py claim"
     ) < source.index("cat ops/midnight_codex_prompt.txt")
@@ -106,9 +112,18 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert '|| TRANSFER_RC=$?' in source
 
 
+def test_shadow_forward_service_can_import_certified_enrolment_modules() -> None:
+    service = Path("ops/shadow-forward.service").read_text("utf-8")
+    assert "sys.path.insert(0,'research')" in service
+    assert "from research.shadow_forward import main" in service
+
+
 def test_midnight_builds_mt5_state_before_reasoning() -> None:
     wrapper = WRAPPER.read_text("utf-8")
     assert wrapper.index("--pipeline-start") < wrapper.index("build_mt5_midnight_state.py")
+    assert wrapper.index("run_midnight_completion.py") < wrapper.index(
+        "build_mt5_midnight_state.py"
+    )
     assert "MT5/Fusion-only" in wrapper
     assert "legacy crypto-wide study registry" in wrapper
 
@@ -130,6 +145,8 @@ def test_controller_prompt_is_one_compact_mt5_only_operating_brief() -> None:
         "implementation ledger of at most 300 words",
         "never a replacement, reduction or amendment",
         "preserve every master obligation",
+        "TIER1_CONTROLLER_MANDATE.md",
+        "tier-1 institutions",
     ):
         assert required.casefold() in prompt.casefold()
     assert MANDATE.exists() and len(MANDATE.read_text("utf-8")) > 20_000

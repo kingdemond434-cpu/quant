@@ -1,0 +1,470 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Explaining the Risk Neutral Measure",
+  "url": "https://quant.stackexchange.com/questions/55239/explaining-the-risk-neutral-measure",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 35,
+  "tags": [
+   "option-pricing",
+   "stochastic-processes",
+   "risk-neutral-measure",
+   "pricing",
+   "martingale"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "GBM with adjusted normal distribution",
+  "url": "https://quant.stackexchange.com/questions/85269/gbm-with-adjusted-normal-distribution",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "monte-carlo",
+   "geometric-brownian",
+   "stochastic-drift"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "APIs to get first notice date for relevant commodities / futures?",
+  "url": "https://quant.stackexchange.com/questions/85816/apis-to-get-first-notice-date-for-relevant-commodities-futures",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "programming",
+   "futures",
+   "commodities"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Market price of volatility risk",
+  "url": "https://quant.stackexchange.com/questions/16138/market-price-of-volatility-risk",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 8,
+  "tags": [
+   "stochastic-volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Caplet stripping in the bwd-looking RFR world with/without maturity adjustment",
+  "url": "https://quant.stackexchange.com/questions/69900/caplet-stripping-in-the-bwd-looking-rfr-world-with-without-maturity-adjustment",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 8,
+  "tags": [
+   "interest-rates",
+   "implied-volatility",
+   "european-options",
+   "caplet",
+   "rfr"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Estimating Zero Coupon Curve using only Fixed-Coupon bonds available",
+  "url": "https://quant.stackexchange.com/questions/71590/estimating-zero-coupon-curve-using-only-fixed-coupon-bonds-available",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "estimation",
+   "yield",
+   "fixed",
+   "income"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Looking for non-GAUSS Code for Thiery Roncalli&#39;s book on Risk Parity and Budgeting",
+  "url": "https://quant.stackexchange.com/questions/57737/looking-for-non-gauss-code-for-thiery-roncallis-book-on-risk-parity-and-budgeti",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 3,
+  "tags": [
+   "programming",
+   "risk-management",
+   "risk-parity"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Framework for hypothesis testing and non-linear signal extraction in alternative data",
+  "url": "https://quant.stackexchange.com/questions/85737/framework-for-hypothesis-testing-and-non-linear-signal-extraction-in-alternative",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "statistics",
+   "machine-learning",
+   "economics",
+   "data-mining"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Is there existing work on detecting look-ahead bias by perturbing future data and re-running the feature pipeline?",
+  "url": "https://quant.stackexchange.com/questions/85733/is-there-existing-work-on-detecting-look-ahead-bias-by-perturbing-future-data-an",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 1,
+  "tags": [
+   "time-series",
+   "data",
+   "backtesting",
+   "machine-learning"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Hedge a down-and-in BTC put?",
+  "url": "https://quant.stackexchange.com/questions/77704/hedge-a-down-and-in-btc-put",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "hedging"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "European OTC options and their listed equivalent - CSA vs margin",
+  "url": "https://quant.stackexchange.com/questions/85267/european-otc-options-and-their-listed-equivalent-csa-vs-margin",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 2,
+  "tags": [
+   "options",
+   "margin",
+   "collateral"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to price an option on future using a binomial tree?",
+  "url": "https://quant.stackexchange.com/questions/85452/how-to-price-an-option-on-future-using-a-binomial-tree",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 1,
+  "tags": [
+   "options",
+   "option-pricing",
+   "futures",
+   "derivatives",
+   "binomial-tree"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Accrued interest for a bond with a long first coupon: should the long coupon period be split into quasi-coupon periods?",
+  "url": "https://quant.stackexchange.com/questions/85739/accrued-interest-for-a-bond-with-a-long-first-coupon-should-the-long-coupon-per",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 1,
+  "tags": [
+   "fixed-income",
+   "bond",
+   "quantlib",
+   "daycounting",
+   "accrued-interest"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Portfolio Optimization with Options Using Only the P Measure",
+  "url": "https://quant.stackexchange.com/questions/85748/portfolio-optimization-with-options-using-only-the-p-measure",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "portfolio-optimization",
+   "simulations"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Black Scholes PDE explicit Scheme",
+  "url": "https://quant.stackexchange.com/questions/75027/black-scholes-pde-explicit-scheme",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "black-scholes-pde",
+   "finite-difference-method"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Calculation of Total Credit Risk Capital % but seeing lower capital percentage for higher risk band. Is there any correction required?",
+  "url": "https://quant.stackexchange.com/questions/69176/calculation-of-total-credit-risk-capital-but-seeing-lower-capital-percentage-f",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 1,
+  "tags": [
+   "risk",
+   "risk-management",
+   "credit-risk",
+   "risk-models",
+   "default-probability"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "$\\mathbb{P}$ vs. $\\mathbb{Q}$ measure in FX options",
+  "url": "https://quant.stackexchange.com/questions/85719/mathbbp-vs-mathbbq-measure-in-fx-options",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 2,
+  "tags": [
+   "risk-neutral-measure",
+   "itos-lemma",
+   "currency",
+   "real-world-measure"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Pricing of Callable Bonds and Coupon Behavior",
+  "url": "https://quant.stackexchange.com/questions/85797/pricing-of-callable-bonds-and-coupon-behavior",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "fixed-income",
+   "duration",
+   "convexity",
+   "callable-bonds"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Prove that an It&#244; integral is a martingale",
+  "url": "https://quant.stackexchange.com/questions/85732/prove-that-an-it%c3%b4-integral-is-a-martingale",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 1,
+  "tags": [
+   "stochastic-calculus",
+   "martingale",
+   "proof"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Proxy Volatility",
+  "url": "https://quant.stackexchange.com/questions/85666/proxy-volatility",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 1,
+  "tags": [
+   "volatility",
+   "implied-volatility",
+   "correlation",
+   "volatility-surface",
+   "cointegration"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How do you regularize piecewise constant and linear interpolations?",
+  "url": "https://quant.stackexchange.com/questions/85709/how-do-you-regularize-piecewise-constant-and-linear-interpolations",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 2,
+  "tags": [
+   "yield-curve",
+   "interpolation",
+   "curve-fitting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Local Volatility smile dynamics",
+  "url": "https://quant.stackexchange.com/questions/81545/local-volatility-smile-dynamics",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "implied-volatility",
+   "local-volatility",
+   "volatility-smile"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Discounting and XVA for Securities Lending",
+  "url": "https://quant.stackexchange.com/questions/85750/discounting-and-xva-for-securities-lending",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 1,
+  "tags": [
+   "finance",
+   "discounting",
+   "repo",
+   "xva"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Using the Hull-White model to find the 2026 value in the US bond plot",
+  "url": "https://quant.stackexchange.com/questions/85789/using-the-hull-white-model-to-find-the-2026-value-in-the-us-bond-plot",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 1,
+  "tags": [
+   "stochastic-processes",
+   "bond-yields",
+   "hullwhite"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How can I separate MPC policy error from the value of perfect information in event-driven portfolio allocation?",
+  "url": "https://quant.stackexchange.com/questions/85800/how-can-i-separate-mpc-policy-error-from-the-value-of-perfect-information-in-eve",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 0,
+  "tags": [
+   "portfolio-management",
+   "asset-allocation",
+   "performance-evaluation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to interpret the physical meaning of cointegration vectors of log prices in real world",
+  "url": "https://quant.stackexchange.com/questions/80240/how-to-interpret-the-physical-meaning-of-cointegration-vectors-of-log-prices-in",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 3,
+  "tags": [
+   "equities",
+   "pairs-trading",
+   "cointegration"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "For a bet, that is about information lag. What is a forumula we can use to calculate approximate confidence to help size the bet?",
+  "url": "https://quant.stackexchange.com/questions/85803/for-a-bet-that-is-about-information-lag-what-is-a-forumula-we-can-use-to-calcu",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": -1,
+  "tags": [
+   "finance-mathematics",
+   "algorithmic-trading",
+   "machine-learning",
+   "position-sizing",
+   "betting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "What is the most convenient data structure for backtesting a model of futures options prices?",
+  "url": "https://quant.stackexchange.com/questions/14351/what-is-the-most-convenient-data-structure-for-backtesting-a-model-of-futures-op",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 11,
+  "tags": [
+   "options",
+   "data",
+   "backtesting",
+   "futures"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Model Price vs Market Price in terms of Fair Price (Options)",
+  "url": "https://quant.stackexchange.com/questions/21443/model-price-vs-market-price-in-terms-of-fair-price-options",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 9,
+  "tags": [
+   "options",
+   "option-pricing",
+   "european"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "What best price fit by option P/L means in math terms?",
+  "url": "https://quant.stackexchange.com/questions/82259/what-best-price-fit-by-option-p-l-means-in-math-terms",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:42+00:00",
+  "score": 1,
+  "tags": [
+   "options",
+   "optimization",
+   "european-options"
+  ]
+ }
+]

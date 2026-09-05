@@ -492,6 +492,21 @@ marked [UNVERIFIED] and must be negative-controlled before budget is spent on th
 | ошибка выжившего | survivorship bias — the RU term, and a smart-lab keyword tag. Finds the RU data-hygiene corpus, which is where the point-in-time/universe discussion actually lives | perennial | [V] smart-lab 1336741 keyword tags (2026-08-13) | `ошибка выжившего бэктест состав индекса` |
 | переподгонка | overfitting — RU practitioner term (not "оверфиттинг"); pairs with `подгонка` (fitting). Finds the validation-discipline layer rather than the vendor layer | perennial | [V] smart-lab 1335532 body (2026-08-13) | `переподгонка walk-forward количество попыток` |
 
+### OP-041 CN deep-forest story grounds via search-engine `site:` routes           [active]
+class: multilingual-pattern / route-ladder
+origin: principal order 2026-09-04 ("the deep Chinese web is still absolutely worth mining")
+technique: grounds that refuse a datacenter fetch (知乎 403, CSDN timeout, 雪球 WAF, 淘股吧, 经管之家) are
+  reached through Bing (`site:zhihu.com 黄金 日内 交易 策略 实盘 经验`, setlang=zh-CN) with DuckDuckGo html as
+  the second engine; platforms with APIs are read natively (Gitee api/v5 search+readme, Bilibili WBI search +
+  player/v2 subtitles, 掘金 search_api, 微信 via 搜狗); JS shells (聚宽/优矿/米筐/BigQuant) through the
+  rendered fetch. Query bank lives in desks/mt5/data/deep_forest_sources.json; every claim (quantity +
+  direction + horizon, zh or en) is queued as story_mechanism with the instrument mapped to its MT5
+  analogue and provenance; result URLs are fed to the world-crawler frontier. Competition records
+  (期货日报实盘大赛, 蓝海密剑) and interviews (七禾网, 私募排排网) are the highest-yield register: numbers plus
+  a stated method. A story's numbers are evidence about the story, never about the mechanism.
+adaptations: per-region site: lists (KR: dcinside/naver blogs, JP: note/qiita, RU: smart-lab) reuse the same
+  route ladder and claim grammar; add the region's instrument aliases to mechanism_claims.INSTRUMENT_ALIASES.
+
 ## ARCHIVED
 (none yet)
 
@@ -596,6 +611,19 @@ marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/API
 | MT | — | CN-era abbreviation for MtGox ("MT大跌") | ✓(08-19) coinsbbs thread-120 #229 (2013-12-07) — era key; "门头沟" (the later folk name) post-dates the 2014 collapse, so MT is the IN-ERA search key |
 | 搬砖群 / 板砖群 | banzhuanqun | closed QQ arb groups — the era's edge-distribution channel ("绝密", full by 2013-12); 板砖 is a live typo-variant of 搬砖 | ✓(08-19) coinsbbs thread-120 #171/#173 — search both orthographies; the group layer itself is §13-closed, but the term finds the RECRUITMENT/advertisement threads which are public |
 | 回复可见 / 隐藏内容 / 阅读权限 | huifukejian / yincang neirong / yuedu quanxian | reply-to-view / hidden content / read-permission — Discuz gate MARKERS, method vocabulary not slang | ✓(08-19) OP-088's discovery inversion: query gate-marker + 教程/策略/搬砖 to enumerate exactly the threads the era gated — the ranked where-the-edges-were shortlist |
+| 贴水 | tieshui | SGE gold trading BELOW international parity (antonym 升水 = premium; unobserved this session) | ✓(08-25, MT5-era row) cngold "贴水扩大至8.07元/克" — pair with 沪金/伦敦金 to find premium-regime threads |
+| 延期补偿费 / 延期费 | yanqi buchangfei / yanqifei | SGE T+D deferred compensation fee — the funding-rate analog on CN gold/silver; direction set by delivery-declaration imbalance (递延费 is a common variant, unobserved this session) | ✓(08-25) SGE official spec + cngold; THE key for CN gold carry/positioning lore |
+| 交收申报 / 中立仓 | jiaoshou shenbao / zhonglicang | delivery declaration / neutral-warehouse declaration — the 15:00–15:40 CST window that SETS the fee direction | ✓(08-25) SGE spec; microstructure vocabulary, finds rules + lore the retail words miss |
+| 空头付多头 / 多付空 | kongtou fu duotou | shorts-pay-longs (fee direction reading); abbreviated 空付多/多付空 | ✓(08-25) cngold; the direction-flip event key |
+| 对赌 / 对赌盘 | dudu/ dudupan (duìdǔ) | member-firm B-book — the house takes the other side of its own clients | ✓(08-25) 2014 南都 exposé + 武久文 legal analysis; THE bucket-shop-era mechanics key |
+| 吃头寸 | chi toucun | "eating the position" = booking client losses as house revenue (头寸 = the client-loss pool rebated to member firms) | ✓(08-25) exposé, insider-quoted; finds B-book economics threads |
+| 喊单 / 带盘 / 老师 / 托 | handan / daipan / laoshi / tuo | call-room signal-calling / guided trading / the "teacher" / the shill | ✓(08-25) exposé + legal analysis; the call-room-structure key set |
+| 刷单 | shuadan | churning client accounts for fees (advisor-driven turnover) | ✓(08-25) exposé (¥500k → ¥40M turnover in 10 days); finds churn-complaint threads |
+| 反向跟单 / 反跟单 | fanxiang gendan | reverse copy-trade — industrial fading of aggregate retail flow; an entire CN software-vendor genre | ✓(08-25) vendor corpus qhfgd.com (68-part series, unmined); BOTH orthographies needed |
+| 滑点 | huadian | slippage — in bucket-shop context an ADMINISTERED per-client parameter, not a market outcome | ✓(08-25) back-office menu screenshot ("滑点金额：10"); pairs with 后台 for software-manipulation lore |
+| 维权 | weiquan | victims' rights-defense — collapse/fraud aftermath threads (QQ groups, HQ sieges) | ✓(08-25) exposé; 维权 + venue name = the post-mortem layer of ANY dead CN platform, era-universal |
+| 清理整顿 | qingli zhengdun | the State-Council venue cleanup (38号文 2011 / 37号文 2012 / 2017 回头看) | ✓(08-25) CSRC official Q&A; THE era-boundary key for the bucket-shop stratum |
+| 现货白银 / 贵金属交易所 | xianhuo baiyin / guijinshu jiaoyisuo | "spot silver" / local precious-metals bourse — the 2011-2017 CFD-shaped retail era on gold/silver | ✓(08-25) all primary sources this run; the era's own name for itself |
 
 ### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
 class: extraction
@@ -2689,6 +2717,38 @@ expecting enums.
 **Also confirmed from the wild (see OP-084): `ts_zscore`, `ts_av_diff`, `ts_corr`, `group_rank` are
 real platform operators** — `ts_zscore` is one of the six this desk still lacks.
 
+### 2026-08-30 addendum — OP-083 now has executable population semantics and four falsifiers
+
+Public MIT `myacgl/ProdMemo` at `c0e2402bb199c2aef82d6377ccb44e8bde671711` gives the first
+reproducible specification found for the *population* behind BRAIN correlation diagnostics. It
+first-differences cumulative PnL over four calendar years, compares within region, separates the
+user's OS pool from `POWER_POOL:POWER_POOL_ELIGIBLE`, and persists pool size, window, algorithm
+version and a pool fingerprint. Platform production correlation is a third, distinct record and is
+cached with its own timestamp. That sharpens OP-083: **candidate-vs-prior, candidate-vs-peer pool,
+and candidate-vs-production are three denominators, never aliases.** DERIVES-FROM: NONE declared
+for the local correlation implementation (checked README and source). [§33: screened ->
+`data/brain_hunter_s35_active_book_correlation_audit.json`]
+
+Public MIT `Fin-Agentian/openalpha` at `405828e54f2be8c1d8b5facead3f537f8490727c` independently
+states the correct portfolio question—rank passing candidates by residual PnL variance against the
+ACTIVE book—but its implementation supplies four **negative controls** for any R0602 repair:
+
+1. it refuses to measure a book with fewer than two incumbents, although one incumbent is already a
+   valid candidate-vs-book comparison;
+2. it selects the 200 highest-Sharpe candidates *before* independence, deleting modest-standalone,
+   high-marginal candidates before the relevant score exists;
+3. `LinAlgError` returns `resid_frac=1.0`, awarding a failed projection maximum independence; and
+4. its PnL cache has no TTL or content revision, so a live portfolio decision can consume an
+   arbitrarily stale return panel.
+
+The MT5 analogue is candidate net-R versus every deployed Fusion sleeve and the book aggregate on
+jointly observable forward timestamps, using point-in-time bid/ask, fills, spread, commission, swap
+and markout. `translate_to_mt5("production correlation active portfolio orthogonality")` currently
+returns no row, so this explicit mapping is also a named translation-table gap; absence was not read
+as no analogue. Thresholds do not transfer. The instrument does. OpenAlpha explicitly derives from
+a private IQC 2026 harness and named legacy scripts, so it is convergence at the **method** level,
+not an independent implementation lineage.
+
 ---
 
 ## OP-084 — MEASURED: THE INDEPENDENCE CAME FROM THE **DATA**, NOT THE **MATH** (49 fields, 8 operators, 48/50 single-operator)
@@ -3264,3 +3324,1473 @@ absorbing the page's sidebar and "read next" chrome. Measured on smart-lab 13355
 comment scored `density=20` with roughly half its tokens from nav furniture, against `13` for the
 genuine best. **Truncate each block at the site's nav marker** (smart-lab: `Читайте на SMART-LAB:`)
 before scoring, or the ranker systematically promotes whichever comment is last.
+
+## OP-095 — TRANSFORM THE ARRIVALS, NOT THE EMPTY DAYS: MATCH THE OPERATOR CLOCK TO THE SOURCE CLOCK (BRAIN hunter s5, 2026-08-24)   [active]
+
+**SOURCE:** `zl3311/alpha-mining` public research archive, `POSTMORTEM.md` plus all 28 indexed
+`data/knowledge/dead_zones/*.md` analyses (MIT for methodology/author analysis; its `DATA-NOTICE.md`
+explicitly withholds reuse authority for submitted formulas and platform-derived field metadata).
+Read as text only: no BRAIN credential, API call, formula reuse or third-party execution.
+**DERIVES-FROM:** NONE (checked in each dead-zone note; session ids are internal evidence links,
+not citations to an outside method). Desk-side convergence is independent: the COT/macro stack
+already preserves release/vintage semantics, but the operator library had no general cadence rule.
+
+**WHAT IT COMPUTES / REFUSES.** Before applying a rolling transform, measure the source's genuine
+update process. For a field that is flat between discrete releases, do **not** manufacture daily
+"observations" and then apply overlapping-window differences, `delta/std`, a fast sign gate, or a
+short-vs-long window subtraction. Those transformations mostly measure distance from the last
+release and denominator noise. Represent the new information as:
+
+1. the point-in-time release innovation at first availability;
+2. an event clock since release; or
+3. a slow state held unchanged until the next legitimate update.
+
+This is a search operator, not a universal negative claim. The same window transform can be valid
+on a dense price, quote, IV or execution series; the refusal is **field-clock specific**. The source
+itself contains the falsifier: multi-horizon transforms remained explicitly untested on dense
+series and therefore cannot be graveyarded there.
+
+**FUSION MT5 ANALOGUE — exact and point-in-time.** `translate_to_mt5()` returns no row for the
+phrase "update cadence"; that empty result is recorded as a mapping gap, not permission to reuse a
+crypto destination. The manual active-venue translation is weekly CFTC COT pressure and scheduled
+macro releases mapped to Fusion `EURUSD`, `GBPUSD`, `USDJPY`, `XAUUSD` (and their cross-pair
+descendants). COT's Tuesday reference state becomes observable only at the official Friday release;
+a revised macro value is unavailable before its vintage timestamp. Use H1/D1 decisions after
+first-seen, and price every candidate with the Fusion contract's observed median spread points ×
+tick value plus long/short swap across any held rollover. Never forward-fill a future release into
+earlier bars and never count the unchanged days as independent observations.
+
+**SAME-RUN VERDICT.** `[§33: screened]` as methodology, not alpha: repository audit found no new
+tradeable hypothesis was created, so no Stage-A trial or forward clock was minted. The public
+equity backtests are selection-biased ore and do not establish a Fusion return. Artifact:
+`data/brain_hunter_s5_20260824.json`.
+
+---
+
+## OP-096b — CDX ATTACHMENT-CORPUS HARVEST: a dead vBulletin board's file uploads are a minable code corpus (EN miner s-J, 2026-08-25)
+
+**THE OPERATOR.** For any dead/archived vBulletin-era forum, the Wayback CDX index exposes the
+board's ATTACHMENT namespace as a flat, filterable file corpus — no thread crawling needed:
+
+    http://web.archive.org/cdx/search/cdx?url=<domain>&matchType=domain
+      &filter=original:.*attachments/<subforum-slug>.*&filter=statuscode:200
+      &collapse=urlkey&fl=timestamp,original
+
+Demonstrated live on forex-tsd.com (dead pre-MQL5 MT4/MT5 EA community, 2005–2015): the PUBLIC
+`attachments/digital-filters/` namespace returns archived `.mq4`/`.mqh` SOURCE FILES with 200s
+(Jurik JJMASeries.mqh, jvel1, AMA 2007, DTM 2007, T3 variants) plus posted MT4 equity statements
+(`*mtstatement*.htm` — era-authentic BACKTEST-MINER ore, claimed-not-verified). File-ID URL
+schemes carry POST DATES in the slug (`100541d1271046538` = attachment 100541, unix 1271046538),
+so the corpus is datable without the thread. Thread TEXT lives in parallel under the pre-2013
+URL shape `/<subforum>/<id>-<slug>-<page>.html` with `-print` variants (clean text, ~10 posts/pp).
+**ROUTE NOTE (this box, measured 2026-08-25): web.archive.org is UNREACHABLE via WebFetch but
+fully reachable via curl — use the shell route for Wayback, always.**
+
+**§13 BOUNDARY, encoded as a PATH RULE:** on forex-tsd.com the paid closed-group areas live under
+`attachments/advanced-elite/`, `attachments/elite-section/`, `/forum/exclusive-forum/*` — HARD
+STOP even though Wayback captured them (mining a paid section via the archive is routing around
+access control). The free-registration public subforums (`digital-filters`, `trading-systems/
+graduated/*`, `broker-talks`, `indicators-expert-systems`) are in scope. Apply the same
+path-partition test to every archived board before mining it.
+
+**PER-REGION ADAPTATIONS (charter §16):** RU — the same vBulletin attachment shape on archived
+forex.kbpauk.ru / onix boards; the RU school is the ORIGIN of this corpus (see OP-096c provenance).
+CN — Discuz! boards use `attachment.php?aid=` (query-string, needs `matchType=domain` + filter on
+`attachment`); JP — 2ch-era boards carry no attachments (text-only; skip the operator, mine dat
+mirrors). EN — Steve Hopwood forums / Donna Forex (both dead) publish the same shape; NEXT GROUND.
+
+## OP-096c — RETAIL DSP FILTER FAMILY as unary feature transforms + the ADAPTIVE-LENGTH composition pattern (era-archaeology, Forex-TSD digital-filters 2005–2013)
+
+**WHAT THE ERA BUILT** (public subforum, thread 198 "jurik", 29 archived pages 2007–2009, read
+this run): a coherent school of LOW-LAG SMOOTHERS used as feature transforms on FX/gold/index
+bars — exactly the MT5 universe. Family: **JMA** (Jurik adaptive MA; phase param −100..+100),
+**JRSX** (noise-reduced RSI), **CFB** (composite fractal behavior — a market-state functional
+returning an ADAPTIVE LENGTH), **AMA** (Kaufman), **T3** (Tillson), **FATL/SATL/RFTL/RSTL**
+(Finware fixed-coefficient spectral FIR filters), **NRTR** (trailing-reverse state). All were
+MT4-implementable and traded on exactly Fusion's instruments (EURUSD/GBPUSD/XAUUSD, H1 and
+below).
+
+**THE TRANSFERABLE PATTERN (the process, not the formula):** the era separated the SMOOTHER from
+the PERIOD-SELECTOR — `adaptive_length = f(market_state)` composed with ANY base operator:
+thread-documented construction `JRSX.length = ceil(Lo + norm(CFB) * (Hi − Lo))`. That is a
+first-class operator-library pattern: `base_op(series, length=state_fn(series))` — an unary
+transform whose window is itself a feature. The desk's operator set has fixed-window transforms;
+a state-driven window is the structural upgrade this ground contributes. MT5 translation: apply
+to H1 FX/gold features (trend-state estimator drives lookback of momentum/zscore transforms);
+price with Fusion spread+swap as always; every (state_fn, base_op, hi, lo) cell is a DSR-counted
+trial — the era swept these visually, which is precisely why its curves cannot be trusted.
+
+**PROVENANCE / DERIVES-FROM (recorded so convergence cannot be double-counted, GAP #85):** the EN
+Forex-TSD corpus is substantially a TRANSLATION LAYER over the RU MQL school — thread-explicit:
+"I translated those mt4 indicators from russian language"; JJMASeries.mqh authored by **Nikolay
+Kositsin** (RU; his libraries live on today, public, in the MQL5 codebase); FATL/SATL are Finware
+(RU) filters. ANY future EN↔RU "independent convergence" on this family is ONE reading of one
+school, not two events.
+
+**FREE FALSIFICATION CONTEXT (era's own debunking layer, harvested):** (1) REPAINT SIGNATURE
+spotted by a user in 2007 in the thread's own words — "a 3rd color … can be seen on older data,
+but on current data only two colors are seen": an indicator whose HISTORICAL bars differ from its
+LIVE bars is repainting, and every visual/era backtest of a repainting construct is invalid. TEST:
+record live values, recompute historically, diff. (2) The era's equity evidence is posted MT4
+statements on B-book demo/micro accounts, pre-cost — ore, never evidence. `[§33: screened]` as
+methodology: no tradeable hypothesis minted this run, no Stage-A trial, no forward clock; the
+contribution is the operator pattern + provenance + the two falsifiers, routed here.
+
+## OP-097 — EASTMONEY `push2his` KLINE BY MARKET NAMESPACE: CN-listed non-equity instruments have a keyless daily-history API, and its rate limit masquerades as a DEAD ROUTE (CN frontier miner s12, 2026-08-25)   [active]
+
+**THE ROUTE.** `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=<MKT>.<CODE>&klt=101`
+`&fqt=0&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58&beg=0&end=20500101`
+`&lmt=<N>` with `Referer: https://quote.eastmoney.com/`. Keyless, JSON, daily rows as CSV strings
+`date,open,close,high,low,volume,amount,amplitude`. `klt` 102/103 = weekly/monthly (untested).
+**THE NAMESPACE IS THE FIND**: `<MKT>` selects an EXCHANGE, and the coverage extends far past
+A-shares. VERIFIED this run: **118 = Shanghai Gold Exchange** — `118.AU9999` (Au99.99 spot
+benchmark, daily from **2004-01-02**, 5,511 rows, CNY/gram), `118.AUTD` (gold T+D from
+2012-06-05). UNVERIFIED leads for the MT5 translation layer (probe with the same recipe): SHFE /
+INE / DCE / CZCE / CFFEX market codes would give 沪铜/沪银/SC crude etc. — the 内外盘 ratio legs
+for copper/silver/oil CFDs; akshare/efinance source code is the free market-code index.
+**THE THROTTLE MASQUERADES AS A DEAD ROUTE (false-null family, OP-069's transport class):** burst
+calls are answered with a **TLS drop** — curl `SSL_read: unexpected eof`, urllib
+`RemoteDisconnected` — never HTTP 429, and the cooldown persists ≥30min once tripped. Two
+correct calls then hard EOFs on every subsequent attempt looks EXACTLY like "the route died";
+it is the rate limiter. RECIPE: space calls ≥10-20s, window bulk history via `beg`/`end`
+year-chunks, and treat a TLS-layer failure on a route that JUST worked as a cooldown signal —
+switch task and return, never re-probe in a loop (each probe may extend the window).
+**PER-REGION ADAPTATIONS (charter §16):** CN — as above; the same host also serves guba sentiment
+(source_alternatives.py already catalogues it) so one cooldown can starve two collectors: schedule
+them apart. KR/JP — Naver/Rakuten finance chart APIs are the analogous quote-page backends; when
+one "dies" mid-session, test the TLS-drop-vs-429 distinction before recording a WALLED verdict.
+ALL SEATS — a venue-adjacent PORTAL (financial-media quote API) often carries longer clean history
+for a venue's instruments than the venue's own site, whose official endpoint serves only the
+current session (measured here: SGE official = today's minute tape; Eastmoney = 22 years) — probe
+the portal layer FIRST for history, the venue for provenance/spec.
+
+---
+
+## OP-098 — WAYBACK CDX IS THE POPULATION ENUMERATOR FOR ANY TRACK-RECORD SITE WHOSE PER-ENTITY ROUTE IS PUBLIC AND WHOSE LISTING IS HIDDEN (unified frontier dig, 2026-08-27)   [active]
+
+**THE CLASS.** A track-record ground has TWO routes and they fail independently: the **per-entity**
+route (one trader's page) and the **population** route (who exists). Sites routinely leave the
+first wide open and the second behind a JS filter, a POST search or an investor login. The
+standing failure mode is to confirm the per-entity route, fail to find a listing, and stop —
+which is exactly where the FX Blue dig stopped on 2026-08-25 ("sitemap.xml enumerates exactly ONE
+user, `/users/example` — there is no population route, and a track-record ground without a
+population cannot be mined"). **That verdict was wrong, and the correction is one command.**
+
+**THE OPERATOR.** The archive's URL index is a population enumerator. It is not a content fetch —
+it is a keyless list of every URL ever crawled under a prefix, so it recovers the listing the
+site declines to publish, INCLUDING entities the current site has delisted:
+
+```
+curl -sS "http://web.archive.org/cdx/search/cdx?url=<host>/<entity-path>/*\
+&output=text&fl=original&collapse=urlkey&limit=40000&filter=statuscode:200"
+```
+
+Then regex the entity id out of the URLs and de-duplicate. **Measured 2026-08-27, both in one
+session:** `fxblue.com/users/*` -> **5,077 handles**; `darwinex.com/invest/*` -> **1,479 DARWIN
+tickers**. Both grounds had been recorded as population-blocked. The hits are LIVE against the
+current site, not archive reads — CDX supplies only the identifier list, and every subsequent
+fetch goes to the origin, so archive staleness cannot contaminate the data (it costs only a dead
+rate: measured ~0-33% dead handles, which is itself a real attrition number to record, never to
+hide).
+
+**WHY IT GENERALISES.** The prerequisite is only that entity pages were once publicly crawlable
+under a stable path prefix. That is true of essentially every leaderboard, signal marketplace,
+copy-trading platform and public-statement host — the ground RESEARCH §4 calls first-class.
+Standing targets to run this against before declaring any of them population-blocked: Myfxbook
+`/members/*` and `/portfolio/*`, Collective2 `/strategies/*`, ZuluTrade `/traders/*`, eToro
+`/people/*`, MQL5 `/signals/*` (already enumerated natively, use as the CONTROL — if CDX recovers
+a comparable count there, the operator is validated against a known population).
+
+**THE TWO CAVEATS, both real.** (1) Path-prefix CDX is **subdomain-blind** (OP, AR s4 2026-08-20) —
+enumerate each host separately. (2) **robots is not a reuse grant** (OP-096): CDX legitimises
+DISCOVERY of identifiers, never the licence to redistribute what you then fetch. The §13 read on
+the origin still has to happen and is unchanged by the enumeration route.
+
+**COROLLARY — "no population route" is a claim requiring the CDX probe.** Under L1.51 ("exhausted"
+requires evidence), a track-record ground may not be graded population-blocked until this command
+has been run against it and returned nothing. It costs one request.
+
+## OP-099 — THE PRE-COMPUTE DUPLICATE GATE: STRUCTURAL FINGERPRINTS BEAT RETURNS CORRELATION BECAUSE A SKELETON IS A FACT AND A CORRELATION IS AN ESTIMATE (BRAIN hunter s6, 2026-08-28)   [active]
+
+**SOURCE:** `github.com/aircrushin/wq-alpha-agent` (MIT, 12★, pushed 2026-08-03), file
+`wq_alpha_agent/diversity.py`, read in full. Reached from the s5 session note's own named next
+ground ("RICH, UNMINED beyond README/licence"). **DERIVES-FROM:** BRAIN → alternative agent
+implementations → this repo. Its FAMILY_RULES/field vocabulary is BRAIN-platform-specific and is
+NOT imported; the mechanism is.
+
+**WHAT IT COMPUTES.** Before any simulation, each candidate expression is reduced to four
+comparable objects and checked against the already-held ("protected") set:
+  1. `skeleton` — whitespace collapsed, lowercased, **every numeric literal replaced by `#`**.
+     Two candidates differing only in lookbacks/weights collapse to the SAME string.
+  2. `field_skeleton` — the skeleton with every *operand* replaced by `FIELD` and every local
+     assignment by `VAR`. This is the layer the desk does not have: it separates *same shape,
+     different data* from *same shape, same data, different parameter*.
+  3. field-set **Jaccard**, and a **multi-set** operator overlap (Counter `&` / `|`, so using
+     `ts_mean` three times is not the same usage as once).
+  4. a family label from distinctive (non-common) fields.
+Rejection fires on: exact skeleton match; OR same `field_skeleton` with field-Jaccard ≥ 0.7; OR
+same family with key-field ≥ 0.67, field ≥ 0.5 and operator ≥ 0.6 overlap.
+
+**THE MECHANISM WORTH TAKING, stated as the desk's own argument.** A duplicate detected by
+*returns correlation* is detected by an ESTIMATE over a finite sample, after the compute is
+already spent. A duplicate detected by *skeleton identity* is a FACT, costs nothing, and is
+available before the first bar is read. Under L1.60/L1.61 the desk pays a multiplicity charge per
+trial and selects on marginal independence: a re-parameterisation therefore costs twice — the
+compute AND the budget a genuinely new question needed — and the statistical cost is the larger
+one. The `#`-collapse is the precise instrument for "is this a new question or the same question
+with a knob turned".
+
+**CONVERGENT, NOT NOVEL — and the provenance matters.** The desk built this argument
+independently: `libs/research/variation_blocker.py` (HYPOTHESIS_MAX #3) blocks on mechanism
+fingerprint and states the same multiplicity reasoning almost word for word, is wired through
+`scripts/run_generation_diversity.py`, and is **live on a 6-hourly cron** (`ops/crontab.manifest`
+:1122) writing `data/gen_diversity.json`. So this is a genuine cross-ecosystem CONVERGENCE on the
+same mechanism, not an echo — which raises confidence in the mechanism and lowers the value of
+the import. **What the desk does NOT have is layer 2**, the `field_skeleton`: the desk's
+fingerprints are semantic tuples (`liquidity/reversal/unspecified`), which cannot distinguish
+"same structure over a different instrument/field" from "same structure, same field". That is the
+one importable delta and it is a small one.
+
+**MT5 ANALOGUE.** Direct, on the desk's candidate expressions; `translate_to_mt5` is not needed
+because this operates on *candidate syntax*, not on market data — it is universe-agnostic and
+therefore survives the MT5 mandate unchanged, which is rare on this ground.
+
+**WHAT IS DELIBERATELY NOT IMPORTED (L1.6, and the standing refusal on this ground).** The four
+thresholds (0.7 / 0.67 / 0.5 / 0.6) and `self_correlation_max=0.7` are **facts about their
+process, never gates for ours**: they are tuned for a submission funnel whose expensive
+out-of-sample stage is paid by the platform, not by the tuner. The desk's own variation_blocker
+states the opposite bias explicitly and correctly — "the timid error here is the more expensive
+one" (L1.21a), so it blocks only on EXACT fingerprint match. Importing these thresholds would
+narrow the desk's search space to fit a stranger's cost structure.
+
+**THE ONE NUMBER THIS DIG ACTUALLY SURFACED, and it is not about diversity code.** The live
+6-hourly artifact reports `market_breadth: 11` over a 200-candidate batch, against a canonical
+registry of **251 symbols** — 4.4% — and `feature_breadth 0.060`, with verdict `OK` and zero
+flags. Instrumentation that reports a 4.4% breadth as OK is not measuring against the universe
+(L1.61: the hunted ground is every tradable Fusion symbol). Routed as a separate item, not fixed
+here: this seat is research-only.
+
+---
+
+## OP-100 — the BRAIN post-processing pipeline, in its exact order, and why the order is the semantics
+
+**Source:** `github.com/efJerryYang/worldquant-brain-simulator` (GPL-3.0, 32★, public), an
+independent offline reimplementation of the BRAIN simulator. **Read for MECHANISM ONLY — GPL-3.0,
+so no line of it is copied into this desk and none is proposed for copying.** Found by the
+RECURSIVE EXPANSION mandate: BRAIN → alternative implementations → the people who had to
+*understand* the semantics in order to rebuild them. The brief predicted this node would be the
+highest-yield one on this ground and it was.
+
+**What the official documentation elides and this implementation states, from `simulate.py`:**
+
+The daily loop is `(prev_day, today)` and the whole pipeline is:
+
+1. **Universe selection on `prev_day`** — `nlargest(top, "cumulative_liq")` over the *previous*
+   day's liquidity. Point-in-time by construction.
+2. **Alpha computed on a window ending at `prev_day`** (`start_day <= date <= prev_day_dt`).
+   **This is what `delay: 1` actually IS** — not a `shift()` applied to the finished signal, but a
+   truncation of the input data window, with the return realised on `today`. That is a materially
+   stronger formulation than shifting: a shifted signal can still have been *built* from a
+   full-sample statistic, which is the desk's own R0289 causal-guard blind spot (a `z(funding)`
+   over the whole sample passes `check_causal` today). Windowing the input cannot express that leak.
+3. **Neutralization** — `alpha = alpha - alpha.mean()`, cross-sectional over the universe.
+4. **Truncation** — `alpha.clip(-boundary, +boundary)`.
+5. **Normalization** — `alpha = alpha / alpha.abs().sum()`, i.e. **unit gross book**.
+6. **PnL** — `(weights · today's returns) * booksize`.
+
+**THE ORDER IS LOAD-BEARING AND IT IS NOT THE INTUITIVE ONE.** Truncation runs *before*
+normalization, so the `truncation` setting is **not a cap on final portfolio weight** — it clips
+the un-normalised, mean-subtracted alpha, and the subsequent divide rescales everything. Measured
+on random draws, with `truncation = 0.01`:
+
+| universe N | `sum(|clipped|)` | final `max(|w|)` | exceeds the bound? |
+|---|---|---|---|
+| 20 | 0.191 | 0.0523 | **YES — 5.2x the bound** |
+| 50 | 0.500 | 0.0200 | **YES — 2x** |
+| 100 | 1.000 | 0.0100 | at the bound exactly |
+| 251 | 2.506 | 0.0040 | no |
+| 3000 | 29.90 | 0.0003 | no |
+
+The crossover is exactly **N = 1/boundary**: below it the normalisation *inflates* past the
+truncation bound, above it the bound never binds on the final weight at all. On a Top3000 equity
+universe the setting is nearly inert; the same code on a small book silently levers the largest
+name. **The desk's canonical MT5 registry is 251 symbols — above the crossover — but any
+asset-class or currency-bucket sub-book is comfortably under 100, which is precisely where the
+bound inverts.** Recorded as a fact about their construction, never as a gate for ours (L1.6).
+
+The reason the order is nonetheless *correct* is the one thing the settings file never says:
+clip-before-normalize yields gross exposure of exactly 1.0 always, whereas normalize-before-clip
+measured **0.956** on the same draw — clipping after normalisation breaks the unit-gross book,
+which is the invariant the whole PnL line depends on. Anyone reimplementing this who "fixes" the
+order to make truncation behave like a weight cap silently un-normalises their book.
+
+**MT5 analogue:** steps 3–5 are a complete, grouping-map-free portfolio-construction spec that the
+desk can run on 251 Fusion symbols today. See OP-101, which is the actionable half.
+
+**What it needs that the desk lacks:** nothing for the market arm. The `Sector`/`Industry`/
+`Subindustry` arms need the grouping map that is still this ground's blocking input.
+
+---
+
+## OP-101 — market neutralization needs NO grouping map, and the desk never noticed it was unblocked
+
+**This is the session's real find, and like s6's it is about the desk rather than the platform.**
+
+The desk adopted four BRAIN operators on 2026-08-07 (`group_rank`, `group_zscore`, `ts_backfill`,
+`trade_when`). Two of them refuse to compute without a grouping map the desk does not have, and
+that dependency has been carried ever since as *the* blocking input on this ground.
+
+**Verified state, read this session, not inherited:**
+- `libs/alpha_factory/wq_operators.py` defines `_require_groups`, `group_rank`, `group_zscore`,
+  `ts_backfill`, `trade_when`, `fitness` — **and no neutralization function of any kind.**
+- `grep -rn "neutraliz" libs/ desks/mt5/ --include=*.py` returns exactly three live hits:
+  `libs/risk/overlays.py:36 beta_neutralize` (a regression-based *risk overlay*, not a
+  portfolio-construction step), a data-cleaning docstring, and
+  `libs/research/evidence_tier.py:235-236`, which maps *"sector neutral" / "industry neutral"* →
+  *"neutralize by MT5 asset class and currency-risk bucket"*.
+
+So the entire neutralization axis was translated into the desk's own mapping table **as a
+group-conditional operation**, and therefore inherited the grouping-map block wholesale.
+
+**But the platform's own neutralization ladder is `None / Market / Sector / Industry /
+Subindustry`, and the `Market` rung is `alpha - alpha.mean()` over the point-in-time universe.
+It takes no taxonomy at all.** It is one line, it runs on the 251-symbol registry today, and it
+has been sitting unbuilt behind a dependency it does not have.
+
+Why this matters beyond one missing line:
+
+1. **It is the control arm the desk's own regime law already requires.** Any future
+   asset-class/currency-bucket neutralization must prove itself *against* an unconditional
+   control. Market-neutral IS that control, and it is cheaper than the thing it controls for.
+2. **It converts the grouping map from a blocker into a measurable increment.** Today "we have no
+   grouping map" is an unfalsifiable reason to build nothing. With the market arm running, the
+   question becomes "what does bucketing add over demeaning?" — a number, gate-able, and a
+   perfectly good null if it adds nothing.
+3. **`_require_groups` refusing is the correct behaviour and is not the defect.** The defect is
+   that the ladder's bottom rung was never separated from its top rungs when the axis was
+   translated, so a map-free operation was filed under a map-dependent heading and disappeared.
+
+**Routed, not built — this seat is research-only (freeze).** The exact prescription: add a
+`market_neutralize(x)` = cross-sectional demean over the point-in-time universe to
+`wq_operators.py`, and extend the `evidence_tier` mapping rows at lines 235–236 so the ladder's
+rungs are distinguishable rather than collapsed onto the group-conditional translation.
+
+**CAVEAT, stated because it cuts against the find.** Market-neutralizing is not free on an MT5
+book the way it is on a Top3000 equity cross-section. Demeaning across 251 heterogeneous
+instruments (FX crosses, gold, indices, energy, share CFDs) subtracts a mean that has no single
+economic meaning — and the desk has already measured the shape of this failure: removing a common
+factor *manufactures* negative residual correlation, and residual correlation must be compared to
+−1/(N−1), never to zero (`demeaning_floor()` in `libs/research/cohort_independence.py`; the
+64.4-independent-bets error). The honest form of this item is therefore *within-asset-class*
+demeaning, which needs only the asset-class label the registry already carries — still no
+taxonomy purchase, still unblocked, and it is the version that should be built.
+
+**Verified this session (not inherited): the label exists and the buckets are measured.**
+`desks/mt5/data/universe/universe.json` carries `asset_class` on **248 of 251** symbols:
+Equities 103 · Forex Exotics 57 · Forex 29 · Indices 16 · Crypto 14 · Commodities 12 ·
+Soft Commodity 11 · Bonds 3 · Energy 3 · **unlabelled 3**. So within-asset-class demeaning is
+buildable today with zero new data.
+
+Two consequences worth carrying forward:
+
+- **Only ONE bucket clears OP-100's `N = 1/boundary` crossover.** With `truncation = 0.01` the
+  crossover is 100 names, and Equities (103) is the sole bucket above it. Every other bucket —
+  including all of FX — sits in the zone where clip-before-normalize *inflates* the largest
+  weight past its own stated bound, by 2x at N=50 and 5.2x at N=20. **A truncation setting
+  imported from an equity venue is not just inert on this desk's books, it is inverted on eight
+  of nine of them.** If a bounded per-instrument weight is wanted here, the bound must be applied
+  after normalisation and the gross re-scaled explicitly — which is a different construction, not
+  a parameter change.
+- **The 3 unlabelled symbols are a real gap, not a rounding error**, because an unlabelled
+  instrument cannot be demeaned within its class and would silently fall into whatever the
+  grouping code's default bucket is. That is the WS-005 shape (absence read as a clean verdict);
+  it should fail loud, not default. Named here, routed, not patched — research-only freeze.
+
+---
+
+## OP-102 — MUTUAL INDEPENDENCE IS BOUGHT WITH FIELD BREADTH, NOT OPERATOR BREADTH (BRAIN hunter s8, 2026-08-29)   [active]
+
+**Source.** `github.com/CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon` (85★, 2023-10, **no
+licence — all rights reserved, read for MECHANISM ONLY**, statistics computed over it, not one
+expression copied here). Its entire stated purpose is the desk's own scarcest axis: *"50 alphas
+that can pass the correlation test if they are submitted together."* s7 ranked it #1 on the
+measured population precisely because it is boring; that ranking was right.
+
+**WHAT IT COMPUTES — measured over all 50 rows of `alpha50.csv`, not read off the README:**
+
+| quantity | value |
+|---|---|
+| alphas | 50 |
+| **distinct data fields** | **50** |
+| distinct operators | **8** — `rank` 28, `ts_mean` 18, `ts_zscore` 2, `sum`/`delay`/`group_rank`/`ts_av_diff`/`ts_corr` 1 each |
+| median formula length | **20 characters** (min 13, max 137) |
+| field families | `mdf_*` model-derived 22 · `fnd6_*` fundamentals 18 · price/volume 6 · ratio/analyst/sector 5 |
+
+`rank` + `ts_mean` cover **46 of 50**. The median alpha is literally a field wrapped in one
+operator. The README's proprietary-sounding *"unique method"* that found *"over 400"* such alphas
+is, structurally, **enumerate the field catalogue and rank each field**.
+
+**THE MECHANISM, stated so it can be implemented without the source.** Two alphas over the same
+input field cannot be independent however different their operators — the operator is a monotone
+or near-monotone re-expression of one underlying quantity, so the cross-sectional orderings stay
+coupled. Two `rank()`s over *different* fields are close to independent **by construction**,
+because their correlation is inherited from the correlation of the raw fields and nothing else.
+**Operator variety re-describes one signal; field variety adds signals.** Independence is
+therefore purchased in the units of the DATA CATALOGUE, and the number of mutually-independent
+alphas a research process can produce is bounded above by its count of weakly-correlated input
+FIELDS, not by the size of its expression grammar.
+
+**MT5 ANALOGUE AND WHY IT MATTERS HERE.** The desk's marginal-independence problem (L1.18,
+L1.61 — *"selection optimises MARGINAL INDEPENDENCE directly, so a second copy of a held edge
+scores ~0"*) has been attacked from the OPERATOR side for six BRAIN sessions (OP-093…OP-101) and
+by the generic search's ~4,900 primitives per symbol. This artifact says the attack is on the
+wrong axis. `edge_search.build_primitives` derives **>130 named transforms and ~4,900 primitives
+including pairwise interactions from a raw intake of OHLCV + spread/volume** — one field family.
+An interaction `x_a__b` of two transforms of `close` is not a new field; it is a fourth
+re-description of the same field, and it is counted as a trial while contributing nothing to
+independence. **The desk is transform-rich and field-poor, which is the exact inverse of the one
+published artifact whose purpose is constructing an independent set.**
+
+**THE OPERATIONAL CONSEQUENCE, and it is a reallocation, not a note.** Marginal spend on the
+independence axis belongs on RAW FIELD INTAKE — the free-data seats, the macro/COT/curve/flow
+axes, the desk's own tape aggregates — ahead of further operator or interaction expansion. A new
+field is worth more than a new operator whenever the desk already holds more operators than
+fields, which it does by two orders of magnitude. This is the value-of-information argument
+behind the free-data mining seats, and it now has a measurement behind it rather than a prior.
+
+**AND IT IS WHY THIS SESSION WENT AND COUNTED — see OP-103.** Applying this operator to the desk
+itself was what surfaced R0715: the desk's live generic discovery engine consumes **zero**
+external fields, because the whole external axis raises and is swallowed.
+
+**Trial-accounting fact recorded about their process, NEVER imported as a gate (L1.6).** Sharpe
+across the 50 is min = median = **1.25** = the platform's stated submission bar, max 1.29 — a
+mass point at a threshold, not a distribution. The settings grid (Universe × Decay × Truncation ×
+Neutralization) carries eleven singleton non-round `Decay` values (13, 18, 52, 55, 65, 70, 78, 90,
+95), so each published alpha is the **argmax over an unreported per-alpha settings search**. The
+performance column is informative about the filter and uninformative about edge. Their bar is a
+fact about them; ours is 5.236 deflated and does not move.
+
+**Base rate for OP-101, measured here:** **48 of 50** alphas carry a neutralization setting
+(Subindustry 19 · Market 17 · Sector 8 · Industry 4); only 2 run `None`. Neutralization is the
+default in the reference process and is entirely absent from `wq_operators.py`.
+
+---
+
+## OP-103 — APPLY EVERY MINED OPERATOR TO THIS DESK BEFORE FILING IT: OP-102 POINTED AT R0715 IN ONE COUNT (BRAIN hunter s8, 2026-08-29)   [active]
+
+**The pattern, and it is a research method rather than a finding.** OP-102 says independence is
+bought in units of input FIELDS. The next action after extracting a mechanism is not to file it —
+it is to **run its measurement against this desk's own artifacts** and see what the number says
+here. That single step, costing one command, converted a mined observation about a stranger's
+equity alphas into a live defect in the desk's nightly discovery engine:
+
+- Count the desk's raw input fields → read `edge_search.resolve_inputs` → **run it** →
+  `TypeError: Cannot join tz-naive with tz-aware DatetimeIndex` at `edge_search.py:296`, on the
+  first symbol tried.
+- Verify from the OUTPUT rather than the code (the standing lesson): today's
+  `edge_search_results.json` — 3,543 hypotheses, written 05:55 — contains **ZERO** features
+  matching `ext_`. Not one peer residual, lead-lag, cross-sectional, triangular, tick-book, swap,
+  macro or COT feature has entered the desk's generic search.
+- Root cause, measured: **173 of 197 universe `_H1.parquet` files are tz-naive and 24 are
+  tz-aware UTC** — the partial-sync generation split recorded on 2026-08-28. The cross-section
+  `pd.concat` at line 296 therefore always mixes generations. The caller at line 612 catches the
+  raise into a `print` and continues on pure OHLCV, and because the raise unwinds the whole
+  function it **discards the peer/lead/corr keys already built above it** (one family's failure
+  destroys 1..N−1).
+
+**Ledgered R0715 (tz + per-family isolation), R0716 (macro reader reads the wrong nesting level
+and would broadcast a scalar), R0717 (COT reader names `.json` files that are parquet
+directories). Not patched — research-only freeze.**
+
+**The transferable rule:** a mined mechanism is a *measuring instrument*. File the mechanism, but
+point it at this desk first — the yield from measuring ourselves with a stranger's ruler beat the
+yield from the stranger's alphas by a wide margin this session, and it will usually do so, because
+nobody else has ever measured us.
+
+---
+
+## OP-104 — `bfill` INSIDE A FEATURE TRANSFORM IS A LOOK-AHEAD THE CAUSAL GUARD CANNOT SEE (BRAIN hunter s8, 2026-08-29)   [active]
+
+**Source.** `efJerryYang/worldquant-brain-simulator` → `src/alpha_pool/expression.py` (GPL-3.0,
+mechanism-only read; note the path — s7's handoff recorded `src/simulator/alpha_pool/…`, which
+**404s**; correct path is `src/alpha_pool/expression.py`). The file credits
+`yli188/WorldQuant_alpha101_code` as its origin, so this is the ancestor of a widely-forked
+alpha101 lineage rather than one author's slip.
+
+**Three documented defects in the reference implementation, all of them classes this desk knows:**
+
+1. **`decay_linear` calls `df.fillna(method="bfill")` before weighting.** Backfill inside a
+   feature transform fills a missing observation with a **future** one. It is a look-ahead in the
+   FEATURE, and it survives every guard that checks the alignment of signal to return — the
+   desk's own R0289 blind spot exactly (`check_causal` passes a full-sample `z(funding)`). The
+   function's own comment says *"The backtest engine should assure to be snooping bias free"*,
+   which is the assumption that lets the leak live: **the engine cannot repair a feature that was
+   built from the future before the engine ever saw it.**
+   *Verified against this desk the same session: `grep` for `bfill` / `fillna(method=` across
+   `libs/` and `desks/mt5/` returns **no hits in any feature builder** — the only matches are the
+   word "backfill" in `perishability.py` and friends. **The desk is clean on this class**, and
+   that is a verified negative worth recording rather than an assumption.*
+2. **`rank(df, rate=2)` accepts the `rate` parameter and never reads it.** The official operator
+   is documented *in the file's own quoted description* as approximate by default —
+   *"When rate is set to 0, the sorting is done precisely. The default value of rate is 2"* — so
+   the platform's canonical `rank`, the operator carrying 28 of OP-102's 50 independent alphas,
+   is a **quantised** rank unless explicitly told otherwise. The reimplementation silently does
+   an exact `df.rank()`.
+3. **`decay_linear` also calls `df.as_matrix()`**, removed from pandas in 1.0 (2020), and returns
+   `columns=["CLOSE"]` — collapsing a multi-symbol panel to one hardcoded column name. The
+   function cannot execute on any modern pandas.
+
+**THE TRANSFERABLE LESSON, now on its second instance in this one repo.** s7 found
+`simulate.py:257` parsing `neutralization` into a variable never read again. Here, `rank` parses
+`rate` and never reads it. **A settings key that is parsed but not consumed is indistinguishable,
+from the outside, from one that works** — and this repo's README carries the open question
+*"results are still different from the platform's"* with two such keys sitting unread in it. The
+desk's own version of this is the gap-wirer class: *a producer computes a distinction, the
+consumer collapses it.* Where a config key is accepted, assert it is consumed.
+
+## OP-103 — THE FIELD-REACHABILITY PARTITION: 50.5% of canonical alpha101 is reachable on the desk's tape, and the entire gap is THREE named items (brain-hunter s10, 2026-08-29)
+
+s9 measured this desk's **external** field breadth at **1** (every one of 1730 `ext_` names is a
+function of peer close price) and named the alpha101 field-vector extraction as the way to get the
+comparison number — *how many distinct input fields the reference set spans, and how many have an
+MT5 analogue.* That ratio estimates the desk's reachable independence ceiling. It is now measured.
+
+**SOURCE:** `efJerryYang/worldquant-brain-simulator` `src/alpha_pool/alpha101.py`, GPL-3.0,
+43,486 b, fetched from `raw.githubusercontent.com`. Read by SCRIPT, not into context: methods split
+on `def alpha\d+`, raw fields taken as the `self.<name>` reference set per method.
+
+### THE MEASURED FIELD VECTOR — the reference set runs on EIGHT raw fields
+
+| field | alphas using it (of 82 implemented) |
+|---|---|
+| `close` | 53 | 
+| `volume` | 53 |
+| `high` | 31 |
+| `vwap` | 30 |
+| `low` | 28 |
+| `open` | 25 |
+| `returns` | 12 |
+| `cap` | 1 |
+
+Mean **2.84** distinct fields per alpha (median 2.5, min 1, max 6). This is the OP-102 ruler
+confirmed on an independent artifact: independence is bought in units of the DATA CATALOGUE, and
+each individual alpha is field-shallow — the *set* is broad because the catalogue is.
+
+### THE REACHABILITY PARTITION AGAINST THE DESK'S ACTUAL TAPE
+
+Desk tape measured, not assumed: **197/197** `*_H1.parquet` share one schema —
+`open high low close tick_volume spread real_volume`. Mapping `volume → tick_volume` (a proxy, see
+caveat) and `returns → derived from close`:
+
+```
+101  canonical alphas
+ -18  require IndNeutralize(..., IndClass.sector/industry/subindustry)  -> NO GROUPING MAP
+ ---
+  82  implemented in the OSS port
+ -30  require vwap                                                     -> NOT ON THE TAPE
+  -1  requires cap                                                     -> NOT ON THE TAPE
+ ---
+  51  REACHABLE  = 62% of implemented, 50.5% of canonical
+```
+
+**There is no long tail.** Beyond the grouping map, exactly TWO fields — `vwap` and `cap` — account
+for the entire remaining gap. That is a shopping list, not a research programme.
+
+### THE INDEPENDENT CONFIRMATION, AND IT ARRIVES FROM THE OPPOSITE DIRECTION
+
+The 18 missing alphas are **not stubbed and not partial — they are absent from the file entirely**
+(`alpha48/58/59/63/67/69/70/76/79/80/82/87/89/90/91/93/97/100` return `NOT MENTIONED ANYWHERE` on a
+source search). They survive only as **commented formulas**, and every one of those comments carries
+`IndNeutralize(..., IndClass.*)`.
+
+So the most-used open-source alpha101 reimplementation hit the desk's own blocking input, and
+**dropped 17.8% of the canonical set rather than solve it.** This desk's missing grouping map is not
+a local gap in a corner of one engine; it is the same wall an independent implementer hit and
+declined. That is external corroboration of the brief's standing claim — *a grouping the desk can
+actually build is worth more right now than another operator it cannot apply* — and it now carries a
+number: **18 reference alphas, 17.8% of the canonical set.**
+
+### VWAP IS THE SINGLE HIGHEST-LEVERAGE MISSING FIELD, AND IT IS NOT ONE FLAG AWAY
+
+`vwap` blocks **30/82 (37%)** of implemented alphas — more than every other missing field combined.
+The tempting conclusion is that it is cheap, since MT5 serves sub-H1 bars from the same terminal the
+desk already pulls H1 from (`fetch_universe.py:94` pins `mt5.TIMEFRAME_H1`). **Measured, that
+conclusion is wrong.** Sub-H1 coverage on the box is **4 symbols of 197** (3 FX crosses at M15,
+`XAUUSD` at M1/M5/M15), and the only M1 artifact — `XAUUSD_M1.parquet`, 20,000 rows — spans
+**2026-08-03 → 2026-08-21, eighteen days**, against an H1 history reaching back to 1984 on some
+symbols. Broker M1 retention, not collector scope, is the binding limit.
+
+**Therefore:** a *true* intrabar VWAP is not reconstructable over the backtest window. What IS
+available is a tick_volume-weighted typical-price **proxy** at H1 — a different object, and any
+alpha built on it is *inspired-by*, never a replication. Label it as a proxy at construction or the
+provenance is lost the moment it enters the gauntlet. **Recovering vwap over history is a DATA-AXIS
+item (a tick or M1 archive), not an engineering one** — routed to `data_axis_watchlist.md`.
+
+### SIDE MEASUREMENT — `real_volume` IS ADVERTISED ON 197 SYMBOLS AND DEAD ON 195
+
+`real_volume` is in the schema of all 197 files and is **all-zero on 195**. The only two exceptions
+are US share CFDs (`BlackRock` 5,637/13,480 non-zero from 1999-10; `CVSHealth` 9,374/17,219 from
+1984-12) and both are *partially* populated. `tick_volume` and `spread` are populated everywhere.
+
+`edge_search.py:210` admits the column on `if col in d.columns` — **presence, not content**, the
+WS-005 shape. Checked downstream before reporting it: `edge_search_results.json` contains **zero**
+`real_volume` hypotheses out of 3,543, so the constant-zero and all-NaN columns are filtered later
+and **this is dead weight today, not a live defect.** Reported as the honest null it is.
+
+**But it is a loaded gun for exactly the operators this seat is trying to add.** A cross-sectional
+`rank`/`zscore`/`group_rank` over `real_volume` puts those 2 symbols above 195 structural zeros **by
+construction, forever** — a degenerate ordering that reads as a signal. The desk is actively working
+to point group operators at this universe, so the guard should become content-aware (`nunique > 1`)
+*before* that happens, not after.
+
+---
+
+## THE BLOCKING INPUT IS UNBLOCKED — `data/mt5_grouping_map.json` (BRAIN HUNTER s11, 2026-08-29)
+
+`group_rank` and `group_zscore` have been inert since adoption for want of a peer map (s10 measured
+the cost from the other side: **18 of 101 canonical alphas, 17.8%**, unimplementable without one).
+The map now exists, built from data already on the box by
+`data/brain_hunter_s11_build_grouping_map.py`, and **the operators were run against it** — both
+return a series on all five schemes rather than `None`.
+
+| scheme | symbols | groups | median group | max group | mean \|corr\| vs universe-wide `rank` |
+|---|---|---|---|---|---|
+| `asset_class` | 194 | 7 | 15 | 64 | **0.819** |
+| `currency_base` | 80 | 8 | 7 | 21 | **0.716** |
+| `currency_quote` | 79 | 19 | 4 | 13 | **0.493** |
+| `corr_cluster` k=8 (2025) | 192 | 6 | 9 | **125** | **0.852** |
+| `corr_cluster` k=24 (2025) | 183 | 13 | 5 | 67 | **0.716** |
+
+Window 2024-01-01..2025-12-31, daily log returns, baseline = universe-wide `rank` over the same
+members, per-symbol correlation then averaged. Saved: `data/brain_hunter_s11_group_independence.json`.
+
+**THE FINDING, and it decides which scheme to point the search at: a grouping is not automatically a
+new axis.** `asset_class` — the obvious `IndClass.sector` analogue, and the one the desk would have
+adopted by default — reproduces the universe-wide rank at **0.82**, because its largest group *is*
+most of the universe (103 equity CFDs of 251). The `k=8` correlation cluster is worse still at
+**0.85**: clustering "succeeded" and produced **one 125-member blob** plus five fragments. Both
+would consume a whole new arm of the search space to recompute something the desk already has —
+precisely the failure `_require_groups` was written to refuse, arriving through the front door with
+a legitimate map instead of a missing one.
+
+**Independence tracks median PEER-GROUP SIZE, not the sophistication of the grouping.** The ranking
+above is monotone in it. `currency_quote` (19 groups, median 4 members) is the only scheme that buys
+a genuinely different question, and it is the one with **no equity counterpart at all** — "is EURUSD
+extreme against the other things quoted in USD?" is not a factor BRAIN can express. It is the
+recommended first arm; `currency_base` and `corr_cluster k=24` are the second tier; **`asset_class`
+and `corr_cluster k=8` should not be given a search arm on this measurement.**
+
+**The cluster maps are point-in-time by construction.** Key `Y` is estimated on year `Y-1` daily
+returns only; no bar is ever grouped using its own future. A whole-sample cluster map would be
+lookahead and is deliberately not produced. Both cut heights (8, 24) are fixed a priori and carried
+side by side rather than tuned — the peer-size axis is left visible to the consumer.
+
+Unlabelled symbols are **omitted, never pooled** into an `other` bucket, and singleton groups are
+dropped at build time (a group of one has no rank to compute).
+
+### INDEPENDENT CORROBORATION OF s10 — THE IndClass WALL IS UNIVERSAL TO THE PUBLIC LINEAGE
+
+s10 found the most-used OSS port dropped 18 canonical alphas rather than solve the grouping problem.
+Checked against the **upstream original it credits**, `yli188/WorldQuant_alpha101_code`
+(851★, `101Alpha_code_1.py`, 44,512 b, HTTP 200 from `raw.githubusercontent.com`):
+
+```
+upstream implemented        83
+port implemented            82
+missing from BOTH           18  = {48,58,59,63,67,69,70,76,79,80,82,87,89,90,91,93,97,100}
+                                  every one present only as a COMMENTED formula carrying
+                                  IndNeutralize(..., IndClass.*)
+port minus upstream          1  = alpha56 -- the `cap` alpha, s10's other named field gap
+```
+
+Two independent public implementations, the same 18 alphas, the same stated reason, and the single
+divergence between them lands exactly on the *other* field s10 named. **The public lineage has never
+solved this; it has routed around it twice.** That makes the map above the differentiating asset on
+this ground rather than a catch-up item — and it is why the independence table matters more than the
+map's existence: the desk can now ask the question, and only one of its five ways of asking it is
+worth a search arm.
+
+---
+
+## `correlation` / `covariance` and binary `min`/`max` — BRAIN hunter s12 (2026-08-29)
+
+Source: `yli188/WorldQuant_alpha101_code` (851★) `101Alpha_code_2.py` (111,340 b) — a
+**machine-transpiled** Quantopian `CustomFactor` implementation, a different artifact from the
+hand-written `101Alpha_code_1.py` s11 exhausted. Public route only (`raw.githubusercontent.com`,
+`api.github.com`; robots 404 = ALLOW-ALL under RFC 9309). Raw:
+`data/brain_hunter_s12_alpha101_code2.json`.
+
+### 1. THE TRANSPILER COMPUTES THE OTHER OPERATOR — 47/47 call sites, exactly inverted
+
+| | in the expression comment | in the emitted code |
+|---|---|---|
+| `correlation(...)` | 45 | `.rolling(d).cov(...)` ×45, `.corr(` ×0 |
+| `covariance(...)`  | 2  | `.rolling(d).corr(...)` ×2, `.cov(` ×0 |
+
+Not a rounding of intent — a **symbol-table inversion in the code generator**, both directions,
+zero exceptions, affecting **35 of the 77 alphas it implements**. `correlation` is the most-used
+binary operator in the canonical corpus, so the single most-copied public alpha101 implementation
+silently ships the wrong one on 45% of its output. Anyone who lifted a formula from this file
+lifted `cov` where the paper says `corr`.
+
+### 2. AND THE DISTINCTION IS LOAD-BEARING — measured on the desk's own tape
+
+`cov = corr · sd_x · sd_y`, so the swap injects a volatility tilt that survives the cross-sectional
+`rank` wrapped around it. Measured as mean daily Spearman between the two cross-sectional orderings,
+24 Fusion symbols (FX majors/crosses, XAUUSD, XAGUSD, BTCUSD, ETHUSD), D1 from `_H1`, 2018-01-02 →
+2026-08-17, ~2,230 days:
+
+| input shape | d | mean Spearman(corr-order, cov-order) | p05 | days < 0.90 |
+|---|---|---|---|---|
+| rank-transformed (alpha2 shape) | 5 | **0.920** | 0.840 | 23.6% |
+| rank-transformed | 6 | 0.933 | 0.866 | 14.9% |
+| rank-transformed | 10 | 0.952 | 0.901 | 5.0% |
+| **raw** (`close`, `tick_volume`) | 5 | **0.775** | **0.597** | — |
+| raw | 10 | 0.786 | 0.593 | — |
+
+Rank inputs are the *best* case: bounded [0,1] ranks compress the `sd_x·sd_y` multiplier, and even
+there the orderings disagree on a quarter of days at d=5. On raw inputs they are plainly different
+operators. **They are two operators, not one with a scaling quirk — and this desk has NEITHER.**
+`libs/alpha_factory/wq_operators.py` exposes five functions (`group_rank`, `group_zscore`,
+`ts_backfill`, `trade_when`, `fitness`) and no pairwise operator at all; `edge_search.py` uses
+`.rolling().corr()` only as a *feature* against a fixed peer list (line 283), never as an operator
+over arbitrary field pairs, and `.cov(` appears nowhere in either.
+
+One hypothesis of mine did **not** survive its own control: I expected the cov ordering on raw
+inputs to collapse into the price-level ordering, since the panel spans 109,119× in price
+(0.59 → 64,382). It does not — mean |Spearman| against the price-level rank is only **0.33**. The
+divergence is driven by the *volume* standard deviation, not the price scale. Recorded because the
+plausible version of this claim is the one a reader would assume.
+
+**MT5 analogue:** direct, no equity dependency — `ts_correlation(x, y, d)` and `ts_covariance(x, y, d)`
+over any two per-symbol series (price, return, range, `tick_volume`, spread, swap), then a
+cross-sectional wrapper. `translate_to_mt5` needs no new mapping; this is a pure operator gap.
+
+### 3. THE SECOND MISSING PARTITION IS AN OPERATOR GAP, NOT A DATA GAP
+
+`code_2` implements 77 and skips 24 — six *more* than `code_1`'s 18. The partition is exact and
+mutually exclusive:
+
+- **18** (`{48,58,59,63,67,69,70,76,79,80,82,87,89,90,91,93,97,100}`) — every one carries
+  `IndNeutralize(..., IndClass.*)`. The s10/s11 wall, a **data** gap, and the one s11 closed for
+  MT5 with `data/mt5_grouping_map.json`.
+- **6** (`{71,73,77,88,92,96}`) — **not one contains `IndClass`**. All six are
+  `min(...)`/`max(...)` of *two composite branches*, and **zero of the 77 implemented alphas use
+  that form**. 6/6 and 0/77: a clean split. The transpiler handles the unary time-series
+  `ts_min/ts_max` and cannot emit a binary elementwise combinator over two full sub-expressions.
+
+Alpha73 is the proof the driver is min/max rather than anything else — it has no `correlation` and
+no `IndClass`, only `max(rank(decay_linear(...)), Ts_Rank(decay_linear(...)))`, and it is skipped.
+
+**The mechanism worth extracting is the SHAPE, not the formulas.** `min`/`max` over two independent
+branches is a *disjunctive* hypothesis — "fire on whichever of two distinct mechanisms is stronger
+today" — as opposed to the product/sum forms that dominate the desk's combination engine, which are
+conjunctive and average away a branch that is silent. This is regime-specialisation expressed inside
+a single expression (LAWS §5, the regime specialization law) rather than across sleeves.
+`np.minimum`/`np.maximum` appear **0 times** in `edge_search.py` or `libs/alpha_factory/`: the desk
+cannot currently express a disjunctive candidate at all.
+
+### 4. THE PDF IS NOT LOCKED, IT IS DIAGNOSED
+
+`101 Formulaic Alphas.pdf` (244,416 b) is the *original paper*, not a port. Streams decompress
+cleanly; the text is font-subsetted. I harvested 96 `ToUnicode` CMap entries, but the file carries
+multiple subset fonts sharing one code space, so a single merged CMap collides (`a`→`^`). The route
+is **per-font CMap binding via the page resource dict / `Tf` operator** — ~40 more lines. No PDF
+tooling exists on the box (`pdftotext`, `pdfminer`, `fitz`, `PyPDF2`, `pypdf` all absent) and the
+freeze forbids installs. Graded EXTRACTABLE-BUT-BLOCKED with the exact cause, never `locked`.
+
+## THE CANONICAL OPERATOR TABLE, FROM THE PAPER ITSELF (BRAIN HUNTER s13, 2026-08-29)
+
+s12 left `101 Formulaic Alphas.pdf` as EXTRACTABLE-BUT-BLOCKED with a diagnosed route. The route
+works: `data/brain_hunter_s13_pdf_cmap_extract.py` binds each `/ToUnicode` CMap to its own font
+resource name and switches tables on the `Tf` operator, which is what the merged-CMap collision
+needed. A **second** bug was in the way and is the more general one: a `\r?\n`-anchored `endstream`
+regex silently dropped **21 of the paper's 22 pages**, because Flate payloads abut `endstream` with
+no trailing EOL. Index-based slicing recovers all 22. The extractor is pure stdlib — the box has no
+PDF tooling and the freeze forbids installs — so **every PDF ground on this desk is now open**, not
+just this one. All 101 Appendix-A formulas recovered. Math-subset glyphs carry no ToUnicode entry
+and extract empty, so Tables 1–5 lose their symbol labels; body text and formulas are complete.
+
+**§13/licence:** arXiv robots **Allows `/pdf` and `/html`, Disallows `/e-print` and `/src`** — the
+easy LaTeX-source route is barred and was not used. Appendix B of the paper asserts **WorldQuant
+LLC copyright over the Appendix A formulae**, so no verbatim formula corpus is stored in this repo;
+`data/brain_hunter_s13_alpha101_paper.json` holds derived structure, counts and the short factual
+operator definitions only.
+
+### The definitions the reimplementations paraphrase (authoritative, Appendix A.1)
+
+| operator | canonical definition | desk status |
+|---|---|---|
+| `correlation(x,y,d)` | time-serial correlation over past d days | **absent** (R0729) |
+| `covariance(x,y,d)` | time-serial covariance over past d days | **absent** (R0729) |
+| `rank(x)` | cross-sectional rank | present, universe-wide |
+| `scale(x,a)` | rescale so `sum(abs(x)) = a`, default `a=1` | absent |
+| `decay_linear(x,d)` | weighted MA, linearly decaying weights `d, d-1, …, 1`, rescaled to sum to 1 | absent |
+| `indneutralize(x,g)` | **x cross-sectionally DEMEANED within each group g** | **absent — see below** |
+| `min(x,d)` / `max(x,d)` | `= ts_min(x,d)` / `= ts_max(x,d)` — **window forms only** | n/a |
+| non-integer `d` | **"converted to `floor(d)`"**, stated explicitly | n/a |
+
+### `indneutralize` IS NOT `group_zscore`, and on an MT5 book that is expensive
+
+The canonical operator **demeans within group and stops**. `wq_operators.group_zscore` demeans and
+then divides by the within-group cross-sectional sd; the desk exposes no demean-only operator, so it
+cannot express the operator that **18 of the 101** canonical alphas call — the exact 18 that s11's
+grouping map was built to unblock. Measured on the desk's own tape (52 Fusion symbols, 5 groups,
+D1 from `_H1`, 2021-01-04 → 2026-08-26, 1,449 days, s11's `asset_class` arm): daily cross-sectional
+Spearman between the two orderings **mean 0.914, p05 0.857, 29.3% of days below 0.90**.
+
+The driver is stated rather than assumed: median within-group cross-sectional sd spans **6.2×**
+(Forex 0.00172 → Crypto 0.01063). Dividing each group by a different constant re-interleaves the
+pooled cross-section, systematically **amplifying the lowest-dispersion group and suppressing the
+highest**. On the paper's own venue within-sector dispersion is broadly comparable, so the
+substitution is nearly harmless *there* — this is a venue-specific failure of an equity-venue
+assumption, not a general one. → **R0732**.
+
+**Population stated:** 52 of 251 registry symbols (partial parquet sync). An earlier pass over the
+full 1970–2026 span returned a Spearman of exactly **1.000**, which was an artifact — only ONE group
+(Crypto, 14 symbols) populated any given day, so the sd divisor was a single positive constant and
+could not reorder anything. Recorded so it is not re-derived.
+
+### `floor(d)`, and the reimplementation rounds
+
+The paper mandates `floor(d)` for non-integer windows. `yli188/…/101Alpha_code_2.py` **ROUNDS on
+14 of the 14 windows where floor and round differ, and floors on none**. Worst case alpha98
+`d=4.58418 → 5` instead of `4`: a **25% window error** on a short window. Anyone who lifted windows
+from that file inherited it. → **R0733**.
+
+### Binary `min`/`max` blocks NINE alphas, not six — a correction to s12
+
+s12 recorded the shape in `{71,73,77,88,92,96}` and `implemented_using_binary_minmax: []`. It is
+actually in **`{71,73,76,77,82,87,88,92,96}`**: **76, 82 and 87 carry BOTH `IndClass` and binary
+min/max**, and s12 attributed them to `IndClass` alone. The operative consequence is a claim the
+desk is currently acting on: **s11's grouping map unblocks 15 of the 18 IndClass alphas, not 18** —
+the other three stay blocked on an operator the desk does not have. R0730's expressibility gap is
+confirmed at the primary source and is 50% larger than recorded. → **R0734**. → **R0734**.
+
+And the reason every reimplementation diverges at exactly these nine: **the paper's own operator
+table never defines a binary min/max.** It defines `min(x,d) = ts_min(x,d)`. Under the paper's own
+definitions, `max(rank(...), Ts_Rank(...))` parses as a time-series window whose *length is an
+expression*. The canonical source is internally inconsistent here — the ambiguity is upstream of
+every port, which is why no two ports agree.
+
+## OP-102 — GID-BLOCK RECOVERY: reading a PDF whose font subset stripped every Unicode channel
+
+**Provenance:** BRAIN HUNTER s14, 2026-08-29, on `arXiv:1601.00991`. **SOURCE:** the file itself.
+**DERIVES-FROM:** s13's per-font `/ToUnicode` binding extractor (`brain_hunter_s13_pdf_cmap_extract.py`),
+whose proposed successor route (AGL glyph names) was refuted here.
+**Tool:** `data/brain_hunter_s14_gid_recover.py` (pure stdlib; `--diagnose` prints the channel audit).
+
+**WHAT IT COMPUTES.** When a PDF's embedded subset font offers no usable Unicode mapping, recover
+text from the *glyph index*, which is a POSITION in the original font's glyph order and therefore
+contiguous across an alphabet. Derive each block's base GID from the codes that DO carry a
+`/ToUnicode` entry, requiring **≥2 mutually consistent observations** per block (one point fits any
+offset). Anything still unmapped renders as a visible `<gNNNN>`.
+
+**THE FOUR CHANNELS TO AUDIT BEFORE CONCLUDING A PDF IS UNREADABLE** — check all four, because
+three of them can return a clean-looking answer that is meaningless:
+1. `/ToUnicode` — may be present but PARTIAL. Count entries against `/FirstChar…/LastChar`.
+2. `/Encoding /Differences` — may carry AGL names (recoverable) or `/gNNNN` glyph indices (not).
+3. embedded `post` table — format 2.0 carries names; **format 3.0 carries none by design**.
+4. embedded `cmap` — may be a **synthetic PUA identity** (code C → U+F000+C), which re-encodes the
+   code rather than mapping it. *This is the trap*: the lookup succeeds and the answer is fiction.
+
+**THE TWO RULES THAT MADE IT WORK, and they are not PDF-specific:**
+- **NEVER RENDER A MISSING GLYPH AS `""`.** A silent drop is indistinguishable from "this cell has
+  no label", so a solvable extraction gets written up as an unsolvable one. A visible placeholder
+  makes the gap named, countable and anchorable (412 → 307 resolved, 105 enumerable residual).
+- **WHEN THE FONT HAS NO ANCHORS, THE DOCUMENT DOES.** Prose names its own symbols immediately
+  before showing them ("the annualized Sharpe ratio `<g1845>`"). Harvest anchors from captions and
+  definitions, record the originating sentence as evidence, and refuse to extend a block that the
+  anchors do not support — italic Greek was left un-guessed here for exactly that reason.
+
+**MT5 ANALOGUE:** none needed — this is an extraction capability, not a market operator. It applies
+to every PDF ground the desk mines: central-bank annexes, exchange contract specs, CFTC/regulator
+filings, theses and conference decks, which are disproportionately the ones with subset math fonts.
+
+**DATA THE DESK LACKS:** nothing. Pure stdlib, no install, works under the research freeze.
+
+---
+
+## BRAIN HUNTER s28 (2026-08-29) — THE OPERATOR SET HAS A TYPE ALGEBRA, AND THE DESK NEVER HAD IT
+
+**Source:** `AshSwing/FastPlus` `src/operator.rs` (MIT, public, branch `dev`) — a Rust/PyO3
+reimplementation of WorldQuant's Fast Expression Language. Mined as TEXT; nothing installed or
+executed (supply-chain rule). Full parsed census: `data/brain_hunter_s28_operator_typespec.json`
+(**108 operators parsed, exactly the count the README claims** — so the registry is complete for
+Expert scope, not a sample).
+
+**THE FIND IS NOT THE OPERATOR NAMES. IT IS THE TYPES.** The desk's catalogue records operators
+as names and prose. The reimplementation had to encode what the docs assume, and it is a typed
+algebra over four kinds — `Matrix` (date × symbol panel), `Vector`, `Group` (a labelling),
+and constants (`PositiveInt`/`Int`/`Boolean`/`Number`) — with a hard rule: **a signal must be
+Matrix-compatible.** 108 operators collapse to **14 signature classes**:
+
+| n | signature | reading |
+|--:|---|---|
+| 34 | `(Matrix)->Matrix` | unary transforms |
+| 25 | `(Matrix,PositiveInt)->Matrix` | the time-series family — window is a TYPE, not a number |
+| 16 | `(Matrix,Matrix)->Matrix` | binary combiners |
+| 9 | `(Matrix,Group)->Matrix` | **the peer-group family** |
+| 8 | `(Vector)->Matrix` | vector-field reducers (no MT5 analogue, see below) |
+| 6 | `(Matrix,Matrix,PositiveInt)->Matrix` | pairwise time-series |
+| 2 | `(Matrix,Matrix,Group)->Matrix` | per-group neutralisation |
+| 1 each | `(Group)->Group`, `(Matrix)->Group`, `(Int)->Matrix`, … | grouping constructors |
+
+**WHY A TYPE ALGEBRA IS WORTH MORE THAN AN OPERATOR:** the desk's generator has no type
+discipline, so it can emit expressions that are not bad alphas but MALFORMED, and it only finds
+out by evaluating them. A parse-time type check kills those before they consume an evaluation
+AND before they enter the trial count — which is the thing the desk actually pays for twice
+(compute, and multiplicity). `vec_avg(rank(x))` is rejected statically because `rank` returns
+Matrix and `vec_avg` demands Vector; `bucket(...)` returning Group can never be a signal.
+
+**THE GROUPING MAP UNLOCKS FOURTEEN OPERATORS AND THE DESK BUILT TWO.** Group-consuming
+operators in the registry: `densify`, `group_backfill`, `group_cartesian_product`, `group_count`,
+`group_max`, `group_mean`, `group_min`, `group_neutralize`, `group_rank`, `group_scale`,
+`group_std_dev`, `group_sum`, `group_vector_neut`, `group_zscore`. **`grep -rl "def <op>" libs/`
+finds exactly two: `group_rank` and `group_zscore` (`libs/research/operators.py`). The other
+twelve are ABSENT.** Six sessions were spent choosing which grouping arm to use; the arm now
+feeds 2/14 of the operators it exists to serve. `group_neutralize` is the most consequential
+absence — it is the operator the entire sector-neutralisation methodology is built on, and its
+MT5 analogue (neutralise within asset-class / currency bucket / PIT correlation cluster) is
+exactly the transform `docs/LAWS.md`-mandated cross-asset conditioning wants.
+
+**29 OPERATORS THE DESK'S CATALOGUE DOES NOT NAME AT ALL** (full list + descriptions in the
+artifact). The ones with an immediate MT5 analogue and no data gap:
+- `ts_ir(x,d)` = `ts_mean/ts_std_dev` — a rolling information ratio as a FEATURE, not a metric.
+- `ts_max_diff(x,d)` = `x - ts_max(x,d)` — distance-below-rolling-high; the drawdown-state
+  feature the desk computes ad hoc in several places and has never had as an operator.
+- `ts_vector_proj(x,y,d)` / `ts_vector_neut(x,y,d)` — **time-series** projection and residual.
+  This is beta-hedging as an operator: neutralise a symbol's feature against a reference market
+  over a rolling window. Direct MT5 use — neutralise any FX leg against DXY/gold/index state.
+- `ts_co_skewness`, `ts_kurtosis`, `ts_triple_corr` — higher-moment and three-way dependence.
+- `clamp`, `purify`, `pasteurize`, `nan_mask`, `is_not_finite` — the HYGIENE layer. `pasteurize`
+  ("NaN if the instrument is not in the alpha universe") is the platform's own answer to the
+  point-in-time universe problem, and it is an OPERATOR there, not an afterthought.
+- `ts_target_tvr_hump` — tunes hump until turnover hits a TARGET. The platform treats turnover as
+  a controlled quantity with a solver, not a reported diagnostic.
+
+**NO MT5 ANALOGUE — the data-axis routing.** The 8 `(Vector)->Matrix` operators (`vec_count`,
+`vec_norm`, `vec_range`, `vec_stddev`, `vec_avg`, …) presuppose a **vector field**: multiple
+values per (date, symbol) — e.g. every analyst estimate for one name on one day. The MT5 book has
+no such field today. It names a real axis: per-(date,symbol) multi-valued data the desk could
+own — every tick in the bar, the full depth ladder, every calendar event for a currency that day.
+Routed to `docs/research/data_axis_watchlist.md`.
+
+**NOT IMPORTED (L1.6):** nothing about the platform's thresholds, fitness bar or submission
+filter is taken from this repo. The type algebra is a correctness property; it has no bar.
+
+---
+
+## BRAIN s29 — 2026-08-29 — `efJerryYang/worldquant-brain-simulator` (GPL-3.0), mined as TEXT
+
+s28's next-ground item 4. The brief's argument for opening a reimplementation is that *a
+simulator exposes the semantics documentation elides*. It does — and on this one the loudest
+semantics are the ones the simulator **advertises and then never applies**.
+
+**THE ONE SEMANTIC THE DESK ACTUALLY NEEDED — the post-processing ORDER.** `Simulator.post_processing`
+is the entire alpha→weights path and it is four lines, in this order:
+
+1. **neutralize** — `alpha = alpha - alpha.mean()` (cross-sectional demean)
+2. **truncate** — `alpha = alpha.clip(-boundary, +boundary)`, `boundary = settings["truncation"]`
+3. **normalize** — `alpha = alpha / alpha.abs().sum()` (gross book = 1)
+
+Neutralise → truncate → normalise. The desk's own cells (s28) do demean-then-gross-normalise with
+no truncation step at all, so the ordering is now pinned against an independent implementation.
+
+**BUT THE TRUNCATION IS SCALE-INHOMOGENEOUS AND THEREFORE MEANINGLESS AS WRITTEN.** The clip is
+applied to the RAW alpha value, BEFORE normalisation. Alpha units are arbitrary — a `rank()` alpha
+lives in [0,1], a raw-price alpha lives in the hundreds — so `truncation: 0.01` either clips
+nothing (rank alpha demeaned into [−0.5,0.5]… actually clips most of it) or clips everything,
+purely as a function of the expression's scale. On the platform truncation is a cap on the FINAL
+weight as a fraction of book, i.e. it must come AFTER normalisation, and it must be re-normalised
+afterwards or the book no longer sums to 1. **The MT5 lesson, and it is the s21 test again:
+`score(k·alpha)` must equal `score(alpha)`. Any desk-side truncation/hump/cap must be applied to
+normalised weights, and re-normalised, or it is a hidden function of expression scale.**
+
+**`rank(x, rate=2)` — the platform's default rank is APPROXIMATE.** The repo quotes the official
+description verbatim with its URL: rank returns floats equally distributed in [0,1], *"when rate
+is set to 0, the sorting is done precisely. The default value of rate is 2."* The desk's `rank`
+has no `rate` and is exact. **This matters for reading any published BRAIN result**: an alpha
+tuned under bucketed ranking is not the same alpha as one tuned under exact ranking, and the
+difference is largest exactly where the cross-section is thin — which is the MT5 book's normal
+state (s28 measured a mean cross-section of ~140 names, against the platform's Top3000). Logged as
+a FACT ABOUT THEIR PROCESS (L1.6); the desk imports no rate parameter and no bar.
+
+**DELAY IS STRUCTURAL, NOT A SETTING.** `process_day(prev_day, today)` computes the alpha from
+data up to and including `prev_day` and applies it to `today`'s returns. `delay: 1` is hardcoded
+by the loop's shape; `delay: 0` is unreachable. This is the same construction s28's cells use, so
+the desk's PIT convention is confirmed against an independent build.
+
+**THE UNIVERSE OPERATOR — worth stealing, and it is free.** `filter_by_universe(prev_day)` ranks
+by `cumulative_liq = rolling_90d_sum(log(volume × close))` and takes the top N **as of the
+previous day**, with an 89-row per-symbol burn-in dropped and any date carrying fewer than 200
+names dropped entirely. MT5 analogue exists today: `log(tick_volume × close)` summed over 90 days
+per symbol, ranked PIT. BRAIN s24 already killed liquidity tier as a *grouping*; this is a
+different use — a PIT UNIVERSE FILTER, not a peer group — and it is untested on the desk.
+
+### WHAT THE SIMULATOR PARSES AND THEN THROWS AWAY (four settings, zero readers)
+
+`settings.yaml` declares `neutralization`, `decay`, `pasteurization`, `nan-handling`. Greping the
+whole repo for their readers:
+
+| setting | read? | applied? |
+|---|---|---|
+| `neutralization: Market\|Sector\|Industry\|Subindustry\|None` | `by_what = settings.get(...)` assigned | **NEVER USED** — the next line demeans unconditionally |
+| `decay: 30` | never read | no (`decay_linear` exists in `expression.py` as an alpha101 primitive only) |
+| `pasteurization: True` | never read | no |
+| `nan-handling: False` | never read | no |
+| `unit-handling`, `instrument-type` | commented `# No usage` (honest) | no |
+
+**The consequence is a hard scope limit and it must be recorded before anyone cites this repo:
+this simulator cannot answer a neutralisation question.** Every setting from `None` to
+`Subindustry` produces byte-identical market-neutral output. Its `docs/*_platform.png`
+side-by-side comparisons against the real platform were therefore run with the platform
+neutralising by sector and the local build neutralising by market, whatever the yaml said. This
+is the parsed-but-unread-settings-key class (BRAIN s7): **a dead key is indistinguishable from a
+live one at the call site, and here it silently voids the one axis this desk came for.**
+
+### A SILENT WINDOW TRUNCATION — the s28 calendar bug's cousin, in someone else's code
+
+`process_day` hands the alpha function `s.df.query("... @start_day_dt <= date <= @prev_day_dt")`
+with `start_day_dt = prev_day − 60 CALENDAR days` — about **41 trading days**. Nothing checks it.
+Every alpha101 expression with a window past ~41 bars (and there are many: `ts_rank(…, 250)`,
+`correlation(…, 250)`, `sum(…, 220)`) returns NaN or a short-window value **with no error and no
+warning**, exactly like s28's union-calendar collapse. It is the same defect class for the third
+run in a row: *a window silently served fewer observations than it asked for, and the output
+looked clean.* The habit that catches it is unchanged — **print `n` beside every number**, where
+here `n` is the count of bars the window actually consumed.
+
+### PROVENANCE — and a correction to the desk's own s12 finding
+
+`expression.py` opens `# yli188's original work here: https://github.com/yli188/WorldQuant_alpha101_code`.
+BRAIN s12 proved yli188's `code_2` inverts `correlation`/`covariance` at 47/47 sites. **This
+descendant does NOT carry the inversion**: `correlation` returns `x.rolling(w).corr(y)` and
+`covariance` returns `x.rolling(w).cov(y)`, both correct. So a public corrected fork of the
+inverted file exists, and s12's finding is a property of yli188's file, never of the lineage.
+SOURCE: `efJerryYang/worldquant-brain-simulator` (GPL-3.0). DERIVES-FROM: yli188 (stated by the
+file itself). No third-party code was installed, executed or vendored — read as TEXT via
+`raw.githubusercontent.com`.
+
+**NOT IMPORTED (L1.6):** no threshold, no fitness bar, no booksize, no submission filter.
+`booksize = 20_000_000  # should not change` is a fact about their harness and nothing else.
+
+### BRAIN s29 (2026-08-29) — `rank(x, rate)` granularity, and the post-processing order
+
+Source: `efJerryYang/worldquant-brain-simulator` (GPL-3.0), `src/alpha_pool/expression.py:154`
+and `src/simulator/simulate.py:252-264`. Mined as TEXT; nothing installed or vendored.
+
+- **`rank(x, rate=2)`** — the platform's own description, quoted verbatim in that file: ranks x
+  among all instruments returning floats **equally distributed on [0.0, 1.0]**; `rate=0` sorts
+  precisely, and **the default is rate=2, i.e. deliberately imprecise**. MT5 analogue: bucketed
+  cross-sectional rank, `ceil(pct * B) / B`. **MEASURED AND REFUTED as a turnover lever**
+  (`data/brain_hunter_s29b_coarse_rank.json`): precise → 3 buckets moves daily turnover 1.467 →
+  1.452 on `reversal_1|ward_k24`, non-monotone, effect size indistinguishable from noise on all
+  three cells tried. Retained as a documented operator, **not** as a cost lever — the family's
+  turnover is set by the feature's autocorrelation, not by ranking granularity.
+- **Checked null, recorded so nobody re-derives it:** the platform's `(rank−1)/(n−1)` and the desk's
+  `rank(pct=True)` = `rank/n` are affine transforms of one another. Demeaning removes the offset and
+  gross-normalisation removes the scale, so the resulting weights are **identical**. No change owed.
+- **Post-processing ORDER: neutralise → truncate → normalise.** The desk's cells currently do
+  demean → gross-normalise with **no truncation stage**. Flagged as a **spec question, not a spec**:
+  this implementation clips in raw-alpha units *before* normalising, which is not the same as
+  bounding a normalised weight, and clip-then-renormalise is not idempotent. The author's own hidden
+  README TODO reads *"Truncation correctness (current not necessarily working)"*. A per-name weight
+  cap is worth testing on desk cells on its own merits (concentration control), but this source
+  cannot settle what the platform actually does.
+- **Do not read this simulator's `settings.yaml` as the platform's parameter list.**
+  `neutralization` is read into a variable that is never used (`simulate.py:257`) — all four modes
+  silently execute market neutralisation — and `decay`, `delay`, `pasteurization`, `nan-handling`
+  and `unit-handling` appear in no `settings.get` call at all. Six of twelve settings are inert.
+
+---
+
+## BRAIN HUNTER s30 (2026-08-29) — three findings inside an artifact s28 had already exhausted
+
+**FIRST, THE DEFECT, AND IT IS MINE.** s28 marked `AshSwing/FastPlus` `src/operator.rs`
+**"fully parsed, 108/108"** in the exhaustion list, with the census committed as
+`data/brain_hunter_s28_operator_typespec.json`. This session re-fetched and re-parsed the same
+file from scratch before reading that line, and produced a strictly *worse* duplicate (no kwarg
+defaults, no variadic arity). The duplicate artifact has been **deleted**; s28's typespec remains
+the desk's operator registry. The exhaustion list did its job and I failed to read it first —
+recorded because the whole point of a dated exhaustion claim is that the next session does not
+re-spend on it, and the claim is only as good as the habit of reading it before fetching.
+
+Everything below is what re-reading the same file surfaced that s28's note did **not** carry.
+Source unchanged: `AshSwing/FastPlus` (MIT, 4★, pushed 2026-08-13), read as TEXT over
+raw.githubusercontent; nothing installed, executed or vendored. §13 clean. **CLAIMED, not
+verified** — the descriptions are the platform's documentation as transcribed by that author, and
+nothing here has been run on desk data.
+
+### 1. `Group` is a PRODUCED type — the grouping is manufactured, never sourced
+s28 counted the 14 group-**consuming** operators and concluded the desk needs a grouping map.
+It did not report the other side of the type algebra: **three operators RETURN `Group`.**
+
+**And the data was already on disk.** `data/brain_hunter_s28_operator_typespec.json` records
+`(Matrix)->Group` and `(Group,Group)->Group` among its fourteen signature classes. s28 captured
+the fact and did not read it; this session re-fetched the source to rediscover something the
+desk's own artifact already held. That is the owned-data breach in miniature — the re-fetch was
+waste, but the *unread artifact* was the more expensive of the two, and it went unnoticed for a
+session because the census was reported as a count rather than interrogated as a structure.
+
+- **`bucket(x, range=…|buckets=…, skipBoth=, NaNGroup=) → Group`** — converts **any numeric
+  field** into a grouping by ranking to [0,1] and cutting into buckets. The registry's own
+  description ends with the platform's documented idiom, verbatim: *"most common usage is
+  `bucket(rank(x), range='0,1,0.1')`"*. Hidden `(-inf,start]` / `[end,+inf)` buckets by default;
+  `NaNGroup=True` gives NaNs their own bucket instead of dropping them.
+- **`group_cartesian_product(g1, g2) → Group`** — cross two groupings into `len_1 × len_2` cells.
+- **`densify(g) → Group`** — collapse a many-bucket grouping to only its occupied buckets.
+
+**Consequence, and it is six sessions wide.** s11–s28 treated the missing grouping as a
+**data-acquisition** problem: hunt a taxonomy, build ward clusters, argue about k for four
+sessions. The platform's canonical route sources no taxonomy at all — it builds the grouping from
+a numeric field you already own, per bar, **PIT by construction** (unlike the year-lagged ward
+clusters). On MT5 that needs nothing new: `bucket(rank(ts_std_dev(ret,60)))` is a volatility tier,
+`bucket(rank(ADV))` a liquidity tier, `bucket(rank(ts_corr(ret, XAUUSD, 120)))` a gold-beta tier.
+Routed as an axis to `data_axis_watchlist.md`; **named as s31's first ground**; **untested**.
+
+### 2. The turnover family is a SOLVER, not a grid — and turnover is this desk's binding constraint
+s28 listed `ts_target_tvr_hump` among "operators not named in the desk catalogue" and moved on.
+Reading the descriptions, there are **six** operators aimed at turnover and **three of them invert
+the problem** — you state the turnover you want and they solve for the smoothing parameter,
+optimising λ inside a stated `lambda_min, lambda_max`:
+
+| operator | what it computes |
+|---|---|
+| `ts_decay_linear(x, d, dense=)` | linear-weighted MA over the last d values |
+| `hump(x, hump=)` | limits the amount **and magnitude** of change in the input |
+| `jump_decay(x, d, stddev=, sensitivity=, force=)` | `abs(x−ts_delay(x,1)) > sensitivity·ts_stddev(x,d) ? ts_delay(x,1)+ts_delta(x,1)·force : x` — a vol-scaled **gap filter**: a jump bigger than the threshold is only partially followed |
+| `ts_target_tvr_decay(x, target_tvr=, lambda_min=, lambda_max=)` | tunes the decay so **realised turnover equals a target** |
+| `ts_target_tvr_hump(...)` | same, solving for the hump threshold |
+| `ts_target_tvr_delta_limit(x, y, ...)` | same, solving a delta limit; `y` may be `adv20`/volume **or a constant** |
+
+All six have direct MT5 analogues and need no grouping and no new data. `jump_decay` is the
+pointed one: an MT5 book takes weekend and session gaps that this operator exists to absorb, and
+the desk has no equivalent. Methodology consequence routed to `improvement_inbox.md`.
+
+### 3. The desk implements SIX of 108 — across TWO modules, three of them implemented twice
+**Corrected mid-session, and the correction is the finding.** My first pass counted 4 by treating
+`libs/alpha_factory/wq_operators.py` as the desk's only WQ operator module. It is not: a second
+module, **`libs/research/operators.py`**, implements `group_rank`, `group_zscore`, `vector_neut`,
+`ts_backfill` and `ts_information_ratio` (= the registry's `ts_ir`). I found it only because a
+sibling session's abandoned script quoted it. The true union is **6 of 108 (5.6%)**:
+
+| operator | `libs/alpha_factory/wq_operators.py` | `libs/research/operators.py` |
+|---|---|---|
+| `group_rank` | ✔ | ✔ |
+| `group_zscore` | ✔ | ✔ |
+| `ts_backfill` | ✔ | ✔ |
+| `trade_when` | ✔ | — |
+| `vector_neut` | — | ✔ |
+| `ts_ir` (as `ts_information_ratio`) | — | ✔ |
+
+**Two defects fall out of that table.** (1) **Three operators are implemented twice, in two
+modules, with no shared source** — two independent definitions of `group_rank` that no test
+compares, which is a divergence waiting to be discovered as an unexplained result difference
+between two cells. (2) **`vector_neut` is implemented and has never been consumed by a
+hypothesis**, while three consecutive session notes (s28, s29, s30) carried it forward as an
+un-built "next ground". A capability that exists but is invisible to the seats that need it is
+the III.16 shape, and it cost this ground three sessions of misdirected priority.
+
+**The measurement trap, recorded because it is what produced my wrong number.** A `def <name>`
+grep across `libs/` and `desks/` returns 14 matches. Nine — `add`, `log`, `or`, `quantile`,
+`rank`, `reverse`, `scale`, `sign`, `bucket` — are **name collisions with unrelated desk
+functions**; `vector_neut` and `ts_information_ratio` are **real and were nearly discarded as
+collisions**. So the naive grep is wrong in *both* directions at once: it over-counts by 9 and,
+once you start pruning collisions by eye, it invites you to prune the true positives too. The only
+reliable method is to enumerate the modules that exist, which is what the table above does.
+
+### Still not buildable under this seat
+This seat is research-frozen (docs/research + data only). Every operator above is a `libs/` change
+and is named here as a **specification**, not as work done.
+`data/brain_hunter_s28_operator_typespec.json` is the machine-readable input for a seat that can
+write code. `group_neutralize`, `ts_vector_proj`/`ts_vector_neut` and `ts_regression(rettype 0–9)`
+remain genuinely absent. **`vector_neut` does NOT** — it is implemented in
+`libs/research/operators.py` and has simply never been consumed; carrying it as an un-built
+"next ground" for three sessions was an error of inventory, not of capability, and the correct
+next step for it is a HYPOTHESIS, not a build.
+
+### 4. Operator shapes the BRAIN registry does NOT contain — `GaomingOrion/qweave` (MIT), read as TEXT
+
+qweave is a **computation engine**, not a parser, so its AST is a claim about semantics rather
+than signatures. Its expression enum (`crates/qweave-core/src/expr.rs`) carries several shapes
+absent from the 108-operator BRAIN Expert registry:
+
+- **`Sma(x, n, m)` — the Chinese recursive smoother.** Confirmed from the repo's own docs
+  (`docs/gtja_alpha191.md`): *"`SMA(A,n,m)` 使用递归平滑系数 `m/n`"* — an EWMA with smoothing
+  coefficient **m/n**, not a moving average. This is the signature operator of the CN factor
+  libraries and BRAIN has no equivalent.
+- **`Wma(x, n)` with `0.9^i` weights** — same doc: the GTJA research report's own definition is
+  **geometric**, not linear. BRAIN's `ts_decay_linear` uses linear weights d, d−1, …, 1. Two
+  different kernels on the same axis, and the desk has now measured only one of them.
+- **`ConditionalBeta`** — beta estimated conditional on a state. No BRAIN analogue; `ts_regression`
+  is unconditional.
+- **`Resi` / `MultiResi` / `RollingBeta` / `Slope` / `Rsquare`** — regression residuals and
+  diagnostics as first-class nodes (BRAIN folds these into `ts_regression(rettype 0–9)`).
+- **`ScanMul`** — an *expanding* cumulative product; BRAIN's `ts_product` is windowed.
+
+**The immediate consequence for s30c's refutation, and it is a pre-registerable follow-up.** s30c
+refuted **linear** decay as a cost lever on `reversal_1`, and the mechanism of the refutation was
+that smoothing deletes signal faster than it deletes turnover, because a one-day reversal's
+information is concentrated in the most recent bar. That mechanism makes a **directional
+prediction about other kernels**: a kernel that concentrates more weight on the newest bar should
+lose less signal per unit of turnover reduction than linear decay did. `Sma(x, n, m)` (EWMA, tuned
+by m/n) and `Wma` at `0.9^i` are exactly that, and the desk has neither.
+
+**Declare the sign before running it** (s29's rule, and it is the whole point of writing it here
+rather than after): at a **matched turnover reduction**, EWMA/geometric smoothing loses **less**
+gross Sharpe than linear decay. If it loses the same or more, the kernel axis is closed and the
+family's cost problem is confirmed as kernel-independent — which would be the stronger and more
+useful result of the two.
+
+---
+
+## BRAIN HUNTER s31 (2026-08-29) — the eval kernel, not the AST: exact arithmetic for five operators s30 could only name
+
+s30 read `crates/qweave-core/src/expr.rs` and marked the artifact "AST fully enumerated". An AST
+node is a **name and an arity**; it is not semantics. s30's `Sma` entry therefore rested on one
+sentence of the repo's own Chinese documentation (`使用递归平滑系数 m/n`), which is a paraphrase of
+the GTJA report, not the code. This session read `crates/qweave-core/src/alpha_eval.rs` (86 KB,
+never opened by any session) and `crates/qweave-factors/src/qlib_alpha158.rs`, both MIT, both as
+TEXT. The shapes s30 named are confirmed; the arithmetic below is new, and two of the four calibers
+would have produced a wrong implementation if taken from the AST alone.
+
+### `Sma(x, n, m)` — EWMA at α = m/n, **and the state resets to NaN on any gap**
+
+```
+alpha = m / n                         # guard: NaN everywhere if n == 0 or m > n
+state = alpha*value + (1-alpha)*state   if value is finite and state is finite
+state = value                           if value is finite and state is NaN  (seeds on first obs)
+state = NaN                             if value is NOT finite               (RESETS)
+```
+
+**The caliber that matters on this desk and appears nowhere in the docs: a single non-finite input
+DESTROYS the accumulator, it does not skip the bar.** A conventional `ewm(adjust=False)` carries
+its state across a missing observation. On the desk's MT5 tape — holidays, per-symbol calendars,
+the union-index NaNs that silently ate 89% of the cross-section in s28 — those two conventions are
+materially different operators wearing one name, and the difference grows with window length.
+Any desk implementation must choose the convention **explicitly and say which**.
+
+### `Wma(x, n)` — geometric weights, and the direction is the opposite of the naive read
+
+```
+w_oldest = 0.9^(n-1) ... w_newest = 0.9^0 = 1     # weight /= 0.9 walking forward
+result   = sum(w_i * x_i) / sum(w_i)              # normalised, so it is a weighted MEAN
+```
+
+`0.9^i` is ambiguous until you see the loop: the **newest** bar carries the largest weight and the
+decay runs backwards in time. It is also **normalised**, where BRAIN's `ts_decay_linear` is
+conventionally a weighted sum. A desk implementation copying "0.9^i" from s30's note without the
+loop direction would build the time-reversed operator and get a result that is not wrong-looking.
+
+### `ConditionalBeta(y, x, cond, n)` — the conditioning shape with no BRAIN analogue, exactly
+
+```
+over the trailing n bars, keep index i iff cond[i] == 1.0 AND y[i], x[i] both finite
+if fewer than 2 survive -> NaN
+else -> OLS beta on the SURVIVING SUBSET
+```
+
+Note the two calibers: the condition is compared to `1.0` **exactly** (it is a boolean-valued
+expression, not a truthiness test), and the estimator uses a **variable sample size** — the window
+is n bars but the regression may be fit on 2. That is an unadvertised power problem, and any desk
+use needs a minimum-sample guard the source does not have.
+
+### `Slope(x, n)` / `Rsquare(x, n)` / `Resi(x, n)` — regression against the TIME INDEX
+
+Unary, so the regressor is the bar index, not another series. These are the rolling trend-strength
+diagnostics: slope of the fitted line, its R², and the residual of the newest bar.
+
+**A CORRECTION TO THIS SESSION'S OWN FIRST DRAFT, and the correction is the better finding.** The
+draft said the desk has no rolling-regression operator of any kind, on the evidence that
+`libs/research/operators.py` and `libs/alpha_factory/wq_operators.py` expose eight public functions
+between them (`group_rank`, `group_zscore`, `vector_neut`, `trade_when`, `ts_backfill`,
+`ts_information_ratio`, `fitness`, `_as_panel`) and not one is a regression. That is true of those
+two files and false of the desk. **`libs/ict/cross_sectional.py` has carried
+`rolling_beta(sym, idx, window)` and `residualise(sym_ret, idx_ret, beta)` the whole time**, and
+neither operator module references either, nor did any of the thirty-one operator censuses this
+seat has written. Searching the operator layer and reporting its emptiness as the desk's inventory
+is the same defect shape as an empty collector artifact asserting absence: **I searched where the
+answer was supposed to live, not where it was.** The standing repair is one grep across `libs/`
+rather than across the two files whose names contain "operator".
+
+The precise gap, restated: `rolling_beta` is **bivariate** (a symbol against an index). There is no
+**unary** regression against the time index anywhere on the desk, hence no trend-QUALITY measure of
+any kind. `Rsquare` remains the highest-value item of the seven — it separates "moved a lot" from
+"moved monotonically", precisely the distinction every momentum feature in s28/s31 cannot make —
+and its absence is now established against the whole tree, not against two files.
+
+### `Quantile(x, n, q)` — rolling quantile, and s30's list omitted it
+
+Also present, also absent from the desk. Named here for completeness; it is the cheapest of the
+six to implement and the one with the weakest mechanism story.
+
+### The corpus find: `qlib_alpha158.rs` — a FOURTH factor library on this ground, never named
+
+Twenty-three sessions of coverage on the BRAIN ground name alpha101, GTJA alpha191 and the BRAIN
+operator registry. The same repo carries **Microsoft Qlib's Alpha158** (9 kbar + 4 price + 29
+rolling groups × 5 windows ∈ {5,10,20,30,60}), and it is the only one of the three whose factors
+are **entirely per-symbol time-series with no cross-section at all** — which makes it the single
+most MT5-transferable of the three libraries, because it needs no grouping map, no universe and no
+peer set. Every blocker six sessions argued about (s24–s27, and s31's own bucket work) is
+irrelevant to it. The file's own header also documents two calibration divergences from upstream
+qlib (`min_periods=1` vs full-window; 0- vs 1-based `IdxMax`), which is a reimplementation telling
+you where it disagrees with its source — the highest-value kind of README line.
+
+**Routing:** Alpha158 is logged as the next-ground item, NOT as a claim. The prior on published
+factor libraries measured on this desk is bad and stated in `prospector_watchlist.md`
+(alpha101 median Sharpe 0.518 on independent audit, s28). What is different here is the *shape*,
+not the expected return: a library with no cross-sectional dependency is testable on the desk's
+tape without settling any of the grouping questions.
+
+### Boundary
+
+Public MIT source, `raw.githubusercontent.com` and the public contents API, no auth, no wall
+touched, nothing installed or executed (supply-chain rule: mined as TEXT).
+
+### Artifacts exhausted this session (do not re-surface-scan)
+
+`GaomingOrion/qweave`: `crates/qweave-core/src/alpha_eval.rs` — the six kernels above read in
+full; the remainder is the cross-sectional and arithmetic node set already covered by s28.
+`crates/qweave-core/src/alpha.rs` (constructor signatures, complete).
+`crates/qweave-factors/src/gtja_alpha191.rs` — **censused for OPERATORS, which was the assigned
+task, and it is now closed on that axis**: the 191 formulas use exactly the vocabulary
+{`delay` 294, `rank` 139, `ts_sum` 134, `abs`, `ts_mean`, `sma` 82, `where_` 77, `correlation` 55,
+`decay_linear` 33, `delta`, `ts_rank`, `ts_min`/`max`, `power`, `ts_std`, `wma` 2, `slope` 3,
+`ts_argmin`/`argmax`, `covariance`, plus the CN directional primitives `tr`/`hd`/`ld`/`dtm`/`dbm`}.
+**There is no conditioning shape in the 191 that is not already in alpha101 or in the six kernels
+above** — the library's distinctiveness is its *fields* (`amount`, `vwap`, `volume`) and its
+recursive smoother, not its operator algebra. That is a negative result and it closes item 4 of
+s30's next-ground list.
+
+---
+
+## BRAIN HUNTER s32 (2026-08-30) — Alpha158 formulas, reciprocal conventions, and near-duplicate columns
+
+Source: public MIT `GaomingOrion/qweave`, branch `master`,
+`crates/qweave-factors/src/qlib_alpha158.rs`, read as text and checked against the repository's
+public documentation. The file expands 29 rolling groups over `[5, 10, 20, 30, 60]` and contains
+no group/fundamental inputs.
+
+### Exact implementation calibers
+
+- Level-valued rolling groups divide by the **current close**: `MA`, `STD`, `BETA`, `RESI`,
+  `MAX`, `MIN`, `QTLU`, `QTLD`; `RSQR` is already unitless. In particular,
+  `BETA = slope(close,d)/close`, so a raw slope port would make a multi-asset cross-section mostly
+  a price-level comparison.
+- `ROC = delay(close,d)/close`, the reciprocal of the usual `close/delay(close,d)`. A
+  cross-sectional rank is therefore reversed relative to the conventional implementation.
+- `VMA` and `VSTD` divide a rolling volume statistic by the **current** volume. They use the
+  opposite orientation from the price-level groups: a low current bar raises the ratio.
+
+### The honest redundancy result: near-affine away from all-flat windows, not exact
+
+Let `P=sum(max(delta,0))`, `N=sum(max(-delta,0))`, `D=P+N`, and `Q=D+eps`. The source computes
+`SUMP=P/Q`, `SUMN=N/Q`, and `SUMD=(P-N)/Q`. Therefore `SUMD = SUMP-SUMN` exactly, while
+`SUMP+SUMN=D/(D+eps)` — **not exactly one**. When `D` is ordinary-sized the three are numerically
+near-affine; when the whole window is flat they all collapse to zero. The same holds for
+`VSUMP/VSUMN/VSUMD`.
+
+Across five windows, 20 named columns (`SUMN`, `SUMD`, `VSUMN`, `VSUMD`) are consequently
+near-duplicates of their `*SUMP` sibling on active windows, but the epsilon/all-flat behavior is a
+real exception and must not be erased as “exact redundancy.” A feature-selection or trial-count
+audit should measure the exceptions on Fusion bars rather than assume either independence or
+identity.
+
+The count family carries a different result: `CNTD = CNTP-CNTN`, but `CNTP+CNTN < 1` whenever
+closes tie because a flat bar contributes to neither side. That makes tie density/stale-bar rate a
+separate MT5-native liquidity and data-quality axis.
+
+### MT5 mapping and verification asset
+
+Price-only families map directly to Fusion OHLC. MT5 `volume` is broker tick count, not traded
+size, and CFD `vwap` is absent; all 40 columns in the eight volume groups plus `VWAP0` therefore
+require an explicit substitution hypothesis or a named data gap, never a silent rename.
+
+The repository commits `golden_qlib_alpha158.parquet`, `golden_alphas.parquet`, and
+`golden_gtja_alpha191.parquet` under `crates/qweave-factors/tests/fixtures/`. These are free,
+independent expected-output fixtures for any desk port. The source also documents a warm-up
+caliber: qweave requires a full non-NaN window where upstream Qlib uses `min_periods=1`.
+
+---
+
+## BRAIN HUNTER s39 (2026-08-30) — three price-only distribution/state transforms from `alpha-gauntlet`
+
+Source: public MIT `openclaw-pza/alpha-gauntlet` at
+`c05298cb966e655a5efcf689468371365f6fbcc3`, read as text only. `NOTICE` declares derivation from
+QuantaAlpha (MIT) for its extended WQ operator/DSL/re-skin layer and from Kakushadze's public
+Alpha101 paper for formulas. The three shapes below live outside that formula layer and are exact
+code semantics, not copied performance claims.
+
+### `downside_var_ratio_168h` — realised downside semivariance share
+
+For H1 close (C_t), set (r_t=\Delta\log C_t). Over the trailing 168 observed bars, with at
+least 120 present:
+
+```
+sum(min(r, 0)^2) / (sum(r^2) + 1e-12)
+```
+
+It computes the fraction of realised variance carried by negative returns, bounded near [0,1].
+The source attaches a rebound intuition; that sign is ore and is **not** imported.
+
+**MT5 analogue:** compute from PIT H1 `close` on every currently tradable terminal-enumerated
+Fusion symbol, then rank only symbols with a bar genuinely available at the common decision time.
+Do not forward-fill a closed share/soft session into a fresh FX/index cross-section. No new data is
+needed. `translate_to_mt5("downside semivariance share")` currently returns `[]`; this explicit
+mapping is therefore a documentation-level extension under the research freeze, not a hidden
+fallback to another venue.
+
+### `tail_ratio_168h` — non-parametric return-tail asymmetry
+
+Over 168 simple H1 returns, with at least 120 present:
+
+```
+rolling_quantile(return, 0.95) / (abs(rolling_quantile(return, 0.05)) + 1e-12)
+```
+
+It compares positive and negative realised tail sizes without fitting a distribution. The source's
+"lottery-like overpriced" direction is explicitly refused: the operator computes shape; the Fusion
+gauntlet must learn whether either sign pays.
+
+**MT5 analogue:** same terminal-enumerated H1 ground and PIT mixed-calendar rule as semivariance.
+The input is only `time, close, symbol-session availability`; no volume substitute is involved.
+`translate_to_mt5("tail ratio")` returns `[]`, so the mapping is recorded here rather than
+fabricated by the function.
+
+### `ou_rev_press` — deviation multiplied by relative mean-reversion speed
+
+Over a right-aligned 168-bar window, source arithmetic is:
+
+```
+logp  = log(close)
+mu    = rolling_mean(logp, 168)
+y     = logp - mu
+b     = rolling_cov(diff(y), lag(y), 168) / rolling_var(lag(y), 168)
+theta = -log(1+b) for -1 < b < 0; 0 for b >= 0; NaN for b <= -1
+z     = (logp-mu) / rolling_std(logp, 168)
+score = -tanh(z) * sqrt(clip(theta / rolling_median(theta, 168), 0, 5))
+```
+
+This is a **relative pressure score**, not an OU half-life estimate: the source itself records
+small-sample upward bias in theta. Trending states mute to zero; oscillatory-divergent estimates
+become missing rather than fake super-fast reversion.
+
+**MT5 analogue:** H1 price-only state per terminal-enumerated Fusion symbol, optionally ranked at
+the same PIT common decision time. `translate_to_mt5("OU reversion pressure")` returns `[]`; no
+data gap exists for the transform, but its sign and horizon remain unmeasured. Source comments
+claim positive h1/h4/h24 t-statistics; those are external ore with no accepted result cells here.
+
+### One cost door, one policy door
+
+Any future construction must declare each target horizon as a counted trial and charge fresh
+symbol-native spread, commission, realised slippage/partial-fill markout and rollover swap. The
+current registry demonstrates why no common scalar is valid: at read time EURUSD spread was 1
+point with swaps -7.16/+3.04, US500 spread 36 with swaps -5.90/+1.54, and XAUUSD spread 20
+(realised-fill median 14.5) with swaps -67.06/+32.75. Those are consumption-time examples, not
+frozen backtest inputs.
+
+The repository's Bonferroni candidate-count threshold and attempt-inflated champion ratchet are
+**not imported**. They would add private gates before/around the canonical ten; L1.60 allows the
+operator language to expand and reserves every verdict for the one canonical pipeline. Evidence:
+`data/brain_hunter_s39_alpha_gauntlet_operator_screen.json`. Three operator specifications, zero
+desk constructions, zero target-horizon cells, zero survivors.

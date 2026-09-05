@@ -555,7 +555,7 @@ health — these rows are its dated verdicts, published before/while the named v
 degrades. The §42 named ground "delisting unwinds" is the adjacent family; this is its
 venue-death sibling, keyed by a THIRD party's risk decision rather than the dying venue's own
 announcement (which lies late — the announcement≠treatment fence's counterparty twin).
-mechanism-vocabulary flag (mandate): maps to NONE of the 24 CRYPTO_MECHANISMS cleanly
+mechanism-vocabulary flag (mandate): maps to NONE of the 24 OFF_BOOK_MECHANISMS cleanly
 (counterparty/venue-death risk) — the interesting case, widens the feature space.
 honest limits: (a) single archive so far — Bithumb's equivalent feed is WALLED from this probe
 origin (IP-level 403 incl. robots.txt, browser-UA control same), so cross-venue confirmation of
@@ -616,3 +616,122 @@ that union is exactly what R0193's timeline build produces, so the promotion che
 promotion-check: after R0193 lands, count warning→enforcement pairs with a Binance-listed
 instrument across ALL jurisdiction columns; if pooled n reaches double digits, screen via the
 event-study gate (libs/validation/event_study.py), pre-registered, never the continuous gauntlet.
+
+### WS-020 SGE deferred-fee direction: the retail read ("bearish sentiment") and the mechanical rule (delivery-declaration imbalance) assign OPPOSITE meanings to the same print   [observations: 1]
+logged: 2026-08-25 (CN frontier miner s12) | source: cngold.org 2026-07-01 fee article + SGE
+official contract spec (fetched this run; card #38 carries both)
+signal: Au(T+D) 延期补偿费 direction flipped to 空头付多头 (shorts pay longs) in mid-2026 while
+SGE traded at an 8.07 CNY/g DISCOUNT to international. CN retail media reads shorts-pay-longs as
+"bearish sentiment crowding" — but the OFFICIAL rule sets direction by DELIVERY DECLARATIONS
+(fewer-declarations side pays), under which shorts-pay-longs means take-delivery demand exceeds
+make-delivery supply, a PHYSICAL-DEMAND excess reading. Both cannot be the operative
+interpretation at once, and the discount context makes the tension sharp (physical-demand excess
+during a discount is itself odd — unless declaration behaviour is dominated by warehouse/
+financing logistics rather than either sentiment or demand, which would kill the fee direction
+as a signal entirely: card #38 falsifier (c)).
+direction: the desk's own R0021 lesson transfers exactly (funding is a quantized/clamped proxy —
+read the underlying imbalance, not the fee): the resolving observable is the DECLARATION
+QUANTITIES (交收申报量) per side per day, if SGE publishes them (daily-report route unmapped;
+named in card #38 NEXT). n=1 regime observation; no signal claim, no trial burned.
+promotion-check: once a declaration-quantity series exists, test whether fee-direction flips are
+declaration-led (physical) or price-led (sentiment) across ≥3 direction regimes before any
+XAUUSD conditioning use.
+
+### WS — 2026-08-29 — the neutralisation horizon crossover (BRAIN s29)
+
+**Observation, unexplained.** Pooling s28 and s29 (12 pre-registered and post-hoc cells, all
+reported), the benefit of cluster-neutralising a cross-sectional MT5 feature flips sign with the
+feature's HORIZON, not its family. Neutralisation HURTS at 5d / 20d / 60d / 120d trend
+(`mom_120` Δ=−0.126 at z=−6.31; `mom_60_skip5` Δ=−0.086 at z=−3.48; s28's `mom_60` at z=−7.8) and
+HELPS at 250d (`mom_250` Δ=+0.194 at z=+5.51) and at every dispersion feature at every horizon
+(`reversal_5` +0.174, `lowvol_60` +0.224, `absret_20` +0.145, all z ≥ 4.33 vs exact permuted
+control). n = 2,379–2,380 days, 127.7–140.5 mean names.
+
+**Why it is registered as weak rather than banked.** The crossover between 120d and 250d rests on a
+single feature on the far side. It was NOT pre-registered — it is the residual left after s29's
+declared rule was refuted 5/6 — so it carries exactly the forking-paths problem s29 was built to
+avoid, and it is recorded here rather than acted on for that reason.
+
+**Candidate mechanism, untested:** at 250d the cross-sectional spread in trend is dominated by
+asset-class-level drift, so a universe-wide rank is effectively ranking asset classes and the
+cluster removes a common drift rather than the signal; at 5–120d the cluster *is* the signal carrier.
+
+**Falsifier and next step:** pre-register signs for 150 / 180 / 200 / 250 / 300d against the exact
+size-matched control and require a monotone sign change at a single crossover. A scattered or
+absent crossover kills it. This is s30's ranked-first ground.
+
+## Lagged average pairwise correlation → next-month TSMOM (BRAIN s58 screen, RUN in s60)
+
+**Pre-registered, and the sign held.** `data/brain_hunter_s58_corr_regime.py` was written by s58
+and never executed (R0775, disposed same day). SOURCE: AQR *A Century of Evidence on Trend-Following
+Investing* (JPM Fall 2017) Exhibit 10 Panel B — of S&P volatility, 3-month change in volatility,
+T-bill yield and average absolute pairwise correlation, the correlation is "the ONLY indicator with
+a monotonic relation to the performance of time-series momentum." Sign declared NEGATIVE before
+measurement; negative control = trailing realised vol, which the paper reports as non-monotone.
+
+Desk MT5 daily panel, 175 symbols, 2008-07-17 → 2026-08-28, 60d correlation window, n = 202–203
+months. **All 8 cells reported** (2 conditioners × 2 sleeve constructions × lag-1/lag-0).
+
+| conditioner | sleeve | arm | ρ | p |
+|---|---|---|---|---|
+| avg\|corr\| | unscaled | **lag-1 (tradable)** | −0.107 | 0.131 |
+| avg\|corr\| | vol-scaled | **lag-1 (tradable)** | −0.139 | 0.049 |
+| avg\|corr\| | unscaled | lag-0 (untradable) | −0.145 | 0.039 |
+| avg\|corr\| | vol-scaled | lag-0 (untradable) | −0.173 | 0.014 |
+| realvol (control) | both | both | −0.02 … −0.05 | 0.51 … 0.74 |
+
+**Verdict: WEAK, not banked.** Three things are clean: the declared sign holds on all four
+avg|corr| cells, the negative control is flat everywhere (so this is not a generic conditioning
+artifact), and the effect is not a vol proxy. Two things stop it: (a) the best TRADABLE p is 0.049
+on 8 reported trials — Holm-corrected it survives nothing; (b) the lag-0 arm beats the lag-1 arm on
+every construction, the desk's recurring "the information arrives in the bar you cannot trade"
+pattern (PROSPECTOR s19, FREE-DATA q), though here the tradable arm retains most of it rather than
+collapsing.
+
+**The mechanism split the screen was built for is INSUFFICIENT-EVIDENCE, not resolved.** The paper
+names two separable causes: breadth ("fewer truly different trends to bet on") and vol-targeting
+sizing (positions shrink when correlations rise). The unscaled arm isolates breadth and does NOT
+reach significance (−0.107, p = 0.131); the vol-scaled arm is stronger (−0.139, p = 0.049). That
+leans toward the sizing artifact — the direction the authors' own portfolio construction would
+manufacture — but −0.107 vs −0.139 at n = 202 on near-identical samples is not a distinguishable
+difference, and reporting it as one would be the error this registry exists to prevent.
+
+**Falsifier / next step:** the arms need to be compared directly, not by their separate p-values —
+paired bootstrap on the ρ difference with the same months, plus an unscaled arm at larger n
+(extend the panel before 2008, where the desk's tape thins). If breadth survives at n ≫ 200 with
+the sizing arm removed, it is a real conditioner and becomes a regime candidate under the regime
+specialization law; if the gap holds under a paired test, the paper's headline is its own
+construction. **0 cards, 0 forward clocks.** Artifact: `data/brain_hunter_s58_corr_regime.json`.
+
+### RESOLVED 2026-09-03 (BRAIN s61, paired test + deep panel) — the sign does not survive the window
+
+The falsifier above was written by s60, run by s61 (`data/brain/s61_corr_regime_paired.py`,
+`data/brain_hunter_s61_corr_regime_paired.json`) and never written up until now. Stationary block
+bootstrap, 5,000 draws, mean block 6 months, seed 20260903. **11 cells, all reported.**
+
+**H1 (paired ρ difference) — NOT SUPPORTED, on every arm.** The exact s58 replication reproduces
+the published pair (−0.1066 / −0.1387, n = 202) and the paired statistic is d_ρ = +0.032 with
+CI95 [−0.032, +0.102], boot p = 0.353. The two arms' monthly returns correlate 0.74, which is
+precisely why comparing their separate p-values was never a test. Free-composition deep arm
+d_ρ = +0.067, p = 0.135; fixed-composition d_ρ = +0.034, p = 0.515. **The breadth-vs-sizing split
+stays INSUFFICIENT-EVIDENCE — but now on a correct test rather than on a fallacy.** The lean
+toward sizing is real in sign and absent in significance on all three arms.
+
+**H2 (the unscaled sign survives at larger n) — REFUTED, and this is the finding.** Extending the
+panel from 202 to 327 months (175 symbols, 1999-05 → 2026-07) **flips the unscaled ρ from −0.107
+to +0.098**, and the vol-scaled arm from −0.139 to +0.031. On the free-composition 244-symbol arm
+(359 months back to 1996-09) unscaled ρ = +0.110. On the ONLY arm that answers H2 without a
+composition confound — a fixed 15-symbol set held for the whole 360 months — ρ = +0.020, p = 0.711
+unscaled and −0.014, p = 0.791 vol-scaled: **flat**.
+
+**H3 (negative control) — HELD.** The paired statistic on realvol is d_ρ = +0.020, CI
+[−0.073, +0.113], p = 0.680. So the paired machinery is not manufacturing a difference.
+
+**Verdict: RETIRED as a conditioner candidate.** The declared negative sign was a property of the
+2009–2026 window, not of the desk's panel: it is negative on 202 months, positive on 327, and
+indistinguishable from zero on the 360-month fixed-composition panel that removes the confound.
+The s58 result was never significant after multiplicity, and it does not replicate out of its own
+window — which is the strongest form this registry's "weak, not banked" verdict can resolve into.
+Re-open only on the L1.16a bar: a NAMED enabling change addressing the window dependence itself
+(e.g. a per-regime conditional formulation preregistered before measurement), never on a fresh
+sample of the same test. **0 cards, 0 forward clocks, no gate threshold applied.**

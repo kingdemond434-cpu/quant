@@ -1,0 +1,160 @@
+{
+  "session": "brain_hunter_s52",
+  "date": "2026-09-03",
+  "ground": "AQR data library (s51 next-ground (a)); AQR sitemap population",
+  "legitimacy": {
+    "robots": "www.aqr.com/robots.txt = 302 -> homepage HTML (soft-404). Under RFC 9309 an unavailable robots is ALLOW-ALL. Confirms s51.",
+    "licence": "Public unauthenticated download. AQR asks only for citation 'AQR Capital Management, LLC.'. No auth wall, no paywall, no control circumvented.",
+    "fetches": [
+      "/robots.txt",
+      "/sitemap.xml",
+      "4 dataset pages",
+      "3 xlsx files"
+    ]
+  },
+  "population_correction": {
+    "s51_claim": "AQR front page is not factor ground; the factor library 'is elsewhere on the host and was not located this session'",
+    "verdict": "REFUTED \u2014 located",
+    "sitemap_urls": 916,
+    "sections": {
+      "insights/research": 564,
+      "insights/perspectives": 108,
+      "our-firm/aqr-insight-award": 46,
+      "insights/quick-takes": 26,
+      "insights/datasets": 23
+    },
+    "note": "s51 saw 11 article URLs from the collector's landing page. The sitemap exposes 916. The collector's one-hop view understated the reachable population by ~83x."
+  },
+  "datasets_mt5_relevant": {
+    "century-of-factor-premia-monthly": {
+      "rows": 1196,
+      "first": "1926-07-30",
+      "last": "2026-02-27",
+      "columns": 46,
+      "mt5_native_legs": [
+        "Currencies Value/Momentum/Carry/Multi-style",
+        "Commodities Value/Momentum/Carry/Multi-style",
+        "Equity indices Value/Momentum/Carry/Defensive/Multi-style",
+        "Equity indices Market",
+        "Commodities Market"
+      ],
+      "measured_publication_lag_months": 6.2
+    },
+    "time-series-momentum-factors-monthly": {
+      "rows": 497,
+      "first": "1985-01-31",
+      "last": "2026-05-29",
+      "legs": [
+        "TSMOM",
+        "TSMOM^FX",
+        "TSMOM^CM",
+        "TSMOM^EQ",
+        "TSMOM^FI"
+      ],
+      "measured_publication_lag_months": 3.2
+    }
+  },
+  "finding_stated_lag_is_boilerplate": {
+    "aqr_statement": "'We aim to update each data set monthly with a lag of about two months.'",
+    "measured": {
+      "TSMOM": 3.2,
+      "Century": 6.2
+    },
+    "verdict": "The stated lag is boilerplate on both datasets, understating actual staleness 1.6x and 3.1x. Per-dataset max(observation_date) is the only liveness measure."
+  },
+  "finding_restatement_measured": {
+    "claim_source": "AQR about page: updated series 'highly (but not perfectly) correlated' with the original; entire history restated each update",
+    "method": "Original-paper vintage vs current updated file, name-matched (NOT position-matched), identical 300-month overlap 1985-01..2009-12",
+    "result": {
+      "TSMOM": {
+        "n": 300,
+        "first": "1985-01-31",
+        "last": "2009-12-31",
+        "corr": 0.9744,
+        "mean_abs_diff_monthly": 0.00495,
+        "sharpe_original": 1.385,
+        "sharpe_restated": 1.411,
+        "sharpe_delta": 0.027
+      },
+      "TSMOM^CM": {
+        "n": 300,
+        "first": "1985-01-31",
+        "last": "2009-12-31",
+        "corr": 0.9312,
+        "mean_abs_diff_monthly": 0.00902,
+        "sharpe_original": 1.063,
+        "sharpe_restated": 1.012,
+        "sharpe_delta": -0.051
+      },
+      "TSMOM^EQ": {
+        "n": 300,
+        "first": "1985-01-31",
+        "last": "2009-12-31",
+        "corr": 0.9989,
+        "mean_abs_diff_monthly": 0.00103,
+        "sharpe_original": 0.827,
+        "sharpe_restated": 0.83,
+        "sharpe_delta": 0.003
+      },
+      "TSMOM^FI": {
+        "n": 300,
+        "first": "1985-01-31",
+        "last": "2009-12-31",
+        "corr": 0.9746,
+        "mean_abs_diff_monthly": 0.00959,
+        "sharpe_original": 0.743,
+        "sharpe_restated": 0.705,
+        "sharpe_delta": -0.038
+      },
+      "TSMOM^FX": {
+        "n": 300,
+        "first": "1985-01-31",
+        "last": "2009-12-31",
+        "corr": 0.9925,
+        "mean_abs_diff_monthly": 0.00317,
+        "sharpe_original": 0.743,
+        "sharpe_restated": 0.784,
+        "sharpe_delta": 0.041
+      }
+    },
+    "verdict": "Restatement is REAL but SMALL. Worst leg is commodities (corr 0.9312 => ~13% of variance over a FIXED historical window is vintage artifact). Sharpe shifts <=0.051 on every leg.",
+    "consequence": "Sound as an ex-post benchmark. NOT a point-in-time series: the vintage downloaded today is not the vintage that existed at any past date, so it must never enter a live or PIT signal path."
+  },
+  "trap_column_order": {
+    "detail": "Updated file column order is TSMOM,CM,EQ,FI,FX; original-paper file is TSMOM,EQ,FX,FI,CM.",
+    "consequence": "A positional merge of the two vintages silently swaps asset classes \u2014 FX would be read as CM. Match by header name.",
+    "status": "avoided in this session's measurement; recorded so no future reader repeats it"
+  },
+  "desk_gap_confirmed": {
+    "id": "external factor redundancy is unmeasured",
+    "evidence": "desks/mt5/mt5desk/independence.py measures k_eff strictly from the desk's OWN sleeve ledger (daily_returns -> mean_pairwise_corr -> effective_bets). grep finds no external factor benchmark anywhere in libs/, scripts/, desks/.",
+    "why_it_matters": "A sleeve can be perfectly uncorrelated with every other DESK sleeve and still be a repackaging of a free, public, century-old factor premium (Currencies Carry). Internal-only independence cannot see this by construction. L1.61 requires selection to optimise MARGINAL independence.",
+    "proposed_use": "DIAGNOSTIC ONLY \u2014 regress a candidate's backtest monthly returns on the matching AQR asset-class legs (FX sleeves -> Currencies V/M/C; metals+energy -> Commodities V/M/C; indices -> Equity indices V/M/C/D) and report residual alpha alongside the existing verdict.",
+    "explicitly_not_a_gate": "L1.60 forbids inserted gates. This is proposed with NO pass/fail path, mirroring wq_operators.fitness() which this seat's own brief cites as the precedent. Do not add a threshold."
+  },
+  "feasibility_limit_stated": {
+    "constraint": "AQR legs are MONTHLY. A 14-day forward window yields 0 monthly observations, so this diagnostic can NEVER apply to a forward-window decision.",
+    "applicable_where": "Backtest histories only (a 2015-2026 candidate gives ~130 monthly observations, which is sufficient)."
+  },
+  "counts": {
+    "desk_constructions": 0,
+    "target_horizon_cells": 0,
+    "gauntlet_trials_run": 0,
+    "tradeable_cards": 0,
+    "survivors": 0,
+    "multiplicity_incurred": "none",
+    "bars_imported_from_AQR": 0,
+    "note": "No AQR Sharpe, threshold or fitness bar was imported as a desk gate (L1.6). Their numbers are recorded as facts about their process."
+  },
+  "video": {
+    "fetched": 0,
+    "newly_locked": 0
+  },
+  "new_venues": 0,
+  "artifacts": [
+    "data/external/aqr/Century-of-Factor-Premia-Monthly.xlsx",
+    "data/external/aqr/Time-Series-Momentum-Factors-Monthly.xlsx",
+    "data/external/aqr/TSMOM-orig.xlsx",
+    "data/external/aqr/tsmom_restatement.json"
+  ]
+}

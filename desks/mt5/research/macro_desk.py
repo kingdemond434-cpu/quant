@@ -15,6 +15,7 @@ No marker: perpetual watcher (supervisor keeps alive like research_loop).
 from __future__ import annotations
 
 import json
+import os
 import pickle
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -238,7 +239,12 @@ def build_state() -> None:
         state["differentials"]["US_MINUS_JP_CPI_YOY"] = round(us_cpi - jp_yoy, 3)
     state["differentials"]["US10Y"] = lv("DGS10")
 
-    STATE_F.write_text(json.dumps(state, indent=1), "utf-8")
+    # ATOMIC. macro_state.json is read by the desks and the reaction atlas while this runs;
+    # a partial write is a torn read, and json.loads of a half-file raises in the CONSUMER --
+    # which is where it would be diagnosed, several organs away from its cause.
+    _tmp = STATE_F.with_suffix(STATE_F.suffix + ".tmp")
+    _tmp.write_text(json.dumps(state, indent=1), "utf-8")
+    os.replace(_tmp, STATE_F)
     log(f"macro_state written: G={state['states']['GROWTH_STATE']} "
         f"I={state['states']['INFLATION_STATE']} "
         f"L={state['states']['LIQUIDITY_STATE']} "
@@ -259,5 +265,36 @@ def main() -> None:
         time.sleep(max(60, 3600 - (time.time() - t0)))
 
 
+def _cli_main() -> int:
+    """SINGLE INSTANCE, because this one never exits and every launch is therefore permanent.
+
+    MEASURED 2026-08-28: THREE macro_desk processes were alive at once -- 20, 20 and 23 hours,
+    two orphaned to pid 1 -- each holding ~75MB on a 3.8GB box, all four states racing the same
+    unlocked `macro_state.json`. This is a `while True` daemon with no marker and no lock, so a
+    second launch from a supervisor, a controller or a shell never collides with the first: it
+    just adds another permanent copy. The leak compounds at the PROCESS level and it is not
+    self-limiting; it was a direct contributor to `quant-cadence.service` being OOM-killed 35
+    times in 36 hours, which in turn left six deep-review duties owed for six weeks.
+
+    `exclusive_job` was built, tested and already used by six other organs -- the defect was
+    that nothing wired it here (III.16). A long-lived holder is safe under it only because
+    `_owner_state` is a tri-state whose ALIVE verdict VETOES the 45-minute age rule; a boolean
+    would have let the next hour's launch reclaim this lock from a working owner and reproduce
+    the very duplication it is being wired to stop.
+    """
+    try:
+        from research.job_lock import exclusive_job
+    except ModuleNotFoundError:        # entrypoint put research/ on the path, not desks/mt5
+        from job_lock import exclusive_job
+
+    with exclusive_job("macro_desk") as acquired:
+        if not acquired:
+            log("macro desk: another copy already holds the lock -- standing down (not an error; "
+                "a perpetual watcher only needs one instance)")
+            return 0
+        main()
+        return 0
+
+
 if __name__ == "__main__":
-    main()
+    raise SystemExit(_cli_main())

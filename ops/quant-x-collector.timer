@@ -1,0 +1,8 @@
+[Unit]
+Description=Run Quant X Collector hourly
+[Timer]
+OnCalendar=*:05
+Persistent=true
+RandomizedDelaySec=30
+[Install]
+WantedBy=timers.target

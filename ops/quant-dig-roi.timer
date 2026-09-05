@@ -1,0 +1,9 @@
+[Unit]
+Description=Dig ROI scorecard, twice hourly at :09 and :39
+
+[Timer]
+OnCalendar=*:09,39
+Persistent=true
+
+[Install]
+WantedBy=timers.target

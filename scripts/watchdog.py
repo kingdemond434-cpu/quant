@@ -37,6 +37,36 @@ _WD_LOG_CAP = 8_000_000                      # bytes; nothing else rotates this 
 _DETACHED = 0x00000008 | 0x08000000          # DETACHED_PROCESS | CREATE_NO_WINDOW
 
 
+#: BANNED-UNIVERSE ARMS (GAP REGISTER #150, LAWS §1). The MT5/Fusion mandate of 2026-08-18
+#: permanently retires the crypto-exchange universe, but three arms below still re-arm organs that
+#: trade or record it -- including `run_cashcarry_executor.py --live --capital 4500`. Measured
+#: 2026-08-27: that executor was up with live arguments, held flat ONLY by `data/CASHCARRY_KILL`,
+#: while this watchdog stood ready to respawn it every tick if its heartbeat went stale. An
+#: actuator that re-arms a banned book is a ruin path, not an inconvenience: it is the one way a
+#: retired universe takes capital again without anyone deciding that it should.
+#:
+#: The desk's sanctioned non-root switches are consulted here because until now the crypto arms
+#: consulted NOTHING. `data/RECORDERS_OFF` (set 2026-08-25, permanent under the mandate) idles the
+#: recorders; `data/CASHCARRY_KILL` holds the carry book flat. Clearing either is a principal act,
+#: and LAWS §1 makes the ban permanent regardless -- so this gate can only ever be opened
+#: deliberately, never by a stale heartbeat.
+#:
+#: NOT GATED, deliberately: the dead-man switch (Tier-3 never-touch, and a ruin rail must arm
+#: under every condition including this one), the dashboard, and the CRO daily cycle -- row #150's
+#: point is that this watchdog's mandated arms are worth keeping, so they are left untouched.
+_RECORDERS_OFF = _ROOT / "data" / "RECORDERS_OFF"
+_CC_KILL = _ROOT / "data" / "CASHCARRY_KILL"
+
+
+def _banned_universe_block() -> str | None:
+    """Why the crypto-exchange arms must not fire, or None if nothing blocks them."""
+    if _RECORDERS_OFF.exists():
+        return "data/RECORDERS_OFF set"
+    if _CC_KILL.exists():
+        return "data/CASHCARRY_KILL set"
+    return None
+
+
 def _port_up(port: int) -> bool:
     s = socket.socket()
     s.settimeout(1.0)
@@ -208,6 +238,7 @@ def _reap_deadman() -> None:
 
 def main() -> None:
     acted: list[str] = []
+    refused: list[str] = []
     # FREEZE (VPS-migration cutover 2026-07-12): data/FREEZE present -> reap ALL supervised
     # python from inside this S4U session (the only session with kill rights over S4U daemons)
     # and EXIT before any respawn. This is how the laptop desk is cleanly retired without a
@@ -238,7 +269,10 @@ def main() -> None:
     if not _port_up(8080):
         _spawn(["scripts/serve_dashboard.py", "--port", "8080"], "dashboard")
         acted.append("dashboard")
-    if not _fresh(_CC_HB, 240):
+    blocked = _banned_universe_block()
+    if not _fresh(_CC_HB, 240) and blocked:
+        refused.append(f"cashcarry-exec ({blocked})")
+    elif not _fresh(_CC_HB, 240):
         # PRIMARY book = cash-and-carry EXECUTED (long spot + short perp, delta-neutral funding
         # harvest). 60s heartbeat + single-instance lock -> no double book. The structural survivor.
         # MAX-before-diminishing deployment of the delta-neutral book (bounded risk, NOT leverage):
@@ -259,10 +293,16 @@ def main() -> None:
         _spawn(["scripts/run_deadman_switch.py"], "deadman-switch")
         acted.append("deadman")
     # perp L/S book is now SHADOW only (run_crypto_shadow in the flywheel); its executor is retired.
-    if not _fresh(_LIQ_HB, 600):
+    if not _fresh(_LIQ_HB, 600) and blocked:
+        refused.append(f"liquidation-listener ({blocked})")
+    elif not _fresh(_LIQ_HB, 600):
         _spawn(["scripts/liquidation_listener.py"], "liquidation-listener")
         acted.append("liquidations")
-    if not _fresh(_TUN_HB, 120):
+    if not _fresh(_TUN_HB, 120) and blocked:
+        # the crypto dashboard this tunnel published is retired and the cloudflared ingress was
+        # emptied; opening a public tunnel to it is an outward-facing act with nothing behind it.
+        refused.append(f"public-tunnel ({blocked})")
+    elif not _fresh(_TUN_HB, 120):
         # ngrok if configured (permanent-ish), else cloudflared quick-tunnel
         tun = "scripts/run_ngrok.py" if (_ROOT / "data" / "secrets" / "ngrok.json").exists() \
             else "scripts/run_tunnel.py"
@@ -293,6 +333,10 @@ def main() -> None:
         _run_logged(["scripts/publish_netlify.py"], "netlify", 120)
         netlify_marker.write_text(str(time.time()), "utf-8")
         acted.append("netlify")
+    # REFUSALS ARE STATED. A silently-skipped arm and a healthy arm print the same line, and the
+    # desk would have no way to tell "the ban is holding" from "the heartbeat happened to be fresh".
+    if refused:
+        print("watchdog: REFUSED banned-universe arm(s): " + ", ".join(refused))
     print("watchdog: " + (", ".join(acted) + " started" if acted else "all healthy"))
 
 

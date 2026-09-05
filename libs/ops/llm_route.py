@@ -21,6 +21,7 @@ attributable and re-runnable on the preferred route later.
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -129,7 +130,35 @@ def chain_is_sound(model_chain: Sequence[str]) -> tuple[bool, str]:
     if not free:
         return False, "no free tier -- an unfunded account has nowhere to degrade to"
     paid = [i for i, m in enumerate(model_chain) if not m.endswith(":free")]
+    # FREE-FIRST IS A DELIBERATE POLICY, NOT THE ACCIDENT THIS RULE WAS WRITTEN AGAINST.
+    # "Free tiers go last" existed to stop a free route being preferred over a paid one that
+    # WOULD HAVE ANSWERED -- an accident that silently costs quality. Under LLM_FREE_FIRST the
+    # ordering is the principal's standing instruction (2026-08-26), taken on measured evidence:
+    # paid seats produced 0 of 27 accepted findings while free/self organs produced all of them,
+    # and the account is unfunded by choice. Intent, not oversight -- so the guard reports the
+    # policy instead of failing it. Unset the flag and the original rule applies unchanged.
+    if os.environ.get("LLM_FREE_FIRST") == "1":
+        return True, (f"{len(model_chain)} routes across {len(families)} families, FREE-FIRST "
+                      f"policy active ({len(free)} free tier(s) leading)")
     if paid and min(free) < max(paid):
         return False, "a free tier is ordered ahead of a paid route -- free tiers go last"
     return True, (f"{len(model_chain)} routes across {len(families)} families, "
                   f"{len(free)} free tier(s) at the tail")
+
+
+def prefer_free(model_chain: Sequence[str]) -> list[str]:
+    """Reorder a chain free-first when the free-first policy is active, else return it unchanged.
+
+    THE CHAIN IS REORDERED, NOT THE BUILDER. `build_chain` documents that the caller's order IS
+    the policy and deliberately never reorders -- so the honest place to express a routing
+    preference is the chain handed to it. Relative order WITHIN each tier is preserved, so a
+    caller's family-diversity intent survives the flip.
+    """
+    if os.environ.get("LLM_FREE_FIRST") != "1":
+        return list(model_chain)
+    free = [m for m in model_chain if m.endswith(":free")]
+    paid = [m for m in model_chain if not m.endswith(":free")]
+    # Paid routes are KEPT, not deleted: an organ explicitly allowed to spend (ALLOW_PAID=1)
+    # still has somewhere to go, and a free tier that refuses or empties still degrades upward
+    # rather than dead-ending. Free-first changes the ORDER, never the options.
+    return [*free, *paid]

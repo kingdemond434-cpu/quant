@@ -41,6 +41,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -81,6 +82,19 @@ _DERIVATION_WORDS = (
     # hiccuped. Widening is the sanctioned response here (this list's own rule, three classes
     # above); rewording run_conviction_trader to hit the vocabulary would be gaming the fence.
     "cadence", "cron", "consecutive", "schedule",
+    # PAIRED-DESIGN / SIGNIFICANCE-LEVEL derivations -- the fifth false-positive class
+    # (2026-08-29). `resolve_paper_book.py` derives TRAIL_FWD_T=1.7 as the one-sided ~0.05
+    # critical value, TRAIL_FWD_DECIDE_N=25 as the earliest read of a PAIRED design, and
+    # TRAIL_FWD_HARD_N=50 by alignment with the sleeve's own KILL_AFTER_N -- all three stated
+    # plainly in one preregistration block, none of them reachable by the vocabulary above.
+    # Widening is this list's own sanctioned response ("Widen the list on a false positive;
+    # never reword an organ to satisfy a check"), and the alternative was worse than cosmetic:
+    # four false breaches held `run_law_gate --laws-only` RED, and a gate red on correct code
+    # is how a gate red on a real breach stops being read.
+    # `alpha` is deliberately ABSENT: this desk uses it to mean edge on nearly every line, so it
+    # would match everything and the fence would stop asking anything.
+    "one-sided", "two-sided", "paired", "|t|", "t-stat", "p-value", "significance",
+    "critical value", "aligned with",
 )
 
 #: Constants that are pure plumbing, not sizing. Naming them is a DECISION, same as the schedule
@@ -103,6 +117,12 @@ _EXEMPT: dict[str, str] = {
 }
 
 
+#: A module-level CONSTANT assignment, e.g. `TRAIL_FWD_T = 1.7` or `MAX: int = 5`. Used only to
+#: decide whether a line above a constant is a SIBLING in the same declaration group -- so it is
+#: deliberately strict: no indentation (module level), an ALL-CAPS name, one `=`.
+_RE_CONST_ASSIGN = re.compile(r"^[A-Z][A-Z0-9_]*\s*(?::[^=]+)?=")
+
+
 def _comment_block(lines: list[str], lineno: int) -> str:
     """The comment attached to a constant: the `#:` block above it plus any trailing comment.
 
@@ -110,9 +130,33 @@ def _comment_block(lines: list[str], lineno: int) -> str:
     in either -- so both are read rather than mandating a style nobody would follow."""
     out = []
     i = lineno - 2                                   # line above the assignment (0-indexed)
-    while i >= 0 and lines[i].lstrip().startswith("#"):
-        out.append(lines[i])
-        i -= 1
+    # A `#:` BLOCK DOCUMENTS ITS WHOLE GROUP (gap-fixer 2026-08-29). This walk used to stop at
+    # the first non-comment line, so a block covering several related constants was credited to
+    # exactly one of them -- whichever happened to sit directly beneath it -- and its siblings
+    # were reported as undocumented. MEASURED: `scripts/resolve_paper_book.py` carries one
+    # preregistration block explaining TRAIL_FWD_DECIDE_N=25, TRAIL_FWD_HARD_N=50 and
+    # TRAIL_FWD_T=1.7 together ("25 paired differences at |t|>=1.7 (one-sided ~0.05) is the
+    # earliest read; 50 is the hard stop"), and this fence reported three of them plus
+    # TRAIL_FWD_CHALLENGER as `no derivation cited`. Those four false breaches held
+    # `run_law_gate --laws-only` RED, and a gate that is red on correct code is how a gate that
+    # is red on a REAL breach stops being read (L1.43, gate-optimality).
+    #
+    # The rule is deliberately narrow: skip only CONTIGUOUS sibling constant assignments, never
+    # a blank line and never any other statement. A group is a block of adjacent constants under
+    # one comment; the moment anything separates them they are no longer one declaration and the
+    # comment no longer speaks for them. Both directions are pinned by test.
+    while i >= 0:
+        stripped = lines[i].strip()
+        if stripped.startswith("#"):
+            out.append(lines[i])
+            i -= 1
+            continue
+        if out:
+            break                                    # the block ended; do not reach past it
+        if _RE_CONST_ASSIGN.match(lines[i]):
+            i -= 1                                   # a sibling in the same group -- keep walking
+            continue
+        break
     if lineno - 1 < len(lines) and "#" in lines[lineno - 1]:
         out.append(lines[lineno - 1].split("#", 1)[1])
     return " ".join(out).lower()

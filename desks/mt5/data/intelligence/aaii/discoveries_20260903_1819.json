@@ -1,0 +1,7 @@
+[
+  {
+    "source": "aaii_sentiment",
+    "kind": "fetch_error",
+    "error": "ReadTimeout: HTTPSConnectionPool(host='www.aaii.com', port=443): Read timed out. (read timeout=15)"
+  }
+]

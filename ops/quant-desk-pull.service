@@ -1,0 +1,14 @@
+[Unit]
+Description=Pull live desk state from the trading box (dashboard freshness)
+
+[Service]
+Type=oneshot
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 200M, so nothing that fits today is newly constrained.
+MemoryHigh=160M
+MemoryMax=200M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/pull_desk_state.sh
+SuccessExitStatus=0 1

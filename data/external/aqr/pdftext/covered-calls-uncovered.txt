@@ -1,0 +1,1812 @@
+44
+ www.cfa
+pubs
+.org 
+© 2015 CFA Institute. All rights reserved.
+Financial Analysts Journal
+Volume 71 
+·
+ Number 6
+©2015 CFA Institute
+Covered Calls Uncovered
+Roni Israelov and Lars N. Nielsen
+Typical covered call strategies collect the equity and volatility risk premiums but also embed exposure to a naive 
+equity reversal strategy that is uncompensated. This article presents a novel risk and performance attribu
+
+-
+tion methodology that deconstructs the strategy into these three exposures. Historically, the equity exposure 
+contributed most of the risk and return. The short volatility exposure realized a Sharpe ratio of nearly 1.0 but 
+contributed only 10% of the risk. The equity reversal exposure contributed approximately 25% of the risk but 
+provided little return in exchange. The authors propose a risk-managed covered call strategy that eliminates 
+the uncompensated equity reversal exposure. This modied covered call strategy has a superior Sharpe ratio, 
+reduced volatility, and reduced downside equity beta.
+E
+quity index covered calls are the most easily 
+accessible source of the volatility risk pre
+-
+mium for most investors.
+1
+ The volatility risk 
+
+premium, which is absent from most investors port
+-
+folios, has had more than double the risk-adjusted 
+returns (Sharpe ratio) of the equity risk premium, 
+which is the dominant source of return for most 
+investors. By providing the equity and volatility 
+risk premiums, equity index covered calls returns 
+have been historically attractive, nearly matching the 
+returns of their underlying indexes with signicantly 
+lower volatility.
+2
+
+the volatility risk premium is compensation paid by 
+option buyers to the option sellers who underwrite 
+this insurance. Bakshi and Kapadia (2003) analyzed 
+delta-hedged option returns to show that equity 
+index options include a volatility risk premium. 
+Bollen and Whaley (2004) and Gârleanu, Pedersen, 
+and Poteshman (2009) showed how option demand 
+by natural buyers can lead to a risk premium. 
+Litterman (2011) suggested that long-term inves
+-
+tors, such as pensions and endowments, should be 
+natural providers of nancial insurance and sellers 
+of options.
+Yet, many investors remain skeptical of covered 
+call strategies. Although deceptively simplelong 
+equity and short a call optioncovered calls are not 
+well understood. Israelov and Nielsen (2014) identi
+-
+ed and dispelled eight commonly circulated myths 
+about covered calls. These myths sound plausible; 
+otherwise, they would not have such longevity. But 
+they can be a problem if they affect portfolio con
+-
+struction decisions. The securities overwritten and 
+the strikes and maturities of the call options that 
+are sold should be explicitly selected to achieve the 
+portfolios allocation to the equity and volatility risk 
+
+targets, downside protection, and income generation 
+are diversions.
+One source of confusion on covered calls may be 
+due to the opacity of the strategys risk exposures. 
+Our articles rst contribution is a novel performance 
+attribution methodology for portfolios holding 
+options, such as the covered call strategy. We dem
+-
+onstrate how to decompose the portfolio return into 
+three distinct risk exposures: passive equity, equity 
+market timing, and short volatility.
+Our performance attribution methodology pro
+-
+vides investment managers with a tool to effectively 
+
+performance to their investors and allows investors 
+to properly place the covered calls risk exposures 
+and returns in the context of their overall portfolios. 
+Further, it provides a framework by which portfolio 
+managers can evaluate the impact of strike, maturity, 
+underlying security selection, risk management, and 
+Roni Israelov is vice president and Lars N. Nielsen is 
+principal at AQR Capital Management, Greenwich, 
+Connecticut.
+Editors note:
+ Roni Israelov and Lars N. Nielson man
+-
+age option portfolios and covered calls at AQR Capital 
+
+the topics discussed in this article. 
+Editors note: 
+This article was reviewed and accepted 
+by Executive Editor Robert Litterman.
+Authors note:
+ The views and opinions expressed herein 
+are those of the authors and do not necessarily reect 
+the views of AQR Capital Management, LLC (AQR), 
+its afliates, or its employees, nor do they constitute an 
+offer, a solicitation of an offer, or any advice or recom
+-
+mendation to purchase any securities or other nancial 
+instruments by AQR.
+
+Covered Calls Uncovered
+November/December 2015
+ www.cfa
+pubs
+.org  
+45
+leverage on their strategys risk and returns. Proper 
+performance attribution facilitates improved port
+-
+folio construction.
+For example, selling at-the-money options is 
+expected to provide the highest exposure to short 
+volatility. Covered call strategies that sell low-strike 
+options have less equity exposure than those that 
+sell high-strike options. The risk-adjusted perfor
+-
+mance of short volatility may be higher for low-strike 
+options because of the implied volatility smile that 
+is in part due to demand for portfolio protection. 
+By attributing the covered calls performance to its 
+underlying exposures, a portfolio may be explicitly 
+constructed to achieve specic objectives.
+Although we use our performance attribu
+-
+tion to better understand covered call strategies, 
+it may be more broadly applied to any portfolio 
+that includes options. The returns of these portfolios 
+may be attributed to their passive and time-varying 
+equity exposures and to their volatility exposure. 
+For example, protected strategies that are long an 
+index and long a protective put option typically 
+have signicantly lower returns than their under
+-
+lying index. Our performance attribution would 
+indicate the long volatilitys contribution to the 
+strategys performance degradation and how much 
+less equity risk premium has been earned owing 
+to the put options average negative equity expo
+-
+sure. In a similar manner, Israelov and Klein (2015) 
+applied our performance attribution to explain the 
+risk and return characteristics of a more complex 
+option portfolioan equity index collar strategy 
+that is long an index, short a call option, and long 
+a protective put.
+ 
+
+Discussion of ndings.
+ 
+We demonstrate our 
+proposed performance attribution by analyzing 
+and comparing two covered call strategies. The 
+rst strategy mimics the CBOE S&P 500 BuyWrite 
+Index (BXM), selling one-month at-the-money 
+call options on option expiration dates. The sec
+-
+ond strategy mimics the CBOE S&P 500 2% OTM 
+BuyWrite Index (BXY), selling one-month 2% out-
+of-the-money call options on option expiration 
+dates. Our performance attribution shows that 
+passive equity is the dominant exposure for both 
+covered call strategies. Short volatility contributes 
+less than 10% of the risk but, with a Sharpe ratio 
+near 1.0, adds approximately 2% annualized return 
+to the covered call strategies.
+Option-savvy market participants, such as 
+market makers, are well aware that options include 
+market timing, an active equity exposure. In fact, 
+they often use a delta-hedging program specically 
+designed to reduce the risk arising from this dynamic 
+exposure. The covered call benchmark (CBOE S&P 
+500 BuyWrite Index) and most covered call funds, 
+however, do not hedge the time-varying equity expo
+-
+sure arising from option convexity. Further, the risk 
+and return contribution of an unhedged short option 
+positions dynamic equity exposure is by and large 
+not reported by those who manage to those who 
+invest in covered call strategies and is unaddressed 
+in the covered call literature.
+We use our performance attribution to docu
+-
+ment that market timing is responsible for about 
+one-quarter of the at-the-money covered calls risk. 
+The timing bet is smallest immediately after option 
+expiration and largest just prior to option expiration. 
+In fact, on the day before the call option expires, the 
+equity timing position provides on average nearly 
+the same risk as the passive equity exposure. We 
+further show that covered call investors have not 
+been compensated for bearing this risk. Because the 
+embedded market timing is hedgeable by trading 
+the underlying equity, covered call investors do 
+not need to take that bet to earn the volatility risk 
+premium. In other words, by shorting an option, 
+covered calls include a market-timing exposure 
+that bets on equity reversals whose risk is mate
+-
+rial, uncompensated, and unnecessary for earning 
+the volatility risk premium.
+Having identied the covered calls active 
+equity exposure as an uncompensated contributor 
+to risk, our nal contribution is the analysis of a risk-
+managed covered call strategy that hedges away 
+the identied dynamic equity exposure. On each 
+day, the covered calls active equity exposure may 
+be measured by computing the delta of the strategys 
+call option. The strategy trades an offsetting amount 
+of the S&P 500 Index so that the covered calls equity 
+exposure remains constant. This risk management 
+exercise mimics the delta-hedging approach taken 
+by volatility desks. In so doing, the risk-managed 
+covered call achieves higher risk-adjusted returns 
+than does the traditional covered call because it 
+continues to collect the same amount of equity and 
+volatility risk premiums but is no longer exposed to 
+equity market-timing risk. The risk-managed strat
+-
+egy improved the covered call Sharpe ratio from 0.37 
+to 0.52 by reducing its annualized volatility from 
+11.4% to 9.2%.
+The risk-managed covered call has an addi
+-
+tional benet beyond improving risk-adjusted 
+returns. The strategys goal, design, and execu
+-
+tion are clear, and they transparently map to its 
+performance. The strategy seeks to collect equity 
+and volatility risk premiums and does so by being 
+long equity and short volatility. We may explicitly 
+construct a portfolio by choosing how much risk 
+to allocate to the two desired exposures and sub
+-
+sequently measure their resulting contributions to 
+the strategys performance.
+
+46
+ www.cfa
+pubs
+.org 
+© 2015 CFA Institute. All rights reserved.
+Covered Call Performance 
+Attribution
+A covered call is a combination of a long position 
+in a security and a short position in a call option 
+on that security. The combined position caps the 
+investors upside on the underlying security at 
+the options strike price in exchange for the option 
+premium.
+Figure 1
+ graphically constructs an at-the-
+money covered call payoff diagram when the call 
+option premium is $25 and the current asset price 
+is $100. We may take the long equity exposure and 
+split it in half. Panel A depicts a portfolio that owns 
+$50 of equity and $50 of cash. Panel B depicts a 
+portfolio that is short an at-the-money call option, 
+owns $50 of equity, and is short $50 cash to nance 
+the equity position.
+Figure 1 introduces the foundation for our 
+performance attribution. By splitting the positions 
+in such a manner, we can see two distinct compo
+-
+nents. The rst component provides the long-term 
+strategic long equity allocation. In our example, we 
+Figure 1. 
+Covered Call Payoff Diagram
+0
+0
+Payof
+f ($)
+A. Long Half Equity and Long Half Cash
+200
+175
+150
+125
+100
+25
+75
+50
+0
+0
+200
+50
+125
+100
+150
+25
+75
+175
+Asset Price ($)
+Payof
+f ($)
+B. Short Call Option, Long Half Equity
+, and Short Half Cash
+50
+25
+25
+50
+125
+75
+100
+150
+0
+200
+50
+125
+100
+150
+25
+75
+175
+Asset Price ($)
+Payof
+f ($)C. Cover
+ed Call150
+125
+100
+75
+50
+25
+25
+50
+0
+200
+50
+125
+100
+150
+25
+75
+175
+Asset Price ($)
+
+Covered Calls Uncovered
+November/December 2015
+ www.cfa
+pubs
+.org  
+47
+have a 50% passive equity allocation. The second 
+component provides the long-term strategic short 
+volatility allocation. The second component, how
+-
+ever, provides the covered call with a third exposure: 
+time-varying equity exposure that is zero on average. 
+Although Panel B shows the payoff at expiration, the 
+exposures prole has a similar shape on all the days 
+leading up to the options expiration. It has a posi
+-
+tive slope when the call option is out of the money, a 
+negative slope when the call option is in the money, 
+and approximately no exposure to the stock when 
+the call option is at the money.
+We may rearrange the covered call denition to 
+dene the three economically distinct components:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The passive equity exposure provides the strat
+-
+egy with an equity risk premium and represents a 
+long-term strategic allocation to equity markets. The 
+dynamic equity exposure is effectively a market-
+timing strategy. It is close to zero on average and 
+may be viewed as a tactical equity allocation around 
+the long-term strategic passive exposure. Unless it 
+correlates with (i.e., forecasts) future equity returns, 
+it should not contribute to the strategys average 
+returns. Under efcient markets, the expected return 
+of this market-timing component is zero.
+Short volatility provides the strategy with a vola
+-
+tility risk premium. Arguably, it too may be split into 
+passive (strategic) and active (tactical) components. 
+Its exposure to realized volatility (gamma) uctu
+-
+ates over time. Gamma is higher when the option is 
+close to the money and close to its expiration. Short 
+volatilitys exposure to changes in implied volatility 
+(vega) also uctuates over time. Vega is higher when 
+the option is close to the money and distant from its 
+expiration. In fact, short volatility can be split across 
+other related dimensions as well. The options matu
+-
+rity represents a calendar bet, and the options strike 
+price represents a skew bet. Decomposing across all 
+these dimensions may be tractable if there is a well-
+dened passive short volatility asset. Unfortunately, 
+there is not, and we do not attempt to dene one 
+in this article. For this reason, and to maintain par
+-
+simony in our performance attribution, we do not 
+further decompose short volatility across any of the 
+previously identied dimensions.
+An alternative performance attribution could 
+regress covered call returns on the S&P 500 Index 
+return and an S&P 500 variance swap return. The 
+regression framework is commonly used to estimate 
+return exposures to known factors. Rolling estima
+-
+tion of factor coefcients provides information on 
+exposure dynamics. We believe our attribution meth
+-
+odology is more appropriate for a covered call for 
+the following reasons. First, we know the covered 
+calls constituent assets, so we may use a model to 
+estimate equity exposure at a point in time rather 
+than statistically estimate an average exposure over 
+a rolling period. Option convexity can lead to rapid 
+changes in equity exposure, and the regression will 
+not be able to fully capture these changes and thus 
+will underestimate the equity exposure dynam
+-
+ics. Second, there is no well-dened pure passive 
+short volatility return series. A variance swap is one 
+method to obtain short volatility exposure. Delta 
+hedging a short option is another method. Shorting 
+CBOE Volatility Index futures is a third, and so on. 
+The delta-hedged option has exposure to a variance 
+swap but with basis risk. That basis risk would be an 
+additional term that complicates the decomposition. 
+Our performance attribution mechanically decom
+-
+poses the covered calls return using a model into 
+passive equity, the delta-hedged option variant of 
+short volatility, and equity market timing.
+To demonstrate our attribution methodology 
+in practice, we decompose a simple overwriting 
+strategy, which mimics the industry standard cov
+-
+ered call benchmarkthe CBOE S&P 500 BuyWrite 
+Indexinto these three components. This strategy 
+owns the S&P 500 Index and sells an at-the-money 
+call monthly index option on option expiration dates. 
+Specically, its excess return is computed as
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Mimicking the BXM, our overwriting strategy 
+effectively induces a mild time-varying leverage 
+effect, caused by the denominator being 
+spx
+t
+1
+  
+call
+t
+1
+ instead of 
+spx
+t
+1
+. On the close of any given day, 
+the strategys leverage can, therefore, be modeled as 
+spx
+t
+/(
+spx
+t
+  
+call
+t
+) > 1, which in our sample was 1.02, 
+on average, with a maximum value of 1.14.
+The three returns in the decomposition are com
+-
+puted as follows:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+and
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+48
+ www.cfa
+pubs
+.org 
+© 2015 CFA Institute. All rights reserved.
+where 
+r
+t
+ is the excess return for the respective com
+-
+ponent; 
+r
+cash
+,
+t
+ is US three-month LIBOR; 
+spx
+t
+ is the 
+S&P 500 Index; 
+div
+t
+ represents the dividends payable 
+to the S&P 500 (expressed in S&P 500 Index points); 
+call
+t
+ is the call price; 
+c,t
+ is the call options percentage 
+delta as reported by OptionMetrics;
+3
+ 
+p,t
+  is the port
+-
+folios properly levered delta exposure, calculated as
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+and 
+p
+is the full-sample average portfolio delta 
+exposure over all dates on which the at-the-money 
+call options were sold. On the call options expira
+-
+tion date, the call option is settled at the S&P 500 
+Special Opening Quotation (SOQ), the intraday 
+return is calculated as the expected portfolio delta 
+after the new option sale
+4
+ multiplied by the S&P 500 
+return from settlement to close, and a new short call 
+option position is established at the days closing 
+price. Our short volatility return calculation is simi
+-
+lar to that of Bakshi and Kapadia (2003), except we 
+compute daily returns rather than returns through 
+option expiration.
+Whereas the previously mentioned returns are 
+computed to reect the specic denition of the 
+CBOE BuyWrite indexes, the same approach may 
+be generalized to any portfolio of options. The pas
+-
+sive equity return can be computed as the time-series 
+average of the aggregated portfolio delta multiplied 
+by the underlying equity indexs return in excess 
+of cash. The active equity return can be computed 
+as the time-series demeaned aggregated portfolio 
+delta multiplied by the underlying equity indexs 
+return in excess of cash. The volatility return can 
+be computed as the return to a hypothetical daily 
+delta-hedged portfolio holding the same options and 
+quantities as the original portfolio and having the 
+same net asset value.
+Table 1
+ and 
+Table 2
+ report the full-sample sum
+-
+mary statistics and the correlation matrix of the 
+decomposition, respectively, and cumulative returns 
+are plotted in 
+Figure 2
+. The passive equity exposure 
+realized 8.5% annualized volatility, whereas short 
+volatility realized a modest 2% annualized volatil
+-
+ity. The two components had a correlation of 0.26 
+owing to the negative relationship between equity 
+returns and changes in implied volatility. Equity 
+timing was a signicant source of risk, realizing 
+more than half the volatility of the passive equity 
+exposure and contributing almost four times the 
+risk of short volatility.
+5
+In our sample, the passive equity exposure 
+had a Sharpe ratio of close to 0.4. Short volatility 
+contributed about two-thirds of the return of long 
+equity but with a quarter of its risk, realizing a 
+Sharpe ratio of 1.0. Shorting volatility has provided 
+one-third of the covered calls average return even 
+Table 1.  
+At-the-Money Overwriting Sample: Return Decomposition 
+(Annualized)
+At-the-Money 
+Covered Call 
+Strategy
+Passive 
+Equity
+Short 
+Volatility
+Equity 
+Timing
+Excess return (simple)
+5.9%
+3.5%
+1.9%
+0.5%
+Excess return (geometric)
+5.3%
+3.2%
+1.9%
+0.4%
+Volatility
+11.4%
+8.5%
+1.9%
+4.8%
+Sharpe ratio (simple)
+0.52
+0.41
+0.98
+0.10
+Skew
+1.7
+0.8
+1.1
+1.4
+Kurtosis
+8.7
+3.4
+5.4
+7.4
+Risk contribution
+100%
+67%
+7%
+26%
+Alpha to S&P 500
+1.7%
+
+1.7%
+0.0%
+Beta to S&P 500
+0.62
+0.52
+0.03
+0.07
+Upside beta
+0.46
+0.51
+0.02
+0.04
+Downside beta
+0.86
+0.53
+0.09
+0.25
+Notes:
+ This table shows summary statistics for the decomposition of an at-the-money covered call 
+strategy mimicking the methodology of the BXM over the period 25 March 199631 December 
+2014. The backtest is long the S&P 500 and short at-the-money front-month S&P 500 call options, 
+held to expiry. Risk contribution is dened as the covariance of the component with the full 
+strategy, divided by the variance of the full strategy. Volatility, skew, kurtosis, alpha, beta, upside 
+beta, and downside beta were computed using 21-day overlapping returns.
+Sources:
+ AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+
+Covered Calls Uncovered
+November/December 2015
+ www.cfa
+pubs
+.org  
+49
+though it is responsible for only less than 10% of its 
+risk. Figelman (2008) reported that over March 1994 
+through September 2005, the equity and volatility 
+risk premiums each contributed 2.9% to the at-the-
+money covered calls annual expected return.
+6
+ Our 
+decomposition over March 1996 through December 
+2014 shows a moderately higher equity risk premium 
+and a lower volatility risk premium.
+Although equity timing also realized moder
+-
+ately positive returns over our sample period, the 
+0.5% annualized return is not statistically signicant, 
+given its 4.8% annualized volatility (
+t
+-statistic of 0.4). 
+More importantly, its alpha to S&P 500 is nearly zero 
+(0.0%), and it is unclear why this method of equity 
+timing would be a compensated risk premium. The 
+strategys active exposure can be computed 
+ex ante
+, 
+and hence, the embedded equity timing exposure 
+could be implemented by dynamically replicating 
+the covered calls equity exposure if so desired, but 
+such a timing strategy has an expected return of zero 
+if markets are efcient. Even under inefcient mar
+-
+kets, it remains unclear why such a path-dependent 
+and arbitrary timing strategy would capture the mar
+-
+kets inefciency.
+7
+We repeated the exercise for a strategy mimick
+-
+ing the CBOE S&P 500 2% OTM BuyWrite Index. 
+On rebalance dates, the average portfolio delta of 
+this strategy is 0.70. 
+Table 3
+ and 
+Table 4
+ report 
+full-sample summary statistics and the correlation 
+matrix, respectively, whereas 
+Figure 3
+ plots the 
+cumulative returns. Mechanically, the out-of-the-
+money covered call strategy has higher passive 
+Figure 2. 
+At-the-Money Overwriting: Cumulative Excess Return 
+Decomposition, 25 March 199631 December 2014
+Per
+cent
+100
+80
+60
+40
+20
+0
+20
+96
+00
+04
+10
+12
+14
+98
+02
+06
+08
+Passive Equity
+Short V
+olatility
+Equity T
+iming
+Notes:
+ This gure plots cumulative returns for the decomposition of an at-the-money covered 
+call strategy mimicking the methodology of the BXM. The backtest is long the S&P 500 and short 
+at-the-money front-month S&P 500 call options, held to expiry. These returns are decomposed into 
+three components: passive S&P 500 equity exposure, dynamic S&P 500 equity timing exposure 
+due to the call options time-varying delta, and short volatility exposure.
+Sources: 
+AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+Table 2. 
+At-the-Money Overwriting Sample: Correlation Matrix
+ 
+At-the-Money 
+Covered Call 
+Strategy
+Passive 
+Equity
+Short 
+Volatility
+Equity 
+Timing
+At-the-money covered 
+call strategy
+1.00
+0.89
+0.44
+0.62
+Passive equity
+0.89
+1.00
+0.26
+0.24
+Short volatility
+0.44
+0.26
+1.00
+0.16
+Equity timing
+0.62
+0.24
+0.16
+1.00
+Notes:
+ This table shows correlations for the decomposition of an at-the-money covered call 
+strategy mimicking the methodology of the BXM over the period 25 March 199631 December 
+2014. The backtest is long the S&P 500 and short at-the-money front-month S&P 500 call options, 
+held to expiry. The correlations were computed using 21-day overlapping returns.
+Sources:
+ AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+
+50
+ www.cfa
+pubs
+.org 
+© 2015 CFA Institute. All rights reserved.
+equity exposure and collects a larger equity risk 
+premium than does its at-the-money counterpart. 
+Out-of-the-money options have lower short volatil
+-
+ity exposure than do at-the-money options. They 
+have lower convexity as represented by gamma, 
+and they have lower exposure to changes in the 
+options implied volatilities as represented by vega. 
+In this case, we do not see a signicant impact for 
+the risk or return of the short volatility exposure, 
+indicating that the 2% out-of-the-money delta-
+hedged call option is not materially different from 
+an at-the-money delta-hedged call option.
+To check whether these results are robust over 
+time, 
+Table 5
+ reports the BXM decompositions 
+summary statistics over three subperiods of similar 
+lengths: 19962001, 20022008, and 20092014. In all 
+these periods, the short volatility component real
+-
+ized a higher Sharpe ratio than the passive equity 
+component and was responsible for less than 10% 
+of the covered call strategys risk. Risk contributions 
+were similar in the three subperiods. Although not 
+reported in this article, a subperiod analysis of the 
+BXY decomposition exhibited similar robustness.
+These two examples demonstrate how our per
+-
+formance attribution allows us to determine the effect 
+of portfolio construction on risk exposures and real
+-
+ized returns. For instance, option strike selection 
+inuences exposure to passive equity, short volatil
+-
+ity, and active equity. Other decisions, such as option 
+maturity selection and the amount of the portfolio that 
+Table 3.  
+2% Out-of-the-Money Overwriting Sample: Return 
+Decomposition (Annualized)
+2% OTM 
+Covered Call 
+Strategy
+Passive 
+Equity
+Short 
+Volatility
+Equity 
+Timing
+Excess return (simple)
+7.1%
+4.7%
+1.8%
+0.5%
+Excess return (geometric)
+6.2%
+4.0%
+1.9%
+0.4%
+Volatility
+13.3%
+11.4%
+1.9%
+4.0%
+Sharpe ratio (simple)
+0.53
+0.41
+0.98
+0.13
+Skew
+1.2
+0.8
+0.9
+0.8
+Kurtosis
+5.4
+3.3
+4.0
+4.1
+Risk contribution
+100%
+83%
+5%
+12%
+Alpha to S&P 500
+1.9%
+
+1.6%
+0.3%
+Beta to S&P 500 
+0.76
+0.70
+0.03
+0.03
+Upside beta
+0.61
+0.69
+0.01
+0.08
+Downside beta
+0.90
+0.71
+0.07
+0.13
+Notes:
+ This table shows summary statistics for the decomposition of a 2% out-of-the-money 
+covered call strategy mimicking the methodology of the BXY over the period 25 March 199631 
+December 2014. The backtest is long the S&P 500 and short 2% out-of-the-money front-month 
+S&P 500 call options, held to expiry. Risk contribution is dened as the covariance of the compo
+-
+nent with the full strategy, divided by the variance of the full strategy. Volatility, skew, kurtosis, 
+alpha, beta, upside beta, and downside beta were computed using 21-day overlapping returns.
+Sources: 
+AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+Table 4. 
+2% Out-of-the-Money Overwriting Sample: Correlation Matrix
+2% OTM 
+Covered Call 
+Strategy
+Passive 
+Equity
+Short 
+Volatility
+Equity 
+Timing
+Covered call strategy
+1.00
+0.94
+0.39
+0.43
+Passive equity
+0.94
+1.00
+0.27
+0.13
+Short volatility
+0.39
+0.27
+1.00
+0.06
+Equity timing
+0.43
+0.13
+0.06
+1.00
+Notes: 
+This table shows correlations for the decomposition of a 2% out-of-the-money covered call 
+strategy mimicking the methodology of the BXY over the period 25 March 199631 December 
+2014. The backtest is long the S&P 500 and short 2% out-of-the-money front-month S&P 500 
+call options, held to expiry. Correlations were computed using 21-day overlapping returns.
+Sources:
+ AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+
+Covered Calls Uncovered
+November/December 2015
+ www.cfa
+pubs
+.org  
+51
+Table 5. 
+At-the-Money Overwriting Sample: Return Decomposition over 
+Subperiods (Annualized)
+At-the-Money 
+Covered Call 
+Strategy
+Passive 
+Equity
+Short 
+Volatility
+Equity 
+Timing
+19962001
+Excess return (simple)
+7.4%
+3.9%
+3.0%
+0.5%
+Volatility
+10.9%
+8.7%
+2.1%
+5.4%
+Sharpe ratio (simple)
+0.68
+0.45
+1.49
+0.08
+Risk contribution
+100%
+68%
+9%
+23%
+20022008
+Excess return (simple)
+0.5%
+1.2%
+0.8%
+0.8%
+Volatility
+12.3%
+8.6%
+2.1%
+4.5%
+Sharpe ratio (simple)
+0.04
+0.13
+0.40
+0.18
+Risk contribution
+100%
+65%
+6%
+28%
+20092014
+Excess return (simple)
+10.8%
+8.6%
+2.0%
+0.2%
+Volatility
+10.7%
+7.9%
+1.4%
+4.5%
+Sharpe ratio (simple)
+1.01
+1.09
+1.39
+0.04
+Risk contribution
+100%
+69%
+7%
+24%
+Notes:
+ This table shows summary statistics for the decomposition of an at-the-money covered call 
+strategy mimicking the methodology of the BXM over three subperiods: 25 March 199631 December 
+2001, 1 January 200231 December 2008, and 1 January 200931 December 2014. The backtest is 
+long the S&P 500 and short at-the-money front-month S&P 500 call options, held to expiry. These 
+returns are decomposed into three components: passive S&P 500 equity exposure, dynamic S&P 500 
+equity timing exposure due to the call options time-varying delta, and short volatility exposure. 
+Risk contribution is dened as the covariance of the component with the full strategy divided by 
+the variance of the full strategy. Volatility was computed using 21-day overlapping returns.
+Sources: 
+AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+Figure 3. 
+2% Out-of-the-Money Overwriting: Cumulative Return 
+Decomposition, 25 March 199631 December 2014
+Per
+cent
+100
+80
+60
+40
+20
+0
+20
+96
+00
+04
+10
+12
+14
+98
+02
+06
+08
+Passive Equity
+Short V
+olatility
+Equity T
+iming
+Notes: 
+This gure plots cumulative returns for the decomposition of a 2% out-of-the-money 
+covered call strategy mimicking the methodology of the BXY. The backtest is long the S&P 500 
+and short 2% out-of-the-money front-month S&P 500 call options, held to expiry. These returns 
+are decomposed into three components: passive S&P 500 equity exposure, dynamic S&P 500 
+equity timing exposure due to the call options time-varying delta, and short volatility exposure.
+Sources: 
+AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+
+52
+ www.cfa
+pubs
+.org 
+© 2015 CFA Institute. All rights reserved.
+is overwritten, also affect these exposures. Further, 
+delta-hedged option risk-adjusted performance may 
+depend on the options strike and maturity. Our pro
+-
+posed performance attribution methodology may 
+help portfolio managers evaluate and improve the 
+design of their covered call strategies.
+Covered Calls Bet on Equity 
+Reversals
+The active equity exposure identied in our perfor
+-
+mance attribution is due to option convexity, the 
+options gamma. An at-the-money call options delta 
+is approximately 0.5. Hence, an at-the-money covered 
+call, which is long the equity and short the call option, 
+also has a delta of 0.5. This equity exposure changes, 
+however, as soon as the equitys price moves. Gamma 
+measures the change in an options delta with respect 
+to a change in the underlying securitys price.
+Figure 4
+ compares the evolution of the BXMs 
+equity exposure with the S&P 500s return since 
+the date of the last call option sale over four recent 
+expiration cycles. The equity exposure is slightly 
+above 0.5 on option initiation dates, which is when 
+the options have been sold, because the BXMs meth
+-
+odology sells out-of-the-money call options that are 
+nearest to the money and then uses the call premium 
+to lever the covered call position. As the index price 
+increases, the call options delta increases to reect 
+the higher probability that it will expire in the money. 
+When the equity price falls, the call options delta 
+declines to reect the higher probability that it will 
+expire out of the money. As a result, the covered 
+calls equity exposure is negatively related to the 
+index price. A falling market leads to larger equity 
+exposure, and a rising market leads to smaller but 
+still positive equity exposure. As the call option nears 
+its expiration, the strategys delta has converged to 
+Figure 4.  
+CBOE S&P 500 BuyWrite Indexs Equity Exposure over Time vs. 
+S&P 500 Return since Last Call Option Sale
+Equity Exposur
+e
+1.00
+0.75
+0.50
+0.25
+0
+Jul/13
+Nov/13
+Aug/13
+Sep/13
+Oct/13
+A. CBOE S&P 500 BuyW
+rite Index
+B. S&P 500 Return since Last Call Option SaleReturn (%)
+5
+3
+1
+1
+2
+3
+4
+2
+0
+4
+Jul/13
+Nov/13
+Aug/13
+Sep/13
+Oct/13
+Notes: 
+Panel A shows the equity exposure from 19 July 2013 to 14 November 2013 for an at-
+the-money covered call strategy mimicking the methodology of the BXM. The backtest is long 
+the S&P 500 and short at-the-money front-month S&P 500 call options, held to expiry. Panel 
+B shows the percentage change in the level of the S&P 500 since the close of the last monthly 
+option expiration date from 19 July 2013 to 14 November 2013.
+Sources: 
+AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+
+Covered Calls Uncovered
+November/December 2015
+ www.cfa
+pubs
+.org  
+53
+either 0 or 1, depending on whether the index has 
+appreciated or depreciated, respectively.
+Figure 5
+ shows a scatterplot of the BXMs equity 
+exposure against the S&P 500s return since the date 
+of the last call option sale over the full sample period. 
+As expected, the BXMs equity exposure ranges from 
+0 to 1, is 0.5 on average, and is negatively related to 
+the S&P 500s return since the prior call option sale. 
+The BXM has active equity exposure that resembles a 
+reversal strategy, and that active exposure can at times 
+be as large as the strategys passive equity allocation.
+The size of the at-the-money covered calls active 
+equity exposure varies over time in a predictable 
+manner. 
+Figure 6
+ plots the distribution of the covered 
+calls equity exposure against the number of days 
+since the call option was sold. Immediately after 
+the call option is sold, the strategys delta is tightly 
+distributed around 0.5. As time passes, the covered 
+calls delta disperses, and by the time the option 
+expires, the delta has settled on either 0 or 1. The 
+active exposure is smallest immediately after the call 
+option is sold and largest immediately prior to the 
+options expiration, and the average absolute active 
+exposure is approximately 0.21. The time-varying 
+pattern is further illustrated in 
+Figure 7
+, which plots 
+the distributions of the covered calls equity expo
+-
+sure 0, 6, 12, and 18 business days after the last call 
+option sale.
+Figure 5. 
+CBOE S&P 500 BuyWrite Indexs Equity Exposure vs. S&P 500 
+Return, 25 March 199631 December 2013 
+Equity Exposur
+e
+1.00
+0.75
+0.50
+0.25
+0
+40
+40
+20
+30
+0
+20
+10
+10
+30
+S&P
+ 500 Return since Last Call Option Sale (%)
+Notes:
+ This gure shows the equity exposure for an at-the-money covered call strategy mimicking 
+the methodology of the BXM plotted against the percentage change in the level of the S&P 500 
+since the close of the last monthly option expiration date. The backtest is long the S&P 500 and 
+short at-the-money front-month S&P 500 call options, held to expiry. 
+Sources:
+ AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+Figure 6. 
+Range of CBOE S&P 500 BuyWrite Indexs Equity Exposure, 25 
+March 199631 December 2013 
+Equity Exposur
+e
+1.00
+0.75
+0.50
+0.25
+0
+6
+0
+2
+4
+8
+10
+14
+16
+20
+22
+24
+12
+18
+Business Days since Last Call Option Sale
+10th and 90th Per
+centiles
+25th and 75th Per
+centiles
+Median
+Notes: 
+This gure plots percentiles of the equity exposure for an at-the-money covered call 
+strategy mimicking the methodology of the BXM, based on the number of business days since 
+the last call option sale (i.e., the last monthly option expiration date). The backtest is long the 
+S&P 500 and short at-the-money front-month S&P 500 call options, held to expiry. 
+Sources:
+ AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+
+54
+ www.cfa
+pubs
+.org 
+© 2015 CFA Institute. All rights reserved.
+Risk-Managed Covered Calls
+Our covered call performance attribution indicates 
+that active equity exposure is a signicant source of 
+risk, and our analysis of the relationship between 
+the covered calls equity exposure and the S&P 500s 
+index level shows why. Because the covered calls 
+equity exposure is known 
+ex ante
+ and equity exposure 
+is easily hedged with such instruments as futures and 
+exchange-traded funds, we propose a risk-managed 
+covered call strategy that hedges away the undesir
+-
+able active equity exposure. After doing so, the result
+-
+ing risk-managed covered call is effectively a long 
+equity and short volatility portfolio,
+8
+ whose risk and 
+return arise from these two exposures.
+The proposed strategy is straightforward. We 
+begin with an existing covered call allocation. Each 
+day, we compute its equity exposure according to 
+the BlackScholes model. We hedge the active equity 
+exposure using S&P 500 futures. For instance, on 30 
+September 2014, the BXM was short a 2020 strike call 
+option expiring on 17 October 2014. The delta of that 
+call option according to the BlackScholes model is 
+0.15. Because the expected delta of the strategys call 
+options on rebalance dates was 0.5, we hedge our 
+strategy with a short futures position sized at 35% 
+of net asset value. We repeat this exercise each day.
+Table 6
+ reports performance statistics for the 
+BXM and the BXY and for the two indexes after we 
+used our risk management process.
+9
+ Hedging the 
+Figure 7. 
+CBOE S&P 500 BuyWrite Indexs Equity Exposure Distribution 
+at Constant Number of Business Days since Last Rebalance, 25 
+March 199631 December 2014
+Fr
+equency
+A. 0 Days since Rebalancing
+0
+1.00
+0.75
+0.25
+0.50
+Equity Exposur
+e
+Fr
+equency
+B. 6 Days since Rebalancing
+0
+1.00
+0.75
+0.25
+0.50
+Equity Exposur
+e
+Fr
+equencyC. 12 Days since Rebalancing
+0
+1.00
+0.75
+0.25
+0.50
+Equity Exposur
+e
+Fr
+equencyD. 18 Days since Rebalancing
+0
+1.00
+0.75
+0.25
+0.50
+Equity Exposur
+e
+Notes: 
+This gure shows the distributions of the equity exposure for an at-the-money covered 
+call strategy mimicking the methodology of the BXM 0, 6, 12, and 18 business days after the last 
+call option sale (i.e., the last monthly option expiration date). The equity exposure buckets are 
+in intervals of 0.05. The backtest is long the S&P 500 and short at-the-money front-month S&P 
+500 call options, held to expiry. 
+Sources: 
+AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+
+Covered Calls Uncovered
+November/December 2015
+ www.cfa
+pubs
+.org  
+55
+covered call strategies active equity exposure suc
+-
+cessfully reduced the strategies volatilities. Hedging 
+reduced the BXMs volatility from 11.4% to 9.2%, 
+thereby increasing its Sharpe ratio from 0.37 to 0.52. 
+Similarly, hedging reduced the BXYs volatility from 
+13.3% to 12.4% and increased its Sharpe ratio from 
+0.41 to 0.46.
+The BuyWrite indexes have asymmetric betas 
+in part because of their active equity reversal expo
+-
+sure. As the S&P 500 declines (increases) in value, 
+their exposures to the index increase (decline). As a 
+result, both BuyWrite indexes have higher exposure 
+to the S&P 500s losses than to its gains. For example, 
+the BXM has a downside beta of 0.85 and an upside 
+beta of 0.46. Our proposed risk management process 
+brings these two exposures closer to parity, result
+-
+ing in a downside beta of 0.60 and an upside beta 
+of 0.49. The remaining asymmetry in beta is due to 
+short volatility exposure.
+The hedged covered call will necessarily have 
+higher trading costs than the unhedged covered call. 
+The examples we provide are intended to illustrate 
+how the performance attribution can help identify 
+a risk that may be hedged and that hedging this 
+risk successfully reduces the strategies volatili
+-
+ties. Portfolio managers or investors who intend to 
+hedge the covered calls equity timing risk can opti
+-
+mize their hedging activity to balance trading costs 
+against equity timing risk if so desired. Once the 
+nal portfolio is constructed, our proposed attribu
+-
+tion methodology can be used to identify and com
+-
+municate the drivers of the strategys performance.
+Conclusion
+Many investors seek to protect their portfolios by 
+purchasing equity index options. As a result, options 
+tend to include a risk premium as a form of com
+-
+pensation to option sellers. Covered calls, which are 
+short options, collect this volatility risk premium in 
+addition to the equity risk premium earned from 
+their long equity exposure. Because of option con
+-
+vexity, covered calls also embed active equity expo
+-
+sure that behaves like a reversal strategy.
+Unfortunately, covered calls are rarely consid
+-
+ered in terms of their risk exposures. Our article 
+introduces a novel performance attribution meth
+-
+odology that decomposes the strategys return into 
+its passive and active equity and short volatility 
+exposures. Not only does the performance attribu
+-
+tion of our samples allow covered call investors to 
+better understand the strategys characteristics, but it 
+also allows portfolio managers to assess the risk and 
+Table 6. 
+Summary Statistics: Returns (Annualized), 25 March 199631 
+December 2014 
+S&P 500
+BXM
+Hedged 
+BXM
+BXY
+Hedged 
+BXY
+Excess return (simple)
+6.8%
+4.9%
+5.1%
+6.3%
+6.5%
+Excess return (geometric)
+5.2%
+4.2%
+4.8%
+5.4%
+5.8%
+Volatility
+16.4%
+11.4%
+9.2%
+13.3%
+12.4%
+Sharpe ratio (geometric)
+0.32
+0.37
+0.52
+0.41
+0.46
+Skew
+0.7
+1.6
+1.1
+1.1
+0.9
+Kurtosis
+3.1
+7.6
+4.2
+5.0
+3.7
+Beta to S&P 500 
+1.00
+0.62
+0.54
+0.76
+0.75
+Upside beta
+1.00
+0.46
+0.49
+0.61
+0.71
+Downside beta
+1.00
+0.85
+0.60
+0.89
+0.78
+Notes: 
+This table shows summary statistics for various hedged and unhedged covered call 
+series, as well as the S&P 500. The BXM column refers to the actual returns of the CBOE S&P 
+500 BuyWrite Index. The BXY column refers to the actual returns of the CBOE S&P 500 2% 
+OTM BuyWrite Index. To compute the Hedged series for the BXM and BXY, we rst simulate 
+covered call backtests mimicking the methodologies of the indexes. Each day, we compute the 
+equity exposure of the call option according to the BlackScholes model. We then hedge the 
+active equity exposure using S&P 500 futures, where active equity exposure is dened as the 
+difference between the calls delta and the expected delta of the selected call options on option 
+rebalance dates (dened as 0.5 for the at-the-money backtest and 0.3 for the 2% out-of-the-money 
+backtest). The Hedged BXM column refers to the sum of the actual BXM returns and the time 
+series of index future hedge returns for our simulated BXM backtest. The Hedged BXY column 
+refers to the sum of the actual BXY returns and the time series of index future hedge returns for 
+our simulated BXY backtest. Returns are in excess of US three-month LIBOR. Volatility, skew, 
+kurtosis, beta, upside beta, and downside beta were computed using 21-day overlapping returns. 
+Sources: 
+AQR, OptionMetrics, Chicago Board Options Exchange, and Standard & Poors.
+
+56
+ 
+www.cfa
+pubs
+.org
+ 
+© 2015 CF
+A Institute. All rights reserved.
+return impact of portfolio construction decisions, such as the call options strike and maturity, so that 
+they may improve their strategies.As an example, our article proposes a risk-managed covered call to hedge away the uncompen
+-sated active equity exposure, which is a signicant 
+contributor to the covered calls risk. Our proposed 
+strategy has similar expected returns to the original covered call but has lower risk, lower downside beta, and a higher Sharpe ratio. And although the motiva
+-tion for covered calls is often confusing and muddled by a number of myths, the motivation for the risk-managed covered call is clear: to earn the equity and volatility risk premiums by constructing a portfolio 
+with long equity and short volatility exposure.With these motives clearly established, creating custom portfolio solutions for those with increased 
+exibility can be a straightforward exercise. Those who seek to collect a greater volatility risk premium 
+than that provided by a traditional covered call can sell more options to increase their short volatility exposure. Those who wish to supplement, rather than replace, their equity exposure with short volatility exposure can sell delta-neutral straddles, rather than a delta-reducing call option. The (risk-managed) at-the-money covered call is but one choice along a continuum of possible allo
+-cations to long equity and short volatility for those who seek to earn the equity and volatility risk premiums.We thank Jacob Boudoukh, Brian Hurst, Ronen Israel, Bradley Jones, Michael Katz, John Liew, Ari Levine, Andrew Sterge, Rodney Sullivan, and Daniel Villalon for helpful comments and suggestions and Matthew Klein and Harsha Tummala for data and analysis.
+Notes
+1.
+Bollerslev
+, Gibson, and Zhou (2006) dened the volatility risk 
+premium as the spread between an options implied volatility and the underlying securitys realized volatility. Although it 
+is not an investment return per se when dened as such, the 
+volatility risk premium is an intuitive measure of an options richness. The volatility risk premium has also become industry jargon for the expected excess return earned when selling options. In this article, we apply the terminology 
+volatility risk premium to both contexts.
+2.
+A number of papers, such as Whaley (2002), Feldman and
+Roy (2005), and Hill, Balasubramanian, Gregory, and Tierens (2006), have shown that S&P 500 Index covered calls have had average returns in line with the S&P 500. Kapadia and Szado 
+(2007) reported a similar result for the Russell 2000 Index.
+3.
+By using delta r
+eported by OptionMetrics, we are using the
+BlackScholes model to identify delta-hedged returns andequity timing exposure. Alternatively, a stochastic volatilitymodel could be used to generate the options delta. A different model for delta would necessarily shift return between pas-
+sive equity, short volatility, and equity timing and provide an alternative performance attribution. According to Bakshi and Kapadia (2003), establishing that the volatility risk premiumand the mean discrete delta-hedged gains share the same sign does not require correct specication of the volatility process. 
+If an improved model of an options delta is used, we expect that short volatilitys risk contribution should be lower owing to the increased option-hedging efcacy. For parsimony, ourperformance attribution relies on BlackScholes option deltas.
+4.
+If we assume an implied volatility of 18%, then the Black
+Scholes deltas of an at-the-money and a 2% out-of-the-money call option with one month to expiration can be calculated as 
+0.5 and 0.3, respectively, after rounding. On the basis of these calculations, our expected portfolio deltas after rebalancingwere 0.5 and 0.7, respectively, for the two backtests.
+5.
+Risk contribution is dened as the covariance of the com
+-ponent with the respective BuyWrite Index divided by thevariance of the respective BuyWrite Index.
+6.
+Figelman (2008) decomposed cover
+ed call expected returns
+into three terms: (1) risk-free return plus, (2) equity riskpremium minus, and (3) call risk premium. Because a longcall option has positive exposure to the stock, in Figelmans
+decomposition, the call risk premium includes an equity risk premium. Our equity timing plays no role in Figelmansdecomposition because its expected return is zero. We decom
+-posed the covered calls excess return into three economically distinct terms. As a result, the short volatility returns are equity neutral. Because we decomposed actual realized covered call returns, we are able to analyze each components contribu
+-tion to the strategys risk in addition to its contribution to the 
+strategys average return.
+7.
+Covered calls can be written at different strikes and maturities
+and at any point in time; one implementations active exposure might be positive, whereas anothers might be negative.
+8.
+Bakshi and Kapadia (2003) documented the existence of a
+volatility risk premium in their analysis of delta-hedgedoption returns. They showed that the sign of the volatilityrisk premium provides the sign of the expected delta-hedged 
+option return, even when volatility follows a stochastic pro
+-cess. Similarly, Figelman (2009) showed that the volatility risk premium is not explained by stock indexes returns that donot follow a normal distribution.
+9.
+ 
+Comparing T
+able 1 and Table 3 with Table 6, the at-the-money 
+backtests return of 5.9% was roughly 1.0 percentage pointhigher than the actual BXMs return of 4.9%, and the 2% OTM backtests return of 7.1% was roughly 0.8 percentage pointhigher than the BXYs return of 6.3%. These discrepancies are mostly an artifact of the BXM and BXY calculation methodolo
+-gies on expiration dates. On these dates, the BXM and BXY are fully invested in the S&P 500 for the interval between the time 
+that the old option expires and a VWAP (volume-weighted
+average price) period during which the new option is sold,roughly two hours later. Because intraday option prices arenot available over the full period, our covered call backtestsinstead calculate the intraday return as the expected portfolio delta multiplied by the S&P 500 return from settlement to close, and a new short call option position is then established at the 
+days closing price. This discrepancy means that the BXM and 
+BXY have relatively larger exposures to S&P 500 movements
+from settlement until the VWAP period, an interval that hashistorically seen strongly negative returns on average. TheCBOE (2015) paper The BXM and PUT Conundrum alsorecognized this effect, noting that the SOQ is often greaterthan the subsequent VWAP value of the S&P 500. As seen from Equation (1), the ratio of the SOQ to the VWAP drags down
+the rate of return of the BXM when the BXM call expires in the 
+money, which has occurred 70% of the time since 2004 (p. 3).
+CE Qualified
+Activity
+1 CE credit
+
+Covered Calls Uncovered
+November/December 2015
+www.cfa
+pubs
+.org 
+ 
+57ReferencesBakshi, G., and N. Kapadia. 2003. Delta-Hedged Gains and the Negative Market Volatility Risk Premium. 
+Review of Financial Studies, vol. 16, no. 2 (April): 527566. Bollen, N.P.B., and R.E. Whaley. 2004. Does Net Buying Pressure Affect the Shape of Implied Volatility Functions? 
+Journal of Finance, vol. 59, no. 2 (April): 711753. Bollerslev, T., M. Gibson, and Hao Zhou. 2006. Dynamic Estimation of Volatility Risk Premia and Investor Risk Aversion 
+from Option-Implied and Realized Volatilities. Working paper, 
+Federal Reserve Board.CBOE. 2015. The BXM and PUT Conundrum (www.cboe.com/micro/bxm/bxm-put-conundrum.pdf).Feldman, B., and D. Roy. 2005. Passive Options-Based Investment Strategies: The Case of the CBOE S&P 500 Buy Write Index. Journal of Investing, vol. 14, no. 2 (Summer): 6683. Figelman, I. 2008. Expected Return and Risk of Covered 
+Call Strategies. 
+Journal of Portfolio Management
+, vol. 34, no. 4 (Summer): 8197. .  2009. Effect of Non-Normality Dynamics on the Expected Return of Options. 
+Journal of Portfolio Management, vol. 35, no. 
+2 (Winter): 110117. Gârleanu, N., L.H. Pedersen, and A.M. Poteshman. 2009. Demand-Based Option Pricing. 
+Review of Financial Studies
+, vol. 
+22, no. 10 (October): 42594299. 
+Hill, J.M., V. Balasubramanian, K. Gregory, and I. Tierens. 2006. Finding Alpha via Covered Index Writing. Financial Analysts Journal, vol. 62, no. 5 (September/October): 2946. Israelov, R., and M. Klein. 2015. Risk and Return of Equity Index Collar Strategies. Working paper, AQR.Israelov, R., and L.N. Nielsen. 2014. Covered Call Strategies: One Fact and Eight Myths. 
+Financial Analysts Journal
+, vol. 70, no. 6 (November/December): 2331.Kapadia, N., and E. Szado. 2007. The Risk and Return 
+Characteristics of the Buy-Write Strategy on the Russell 2000 Index. 
+Journal of Alternative Investments
+, vol. 9, no. 4 (Spring): 3956. Litterman, R. 2011. Who Should Hedge Tail Risk? 
+Financial Analysts Journal, vol. 67, no. 3 (May/June): 611. Whaley, R.E. 2002. Return and Risk of CBOE Buy Write Monthly Index. Journal of Derivatives, vol. 10, no. 2 (Winter): 3542. 
+Malmgren monograph.indd   1
+3/30/15   9:22 AM
+
+Financial Analysts Journal

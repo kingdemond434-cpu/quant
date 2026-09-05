@@ -1,0 +1,2439 @@
+{
+  "youtube": {
+    "count": 0,
+    "discoveries": []
+  },
+  "github": {
+    "count": 27,
+    "discoveries": [
+      {
+        "source": "github",
+        "repo": "ashikscreativemath-commits/Paldo-ALM",
+        "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+        "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+        "stars": 21,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "scalping",
+          "swing"
+        ],
+        "confidence": 0.321
+      },
+      {
+        "source": "github",
+        "repo": "ilahuerta-IA/tradingsystem",
+        "url": "https://github.com/ilahuerta-IA/tradingsystem",
+        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+        "stars": 16,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.16599999999999998
+      },
+      {
+        "source": "github",
+        "repo": "Anastasiamaster/forex-c15-trader-strategy-mt4",
+        "url": "https://github.com/Anastasiamaster/forex-c15-trader-strategy-mt4",
+        "description": "Official repository for Forex C 15 Trader Strategy on MetaTrader 4 (MT4). Clean, non-repainting M15 intraday trading signals, trend filter, and risk management templates for Forex & Gold (XAUUSD).",
+        "stars": 93,
+        "language": null,
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.29300000000000004
+      },
+      {
+        "source": "github",
+        "repo": "Evangeline668/forex-market-balance-trading-system",
+        "url": "https://github.com/Evangeline668/forex-market-balance-trading-system",
+        "description": "An institutional Forex Market Balance strategy for MetaTrader 4 (MT4). Automate value area detection, identify order flow imbalances, and trade alongside smart money with high R:R setups.",
+        "stars": 96,
+        "language": null,
+        "symbols": [],
+        "patterns": [
+          "SMA",
+          "smart money"
+        ],
+        "confidence": 0.396
+      },
+      {
+        "source": "github",
+        "repo": "Evangeline668/forex-tp-pro-trend-strategy-mt4",
+        "url": "https://github.com/Evangeline668/forex-tp-pro-trend-strategy-mt4",
+        "description": "Forex TP PRO Trend Strategy for MetaTrader 4 \u2014 A 100% no-repaint signal system for trading currency pairs and XAUUSD with built-in risk rules.",
+        "stars": 95,
+        "language": null,
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.29500000000000004
+      },
+      {
+        "source": "github",
+        "repo": "NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+        "url": "https://github.com/NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+        "description": "A complete trading automation framework using MetaTrader 5, LSTM Neural Networks, and Python. The bot detects engulfing candlestick patterns, combines volume and pivot-based signals, and trades GBPUSD using a risk-managed strategy with trailing stop-loss, partial take-profit, and live execution support.",
+        "stars": 14,
+        "language": "Python",
+        "symbols": [
+          "GBPUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.21400000000000002
+      },
+      {
+        "source": "github",
+        "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
+        "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
+        "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
+        "stars": 94,
+        "language": null,
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.44399999999999995
+      },
+      {
+        "source": "github",
+        "repo": "Clementinemaster/forex-mpx-zones-strategy-mt4",
+        "url": "https://github.com/Clementinemaster/forex-mpx-zones-strategy-mt4",
+        "description": "Forex MPX Zones Strategy for MT4 \u2013 Master institutional order flow trading. Automate smart money zone mapping, get real-time price alerts, and upgrade your FX execution.",
+        "stars": 93,
+        "language": null,
+        "symbols": [],
+        "patterns": [
+          "SMA",
+          "smart money"
+        ],
+        "confidence": 0.393
+      },
+      {
+        "source": "github",
+        "repo": "Clementinemaster/forex-stgfx-advanced-strategy-mt4",
+        "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
+        "description": "High Risk-to-Reward Forex & Gold (XAUUSD) trading strategy for MetaTrader 4 (MT4). Built on 100% non-repainting signals, multi-timeframe volatility filtering, and systematic risk management. Includes complete setup guide, templates (.tpl), and presets (.set).",
+        "stars": 94,
+        "language": null,
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.44399999999999995
+      },
+      {
+        "source": "github",
+        "repo": "goodie1972/algoforge",
+        "url": "https://github.com/goodie1972/algoforge",
+        "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
+        "stars": 5,
+        "language": "HTML",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.20500000000000002
+      },
+      {
+        "source": "github",
+        "repo": "rolling-panda-san/notebooks",
+        "url": "https://github.com/rolling-panda-san/notebooks",
+        "description": "Analysis on systematic trading strategies (e.g., trend-following, carry and mean-reversion). The result is regularly updated. ",
+        "stars": 756,
+        "language": "Jupyter Notebook",
+        "symbols": [],
+        "patterns": [
+          "RSI",
+          "EMA"
+        ],
+        "confidence": 1.0
+      },
+      {
+        "source": "github",
+        "repo": "moss-site/moss-trade-bot-skills",
+        "url": "https://github.com/moss-site/moss-trade-bot-skills",
+        "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
+        "stars": 381,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "momentum",
+          "RSI"
+        ],
+        "confidence": 0.681
+      },
+      {
+        "source": "github",
+        "repo": "orangepineapple/mean_reversion_strategies",
+        "url": "https://github.com/orangepineapple/mean_reversion_strategies",
+        "description": "Here I go through the processing of prototyping a mean reversion trading strategy using statistical concepts, then test it in backtrader.",
+        "stars": 83,
+        "language": "Jupyter Notebook",
+        "symbols": [],
+        "patterns": [
+          "mean reversion",
+          "RSI"
+        ],
+        "confidence": 0.383
+      },
+      {
+        "source": "github",
+        "repo": "n30dyn4m1c/gold-pro-scalper",
+        "url": "https://github.com/n30dyn4m1c/gold-pro-scalper",
+        "description": "MetaTrader 5 gold (XAUUSD) M1 mean-reversion scalpers \u2014 Z-Score entries, cost-aware TickRobust variant, and dual MR + breakout EA",
+        "stars": 14,
+        "language": "MQL5",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "breakout",
+          "RSI"
+        ],
+        "confidence": 0.514
+      },
+      {
+        "source": "github",
+        "repo": "ChypherFish3r/coinbase-trading-bot",
+        "url": "https://github.com/ChypherFish3r/coinbase-trading-bot",
+        "description": "coinbase trading bot for momentum strategies with optional profit transfers, CSV backtests, and a clean CLI",
+        "stars": 148,
+        "language": "JavaScript",
+        "symbols": [],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.298
+      },
+      {
+        "source": "github",
+        "repo": "mbordash/DRADIS",
+        "url": "https://github.com/mbordash/DRADIS",
+        "description": "Low-latency Rust prediction-market trading bot for Kalshi & Polymarket. 9 autonomous strategies (Momentum, Maker, Arbitrage, ML, etc.), real-time Next.js Control Tower, and an AI LLM Advisor that delivers optimization recommendations via Ollama (local or remote), MCP + Telegram and OpenClaw.",
+        "stars": 23,
+        "language": "Rust",
+        "symbols": [],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.173
+      },
+      {
+        "source": "github",
+        "repo": "nmj94/momentum-lab",
+        "url": "https://github.com/nmj94/momentum-lab",
+        "description": "Find the optimal momentum trading strategy for any asset. Just provide a ticker. 26 strategies, 1.6M+ parameter combinations, regime-aware adaptive switching.",
+        "stars": 101,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.251
+      },
+      {
+        "source": "github",
+        "repo": "utplawan/momentum-trading-backtester-",
+        "url": "https://github.com/utplawan/momentum-trading-backtester-",
+        "description": "Momentum investing strategy backtester with statistical validation and interactive Streamlit dashboard ",
+        "stars": 11,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.161
+      },
+      {
+        "source": "github",
+        "repo": "moss-site/moss-trade-bot-skills",
+        "url": "https://github.com/moss-site/moss-trade-bot-skills",
+        "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
+        "stars": 381,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "momentum",
+          "RSI"
+        ],
+        "confidence": 0.681
+      },
+      {
+        "source": "github",
+        "repo": "Ahmed-GoCode/Quant-Edge-Indicators",
+        "url": "https://github.com/Ahmed-GoCode/Quant-Edge-Indicators",
+        "description": "\u26a1 A professional open-source algorithmic trading suite for TradingView. Features 16 Pine Script v6 strategies covering Smart Money Concepts (SMC), Order Flow, Momentum, and Trend Breakouts.",
+        "stars": 43,
+        "language": null,
+        "symbols": [],
+        "patterns": [
+          "breakout",
+          "momentum",
+          "SMA",
+          "smart money"
+        ],
+        "confidence": 0.643
+      },
+      {
+        "source": "github",
+        "repo": "nirholas/robinhood-chain-trading-bot",
+        "url": "https://github.com/nirholas/robinhood-chain-trading-bot",
+        "description": "Open-source autonomous trading bot for Robinhood Chain. Four strategies: launch sniping, momentum, Stock Token premium/discount arbitrage, and a bring-your-own-key LLM strategist (Claude, OpenAI, Groq, or OpenRouter). Real risk caps, real signed swaps, paper mode by default, live P&L dashboard.",
+        "stars": 5,
+        "language": "TypeScript",
+        "symbols": [],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.155
+      },
+      {
+        "source": "github",
+        "repo": "jefrnc/strategy-orb15-momentum",
+        "url": "https://github.com/jefrnc/strategy-orb15-momentum",
+        "description": "Opening Range Breakout system in Python \u2014 reproducible backtest, risk management and walk-forward validation. Results are in the repo; no return promises.",
+        "stars": 16,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "breakout",
+          "momentum"
+        ],
+        "confidence": 0.316
+      },
+      {
+        "source": "github",
+        "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
+        "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
+        "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
+        "stars": 94,
+        "language": null,
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.44399999999999995
+      },
+      {
+        "source": "github",
+        "repo": "ashikscreativemath-commits/Paldo-ALM",
+        "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+        "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+        "stars": 21,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "scalping",
+          "swing"
+        ],
+        "confidence": 0.321
+      },
+      {
+        "source": "github",
+        "repo": "goodie1972/algoforge",
+        "url": "https://github.com/goodie1972/algoforge",
+        "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
+        "stars": 5,
+        "language": "HTML",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.20500000000000002
+      },
+      {
+        "source": "github",
+        "repo": "ELOSPO/algorithmic-tradingUR2023I",
+        "url": "https://github.com/ELOSPO/algorithmic-tradingUR2023I",
+        "description": "Este repositorio contiene las funciones b\u00e1sicas del curso de Trading Algor\u00edtmico con Python y MT5 dictado en la Universidad del Rosario as\u00ed como los robots desarrollados durante el curso",
+        "stars": 38,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "RSI"
+        ],
+        "confidence": 0.188
+      },
+      {
+        "source": "github",
+        "repo": "ilahuerta-IA/tradingsystem",
+        "url": "https://github.com/ilahuerta-IA/tradingsystem",
+        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+        "stars": 16,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.16599999999999998
+      }
+    ]
+  },
+  "mql5_codebase": {
+    "count": 0,
+    "discoveries": []
+  },
+  "mql5_articles": {
+    "count": 0,
+    "discoveries": []
+  },
+  "mql5_signals": {
+    "count": 5,
+    "discoveries": [
+      {
+        "source": "mql5_signals",
+        "name": "Filter",
+        "profit": "",
+        "drawdown": "",
+        "url": "https://www.mql5.com/en/signals",
+        "confidence": 0.3
+      },
+      {
+        "source": "mql5_signals",
+        "name": "Broker server",
+        "profit": "",
+        "drawdown": "",
+        "url": "https://www.mql5.com/en/signals",
+        "confidence": 0.3
+      },
+      {
+        "source": "mql5_signals",
+        "name": "Maximum profit",
+        "profit": "Maximum profit",
+        "drawdown": "",
+        "url": "https://www.mql5.com/en/signals",
+        "confidence": 0.3
+      },
+      {
+        "source": "mql5_signals",
+        "name": "Reliability",
+        "profit": "",
+        "drawdown": "",
+        "url": "https://www.mql5.com/en/signals",
+        "confidence": 0.3
+      },
+      {
+        "source": "mql5_signals",
+        "name": "Popular among subscribers",
+        "profit": "",
+        "drawdown": "",
+        "url": "https://www.mql5.com/en/signals",
+        "confidence": 0.3
+      }
+    ]
+  },
+  "mql5_forum": {
+    "count": 0,
+    "discoveries": []
+  },
+  "tradingview": {
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "tradingview",
+        "kind": "stub",
+        "needs_selector_work": true,
+        "host": "www.tradingview.com/scripts/",
+        "why": "fetched OK, content is client-side rendered"
+      }
+    ]
+  },
+  "quantconnect": {
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "quantconnect",
+        "kind": "stub",
+        "needs_selector_work": true,
+        "host": "www.quantconnect.com/tutorials/strategy-library",
+        "why": "fetched OK, content is client-side rendered"
+      }
+    ]
+  },
+  "reddit": {
+    "count": 25,
+    "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Last hope lost hope! XAUUSD",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "FINAL UPDATE: Turning Around a 1$ blown account",
+        "url": "",
+        "symbols": [
+          "DXY",
+          "XAUUSD"
+        ],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Why I passed on USD/JPY",
+        "url": "",
+        "symbols": [
+          "DXY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Gold Algo",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Me VS XAUUSD",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Looking for 1 more market to trade alongside XAUUSD",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "liquidity"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Waiting for the profit. Will it break volume support or not?",
+        "url": "",
+        "symbols": [
+          "EURUSD"
+        ],
+        "patterns": [
+          "support"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Gold taking support from major level",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "support",
+          "trend"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "XAUUSD",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "XAUUSD Trade",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "NASDAQ MONTHLY REVIEW",
+        "url": "",
+        "symbols": [
+          "NAS100"
+        ],
+        "patterns": [
+          "reversal",
+          "EMA",
+          "order block"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "One more with Gold /XAUUSD",
+        "url": "",
+        "symbols": [
+          "DXY",
+          "XAUUSD"
+        ],
+        "patterns": [
+          "support",
+          "resistance"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Monday! Let's see XAUUSD",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "support",
+          "resistance",
+          "EMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Xauusd at support",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "support",
+          "fibonacci"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Watching futures data while trading CFDs, anyone else do this?",
+        "url": "",
+        "symbols": [
+          "EURUSD"
+        ],
+        "patterns": [
+          "liquidity"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Reverse-engineered an ML expert advisor on XAUUSD (H1) for MT5 with a near-flawless 11-year equity curve. The teardown revealed systemic methodological flaws.",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "I added real slippage to 3 recommended setups. 2 lose money and 1 barely does anything",
+        "url": "",
+        "symbols": [
+          "EURUSD"
+        ],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Need help: Circling around the zero $ mark on FTMO for 6 months. What does it mean?",
+        "url": "",
+        "symbols": [
+          "DXY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "Which platform should I use to automate my trading?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "Search for BTC daily trading signals is coming to an end. Keep going or stop?",
+        "url": "",
+        "symbols": [
+          "BTCUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "Is tradingview strategy tester reliable?",
+        "url": "",
+        "symbols": [
+          "BTCUSD",
+          "ETHUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "What's the difference between $15 Nasdaq TotalView subscription and Lvl2 data obtained via a broker?",
+        "url": "",
+        "symbols": [
+          "NAS100"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "Possible to algotrade Liquidity concept like ICT/SMC or CRT?",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [
+          "liquidity"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "Where do I go from here",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "algotrading",
+        "title": "made a pairs screener for us equities. 1.7 million pairs a week, poke at it maybe?",
+        "url": "",
+        "symbols": [
+          "DXY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      }
+    ]
+  },
+  "central_bank": {
+    "count": 0,
+    "discoveries": []
+  },
+  "forexfactory": {
+    "count": 0,
+    "error": "UnboundLocalError: cannot access local variable 'e' where it is not associated with a value"
+  },
+  "cot": {
+    "count": 11,
+    "discoveries": [
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "USDCHF",
+        "contract": "SWISS FRANC - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-25",
+        "open_interest": 92,
+        "non_commercial_long": 108923,
+        "non_commercial_short": 57751,
+        "non_commercial_net": 51172,
+        "commercial_long": 10090,
+        "commercial_short": 12353,
+        "commercial_net": -2263,
+        "spec_pct_of_oi": 55621.74,
+        "comm_pct_of_oi": -2459.78
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "GBPUSD",
+        "contract": "BRITISH POUND - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-25",
+        "open_interest": 96,
+        "non_commercial_long": 318468,
+        "non_commercial_short": 135405,
+        "non_commercial_net": 183063,
+        "commercial_long": 7143,
+        "commercial_short": 81286,
+        "commercial_net": -74143,
+        "spec_pct_of_oi": 190690.62,
+        "comm_pct_of_oi": -77232.29
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "USDJPY",
+        "contract": "JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-25",
+        "open_interest": 97,
+        "non_commercial_long": 384216,
+        "non_commercial_short": 99992,
+        "non_commercial_net": 284224,
+        "commercial_long": 25216,
+        "commercial_short": 66528,
+        "commercial_net": -41312,
+        "spec_pct_of_oi": 293014.43,
+        "comm_pct_of_oi": -42589.69
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "EURUSD",
+        "contract": "EURO FX - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-25",
+        "open_interest": 99,
+        "non_commercial_long": 818524,
+        "non_commercial_short": 52864,
+        "non_commercial_net": 765660,
+        "commercial_long": 61713,
+        "commercial_short": 90921,
+        "commercial_net": -29208,
+        "spec_pct_of_oi": 773393.94,
+        "comm_pct_of_oi": -29503.03
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "AUDUSD",
+        "contract": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-25",
+        "open_interest": 232,
+        "non_commercial_long": 333906,
+        "non_commercial_short": 101536,
+        "non_commercial_net": 232370,
+        "commercial_long": 3728,
+        "commercial_short": 81344,
+        "commercial_net": -77616,
+        "spec_pct_of_oi": 100159.48,
+        "comm_pct_of_oi": -33455.17
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "EURUSD",
+        "contract": "EURO FX/BRITISH POUND XRATE - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-25",
+        "open_interest": 99,
+        "non_commercial_long": 40299,
+        "non_commercial_short": 827,
+        "non_commercial_net": 39472,
+        "commercial_long": 1132,
+        "commercial_short": 3276,
+        "commercial_net": -2144,
+        "spec_pct_of_oi": 39870.71,
+        "comm_pct_of_oi": -2165.66
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "EURUSD",
+        "contract": "EURO FX/JAPANESE YEN XRATE - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-25",
+        "open_interest": 99,
+        "non_commercial_long": 22261,
+        "non_commercial_short": 476,
+        "non_commercial_net": 21785,
+        "commercial_long": 564,
+        "commercial_short": 1371,
+        "commercial_net": -807,
+        "spec_pct_of_oi": 22005.05,
+        "comm_pct_of_oi": -815.15
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "USDMXN",
+        "contract": "MEXICAN PESO - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-25",
+        "open_interest": 95,
+        "non_commercial_long": 286429,
+        "non_commercial_short": 19497,
+        "non_commercial_net": 266932,
+        "commercial_long": 1947,
+        "commercial_short": 131529,
+        "commercial_net": -129582,
+        "spec_pct_of_oi": 280981.05,
+        "comm_pct_of_oi": -136402.11
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "NZDUSD",
+        "contract": "NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-25",
+        "open_interest": 112,
+        "non_commercial_long": 88964,
+        "non_commercial_short": 64953,
+        "non_commercial_net": 24011,
+        "commercial_long": 1231,
+        "commercial_short": 3673,
+        "commercial_net": -2442,
+        "spec_pct_of_oi": 21438.39,
+        "comm_pct_of_oi": -2180.36
+      },
+      {
+        "source": "cot",
+        "type": "extreme_positioning",
+        "symbol": "EURUSD",
+        "spec_pct": 22005.05,
+        "direction": "long",
+        "contrarian_signal": "short",
+        "confidence": 0.8,
+        "description": "Speculators 22005.0% net long - contrarian reversal signal"
+      },
+      {
+        "source": "cot",
+        "type": "positioning_shift",
+        "symbol": "EURUSD",
+        "spec_change": -17865.66,
+        "direction": "decreasing",
+        "confidence": 0.6,
+        "description": "Speculator positioning decreasing by 17865.7% in one week"
+      }
+    ]
+  },
+  "sec_edgar": {
+    "count": 10,
+    "discoveries": [
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Bridgewater",
+        "cik": "0001350694",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Bridgewater has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Renaissance",
+        "cik": "0001037389",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Renaissance has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Citadel",
+        "cik": "0001423053",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Citadel has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Point72",
+        "cik": "0001567464",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Point72 has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "D.E. Shaw",
+        "cik": "0001649339",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "D.E. Shaw has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Two Sigma",
+        "cik": "0001590974",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Two Sigma has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Millennium",
+        "cik": "0001103804",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Millennium has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Baupost",
+        "cik": "0001061768",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Baupost has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Soros",
+        "cik": "0001028931",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Soros has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Appaloosa",
+        "cik": "0001103847",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Appaloosa has recent 13F filing - check for position changes"
+      }
+    ]
+  },
+  "earnings": {
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "earnings",
+        "kind": "stub",
+        "needs_selector_work": true,
+        "host": "finance.yahoo.com/quote/<ticker>/",
+        "why": "fetched OK, content is client-side rendered"
+      }
+    ]
+  },
+  "aaii": {
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "aaii",
+        "type": "extreme_sentiment",
+        "reading": "extreme_bullish",
+        "bullish_pct": 75.0,
+        "bearish_pct": 70.3,
+        "bull_bear_ratio": 1.07,
+        "symbols": [
+          "US500",
+          "NAS100",
+          "XAUUSD"
+        ],
+        "confidence": 0.75,
+        "description": "AAII: 75.0% bullish (extreme) - contrarian sell signal"
+      }
+    ]
+  },
+  "fear_greed": {
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "cnn_fear_greed",
+        "type": "sentiment_reading",
+        "reading": "neutral",
+        "score": 35.2571428571429,
+        "rating": "fear",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.3,
+        "description": "Fear & Greed: 35.2571428571429 (fear)"
+      }
+    ]
+  },
+  "investing": {
+    "count": 0,
+    "discoveries": []
+  },
+  "google_trends": {
+    "count": 0,
+    "discoveries": []
+  },
+  "academic": {
+    "count": 0,
+    "discoveries": []
+  },
+  "correlations": {
+    "count": 0,
+    "discoveries": []
+  },
+  "seasonality": {
+    "count": 87,
+    "discoveries": [
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Coca-Cola",
+        "month": 9,
+        "avg_return": 0.0755,
+        "overall_avg": 0.0489,
+        "direction": "bullish",
+        "symbols": [
+          "Coca-Cola"
+        ],
+        "confidence": 0.46280846043621815,
+        "description": "Coca-Cola historically bullish in month 9 (avg 0.075%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "A",
+        "month": 9,
+        "avg_return": 0.0122,
+        "overall_avg": 0.0048,
+        "direction": "bullish",
+        "symbols": [
+          "A"
+        ],
+        "confidence": 0.6,
+        "description": "A historically bullish in month 9 (avg 0.012%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ABT",
+        "month": 9,
+        "avg_return": 0.0523,
+        "overall_avg": 0.0112,
+        "direction": "bullish",
+        "symbols": [
+          "ABT"
+        ],
+        "confidence": 0.6,
+        "description": "ABT historically bullish in month 9 (avg 0.052%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AIG",
+        "month": 9,
+        "avg_return": 0.087,
+        "overall_avg": 0.0564,
+        "direction": "bullish",
+        "symbols": [
+          "AIG"
+        ],
+        "confidence": 0.4632115793527291,
+        "description": "AIG historically bullish in month 9 (avg 0.087%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Boeing",
+        "month": 9,
+        "avg_return": 0.0537,
+        "overall_avg": 0.0193,
+        "direction": "bullish",
+        "symbols": [
+          "Boeing"
+        ],
+        "confidence": 0.6,
+        "description": "Boeing historically bullish in month 9 (avg 0.054%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ADAJPY",
+        "month": 9,
+        "avg_return": 0.0917,
+        "overall_avg": -0.011,
+        "direction": "bullish",
+        "symbols": [
+          "ADAJPY"
+        ],
+        "confidence": 0.6,
+        "description": "ADAJPY historically bullish in month 9 (avg 0.092%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "BeyondMeat",
+        "month": 9,
+        "avg_return": -0.4531,
+        "overall_avg": -0.2977,
+        "direction": "bearish",
+        "symbols": [
+          "BeyondMeat"
+        ],
+        "confidence": 0.45653664368102986,
+        "description": "BeyondMeat historically bearish in month 9 (avg -0.453%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "GBPDKK",
+        "month": 9,
+        "avg_return": 0.0018,
+        "overall_avg": 0.0008,
+        "direction": "bullish",
+        "symbols": [
+          "GBPDKK"
+        ],
+        "confidence": 0.6,
+        "description": "GBPDKK historically bullish in month 9 (avg 0.002%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Roku",
+        "month": 9,
+        "avg_return": 0.2072,
+        "overall_avg": 0.0142,
+        "direction": "bullish",
+        "symbols": [
+          "Roku"
+        ],
+        "confidence": 0.6,
+        "description": "Roku historically bullish in month 9 (avg 0.207%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ALIBABA.24H",
+        "month": 9,
+        "avg_return": 0.1111,
+        "overall_avg": 0.026,
+        "direction": "bullish",
+        "symbols": [
+          "ALIBABA.24H"
+        ],
+        "confidence": 0.6,
+        "description": "ALIBABA.24H historically bullish in month 9 (avg 0.111%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Merck",
+        "month": 9,
+        "avg_return": 0.1333,
+        "overall_avg": 0.0725,
+        "direction": "bullish",
+        "symbols": [
+          "Merck"
+        ],
+        "confidence": 0.5517845678610895,
+        "description": "Merck historically bullish in month 9 (avg 0.133%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "USDPLN",
+        "month": 9,
+        "avg_return": 0.0011,
+        "overall_avg": -0.0003,
+        "direction": "bullish",
+        "symbols": [
+          "USDPLN"
+        ],
+        "confidence": 0.6,
+        "description": "USDPLN historically bullish in month 9 (avg 0.001%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ADP",
+        "month": 9,
+        "avg_return": 0.0559,
+        "overall_avg": 0.0305,
+        "direction": "bullish",
+        "symbols": [
+          "ADP"
+        ],
+        "confidence": 0.5495787046691293,
+        "description": "ADP historically bullish in month 9 (avg 0.056%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Qualcomm",
+        "month": 9,
+        "avg_return": 0.0943,
+        "overall_avg": 0.055,
+        "direction": "bullish",
+        "symbols": [
+          "Qualcomm"
+        ],
+        "confidence": 0.5144932289838974,
+        "description": "Qualcomm historically bullish in month 9 (avg 0.094%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "EURGBP",
+        "month": 9,
+        "avg_return": -0.0006,
+        "overall_avg": -0.0003,
+        "direction": "bearish",
+        "symbols": [
+          "EURGBP"
+        ],
+        "confidence": 0.5331035200429971,
+        "description": "EURGBP historically bearish in month 9 (avg -0.001%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "XCUUSD",
+        "month": 9,
+        "avg_return": 0.0408,
+        "overall_avg": 0.024,
+        "direction": "bullish",
+        "symbols": [
+          "XCUUSD"
+        ],
+        "confidence": 0.5098395179613213,
+        "description": "XCUUSD historically bullish in month 9 (avg 0.041%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ADBE",
+        "month": 9,
+        "avg_return": 0.0699,
+        "overall_avg": 0.0001,
+        "direction": "bullish",
+        "symbols": [
+          "ADBE"
+        ],
+        "confidence": 0.6,
+        "description": "ADBE historically bullish in month 9 (avg 0.070%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "GBPUSD",
+        "month": 9,
+        "avg_return": 0.0018,
+        "overall_avg": 0.0006,
+        "direction": "bullish",
+        "symbols": [
+          "GBPUSD"
+        ],
+        "confidence": 0.6,
+        "description": "GBPUSD historically bullish in month 9 (avg 0.002%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "COTTON",
+        "month": 9,
+        "avg_return": 0.0244,
+        "overall_avg": -0.0133,
+        "direction": "bullish",
+        "symbols": [
+          "COTTON"
+        ],
+        "confidence": 0.5517623441825519,
+        "description": "COTTON historically bullish in month 9 (avg 0.024%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Salesforce",
+        "month": 9,
+        "avg_return": 0.0389,
+        "overall_avg": 0.0165,
+        "direction": "bullish",
+        "symbols": [
+          "Salesforce"
+        ],
+        "confidence": 0.6,
+        "description": "Salesforce historically bullish in month 9 (avg 0.039%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ADS",
+        "month": 9,
+        "avg_return": 0.0598,
+        "overall_avg": 0.0355,
+        "direction": "bullish",
+        "symbols": [
+          "ADS"
+        ],
+        "confidence": 0.5052309176222337,
+        "description": "ADS historically bullish in month 9 (avg 0.060%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "GeneralElectric",
+        "month": 9,
+        "avg_return": 0.442,
+        "overall_avg": 0.2646,
+        "direction": "bullish",
+        "symbols": [
+          "GeneralElectric"
+        ],
+        "confidence": 0.5011173552024137,
+        "description": "GeneralElectric historically bullish in month 9 (avg 0.442%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AALB",
+        "month": 9,
+        "avg_return": -0.0283,
+        "overall_avg": -0.0128,
+        "direction": "bearish",
+        "symbols": [
+          "AALB"
+        ],
+        "confidence": 0.6,
+        "description": "AALB historically bearish in month 9 (avg -0.028%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "SOYBEAN",
+        "month": 9,
+        "avg_return": 0.0208,
+        "overall_avg": -0.0065,
+        "direction": "bullish",
+        "symbols": [
+          "SOYBEAN"
+        ],
+        "confidence": 0.6,
+        "description": "SOYBEAN historically bullish in month 9 (avg 0.021%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "UnitedHealth",
+        "month": 9,
+        "avg_return": 0.0298,
+        "overall_avg": 0.0054,
+        "direction": "bullish",
+        "symbols": [
+          "UnitedHealth"
+        ],
+        "confidence": 0.6,
+        "description": "UnitedHealth historically bullish in month 9 (avg 0.030%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ThermoFisherScientific",
+        "month": 9,
+        "avg_return": 0.0853,
+        "overall_avg": 0.0364,
+        "direction": "bullish",
+        "symbols": [
+          "ThermoFisherScientific"
+        ],
+        "confidence": 0.6,
+        "description": "ThermoFisherScientific historically bullish in month 9 (avg 0.085%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AVAXUSD",
+        "month": 9,
+        "avg_return": 0.0437,
+        "overall_avg": 0.0075,
+        "direction": "bullish",
+        "symbols": [
+          "AVAXUSD"
+        ],
+        "confidence": 0.6,
+        "description": "AVAXUSD historically bullish in month 9 (avg 0.044%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "CORN",
+        "month": 9,
+        "avg_return": 0.0324,
+        "overall_avg": -0.0007,
+        "direction": "bullish",
+        "symbols": [
+          "CORN"
+        ],
+        "confidence": 0.6,
+        "description": "CORN historically bullish in month 9 (avg 0.032%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "3M",
+        "month": 9,
+        "avg_return": -0.0117,
+        "overall_avg": 0.0032,
+        "direction": "bearish",
+        "symbols": [
+          "3M"
+        ],
+        "confidence": 0.6,
+        "description": "3M historically bearish in month 9 (avg -0.012%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Honeywell",
+        "month": 9,
+        "avg_return": -0.0121,
+        "overall_avg": 0.0046,
+        "direction": "bearish",
+        "symbols": [
+          "Honeywell"
+        ],
+        "confidence": 0.6,
+        "description": "Honeywell historically bearish in month 9 (avg -0.012%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ADYEN",
+        "month": 9,
+        "avg_return": 0.1442,
+        "overall_avg": 0.0025,
+        "direction": "bullish",
+        "symbols": [
+          "ADYEN"
+        ],
+        "confidence": 0.6,
+        "description": "ADYEN historically bullish in month 9 (avg 0.144%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Starbucks",
+        "month": 9,
+        "avg_return": 0.0596,
+        "overall_avg": 0.0079,
+        "direction": "bullish",
+        "symbols": [
+          "Starbucks"
+        ],
+        "confidence": 0.6,
+        "description": "Starbucks historically bullish in month 9 (avg 0.060%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "CHINAH",
+        "month": 9,
+        "avg_return": -0.0039,
+        "overall_avg": -0.0018,
+        "direction": "bearish",
+        "symbols": [
+          "CHINAH"
+        ],
+        "confidence": 0.6,
+        "description": "CHINAH historically bearish in month 9 (avg -0.004%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "TexasInstruments",
+        "month": 9,
+        "avg_return": 0.1281,
+        "overall_avg": 0.0589,
+        "direction": "bullish",
+        "symbols": [
+          "TexasInstruments"
+        ],
+        "confidence": 0.6,
+        "description": "TexasInstruments historically bullish in month 9 (avg 0.128%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ALIBABA",
+        "month": 9,
+        "avg_return": 0.0446,
+        "overall_avg": 0.0253,
+        "direction": "bullish",
+        "symbols": [
+          "ALIBABA"
+        ],
+        "confidence": 0.5281818390524443,
+        "description": "ALIBABA historically bullish in month 9 (avg 0.045%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "NOKSEK",
+        "month": 9,
+        "avg_return": 0.0021,
+        "overall_avg": 0.0001,
+        "direction": "bullish",
+        "symbols": [
+          "NOKSEK"
+        ],
+        "confidence": 0.6,
+        "description": "NOKSEK historically bullish in month 9 (avg 0.002%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AT&T",
+        "month": 9,
+        "avg_return": 0.0146,
+        "overall_avg": -0.0078,
+        "direction": "bullish",
+        "symbols": [
+          "AT&T"
+        ],
+        "confidence": 0.5622699202125346,
+        "description": "AT&T historically bullish in month 9 (avg 0.015%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Ford",
+        "month": 9,
+        "avg_return": 0.1682,
+        "overall_avg": 0.0894,
+        "direction": "bullish",
+        "symbols": [
+          "Ford"
+        ],
+        "confidence": 0.5645703145736599,
+        "description": "Ford historically bullish in month 9 (avg 0.168%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Airbnb",
+        "month": 9,
+        "avg_return": -0.0189,
+        "overall_avg": -0.001,
+        "direction": "bearish",
+        "symbols": [
+          "Airbnb"
+        ],
+        "confidence": 0.6,
+        "description": "Airbnb historically bearish in month 9 (avg -0.019%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "UKGILT",
+        "month": 9,
+        "avg_return": -0.028,
+        "overall_avg": -0.0134,
+        "direction": "bearish",
+        "symbols": [
+          "UKGILT"
+        ],
+        "confidence": 0.6,
+        "description": "UKGILT historically bearish in month 9 (avg -0.028%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "EURHKD",
+        "month": 9,
+        "avg_return": 0.0003,
+        "overall_avg": -0.0001,
+        "direction": "bullish",
+        "symbols": [
+          "EURHKD"
+        ],
+        "confidence": 0.6,
+        "description": "EURHKD historically bullish in month 9 (avg 0.000%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "XZNUSD",
+        "month": 9,
+        "avg_return": 0.0246,
+        "overall_avg": 0.0148,
+        "direction": "bullish",
+        "symbols": [
+          "XZNUSD"
+        ],
+        "confidence": 0.49832573570247024,
+        "description": "XZNUSD historically bullish in month 9 (avg 0.025%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ADAUSD",
+        "month": 9,
+        "avg_return": 0.7955,
+        "overall_avg": 0.4434,
+        "direction": "bullish",
+        "symbols": [
+          "ADAUSD"
+        ],
+        "confidence": 0.5382061816707514,
+        "description": "ADAUSD historically bullish in month 9 (avg 0.795%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "EURUSD",
+        "month": 9,
+        "avg_return": 0.0009,
+        "overall_avg": 0.0001,
+        "direction": "bullish",
+        "symbols": [
+          "EURUSD"
+        ],
+        "confidence": 0.6,
+        "description": "EURUSD historically bullish in month 9 (avg 0.001%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ALK",
+        "month": 9,
+        "avg_return": 0.0418,
+        "overall_avg": 0.0262,
+        "direction": "bullish",
+        "symbols": [
+          "ALK"
+        ],
+        "confidence": 0.47947904421908566,
+        "description": "ALK historically bullish in month 9 (avg 0.042%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "DOTUSD",
+        "month": 9,
+        "avg_return": 0.1167,
+        "overall_avg": 0.0153,
+        "direction": "bullish",
+        "symbols": [
+          "DOTUSD"
+        ],
+        "confidence": 0.6,
+        "description": "DOTUSD historically bullish in month 9 (avg 0.117%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "BlackRock",
+        "month": 9,
+        "avg_return": 0.1605,
+        "overall_avg": 0.0784,
+        "direction": "bullish",
+        "symbols": [
+          "BlackRock"
+        ],
+        "confidence": 0.6,
+        "description": "BlackRock historically bullish in month 9 (avg 0.160%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "XPBUSD",
+        "month": 9,
+        "avg_return": 0.0015,
+        "overall_avg": -0.001,
+        "direction": "bullish",
+        "symbols": [
+          "XPBUSD"
+        ],
+        "confidence": 0.4784921880147429,
+        "description": "XPBUSD historically bullish in month 9 (avg 0.002%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AENA",
+        "month": 9,
+        "avg_return": -0.1084,
+        "overall_avg": -0.0661,
+        "direction": "bearish",
+        "symbols": [
+          "AENA"
+        ],
+        "confidence": 0.4921845073342203,
+        "description": "AENA historically bearish in month 9 (avg -0.108%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "GeneralMotors",
+        "month": 9,
+        "avg_return": 0.2221,
+        "overall_avg": 0.126,
+        "direction": "bullish",
+        "symbols": [
+          "GeneralMotors"
+        ],
+        "confidence": 0.5288398626366739,
+        "description": "GeneralMotors historically bullish in month 9 (avg 0.222%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Target",
+        "month": 9,
+        "avg_return": 0.1142,
+        "overall_avg": -0.0256,
+        "direction": "bullish",
+        "symbols": [
+          "Target"
+        ],
+        "confidence": 0.6,
+        "description": "Target historically bullish in month 9 (avg 0.114%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AlibabaGroup",
+        "month": 9,
+        "avg_return": 0.0858,
+        "overall_avg": 0.0477,
+        "direction": "bullish",
+        "symbols": [
+          "AlibabaGroup"
+        ],
+        "confidence": 0.539296452908399,
+        "description": "AlibabaGroup historically bullish in month 9 (avg 0.086%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Snowflake",
+        "month": 9,
+        "avg_return": 0.1334,
+        "overall_avg": 0.043,
+        "direction": "bullish",
+        "symbols": [
+          "Snowflake"
+        ],
+        "confidence": 0.6,
+        "description": "Snowflake historically bullish in month 9 (avg 0.133%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "WHEAT",
+        "month": 9,
+        "avg_return": 0.0297,
+        "overall_avg": 0.0046,
+        "direction": "bullish",
+        "symbols": [
+          "WHEAT"
+        ],
+        "confidence": 0.6,
+        "description": "WHEAT historically bullish in month 9 (avg 0.030%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "SUGARRAW",
+        "month": 9,
+        "avg_return": 0.0574,
+        "overall_avg": -0.0019,
+        "direction": "bullish",
+        "symbols": [
+          "SUGARRAW"
+        ],
+        "confidence": 0.6,
+        "description": "SUGARRAW historically bullish in month 9 (avg 0.057%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Citigroup",
+        "month": 9,
+        "avg_return": 0.2296,
+        "overall_avg": 0.1447,
+        "direction": "bullish",
+        "symbols": [
+          "Citigroup"
+        ],
+        "confidence": 0.4761297349487949,
+        "description": "Citigroup historically bullish in month 9 (avg 0.230%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AALG",
+        "month": 9,
+        "avg_return": -0.0523,
+        "overall_avg": -0.0262,
+        "direction": "bearish",
+        "symbols": [
+          "AALG"
+        ],
+        "confidence": 0.6,
+        "description": "AALG historically bearish in month 9 (avg -0.052%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Pepsi",
+        "month": 9,
+        "avg_return": -0.0125,
+        "overall_avg": 0.0019,
+        "direction": "bearish",
+        "symbols": [
+          "Pepsi"
+        ],
+        "confidence": 0.6,
+        "description": "Pepsi historically bearish in month 9 (avg -0.012%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "HK50",
+        "month": 9,
+        "avg_return": 0.0046,
+        "overall_avg": 0.003,
+        "direction": "bullish",
+        "symbols": [
+          "HK50"
+        ],
+        "confidence": 0.4566238943164698,
+        "description": "HK50 historically bullish in month 9 (avg 0.005%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "USDMXN",
+        "month": 9,
+        "avg_return": -0.0069,
+        "overall_avg": -0.004,
+        "direction": "bearish",
+        "symbols": [
+          "USDMXN"
+        ],
+        "confidence": 0.5174914417892519,
+        "description": "USDMXN historically bearish in month 9 (avg -0.007%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AFG",
+        "month": 9,
+        "avg_return": 0.0267,
+        "overall_avg": 0.0057,
+        "direction": "bullish",
+        "symbols": [
+          "AFG"
+        ],
+        "confidence": 0.6,
+        "description": "AFG historically bullish in month 9 (avg 0.027%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AGNC",
+        "month": 9,
+        "avg_return": -0.024,
+        "overall_avg": 0.0065,
+        "direction": "bearish",
+        "symbols": [
+          "AGNC"
+        ],
+        "confidence": 0.6,
+        "description": "AGNC historically bearish in month 9 (avg -0.024%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "CVSHealth",
+        "month": 9,
+        "avg_return": 0.1159,
+        "overall_avg": 0.059,
+        "direction": "bullish",
+        "symbols": [
+          "CVSHealth"
+        ],
+        "confidence": 0.5895876765086079,
+        "description": "CVSHealth historically bullish in month 9 (avg 0.116%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "AUDCAD",
+        "month": 9,
+        "avg_return": -0.0003,
+        "overall_avg": -0.0,
+        "direction": "bearish",
+        "symbols": [
+          "AUDCAD"
+        ],
+        "confidence": 0.6,
+        "description": "AUDCAD historically bearish in month 9 (avg -0.000%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "USDSGD",
+        "month": 9,
+        "avg_return": -0.0023,
+        "overall_avg": -0.0014,
+        "direction": "bearish",
+        "symbols": [
+          "USDSGD"
+        ],
+        "confidence": 0.4753217676809426,
+        "description": "USDSGD historically bearish in month 9 (avg -0.002%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "UnionPacific",
+        "month": 9,
+        "avg_return": 0.0844,
+        "overall_avg": 0.0423,
+        "direction": "bullish",
+        "symbols": [
+          "UnionPacific"
+        ],
+        "confidence": 0.5986093968411652,
+        "description": "UnionPacific historically bullish in month 9 (avg 0.084%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ALAB",
+        "month": 9,
+        "avg_return": 0.8601,
+        "overall_avg": 0.5036,
+        "direction": "bullish",
+        "symbols": [
+          "ALAB"
+        ],
+        "confidence": 0.5123256993950339,
+        "description": "ALAB historically bullish in month 9 (avg 0.860%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ServiceNow",
+        "month": 9,
+        "avg_return": 0.132,
+        "overall_avg": 0.0816,
+        "direction": "bullish",
+        "symbols": [
+          "ServiceNow"
+        ],
+        "confidence": 0.4850939301968146,
+        "description": "ServiceNow historically bullish in month 9 (avg 0.132%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "XBRUSD",
+        "month": 9,
+        "avg_return": 0.0494,
+        "overall_avg": 0.0272,
+        "direction": "bullish",
+        "symbols": [
+          "XBRUSD"
+        ],
+        "confidence": 0.5446836234993153,
+        "description": "XBRUSD historically bullish in month 9 (avg 0.049%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Oracle",
+        "month": 9,
+        "avg_return": 0.2865,
+        "overall_avg": 0.1875,
+        "direction": "bullish",
+        "symbols": [
+          "Oracle"
+        ],
+        "confidence": 0.45843647785976593,
+        "description": "Oracle historically bullish in month 9 (avg 0.287%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Chevron",
+        "month": 9,
+        "avg_return": 0.1325,
+        "overall_avg": 0.0843,
+        "direction": "bullish",
+        "symbols": [
+          "Chevron"
+        ],
+        "confidence": 0.47179073721768394,
+        "description": "Chevron historically bullish in month 9 (avg 0.133%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "NETH25",
+        "month": 9,
+        "avg_return": 0.0572,
+        "overall_avg": 0.0301,
+        "direction": "bullish",
+        "symbols": [
+          "NETH25"
+        ],
+        "confidence": 0.5706964311391907,
+        "description": "NETH25 historically bullish in month 9 (avg 0.057%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Twilio",
+        "month": 9,
+        "avg_return": 0.2413,
+        "overall_avg": 0.0473,
+        "direction": "bullish",
+        "symbols": [
+          "Twilio"
+        ],
+        "confidence": 0.6,
+        "description": "Twilio historically bullish in month 9 (avg 0.241%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ALB",
+        "month": 9,
+        "avg_return": -0.1506,
+        "overall_avg": 0.0182,
+        "direction": "bearish",
+        "symbols": [
+          "ALB"
+        ],
+        "confidence": 0.6,
+        "description": "ALB historically bearish in month 9 (avg -0.151%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "SUGAR",
+        "month": 9,
+        "avg_return": 0.0437,
+        "overall_avg": 0.0125,
+        "direction": "bullish",
+        "symbols": [
+          "SUGAR"
+        ],
+        "confidence": 0.6,
+        "description": "SUGAR historically bullish in month 9 (avg 0.044%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "EURRUB",
+        "month": 9,
+        "avg_return": -0.0055,
+        "overall_avg": -0.0002,
+        "direction": "bearish",
+        "symbols": [
+          "EURRUB"
+        ],
+        "confidence": 0.6,
+        "description": "EURRUB historically bearish in month 9 (avg -0.006%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "CharlesSchwab",
+        "month": 9,
+        "avg_return": 0.2554,
+        "overall_avg": 0.1174,
+        "direction": "bullish",
+        "symbols": [
+          "CharlesSchwab"
+        ],
+        "confidence": 0.6,
+        "description": "CharlesSchwab historically bullish in month 9 (avg 0.255%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "LTCUSD",
+        "month": 9,
+        "avg_return": 0.0615,
+        "overall_avg": 0.0071,
+        "direction": "bullish",
+        "symbols": [
+          "LTCUSD"
+        ],
+        "confidence": 0.6,
+        "description": "LTCUSD historically bullish in month 9 (avg 0.061%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "DOGEUSD",
+        "month": 9,
+        "avg_return": 2.9417,
+        "overall_avg": 0.7603,
+        "direction": "bullish",
+        "symbols": [
+          "DOGEUSD"
+        ],
+        "confidence": 0.6,
+        "description": "DOGEUSD historically bullish in month 9 (avg 2.942%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ABF",
+        "month": 9,
+        "avg_return": 0.0623,
+        "overall_avg": 0.0308,
+        "direction": "bullish",
+        "symbols": [
+          "ABF"
+        ],
+        "confidence": 0.6,
+        "description": "ABF historically bullish in month 9 (avg 0.062%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "USDRUB",
+        "month": 9,
+        "avg_return": 0.0118,
+        "overall_avg": 0.0067,
+        "direction": "bullish",
+        "symbols": [
+          "USDRUB"
+        ],
+        "confidence": 0.5306594484639113,
+        "description": "USDRUB historically bullish in month 9 (avg 0.012%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "Lyft",
+        "month": 9,
+        "avg_return": 0.0629,
+        "overall_avg": -0.0226,
+        "direction": "bullish",
+        "symbols": [
+          "Lyft"
+        ],
+        "confidence": 0.6,
+        "description": "Lyft historically bullish in month 9 (avg 0.063%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "XTIUSD",
+        "month": 9,
+        "avg_return": 0.0454,
+        "overall_avg": 0.025,
+        "direction": "bullish",
+        "symbols": [
+          "XTIUSD"
+        ],
+        "confidence": 0.5446183792018537,
+        "description": "XTIUSD historically bullish in month 9 (avg 0.045%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "XLMUSD",
+        "month": 9,
+        "avg_return": 0.1481,
+        "overall_avg": 0.0564,
+        "direction": "bullish",
+        "symbols": [
+          "XLMUSD"
+        ],
+        "confidence": 0.6,
+        "description": "XLMUSD historically bullish in month 9 (avg 0.148%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "MorganStanley",
+        "month": 9,
+        "avg_return": 0.3207,
+        "overall_avg": 0.1864,
+        "direction": "bullish",
+        "symbols": [
+          "MorganStanley"
+        ],
+        "confidence": 0.5159680585172182,
+        "description": "MorganStanley historically bullish in month 9 (avg 0.321%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ADM",
+        "month": 9,
+        "avg_return": -0.0595,
+        "overall_avg": -0.0175,
+        "direction": "bearish",
+        "symbols": [
+          "ADM"
+        ],
+        "confidence": 0.6,
+        "description": "ADM historically bearish in month 9 (avg -0.060%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "ADSK",
+        "month": 9,
+        "avg_return": 0.0943,
+        "overall_avg": 0.0529,
+        "direction": "bullish",
+        "symbols": [
+          "ADSK"
+        ],
+        "confidence": 0.5344546462268696,
+        "description": "ADSK historically bullish in month 9 (avg 0.094%)"
+      }
+    ]
+  },
+  "weather": {
+    "count": 3,
+    "discoveries": [
+      {
+        "source": "weather",
+        "type": "hurricane",
+        "name": "Karina",
+        "symbols": [
+          "USOIL",
+          "NATGAS"
+        ],
+        "confidence": 0.5,
+        "description": "Active hurricane Karina - may impact energy prices"
+      },
+      {
+        "source": "weather",
+        "type": "hurricane",
+        "name": "Marie",
+        "symbols": [
+          "USOIL",
+          "NATGAS"
+        ],
+        "confidence": 0.5,
+        "description": "Active hurricane Marie - may impact energy prices"
+      },
+      {
+        "source": "weather",
+        "type": "hurricane",
+        "name": "Lowell",
+        "symbols": [
+          "USOIL",
+          "NATGAS"
+        ],
+        "confidence": 0.5,
+        "description": "Active hurricane Lowell - may impact energy prices"
+      }
+    ]
+  },
+  "shipping": {
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "shipping",
+        "type": "bdi",
+        "value": 3488,
+        "signal": "strong_expansion",
+        "symbols": [
+          "US500",
+          "NAS100",
+          "AUDUSD",
+          "NZDUSD"
+        ],
+        "confidence": 0.6,
+        "description": "BDI: 3488 (strong_expansion)"
+      }
+    ]
+  },
+  "china": {
+    "count": 0,
+    "discoveries": []
+  },
+  "korea": {
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "korea",
+        "kind": "stub",
+        "needs_selector_work": true,
+        "host": "finance.naver.com/search/search.naver",
+        "why": "fetched OK, content is client-side rendered"
+      }
+    ]
+  }
+}

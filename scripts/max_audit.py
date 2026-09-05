@@ -32,7 +32,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -74,10 +74,43 @@ ORGANS = {
     "frontier-jp":      ("frontier_jp_*.log",        1500, 36.0),
     "frontier-ar":      ("frontier_ar_*.log",        1500, 36.0),
     "frontier-br":      ("frontier_br_*.log",        1500, 36.0),
+    # THE ORGAN THAT REPLACED THE SEVEN ABOVE, AND NOTHING WAS WATCHING IT (2026-08-26).
+    # 53c55b8e deleted `REGIONS=(en cn ru kr jp ar br)` from ops/run_frontier_rotation.sh on
+    # 08-25 and put one EV-triaged unified dig in its place. The seven regional entries here
+    # kept firing `organ-stale-*` about seats nothing invokes any more, while the dig that
+    # actually runs -- the desk's primary discovery organ -- appeared in no liveness table at
+    # all. `grep frontier_unified` over scripts/ and libs/ops/ found exactly one hit, in
+    # check_quota_resume, which is itself unscheduled. So the desk was monitoring seven ghosts
+    # and zero real organs on its highest-value hunting path: if the unified dig had died, the
+    # only signal would have been the arrival rate months later.
+    "frontier-unified": ("frontier_unified_*.log",   1500, 36.0),
     "dataaxis-dig":     ("dataaxis_*.log",           1500, 96.0),
     "litminer-dig":     ("litminer_*.log",           1500, 216.0),
     "prospector-dig":   ("prospector_*.log",         1500, 216.0),
     "blindrediscovery": ("blindrediscovery_*.log",   1500, 840.0),
+}
+
+
+#: organ -> the organ that now does its work. Lives HERE, beside ORGANS, because this file is
+#: already the shared home of the organ tables and check_miner_runway imports from it; a second
+#: copy in the other direction would be circular and would drift the day either moved.
+#:
+#: NOT A DELETION. Dropping these seven rows would shrink the denominator until both fences went
+#: green on seven dead hunting grounds, which is the trick LAWS §2a forbids by name. Keeping them
+#: as permanent daily reds is the other failure: a fence that is always red gets ignored, and
+#: this desk lost six days to a cron outage nobody escalated for exactly that reason. So the
+#: ghosts stop firing HERE -- `frontier-unified` is in ORGANS and fires once, naming the one
+#: repair -- while check_miner_runway keeps a row per ground and flips every one of them bad the
+#: moment the superseder is.
+#:
+#: MEASURED 2026-08-26: 53c55b8e deleted `REGIONS=(en cn ru kr jp ar br)` from
+#: ops/run_frontier_rotation.sh on 08-25, so nothing has invoked a per-region dig since. These
+#: five had been firing `organ-stale-*` for 101h about seats no scheduler names.
+SUPERSEDED_BY: dict[str, str] = {
+    "frontier-en": "frontier-unified", "frontier-cn": "frontier-unified",
+    "frontier-ru": "frontier-unified", "frontier-kr": "frontier-unified",
+    "frontier-jp": "frontier-unified", "frontier-ar": "frontier-unified",
+    "frontier-br": "frontier-unified",
 }
 
 
@@ -195,6 +228,21 @@ def _trial_mechanisms() -> list[str]:
 _RECORDING: list[str] | None = None
 _PATH_METHODS = ("exists", "stat", "glob", "rglob", "iterdir", "open",
                  "read_text", "read_bytes", "is_file", "is_dir")
+
+
+def _git_head() -> str | None:
+    """The repo's current HEAD sha, or None when it cannot be resolved.
+
+    None is the honest answer for a detached/absent/broken git dir, and every caller must treat
+    it as "cannot tell" rather than "unchanged" -- a comparison against an unknown must never
+    soften a safety verdict.
+    """
+    try:
+        r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
+                           text=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return ((r.stdout or "").strip() or None) if r.returncode == 0 else None
 
 
 def _rel_root(p: Path) -> str:
@@ -419,6 +467,11 @@ ORGAN_ARTIFACTS: dict[str, tuple[str, ...]] = {
     # committed log doc -- run 2 (8278e31) wrote 234 lines there while every .log stayed
     # under 200b, and this check read that as "organ has never fired" (2026-08-12).
     "blindrediscovery": ("docs/research/blind_rediscovery_log.md",),
+    # DECLARED EMPTY ON PURPOSE, same reasoning as brain-cycle above. The unified dig writes
+    # prospector_coverage.md and search_operator_library.md, both of which several organs write,
+    # and a liveness signal a dozen writers can emit is not evidence THIS organ ran. Log size is
+    # weaker and honest; a shared artifact here would make a dead unified cycle read as produced.
+    "frontier-unified": (),
 }
 
 
@@ -454,6 +507,20 @@ def _artifact_age_h(organ: str) -> float:
 
 def check_organs(defects) -> None:
     for organ, (pat, min_b, max_h) in ORGANS.items():
+        sup = SUPERSEDED_BY.get(organ)
+        if sup:
+            # Its work moved. The superseder has its own row in this table and fires ONCE if it
+            # dies, which is the report the desk wants -- seven identical defects naming one
+            # repair is noise, and noise is how a real one gets skimmed past. A map pointing at
+            # an organ that is not in ORGANS is the dangerous case and is caught below, not here.
+            if sup in ORGANS:
+                continue
+            defects.append((f"organ-supersession-broken-{organ}",
+                            f"{organ} is recorded as superseded by {sup!r}, which is not in "
+                            "ORGANS -- so this ground is watched by nothing at all. A "
+                            "retirement pointing at an absent organ is strictly worse than no "
+                            "retirement, because it reads as covered."))
+            continue
         ok = [p for p in LOGS.glob(pat) if p.stat().st_size >= min_b]
         art_h = _artifact_age_h(organ)
         if not ok and art_h > max_h:
@@ -574,6 +641,201 @@ def check_stub_deaths(defects) -> None:
         defects.append(("stub-deaths",
                         f"{len(dead)} organ runs died at birth in 48h (log CONTENT names a quota/"
                         f"auth/model failure): {', '.join(p.name for p in dead[:6])}"))
+
+
+_DEATH_DROPIN = Path.home() / ".config/systemd/user/service.d/10-death-visibility.conf"
+
+
+def check_unit_deaths(defects) -> None:
+    """Fleet-wide abnormal unit stops (2026-08-26). A global user-scope drop-in
+    (ops/service.d/10-death-visibility.conf) logs every non-success service stop to
+    unit_deaths.jsonl -- oom-kill, timeout, crash. Before it, three gap-wirer seats were
+    OOM-killed in one night leaving 58-byte logs identical to auth failures. Two arms:
+    the drop-in going missing is itself a defect (absence must never read as clean),
+    and any death in 24h is named. stub-deaths reads log CONTENT; this reads the KILL."""
+    dropin = _DEATH_DROPIN
+    if not dropin.exists():
+        defects.append(("unit-deaths-fence-missing",
+                        "the death-visibility drop-in is NOT installed at "
+                        f"{dropin} -- every abnormal user-unit stop (oom-kill, timeout, crash) "
+                        "is silent again. Reinstall from ops/service.d/ + daemon-reload."))
+        return
+    log = LOGS / "unit_deaths.jsonl"
+    if not log.exists():
+        return  # fence installed, no deaths ever logged -- genuinely clean
+    # WINDOW BY TIME, NOT BY ROW COUNT (gap-fixer 2026-08-28). This read `[-200:]` and then
+    # filtered to 24h -- a row cap standing in for a time window. Measured the day it was fixed:
+    # 241 abnormal stops in 24h, so the cap silently dropped 41 of them and, worse, the count it
+    # printed would have STOPPED RISING at 200 exactly as the fleet got sicker. A cap that
+    # saturates during the incident it exists to size is the "no silent caps" defect (LAWS): the
+    # number reads like a measurement and is really the cap. 5000 lines is a memory bound, not a
+    # window, and if it ever binds the check says so instead of quietly under-reporting.
+    _SCAN_LINES = 5000
+    lines = log.read_text("utf-8", errors="ignore").splitlines()
+    scanned = lines[-_SCAN_LINES:]
+    recent: list[str] = []
+    counts: dict[str, int] = {}
+    oldest_in_window = False
+    for line in scanned:
+        try:
+            row = json.loads(line)
+            ts = time.mktime(time.strptime(row["ts"], "%Y-%m-%dT%H:%M:%SZ"))
+        except (ValueError, KeyError):
+            continue
+        if NOW - ts <= 24 * 3600 and "test-death-visibility" not in row.get("unit", ""):
+            label = f"{row.get('unit')}({row.get('result')}/{row.get('exit_status')})"
+            recent.append(label)
+            counts[label] = counts.get(label, 0) + 1
+            if line is scanned[0]:
+                oldest_in_window = True
+    if recent:
+        # Rank by frequency so the report names the CAUSE, not the first eight rows
+        # chronologically: on the day this was fixed one crash-looping unit produced 106 of the
+        # 241 stops, and a chronological head buried it among the units it was killing. The
+        # label keeps result/exit_status -- an oom-kill and an exit-1 need different repairs.
+        top = ", ".join(f"{lab}x{n}" if n > 1 else lab
+                        for lab, n in sorted(counts.items(), key=lambda kv: -kv[1])[:8])
+        truncated = (" SCAN WINDOW BOUND HIT: the oldest scanned line is still inside 24h, so "
+                     f"this count is a FLOOR -- raise _SCAN_LINES above {_SCAN_LINES}."
+                     if oldest_in_window and len(scanned) == _SCAN_LINES else "")
+        defects.append(("unit-deaths",
+                        f"{len(recent)} abnormal user-unit stop(s) in 24h, by unit: {top}."
+                        f"{truncated} An oom-kill here is the 4GB/no-swap box "
+                        "eating a seat mid-cycle (console item: swapfile); a timeout/crash is "
+                        "that unit's own defect. Read the unit journal, fix the cause -- the "
+                        "retry loop hides the death but pays for it in quota."))
+
+
+def check_launcher_seal(defects) -> None:
+    """Long-running shell launchers must be sealed against mid-run rewrite (2026-08-26).
+
+    bash reads a script INCREMENTALLY, by byte offset. This desk commits ~200x/day into the tree
+    these launchers execute from, and a dig holds its slot for up to three hours, so any commit
+    that changes a launcher's LENGTH mid-run makes bash resume from the middle of a line.
+
+    IT HAPPENED. 63680c05 grew a comment in ops/run_frontier_rotation.sh by ~120 bytes at 11:22
+    while a dig was running, and data/cro_ai_logs/seat_frontier.log recorded comment text being
+    executed as a command, then output from the STALE version, then `syntax error near
+    unexpected token 'fi'`. The dig died mid-way and the failure looked like an ordinary
+    non-zero exit.
+
+    REPRODUCED, AND THE FIX MEASURED RATHER THAN ASSUMED: an unguarded script rewritten mid-run
+    executed garbage AND THEN RE-RAN ITSELF FROM THE TOP. A bare `{ ... }` protected the body
+    but bash still read past the closing brace and re-ran. Only `{ ... exit N }` -- the exit
+    INSIDE the group, so the process is gone before bash reads another byte -- ran exactly once,
+    cleanly, with the right status.
+
+    So the seal is three properties, and this check tests all three because two of them alone
+    still leave the script re-running: a `{` on its own line, an `exit` as the last statement
+    INSIDE the group, and a `}` that is the final line of the file.
+    """
+    root = ROOT / "ops"
+    if not root.is_dir():
+        return
+    unsealed = []
+    for f in sorted(root.glob("run_*.sh")):
+        try:
+            lines = f.read_text("utf-8", errors="ignore").rstrip("\n").split("\n")
+        except OSError:
+            continue
+        # Only launchers a scheduler actually starts and that run long enough to be caught.
+        # A script nothing invokes cannot be corrupted mid-run by definition.
+        if not _launcher_is_scheduled(f.name):
+            continue
+        body = [ln for ln in lines if ln.strip()]
+        sealed = (bool(body) and body[-1].strip() == "}"
+                  and body[-2].strip().startswith("exit")
+                  and any(ln.strip() == "{" for ln in lines))
+        if not sealed:
+            unsealed.append(f.name)
+    if unsealed:
+        defects.append(("launcher-unsealed",
+                        f"{len(unsealed)} scheduled shell launcher(s) can be corrupted by a "
+                        f"commit landing mid-run: {', '.join(unsealed[:8])}"
+                        f"{' ...' if len(unsealed) > 8 else ''}. bash reads by byte offset, so a "
+                        "length change mid-run resumes execution inside a line -- measured on "
+                        "63680c05, which killed a frontier dig and left a `syntax error near "
+                        "unexpected token` in seat_frontier.log. Fix: wrap the body in `{` ... "
+                        "`exit $?` `}` with the closing brace as the file's last line."))
+
+
+def _launcher_is_scheduled(name: str) -> bool:
+    """True when a user unit or the crontab manifest names this launcher."""
+    units = Path.home() / ".config" / "systemd" / "user"
+    if units.is_dir():
+        for u in units.glob("*.service"):
+            try:
+                if name in u.read_text("utf-8", errors="ignore"):
+                    return True
+            except OSError:
+                continue
+    man = ROOT / "ops" / "crontab.manifest"
+    try:
+        return name in man.read_text("utf-8", errors="ignore")
+    except OSError:
+        return False
+
+
+def check_manifest_backlog(defects) -> None:
+    """The scheduler's own backlog (2026-08-26). Root `cron.service` OOM-died on 08-20 and
+    every ops/crontab.manifest row without a user-timer twin died with it -- 201 organs,
+    including the hourly law gate, the daily ratchet raiser (the L1.50 floor stall's direct
+    cause) and `check_organ_liveness` itself, which is precisely why six days passed with no
+    escalation: the dead-organ detector was one of the dead organs.
+
+    `run_manifest_dispatch.py` resurrects the allowlisted rows and has always WRITTEN the
+    remaining backlog to its state file -- but nothing ever READ it (grep, 2026-08-26: zero
+    consumers). A measurement no organ consumes is an opinion, so "216 uncovered" sat in a
+    JSON file and escalated to nobody. This is the consumer. Two arms, because the failure has
+    two shapes: the dispatcher itself going silent (the outage recursing one level up), and the
+    backlog sitting un-drained. Both are the same defect class -- a schedule nobody is checking.
+    """
+    state = ROOT / "data" / "manifest_dispatch_state.json"
+    if not state.is_file():
+        defects.append(("manifest-dispatch-missing",
+                        f"{state} does not exist -- the manifest dispatcher has never run, so "
+                        "every ops/crontab.manifest row without a user-timer twin is dead and "
+                        "unmeasured. Root cron has been down since 2026-08-20."))
+        return
+    try:
+        data = json.loads(state.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        defects.append(("manifest-dispatch-unreadable", f"{state} is unreadable ({exc})"))
+        return
+    try:
+        age_h = (NOW - time.mktime(time.strptime(
+            str(data.get("last_check", ""))[:19], "%Y-%m-%dT%H:%M:%S"))) / 3600.0
+    except ValueError:
+        age_h = None
+    # The timer fires every 5 minutes; an hour of silence is the dispatcher itself dead.
+    if age_h is None or age_h > 1.0:
+        defects.append(("manifest-dispatch-stale",
+                        f"manifest dispatcher last ran {age_h if age_h is None else round(age_h, 1)}h "
+                        "ago (timer is every 5min) -- the organ that resurrects cron rows is "
+                        "itself down. `systemctl --user status quant-manifest-dispatch`."))
+    uncovered = int(data.get("uncovered_unallowed", 0) or 0)
+    if uncovered:
+        toks = [str(t) for t in (data.get("uncovered_tokens") or [])][:6]
+        defects.append(("manifest-backlog",
+                        f"{uncovered} manifest row(s) still have no scheduler since the 08-20 "
+                        f"cron death: {', '.join(toks) or 'see uncovered_tokens'}"
+                        f"{' ...' if uncovered > len(toks) else ''}. Each is an organ that "
+                        "leaves no artifact. Triage: allowlist the venue-agnostic positive-EV "
+                        "ones in run_manifest_dispatch.py, or retire the crypto-era rows OUT "
+                        "of ops/crontab.manifest so the backlog is honest rather than ignored."))
+    pending = data.get("pending") or {}
+    if len(pending) >= 8:
+        defects.append(("manifest-dispatch-throttled",
+                        f"{len(pending)} allowlisted row(s) are deferred by the memory governor "
+                        f"(avail {data.get('avail_mb')}MB < {MIN_AVAIL_MB_HINT}MB floor) -- the "
+                        "box is too tight to run the fleet it is scheduled to run. This is a "
+                        "capacity fact, not a missing executor (L1.53): the console item is a "
+                        "swapfile or a bigger box."))
+
+
+#: Mirrors run_manifest_dispatch.MIN_AVAIL_MB for the message above; imported lazily would
+#: couple the audit to a script, so it is restated and kept in sync by the test.
+MIN_AVAIL_MB_HINT = 420
 
 
 #: Long-lived daemons whose code is loaded ONCE at process start. Add any new always-on service.
@@ -874,6 +1136,34 @@ def _worker_pids(rel: str) -> list[int]:
     return pids
 
 
+def _owner_unit(pid: int) -> str:
+    """The systemd unit that actually owns this pid, from its cgroup. "" when nothing does.
+
+    WHY THIS EXISTS (2026-08-26). `_live_organs()` maps a script to EVERY pid running it, and
+    this check then collapsed them into ONE verdict keyed on the OLDEST -- so three
+    `serve_dashboard.py` processes with three different owners produced a single reading, taken
+    from whichever had been alive longest.
+
+    Measured: `quant-dashboard.service` (pid 861460, /system.slice), the token-gated desk-web
+    unit (pid 2582648, --port 8788), and an ORPHAN (pid 2484799, --port 8799) left behind in
+    `/user.slice/.../session-91168.scope` by an ssh session that had since closed. The orphan was
+    the oldest, so `daemon-stale-code-quant-dashboard` reported ITS staleness against the UNIT's
+    label -- and `run_stale_daemon_repair` dutifully restarted the unit, every run, forever. The
+    restart worked (the unit's pid did change) and the verdict came back STILL-STALE because the
+    stale process was never part of that unit. The defect had stood 53.9h that way.
+
+    The orphan was also invisible to the `daemon-unsupervised` arm below, because that arm asks
+    whether MainPID is anywhere in the pid SET -- and it was, via a legitimate sibling. An orphan
+    hiding inside a supervised script's pid set is exactly the case that check exists to catch.
+    """
+    try:
+        line = Path(f"/proc/{pid}/cgroup").read_text("utf-8", errors="ignore").strip()
+    except OSError:
+        return ""
+    tail = line.rsplit("/", 1)[-1] if line else ""
+    return tail if tail.endswith(".service") else ""
+
+
 def check_stale_daemons(defects) -> None:
     """A daemon running code older than its own source is a fix that DID NOT SHIP.
 
@@ -910,6 +1200,27 @@ def check_stale_daemons(defects) -> None:
         if not entry.exists():
             continue
         svc = by_script.get(rel)
+        # ATTRIBUTE BEFORE JUDGING. A pid that no systemd unit owns cannot be repaired by
+        # restarting one, so it must not be folded into a unit's staleness verdict -- that is
+        # what made this defect self-perpetuating. Orphans get their OWN defect naming their own
+        # repair (a kill), and the unit is judged only on the processes it actually owns.
+        owned, orphans = [], []
+        for _p in pids:
+            (owned if (_owner_unit(_p) or not svc) else orphans).append(_p)
+        for _p in orphans:
+            _oage = (now - (_proc_start(_p) or now)) / 3600.0
+            if _oage < _ORGAN_MIN_UP_H:
+                continue
+            defects.append((f"daemon-orphan-{rel.rsplit('/', 1)[-1].removesuffix('.py')}-{_p}",
+                            f"{rel} pid {_p} (up {_oage:.1f}h) belongs to NO systemd unit -- it "
+                            "was started by hand in a login session that has since closed, and "
+                            "nothing supervises, restarts or ships fixes into it. It is running "
+                            "whatever code existed when that session ran. `systemctl restart` "
+                            f"cannot touch it: the repair is `kill {_p}` after confirming the "
+                            "managed unit serves the same thing."))
+        pids = owned
+        if not pids:
+            continue
         starts = [s for s in (_proc_start(p) for p in pids) if s is not None]
         if not starts:
             continue                       # every pid exited mid-audit; next run sees them
@@ -918,7 +1229,18 @@ def check_stale_daemons(defects) -> None:
         age = (now - started) / 3600.0
         if age < _ORGAN_MIN_UP_H:
             continue        # a one-shot CLI run or a just-restarted organ -- it loaded fresh code
-        label = svc or rel.rsplit("/", 1)[-1].removesuffix(".py")
+        # LABEL FROM THE PID'S ACTUAL OWNER, not from the script->unit map. Two DIFFERENT units
+        # run serve_dashboard.py here (quant-dashboard on :8080, quant-desk-web on :8788), and
+        # `by_script` collapses a script to ONE unit name -- so a stale pid owned by desk-web was
+        # reported under quant-dashboard's label, and the actuator restarted quant-dashboard. Same
+        # class as the orphan above, one level down: a verdict is only actionable if it names the
+        # thing whose restart would change it.
+        #
+        # RESIDUAL, STATED RATHER THAN HIDDEN: still ONE verdict per script, taken from the oldest
+        # owned pid. If two units are stale at once, the older is reported, repaired, and the
+        # other surfaces on the next run -- it converges rather than reporting both at once.
+        label = _owner_unit(pid).removesuffix(".service") or svc or \
+            rel.rsplit("/", 1)[-1].removesuffix(".py")
         # OWNERSHIP: a fix cannot ship into a process the supervisor does not control. Only
         # meaningful for scripts that HAVE a unit -- the rest are cron/loop organs by design.
         if svc:
@@ -1241,6 +1563,40 @@ def check_blind_trigger(defects) -> None:
                         "has new raw material; do not wait for the monthly floor."))
 
 
+def _recorder_pause_reason() -> str:
+    """Why the tape recorders are not writing, READ from what they publish. '' == they are writing.
+
+    Returns "SWITCHED-OFF" | "DISK-PAUSED" | "".
+
+    TWO STATES THAT ARE NOT DEFECTS, AND ONE THAT WELDED A GATE SHUT. `data/RECORDERS_OFF` is the
+    desk's own non-root kill switch (scripts/recorder_switch.py) -- the exact file
+    data/PRINCIPAL_ACTION.md tells the principal to touch to ACCEPT the crypto-tape retirement
+    (Constitution 224 / commit 6b8b61a9 / R0717). Nothing in this file had ever heard of it:
+    `grep -c RECORDERS_OFF scripts/max_audit.py` was 0. So accepting the retirement would have
+    left `recorder-scope-shrank` and `tape-recording-stopped` firing forever, identically and
+    unclearably, on a decision the desk had deliberately made -- the ACCEPT path welded shut by
+    the fence that was supposed to watch it. A gate that cannot be satisfied by doing the right
+    thing is a §33 Tier-1 defect-closer, and this desk has shipped that exact shape before (a
+    file-presence gate holding the sterile cockpit shut over a retired executor's flat book).
+
+    DISK-PAUSED is self-protection, not a stall: run_recorder.py:281-287 stops writing above
+    _DISK_MAX_FRAC=0.80 and keeps the heartbeat fresh, stamping the marker so a reader can tell.
+    Reading it is what separates "the recorder broke" from "the disk filled up".
+
+    This LOOSENS NOTHING: a genuinely stalled recorder publishes neither marker and still fires
+    the original defect with the original message.
+    """
+    if (ROOT / "data" / "RECORDERS_OFF").exists():
+        return "SWITCHED-OFF"
+    for hb in ("recorder_heartbeat", "recorder_spot_heartbeat", "recorder_bybit_heartbeat"):
+        try:
+            if "DISK-PAUSED" in (ROOT / "data" / hb).read_text("utf-8"):
+                return "DISK-PAUSED"
+        except OSError:
+            continue      # a heartbeat we cannot read is not evidence of a pause
+    return ""
+
+
 def check_self_application(defects) -> None:
     """Each of these encodes a max-fix the principal forced this session, as a REGRESSION guard.
     His pressure, made permanent: a future edit that undoes any becomes a same-day defect."""
@@ -1291,10 +1647,26 @@ def check_self_application(defects) -> None:
                    if d.is_dir() and any(f.stat().st_mtime > cutoff
                                          for f in d.glob("*.jsonl.gz")))
         if live < 20:
-            defects.append(("recorder-scope-shrank",
-                            f"recorder futures tape has {live} symbols written in the last "
-                            "30min (expansion floor is 20) -- forward-tape breadth regressed "
-                            "or the recorder stalled"))
+            # RESTORED 2026-08-26 (lost half of 3da91a1d, which never merged: the CHECKS landed
+            # and their un-welder did not). Three causes, three different actions, and only one
+            # of them is this defect -- without this, a recorder that is alive, healthy and
+            # DELIBERATELY paused reported as "breadth regressed or the recorder stalled".
+            reason = _recorder_pause_reason()
+            if reason == "SWITCHED-OFF":
+                pass          # a recorded decision via the desk's own kill switch
+            elif reason == "DISK-PAUSED":
+                defects.append((
+                    "recorder-disk-paused",
+                    f"recorder futures tape has {live} symbols written in the last 30min, "
+                    "because the recorders PAUSED THEMSELVES on disk pressure (heartbeat marker "
+                    "DISK-PAUSED, run_recorder.py _DISK_MAX_FRAC=0.80) -- the recorders are "
+                    "healthy and the DISK is the defect. Reclaim space or buy it; do not chase "
+                    "the recorder."))
+            else:
+                defects.append(("recorder-scope-shrank",
+                                f"recorder futures tape has {live} symbols written in the last "
+                                "30min (expansion floor is 20) -- forward-tape breadth regressed "
+                                "or the recorder stalled"))
     # bybit second-venue recorder must still exist
     if not (ROOT / "scripts/run_recorder_bybit.py").exists():
         defects.append(("bybit-recorder-gone", "second-venue (bybit) recorder script removed -- "
@@ -1348,10 +1720,58 @@ def check_ci_gate(defects) -> None:
             # an old marker still escalates rather than silently reading as green. Staleness is
             # NOT softened by this: ci-gate-stale below is unchanged and still fail-closed.
             if ci.get("tracked_ok", ci.get("ok")) is False:
-                defects.append(("ci-gate-red",
-                                f"last CI run ({ci.get('ts')}) was RED on COMMITTED code -> "
-                                f"{ci.get('failed_tracked') or ci.get('failed')}; the desk-wide "
-                                "safety gate is down. Run scripts/run_ci.py + fix"))
+                # A RESOURCE KILL IS NOT A CODE FAILURE, AND THE PRODUCER ALREADY KNOWS THE
+                # DIFFERENCE (2026-08-26). run_ci.py writes a separate `killed` list and its
+                # entries carry their own diagnosis -- the 08-26 marker reads verbatim "KILLED
+                # sig9, MemAvailable 827MB, 495MB of RAM held by files under /tmp (tmpfs) -- box
+                # ran out of resources mid-step, NOT a code failure". This consumer never read
+                # that field, so the desk-wide safety gate reported "RED on COMMITTED code" about
+                # a run whose own record says the code was never the problem.
+                #
+                # The two demand OPPOSITE repairs: one sends someone to find a bug that does not
+                # exist, the other says reclaim memory and re-run when quiet. Merging them is the
+                # same defect the tracked_ok fix above was written for -- a red nobody can act on
+                # recurs, gets skimmed, and BURIES a real one. Still a defect either way: unknown
+                # is never green, and the gate has not proven anything.
+                failed = list(ci.get("failed_tracked") or ci.get("failed") or [])
+                killed = set(ci.get("killed") or [])
+                if failed and all(f in killed for f in failed):
+                    defects.append(("ci-gate-resource-killed",
+                                    f"last CI run ({ci.get('ts')}) did not finish -- every "
+                                    f"tracked failure is a RESOURCE KILL, not a code failure: "
+                                    f"{failed}. The gate has proven NOTHING (unknown is not "
+                                    "green), but the repair is capacity, not a code fix: reclaim "
+                                    "memory (scripts/disk_guard.py has a tmpfs arm) and re-run "
+                                    "scripts/run_ci.py when the box is quiet."))
+                else:
+                    # A RED IS A STATEMENT ABOUT A TREE, AND THE TREE MOVES (2026-08-28).
+                    # run_ci now stamps the commit it measured. On 2026-08-28 the 08:54 marker
+                    # named 25 committed-code failures; every one was fixed by 09:39, and this
+                    # check went on reporting "RED on COMMITTED code" -- sending a reader to hunt
+                    # a bug that no longer existed. Same burying as the tracked_ok and
+                    # resource-killed splits above: an un-actionable red recurs, gets skimmed, and
+                    # hides the next real one. The two demand OPPOSITE work -- one is "find the
+                    # bug", the other is "re-run the gate" -- so they get separate names.
+                    # STILL A DEFECT either way: a verdict about a superseded tree has proven
+                    # NOTHING about this one, and unknown is never green. An absent `head`
+                    # (markers written before this fix) or an unresolvable HEAD keeps the old
+                    # escalation, so the fail-closed direction is unchanged.
+                    marker_head = ci.get("head")
+                    live_head = _git_head()
+                    if marker_head and live_head and marker_head != live_head:
+                        defects.append(("ci-gate-red-superseded",
+                                        f"last CI run ({ci.get('ts')}) was red -> {failed}, but "
+                                        f"it measured commit {marker_head[:8]} and HEAD is now "
+                                        f"{live_head[:8]}. Do NOT hunt those failures until they "
+                                        "are re-observed -- they may already be fixed. The gate "
+                                        "has proven nothing about the current tree (unknown is "
+                                        "not green): re-run scripts/run_ci.py, then fix whatever "
+                                        "survives."))
+                    else:
+                        defects.append(("ci-gate-red",
+                                        f"last CI run ({ci.get('ts')}) was RED on COMMITTED code "
+                                        f"-> {failed}; the desk-wide safety gate is down. "
+                                        "Run scripts/run_ci.py + fix"))
             # NOW is epoch seconds (time.time()), not a datetime -- compare in epoch space.
             age_h = (NOW - datetime.fromisoformat(str(ci.get("ts"))).timestamp()) / 3600.0
             if age_h > _CI_STALE_H:
@@ -1891,8 +2311,32 @@ def check_forensics_fresh(defects) -> None:
     """DAILY PnL/churn/loss analysis is GUARANTEED, not assumed (principal 2026-07-24): the
     trade-forensics probe (the mechanical version of the probes that found gaps #42/#43/#34)
     must have produced a fresh verdict within 26h, or the desk is flying without its daily
-    bleed detection -- the exact silent-leak failure mode the integrity watch exists to kill."""
+    bleed detection -- the exact silent-leak failure mode the integrity watch exists to kill.
+
+    THE DUTY SURVIVES THE MANDATE; ITS ARTIFACT DID NOT (2026-08-27). `web/trade_forensics.json`
+    is the funding/maker-fill/hold-bucket forensics of the crypto cashcarry book, retired by
+    principal order, and the MT5 desk holds no live capital yet (readiness rung 0). So there are
+    no fills to analyse, and reporting that as "not landing; check daily_research_cycle" blamed a
+    healthy organ for the absence of a book -- the same misattribution `live_readiness` made when
+    it called a desk defect a fact about the market.
+
+    UNMEASURABLE IS ITS OWN VERDICT (L1.28a), so it is reported rather than quietly skipped, and
+    the duty RE-ARMS BY ITSELF: the moment the desk reaches a rung above 0 the staleness bar
+    applies again with no edit here. Absence of a book is never permission to stop watching for
+    bleed; it is only the honest reason there is none to see."""
     fj = ROOT / "web/trade_forensics.json"
+    try:
+        rung = int(json.loads((ROOT / "data/live_readiness.json").read_text("utf-8"))["rung"])
+    except (OSError, ValueError, KeyError, TypeError):
+        rung = -1               # unreadable readiness is NOT "no book"; fall through and gauge
+    if rung == 0:
+        defects.append(("forensics-unmeasurable",
+                        "trade-class bleed forensics UNMEASURABLE, not stale: readiness is rung 0 "
+                        "(no live capital) and the only forensics artifact on disk belongs to the "
+                        "retired crypto cashcarry book, which the MT5 mandate bans re-running. "
+                        "The duty stands and re-arms automatically at rung > 0; nothing here is "
+                        "evidence the desk is bleeding unwatched"))
+        return
     if not fj.exists():
         defects.append(("forensics-stale", "web/trade_forensics.json MISSING -- daily "
                         "trade-class bleed analysis has never produced output"))
@@ -2214,11 +2658,42 @@ def check_production(defects) -> None:
         ("cron-cycle", "data/cro_ai_logs/2026*_????.log", 26, 2000),
         ("panel-verdicts", "data/panel_verdicts.jsonl", 96, 100),
         ("dataaxis-product", "docs/research/data_axis_watchlist.md", 30, 100),
-        ("prospector-product", "docs/research/prospector_watchlist.md", 30, 100),
-        ("litminer-product", "docs/research/*iterature*coverage*.md", 30, 50),
+        # THE PRODUCT IS THE RUN, NOT A MUTATED FILE (corrected 2026-08-27). Both rows below were
+        # red against organs that were behaving CORRECTLY, and in the prospector's case the fence
+        # was punishing the exact behaviour the desk most wants.
+        #
+        # PROSPECTOR: its 2026-08-27 06:00 run took 24 minutes, raised R0673/R0674/R0675, and
+        # wrote NO watchlist card -- "the public MQL5 alpha layer was picked clean again... I did
+        # not fabricate survivors to cover it." Gauging `prospector_watchlist.md` by MTIME makes a
+        # run that honestly found nothing indistinguishable from a run that never happened, and
+        # the only way to clear the alarm is to write a card -- a fence that pays for padding, in
+        # a desk whose L1.21 forbids it. So the RUN is gauged (its dated log, whose size separates
+        # a real dig from a 172-byte stub) and the product keeps a weekly bar, which still catches
+        # a genuinely silent organ without demanding output that does not exist.
+        ("prospector-run", "data/cro_ai_logs/prospector_2026*.log", 30, 1000),
+        ("prospector-product", "docs/research/prospector_watchlist.md", 168, 100),
+        # LITMINER: it stands down behind its own MONTHLY gate ("last real dig is younger than
+        # 28 days"), so a 30h bar was red for 28 days out of every 29 by construction -- the fence
+        # asserting a cadence the organ does not have and never claimed. Gauged at its real one.
+        ("litminer-product", "docs/research/*iterature*coverage*.md", 720, 50),
         ("frontier-product", "docs/research/prospector_coverage.md", 30, 100),
-        ("crypto-factory", "web/autodiscovery_crypto.json", 30, 100),
-        ("forensics", "web/trade_forensics.json", 30, 50),
+        # RETIRED 2026-08-27 BY THE MT5 MANDATE, not by neglect -- and retired rather than left
+        # red, because a cadence row nothing may legally satisfy is a permanent alarm, and a
+        # detector that is always red is one everybody learns to scroll past (L1.37 rule 1). Both
+        # products belong to the crypto-exchange universe the standing principal order of
+        # 2026-08-18 bans permanently (LAWS s1): `web/autodiscovery_crypto.json` is written only
+        # by ops/run_crypto_factory.sh, whose twelve `quant-autodiscovery*` timers are all
+        # disabled -- VERIFIED, none appears in `systemctl --user list-timers --all` and none has
+        # started this boot; `web/trade_forensics.json` is the funding/maker-fill/hold-bucket
+        # forensics of the retired cashcarry book (its last content is 4 closes on $25.85
+        # notional). Neither can be produced again without breaching the mandate.
+        #   ("crypto-factory", "web/autodiscovery_crypto.json", 30, 100),
+        #   ("forensics", "web/trade_forensics.json", 30, 50),
+        # THE DUTY TRANSFERS, THE ARTIFACT DOES NOT. Execution-quality forensics on MT5 ground is
+        # `desks/mt5/reports/execution_quality.json`, already age-gauged at 36h in
+        # check_job_manifest, so retiring the crypto row drops no coverage. If a crypto row is
+        # ever wanted back, the mandate must be lifted first -- restoring the cadence is not the
+        # act that lifts it.
     ]
     for label, pat, max_h, min_b in manifest:
         hits = [Path(q) for q in _glob.glob(str(ROOT / pat))]
@@ -2239,6 +2714,39 @@ def check_production(defects) -> None:
             defects.append(("production-stub",
                             f"{label}: product {newest.name} is {sz}b (<{min_b}b) -- ran but "
                             "produced a stub, not real output (the quota-stub / refuse class)"))
+    # THE FINANCING TAPE IS UNBUYABLE ONCE THE DAY PASSES, AND IT DIED IN SILENCE. On 2026-08-29
+    # `desks/mt5/data/tape/contract_terms` held exactly one file -- 2026-08-27, 9 hourly
+    # observations -- while the H1 bar sync from the same Windows terminal was fresh THAT DAY, so
+    # the terminal was up and only this recorder had stopped. Nothing said so, because no fence
+    # gauged it: the crypto recorders had `ensure_recorder` and a staleness pager, and the
+    # obligation that "TRANSFERS to mt5desk.tape" (ops/crontab.manifest:814) transferred without
+    # its instrument. `mt5desk.tape --terms-only` exists precisely so the cheap perishable leg can
+    # run at its own cadence; what it lacked was anything that noticed when it did not.
+    #
+    # GAUGED ON TRADING DAYS, NOT ON AGE. A plain mtime bar cannot distinguish a dead recorder
+    # from a weekend: loose enough to survive Fri-close..Mon-open (~51h) it also sleeps through a
+    # missed Friday, which is the exact miss here. So the test is the honest one -- the most
+    # recent WEEKDAY that has fully passed must have a file. It cannot fire on a Saturday for
+    # being a Saturday, and it fires the morning after any missed trading day.
+    _terms = ROOT / "desks/mt5/data/tape/contract_terms"
+    _have = {q.stem for q in _terms.glob("*.parquet")} if _terms.exists() else set()
+    _day = datetime.now(UTC).date() - timedelta(days=1)
+    while _day.weekday() >= 5:                      # Sat/Sun are not trading days
+        _day -= timedelta(days=1)
+    if not _terms.exists():
+        defects.append(("production-missing",
+                        "mt5-contract-terms: NO tape at desks/mt5/data/tape/contract_terms -- the "
+                        "point-in-time swap/margin history has never been recorded"))
+    elif _day.isoformat() not in _have:
+        defects.append(("production-stale",
+                        f"mt5-contract-terms: no rows for {_day.isoformat()} (the last completed "
+                        f"trading day); newest on disk is {max(_have) if _have else 'nothing'}. "
+                        "Point-in-time broker financing is UNBUYABLE once the day passes -- a "
+                        "swap or margin reprice inside the gap is permanently gone. The recorder "
+                        "runs on the Windows terminal box (`python -m mt5desk.tape --terms-only`, "
+                        "seconds of work); install/repair its scheduled task via "
+                        "desks/mt5/scripts/install_contract_terms_task.ps1"))
+
     # research_memory must GROW, not just be non-zero (the null-pipe class)
     try:
         import sqlite3
@@ -3057,6 +3565,21 @@ _FINDING_DOCS = (
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
 _FINDING_DOCS_EXCLUDED = {
+    "docs/RESEARCH.md":
+        "OPERATIVE GOVERNING DOCUMENT (the 2026-08-25 consolidation's research constitution, "
+        "CLAUDE.md table row 2; supersedes ELITE_QUANT_INTELLIGENCE_MANDATE, which is excluded "
+        "on the same class). Its numbered matches are the canonical ten-gate table (§6a rows "
+        "1-10) and the discovery->live pipeline steps -- LAW that stays open by design, never "
+        "findings owing dispositions. It binds through ops/brain_env.sh injection into every "
+        "organ prompt, not through the findings register; rowing its clauses would inflate the "
+        "open-finding count with items that can never close.",
+    "docs/research/MOAT_NODE_SPEC.md":
+        "BUILD SPECIFICATION for the Contabo moat recorder node: its numbered items are spec "
+        "requirements (symbols-recorded/uptime/gap-count floors, heartbeat contract) whose "
+        "delivery is driven by GAP register row 127 (moat coverage ratchet), not by findings "
+        "rows -- one obligation, one law, the COINM_CONVEXITY precedent. The spec stays open "
+        "until the node ships its fence; double-rowing each requirement would charge the same "
+        "work to two registers.",
     "docs/research/recent_changes.md":
         "GENERATED 24h change digest (scripts/, regenerated on a rolling window): every line is "
         "a QUOTED commit patch, so any numbered finding matched inside it is a copy of text that "
@@ -3618,6 +4141,13 @@ _TERMINAL_ARTIFACTS = {
         "standing subordinate implementation doctrine under the sealed master",
     "docs/RESEARCH_DATA_TRANSPORT.md":
         "deployment runbook -- superseded by a new transport design, never cadence-refreshed",
+    # 2026-08-26 consolidation docs (gap-wirer): the two operative governing documents, their
+    # disposition map, and two standing specs -- classified in ARTIFACT_GOVERNANCE.md same cycle.
+    "docs/LAWS.md": "operative constitution of the 2026-08-25 consolidation -- amendment is a principal act, never a cadence",
+    "docs/RESEARCH.md": "operative research mandate -- every organ's first standing order, amended by decision only",
+    "docs/MANDATE_COVERAGE.md": "terminal disposition map of the consolidation -- a re-consolidation writes a NEW map",
+    "docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md": "standing principal mandate -- donation-only flywheel authority limits",
+    "docs/research/MOAT_NODE_SPEC.md": "standing spec -- implementations change by code, the spec by decision",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",
@@ -4664,6 +5194,12 @@ def check_mine_evidence_base(defects) -> None:
 #: One-shot scripts that legitimately ran once and are kept for provenance. Anything NOT listed
 #: here must be reachable, so the exemption is a written decision rather than a silent default.
 _ONESHOT_SCRIPTS = frozenset({
+    # classified 2026-08-27: R0574's decisive study -- does the Kelly estimation shrink already
+    # absorb the best-of-12 PROMOTION winner's curse? It answers ONE question about the sizer's
+    # bias on a fixed body of evidence; re-running it on unchanged history re-derives the same
+    # verdict, so a cadence would buy nothing and would make a settled question look perpetually
+    # open. Its answer belongs in the ledger, not in a timer.
+    "study_promotion_selection_bias.py",
     "backfill_onchain_oos.py", "batch_onchain.py", "batch_premium.py", "build_dev_factor.py",
     "dl_metrics_history.py", "pull_cme.py",
     # classified 2026-07-31 (orphan-scripts sweep):
@@ -6221,13 +6757,38 @@ def check_scheduled_scripts(defects) -> None:
     import re
     import subprocess as _sp
 
+    # The pattern must consume the WHOLE path token, not the tail that happens to start at a
+    # `scripts/`|`ops/`|`deploy/` segment. The unanchored form shipped until 2026-09-03 and was
+    # wrong in BOTH directions on any organ living under a sub-desk: it reported
+    # `desks/mt5/scripts/fxblue_track_record_miner.py` as the non-existent
+    # `scripts/fxblue_track_record_miner.py` (a false positive, which trains the desk to ignore
+    # this fence -- L1.43), and, worse, it would have resolved a genuinely MISSING
+    # `desks/<x>/scripts/foo.py` against a same-named `scripts/foo.py` that does exist and
+    # reported the dead organ HEALTHY. That silent direction is the exact failure this check was
+    # written for. The leading greedy class backtracks to the longest prefix, so absolute paths
+    # match whole too and are normalised against ROOT below.
+    _SCHED_PATH_RE = re.compile(
+        r"[A-Za-z0-9_./-]*(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)")
+
+    def _resolve(tok: str) -> Path:
+        """A scheduled token -> the path to stat. Absolute stays absolute unless it is inside
+        this checkout, in which case it is made repo-relative so the answer does not depend on
+        which worktree ran the audit."""
+        q = Path(tok)
+        if q.is_absolute():
+            try:
+                return ROOT / q.relative_to(ROOT)
+            except ValueError:
+                return q
+        return ROOT / q
+
     refs: dict[str, str] = {}                     # script path -> where it was scheduled
     try:
         _cr = _sp.run(["crontab", "-l"], capture_output=True, text=True, timeout=20, check=False)
         for ln in (_cr.stdout or "").splitlines():
             if ln.strip().startswith("#"):
                 continue
-            for m in re.findall(r"(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)", ln):
+            for m in _SCHED_PATH_RE.findall(ln):
                 refs.setdefault(m, "crontab")
     except (OSError, _sp.SubprocessError):
         pass                                       # no crontab on this box: unit files still count
@@ -6235,12 +6796,12 @@ def check_scheduled_scripts(defects) -> None:
         try:
             for ln in unit.read_text("utf-8").splitlines():
                 if ln.strip().startswith("ExecStart"):
-                    for m in re.findall(r"(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)", ln):
+                    for m in _SCHED_PATH_RE.findall(ln):
                         refs.setdefault(m, unit.name)
         except OSError:
             continue
 
-    missing = sorted(p for p in refs if not Path(p).exists())
+    missing = sorted(p for p in refs if not _resolve(p).exists())
     if missing:
         shown = ", ".join(missing[:6]) + ("..." if len(missing) > 6 else "")
         defects.append((
@@ -6255,6 +6816,9 @@ def check_scheduled_scripts(defects) -> None:
 CHECKS = [("carryover-skipped", check_carryover_skipped),
           ("recommendation-rows", check_recommendation_rows),
           ("organs", check_organs), ("stubs", check_stub_deaths),
+          ("unit-deaths", check_unit_deaths),
+          ("manifest-backlog", check_manifest_backlog),
+          ("launcher-unsealed", check_launcher_seal),
                       ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("model-freshness", check_model_freshness),
                       ("coverage", check_coverage),
@@ -6774,11 +7338,33 @@ DOCTRINE = ROOT / "ops/principal_doctrine.txt"
 # Duties that must reach EVERY organ, not just the brain. The list is explicit rather than
 # inferred: a heuristic would either miss a renamed duty or nag about the many duties that are
 # CORRECTLY brain-only (audit coverage, red-team panels, risk-path depth, the independence gate).
-_UNIVERSAL = ("PROACTIVE BATTERY DUTY", "NO-ORPHANED-RECOMMENDATION LAW", "NOVELTY GATE",
-              "TARGET/HORIZON SWEEP DUTY", "RESEARCH-MEMORY DUTY", "FREE-FIRST DATA PROTOCOL",
-              "BLIND-SPOT ORIGIN DUTY", "FINDING LIFECYCLE DUTY", "SELF-INTERROGATION DUTY",
-              "TWO-STAGE DISCOVERY LAW", "SCREEN-ON-DISCOVERY DUTY", "MINING-NEVER-REGRESSES LAW",
-              "NO-CEILING AXIOM", "FREE-FRONTIER AXIOM", "DATA-UTILIZATION")
+# REPOINTED 2026-08-26 (gap-fixer): the 08-25 consolidation moved every one of these into
+# LAWS.md/RESEARCH.md under the canon's own phrasing, and this check kept demanding the OLD
+# all-caps names from the OLD single file -- accusing the correct post-consolidation doctrine
+# (the same failure the constitution-not-injected detector had, fixed the same way). The shared
+# surface is now the UNION of what organs inject/read (LAWS §7: brain_env injects the sealed
+# doctrine AND LAWS.md; research organs open RESEARCH.md as their first standing order), and
+# each token below is the consolidated canon's own distinctive name, matched case-insensitively.
+_UNIVERSAL = (
+    ("PROACTIVE BATTERY DUTY", "adversarial battery"),          # RESEARCH §8, masters 187-207
+    ("NO-ORPHANED-RECOMMENDATION LAW", "no orphaned recommendation"),
+    ("NOVELTY GATE", "novelty gate"),
+    ("TARGET/HORIZON SWEEP DUTY", "target-horizon cell is a dsr-counted trial"),
+    ("RESEARCH-MEMORY DUTY", "research memory"),
+    ("FREE-FIRST DATA PROTOCOL", "free-first"),
+    ("BLIND-SPOT ORIGIN DUTY", "blind-spot origin"),
+    ("FINDING LIFECYCLE DUTY", "findings lifecycle"),
+    ("SELF-INTERROGATION DUTY", "self-interrogation"),
+    ("TWO-STAGE DISCOVERY LAW", "two-stage discovery law"),
+    ("SCREEN-ON-DISCOVERY DUTY", "screen-on-discovery"),
+    ("MINING-NEVER-REGRESSES LAW", "mining-never-regresses"),
+    ("NO-CEILING AXIOM", "no-ceiling"),
+    ("FREE-FRONTIER AXIOM", "free-frontier"),
+    ("DATA-UTILIZATION", "data-utilization"),
+)
+#: The injected/read shared surface (LAWS §7). ALL of these must exist and together carry
+#: every universal duty; principal_doctrine.txt alone is the sealed core, not the whole law.
+_SHARED_SURFACE = ("ops/principal_doctrine.txt", "docs/LAWS.md", "docs/RESEARCH.md")
 
 
 def check_universal_doctrine(defects) -> None:
@@ -6790,16 +7376,20 @@ def check_universal_doctrine(defects) -> None:
     dangerous half of the job without the discipline that makes it safe. A universal law parked in
     one organ's prompt is not a law, it is a local habit.
     """
-    if not DOCTRINE.exists():
+    absent = [p for p in _SHARED_SURFACE if not (ROOT / p).exists()]
+    if absent:
         defects.append(("doctrine-missing",
-                        "ops/principal_doctrine.txt is gone -- every organ injects it as its "
-                        "system prompt, so the desk is running with no standing law at all"))
+                        f"shared-surface document(s) gone: {', '.join(absent)} -- every organ "
+                        "injects/reads these as standing law (LAWS §7), so the desk is running "
+                        "with a hole in its constitution"))
         return
-    txt = DOCTRINE.read_text("utf-8", errors="ignore")
-    missing = [d for d in _UNIVERSAL if d not in txt]
+    txt = "".join((ROOT / p).read_text("utf-8", errors="ignore")
+                  for p in _SHARED_SURFACE).lower()
+    missing = [label for label, token in _UNIVERSAL if token not in txt]
     if missing:
         defects.append(("doctrine-universal-missing",
-                        f"universal duties absent from the shared doctrine: {', '.join(missing)}. "
+                        f"universal duties absent from the shared doctrine surface "
+                        f"({' + '.join(_SHARED_SURFACE)}): {', '.join(missing)}. "
                         "These bind every organ; if one lives only in a single organ's prompt, "
                         "every other organ operates without it -- which is how diggers came to be "
                         "ordered to screen axes with no novelty gate or trial accounting."))
@@ -6819,13 +7409,182 @@ def check_universal_doctrine(defects) -> None:
 # Checks DEFINED BELOW the CHECKS literal must be registered here -- appending them up there is a
 # NameError, which is exactly how four of them ended up dead. Keep the order explicit (the list is
 # the run order); `check_registry_complete` below is what makes a future omission impossible.
+def check_route_shaped_identity(defects) -> None:
+    """A frozen IDENTITY field that names a FILE, HOST or PATH describes the pipe, not the water.
+
+    Origin (2026-08-26, self-found): `shadow_forward` froze `data_venue = str(bars.source)` -- the
+    ROUTE the bars arrived by -- into every sleeve identity. On the Linux VPS `MetaTrader5` is not
+    importable, so every run read the parquet cache, every run "drifted", and an identity break is
+    TERMINAL. 195 IDENTITY BROKEN lines with data_venue named in 195/195: the 14-day forward
+    window never survived one day and nothing could ever reach promotion. Each break looked like
+    the gate correctly doing its job, which is why nothing surfaced it.
+
+    The check is the angle in the patterns file, mechanised: read the frozen identities and flag
+    any value that contains a path separator, a file extension or a cache/route verb. Those are
+    transport facts. A venue, a model, a dataset or a venue-server name is not one.
+    """
+    reg = ROOT / "desks/mt5/data/sleeve_registry.json"
+    if not reg.exists():
+        return
+    try:
+        rows = (json.loads(reg.read_text("utf-8")).get("sleeves") or {})
+    except (OSError, ValueError):
+        return
+    bad: list[str] = []
+    for key, row in rows.items():
+        ident = row.get("identity") or {}
+        for field, value in ident.items():
+            if field == "sleeve_id" or not isinstance(value, str):
+                continue
+            low = value.lower()
+            if (low.startswith(("cache:", "file:", "path:"))
+                    or "/" in value or "\\" in value
+                    or low.endswith((".parquet", ".json", ".csv"))):
+                bad.append(f"{key}.{field}={value!r}")
+    if not bad:
+        return
+    defects.append(("route-shaped-identity",
+            f"{len(bad)} frozen identity field(s) name a RETRIEVAL ROUTE "
+            f"rather than the thing itself -- {', '.join(sorted(bad)[:4])}. A route in an identity "
+            f"field fires on every outage AND is blind to a real change arriving by the same "
+            f"route; it is not a stricter gate, it is the wrong quantity. Split the subject from "
+            f"the transport (h1_source.Bars.evidence_venue is the worked example), fail the "
+            f"subject CLOSED, and version the schema so rows frozen under the old meaning are "
+            f"archived and re-windowed rather than silently re-blessed."))
+
+
+def check_worktree_on_tmpfs(defects) -> None:
+    """A git worktree under /tmp is tmpfs -- it is spending RAM, not disk.
+
+    tmpfs mounts are DERIVED from /proc/mounts, not listed -- any mount can be memory.
+
+    Origin (2026-08-26, self-found): CI was RED on committed code with 'KILLED sig9, MemAvailable
+    827MB, 495MB of RAM held by files under /tmp (tmpfs)'. The holder was /tmp/lit10-wt, an
+    abandoned detached worktree costing 322MB of a 4GB no-swap box -- so the desk-wide safety gate
+    was down for a reason no code change could fix and no code review could see. Removing it took
+    MemAvailable 1131MB -> 1348MB and CI came back.
+
+    The second hazard is worse than the first and is why this reports rather than stays quiet: the
+    same worktree held commit 16a68718 (a full litminer run) reachable from NO branch. tmpfs does
+    not survive a reboot, so that work was one power cycle -- or one `worktree remove` -- from
+    being gone. TAG THE HEAD BEFORE RECLAIMING, always; verify the tag makes it reachable, then
+    remove. Never delete a sibling's worktree that still has uncommitted work; relocate it to real
+    disk instead, which fixes the RAM cost with zero data loss.
+    """
+    try:
+        out = subprocess.run(["git", "worktree", "list", "--porcelain"], cwd=ROOT,
+                             capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return
+    if out.returncode != 0:
+        return
+    paths = [ln.split(" ", 1)[1].strip() for ln in out.stdout.splitlines()
+             if ln.startswith("worktree ")]
+    # Derived, never hardcoded: /tmp and /dev/shm are the usual tmpfs mounts on this box, but the
+    # property that matters is "this filesystem IS memory", and any mount can be one. A literal
+    # list here would be a boundary silently capping the sweep (the anti-hardcode law).
+    ram_mounts: list[str] = []
+    try:
+        for line in Path("/proc/mounts").read_text("utf-8").splitlines():
+            parts = line.split()
+            if len(parts) >= 3 and parts[2] in ("tmpfs", "ramfs"):
+                ram_mounts.append(parts[1].rstrip("/") + "/")
+    except OSError:                              # pragma: no cover -- non-Linux
+        return
+    if not ram_mounts:
+        return
+    offenders: list[str] = []
+    for raw in paths:
+        wt = Path(raw)
+        if not str(wt).startswith(tuple(ram_mounts)) or not wt.exists():
+            continue
+        try:
+            head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=wt,
+                                  capture_output=True, text=True, timeout=30).stdout.strip()
+            reach = subprocess.run(["git", "branch", "-a", "--contains", head], cwd=ROOT,
+                                   capture_output=True, text=True, timeout=60).stdout
+            size = subprocess.run(["du", "-sm", str(wt)], capture_output=True, text=True,
+                                  timeout=120).stdout.split("\t")[0].strip()
+        except (OSError, subprocess.SubprocessError, IndexError):
+            continue
+        named = [b for b in reach.splitlines() if b.strip() and "(no branch)" not in b]
+        orphan = "" if named else " and its HEAD is reachable from NO BRANCH -- TAG IT FIRST"
+        offenders.append(f"{wt} (~{size}MB of RAM, HEAD {head[:8]}{orphan})")
+    if offenders:
+        defects.append((
+            "worktree-on-tmpfs",
+            f"{len(offenders)} git worktree(s) live on tmpfs, so they cost RAM on a 4GB no-swap "
+            f"box and do NOT survive a reboot: {'; '.join(offenders)}. This is how CI died on "
+            "2026-08-26 -- a resource failure no code review could see and no code change could "
+            "fix. Reclaim it, but TAG the HEAD and verify reachability BEFORE removing; if it "
+            "holds uncommitted work, relocate it to real disk rather than deleting it."))
+
+
+def check_sync_launder(defects) -> None:
+    """Code a one-way sync reverted and nobody put back -- DERIVED, so no file falls through.
+
+    The Dell's hourly sync scp's its copy over desks/mt5 and commits it here over ssh. Two
+    defences exist and both are LIST-shaped: the pre-commit guard is future-tense (it works --
+    no mt5 sync commit has carried a .py change since 2026-08-26 02:02), and the content fence
+    restores only files somebody already added to its hand-maintained PROTECTED map.
+
+    MEASURED 2026-08-28: desks/mt5/research/regime_monitor.py lost 122 of 149 lines -- the GAP 130
+    shadow-replay wake -- to a sync two hours after it shipped, and sat dead in HEAD for two days
+    with its 5 tests inside a 25-test CI red nobody traced. It was invisible for one reason: it
+    was in no list. A registry of files already damaged cannot name the file about to be, and
+    every entry in it was bought with the loss it was meant to prevent.
+
+    Reads the artifact rather than re-deriving it (the walk is a few hundred `git show` calls);
+    the producer is scripts/check_sync_launder.py, wired to run before this. Only CLEAN-REVERT
+    rows are defects: a REVIEW row cannot be closed mechanically -- it needs two versions of a
+    rewritten file read by a mind -- and a red nobody can act on gets skimmed and buries a real
+    one, which is the lesson check_ci_gate already carries in its own body.
+    """
+    # PRODUCER AND CONSUMER ON ONE SCHEDULE, so they cannot rot apart. The manifest has 120 rows
+    # with no scheduler since the 08-20 cron death; adding a 121st would be wiring an organ to a
+    # dead clock and calling it done. The walk is a few hundred `git show` calls -- refreshed at
+    # most once a day, bounded, and a failure leaves the previous artifact rather than a lie.
+    art = ROOT / "data" / "sync_launder.json"
+    stale = (not art.exists()) or (NOW - art.stat().st_mtime) > 20 * 3600
+    if stale:
+        with contextlib.suppress(OSError, subprocess.SubprocessError):
+            subprocess.run([sys.executable, str(ROOT / "scripts" / "check_sync_launder.py")],
+                           cwd=ROOT, capture_output=True, text=True, timeout=600, check=False)
+    if not art.exists():
+        return
+    try:
+        rows = json.loads(art.read_text("utf-8")).get("residue") or []
+    except (OSError, json.JSONDecodeError, TypeError):
+        return
+    clean = [r for r in rows if r.get("verdict") == "CLEAN-REVERT"]
+    if clean:
+        named = ", ".join(f"{r['file']} ({r['lines_lost']} lines, {r['sync_commit']})"
+                          for r in clean[:4])
+        defects.append(("sync-launder",
+                        f"{len(clean)} file(s) still carry authored code a SYNC commit reverted "
+                        f"and nothing restored: {named}. Each is desk work that reached HEAD, was "
+                        "overwritten by a one-way push, and is being run in its stale form right "
+                        "now. Heal with scripts/check_sync_launder.py --heal (previous bytes are "
+                        "quarantined), then commit."))
+    review = [r for r in rows if r.get("verdict") == "REVIEW"]
+    if len(review) > 12:
+        defects.append(("sync-launder-review-backlog",
+                        f"{len(review)} file(s) carry sync-removed lines that a later rewrite may "
+                        "or may not have superseded -- nothing mechanical can tell those apart. "
+                        "The backlog is only worth reporting when it grows: read the samples in "
+                        "data/sync_launder.json and close each one with a judgement."))
+
+
 CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("close-retry-loop", check_close_retry_loop),
            ("paid-target-registry", check_paid_target_registry),
            ("holdings-ratchet", check_holdings_never_shrink),
            ("book-absorbing-state", check_book_absorbing_state),
            ("rail-verdict-published", check_rail_verdict_published),
-           ("universal-doctrine", check_universal_doctrine)]
+           ("universal-doctrine", check_universal_doctrine),
+           ("route-shaped-identity", check_route_shaped_identity),
+           ("worktree-on-tmpfs", check_worktree_on_tmpfs),
+           ("sync-launder", check_sync_launder)]
 
 
 #: Every reasoning organ. An organ that does not carry the constitution is optimising for
@@ -7371,6 +8130,21 @@ def check_under_exploration(defects) -> None:
                 "seven reconstructions are the first seven, not the last, so raw tape must stay "
                 "re-readable. Buy storage; every hour past the pause is permanently unbuyable."))
         if state == "RECORDING-STOPPED":
+            # A tape that stopped because the desk SWITCHED IT OFF is a recorded decision, not a
+            # stall (see _recorder_pause_reason). Without this, the principal's own ACCEPT path in
+            # data/PRINCIPAL_ACTION.md fires an unclearable defect for as long as the retirement
+            # holds -- and under the MT5 mandate that retirement is PERMANENT, so this defect
+            # would have fired forever on a decision the desk deliberately made. Restored
+            # 2026-08-26 from 3da91a1d, whose checks landed here while this half never did.
+            # The frozen-denominator warning still stands and is still said.
+            if _recorder_pause_reason() == "SWITCHED-OFF":
+                defects.append((
+                    "tape-retired-coverage-frozen",
+                    f"{label}: recording is OFF by decision (data/RECORDERS_OFF present). That is "
+                    "not a stall -- but coverage is filled/total over a FROZEN grid, so any "
+                    "coverage number from this surface is now meaningless and must not be read "
+                    "as progress (L1.65: a gauge denominated in what survives cannot see a loss)."))
+                continue
             defects.append((
                 "tape-recording-stopped",
                 f"{label}: {why} This outranks every coverage finding: coverage is filled/total "
@@ -7786,7 +8560,15 @@ def check_unwired_modules(defects) -> None:
     # it into a Linux cadence would schedule a guaranteed ImportError every cycle, which is noise
     # dressed as coverage. The module it keeps alive (libs.costs.mt5_calibration) is reachable the
     # day the desk runs an MT5 leg, and not before.
-    _CALLER_EXEMPT = {"scripts/run_autodiscovery.py": "imports MetaTrader5 -- Windows-only"}
+    _CALLER_EXEMPT = {
+        "scripts/run_autodiscovery.py": "imports MetaTrader5 -- Windows-only",
+        # The funding-interval/venue-risk-parameter axis is crypto-exchange-NATIVE ground, which
+        # the 2026-08-18 universe mandate bans from ever being hunted again -- wiring this screen
+        # to a schedule would manufacture usage of a retired axis (the III.16 inverse). Retained
+        # for provenance; re-entry only via a named enabling change under L1.16a.
+        "scripts/screen_venue_risk_params.py":
+            "crypto-exchange-native axis -- banned universe (MT5 mandate 2026-08-18)",
+    }
 
     dead_links = []
     for mod, script in sorted(sole_importer.items()):
@@ -8033,6 +8815,35 @@ def check_registry_complete(defects) -> None:
         name for name, obj in globals().items()
         if name.startswith("check_") and callable(obj)
         and name not in registered and name not in _CHECKS_EXEMPT)
+
+    # 2026-08-26, self-found and PAID FOR THE SAME DAY: `check_route_shaped_identity` was written
+    # `() -> list[str]` (returning its verdicts) while the runner calls `fn(defects)`. It was
+    # correctly REGISTERED, so this guard was green -- and it raised TypeError on every single
+    # sweep, so a real 195-break defect produced zero verdicts and the dimension read clean.
+    # Registration is not enforcement: a check the runner cannot CALL is as inert as one it never
+    # reaches, and _fenced's sweep-broken-* rescue reports the crash without ever naming the law
+    # that went dark. Shape is checked here, at registration, where it is cheap and unmissable.
+    import inspect
+    misshapen: list[str] = []
+    for label, fn in CHECKS:
+        try:
+            sig = inspect.signature(fn)
+        except (TypeError, ValueError):          # pragma: no cover -- builtins/C callables
+            continue
+        positional = [pm for pm in sig.parameters.values()
+                      if pm.kind in (pm.POSITIONAL_ONLY, pm.POSITIONAL_OR_KEYWORD)
+                      and pm.default is pm.empty]
+        varargs = any(pm.kind is pm.VAR_POSITIONAL for pm in sig.parameters.values())
+        if len(positional) != 1 and not varargs:
+            misshapen.append(f"{label}({fn.__name__}{sig})")
+    if misshapen:
+        defects.append((
+            "check-wrong-signature",
+            f"{len(misshapen)} registered check(s) cannot be CALLED by the runner, which passes "
+            f"exactly one positional `defects` list: {', '.join(misshapen)}. Each raises on every "
+            "sweep and its law reads clean while going unenforced -- registration is not "
+            "enforcement. Every check is `def check_x(defects) -> None` and APPENDS "
+            "`(id, message)` tuples; returning verdicts discards them silently."))
     if orphans:
         defects.append((
             "check-unregistered",
@@ -8070,11 +8881,19 @@ def check_constitution_review(defects) -> None:
         doct = (ROOT / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
     except OSError:
         doct = ""   # ABSENT doctrine injects nothing: same defect as de-cored, reported not crashed
-    if "docs/CONSTITUTION.md" not in doct or "E[log(W_T)]" not in doct:
+    # CONSOLIDATION 2026-08-25: docs/LAWS.md is the operative constitution and the doctrine
+    # writes the objective as E[log W_T]; the old strings (CONSTITUTION.md, parenthesised W_T)
+    # made this detector fire on the CORRECT consolidated doctrine -- a stale detector accusing
+    # a healthy artifact. Either generation of either token satisfies the same property: the
+    # doctrine names its governing document and states the objective.
+    _governs = ("docs/LAWS.md" in doct) or ("docs/CONSTITUTION.md" in doct)
+    _objective = ("E[log W_T]" in doct) or ("E[log(W_T)]" in doct)
+    if not _governs or not _objective:
         defects.append(("constitution-not-injected",
-                        "the doctrine no longer declares docs/CONSTITUTION.md governing (or lost "
-                        "the L1.1 objective) -- organs are being briefed without the "
-                        "constitutional core, which voids universal enforcement"))
+                        "the doctrine no longer declares docs/LAWS.md (or the legacy "
+                        "CONSTITUTION.md) governing, or lost the E[log W_T] objective -- organs "
+                        "are being briefed without the constitutional core, which voids "
+                        "universal enforcement"))
     if CONST_REVIEW.exists():
         age_d = (NOW - CONST_REVIEW.stat().st_mtime) / 86400.0
         if age_d > 92:
@@ -8647,3 +9466,207 @@ def check_blocked_routes_hunted(defects) -> None:
 
 
 CHECKS += [("blocked-routes", check_blocked_routes_hunted)]
+
+
+# ---------------------------------------------------------------------------------------------
+# SESSION-DERIVED FENCES (2026-08-26). The recursion rule, applied: every defect this desk finds
+# becomes a standing automatic check, so the same class can never run unnoticed again. Each of
+# the four below is a REAL failure measured on this box, not a hypothetical.
+# ---------------------------------------------------------------------------------------------
+
+def check_verifier_reads_injection(defects) -> None:
+    """A law verifier must read the SAME text the organ receives.
+
+    MEASURED 2026-08-26: the governance consolidation made the injected prompt doctrine +
+    docs/LAWS.md, but libs/ops/lawful.py kept reading the doctrine alone, declared all six law
+    families missing, and paged on every guard() call -- 292 OOM kills in two hours. A verifier
+    that reads LESS than the organ does reports on a prompt nobody is running.
+    """
+    inj = ROOT / "ops/brain_env.sh"
+    if not inj.exists():
+        return
+    try:
+        env = inj.read_text("utf-8", errors="ignore")
+    except OSError:
+        return
+    # what brain_env actually concatenates into _DOCTRINE
+    m = re.search(r'_DOCTRINE="\$\(cat ([^)]+)\)"', env)
+    if not m:
+        return
+    sources = {p.strip().strip('"').split("/")[-1] for p in m.group(1).split()
+               if ("/" in p or p.strip().startswith("$")) and ">" not in p}
+    sources = {s for s in sources if "." in s and not s.startswith("dev")}
+    for verifier in ("libs/ops/lawful.py", "scripts/run_law_gate.py"):
+        p = ROOT / verifier
+        if not p.exists():
+            continue
+        try:
+            body = p.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "check_law_families" not in body and "FAMILIES" not in body:
+            continue
+        missing = [s for s in sources if s and s not in body]
+        if missing:
+            defects.append(("verifier-reads-less-than-injection",
+                            f"{verifier} verifies law families but does not read {missing} -- "
+                            f"ops/brain_env.sh injects them into every organ. A verifier reading "
+                            f"less than the organ receives reports on a prompt nobody runs, and "
+                            f"its false gaps page in a loop (measured: 292 OOM kills, 2026-08-26)."))
+
+
+def check_authority_writers_scheduled(defects) -> None:
+    """Every script that writes an AUTHORITY artifact must be on a clock.
+
+    MEASURED 2026-08-26: universal_gate.py is the sole writer of UNIVERSAL_SURVIVORS.json -- the
+    file shadow_admission and the promoter treat as certificate authority -- and it had no task
+    on any box. Candidates could never obtain a certificate, so nothing could ever promote, and
+    the nightly job everyone assumed was the certifier writes diagnostics only. III.16 sitting on
+    the certification door.
+    """
+    authority = {"UNIVERSAL_SURVIVORS.json": "certificate authority",
+                 "constitution_core.lock": "the sealed core"}
+    for artifact, role in authority.items():
+        writers = []
+        for py in (ROOT / "desks/mt5/research").glob("*.py"):
+            try:
+                body = py.read_text("utf-8", errors="ignore")
+            except OSError:
+                continue
+            # PROXIMITY, not co-occurrence: promoter.py READS this artifact and WRITES a
+            # different one, and a naive `name in body and write_text in body` calls that a
+            # writer. Require the artifact name to sit within 200 chars of the write call.
+            # SAME LINE, not merely nearby: the real writer reads
+            # `(REPORTS / "ARTIFACT").write_text(` -- one statement. Readers like
+            # qquant_shadow.py mention the artifact on a DIFFERENT line from their own
+            # (unrelated) write, and a proximity window still called them writers.
+            is_writer = any(artifact in ln and ".write_text" in ln
+                            for ln in body.splitlines())
+            if is_writer:
+                writers.append(py.name)
+        for w in writers:
+            stem = w[:-3]
+            scheduled = any(stem in f.read_text("utf-8", errors="ignore")
+                            for f in list((ROOT / "ops").glob("*.sh"))
+                            if f.is_file())
+            marker = ROOT / "data" / f".sched_{stem}"
+            if not scheduled and not marker.exists():
+                defects.append(("authority-writer-unscheduled",
+                                f"{w} writes {artifact} ({role}) but no ops/ runner references "
+                                f"it. An authority artifact nothing refreshes is a gate that "
+                                f"cannot mint -- candidates accrue forward evidence they can "
+                                f"never cash (measured 2026-08-26)."))
+
+
+def check_one_way_flags(defects) -> None:
+    """A flag an organ can SET must have a path that CLEARS it.
+
+    MEASURED 2026-08-26 (GAP 130): regime_monitor.py writes flag="hibernate" and the gateway
+    drops flagged sleeves, but nothing anywhere clears the flag when the regime returns. Under
+    the Regime Specialization Law a specialist is SUPPOSED to sleep out of regime and wake in
+    it, so every hibernation was a permanent loss of a deliberately-admitted sleeve.
+    """
+    pairs = [("hibernate", "desks/mt5/research/regime_monitor.py",
+              "regime hibernation (specialists must WAKE, RESEARCH 6c)")]
+    for token, path, why in pairs:
+        p = ROOT / path
+        if not p.exists():
+            continue
+        try:
+            body = p.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        sets = f'"{token}"' in body or f"'{token}'" in body
+        if not sets:
+            continue
+        clears = any(k in body for k in ("wake", '"ok"', "clear", "unhibernate", "resume"))
+        if not clears:
+            defects.append(("one-way-flag",
+                            f"{path} SETS '{token}' with no clear/wake path -- {why}. A flag that "
+                            f"only ever goes one way is a slow retirement engine wearing a "
+                            f"reversible name."))
+            continue
+        # THE SUBTLER TRAP, measured 2026-08-26: a wake path can EXIST and still be unreachable
+        # if its evidence comes from a source the flag itself switches off. regime_monitor
+        # recomputes the flag every run (a real wake path) from LIVE LEDGER rows -- but a
+        # hibernated sleeve stops trading, stops producing rows, and its trailing window freezes
+        # at the values that hibernated it. Starved recovery evidence is a one-way door wearing
+        # a two-way name, and it is invisible to a grep for "wake".
+        if "live_ledger" in body or "ledger" in body.lower():
+            defects.append(("clear-evidence-starved",
+                            f"{path} can clear '{token}', but its clear condition reads the LIVE "
+                            f"ledger -- which the flag itself stops filling. A hibernated sleeve "
+                            f"produces no trades, so its window never recovers and the wake path "
+                            f"can never fire. Drive the wake from ZERO-CAPITAL SHADOW replay, "
+                            f"which keeps running while the sleeve is dark ({why})."))
+
+
+def check_page_before_spawn(defects) -> None:
+    """No paging path may spawn a heavyweight process before its dedupe check.
+
+    MEASURED 2026-08-26: lawful._page() ran `bash -c source ops/brain_env.sh`, which spawns
+    libs.ops.repair_mode at source time -- so a page SUPPRESSED by the 6h dedupe still bought a
+    ~73MB python interpreter, every call. The alert was correctly silent while the cost ran
+    unbounded, which is exactly why it went unnoticed for hours.
+    """
+    for rel in ("libs/ops/lawful.py",):
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        try:
+            body = p.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "brain_env.sh" not in body:
+            continue
+        # the CODE site, not a docstring mention: the subprocess line that sources it
+        m_spawn = re.search(r"subprocess\.run\([^)]*brain_env\.sh", body, re.DOTALL)
+        if not m_spawn:
+            continue
+        pre = body[:m_spawn.start()]
+        if "brain_page_stamps" not in pre and "_PAGE_DEDUPE" not in pre:
+            defects.append(("page-spawns-before-dedupe",
+                            f"{rel} spawns brain_env.sh (which starts repair_mode at source "
+                            f"time) BEFORE any dedupe check -- a suppressed page still costs a "
+                            f"python interpreter. Dedupe first, spawn second."))
+
+
+def check_recursion_rule_applied(defects) -> None:
+    """THE RULE THAT AUTOMATES THIS FILE'S OWN GROWTH.
+
+    Every FIXED gap-register row should leave behind a standing check, or the desk relearns the
+    same lesson. This compares recent FIXED rows against the CHECKS registry and names the ones
+    that closed without a fence -- so 'turn defects into checks' stops depending on whoever
+    happens to remember it (the recursion rule, made mechanical).
+    """
+    reg = ROOT / "docs/GAP_REGISTER.md"
+    if not reg.exists():
+        return
+    try:
+        rows = reg.read_text("utf-8", errors="ignore").splitlines()
+    except OSError:
+        return
+    fixed = [ln for ln in rows if ln.startswith("| 1") and "FIXED" in ln.upper()]
+    if not fixed:
+        return
+    slugs = {name for name, _fn in CHECKS}
+    unfenced = 0
+    for ln in fixed[-15:]:                       # the recent tail, not all history
+        cells = [c.strip() for c in ln.split("|")]
+        title = cells[2].lower() if len(cells) > 2 else ""
+        words = {w.strip("*`,.:;()") for w in title.split() if len(w) > 5}
+        if not any(any(w in s for w in words) for s in slugs):
+            unfenced += 1
+    if unfenced >= 5:
+        defects.append(("recursion-rule-unapplied",
+                        f"{unfenced} of the last 15 FIXED gap rows have no matching check in "
+                        f"max_audit's registry ({len(slugs)} checks). A defect fixed without a "
+                        f"fence is a lesson the desk will pay for twice -- the recursion rule "
+                        f"exists precisely so remembering is not the mechanism."))
+
+
+CHECKS += [("verifier-reads-injection", check_verifier_reads_injection),
+           ("authority-writer-scheduled", check_authority_writers_scheduled),
+           ("one-way-flag", check_one_way_flags),
+           ("page-before-spawn", check_page_before_spawn),
+           ("recursion-rule", check_recursion_rule_applied)]

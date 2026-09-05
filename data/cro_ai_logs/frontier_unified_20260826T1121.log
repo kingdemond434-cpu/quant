@@ -1,0 +1,116 @@
+=== frontier-unified attempt Wed Aug 26 11:21:48 AM UTC 2026 ===
+=== frontier-unified start Wed Aug 26 11:22:03 AM UTC 2026 ===
+
+## ALLOCATION (STEP 1 triage — the reasoning is the deliverable)
+
+Triage read: data/mine_generation_priors.json (one class, data_axis_watchlist, 0.479 measured
+conversion — the desk's only measured mine class, so it is FAVOURED and I worked it);
+`ls -t data/cro_ai_logs/frontier_*.log` (every regional log from 08-21..08-24 is a 131-byte
+"auth unavailable" stub — SEVEN CONSECUTIVE DAYS OF NO REGIONAL DIG, and the two earlier
+unified runs today both DEFERRED on the brain mutex. No regional log carries an "Owed next run"
+section because none of them ran); scripts/check_miner_conversion.py; scripts/mine_gate.py.
+
+**Grounds worked: the creator/track-record ground and the macro-document ground.** Not because
+they were next in a rotation — the funnel measurement picked them. `check_miner_conversion`
+reports the book is **0.952 one family** (session_range_breakout) with **8 target families
+absent, ALL of them REACHABLE**. Mining more track-record ground cannot raise N_eff; feeding an
+absent family can. Two of the eight absent families — `event_reaction` (needs an economic
+calendar) and `macro_conditional` (needs a macro state series) — map exactly onto owed seed
+cards S6 and S21. That is where the marginal survivor is, so that is where the hour went.
+
+**Grounds NOT worked, each named with its reason (a skip is a decision):**
+- **en / ru / jp / ar / br** — no owed debt reachable this run: the §33 backlog resolved to
+  ZERO real regional items (see the parser finding below), and none of these grounds has a
+  cardable debt that a unified dig can close without the seat's own operator set. They are NOT
+  demoted; their last real logs are >7d old only because the seat auth has been down since
+  08-21, which is an INFRASTRUCTURE defect, not a ground verdict, and it is the single largest
+  thing suppressing this desk's arrival rate right now.
+- **cn** — worked 08-25 (s12, 2718b log, real). Zhihu recorded WALLED twice by that seat. Its
+  open unit (Bilibili) needs the CN operator set; probing a known wall a third time is budget
+  spent to re-derive a known verdict. Skip recorded on card 47.
+- **kr** — its ground needs re-scoping first: the KR venue-state layer it fed was KILLED by the
+  2026-08-18 mandate re-grade, so the cadence question is not yet well-posed. Skip on card 48.
+- **Trump Truth Social (S5)** — deliberately deferred to 09-12 and ranked BELOW S6/S21 on
+  MECHANISM: a central-bank statement is a scheduled, dated, market-moving event with a forced
+  counterparty; a social post is an unscheduled headline whose event window is contaminated by
+  every other headline in it. Its binding constraint is a §13 READ, not a probe, and probing
+  first would generate corpus the desk may not be permitted to keep.
+
+Last time each funded ground fed the survivor pipeline: the creator/track-record class is the
+desk's measured best (Davidd/RFT/Saleh -> 94 stage-A survivors + the only exact ten-gate
+certificate). The macro-document ground has fed it ZERO times — and this run found out why.
+
+## FINDING 1 (T2, the run's main deliverable) — a wired miner that could not, in principle, produce what it was for
+
+`desks/mt5/side_channels/central_bank_miner.py` was wired into run_all_miners.py and listed
+zero-yield by check_miner_conversion (20+ rows, 0 survivors/14d). Reading the file instead of
+trusting the fence's source-level verdict: it scraped each bank's HTML LANDING PAGE, kept the
+first 2000 chars after tag-stripping (navigation chrome), counted policy keywords, and **emitted
+no timestamp at all** — so nothing it produced could ever become an event series, which is
+precisely what the two absent families need. Second defect: `_extract_symbols` substring-matched
+instrument tickers against a central bank's page; "EURUSD" does not appear on federalreserve.gov,
+so it returned [] every run and the fallback emitted **"USDUSD"** for the Fed. Positive control
+against `git show HEAD:` of the old file reproduces both.
+
+REPAIRED IN THE SAME CHANGE (detect implies repair). Dated RSS/RDF feeds, probed live and all
+keyless 200: Fed press_monetary.xml, ECB rss/press.html, BoJ whatsnew.xml, BoE rss/news, BoC
+press-releases, BIS cbspeeches.rss. BIS is RDF `dc:date`, NOT `pubDate` — a pubDate-only reader
+returns zero rows there and reads as an empty feed, so both tag families are parsed. Instruments
+now derive from the speaking bank's CURRENCY. An undated item is DROPPED, never stamped `now`
+(L1.46). **Measured: 162 dated documents, 0 undated, 2026-03-18 -> 2026-08-26, BoE 50 / BoJ 47 /
+BIS 25 / Fed 15 / ECB 15 / BoC 10** -> desks/mt5/data/intelligence/central_banks/cb_documents.jsonl.
+7 regression tests, each naming its defect. Gates green.
+
+RESIDUALS, stated so nothing reads as success: **RBA 403 from this box under two UAs — AUD has
+NO central-bank coverage and the row is kept so the miner shouts about it every run**; SNB not
+routed (CHF uncovered); only 2/162 rows carry a policy signal because the feeds give titles, not
+bodies — **this is an attention stream, not yet a hawkish/dovish series**; and RSS is a rolling
+window, so this axis **cannot backfill** and accrues only forward. That last one is the price of
+the six months the miner sat broken, and it is the argument for reading the reader whenever a
+fence calls a source zero-yield.
+
+## FINDING 2 (T2) — the §33 backlog was 68% PHANTOM, and the mechanism is a one-line parser rule
+
+The gate opened this run demanding 22 dispositions "weighted 48". Fifteen of those cards ALREADY
+CARRIED a valid future deferral — on the line BELOW the heading, where
+`libs/research/mine_conversion.parse_dispositions` cannot see it. Measured directly: the identical
+tag parses to `('deferred','2026-09-05',2)` on the heading line and to `('', '')` one line down.
+This is the known heading-line rule (R0514/R0617 family) and it had been inflating the desk's
+convert-first directive by 3x, aiming every digger's FIRST effort at work that was not owed.
+Card-side fix applied (the KR-s4 precedent; the parser fix stays engineering-owned): 15 orphaned
+tags moved onto their headings. **22 -> 7.**
+
+The remaining 7 were real debt and are now disposed on measured evidence, not rubber-stamped:
+S2 GitHub (api.github.com keyless 200, total_count=646 for topic:mql5 — route live, corpus owed),
+S3 TradingView (200; **merged into S12 as the same ground described twice — recorded as one item,
+not counted as two**), S4 QuantConnect (robots read: `/api` BARRED, public pages open — the same
+boundary shape as MQL5), S5/S7/S8 deferred with dates and named skip reasons, S6 wired above.
+**Gate now reads BACKLOG-CLEAR: all 29 carded finds disposed.**
+
+## FINDING 3 (T3) — FX Blue (seed S13) route half-solved, and the honest stop
+
+robots.txt is `Allow: /` with no restrictions. Public track-record surface is reachable keyless
+at `https://api.fxblue.com/strivewidget.aspx?displayUserId=<user>` (HTTP 200, 52KB/user) — route
+CONFIRMED. Two residuals stopped me: the per-trade XHR endpoint is not in scripts.aspx?20250827c
+nor the preloaded Next chunks, and **sitemap.xml (234 URLs) enumerates exactly ONE user
+(`/users/example`)** — there is no population route, and a track-record ground without a
+population cannot be mined. I stopped rather than keep reverse-engineering, because MQL5 Signals
+already has an enumerated population (2,529 signals, card 49) and that ground's alpha yield is
+already MEASURED LOW (card 41) — so a second track-record population is worth less than it looks.
+Card S13 keeps its 09-05 deferral; the owed unit is the enumeration route, via /competitions.
+
+Also measured this run, feeding the S-card grades: Collective2 /strategies **403** despite robots
+permitting it (edge block, route problem not a wall); ForexFactory robots is 55 bytes with ZERO
+Disallow (but robots is not a reuse grant — OP-096, ToS read still owed); FTMO robots fully open;
+quant.stackexchange 7z dump live on archive.org; arXiv q-fin API and BIS RSS both keyless 200.
+
+## OWED NEXT RUN
+1. **RESTORE THE REGIONAL SEAT AUTH.** Seven straight days of 131-byte stubs is the largest
+   single suppressor of this desk's arrival rate and no amount of digging compensates for it.
+2. **Fetch the document BODIES behind cb_documents.jsonl links** — that is what turns finding 1
+   from an attention stream into the hawkish/dovish series `macro_conditional` actually needs.
+3. **§38 replacement route for RBA (AUD uncovered) and a working SNB feed (CHF uncovered).**
+4. **The parser fix itself** (body-line §33 tags) — card-side patched here for 15 cards, but the
+   next doc written with a body tag re-creates the phantom backlog. Engineering-owned.
+5. FX Blue population enumeration via /competitions; S2 GitHub corpus build.
+=== frontier-unified end Wed Aug 26 UTC 2026 ===

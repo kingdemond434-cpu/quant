@@ -49,6 +49,27 @@ def desk(tmp_path, monkeypatch):
         for state in (None, "FAILED_BREAK", "NORMAL_DAY")
     })
 
+    # LIVE PROMOTION REQUIRES THE CANONICAL CERTIFICATE (2026-08-26: authority revoked from
+    # uncertified lanes). These tests exercise the promotion MECHANICS, so the fixture grants
+    # authority for exactly the keys each test writes -- read from the tmp shadow file at call
+    # time, mirroring authorized_specs' spec shape. The refusal law has its own test below.
+    def _authority_from_shadow(base=None):
+        try:
+            blob = json.loads((shadow_dir / "shadow_state.json").read_text(encoding="utf-8"))
+        except OSError:
+            return set()
+        out = set()
+        for key, row in blob.items():
+            if not isinstance(row, dict):
+                continue
+            parts = key.split(".")
+            if len(parts) < 2:
+                continue
+            cond = parts[2] if len(parts) > 2 else None
+            out.add((parts[0], parts[1], cond, "session_range_breakout", False))
+        return out
+    monkeypatch.setattr(promoter, "authorized_specs", _authority_from_shadow)
+
     class Desk:
         root = tmp_path
 
@@ -78,6 +99,18 @@ def desk(tmp_path, monkeypatch):
 
 
 _GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0}
+
+
+def test_an_uncertified_candidate_is_blocked_not_promoted(desk, monkeypatch):
+    """The strengthened door: meeting every forward criterion promotes NOTHING without the
+    canonical ten-gate certificate -- the refusal is recorded, never silent."""
+    monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set())
+    desk.shadow({"CADJPY.asia": dict(_GOOD)})
+    promoter.main()
+    assert desk.sleeves() == []
+    st = desk.read_shadow()["CADJPY.asia"]
+    assert st["status"] == "BLOCKED_UNIVERSAL_GATES"
+    assert st["promotion_authority"] is False
 
 
 # --------------------------------------------------------------------- promote
@@ -116,7 +149,16 @@ def test_promotion_is_idempotent(desk):
 # ---------------------------------------------------------------------- retire
 
 def _losing(name: str, n: int = 12) -> list[dict]:
-    return [{"sleeve": name, "r_multiple": -1.0} for _ in range(n)]
+    """A sleeve that genuinely lost -- LOSSES THAT DIFFER, on purpose.
+
+    This returned n identical -1.0 R multiples, which `promoter.degenerate_evidence` now refuses
+    to retire on: a constant series is what a broken computation looks like, and the desk
+    retired a live, profitable gold sleeve on exactly that shape (n=30, exp=-1.000, while the
+    account was +EUR 103.84). A fixture that trips the safety guard tests the guard, not the
+    retire path these tests are about. Real losses vary; these do, and still average -0.85R.
+    """
+    losses = (-1.0, -0.62, -1.0, -0.95, -0.41, -1.0, -0.88, -1.0, -0.73, -1.0, -0.55, -1.0)
+    return [{"sleeve": name, "r_multiple": losses[i % len(losses)]} for i in range(n)]
 
 
 def test_retiring_a_conditioned_sleeve_kills_THAT_sleeve_in_shadow(desk):
@@ -174,18 +216,28 @@ def test_a_winning_sleeve_is_not_retired(desk):
 
 # ------------------------------------------------------------- gold challengers
 
-def test_a_gold_challenger_waits_for_the_armed_book(desk):
+def test_a_gold_challenger_no_longer_waits_for_the_armed_book(desk):
+    """PRINCIPAL 2026-09-04: every promotion candidate goes live immediately, no waiting. A
+    challenger used to sit in shadow until the armed window had forward rows to compare
+    against; a certified, matured sleeve held out of the book by a comparison that had never
+    proved it raised E[log W]."""
     desk.shadow({"XAUUSD.asia.NORMAL_DAY": dict(_GOOD)})
     promoter.main()
-    assert desk.sleeves() == [], "promoted with nothing to compare against"
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE" and s["vs_armed"] is None
 
 
-def test_a_gold_challenger_that_loses_to_the_armed_book_is_killed_not_promoted(desk):
+def test_a_gold_challenger_that_trails_the_armed_book_is_promoted_with_the_number_recorded(desk):
+    """The comparison is MEASURED and written on the row; it no longer kills. Capital is the
+    allocator's decision by dElogW, not a promoter heuristic."""
     desk.shadow({"XAUUSD.asia.NORMAL_DAY": {**_GOOD, "exp_r": 0.10}})
     desk.ledger([{"sleeve": "gold_asia", "r_multiple": 0.40} for _ in range(6)])
     promoter.main()
-    assert desk.sleeves() == []
-    assert desk.read_shadow()["XAUUSD.asia.NORMAL_DAY"]["status"] == "KILL"
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE"
+    assert s["vs_armed"]["trails_by_more_than"] is True
+    assert s["vs_armed"]["armed_exp_r"] == pytest.approx(0.40)
+    assert desk.read_shadow()["XAUUSD.asia.NORMAL_DAY"]["status"] == "PROMOTION CANDIDATE"
 
 
 def test_a_gold_challenger_that_beats_the_armed_book_promotes(desk):
@@ -194,6 +246,7 @@ def test_a_gold_challenger_that_beats_the_armed_book_promotes(desk):
     promoter.main()
     (s,) = desk.sleeves()
     assert s["name"] == "XAUUSD.asia.NORMAL_DAY" and s["state"] == "NORMAL_DAY"
+    assert s["vs_armed"]["trails_by_more_than"] is False
 
 
 def test_a_demo_fill_cannot_retire_a_live_sleeve(desk):

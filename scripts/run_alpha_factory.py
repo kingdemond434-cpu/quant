@@ -81,13 +81,27 @@ def _candidates(agenda: dict[str, Any], deployed: list[str],
         # `rank` is hand-maintained and is sometimes prose ("low-rank (near-miss; re-estimate at
         # panel)"). An unparseable rank sorts to the BACK rather than raising or being treated as
         # rank 1 -- the desk wrote words instead of a number precisely when it was unsure.
+        # A RANK BELOW 1 IS UNRANKED, NOT BETTER-THAN-FIRST -- and the difference crashed this
+        # organ on its very first candidate, so it has never run against real desk data.
+        # `research_agenda.json` carries `rank: 0` on 12 of its 20 rows (the axis generator writes
+        # a STRING rank, so a 0 means nobody ranked it). Feeding 0 into the prior below gives
+        # 1.0 - (0-1)/20 = 1.05, and `IdeaCandidate.expected_edge` is bounded `le=1.0`, so pydantic
+        # raised before the first candidate was built. The one-sided `max(0.0, ...)` guarded only
+        # the direction the author was thinking about.
+        # Unranked is treated exactly as an unparseable rank already is -- sorted to the BACK --
+        # because a 0 means the desk did not rank it, and reading that as the top prior would let
+        # the unranked out-rank everything the desk actually ranked.
         try:
             rank = float(q.get("rank", i + 1))
+            if rank < 1.0:
+                rank = float(n)
         except (TypeError, ValueError):
             rank = float(n)
         # the agenda's own rank is the desk's stated prior; converted to 0-1 so the factory's
         # ranking can AGREE or DISAGREE with it visibly rather than silently re-deriving it.
-        prior = max(0.0, 1.0 - (rank - 1.0) / n)
+        # Clamped BOTH ends. The comment above says "converted to 0-1"; the arithmetic only ever
+        # guaranteed >= 0, so any future rank the desk invents can no longer kill the organ.
+        prior = min(1.0, max(0.0, 1.0 - (rank - 1.0) / n))
         out.append(IdeaCandidate(
             idea_id=str(q.get("id", f"idea_{i}")),
             category=str(q.get("family", "uncategorised")),

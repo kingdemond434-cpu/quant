@@ -2238,7 +2238,7 @@ read the book can be farmed.
 **THE VOCABULARY GAP THIS EXPOSES (flagged per the extraction mandate — a mechanism mapping to NONE of the
 desk's families is the interesting case).** His closing line — *"市場がボットで飽和すると、必ずボットを食い物
 にするボットが現れる"* ("when a market saturates with bots, a bot that preys on bots will inevitably appear")
-— is a **PREDATION / adversarial-counterparty** mechanism family. Every entry in `CRYPTO_MECHANISMS` describes
+— is a **PREDATION / adversarial-counterparty** mechanism family. Every entry in `OFF_BOOK_MECHANISMS` describes
 *market state*; none asks **"is my own order pattern a farmable, recognisable signature?"** The desk has this
 lens for its own *process* (L1.32's "the adversary") but not as a *market* family. It is not idle: this desk's
 carry sleeve opens and closes on a schedule tied to funding phase and rank exit, which is precisely a
@@ -2807,3 +2807,3489 @@ other side — *"hysteresis must key on the ECONOMIC condition, never on a rank 
 the ones with a defect shape rather than an idea shape; nothing here is a build order, and per this
 file's own standing note **this inbox does not drive work** — anything that must be driven belongs
 in the recommendation ledger.
+
+## 2026-08-24 — BRAIN hunter s5: public laboratory-notebook postmortem, process imports only
+
+**SOURCE / BOUNDARY:** `zl3311/alpha-mining` (`POSTMORTEM.md`, `DATA-NOTICE.md`, dead-zone corpus),
+public GitHub. Code/methodology/author analysis are MIT. Submitted expressions belong to WorldQuant
+under the author's agreement and platform-derived field metadata carries an explicit rights caveat,
+so neither was copied or ingested. No credential or BRAIN endpoint was used.
+
+1. **Search correlation budget at mechanism/core level.** After roughly 50 submitted alphas, the
+   source reports correlation-to-book—not plausible-signal generation—as its binding transition.
+   The negative corpus sharpens the mechanism: negating one anchor did not escape a shared
+   analyst/intraday core (~0.94 correlation), and fresh weak legs could not rescue a saturated
+   strong core. Fusion translation is timestamp-aligned **net sleeve returns** against the existing
+   MT5 book; an exact polarity inversion has absolute correlation one and is a duplicate, not a
+   second edge. Desk audit found real consumers already (`libs/stage15/contribution.py`,
+   `libs/portfolio/capital_competition.py`), so this is `[§33: screened]` confirmation and search
+   emphasis, not a new subsystem recommendation.
+
+2. **Snapshot external state before access disappears.** The source lost BRAIN access after a
+   normal final session and had no durable last points/rank/leaderboard snapshot or lock trace. For
+   the active MT5 mandate, public MQL5/Myfxbook/Darwinex/competition histories must be captured with
+   `first_seen`, source timestamp, rule version, complete failure cohort and disappearance state.
+   A current winner screenshot is selection-biased ore. `[§33: screened]` process evidence; this
+   session's durable source card is `data/data_universe_map.json` entry 108.
+
+3. **Do not import "stop at the first platform pass" as a desk objective.** The source says this
+   tripled submissions per compute on a platform with its own fixed IS gate. On this desk it would
+   create an arbitrary top-1 choke point and leave independent positive-EV candidates idle. The
+   transferable residue is only *evaluation ordering*: cheap falsification first, then stop
+   spending on a candidate once its next disposition is determined. `[§33: killed]` as a policy
+   import; higher-ERV alternative is exhaustive independent-survivor conversion under the unchanged
+   universal promotion protocol.
+
+**Economic disposition:** no direct alpha claim and zero capital authority. The useful output is a
+lower re-test rate on cadence-mismatched transforms and stronger lineage-level independence search.
+Artifact with the exact Fusion mappings, uncertainty and rights boundary:
+`data/brain_hunter_s5_20260824.json`.
+
+---
+
+## ENGINE IDEA (EN miner s-J, 2026-08-25): measure the MT5 broker's ENDOGENOUS treatment of the desk — spread/slippage/rejects as a function of rolling desk PnL
+
+FROM the HN 25219314 insider tree (see graveyard `retail_fx_stophunt_feed_manipulation` for the
+full provenance): retail FX/CFD brokers (a) apply house MARKUPS to LP quotes on A-book flow,
+(b) internalize B-book flow against the house, and (c) RE-ROUTE consistently-winning accounts
+B→A ("too good → send him to the market"). Consequence for THIS desk: execution quality on the
+Fusion account is NOT a stationary market property — it is a policy function of the desk's own
+profitability, and it can STEP when the broker's toxic-flow classifier re-labels the account.
+An execution-reality model fitted on the quiet era silently mis-prices the profitable era — the
+exact regime where sizing decisions matter most (L1.58 waterfall: a step in venue treatment lands
+in the UNEXPLAINED residual unless it is a named regressor).
+MEASURABLE, with data the desk already holds or can hold free: (1) per-fill effective spread and
+slippage vs the desk's rolling 20d PnL (breakpoint/step test, not a linear fit); (2) reject/
+requote rate over the same clock; (3) a cross-broker quote benchmark — Fusion bid/ask vs a second
+free MT5 demo feed on the same symbols — separates HOUSE markup moves from MARKET spread moves
+(the free_data_cache multi-source pattern already does this shape for macro). NULL IS INFORMATIVE:
+flat treatment across the PnL clock is evidence the A-book claim holds for this account size.
+`[§33: wired -> this entry]` as an engine idea routed per seat charter; no capital claim, no gate
+touched. The consumer is the MT5 desk's execution-reality layer when it next fits cost models.
+
+> **SECOND INDEPENDENT INSTANCE, same day (CN miner s12, 2026-08-25):** the 2014 南都/凤凰
+> exposé of CN precious-metals member firms (graveyard
+> `cn_bucketshop_retail_loss_as_directional_signal`) shows the SAME segmentation implemented as
+> a back-office GUI: menu "扫描赚钱的人" (scan for profitable clients) with per-client 延迟 5s /
+> 滑点 ¥10 auto-handling + large-deposit/HFT/same-LAN scans. No derivation path between the CN
+> and HN source families (checked both ways) — genuine cross-ecosystem convergence that broker
+> treatment is a POLICY FUNCTION of measured client profitability. ADDS one observable to the
+> measurement above: **data-release-window treatment** — the CN houses timed order-gating and
+> server "outages" to US data releases (非农/NFP named explicitly), so test (4): reject/requote/
+> spread quality in the ±5min around top-tier calendar events vs quiet hours, from the desk's own
+> MT5 logs. A broker that degrades exactly when the desk's event edges would fire is a cost model
+> no quiet-hour fit can see.
+
+## 2026-08-25 PROSPECTOR — engine/method findings (full detail in research_memory, axis numerai_methodology / wctc_records)
+1. **|AR1| Smart-Sharpe screen diagnostic** — ledgered R-row this run (chased there, not here);
+   formula + abs(AR1) pitfall from Numerai 151 reply chain (rm-…-e7667f). Diagnostics only.
+2. **Feature-neutralization complexity inversion** (Numerai 899 #48, rm-…-9eb686): neutralization
+   helps simple models, HURTS advanced ones OOS — a regularizer, never a default-on step. Binds
+   any future exposure-control in the desk's cross-sectional MT5 factor work.
+3. **MDA feature-selection discipline** (Numerai 3170, rm-…-6c88ce): permutation importance
+   needs multiplicity correction + fold-stability (drop only features negative across ALL CV
+   folds); raw MDA under-ranks correlated groups (desk FX features are collinear — cluster
+   first). The thread's own #22 is the DSR argument in folk form.
+4. **Process corroboration from audited-forward ground** (WCTC, rm-…-05cbad): Davey's published
+   strategy-factory (mass-generate → walk-forward → incubation → small-live) and the repeat-winner
+   cohort's sizing-under-barrier solution independently converge on the desk's two-stage law +
+   robust-Kelly-with-rails. No action owed; citable when the architecture is next questioned.
+
+## 2026-08-25 · litminer run 10 · AI-METHODS FRONTIER (item 3; engine findings, both with numbers)
+
+### A. The verification-gap survey externally validates the desk's core design — and grades one desk habit WEAK
+arXiv 2608.05179 (Aug 2026, survey of AI-scientist systems 2023→06/2026), read to depth:
+- **Verification-signal hierarchy (strongest→weakest): executable/formal verifiers → physical
+  oracles → HELD-OUT TEMPORAL VALIDATION → learned/proxy rewards → debate/LLM-judge → model
+  opinion.** The desk's two-stage law (backtest screen = zero authority; promotion ONLY from
+  pre-registered forward evidence) IS the survey's top-tier recommendation ("held-out temporal
+  validation … the strongest signal … makes validity mechanically checkable"). External
+  confirmation, no change needed — a rare honest "already at frontier".
+- **CONTRARIAN vs desk habit: multi-agent debate/panel consensus is graded WEAK** — "debate
+  scores, Elo tournaments, and reviewer agents all reduce to one model grading another";
+  sycophancy/self-preference propagate; "consensus aggregation" is listed as a FAILURE MODE.
+  Judge DIVERSITY is explicitly NOT the fix (shared-prior homogenization persists): "a thousand
+  independently generated ideas … may still collapse onto a handful of templates" → the survey
+  prescribes POPULATION-LEVEL ENTROPY AUDITING of idea batches. Desk's own measurements agree
+  (run 6: 65–76% prior anchoring, menu-order 100% selection dependence; JP s4 llm-convergence).
+  **GAP NAMED: `hypothesis_novelty` gates candidates vs the graveyard/HISTORY; NOTHING measures
+  within-cohort template collapse.** Exact instrument: on each generation batch, cluster-count /
+  pairwise-similarity distribution on the SAME embedding the novelty gate already uses; floor =
+  measured baseline, ratchet up. (Ledger row this run.)
+- Self-referential-judge datum (companion search result, flagged RELAYED): same-family
+  judge self-assessment only **25–39% faithful** to actual computation — a measured number for
+  the two-model-family law's (L1.31/L1.33) justification file.
+- Survey's open problems that are ALREADY desk law (convergence, cite when defending these laws
+  externally): memory provenance/"authority of a memory to act" = L1.44 consumption-time
+  freshness; negative-results infrastructure = graveyard/L1.17; calibrated abstention = L1.29.
+- Calibration prior: ResearchClawBench-style end-to-end rediscovery benchmarks — top agents pass
+  only ~20%, failing on the "missing scientific core" (RELAYED from search synthesis). Prior for
+  how much unsupervised trust generation organs get.
+
+### B. False success is the dominant agent failure mode, measured — and the cheap detector BEATS the LLM judge
+arXiv 2606.09863 (Advani), abstract verbatim-read: agents assert completion contradicted by
+environment state at **45–48% of failures** (single-control tau2-bench, 9,876 trajectories,
+8 model families), **75.8%** among self-assessing coding-agent trajectories (AppWorld), vs **3%**
+where a second control channel exists (dual-control). LLM judges MISS it for mechanistic reasons
+(they read confident-closing LANGUAGE and action VOLUME, not state). **Lightweight TF-IDF
+detectors: AUROC 0.83–0.95, recover 4–8× more false successes than LLM judges, 3,300× faster.**
+Desk mapping: the desk's artifact-over-claim (L2.4), exit-code-vs-artifact lesson, and
+anti-rubber-stamp citation floor are exactly anti-false-success fences — now externally
+validated with rates. **UPGRADE AVAILABLE: mechanize the anti-rubber-stamp check as a lexical
+confident-closing-without-citation detector over cycle reports/session notes** (the 3% dual-control
+number is the argument: a SECOND CHANNEL collapses the failure mode; the desk's second channel is
+the artifact read — make it automatic). (Same ledger row as A; two exact patches, one owner-org
+each, consolidated deliberately to keep repair-mode row count down.)
+
+State-of-the-frontier one-liner for the coverage table: verification is the frontier's named
+bottleneck (83% release code, 38% release what a verifier needs); the field is converging on the
+desk's own laws — the desk's edge is having them ENFORCED, not written.
+
+## 2026-08-26 — PROSPECTOR (MQL5 article + forum layer). Structural/method findings.
+
+*(Routed here per PROSPECTOR_SPEC; each item is also a LEDGER row, because this file is
+write-only and a finding that lives only here is not converted.)*
+
+**A. R0667 — the whole MQL5 miner family is dark and certifies itself healthy.**
+4 organs × 36 hourly runs = 144 runs, **8 distinct artifacts of real content**. `mql5_codebase`
+points at `/en/code_base` (**HTTP 404**), `mql5_articles` scrapes `<h3>` from a page with **zero
+`<h3>` tags**, `mql5_signals` archives sidebar chrome ("Broker server", "Filter"), `mql5_forum`
+has produced **3 distinct titles ever**. Shared enablers: `params={"page": N}` which MQL5 ignores
+(measured 105/105 identical thread ids) and `except Exception: continue`, which makes a 404, a 403
+and an empty parse the same empty success. **GAP #140.**
+
+**B. R0666 — the forum miner specifically**, plus the repair route: the sitemap index.
+
+**C. R0668 — execution instrument (MT5-native, design published, mined as TEXT).**
+Measure **entry and exit slippage separately and report the asymmetry**; condition the cost model
+on the symbol's **MT5 execution mode** (Instant → requotes; Market → slippage); and record
+requote counts as **UNMEASURED** for observed (non-probe) fills, because they are unreconstructable
+from anything but your own trade return codes. Extends the R0661 execution program.
+
+**D. Method note, not yet a row — `successful_miners` counts `count > 0`.**
+`desks/mt5/side_channels/run_all_miners.py` grades a miner healthy on a non-empty row count, so
+`mql5_signals` (155 rows of UI chrome) grades **successful** while `mql5_articles` (0 rows) grades
+failed — the same defect the desk already carded as "`errors/rows` is blind to selector stubs".
+Its `summary` block is also inconsistent with its own body in the committed artifact
+(`latest_discoveries.json`: `total_miners: 25 / total_discoveries: 92` over a results dict holding
+**56 miners and ~600 rows**) — a producer/consumer collapse worth its own measurement.
+
+## 2026-08-27 (free-data-alternatives miner) — lake tz semantics, method finding
+`desks/mt5/data/universe/*_H1.parquet` is written by two producers with two clock conventions:
+**24 tz-aware (falsely stamped UTC over server-local wall time) / 173 tz-naive** — the same split
+as GAP #148's tracked-vs-gitignored files. Consequences for any shared loader (R0660's fix):
+- `idx.tz_convert('UTC')` on the aware 24 is a **silent no-op** that preserves the full 2-3h
+  offset while type-checking clean. The offset is invisible to mypy and to any dtype assertion.
+- `idx.tz_localize(None).tz_localize('Europe/Athens').tz_convert('UTC')` was tested against BOTH
+  halves this run and is correct for both (it does NOT raise on the naive index, contrary to
+  expectation) — so one loader can serve the whole lake, but it must NOT branch on `dtype.tz`.
+- A fence should assert the two halves agree, not merely that each parses: the census is a
+  one-line check (`getattr(idx.dtype,'tz',None)`) and today it returns two different answers.
+
+---
+
+## 2026-08-27 — prospector: MQL5 `/en/job` is a free, censusable retail-positioning instrument
+
+**Measured, not inferred.** Full census of the MQL5 job board (154 of 158 rows; page 10 404s),
+artifact `data/intelligence/mql5_catalog/mql5_jobs_20260827.json`. Every row is a client
+describing, in their own words with a budget attached, the strategy they are paying to have
+automated. Median budget **$50**, mean $465, max $10,000; arrival ≈5/day, so the board fully turns
+over in ~30 days and a standing weekly census costs 9 requests.
+
+Term frequency over the 154 briefs: **XAUUSD + gold 68**, RSI 44, scalp 24, trend 20, MACD 14,
+risk-management 14, grid 13, telegram 13, session 12, ICT 11, prop-firm + FTMO 16, martingale 6.
+
+**What this is and is not.** It is NOT a mechanism and it is not carded — no forced participant is
+named, so it fails the mechanism test by construction. It IS a cheap, repeatable measurement of
+where retail automation demand concentrates, and it is decision-relevant in exactly one place:
+**R0671's counterparty-termination and capacity argument.** Broker-side termination risk falls
+hardest on the flow the broker watches most closely, and this board says — by a factor of ~2.5
+over any other instrument — that gold EAs are that flow. The desk's own flagship sleeves are
+XAUUSD session-range breakouts.
+
+**The honest caveat against over-reading it:** a crowded *retail* venue is not a crowded *edge*,
+and nothing in this corpus measures capital. This belongs in the capacity prior, not in a
+retirement argument.
+
+**Proposed instrument (cheap):** weekly census of `/en/job` pages 1–9, append-only, tracking term
+share over time. The interesting series is not the level but the *change* — what retail starts
+paying to automate, and how fast. Nobody else keeps it.
+
+---
+
+## 2026-08-27(c) — PROSPECTOR — twelve FX majors are backtested at a spread of zero, and it is UNMEASURED whether that is the raw-account truth or a rounding artifact
+
+**Measured, not inferred.** `desks/mt5/data/universe/universe.json` holds 251 symbols; **12 carry
+`median_spread_pts == 0`**, and they are not a random 12 — they are precisely the major pairs:
+`AUDCHF AUDUSD CADCHF EURCAD EURCHF EURGBP EURUSD GBPUSD NZDUSD USDCAD USDCHF USDJPY`.
+
+**What that does downstream.** `engine.py::Costs.from_symbol` computes
+`spread = median_spread_pts * tick_size * contract_size`, which is exactly 0 for these twelve, and
+then `max(spread * mult, 0.05)`. So for every major the spread term is the **0.05 floor**, a
+constant that is independent of the symbol, independent of `mult`, and therefore **immune to every
+cost-stress scenario the desk runs** — the x2 and x3 multipliers move nothing on the twelve most
+liquid instruments in the universe.
+
+**Why this is NOT filed as a defect (the honest reading).** Fusion is a raw-spread,
+commission-charging broker; a genuine median major spread of 0.0–0.2 pips can legitimately round to
+0 points, and the commission term (2.25/lot, converted) dominates the spread term for majors
+anyway. So `0` may be *true*. **What is not known is which**, and the two cases have different
+consequences: if true, the floor is harmless; if it is a rounding artifact of an integer
+points field, then every major is stress-tested at a spread that cannot widen.
+
+**UNMEASURED is the answer here (L1.28a), and the resolving measurement is cheap and already owned:**
+the desk has its own MT5 tick tape — take the empirical median of `(ask - bid)` per symbol in
+**price units**, not rounded points, and compare. That is a read of data the desk already paid for.
+Related and stronger: **R0679** shows the engine has no slippage term at all, so the cost model's
+only symbol-varying component for the majors is the commission.
+
+
+## 2026-08-28 — free-data-alternatives miner: two exact patches, neither applied (research-only freeze)
+
+**1. `desks/mt5/side_channels/bis_speech_tone.py` — venue contamination, 2.5% of rows (GBP 6.8%).**
+The BIS description reads *"Speech by the <role> of the <SPEAKER'S BANK>, Mr X, **at the**
+<VENUE>"*, and the venue is usually also a central bank, so matching `BANKS` against the whole
+`title + description` files a PBoC speech delivered at a Bank of England seminar as **GBP**.
+Measured over all 8,770 tone rows: 8,555 correct, **215 attributed only from the venue segment**
+(GBP 55/812, USD 81/2567, EUR 59/2742); 154 rows match >1 bank and take whichever key iterates
+first; only 700 rows matched on the title at all.
+**PATCH:** cut the description at the first of `" at the "` / `" at a "` / `" to the "` /
+`" before the "` and match institution phrases only in the prefix, falling back to the title.
+That is exactly the computation used to measure the defect, so its positive control has already
+run: 8,555 kept, 215 rejected. **Also** add the Eurosystem NCBs (Bundesbank, Banque de France, …)
+to `BANKS` for EUR — their governors vote, and today they enter the EUR series only by accident.
+
+**2. Same module — the availability lag is warned about but never measured, so no consumer can
+size it.** The BIS review URL encodes its own publication date (`/review/r<YYMMDD><letter>.htm`),
+parseable on 10,222 of 20,728 rows. Lag (pub − delivery): **median 4d, p90 28d, p99 87d**.
+**PATCH:** emit `available_date = max(delivery_date + 28d, url_pub_date)` alongside `date`, and
+drop the 28 rows whose URL stamp precedes their delivery date (2 of them are dated in 2027).
+
+**3. Method finding, applies desk-wide — every per-account-normalised statistic needs a trimmed
+twin.** The FX Blue 00:00 spike survived to preregistration because a mean-over-per-account-shares
+gives a 20-trade account with a broken clock the same weight as a 10,655-trade account with a good
+one. Dropping ten accounts moved it from 6.11% to the 4.17% uniform baseline. Related and worth
+hard-coding as a habit: **"the effect grew with the sample" is not evidence against an artifact**
+unless the artifact class is shown not to scale with n — here it scaled faster than the signal.
+
+## 2026-08-28 (c) — free-data-alternatives miner — backlog classifier: a resolved card cannot describe its own resolution
+
+`libs/research/source_backlog.py::_classify` checks non-terminal substrings BEFORE terminal ones,
+so `"unverified" in grade_raw.lower()` keeps a card pending **even when the word appears in prose
+announcing that it is no longer unverified**. Observed live this run: rewriting card 69's grade to
+`**verified-clean** (... the UNVERIFIED /omo half CLOSED 2026-08-28(c) ...)` left the backlog count
+at 3; deleting that one word from the narration dropped it to 2. Nothing errored.
+
+**Why it matters:** the natural way to close a card is to say what was closed, and the natural
+phrasing re-arms the pending flag. A card can therefore be fully verified, documented, and
+artifact-backed, and still occupy a verification slot forever — while the report that surfaces it
+reads exactly like genuine owed work. Same family as the `[§33: deferred until DATE]` grammar trap
+already in the desk's memory: a status field that is also prose.
+
+**Exact fix:** classify on the **bolded grade token only** — the text between the first `**...**`
+pair on the `### N.` line — and treat the remainder of the line as commentary. That is where every
+existing card already puts its grade, so it is a narrowing of the match, not a semantic change, and
+it makes the class of bug impossible rather than one-off-fixed. Add a regression test whose card
+text is `**verified-clean** (the UNVERIFIED half is now closed)` and asserts `resolved`.
+
+Scope note: this is `libs/`, which the free-data miner's freeze forbids touching — routed, not fixed.
+
+## 2026-08-28 (prospector s7) — the source backlog has ONE terminal §33 verb, and it is the rarest one
+
+`libs/research/source_backlog.py::_classify` treats exactly one §33 verb as terminal: `killed`.
+Every other disposition the miners actually write — `screened`, `wired`, `deferred(past date)` —
+falls through to the PROSE grade, so a card that was worked to exhaustion and carries
+`[§33: screened tier:2 -> <artifact>]` stays in the verification queue forever if the word
+`needs-monitoring` survives anywhere on its grade line.
+
+**Measured this run:** all 3 cards the backlog offered as PENDING VERIFICATION (61 BIS speeches,
+68 SNB sight deposits, 70 MNB instruments) were already fully verified, with their artifacts on
+disk and today's timestamps (`cb_tone_screen.json` 1.7KB, `snb_sight_deposits_weekly.json` 68KB,
+`mnb_official_liquidity_daily.json` 626KB). Zero of the three had source work left. Regrading the
+three lines honestly took the queue from `3 pending` to `backlog clear`.
+
+**Why this is worse than a cosmetic mislabel.** The docstring names verification as *the desk's
+bottleneck* — "it already catalogues faster than anything gets verified". A classifier that
+re-offers finished work inflates that bottleneck with phantom load, and the phantom load is
+indistinguishable at the point of reading from real load. Two runs in a row could spend their
+whole bounded item budget re-verifying resolved cards and report a cleared backlog each time.
+
+**The deeper shape, and it is the one to fix:** the module's own docstring says *"THE DISPOSITION
+IS READ FROM THE §33 MARKER, NEVER FROM PROSE"* — and then reads prose for every verb but one.
+The stated rule and the implemented rule disagree, which is why nobody caught it: the docstring
+reads correct.
+
+**EXACT PATCH (research freeze — not applied by this seat, owed to a code seat):** in `_classify`,
+treat `screened` and `wired` as terminal alongside `killed` — both assert an artifact path in the
+marker, so both are checkable — and demote the prose branch to the fallback it claims to be. Add
+the positive-control test that a card graded `needs-monitoring` *with* `[§33: screened -> path]`
+classifies `resolved`, and one graded `needs-monitoring` with NO marker still classifies
+`verification`. Without that second case the fix would resolve everything.
+
+## 2026-08-28 (prospector s7) — `REDUNDANT_ABOVE = 0.7` is a round number, never a measured one
+
+**External evidence (`aircrushin/wq-alpha-agent` SKILL.md §7.3, 625 simulations, MIT, read in
+full).** Daily-return correlations measured across a live alpha book:
+
+| Pair type | Measured daily-return corr |
+|---|---|
+| Same cluster, different weights (open-close reversal + OI/equity blends) | **0.84** |
+| Same cluster, different variant (two analyst-EPS forms) | **0.74** |
+| Same cluster, opposite-sign leverage/quality factors | **0.84** |
+| **Cross**-cluster (sentiment vs analyst) | **0.59 – 0.67** |
+
+Their conclusion, and it is the one that matters: *"changing windows, weights, or neutralization
+cannot create truly low correlation. True low correlation comes from completely different data
+sources or economic logic."* And: in one data pool, realistic "low correlation" is **0.3–0.6, not 0**.
+
+**Why this is desk-relevant rather than trivia.** `libs/alpha_factory/independence.py:41` sets
+`REDUNDANT_ABOVE = 0.7`. Against their measured bands, 0.7 sits **at the very top of the
+within-cluster band and entirely above the cross-cluster band** — so a candidate correlating 0.65
+with an incumbent passes the desk's independence gate while being, on this external evidence,
+the same data pool wearing a different expression. The gate would be admitting exactly the
+re-parameterisation that L1.61 says must score ~0 and that `variation_blocker` exists to reject.
+
+**But do NOT import their number, and this is the point.** Their bands are USA TOP3000 equity
+cross-section; the desk trades MT5 FX/metals/indices, where the correlation structure is a
+different animal (the desk's own crypto measurement was raw mean pairwise 0.638 → N_eff 1.54).
+Importing 0.7→0.5 off a foreign universe would be a private bar set outside the policy (L1.60),
+and tightening a gate on unmeasured grounds is the conservatism the ratchet forbids.
+
+**THE OWED WORK (a measurement, not a threshold change).** Measure the desk's OWN duplicate band:
+take the live/forward MT5 sleeve return series, compute daily-return pairwise correlation
+*within* declared family and *across* families, and publish the two distributions. Then
+`REDUNDANT_ABOVE` becomes the separating value between those bands with a stated overlap cost,
+instead of a round number nobody has ever tested. Until that runs, the honest status of the
+independence gate's threshold is **UNMEASURED, which is not the same as fine (L1.28a)** — and it
+is load-bearing, because the rung-0 independence check gates promotion.
+
+**Convergent-and-already-better (no import owed):** their `correlation_with_existing` silently
+`continue`s on unequal series length, so a short-history candidate correlates against nothing and
+reads as perfectly diversifying. The desk's `pairwise_corr` already returns `None` for exactly
+this case with the WS-005 reasoning written into its docstring. Desk wins; nothing to take.
+
+## [prospector s8, 2026-08-28] `zl3311/alpha-mining` POSTMORTEM — an independent 10-week practitioner archive whose findings collide with three desk quantities
+
+**Source, §13-clean:** `github.com/zl3311/alpha-mining` — code **MIT**; `data/` published as a
+research record under an explicit `DATA-NOTICE.md` (submitted alpha expressions remain
+WorldQuant's property; the author states plainly he cannot grant rights he does not hold).
+**Nothing was installed or run** (supply-chain rule) — mined as TEXT only. Read: `POSTMORTEM.md`
+(179 lines, full), `DATA-NOTICE.md`, the full 2,231-path repo tree, and four
+`data/knowledge/dead_zones/template-*.md` files. Repo created and pushed **2026-07-25**, 0 stars,
+1 fork — a publish-on-exit dump, which is exactly the **practitioner-exodus genre** and why it is
+worth more than its star count.
+
+**Scoreboard attached (his own numbers, reproducible from the repo):** 10 weeks, 63 mining
+sessions, 64 live submitted alphas across 60 mechanism families, 22 SPECTACULAR / 37 EXCELLENT,
+~53,000 simulations, 1,669 factor profiles, 28 dead zones. Ended by an unexplained platform
+account lock. **All performance figures are in-sample BRAIN backtests on US equities** — he says
+so himself, and no number below is treated as validated.
+
+### Four findings that touch quantities this desk actually holds
+
+**1. The binding constraint was CORRELATION BUDGET, not signal quality — and he says designing
+around signal quality was his central architectural mistake.** *"By roughly 50 alphas I was
+spending most of my budget not on finding signal but on finding signal orthogonal to signal I
+already had. I designed the system around signal quality when I should have designed it around
+correlation budget from the start."* This is independent, scoreboard-backed corroboration of
+**L1.61** ("selection optimises MARGINAL INDEPENDENCE directly, so a second copy of a held edge
+scores ~0"). The desk already holds the right law. **The transferable part is the *rate*: the wall
+bound at ~50 held alphas under a 0.7 self-correlation cap.** The desk's forward book is capped at
+`MAX_FORWARD_SLOTS=12` and its measured crypto breadth was `N_eff 1.54` raw / 29 neutral, so the
+desk is nowhere near that wall — which is itself the finding: **the desk's binding constraint is
+still generation, not orthogonality**, and it should not import his correlation-first architecture
+until its own funnel reaches that regime. Filed as calibration, not as a build.
+
+**2. MEASURED: a local PnL-correlation estimate understated the authoritative one by ~1.5x when
+two candidates SHARED DATA FIELDS.** *"My local PnL correlation estimate systematically understated
+BRAIN's self-correlation figure — by roughly 1.5x when two alphas shared data fields."* This is a
+falsifiable claim about a **failure mode of a correlation estimator**, and the desk runs one
+(`pairwise_corr` / `effective_bets` / the `orthogonality` input to `alpha_economics`). The bias
+direction is the dangerous one: understated correlation → overstated orthogonality → **overstated
+EV**, on exactly the candidates most likely to be near-duplicates (shared inputs). Note the desk
+has already been bitten by an adjacent arithmetic error in the same family — `effective_bets`
+reported 64.4 independent bets from 29 perps because removing a common factor manufactures negative
+residual correlation (`demeaning_floor`).
+> **PROPOSED MEASUREMENT (not a fix — the desk has no evidence its own estimator has this bias):**
+> take pairs of desk candidates that share input series, and compare `pairwise_corr` on the signal
+> series against realised-PnL correlation on the same pairs. If the signal-space number is
+> systematically lower, the EV gate's orthogonality input is optimistic and every `ev` this desk
+> has published on a shared-input candidate is too high. If it is not, this is refuted and the row
+> closes. **UNMEASURED until then — this is not a defect claim, it is an instrument request (L1.46).**
+
+**3. NEGATION AS AN INDEPENDENCE-EXPANDER — the one concrete, cheap, in-universe idea.** *"Negating
+a building block — `rank(-1 * x)` instead of `rank(x)` — opens a substantially larger set of
+independent directions than the positive direction alone, because a factor and its negation load
+differently against an existing book. I found this after the positive direction was near
+saturation."* The asymmetry is real and non-obvious: a factor and its negation are perfectly
+anti-correlated *with each other* (so they look like one bet in isolation) but have **opposite**
+correlations to every held sleeve, so against a non-empty book they occupy genuinely different
+slots. Cost to the desk is near-zero — it is a sign flip in the generator's search space, not new
+data, not new code paths. Worth checking whether the desk's own candidate generator already
+enumerates both signs; **if it enumerates only the positive direction, it is searching half its
+space for free.** Routed here as a generator question, not a card.
+
+**4. SATISFICING TRIPLED THROUGHPUT.** *"Changing the goal to 'stop at the first candidate that
+clears every gate' roughly tripled throughput of submitted alphas per unit of compute."* Consistent
+with the desk's own doctrine (throughput comes from screening MORE, never from passing more) and
+with the fixed-for-life canonical gate policy — the desk already satisfices by construction, since
+its ten gates are a **fixed bar** rather than a ranking. Recorded as corroboration; **no change
+proposed, because the desk's version of this is already the stricter one.**
+
+### And the finding he names as the one he'd most like back
+
+*"I did not snapshot platform state... 'I can always look it up later' is exactly the assumption
+that fails when access disappears."* 63 session files, zero record of points/rank/standing, then
+the account closed. This desk's exposure to the identical failure is its **external track-record
+corpora** (MQL5, FX Blue, Darwinex, prop-firm pages) — all read live from hosts that can wall or
+delete at any time, several of which **already have** (the5ers walled this very run; FPA, myfxbook,
+Wilmott ×4). The desk's habit of archiving fetched corpora under `data/intelligence/` is the right
+one and this is evidence for keeping it, not a new build.
+
+## [prospector s8, 2026-08-28] STRUCTURAL — the desk's return construction is price-only, 48.6% of its universe pays a discrete dividend cash flow, and one axis has ALREADY been graveyarded for the resulting drag
+
+**This is a suspected FALSE NULL on an axis the desk has already killed, which is the one failure
+direction the desk's own memory says no gate here catches** (*"a killed axis produces no alert"*).
+Every link below is verified against a path + value read this run; the one inference is labelled.
+
+### The chain
+
+**1. VERIFIED — the desk's own broker pays a discrete dividend cash flow on index CFDs, and the
+sign is direction-dependent.** Primary source, `fusionmarkets.com/posts/weekly-index-dividends`
+(§13: `fusionmarkets.com/robots.txt` is `User-agent: * / Allow: /`, whole file read):
+> *"Due to the corresponding price movement of the stock index when the ex-dividend date is
+> reached, Fusion must provide a 'dividend' adjustment to ensure that no trader is positively or
+> negatively impacted by the ex-dividend event."*
+> *"Traders shorting an index will pay the dividend, whereas traders who are long the index will
+> be paid the dividend."*
+> *"The dividend will appear as a **cash adjustment** on your account."*
+Figures are published **weekly, in index points**. So the ex-date price drop IS in the price
+series, and the compensating credit **is not** — it is a separate balance entry.
+
+**2. VERIFIED — the desk's return construction contains no cash-flow term.**
+`libs/research/transcript_candidates.py:50` `positions_to_returns`:
+```
+r[1:] = np.diff(c) / c[:-1]
+...
+return np.asarray(gross - turn * cost_per_turn)
+```
+Close-to-close price return, minus turn costs. The docstring is scrupulous about costs (*"COSTS ARE
+ALWAYS ON"*, 6 bps/turn) — the omission is not sloppiness about costs, it is that a **discrete
+scheduled cash flow was never in the model at all.** This is **L1.47 verbatim**: *"discrete
+payments booked as continuous accruals are expectation errors"* — except here they are not accrued
+either, they are simply dropped.
+
+**3. VERIFIED — "dividend" appears in exactly 2 python files repo-wide, neither in a return, cost
+or PnL path.** `grep -ril dividend desks/mt5 libs scripts --include=*.py` → `libs/factory/registry.py`
+(a prose comment) and `libs/research/evidence_tier.py:213` (a vocabulary tuple, `"dividend capture"`).
+There is no dividend handling anywhere in the engine.
+
+**4. VERIFIED — 122 of 251 universe symbols (48.6%) are dividend-paying instrument classes.**
+From `desks/mt5/data/universe/universe.json`: **Equities 106**, **Indices 16**, Bonds 3 — against
+Forex 29, Forex Exotics 57, Crypto 14, Commodities 12, Soft Commodity 11, Energy 3. The exposure is
+**not** the 16 indices; the largest affected class is the **106 US share CFDs**, which pay ordinary
+dividends on the same mechanism.
+
+**5. VERIFIED, AND THIS IS THE POINT — the desk has already killed an axis and blamed the
+instrument.** `libs/factory/registry.py:81`, the MT5 ETF-CFD dataset row:
+> *"ingested; sleeves DON'T clear — **price-only CFD (dividend drag) corrupts bond ETF trend
+> (-1.2)**; sector/curve/credit ~0. Tested, mostly rejected."*
+The desk **correctly diagnosed the mechanism**, wrote it down, measured a sleeve at **Sharpe −1.2**
+— and then recorded the verdict as a property of the *instrument* ("Tested, mostly rejected")
+rather than as a defect in its own return construction. TLT/LQD/EMB yield roughly 4–5.5%/yr; a
+price-only long-side series on those carries a systematic negative drift of that size. That is
+comfortably enough to drag a modestly positive trend sleeve to −1.2.
+
+### Why this matters more than one dead sleeve
+
+The bias is **systematic and directional**, not noise: price-only returns **understate every long**
+and **overstate every short** on 122 symbols by the instrument's dividend yield. Consequences:
+- Any long/short screen over indices or share CFDs is **silently tilted toward the short side**.
+- A short-index sleeve that passes the ten gates may be passing on **phantom return it would pay
+  out in cash** in live trading — the dangerous direction, because it survives to capital.
+- Conversely, long-side edges on nearly half the universe are being **rejected at a handicap**,
+  and rejections leave no alert.
+
+### What this is NOT (stated so nobody over-reads it)
+
+- **Not measured on any desk sleeve other than the bond-ETF row the desk itself recorded.** The
+  −1.2 figure is the desk's own; I did not reproduce it.
+- **INFERENCE, labelled:** that the MT5 backtest path for indices/equities uses this same
+  price-only construction. It is strongly supported (no dividend code exists anywhere) but I traced
+  `positions_to_returns` specifically, not every return path in `desks/mt5`. **Confirming which
+  return builders feed the index/equity screens is the first step, not the fix.**
+- **Not a live-accounting claim.** `gateway.py:1063` sums `profit + commission + swap` for live
+  deals; whether MT5 surfaces dividend adjustments as a separate balance deal type that this misses
+  is **UNMEASURED** and should be checked separately — if it is missed there too, live PnL
+  attribution on 122 symbols is also short a term.
+
+### Proposed disposition (research-only run — nothing was changed)
+
+1. **Instrument first (L1.46).** Confirm the return builders used by the index/equity screens. One
+   grep-and-read; no new capability.
+2. **The data is free and already published weekly by the desk's own broker**, in index points, on
+   a page the desk can read without a purchase — so a dividend-adjustment series for the 16 indices
+   is buildable from the primary source. US share CFD dividends are equally public.
+3. **L1.16a REOPEN CANDIDATE.** The bond-ETF/ETF-CFD axis was killed with its mechanism of death
+   *named in the kill record itself*. A dividend-aware return construction is precisely a **"NAMED
+   enabling change addressing the original mechanism of death"** — the standard L1.16a requires for
+   re-opening a graveyarded axis. It should be re-opened **only after** the construction is fixed
+   and verified, never before.
+
+---
+
+## PROSPECTOR s9 — 2026-08-28 — the desk's return series is time-blind, and its holiday organ is unwired, hardcoded and empirically wrong
+
+Three linked structural findings from the broker operational-notice class (the class s8 opened via
+R0691 and named as the run's largest finding — it has now paid twice).
+
+### FINDING 1 — `operational_calendar_miner.py` is unwired, has never run, and its holiday table is wrong in both directions
+
+`desks/mt5/side_channels/operational_calendar_miner.py` declares in its own docstring that it
+covers *"Exchange holidays / half-days / local banking holidays"*.
+
+- **Zero external callers.** Every repo reference to `operational_calendar` outside the file itself
+  is a docstring mention (`side_channels/__init__.py:6`), a string literal in a source-name enum
+  (`base.py:35`, `side_channels_init.py:56`) or a routing key (`intersection_hunter.py:67`). Nothing
+  invokes it.
+- **It has never run.** Its own output directory `desks/mt5/data/operational_calendar/` **does not
+  exist** (the module `mkdir`s it at import, so the directory's absence proves the module has never
+  even been imported in this tree). III.16: built is not a status.
+- **It fetches nothing.** Zero URLs in the file. The 28 `OperationalEvent` entries are a hardcoded
+  literal list — the anti-hardcode law's exact shape (LAWS §1), and here the list is *not* a
+  declared bootstrap seed.
+- **And the hardcoded holiday rows are empirically wrong.** Checked against the broker's own
+  published dated tables (below):
+  - `London_Holiday` sets `affected_instruments=["ALL_EUR","ALL_GBP","FTSE100","EU50","XAUUSD"]`.
+    On the **Summer Bank Holiday 31/08/2026** the broker closes **UK100, COFROB and the five LME
+    base metals (XALUSD, XCUUSD, XNIUSD, XPBUSD, XZNUSD)** — and does **not** close XAUUSD. The
+    entry **names gold, which trades, and omits the five metals, which halt.** Base metals track
+    London/LME; precious metals track US/COMEX (on MLK 19/01/2026 "Precious Metals" is
+    `Early Close 21:30` — a *US* holiday). The hardcoded row has the split backwards.
+  - `US_Market_Holiday` carries a single `forced_action="reduced_liquidity"`. The actual Juneteenth
+    19/06/2025 table shows **five distinct treatments on one day**: Early Close 21:30 (precious
+    metals, XNGUSD, XTIUSD), 20:30 (XBRUSD), 20:00 (US indices, UST05Y, UST10Y), **19:00 (SUGAR)**,
+    and fully **Closed** (USCOCOA, COFARA, COTTON, OJ, SUGARRAW, USDBRL, USDIDR, USDINR, USDKRW,
+    Equities). SUGAR early-closes at 19:00 while SUGARRAW closes outright — two sugar contracts,
+    same day, different states. The schema cannot express any of this.
+- **A schema defect, not a data-entry defect (the important half):** `OperationalEvent.frequency`
+  ranges over `daily|weekly|monthly|quarterly|annually|ad_hoc`. Several recurring halts fall on
+  **Islamic lunar dates** — Id-e-milad (25–26/08/2026), Ascension of the Prophet (16/01/2026), Eid
+  al-Adha (06/06/2025), Islamic New Year (27/06/2025) — which move ~11 days earlier per Gregorian
+  year. **No Gregorian-annual encoding can represent them**, so any hardcoded entry is guaranteed to
+  drift wrong rather than merely be incomplete. There are also purely **ad-hoc political** closures
+  (USDKRW closed 03/06/2025, Korean presidential election) that no calendar frequency covers at all.
+
+### FINDING 2 — the return construction treats a multi-session gap as one period, and the annualisation comment still assumes the banned universe
+
+`libs/research/transcript_candidates.py:50` `positions_to_returns` is close-to-close over
+consecutive bars with no notion of elapsed time. `libs/research/vol_risk_premium.py:77` states the
+governing assumption verbatim:
+
+> "Calendar-day annualisation. **Crypto trades continuously, so a year holds 365 daily returns**..."
+
+That is a **crypto-universe assumption running on the MT5 universe** — a mandate-migration residue
+of the same class as the banned-universe findings of 2026-08-27/28. Measured on the desk's own
+`desks/mt5/data/universe/*_H1.parquet` (196 symbols with ≥500 bars):
+
+| quantity | value |
+|---|---|
+| halted/missing weekday sessions, universe-wide | **29,444** |
+| median share of weekday sessions absent, per symbol | **3.58%** |
+| symbols with >2% / >5% of weekdays absent | **132 / 37** |
+| USDIDR | 151 of 1,330 weekdays absent (**11.4%**) |
+
+**The broker's published calendar predicts the desk's own tape exactly** — 5 of 5 spot-checked
+dates (2025-06-06, 2025-06-19, 2025-06-27, 2026-01-01, 2026-01-16) have **zero bars** in
+`USDIDR_H1.parquet`. So these are real halts, not collection failures.
+
+**Consequence, quantified.** Because variance scales with sessions spanned, treating a 2–5 session
+return as one period **overstates** per-period realised vol, which **understates** Sharpe and
+**over-shrinks** position size — a timidity/under-sizing defect (LAWS §2a), the mirror of R0691:
+
+| symbol | naive sd (bp) | true per-session sd (bp) | vol overstated by | Sharpe understated |
+|---|---|---|---|---|
+| USDKRW | 68.85 | 58.47 | 1.178x | **15.1%** |
+| HK50 | 137.35 | 125.38 | 1.096x | 8.7% |
+| USDIDR | 42.30 | 39.60 | 1.068x | 6.4% |
+| USDINR | 27.12 | 26.27 | 1.032x | 3.1% |
+| USDBRL | 87.87 | 85.29 | 1.030x | 2.9% |
+| GBPZAR / EURNOK | — | — | 1.017x / 1.008x | 1.7% / 0.8% |
+
+**Reported at honest weight: this is a 1–15% sizing error on a minority of the universe, not a
+headline.** It is worth fixing because it is cheap and one-directional (always toward timidity),
+not because it is large.
+
+**A third defect falls out of the census and is arguably the most actionable:** the desk currently
+**cannot distinguish a scheduled halt from a data-collection gap**. JPN225 shows 75.5% of weekdays
+absent, USDRUB 42.0%, BankofAmericaCorp 27.0% — those are collection artifacts, not holidays, yet
+they are byte-identical to a halt in the tape. Both corrupt a close-to-close return and only one is
+a market fact. **UNMEASURED must not read as a clean verdict (L1.28a/WS-005)** — and right now a
+75%-missing series and a genuine holiday calendar are the same object to every consumer.
+
+### FINDING 3 — the calendar is published as a PNG, and that is why nobody has mined it
+
+`fusionmarkets.com/posts/upcoming-holidays` renders the table **only as an image**
+(`/static_images/August_2026_FM_NEW_cebdd13318.png`). Text extraction returns the surrounding prose
+and **nothing of the table** — `<table>` count 0, `<tr>` count 0, and every instrument/time string
+absent from the HTML. This is exactly the "boring, structurally unindexed" layer the deep-forest
+mandate targets: the data is public, free, dated, authoritative and machine-invisible.
+
+**Working route, recorded so no future run re-derives it:** the page is overwritten monthly, but
+**Wayback CDX enumerates the historical run** (`collapse=digest` → 7 distinct snapshots
+2024-04→2026-01), and the archived HTML still carries the `/static_images/…png` filenames, **which
+are all still live on the origin CDN** — so the images fetch directly, no archive replay needed.
+Reading the PNG with the image reader recovers the full table. Three months recovered this run
+(June 2025, Jan 2026, Aug 2026) and each is a complete dated per-instrument halt matrix.
+
+### The repair, and it is one fix, not three
+
+Build the halt calendar **from the desk's own tape** rather than from a hardcoded list — a
+per-symbol session index is derivable directly from the parquet lake and is *already* the ground
+truth (the broker page merely confirms it). Then (a) carry elapsed sessions alongside every return
+so vol scales correctly, and (b) grade every absent session as `halt | collection_gap | unknown`
+instead of collapsing all three into "no bar". The broker PNG calendar is the **labelled training
+set** for that classifier, and it is free.
+
+*Prospector s9. Findings 1–3 are structural/method and route here per spec; the one tradeable
+candidate from this run is carded separately on the watchlist. The reopen-gap mechanism this dig
+started from was **refuted** and is filed in the graveyard.*
+
+## 2026-08-28 (free-data-alternatives miner, session d) — method/tooling findings
+
+**1. `desks/mt5/data/macro_state.json`: three unlocked concurrent writers, and a failed fetch
+overwrites a good state with a degraded one.** MEASURED: 3 × `macro_desk.py` (pids 1459361/1501574/
+1505351, up 15h41/13h03/12h46) wrote the file **43 times today** on overlapping ~1h cycles with **no
+lock** (the recorders use `flock`; this does not). They disagree: instance 1 writes `G=0.302 I=None`
+(4×: 08-27 22:37, 23:37, 08-28 00:37, 13:37), the other two `G=0.779 I=2.142`. The 13:37 degraded
+write was the **live** state for **37.5 minutes**. Cause is in the logs — instance 2 recovered via
+`free_data: DFF served by DBNOMICS mirror (primary blocked)`, instance 1 did not and logged
+`anchors WARNING: GOLDAMGBD228NLBM missing/empty (families will emit no signals and gates will fail
+closed)`. **THE CLASS: a producer that could not compute the state wrote it anyway** — and
+`macro_state.json` carries only `updated`, with **no writer identity and no completeness flag**, so
+no consumer can distinguish a full state from a partial one.
+**THE PATCH (3 parts, all small):** (a) wrap the write in `flock` on a lockfile, as the recorders
+already do; (b) on a missing anchor, **abstain** — leave the previous state in place — rather than
+writing `None` axes over populated ones; (c) add `writer_pid`, `axes_computed` and `degraded: bool`
+to the artifact so a consumer can refuse a degraded state instead of silently trading it.
+*Not applied here — this seat is under the research freeze (no `scripts/`, no `libs/`, no live state).
+Needs an owner.*
+
+**2. An Akamai edge 403 on `robots.txt` is a ROUTE condition, not a §13 wall — and it can contradict
+the site's own published policy.** MEASURED on the 12 Federal Reserve Bank sites: 11 return
+`errors.edgesuite.net` 403 to the ClaudeBot UA **on robots.txt itself**, while the default curl UA
+gets 200. St. Louis's actual robots names **`User-agent: ClaudeBot → Allow: /`** — an explicit grant
+the edge then refuses. **Standing guidance for every seat:** when a host 403s the robots file,
+re-probe with the default UA before grading. If the 403 is UA-keyed the correct label is
+`edge-blocked (route)`, never `walled (§13)`; grading it as a wall records a false refusal on ground
+that permits us. Reading robots with an honest UA to learn policy is legitimate; fetching **content**
+under a disguised UA is evasion and stays barred.
+
+**3. `bis_speech_tone.py` drops the speaker, which is the field that carries the signal.** The
+corpus (8,770 rows, 8 banks, 1996→2026) stores `date/bank/currency/hawk/dove/chars/url/title` and
+**no speaker**, so "does this cover regional Fed presidents?" was **unmeasurable** from the artifact.
+Recovered by regexing titles: Dudley 156, Williams 96, Schmid 58, Plosser 32, Fisher 20 — and
+**zero** for Bostic, Kashkari, Mester, Daly, Barkin, Harker, Bullard, George. **Patch:** parse the
+speaker out of the title at ingest (BIS titles are near-uniform: `Mr./Ms. <Surname> ...`). One field
+turns 2,567 opaque `Fed` rows into an FOMC voter-rotation and dissent panel, from data already on disk.
+
+**4. `desks/mt5/data/universe/*_H1.parquet` — GAP #146 restored readability, never liveness, and
+nothing measures the difference.** The 24/173 tz split is known and closed. What is NOT recorded:
+the split is **also a freshness split**, and it is exactly the same partition. The 24 tz-aware
+symbols are **0–3h** stale; the 173 tz-naive are **54–55h** stale, frozen at **4 distinct write
+instants**, with 7 dead far longer — `BlockInc` last bar **2025-01-17** (4.5 yr), `EURRUB`
+2022-02-28, `EOSUSD` 2025-12-10, `Walgreens` 2025-08-27, `Netflix` 2026-06-05, `ElectronicArts`
+2026-08-04, `BeyondMeat` 2026-08-18. So tz-awareness is a **proxy for "is this symbol actually being
+refreshed"**, and a consumer that reads all 197 gets 173 stale series with no staleness field to
+warn it. **Patch:** a per-symbol `last_bar` freshness fence over the universe dir with a floor, in
+the same shape as the other staleness checks.
+
+## 2026-08-28 — free-data seat (e): the universe registry cannot measure bar LIVENESS
+
+**Evidence:** `data/mt5_universe_bar_liveness.json` (measured this run, 197 parquets walked).
+24/197 symbols fresh ≤2d; 166 frozen at 2026-08-25 22:00; 7 dead >7d (EURRUB 1642.5d);
+**54/251 registry symbols have no H1 parquet at all**, including all softs (CORN/WHEAT/SOYBEAN/
+SUGAR/SUGARRAW/UKCOCOA/USCOCOA/COTTON/OJ) and all rates (UST05Y/UST10Y/UKGILT/US2000).
+
+**Root cause, exact:** `scripts/repair_universe_registry.py:parquet_facts()` (line ~79) does
+`pd.read_parquet(path, columns=["close"])` — it never reads the time index, so it measures bar
+COUNT and is structurally incapable of measuring recency. `universe.json` carries `last` on
+23/251 symbols. The registry's `updated_at` (2026-08-28T04:40 on 238 rows) is the **repairer's**
+clock printed on top of 2.7-day-old data — WS-005 class.
+
+**PATCH (named, not applied — research freeze bars this seat from `scripts/`):**
+1. `parquet_facts()` → also read the time column/index and return `last_bar: dict[str,str]`;
+   `merge()` it into every row as `last_bar` with `source="parquet_on_disk"`, so all 251 carry it.
+2. `defects()` → add two checks: (a) `last_bar` older than N sessions for a symbol whose asset
+   class is currently open; (b) **registry symbol with no parquet at all** — currently invisible.
+3. The 54 bar-less symbols are a separate ownership question: the canon ratchet restores rows from
+   `universe.canon.json` but nothing fetches bars for what it restores, so the ratchet grows the
+   registry and the coverage hole together.
+
+## 2026-08-28 (free-data session f) — the bar-liveness instrument makes a desk-wide claim from a host-local view
+
+`data/mt5_universe_bar_liveness.json` (written 2026-08-28 session e, committed) reports "54 of 251
+registry symbols have NO H1 parquet — zero bars" and "only 24 of 197 are fresh". **Both numbers are
+artifacts of this box holding a partial copy of the lake.** Evidence in
+`docs/research/data_axis_watchlist.md` session (f) item 1: the registry records 6,305–26,168 bars
+for every one of the 54 with `_provenance.bars.source = parquet_on_disk` stamped the same second as
+the 197 present here, and `universe_registry.merge()` cannot stamp a symbol absent from `incoming`,
+which `parquet_facts()` builds by globbing real files. `stamped_today − files_here` = exactly the 54.
+mtime census: 173 local parquets share one mtime (2026-08-26T11:06), 24 carry today's — and 24 is
+precisely the "fresh" count.
+
+**PATCH (not applied here — research freeze, `scripts/` out of scope):** the liveness instrument
+must read `bars` and `_provenance.bars.at` from `universe.json` and diff them against the files it
+can see, then report **three** counts, never two: `n_current`, `n_stale`, and **`n_unobservable`
+(registry says the file exists, this host does not have it)**. Presence of a file and presence of
+the data are different questions and this box can only answer the first. Until then the artifact
+asserts a desk-wide verdict it has no standing to make. This is the WS-005/host-vs-desk class and
+the **second** appearance of the number 24 (cf. 2026-08-27 gap-wirer: a swallowing caller hid 88%
+of the universe as a "market fact", 24/197 → 197/197).
+
+**SECOND ITEM — a collector rule, general.** Any collector reading BoE GLC XLSX must key sheets by
+*suffix* (`endswith("spot curve")`), not exact name: the 1979–1984 workbook uses
+`"4. nominal spot curve"` while 2005+ use `"4. spot curve"`, so an exact-match collector silently
+returns zero rows for the pre-2005 era. And it must fetch **both** `glcnominalddata.zip` (history,
+ends 2026-07-31) **and** `latest-yield-curve-data.zip` (current month) — the archive alone looks
+complete and is 28 days stale.
+
+---
+
+## 2026-08-28 — PROSPECTOR s10: overnight financing is uncharged, and the fix path is a units minefield
+
+**Class:** cost/execution (BOTTLENECK LAW — a cost fix counts as much as an alpha fix).
+**Provenance: VERIFIED** — measured against the desk's own tape,
+`desks/mt5/data/tape/contract_terms/2026-08-27.parquet` (248 symbols, 9 intraday snapshots),
+plus a full import-graph walk. No external source involved.
+
+### Finding A — financing is charged NOWHERE on the live path (L1.5 direction: FALSE POSITIVES)
+
+The only live cost provider is `_mt5_cost_provider` in `scripts/run_autodiscovery.py:44`, which
+calls `libs.costs.mt5_calibration.per_side_cost_fraction` → `round_turn_cost_fraction`. That
+function sums **spread + 2×slippage + commission and nothing else** (`mt5_calibration.py:97`).
+`calibrate()` faithfully computes `swap_long/short_per_lot_per_night` — and no live consumer ever
+reads them.
+
+The single reader of those fields is `libs/costs/model.py:80` (`estimate_trade_cost`), and the
+import-graph walk finds it **exported in `libs/costs/__init__.py` and called by nothing else in
+`libs/`, `desks/` or `scripts/`**. Same for `get_cost_params` / `DEFAULT_COST_PARAMS`.
+
+⇒ **Every multi-night hold the gauntlet has ever screened was costed at ZERO financing.** This
+undercharges, so it fails toward FALSE POSITIVES on exactly the hold-overnight families
+(carry/swing) — and carry is this desk's *only repeat survivor*, which is where the desk can least
+afford a cost blind spot. This is the `benchmark_returns` class again: a gate that exists, is
+tested, and is called by nothing (III.16).
+
+### Finding B — the conversion is wrong for 246 of 248 symbols, and correct on the majors
+
+Wiring Finding A without fixing this makes things worse. `_swap_to_money`
+(`mt5_calibration.py:85`) does:
+
+```python
+if int(info.swap_mode) == _SWAP_MODE_POINTS:      # mode 1
+    scale = float(info.point) * contract_size
+    return (-swap_long * scale, -swap_short * scale)
+return (-swap_long, -swap_short)                  # everything else: raw passthrough
+```
+
+Measured against the tape (account currency is **EUR**, confirmed from `tick_value` arithmetic):
+
+| defect | symbols | what happens |
+|---|---|---|
+| **B1** non-POINTS modes hit the raw passthrough | **138 / 248** | all are `swap_mode=5` = `INTEREST_CURRENT`, an **annual % of notional**. It is returned as if it were EUR-per-lot-per-night — dimensionally not a currency amount at all. Covers every US share CFD, all indices (`AUS200`), and crypto CFDs. |
+| **B2** POINTS mode never converts `currency_profit` → account EUR | **108 / 110** | `point × contract_size` yields **profit-currency** units. Median overstatement **4.33×**, max **20,695×**. |
+
+Worst B2 cases (EUR/lot/night, code vs true):
+
+```
+USDIDR  20694.9x   2,426,600.00  vs  117.26
+USDKRW   1609.9x     100,320.00  vs   62.32
+EURHUF    365.0x       4,784.00  vs   13.11
+AUDJPY    185.5x        -552.00  vs   -2.98
+```
+
+The 185.5× on JPY crosses is the **same class as the already-paid 184× JPY commission
+undercharge**, in a different field.
+
+**Only 2 of 248 symbols are correct — and they are the USD-quoted majors a spot-check tries
+first.** `libs/research/perishability.py:145` predicted this in writing ("the error hides on
+exactly the majors a spot-check would try first"); this is that prediction confirmed with numbers.
+
+Correct conversion, both modes, from fields the tape already records:
+- mode 1: `money_EUR = swap_points × tick_value × (point / tick_size)`  (`tick_value` is already
+  account-ccy per tick)
+- mode 5: `money_EUR ≈ rate_pct/100 × notional_EUR / 365` — **price-dependent**, so it cannot be
+  precomputed into a frozen constant at all.
+
+### Finding C — `libs/costs/params.py` hardcodes 8 instruments; all 8 are wrong
+
+Latent (no callers), so **not** a live defect — recorded so a future wiring does not adopt it.
+Every one undercharges, and `USDJPY`'s **sign is inverted** (params charges 0.60 cost; the real
+long swap is a **credit** of 3.42 EUR/night):
+
+```
+EURUSD 0.70 vs 5.54 (7.9x)   XAUUSD 5.00 vs 56.81 (11.4x)   XAGUSD 4.00 vs 48.04 (12.0x)
+USDJPY 0.60 cost vs 3.42 CREDIT (sign flip)
+US500 / NAS100 / BTCUSD: mode 5 — an annual %, so no fixed per-night constant is even well-formed
+```
+
+### Recommended disposition (RESEARCH-FREEZE: I did not touch `libs/`)
+
+1. Fix `_swap_to_money` first (B) — wiring A before B would charge USDIDR 20,695× its true carry
+   and hard-kill every exotic overnight edge. A false null produces no alert, which is the one
+   direction no gate here catches.
+2. Then wire financing into the live cost path (A), keyed on realised holding nights.
+3. Record `point` in `contract_terms` — the perishability register lists it as an interpretive
+   field and it is **the one of the four that is absent**. `tick_size` is standing in and they are
+   equal on this feed, but that equality is an assumption nothing asserts.
+4. Positive control: assert `USDJPY` long swap comes back a **credit**. Any implementation that
+   returns a cost there has the sign or the currency wrong.
+
+## 2026-08-28 (free-data seat g) — liveness must be measured on the LAST OBSERVATION
+
+**Class:** a green endpoint over a frozen series. SNB cube `rendoblid` returns HTTP 200, well-formed
+CSV, 7,534 rows, and a `PublishingDate` of `2025-09-01` — while its last observation is
+**2025-07-31**. The API *host* is live and current (sibling cube `zimoma` published 2026-08-03), so
+every host-level or endpoint-level liveness probe reports GREEN on a discontinued dataset.
+**This is the desk's `heartbeat != data liveness` lesson on a data source rather than a socket, and
+the same lesson on the source side that the 2026-08-28 (e) `count is not recency` finding made on
+the lake side.**
+**Patch:** any source-liveness instrument must key on `max(observation_date)` vs today, never on
+HTTP status, byte count, endpoint reachability, or a vendor-supplied publishing stamp. A publishing
+stamp NEWER than the last observation is affirmative evidence of discontinuation, not of freshness.
+**No owner — this seat is research-frozen and cannot write `scripts/`.** `data/data_universe_map.json`
+now carries `verified_*` dates per source but has **no last-observation field**, so the map cannot
+currently answer "is this source still alive?" for any of its 113 entries.
+
+## 2026-08-28 (free-data seat g) — two-header-row unit trap in BoE era files
+A first-all-numeric-row header heuristic on the BoE OIS 2009–2015 workbook reads the `months:`
+header instead of `years:`, silently converting a 10-year tenor request into 10 months and
+fabricating a smooth, monotone, plausible-looking spread series. Any parser of BoE/central-bank
+era workbooks must key on the literal `years:` label. Detail in `data_axis_watchlist.md` 2026-08-28 (g).
+
+## 2026-08-28 — DESK MT5 BAR TAPE IS STAMPED `+00:00` BUT CARRIES BROKER EET (free-data seat)
+
+**Not a source finding — a defect in the desk's own primary tape**, surfaced by offset-scanning an
+external tick source against it (the check this seat adopted last run precisely to catch look-ahead).
+
+**What:** `desks/mt5/data/universe/*_{M1,M5,M15,H1}.parquet` carry a tz-aware index labelled
+`+00:00` whose values are **broker server time (EET)**, not UTC.
+
+**Evidence, three independent lines:**
+1. **Offset scan vs Dukascopy true-UTC ticks**, XAUUSD 2026-08-20, hours 08/09/11 scanned separately
+   over ±240 min: every hour locked on **+180 min**, median|diff| **$0.11–0.13** against **$0.7–1.1**
+   at ±1 min. Not a broad optimum — a spike.
+2. **Winter leg**, XAUUSD 2026-01-14 vs `XAUUSD_H1`, scanned ±6h: locks on **+120 min**
+   (median|diff| $0.173 vs $1.9 at zero offset). **So the offset is +2h winter / +3h summer — it is
+   DST-varying, and no constant shift repairs it.**
+3. **Structural, needing no external source at all:** in the claimed-UTC index the Friday session
+   closes at **23:56** and Monday opens at **01:00** (true UTC: ~21:00 Fri / ~22:00 Sun). Max Friday
+   hour is **23 in both January and July**, every year 2018–2026 — a fixed *server-time* week close.
+   **191 of 197 `*_H1.parquet` files** contain Friday bars at/after 22:00 "UTC", impossible in real UTC.
+
+**Why it matters (and why it is not cosmetic):** every join between bars and a genuinely-UTC series
+is silently misaligned by 2–3 hours. That includes the **ForexFactory macro-surprise panel adopted
+by this seat last run** (12,423 events, UTC release minutes) — the exact cross-source pair named as
+the nearest-to-money item this seat holds. A 2–3h misalignment on an event study does not error; it
+moves the event window off the release and **manufactures either a null or a look-ahead depending on
+sign**, and the DST variation means the direction flips between summer and winter samples. Also hits
+session/hour-of-day features, the swap-rollover hour, and any macro-state join.
+
+**The class:** this is the desk's recurring one — a producer computes a distinction and the consumer
+collapses it. Here the producer (MT5) hands server time; something `tz_localize`d it to UTC instead
+of `tz_convert`ing from EET. `tz_localize('UTC')` on server-time values is the single most likely
+line, and it is indistinguishable from correct code at the call site.
+
+**Fix (owner: MT5 desk — outside this seat's research freeze, chasing not building):** locate the
+writer of `desks/mt5/data/universe/*.parquet`, convert with a real EET zone (`Europe/Athens`, which
+carries the DST rule) rather than a constant, and add a fence asserting **no Friday bar at/after
+22:00 UTC** on any FX/metals symbol — a one-line invariant that would have caught this from day one
+and that no existing gate expresses. Until fixed, treat the index as EET everywhere it meets a UTC
+series.
+
+**Cheapest detector, for reuse:** the Friday-close hour test. It needs no external data, runs in
+under a second over the whole universe, and is decisive.
+
+---
+
+## PROSPECTOR s11 (2026-08-28) — the 12 silently-empty collectors, graded per source
+
+**WHAT WAS MEASURED.** Every directory under `desks/mt5/data/intelligence/` was counted by rows,
+error rows and last write. **Twelve sources hold 67–98 output files and have written literally
+`[]` on every run**, with **zero error rows** — so from the log a dead route, a robots wall, a
+parse bug and a genuinely empty seam are all byte-identical (`L1.28a`, WS-005). Every one of these
+miners is built the same way: `requests.get(...)` → regex → `except Exception: pass` → write
+whatever list survived. **The swallowed exception is the defect class**; the empty artifact it
+leaves is a *positive assertion of absence* that nothing on this desk can distinguish from a
+verdict.
+
+Each was probed live this session. The grades are NOT the same, and that is the whole point:
+
+| source | HTTP probe | true cause | repairable? |
+|---|---|---|---|
+| `bis_speeches` | — | **§13 BREACH: reads `bis.org/doclist/cbspeeches.rss`; `bis.org/robots.txt` carries `Disallow: /doclist/`** (verified this session) | **YES — replacement already written and unwired** |
+| `global_frontier` | ddg **202** challenge, mojeek **403** | discovery backend dead; **fabricates coverage** (below) | partly — EN only |
+| `fear_greed` | 418 *"I'm a teapot. You're a bot."* | **NOT a wall — missing `Referer`/`Accept` headers.** With them: **200, full JSON** (`score 54.4`, dated history) | **YES, two headers** |
+| `tradingview` | 200, 774KB | parse bug: 43 `/scripts/` hrefs present; regex demands `>bare text</a>` and modern TV nests spans → 0 | YES |
+| `earnings` | 200, 1.1MB | parse bug: page contains `Earnings Date` ×2, the regex crosses tags/newlines without `DOTALL` → 0. (`query1...v7/finance/quote` now **401**, so the API fallback is gone) | YES |
+| `china` | zhihu **403**, eastmoney **200** | half wall, half bug: the miner strips tags then reads **the first 2000 chars**, which on eastmoney is CSS/footer boilerplate — content never reached | partly |
+| `korea` | naver **200**, kr.investing **403** | identical first-2000-chars defect on naver (payload is IE-detection JS) | partly |
+| `weather` | NOAA **404**, open-meteo **200** | dead route + a genuinely conditional arm (fires only >38 °C in NYC) — the one source whose emptiness is partly honest | YES (NOAA URL) |
+| `aaii` | **403** (bot page) | real wall | no route found |
+| `investing` | **403** | real wall | no route found |
+| `google_trends` | **429** | real wall (explore page is not scrapable) | no route found |
+| `frontier` | — | 0 files: writer suppresses output when empty | n/a |
+
+**A. `bis_speeches` — robots-barred route, requested 69 times, and the fix is already on disk.**
+`seed_miners.mine_bis_speeches()` fetches `https://www.bis.org/doclist/cbspeeches.rss`. BIS's
+robots bars `/doclist/` for `*`. So the miner has been hitting a disallowed path every run and
+recording nothing. The replacement is **already implemented in this repo** —
+`desks/mt5/side_channels/bis_speech_tone.py` documents and uses `https://www.bis.org/speeches/speeches.zip`
+(one request, 20,728 dated speeches, `/speeches/` unbarred) — **but `MINERS` still points at the
+barred RSS.** One-line repoint; the seat that wrote the replacement never rewired the seed miner.
+*This is the recurring class: the producer computed a distinction (a legal route) and the consumer
+kept the old one.*
+
+**B. `global_frontier` FABRICATES COVERAGE, and that is worse than returning nothing.**
+`global_survivor_frontier.search()` scrapes DuckDuckGo-HTML and Mojeek. Measured live:
+DDG returns **HTTP 202 with an anti-bot page and zero results**, Mojeek **403**. `search()` therefore
+returns `[]` for *every* query. But `run_and_save()` then does, unconditionally:
+`c["queries_exercised"] += len(queries)`, stamps `last_swept`, and extends
+`state["queries_done"][locale]` — and `queries_done` is the set the next run **skips**. Measured
+state right now: **`queries_exercised: 207` across 13 locales, `populations_found: 0`,
+`graduated: 0`, and all 207 native queries permanently marked DONE** (capped to the last 400, so
+they are also silently evicted rather than retried). The artifact
+`frontier_coverage.json` therefore reads as *"13 locales swept, 207 native queries exercised"* to
+any consumer, while **not one query was ever executed**. That is a coverage claim with no search
+behind it — `L1.51` ("exhausted" requires evidence) inverted into a machine that manufactures the
+claim automatically. **Scope check, stated honestly:** `frontier_coverage.json` has **no code
+consumer** (grep: only its own writer), so nothing downstream has yet acted on the false number —
+the live damage is **self-inflicted ground-burning inside the organ**, because `queries_done` *is*
+consumed, by the next run, as a skip list. The artifact's danger is to the next reader, human or
+organ, who takes "207 queries exercised" at face value. **The one-line severity fix: only credit `queries_exercised` / `queries_done`
+for queries whose `search()` returned a non-error response.** A failed search must burn no ground.
+
+**C. §38 replacement hunt for the dead search backend — found for EN, graded residual for the rest.**
+- **FOUND:** the **Marginalia public JSON API** — `https://api.marginalia.nu/public/search/<urlencoded>?count=20`,
+  **keyless** (the literal path segment `public` is the free key), returns
+  `{"license":"CC-BY-NC-SA 4.0", "results":[…]}`. Verified 200 with 10–20 real result URLs for
+  `copy trading`, `backtest forex`, `forex strategy`, `MT5 EA`. It is a **small-web index that
+  deliberately downranks commercial SEO**, which is *aligned* with the deep-forest mandate rather
+  than a consolation prize. Pacing: ≥6 s between calls and long timeouts — heavy queries took >30 s
+  and 429-shaped non-JSON bodies appear when hurried, so the reader must not `json()` blindly.
+- **§13 note against myself:** the *HTML* Marginalia route is **barred** —
+  `old-search.marginalia.nu/robots.txt` and `marginalia-search.com/robots.txt` both carry
+  `Disallow: /search`. I made one diagnostic request before reading it; the HTML route is **not
+  adoptable** and only the documented API is.
+- **RESIDUAL, graded with the search that failed:** Marginalia returned **n=0 for `стратегия форекс`** —
+  it is English-heavy, so it does **not** restore the frontier organ's actual purpose (native
+  non-English discovery across 13 locales). Probed and failed from this IP the same session:
+  Mojeek 403, DDG-HTML 202, Ecosia 403, Brave 429, Startpage/Bing/searx.be 200-with-zero-links,
+  `searxng.site` 429, `baresearch.org` 2 links, Yandex and Baidu 200 with **only static assets**
+  (JS-rendered). **Verdict: non-English keyless web discovery has NO working route from this box
+  today.** That is a finding, not a default — and it means the frontier organ's non-EN locales
+  should be marked BLOCKED, not swept.
+
+**PRIORITY.** (1) fix B's coverage fabrication — it corrupts the evidence base and costs nothing;
+(2) repoint A — it is a live §13 breach with the replacement already written; (3) fear&greed's two
+headers — 87 empty runs on a source that answers.
+
+---
+
+## PROSPECTOR s11 (2026-08-28) — the desk records `symbol_info` and throws away every field that would show a forced-deleveraging event
+
+**HOW THIS SURFACED.** Chasing the prop-firm operational-notice family (a scrape), the archive
+turned out to contain exactly two symbol-named forcing events — *margin/leverage changes* and
+*delisting/close-only orders* (`FTMO 11 Sep 2025: "MKRUSD has been set to close-only, and all
+positions must be closed by market close on Friday, 12 Sep 2025"`). Then the same question as
+s10's swaps: **does the desk need to scrape an announcement to see this?**
+
+**IT DOES NOT, AND IT ALREADY HAS THE OBJECT.** `desks/mt5/mt5desk/tape.py::contract_terms_row`
+calls `mt5.symbol_info(symbol)` — the object that carries **`margin_initial`,
+`margin_maintenance`, `trade_mode` (3 = CLOSEONLY, 0 = DISABLED), `volume_min/max/limit`,
+`trade_stops_level`, `freeze_level`, `spread`, `expiration_time`** — and writes **eleven fields,
+none of them these** (verified against the parquet: `observed_at, symbol, swap_long, swap_short,
+swap_mode, swap_rollover3days, contract_size, tick_size, tick_value, currency_profit,
+currency_margin`). The call is already paid for; the fields are dropped at zero saving.
+
+**WHAT ACCRUING THEM WOULD BUY, in order of value:**
+1. **`trade_mode` is a forced-liquidation event detector on the desk's OWN broker.** A symbol
+   flipping to CLOSEONLY is a dated, unambiguous, published-by-behaviour instruction that every
+   holder must exit by a deadline — the cleanest "who is forced to trade and cannot stop" the
+   MT5 ground offers. Today the desk would learn of it by an order rejection.
+2. **`margin_initial` changes are announced deleveraging.** A margin increase forces gross
+   reduction in a named symbol inside a dated window; a decrease permits expansion. Direction-
+   agnostic by construction, which is the class this desk's own lessons say to prefer.
+3. **`trade_stops_level` / `freeze_level`** bound where a stop may legally sit — the desk's
+   execution model currently assumes a stop can be placed anywhere.
+4. **It closes the s10 finding's other half:** with margin recorded, the announced-vs-terminal
+   question ("does a notice lead or lag the terminal?") becomes measurable on owned data.
+
+**COST:** four to eight added keys in one dict literal in an already-scheduled hourly recorder.
+**RISK:** none to the money path — `contract_terms_row` is a pure function feeding a parquet.
+**THE RECURRING SHAPE:** this is the third time in two sessions that a scrape was the wrong
+instrument and the connected terminal was the right one. The rule worth keeping: **before
+cataloguing an external source, ask which of its facts `symbol_info` already answers.**
+
+**NOT PROPOSED, AND WHY:** no card. The prop-firm flow mechanism still rests on an unmeasured
+**pool share** (does an FTMO-cohort deleveraging move a Fusion price?), and the event counts are
+thin — measured over the first 80 of 186 archived EN notices: **6 margin/leverage changes and
+6 delist/close-only orders**, i.e. order-10 events per family per firm. That is not an n for the
+ten gates, and pooling across firms does not fix an unmeasured transmission channel. The
+instrumentation above is worth doing **on its own merits** — it is free, it is owned data, and it
+turns an unmeasurable family into a measurable one.
+
+## 2026-08-28 (free-data j) — three method findings, each with the fence that would have caught it
+
+1. **A robots verdict is a property of your own headers.** `datafeed.dukascopy.com` returns 404 to
+   `Mozilla/5.0`, 503 to `curl/8.5.0`, 429 to `python-requests`, and refuses empty-UA/`ClaudeBot`
+   outright — same host, same minute. Under RFC 9309 a 4xx means *unrestricted* and a 5xx means
+   *fully disallowed*, so UA-keyed rate limiting makes one path simultaneously allowed and forbidden.
+   **FENCE:** any §13 robots read must record the UA used, must be rate-isolated, and a 5xx must be
+   corroborated against Wayback CDX before it is written down as a policy verdict.
+   **ORDERING:** for a named-vendor host, read the **TCU first and robots second** — robots governs
+   crawling, the TCU governs use, and the TCU is usually the binding one.
+2. **Wide-panel liveness must be measured on the panel, not the file.** BoJ `bp_m_en.csv` has a header
+   running to 202702 with non-empty cells, while 2,757 of 2,769 series stop at 202606; the 20
+   outliers are forward-projected X-12-ARIMA seasonal factors. A header read and a last-non-empty read
+   give the *same wrong answer*. **FENCE:** `liveness = max period where >=50% of series report`, and
+   flag any series extending materially past that as a look-ahead candidate rather than as fresh data.
+   This is the `pct_circ_now` class on a new axis: a contaminated **conditioning** variable, which
+   fails toward a **false null** — the one direction no gate here catches.
+3. **`grep` is ugrep and one invalid UTF-8 byte voids a whole file silently.** Every BoJ flat file and
+   every stat-search page is Shift_JIS; my first extraction returned zero series codes from a page
+   holding seventeen, with exit 0. Standing rule, now paid for a second time: read non-UTF-8 corpora
+   with python and an explicit codec, never with bare `grep`.
+
+## 2026-08-28 (l) — free-data-alternatives miner, method findings
+
+1. **A malformed SDMX key returns HTTP 200 with an XML error body.** `stats.bis.org/api/v2/.../D..`
+   (two dots on a two-dimension key) → 200 + `<message:Error code="100">No results for query`.
+   Any collector that checks `status_code == 200` and then CSV-parses records this as a clean empty
+   result — the exact silently-empty-collector class the prospector seat carded on 2026-08-28 (s11).
+   **Rule: assert the expected HEADER ROW, never the status code, on every SDMX/CSV endpoint.**
+2. **DBnomics `/v22/datasets/<provider>` defaults to `limit=50`.** RBA has 167. Read `num_found` from
+   the response `_meta`-adjacent block on every paginated catalogue call. (My own error this run —
+   I reported "50 datasets" and the F-series I actually wanted was in the tail.)
+3. **HuggingFace `datasets-server.huggingface.co/filter` answers SQL-ish `where` clauses keyless.**
+   A 68 MB dataset was verified against ground truth without downloading a byte. This should be the
+   DEFAULT verification route for every HF dataset this desk cards; downloading first is the
+   expensive path and we have been taking it.
+4. **A community dataset's timestamps inherit the UPLOADER's timezone, including its DST history.**
+   `Ehsanrs2/Forex_Factory_Calendar` is stamped Tehran (+03:30) and still applies Iranian DST
+   (+04:30) three years after Iran abolished it, plus defaults missing times to local midnight.
+   **Any imported event calendar needs a clock cross-check against an official release schedule
+   before it keys an event study** — 15% of the rows tested were wrong by 1h or 8h50m.
+5. **Liveness on a wide panel is the last period where the MAJORITY of series report** (run-(j) rule,
+   applied twice more this run and it worked both times). Corollary added: 294 of 8,783 BoJ FoF
+   series stop at 2007Q3 — **a per-series last-observation histogram also surfaces DEAD series that
+   a last-value loader reads as live.**
+
+## 2026-08-28 — free-data run (m): method findings
+
+1. **A robots rule that NAMES your agent is a verdict, not an obstacle.** `data.norges-bank.no` has
+   `User-agent: * / Allow: /` plus a specific `User-agent: ClaudeBot / Disallow: /`. RFC 9309: most
+   specific group wins. Run (j)'s lesson ("a robots verdict is a property of your User-Agent") is
+   being applied in one direction only — it is equally an argument for NOT UA-shopping when the rule
+   names you. Suggest the §13 checklist state both directions explicitly.
+2. **A sitemap is not a site index, and the failure is silent.** Norges Bank's 4,875-URL English
+   sitemap omitted both target pages and 46 of 61 press releases while being dominated by
+   commemorative coins. Sitemap-driven discovery returns a plausible non-empty result that simply
+   does not contain the thing. Fall through to the SECTION INDEX PAGE's own hrefs before grading a
+   site as not-carrying-X.
+3. **`*.xls` in robots does NOT match `.xlsx`** (no trailing wildcard). Riksbank bars xls and permits
+   xlsx. A conservative "spreadsheets are barred" reading shrinks the universe incorrectly — the §38
+   attrition failure mode, from over-reading a pattern.
+4. **`article:published_time` separator hazard:** Norges Bank emits `10:00:00 AM` (U+202F narrow
+   no-break space). Naive `strptime('%I:%M:%S %p')` fails; naive UTC assumption is off by 1–2h.
+5. **URL slug date ≠ publication date** — `/2021-08-30-fx/` published 2021-08-31. Any event study
+   keyed on a slug inherits a silent off-by-one. Join on `published_time`.
+6. **Verify your own next-ground list before writing it.** Run (l) named six digs as next ground;
+   five were already covered by run (l)'s own headline adoption, discoverable with one CSV count.
+   A next-ground list is a claim and deserves verify-don't-trust like any source.
+
+## 2026-08-28 (free-data run n) — three COLLECTOR-DESIGN defects, each found live this run
+1. **Central-bank sitemaps index publications, not data — 2/2 instances.** Norges Bank (run m) and
+   Danmarks Nationalbank (this run: 8,968 URLs, 8,563 of them `/news-and-knowledge`, **zero
+   statistics**). Any sitemap-driven central-bank collector reports full coverage while missing the
+   entire data layer. Discovery must use the section index's own hrefs, or the statistics API host.
+2. **A Wayback capture's `statuscode 200` is about the archiving fetch, not the content.** Two 2019
+   norges-bank.no calendar captures indexed at 200 render `<title>Page not found</title>` in 47 kB.
+   Any CDX-driven collector must content-check, not status-check.
+3. **Path rot + one-character enumeration loss.** One Norges Bank publication used three different
+   URL paths in seven years, and one real event's slug is missing a hyphen
+   (`19-06-28foreign-exchange-transactions`). A path-pinned or strictly-anchored collector reads a
+   live source as dead and drops real events without erroring.
+Also for the parser layer: Statistics Denmark CSV is **semicolon-delimited, decimal-comma, UTF-8-BOM
+on the first header key** (mangles the first column name in a naive `DictReader`), and its
+missing-value marker is the two-character string `'..'`, which on DNVALI is a **third producer state**
+distinct from both a number and an absent row.
+
+### 2026-08-28 (free-data run o) — three collector-design defects, all "wrong reads as empty"
+
+1. **A `robots.txt` fetch that follows a redirect grades the wrong document.** `https://data.ssb.no/robots.txt`
+   301s to `https://www.ssb.no/api` — an HTML page, HTTP 200, no `Disallow` anywhere in it. Any
+   robots check that reads status+body without comparing `url_effective` to the requested URL will
+   grade an API host "open" off a marketing page. **Fix: every robots read asserts
+   `url_effective == requested`; a redirected robots is UNRESOLVED, and the governing document is
+   the one at the redirect target's host per RFC 9309.**
+2. **A pandas time-column fallback silently converted prices into 1970 timestamps.** The desk's MT5
+   parquets carry `time` as the INDEX, not a column; `tcol = 'time' if 'time' in px.columns else
+   px.columns[0]` therefore picked `open` and produced a datetime index of 1970-01-01+6ns. The join
+   returned **overlap n=0**, which reads as "the source has no data" rather than "you used the wrong
+   column". Same class as the desk's standing lesson that unmeasured must never render as clean.
+   **Fix: never fall back to a positional column for a time axis — check the index first and raise
+   if neither is datetime-like.**
+3. **`curl` exit code cannot distinguish unreachable from blocked.** api.scb.se returns rc=56 under
+   every UA and both HTTP versions; robots was never retrieved, so there is no verdict to issue.
+   **Fix: collectors must emit UNREACHABLE as a distinct status from WALLED** — this seat has been
+   issuing WALLED verdicts and run (n) already flagged that it over-issues them.
+
+## 2026-08-28 — free-data run (p): three collector-design defects, all of the same class
+
+1. **HTTP 429 must never render as an empty artifact.** api.riksbank.se returned 429 on the third
+   sequential history call; one 20s backoff cleared it. A collector that treats a non-200 as "no
+   data" writes `[]` and the desk reads absence as a clean verdict (the standing empty-artifact
+   class). Rule: classify rate-limit separately from empty, retry with backoff, and emit an
+   evidence row on give-up.
+2. **Count non-nulls per CELL, never rows per table.** api.statbank.dk table DNPRND materialises a
+   27-cell BALANC×INSTRUMENT cross of which **18 are 100% NULL** (~8,200 of 50,114 rows), and they
+   appear only from 2024-10-22. DNIFVALE's hedge-destination × exposure-currency cross is populated
+   only on the "all currencies" margin — 8 cells are n=78, non-null=0. Both pass every row-count,
+   column-count and freshness check. Third table family in two runs.
+3. **A single-row scale error survives every aggregate check.** SEKUSDFO3MFIX/6M carry a ~4,700×
+   units break on 2020-07-16 (one row in 8,400) that moves the series' sd from ~20 bp to 11,423 bp.
+   Detection that worked: a *physical-plausibility* bound (|F−S|/S > 10% is impossible at 3M) and a
+   *decade-median* view; detection that failed: mean, sd, correlation. Rule: every adopted price or
+   points series gets a physical bound at ingest, not a z-score.
+
+## 2026-08-28 — free-data run (q): three method findings
+
+1. **THE LAG-0 CONTROL IS MANDATORY FOR MACRO-STATE→FX SCREENS.** Two consecutive runs produced a
+   huge contemporaneous t (−9.71 run p, +13.52 run q) with every tradable arm null (≤1.36, ≤1.99).
+   The mechanism is structural, not coincidental: a macro state variable and the exchange rate
+   reprice the same news inside the same bar. Any screen joining a published macro series to an FX
+   return must report the lag-0 arm beside the lagged arms, or its headline number is unreadable.
+2. **THE EMU IRREVOCABLE-CONVERSION ORACLE — a free two-directional data verifier.** For any
+   source publishing pre-euro legacy currency quotes: post-1999 `legacy × conversion_rate` must
+   equal the EUR quote (proves scale, units, and that the source is not fabricating), AND pre-1999
+   it must NOT (proves the quotes are genuine, not back-synthesised from the euro). Demonstrated
+   this run at 0.01–0.54 bp on ten currencies with GRD as the date-shifted control.
+3. **A UNIQUE ID DOES NOT MEAN A UNIQUE EVENT.** Bank of Canada's auction API emits a shell row
+   and a result row per auction from 2022-02-02, with distinct `bond_id`s — so dedup-by-id passes
+   and the row count doubles at a date, reading as a change in issuance rather than in the feed.
+   Add to the ingest checklist: after dedup by id, also check for a step change in rows-per-period.
+
+## 2026-08-28 (free-data r) — TWO METHOD FINDINGS
+
+**M1. THE FIXING OFFSET-SCAN IS A GENERAL TAPE INSTRUMENT.** Take any central bank that
+publishes a daily fixing with a stated survey time, scan it against a broker tape hour-by-hour,
+and the argmin hour recovers (a) the tape's true clock and (b) — from the sign and size of the
+residual bias — its bid/mid convention. Demonstrated this run: four PLN crosses independently
+landed on the 11:00 broker-EET bar at 2.0–2.5 bp with the next-best hour 3–5x worse, and the
+−1.6…−2.2 bp residual is exactly the PLN bid-mid half-spread (it drops to −0.6…−1.0 bp in
+triangulated crosses where the leg cancels). This is cheaper and more decisive than inspecting
+tick-volume histograms, and it works on any symbol with a published official rate. Engine value:
+it turns "the parquets are stamped +00:00 but carry broker EET" from a belief into a per-symbol
+measurement.
+
+**M2. AN OFFICIAL RATE'S DATE LABEL IS ITS EFFECTIVE DATE, NOT ITS OBSERVATION DATE.** Found
+independently in two institutions the same run: the Bank of Russia rate dated D is the market of
+D−1 (14.2 bp at lag 1 vs 34.3 bp at lag 0), and NBP's gold price dated D likewise (26.1 vs 50.4
+bp). Joining such a series on its own label is a silent one-day staleness — as a verification
+target it fabricates ~20 bp of error, and as a FEATURE it is a stale input that looks live.
+Any adopter of a CB fixing must scan lag ∈ {0,1} before use; the scan costs one line.
+
+## 2026-08-28 — FREE-DATA run (s): three collector-integrity methods
+
+**M1 — PROBE AN OPERATION, NEVER A DESCRIPTOR (new failure class: a descriptor outlives its
+service).** `www.mnb.hu/arfolyamok.asmx?WSDL` returns HTTP 200 with a well-formed 4,143-byte
+descriptor naming six operations; **all six 404** on SOAP 1.1, SOAP 1.2, the HTTP-GET binding and
+the HTTP-POST binding. WSDLs, OpenAPI specs, SDMX codelists and JSON schemas are *static files* and
+keep returning 200 long after the service dies — so a liveness check aimed at the descriptor (the
+one URL the documentation hands you) reports a healthy API with six operations on a service that
+cannot serve a single row. **Applies to every collector health check on this desk**: the health
+signal must be a successful OPERATION returning a dated row, never a 200 on the spec. This is the
+run-(o) "codelist advertises columns that are empty" finding one level up — there a column was
+advertised and empty, here an entire API is.
+
+**M2 — A NON-EMPTY ARTIFACT ASSERTS PRESENCE (the twin of the desk's top collector lesson).**
+`curl -sSL https://www.bnr.ro/nbrfxrates.xml` returns **HTTP 200 and 119,885 bytes** — of the
+homepage; the real endpoint 302s and `-L` silently converts a dead door into a successful fetch.
+The desk already knows *an empty artifact asserts absence* (prospector s11); this is the same
+defect inverted, and it is worse because a byte-count health check reads it as **thriving**.
+Two cheap counter-measures for any collector: **do not follow redirects on a data endpoint without
+asserting the final URL**, and **assert the CONTENT-TYPE / a parse of the expected schema**, never
+status+bytes.
+
+**M3 — SCHEMA DRIFT INSIDE ONE ENDPOINT'S OWN HISTORY, at HTTP 200 throughout.** TCMB's keyless
+daily FX XML (`/kurlar/YYYYMM/DDMMYYYY.xml`) changed **twice** across its own archive: the declared
+encoding went **ISO-8859-9 → UTF-8**, and the markup went from compact to **pretty-printed**
+(`</ForexBuying><ForexSelling>` became `</ForexBuying>\r\n\t\t\t<ForexSelling>`). My first pull used
+a regex requiring adjacency; it parsed 1997–2001 perfectly and returned **zero rows for 2022–2026**
+— every request HTTP 200, every file valid, and my loop swallowed the misses into an empty result.
+I caught it only because I diagnosed the zero instead of reporting it. **Rule: parse a historical
+archive with an XML/CSV parser, never a regex tuned on one era, and diff the schema at the
+endpoints of the date range before trusting any long pull.**
+
+**M4 — a 429 may be a RATE, not a quota.** Run (q) recorded SWEA as "4 requests then HTTP 429".
+Six sequential series pulled clean at **25 s spacing with zero 429s**. Before recording a source as
+capped, vary the spacing — the difference between "4 requests per run, forever" and "unlimited at
+25 s" is the whole source.
+
+**M5 — THE DESK'S `desks/mt5/data/universe/*_H1.parquet` FILES ARE A D1/H1 SPLICE (measured, 4 symbols).**
+Every file carries an hour-00 bar on ~every day of its span while all other hours appear on only
+~1,730 days: EURPLN **56.7%** of its 4,004 days hold exactly ONE bar, USDTRY 46.1%, EURCZK 31.2%,
+EURHUF 28.8%. Those single bars are **daily bars stamped 00:00** — on EURPLN the hour-0 bar's
+high–low range is **47.2 bp on solo days vs 7.7 bp on full-24-bar days** (and 12.5 bp for an hour-14
+bar); a one-hour bar cannot be 6× a comparable hour. D1 span 2012-05-21→2025-01-01, true H1
+2019-10-17→2026-06-19, **overlapping**. Consequences: (a) any intraday statistic over a full file
+mixes frequencies, and the hour-0 slice is *mostly daily bars*; (b) **a count is not a frequency** —
+a row/day-count coverage check reads these as fully-covered H1 (the run-(e) *a count is not recency*
+lesson with a new face); (c) any study that filtered `hour==0` believing it read the midnight hour
+read daily bars instead. **Not repaired: this seat is under a research freeze.** Needs an owner —
+either split the frequencies into separate files or add a bar-frequency column, and add a
+frequency assertion to whatever check currently reports these files healthy.
+
+**M6 — THE OFFSET SCAN HAS A PRECONDITION, now quantified (bounds runs q/r/s's own instrument).**
+The lag×hour scan recovers a published fixing's clock only when the instrument's **intraday range is
+large relative to the constant level bias** between the two sources: EURHUF 41.5 bp range / 3.3 bp
+bias = **ratio 12.6 → sharp minimum**; USDTRY 10.4 bp / ~7.7 bp = **ratio 1.3 → flat surface**
+(0.68 bp separates hours 06 and 21). **Compute the ratio before trusting a winning cell**, and when
+it is near 1 record the clock as UNMEASURED rather than adopting whichever hour ranked first.
+
+**M7 — A PUBLISHED CENTRAL-BANK BID/ASK IS AN ARITHMETIC CONVENTION (2nd instance ⇒ rule).**
+TCMB's ForexSelling/ForexBuying spread: median **18.02 bp, sd 0.01 bp, 901/908 days at exactly
+18.0**. NBP table C (run r) is a hardcoded ±1%. Any FX-stress / liquidity / spread-widening
+indicator reconstructed from official CB spreads is measuring a constant — take spreads from a
+trading venue.
+
+**M8 — THE EFFECTIVE-DATE CONVENTION IS A PROPERTY OF THE SERIES, NOT THE INSTITUTION.**
+CBR's rate and NBP's *gold* label with the effective date (D = market of D−1); NBP's *table A* and
+the ECB's EXR do not (NBP×ECB agree to 7.98 bp at lag 0, symmetric in lag). One institution ships
+both kinds, so a verified clock does NOT transfer to that institution's other products. Scan
+per-series.
+
+---
+
+## 2026-08-28 — PROSPECTOR s12: the §13 wall-prober clears every host the desk is actively breaching
+
+**Class: a compliance check evaluated under an identity the desk never uses, against a grammar
+that cannot express the ban it is looking for.** Three independent defects in one 18-line
+function, each alone sufficient to return "allowed" for a site that bans this desk BY NAME.
+
+`desks/mt5/side_channels/seed_miners.py:121 _robots_still_disallows(host, ua_token)` — this is the
+function that decides whether a WALLED source may be RESUMED, so it fails toward resuming barred
+sources. Measured live today, both calls returning `False` ("not disallowed"):
+
+```
+_robots_still_disallows("www.tradingview.com", "ClaudeBot") -> False
+    truth: the ClaudeBot group carries `Disallow: /scripts/*` and tradingview_miner fetches /scripts/
+_robots_still_disallows("www.bis.org", "*")                 -> False
+    truth: the `*` group carries `Disallow: /doclist/` and mine_bis_speeches fetches
+           /doclist/cbspeeches.rss hourly
+```
+
+**Defect 1 — `val == "/"` ONLY (line 140).** The check is `elif key == "disallow" and group_ua ==
+ua_token.lower() and val == "/"`. A path-scoped ban — `Disallow: /scripts/*`, `Disallow: /doclist/`,
+`Disallow: /search` — is structurally invisible. Only a total site ban is recognised. This is the
+standing lesson *"grade the PATH never the HOST, both directions"* (free-data f) paid again, and
+it is the one that produced the misclassification in §2 below.
+**Patch:** compare the request's PATH against every `Disallow` value in the matched group by
+longest-prefix, per RFC 9309 §2.2.2 — never test the value for equality with `/`.
+
+**Defect 2 — stacked User-Agent lines erase the membership.** `group_ua = val` OVERWRITES on each
+consecutive `User-agent:` line. TradingView's robots stacks nine agents before one Disallow block:
+`meta-externalagent / ClaudeBot / PerplexityBot / cohere-training-data-crawler / OmgiliBot /
+AI2Bot / Bytespider / TikTokspider / DeepSeekBot` → `Disallow: /scripts/*`. By the Disallow line
+`group_ua` is `deepseekbot`, so ClaudeBot's membership in the group it is literally named in is
+erased. **Patch:** accumulate a SET of agents per group, reset it on the first `User-agent:` line
+following a directive, and match `ua_token` against the set.
+
+**Defect 3 — the identity split, and it is fleet-wide.** The checker asks about `ClaudeBot`
+(line 81) while `fetch()` sends `Mozilla/5.0 (Windows NT 10.0; Win64; x64) ... Chrome/126.0`
+(line 25). **Compliance is assessed for one identity and the traffic is sent under another.**
+`grep -rl "Mozilla/5.0" desks/mt5/side_channels/*.py` → **57 files**. TradingView is the
+demonstrated case where the two verdicts genuinely DIFFER: the `*` group does not bar `/scripts/`,
+the ClaudeBot group does — so under the spoofed UA the fetch "passes" a rule written for us.
+Standing memory already holds *"a robots verdict is a property of YOUR User-Agent"* (free-data j);
+this is its inverse and more serious face — spoofing does not just mis-read the verdict, it
+EVADES a named one. **Patch:** one shared `UA` constant declaring the desk honestly, used by both
+`fetch()` and the robots read, so the check and the request can never diverge.
+
+### §13 — FOUR live breaches, three of them new
+
+| Host | Path fetched | Group | Rule | Status |
+|---|---|---|---|---|
+| `www.bis.org` | `/doclist/cbspeeches.rss` | `*` | `Disallow: /doclist/` | known (s11), **still live hourly** |
+| `www.tradingview.com` | `/scripts/` | **ClaudeBot, by name** | `Disallow: /scripts/*` | **NEW** |
+| `www.zhihu.com` | `/search?...` | `*` | `Disallow: /search` | **NEW** |
+| `finance.naver.com` | `/search/search.naver?...` | `*` | `Disallow: /` (+`Allow: /research/`) | **NEW** |
+
+**REPAIR (all four): stop the fetch.** Each returns zero rows anyway (below), so the breaches buy
+the desk exactly nothing — this is pure downside with no offsetting yield.
+**My own conduct:** I made 2 diagnostic requests to `tradingview.com/scripts/` under a spoofed
+`Mozilla/5.0` BEFORE reading its robots. That is my breach, logged; I stopped on reading the
+ClaudeBot group and adopted no route there.
+
+### 2. s11's "4 parse bugs on HTTP-200" is CORRECTED: two of them are §13 breaches
+
+This is Defect 1's consequence, not a separate mistake — a path-scoped ban is invisible to the
+desk's own instrument, so path-barred sources get misfiled as parse failures.
+
+- `china_miner` **zhihu** → `Disallow: /search`. **BREACH, not a parse bug.** Drop the target.
+- `korea_miner` **naver_finance** → `Disallow: /` . **BREACH, not a parse bug.**
+  **§38 replacement handed over by the robots file itself: `Allow: /research/` is the ONE
+  permitted path on that host** — the Naver Finance research/analyst-report layer, which is
+  better material than a search page was ever going to be. Opened as a replacement_hunt.
+- `china_miner` **so.eastmoney.com** → robots **404** = full allow (RFC 9309). Genuine parse issue.
+- `korea_miner` **kr.investing.com** → `/search/` not barred. Genuine parse issue.
+
+### 3. Two zero-yield parse defects, exact patches
+
+- **`mine_bis_speeches` (seed_miners.py:325) — wrong RSS profile.** The regex scans for `<item>`;
+  the feed is **RSS 1.0 / RDF**, whose elements are `<item rdf:about="...">`. Measured: the 35,776-byte
+  response holds **0 `<item>` and 26 `<title>`**, so the miner has returned `[]` on every run since
+  it was written, *while breaching robots to do it*. **Patch is moot — delete the fetch.** The
+  corpus is already on disk: BIS `speeches.zip`, **20,728 dated CB speeches**, one request,
+  no robots issue (s11 / frontier). Repoint the miner at the local archive.
+- **`tradingview_miner.py:37` — the regex matches only chrome.** `<a href="/scripts/...">text</a>`
+  requires the anchor's text to be its DIRECT child; every real link on the page wraps its label in
+  `<span class="content-...">`. The 48 `href="/scripts/` occurrences on the page are **tab nav
+  ("Popular", "Editors' picks") and pagination numbers** — there is not one script card among them,
+  so even a fixed regex would harvest navigation. Compounded by `except Exception: pass` (line 48),
+  which renders a 769KB response and a dead host identical. **Patch is moot — the path is barred to
+  this desk by name. Retire the miner; do not repair it.**
+
+**The pattern across all five collectors, and it is the run's real lesson:** every one archived a
+2-byte `[]` hourly with no error row, and *four of the five were reaching a page they were not
+permitted to read*. `[]` recorded absence where the truth was refusal. This is the s11
+empty-artifact-asserts-absence class, one layer down: the artifact does not merely fail to
+distinguish empty-from-broken, it fails to distinguish **empty from forbidden**.
+
+---
+
+## 2026-08-28 — PROSPECTOR s12: "God's Equity Curve" — a shape control for track-record forensics
+
+**Source:** `jonathankinlay.com/how-to-spot-a-fake/` (VERIFIED — robots `Allow: /`, read under an
+honest UA; 217-post solo-quant corpus enumerated via `wp-sitemap.xml`). Provenance: SEMI —
+the mechanism is argued and demonstrated on NG futures, but no numbers are reproduced here.
+
+**Why this matters to THIS desk specifically:** the desk mines public track records as a standing
+activity — MQL5 signals (2,509 enumerated), FX Blue (5,077), Darwinex (1,479), Collective2,
+ForexPeaceArmy, prop-firm boards — and **five of those grounds are in the deferred backlog
+returning 2026-09-03 → 09-05.** The desk's current fakery detector, per its own institutional
+memory, is a single heuristic: *"low reported DD + high gain = martingale detector, not risk
+control"*. The instrument below is **orthogonal to it, cheap, and first-party computable.**
+
+**THE MECHANISM.** Compute the equity curve of a PERFECT-FORESIGHT strategy on the same instrument
+and the same bar size — long if the next bar is up, short if down. Call it God's curve. It is the
+maximum extractable from that instrument, and it is emphatically **NOT a straight line**: on NG
+futures 2008-2014 it is *concave*, because the opportunity set itself (volatility × exploitable
+structure) varies through time. The forensic test is **shape congruence**: a genuine track record
+should show the same slope changes and inflections as God's curve, scaled down — because both are
+driven by the same time-varying opportunity set. A straight-line equity curve is therefore not
+merely "too good to be true"; it is **shape-inconsistent with its own instrument's maximum**, which
+is a far harder claim to argue away than "the Sharpe looks high".
+
+Kinlay's second point is the one that makes it a control rather than a heuristic: the shill's
+rebuttal was *"the concavity is just volatility"* — and NG volatility **rose** over the sample,
+so rising vol with falling perfect-foresight profit refutes the volatility explanation outright.
+The concavity was market efficiency increasing. He notes the same in FX: MA-crossover returns that
+worked in the 1970s-80s "entirely dissipated in the 1990s with widely available computing power".
+
+**WHY IT IS BUILDABLE HERE AND NOWHERE ELSE (the moat argument).** God's curve needs only OHLC on
+the target instrument at the target bar size — and the desk holds its **own MT5 tape for 251
+symbols**. So the desk can compute a first-party God's curve **per symbol per timeframe**, then
+score any external track record's published curve against the curve of the instrument it claims
+to trade. Nobody mining these same leaderboards has the broker-native tape to do that. It also
+normalises across instruments, which a raw Sharpe or DD threshold does not.
+
+**PROPOSED USE, in the desk's own vocabulary:** not a promotion gate (L1.60 forbids inserting
+gates — the canonical ten decide). This is a **SCREEN/RANKING instrument for the mining stage**:
+it orders which of 5,077 FX Blue records deserve extraction effort, and it supplies a *reason* to
+graveyard an obviously-fabricated record instead of spending a forward slot on it. Screens sort
+and report; the ten gates decide.
+
+**Caveats, stated because they bound the claim:** (1) shape congruence is a similarity judgement
+and needs a declared statistic before it is used — correlation of first differences of the two
+curves, or of their drawdown profiles, preregistered, not eyeballed. (2) It cannot distinguish a
+genuine market-making record from a fake, since Kinlay names HFT market-making as the one real
+family that DOES produce a near-straight curve — so the test must be conditioned on the claimed
+holding period. (3) It is a test of the CURVE, so it dies against anyone publishing only summary
+statistics.
+
+**Two further transferable red flags from the same post, both already partly held by the desk:**
+the *"live start date"* annotation on what is wholly a backtest (plausible-deniability fakery),
+and **any ambiguity whatsoever about which data was IS and which was OOS** — Kinlay treats
+unstated IS/OOS partition as sufficient on its own. The desk's `search_trials` / preregistration
+discipline is the same rule pointed inward.
+
+**Also mined, routed elsewhere:** `cointegration-breakdown` (a direct prior for
+`data_axis_watchlist.md` card 27, due 2026-09-01 — see below) and
+`how-not-to-develop-gp-strategies-a-cautionary-tale` (the **double-blind second OOS window**:
+a recent-history block never examined *at all* until after final model selection, because
+inspecting OOS to choose a model is the same as coding `IF oos_perf > x`).
+
+---
+
+## 2026-08-28 — prospector s14 — `execution_resolver.py` swap term is unit-wrong for 181/251 symbols (LATENT: zero callers)
+
+**MEASURED, not inferred.** `desks/mt5/research/execution_resolver.py:172–181` documents
+`swap_long`/`swap_short` as "CURRENCY PER LOT PER NIGHT" and computes
+`swap_r = swap_ccy * nights / (sym_risk * contract)` on that basis. The field is in **POINTS**.
+
+**Evidence (held-out design, not an assertion).** Points and currency-per-lot coincide exactly
+when `tick_size × contract_size = 1`, which holds for 70 five-digit FX pairs and nothing else.
+Fit `carry_ann` on the BIS policy-rate differential over the **22 non-JPY majors** (factor 1.0,
+conventions indistinguishable), then **predict the 7 JPY majors out of sample** (factor 100):
+
+| convention | RMSE |
+|---|---|
+| **POINTS** | **0.232 pp/yr** |
+| currency-per-lot | 207.499 pp/yr |
+
+**894× separation.** Corroborated by the in-sample fit itself: slope **1.002**, R² **0.978**
+against an *independently sourced* rate — a wrong unit conversion cannot produce a unit slope.
+
+**BLAST RADIUS.** `tick_size × contract_size` spans **10⁻⁴ to 10⁴** across `universe.json`:
+JPY crosses **100×**, `USDKRW` **1000×**, `USDIDR` **10,000×** UNDERSTATED; the 102 equities
+(factor 0.01) **100× OVERSTATED**; bonds/indices/commodities/crypto assorted. Correct for
+**70/251**. This is the desk's twice-ledgered unit failure shape (the 184× JPY commission
+undercharge; `tick_value` deleted → 0/197 costable) in a third costume.
+
+**WHY IT IS STILL LATENT — and why that is the argument for fixing it now.** `execution_resolver`
+has **zero callers** (III.16). Nothing has consumed the error, so no historical verdict is
+contaminated. It is a resolver whose whole job is to decide whether a net edge survives costs; the
+moment it is wired it silently under-charges the carry cost of every JPY and exotic expression by
+two to four orders of magnitude, in the direction that manufactures survivors.
+
+**THE FIX (named, not "investigate" — L1.28b):** multiply by `tick_size × contract_size` to reach
+quote currency, then convert quote→account currency (EUR, measured) before dividing by the risk
+leg. **Precondition:** MT5's `symbol_info.swap_mode` (`SYMBOL_SWAP_MODE_*`) is **recorded
+nowhere** in `universe.json` — the collector must capture it, because POINTS is one of seven legal
+modes and this finding establishes the convention *empirically for FX only*. Until `swap_mode` is
+stored, the conversion is an inference, and equities/crypto (where I have no rate anchor to test
+against) are **UNMEASURED, not confirmed** (L1.28a).
+
+**Not patched here — research freeze (writes limited to `docs/research/*` and `data/*`).**
+Evidence: `data/research/s14_swap_decomposition.json`; derivation in `prospector_coverage.md` s14.
+
+## 2026-08-28 — prospector s14 — §38: FRED's international daily rate coverage is DEAD; BIS `WS_CBPOL` replaces it
+
+`IR3TIB01<CC>M156N` / `IRSTCI01<CC>M156N` (OECD MEI) now return **HTTP 400 — series does not
+exist** for all 27 currencies tested. Not empty, not stale: withdrawn. FRED's daily rate coverage
+is **US and EUR only**, and any desk code or card assuming FRED for a foreign policy rate is
+broken. (s13's swap card asserted the lake held `fred_ECBDFR`; it does not.)
+
+**REPLACEMENT — verified live this run, keyless, no registration:**
+`https://stats.bis.org/api/v1/data/WS_CBPOL/D.<AREA>/all?startPeriod=YYYY-MM-DD&format=csv`
+(v2 also works: `/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/D.<AREA>`). Daily central-bank policy
+rates, **26 of 27 desk currencies**, each row carrying a `COMPILATION` provenance string naming the
+source central bank and its splice history — better provenance than FRED gave. `D/all` returns
+29 jurisdictions in **one 50KB call**.
+**§13:** `stats.bis.org/robots.txt` **301s** to `data.bis.org`, whose robots is `Allow: /` with
+disallows only on query-param patterns (`*filter=`, `*sort=`, `*q=`, `*rows=`, `*cols=`,
+`*page_size=`, `*selectedDate=`) that the SDMX path does not use. Clean.
+**Residual gap, graded:** **SGD only** — Singapore has no policy rate (MAS runs an FX band), so
+`D.SG` is empty *correctly*. The quantity does not exist; no replacement is owed.
+
+---
+
+## prospector s15 — 2026-08-28 — findings from `macrosynergy` (BSD-3) + the key sweep
+
+### 1. ENGINE (highest value) — `make_zn_scores(iis=True)` is a burn-in look-ahead, and it is the exact class the desk's causal guard passes silently
+`macrosynergy/panel/make_zn_scores.py` (BSD-3-Clause, pushed 2026-08-28, 193★) is a
+point-in-time panel normaliser: `sequential=True` by default, `min_obs=261`, parameters
+"estimated sequentially with concurrently available information only". Two properties are
+directly relevant to defects this desk has *already paid for*:
+- **It normalises on MEAN ABSOLUTE DEVIATION, not standard deviation**, and offers
+  `upfront_thresh` winsorisation of the *raw* data in native units. That is precisely the defence
+  against the 2026-08-28p finding (ONE row — a 4700× units break — set the sd of a 46-year series,
+  invisible to mean/sd/corr). MAD + a raw-scale physical bound is the fix, and here it is, wired.
+- **BUT `iis=True` is the DEFAULT**, and its own docstring says the initial `min_obs` interval is
+  "estimated in-sample, based on the full initial sample". That is a genuine look-ahead over the
+  first 261 observations, adopted by default by anyone who does not read the parameter.
+**ACTION: if any of this is ported, port it with `iis=False`.** Note the compounding hazard —
+R0289 established that `causal_guard.check_causal` returns `ok=True n_leaked=0` for full-sample
+`z(funding)`, i.e. the desk's own guard **cannot see this leak**, and funding/carry is the desk's
+only repeat-survivor family. A leaky burn-in would be adopted silently and pass every gate.
+
+### 2. ENGINE — a size-dependent transaction-cost model, against the desk's flat 6bps/turn
+`macrosynergy/pnl/transaction_costs.py` + `proxy_pnl_calc.py`. `extrapolate_cost()` is a
+two-point linear model: flat at `median_cost` below median trade size, then interpolating to
+`pct90_cost` at `pct90_size`, with **roll cost carried as a separate term from bid-offer**.
+The desk currently charges a flat 6bps/turn in `positions_to_returns`, and s14 found
+`execution_resolver` unit-wrong on 181/251 symbols (`swap_long` is POINTS, not currency).
+The constitution names execution and cost as the usual binding constraint. **The calibration data
+is JPMaQS/DataQuery (paid) — but the STRUCTURE is free, and the desk can calibrate both points on
+its own MT5 tape, and already measures the roll-cost leg (the swap panel).** Adopt structure,
+self-calibrate. Also worth reading: `pnl/sharpe_stability_ratio.py` and
+`learning/{splitters,sequential,cv_tools}` (walk-forward CV, directly relevant to the two-stage law).
+
+### 3. BREACH-CLASS — the desk holds a LIVE, WORKING Databento key and has never mined it
+`data/secrets/databento.json` holds a 32-char key. Probed this run: `hist.databento.com/v0/metadata.list_datasets`
+returns **HTTP 200** and entitles **GLBX.MDP3 (CME Globex), IFEU/IFLL/IFUS.IMPACT (ICE Europe /
+London / US), XEUR/XEEE.EOBI (Eurex)** among others — i.e. the futures ground underlying the
+desk's mandated FX, gold, index, energy and softs symbols. Meanwhile
+`docs/research/data_axis_watchlist.md` still grades Databento *"signup-gated (page principal only
+when a pull is planned)"*, and the source-backlog sweep I ran treats it as key-blocked.
+**This is paid-for data the desk declined to mine — the L1.8 / under-exploration class, where the
+breach is the gap not closing.** The mis-grade is itself the mechanism: a row written when the
+key did not exist was never re-read after it did. → route to the ledger as a real work item;
+correcting the watchlist grade is the cheap half, actually pulling GLBX is the valuable half.
+
+### 4. METHOD — a research seat's 403 is NOT a verdict on the desk's collector (and vice versa)
+`api.stlouisfed.org` returns **403 Access Denied to the honest `ClaudeBot (quant research desk)` UA**
+while returning a normal **400** to `Mozilla/5.0` and `curl/8.0` — a UA-keyed edge block, the same
+Akamai class already recorded for BoE/RBA/NY Fed, now confirmed on FRED. I nearly filed this as
+"the wired FRED collector is silently dead". It is not: `scripts/collect_fred_macro.py` identifies
+as `quant-fred/1.0`, is unaffected, and its artifact is genuinely live (max **observation** date
+2026-08-27, checked as recency, not mtime). **Generalisation worth holding: production collectors
+and research seats present different identities, so a seat's block and a collector's health are
+independent facts and neither may be inferred from the other.** The converse is the dangerous
+direction — a seat that probes successfully proves nothing about a collector that does not.
+Related source death found in passing: **`TEDRATE` is dead at 2022-01-21** (LIBOR retirement).
+
+### 5. STRUCTURAL — the retail-quant blogosphere is 93.6% off-mandate, measured
+See the coverage note. Enumerated all 2,317 Quantocracy index pages → **6,908 dated items, 373
+blogs, 369 hosts, 2015-04-09 → 2026-08-27, 0 fetch errors**
+(`data/intelligence/quantocracy_blogosphere_index.json`). Only **445/6,908 (6.4%)** of titles touch
+FX / metals / rates / commodities / index futures; the rest is US equity factors and asset
+allocation. **358 of 369 hosts appear nowhere in this desk's `docs/` corpus** (and 6 of the 11
+"known" are generic: medium, t.co, youtube, arxiv, ssrn, substack). This re-prices s14's call that
+Quantocracy was "the highest-leverage single source catalogued in several runs": it is a genuine
+population enumerator (OP-098 class) and it is now enumerated once and for all — but for THIS
+desk's mandated universe it is a thin seam, and the value is concentrated in a handful of hosts
+the density ranking names, not in the 6,908.
+
+## [2026-08-29 brain-hunter] METHOD RULE — verify the SERVED Wayback capture, never trust the REQUESTED one
+
+`web.archive.org/web/<stamp>id_/<url>` resolves to the NEAREST capture when `<stamp>` has no exact
+replay, and both `urllib` and `curl -L` follow that redirect silently at HTTP 200. Verified
+2026-08-29: requesting `20250117071926id_` for `www.lbma.org.uk/clearing-data/data.json` served
+`20250501085016id_`, byte-identical, `len=15029`.
+
+In content mining this is harmless. In **point-in-time / vintage reconstruction it fabricates
+lookahead** — later content attributed to an earlier date, under an authoritative archive timestamp.
+It surfaced as a *negative publication lag* (−16 days on a backward-looking monthly statistic),
+which is the only reason it was caught; a substitution in the other direction leaves no impossible
+value and would have shipped.
+
+**RULE:** every CDX replay compares `response.url`'s served stamp against the requested stamp and
+discards or re-labels on mismatch. `collapse=digest` raises the exposure, since it returns one index
+row per digest-run while replay still resolves per-timestamp.
+
+**EXPOSED CONSUMERS to sweep:** OP-098 CDX population enumerator; seed S18 (Wayback CDX walker for
+dead EA forums); archived track-record corpora (FX Blue / Darwinex). Any consumer reasoning about
+DATES rather than only about CONTENT. Same family as the recorded lesson *"a Wayback CDX 200
+archived a soft-404"*: a CDX index row is a claim about the INDEX, never about the bytes returned.
+
+## 2026-08-29 — PROSPECTOR s16 (3 structural findings; evidence in prospector_coverage.md s16)
+
+1. **A 4xx on `robots.txt` is ALLOW-ALL under RFC 9309 §2.3.1.3, not a disallow — the desk has been
+   applying this asymmetrically and in the restrictive direction.** Only the 5xx half (§2.3.1.4,
+   complete disallow) is in the recorded lessons. s15 read `research.macrosynergy.com` robots → 403
+   and declared "full disallow, hard stop", abandoning a primary source (re-verified 2026-08-29:
+   still 403, i.e. still ALLOW). **Fix: state the rule once, both halves — 4xx ⇒ crawl permitted;
+   5xx/unreachable ⇒ full disallow; a 403 on CONTENT is a wall regardless.** Re-open candidates:
+   every host this desk has graded WALLED on a 4xx-robots reading alone.
+2. **`libs/risk/beta_neutralize` has exactly one caller and that caller is banned-universe.**
+   `scripts/run_overlay_backtest.py:87` hedges against `BTCUSDT`. Under the 2026-08-18 MT5 mandate
+   the residual-beta overlay therefore has **no valid consumer** (III.16). Not patched — `scripts/`
+   is outside this seat's freeze. Owner: MT5 desk. The capability is sound; only its market proxy
+   is void.
+3. **Sign conventions carried by an argument NAME rather than an assertion** — the class behind
+   `macrosynergy/macrosynergy` #2534, where two functions each assumed the other applied the `-1`
+   and hedge positions shipped with the wrong sign for weeks; the maintainer's fix was a *rename*.
+   The desk already defends this in one place (`carry_state.py::swap_per_lot` converts and negates
+   once, by explicit design) and `beta_neutralize` is structurally immune. **Recorded as a standing
+   review question, not a defect: for any new hedge/beta/ratio field, is the sign asserted by a
+   test, or only implied by the name?**
+
+---
+
+## 2026-08-29 (prospector s17) — 24 of 251 registry rows price the desk's most-traded symbols at **ZERO SPREAD**, including EURUSD and GBPUSD
+
+**VERIFIED, cited path + value.** `desks/mt5/data/universe/universe.json` carries
+`"median_spread_pts": 0.0` on **24 of 251** rows. The list is not exotics — it includes
+**EURUSD, GBPUSD, AUDUSD, USDCAD, EURGBP, NZDUSD, EURCHF, GBPCAD, AUDCAD, EURAUD, NVIDIA,
+Broadcom**. Reproduce:
+
+```
+python -c "import json;u=json.load(open('desks/mt5/data/universe/universe.json'));print(sum(1 for d in u.values() if d.get('median_spread_pts')==0))"
+```
+
+**It is wrong, and by how much:** the parquet the value is supposed to summarise disagrees.
+`EURUSD_H1.parquet` has a spread median of **12.0 points** (zero-fraction 0.005 — i.e. the tape is
+fine, the registry row is not). At `digits=5` that is **~1.07bp one-way / 2.13bp round-trip**, not
+zero. GBPUSD 13.0pts, AUDUSD 14.0pts, USDCAD 13.0pts, EURGBP 13.0pts — all present in the tape,
+all recorded as 0.0 in the registry.
+
+**Two distinct bugs, not one:**
+1. **The registry row is not being written from the tape.** `fetch_universe.py:103` computes
+   `med_spread = float(df["spread"].median())` **correctly** (it would yield 12.0 for EURUSD), so
+   whatever produced these 24 rows is not that path. `expand_universe.py:136-137` has a
+   `float(getattr(info, "spread", 0) or 0)` fallback that resolves to **0** when the terminal
+   attribute is absent — a fallback that renders "unmeasured" and "free" identically (WS-005).
+   This is the **same multi-producer-on-one-`universe.json` class** the desk fixed for
+   `tick_value` on 2026-08-26; it has **recurred on `median_spread_pts`**.
+2. **15 of 197 parquets genuinely carry a >50%-zero spread column** (AUDCHF 0.618, CADCHF 0.622,
+   NZDCHF 0.583, HKDJPY 0.836, USDHKD 0.625, EURCAD 0.604, USDSGD 0.513, ExxonMobil 0.627,
+   Broadcom 0.614, Walmart 0.541, AT&T 0.549, BankofAmericaCorp 0.537, CVSHealth 0.545,
+   CharlesSchwab 0.512, EURRUB 0.547). For these a plain `.median()` returns **0.0 legitimately**
+   and is still the wrong cost. `median_of_nonzero` is the honest statistic; **UNMEASURED is the
+   honest answer where the non-zero sample is too thin.**
+
+**Why it matters — it corrupts the one gate that matters.** `cost_surface.py:143/234/244` and
+`expand_universe.py` read this field, and L1.5 says no alpha is valid until it survives realistic
+costs. **A zero-cost EURUSD makes every EURUSD candidate look free at the money bar.** In this very
+session the cost number was the difference between "8 of 12 instruments clear" and a Sharpe of
+0.039 — the money bar is doing the deciding on this desk, and 24 symbols are currently feeding it
+a zero.
+
+**Also observed, opposite direction:** `NZDJPY` registry `median_spread_pts = 147.0` against a tape
+median of **15.0** — a ~10x **over**charge. So the field is unreliable in both directions, which
+means it cannot be repaired by clamping zeros.
+
+**NAMED FIX (this seat is research-frozen; routed, not applied):**
+1. In the registry writer, **never** default a missing spread to `0`. Write `null` and let
+   `carry_state.py`'s already-correct `None`-for-UNMEASURED convention propagate (s16 verified that
+   module returns `None` rather than `0.0` — the pattern to copy is already in the tree).
+2. Compute from **non-zero bars only** (`df.spread[df.spread>0].median()`), and emit
+   `spread_zero_frac` alongside so a consumer can see the sample was thin instead of inferring it.
+3. **Single writer.** Same remedy as the 2026-08-26 `tick_value` incident — the recurrence is the
+   evidence that the earlier fix addressed the symptom on one field rather than the multi-producer
+   cause.
+4. Add the fence that would have caught this: assert **no** `median_spread_pts == 0` for any symbol
+   whose tape has `zero_frac < 0.5`. That single assertion catches all 24 rows today and is the
+   test that belongs in the same commit as the fix.
+
+**Residual/UNMEASURED (not claimed as fixed):** for the 15 genuinely-sparse symbols the true spread
+is **UNMEASURED**, not zero and not the non-zero median; that gap stays open and should be graded,
+not filled with a plausible number.
+
+## 2026-08-29 (prospector s18) — `recommendations.py correct` cannot correct an OPEN row, which is the only kind worth correcting
+
+**Observed.** s17 ledgered R0728 with a specific named patch site. s18 disproved that site (see
+`prospector_coverage.md` s18 item 1) and tried to amend it in place:
+
+```
+$ .venv/bin/python scripts/recommendations.py correct --id R0728 --reason "..."
+R0728 is already open -- nothing to correct
+```
+
+**The verb only applies to rows that are already DISPOSED** — i.e. it can fix the record of a
+decision already taken, but cannot fix a *pending instruction* that is wrong. That is backwards:
+an open row is a work order someone is going to act on. A disposed row is history.
+
+**Why it costs something rather than being cosmetic.** The desk's stated conversion duty is that a
+ledger row names its own fix. R0728 named a fix that would not have worked (`expand_universe.py`'s
+fallback branch, which provably never fired). With `correct` refusing, the only routes are: (a)
+dispose R0728 falsely to unlock the verb, (b) leave a known-wrong instruction standing, or (c) raise
+a new row — I took (c), `R0729`. **(c) inflates the duplicate count on a defect that already had
+three open rows**, which is exactly the signal the backlog uses to rank work. A correction now reads
+as a fourth independent discovery.
+
+**Fix (small, one file).** Allow `correct` on `status == "open"`, appending to a
+`corrections: []` list on the row rather than overwriting `summary` (the original wrong diagnosis is
+itself evidence — it should be visible, not erased). Keep the current disposed-row behaviour
+unchanged. The fence that would have caught this: a test asserting `correct` succeeds on an open
+row.
+
+**Cross-ref:** R0729, R0728, R0695, R0664.
+
+## 2026-08-29 (prospector s18) — a 2017 hobbyist blog ran the null control this desk's graveyard shows it skips
+
+**Not an alpha — a method, logged because the desk keeps re-learning it.** In
+`quantsjourney.blogspot.com/2017/06/trading-decisions-of-your-stone-age.html` the author, testing a
+round-number/pricing filter on EURUSD M15, builds an explicit **control group before scoring the
+rule**: every 10th bar over the whole backtest window (**12,807 control entries**), scored first,
+with the filtered entries compared against *that baseline* rather than against zero.
+
+**Why it is worth an inbox line.** The desk's own recent record: `free-data d` (2026-08-28) —
+*"always run the sign(next-day-return) leak control or your null is a dead pipe"*; PROSPECTOR s9 —
+a 3.08x "excess reopen vol" that was entirely `sqrt(sessions spanned)` once controlled; s17 — a
+`p=0.0001` contrast that netted to Sharpe 0.039 on the level. **Every one of those was a missing
+baseline, not a missing statistic.** A structural-sample control (every Nth bar) is cheaper than
+any of the corrections the desk applies afterward and it is uniform across families.
+
+**Suggested (not a patch — outside a prospector's freeze):** where a screen scores a *conditioned*
+subset, emit the unconditional every-Nth-bar baseline over the identical window and cost model
+alongside it, so the conditioning's contribution is read directly rather than inferred. Cheapest
+place is wherever the ten-gate certificate already assembles the candidate's own return series.
+
+## prospector s19 — 2026-08-29 — an ADOPTED card sat in the "pending verification" queue because the desk's own two vocabularies do not match
+
+**Found while closing the last pending backlog row.** Card 87 was graded
+`**VERIFIED, ADOPTED, PERSISTED**` by s17 and still counted as **pending verification** on every
+subsequent run. `libs/research/source_backlog.py:_classify` resolves a card on exactly three
+things — a `[§33: killed]` marker, `verified-clean`, or `destroyed-at-source` — and its final line
+is `return "verification", None  # unrecognized grade text -- fail open, never silently drop`.
+
+**Fail-open is the right default and is not the defect.** The defect is that the *writing* seats
+and the *reading* parser were never given one vocabulary, so the most confident possible grade a
+digger can write — "VERIFIED, ADOPTED, PERSISTED" — is **unrecognized**, and an adopted card is
+therefore indistinguishable from an unexamined one. It re-presents forever as work owed.
+
+**Why this is worth a row rather than a shrug:** the queue is the desk's measure of whether
+cataloguing is outrunning verification, and this makes that measure read high for a reason that
+has nothing to do with verification. It is the same class as the two §33 tag grammars that failed
+silently (recorded 2026-08-28) — **a producer and a consumer that agree on the concept and
+disagree on the token.** Three prospector sessions read "1 pending verification" and none of them
+found it was already done.
+
+**Fixed here for card 87** (regraded to `verified-clean`, backlog now reports **0 pending, clear**).
+**Not fixed generally, and that is the routed item:** either (a) `_classify` should also accept the
+grades the diggers actually write (`verified`, `adopted`, `persisted`) as terminal, or (b) the card
+template should state the three terminal tokens inline so a writer cannot miss them. (a) is the
+better fix — the parser is one file and the writers are every future seat. **Not this seat's to
+patch: `libs/` is outside the research freeze.** Worth checking whether other cards graded in
+digger-vocabulary are sitting in the same queue for the same reason.
+
+**CHECKED, not left as a suggestion:** re-parsed the whole watchlist through `parse_watchlist`
+after the regrade — **0 cards remain in the verification queue**, so card 87 was the only one
+stuck on vocabulary. The general fix is still worth making (the next digger will write the same
+words card 87 did), but the blast radius today is one card, measured rather than assumed.
+
+## 2026-08-29 — brain_hunter s15 — ADAPTIVE SEARCH-SPACE ALLOCATION IS INCOMPATIBLE WITH PRE-REGISTERED MULTIPLICITY (refusal, with reason)
+
+SOURCE: `zhutoutoutousan/worldquant-miner` (Apache-2.0, 728★) — epsilon-greedy multi-armed bandit
+over simulation CONFIGS, reward = the alpha's own in-sample Sharpe/fitness. DERIVES-FROM: NONE
+(checked). MINED AS TEXT, never installed or run.
+
+**REFUSED, and the reason is the deliverable.** `FusionPlan.effective_n_trials` is the ENUMERATED
+grid hashed before compute, and that accounting is valid ONLY because allocation is non-adaptive. A
+bandit that reallocates trials toward arms that already scored well makes data-dependent selection
+decisions no fixed `n_trials` can price — the enumerated grid stops being the multiplicity owed the
+moment the allocator learns, and there is no honest constant to replace it with. L1.60 already
+forbids a producer supplying its own `search_trials`; **this is the same breach arriving as an
+ARCHITECTURE rather than as a number, which is harder to see and would pass every existing fence.**
+
+Evidence that the endpoint is real, measured on the source (not asserted): the repo stacks an LLM
+expression writer, a genetic mutator and the config bandit — three compounding selection engines —
+and `bonferroni|deflated|family.?wise|holm|fdr_|benjamini|multiple.?compar` matches **0 of its 1,631
+`.py` files**.
+
+**Standing rule proposed for any future "adaptive search" proposal on this desk:** an allocator may
+re-order which cells run FIRST (a compute-budget decision) but may never change WHICH cells count
+toward the declared trial total. Ordering is free; membership is pre-registered.
+
+CONTROL RUN (clean, stated as a negative result): `FusionCell.cell_id` covers all three fields of
+the frozen dataclass and `libs/store/config_versions.py` hashes the whole config dict — the source's
+own arm-key collapse defect (56 arms → 28 keys, `delay` and `maxTrade` unreachable) does NOT exist
+on this desk.
+
+## 2026-08-29 — brain_hunter s16 — the public alpha-generation class has NO multiplicity control at all (14/14), and the one refutation stage it ships has zero power
+
+### FACT 1 — the corpus-level prior s15 asked for, and it is a clean sweep
+
+s15 left item 3: "does the whole class share fact 3? One repo with zero multiplicity control is an
+anecdote." It is not an anecdote. Across **all 14 permissively-licensed** WorldQuant-BRAIN
+alpha-generation repos (`data/brain_hunter_s15_generator_class.json`, shallow-cloned 2026-08-29),
+searching 19 terms — bonferroni, holm, benjamini-hochberg, FDR, false discovery, multiple
+testing/comparison, deflated sharpe, DSR, PBO, probability of backtest overfitting, family-wise,
+FWER, p-hacking, data snooping, White's reality check, SPA test, Harvey-Liu, effective number of
+trials, num_trials:
+
+**14 of 14 repos: ZERO hits. Positive control: 23,619 mentions of "sharpe".**
+
+The only two `n_trials`-shaped matches in the whole corpus are unrelated — a pruning-policy minimum
+(`worldquant-harness`) and a bootstrap resample count (`QuantGPT`). Eight of the fourteen have no
+out-of-sample vocabulary either. Generation-scale vocabulary (itertools.product, mutation,
+crossover, population, batch) fires in 12 of 14, so these are genuinely *searching* — the selection
+is happening; only its accounting is absent.
+
+**HOW TO PRICE THIS GROUND, from now on and by default:** every artifact this seat, or any seat,
+lifts from the public alpha-generation ecosystem is the output of an **unpriced search**. Not a
+weak result — an *unpriced* one, with no recoverable trial count, because the code does not record
+how many expressions were tried before the one that got published. There is no correction the desk
+can apply retroactively. The consequence is operational, not rhetorical: a formula, expression or
+"validated factor" from this class enters as a **hypothesis with a prior no better than a
+randomly-drawn cell**, and its only route to capital is the desk's own ten gates over the desk's
+own pre-registered `effective_n_trials`. This is not a bar the desk is choosing to apply out of
+caution; it is the only bar available, because the source destroyed the information any softer one
+would need. Full census: `data/brain_hunter_s16_multiplicity_prior.json`.
+
+### FACT 2 — two design rules for permutation nulls, bought by refuting the class's best test
+
+`Miasyster/QuantGPT` (MIT, 457★) is the only repo in the class that ships an adversarial validation
+stage at all, and it is worth taking seriously: `test_label_permutation` is a **correct** empirical
+null — shuffle forward returns within each date, preserving the cross-sectional factor distribution,
+and pass only above the 95th percentile of the permuted |IC| distribution. Its sibling
+`test_temporal_shuffle` is refuted (`docs/graveyard.md`, 2026-08-29): at its shipped defaults the
+pass/fail verdict is pinned at ratio 1.16–1.19 across a 10× range of injected signal and is
+therefore a constant function of its own configuration.
+
+Two rules generalise out of that refutation, and both are actionable here:
+
+1. **A block-permutation null has power only when `block_size ≤ the forecast horizon.`** This is
+   counter-intuitive in the direction that matters: a *larger* block feels more conservative, and
+   is in fact strictly weaker, because block-ORDER shuffling only disturbs windows that straddle a
+   boundary. Measured crossover is exactly at `block_size = holding_period`.
+2. **A permutation null's bar must be a PERCENTILE of its own permuted distribution, never a ratio
+   of means against a constant.** Averaging `abs(mean IC)` across shuffles estimates `E|X|`, not
+   `|E X|`, which plants a positive noise floor in the denominator under a pure null — in the
+   control, the real |IC| under a true null sat *below* the shuffled floor.
+
+**WHY THIS IS WORTH SOMETHING TO THIS DESK RATHER THAN JUST TO THAT REPO.** The desk's validation
+is parametric end-to-end — t-statistics, deflated Sharpe, Holm. A permutation null is
+*non-parametric* and assumes nothing about the return distribution, so it fails in different places:
+it is the natural detector for structural leakage and misalignment, where a t-stat computed on
+already-corrupted forward returns is confidently wrong. It is a COMPLEMENT to the ten gates and
+explicitly **not** a candidate to become one of them, nor a replacement for any (L1.60: no inserted
+gates, no private bars in either direction). Proposed as a **diagnostic** on the
+`wq_operators.fitness()` precedent — computed, reported, no pass/fail path.
+
+MT5 TRANSLATION CONSTRAINT, stated because it decides feasibility and is not obvious: the
+within-date cross-sectional permutation needs a cross-section. The MT5 book has ~251 symbols but
+the desk's candidates are predominantly **per-symbol time-series**, where "shuffle across names
+within a date" has no meaning. The transferable form for a time-series candidate is the *label*
+permutation applied along time under a stationary block bootstrap with `block ≤ horizon` — which is
+rule 1 again, and is why rule 1 is the more valuable half of this find.
+
+OPPORTUNITY COST / NEXT ACTION: this is inbox material, not a build — the seat is research-frozen
+and must not touch `libs/`. The named patch, for whichever seat owns it: a `permutation_null()`
+diagnostic beside `libs/alpha_factory/wq_operators.fitness()`, same no-pass/fail contract, block
+size bound to the candidate's declared horizon at call time rather than defaulted.
+
+---
+
+## 2026-08-29 — BRAIN HUNTER s17 — one adoptable diagnostic, one design rule, one corpus prior
+
+Artifact: `data/brain_hunter_s17_adversarial_power_and_costs.json`. SOURCE: `Miasyster/QuantGPT`
+(MIT, 457★) plus the 14-repo permissive BRAIN generator class. DERIVES-FROM: s16 (which validated
+`test_label_permutation`, refuted `test_temporal_shuffle`, and established the zero-multiplicity
+prior over this class). All four adversarial tests on this ground are now characterised: **2
+validated, 2 refuted.**
+
+### 1. ADOPTABLE — subsample sign-stability, the second test to survive its own power control
+
+`test_random_universe` resamples 30% of the cross-section `n_trials` times, recomputes mean IC on
+each subset, and passes when ≥70% of subsets carry the same IC sign as the full universe. Under a
+power control (40 names × 200 bdays, exact injected IC, shipped defaults) it **separates**: it
+FAILS at true IC = 0 (consistency 0.500 / 0.583 against its 0.70 bar) and PASSES at every true IC
+≥ 0.05 (consistency 1.000 in all 8 signal cells).
+
+**MT5 translation — this one is directly implementable and the constraint that blocked the desk's
+other borrowings does not bite here.** The desk's cross-section is the 251-symbol MT5 universe
+(`desks/mt5/data/universe/universe.json`), so a cross-sectional candidate can be resampled over
+symbols exactly as written. It is worth having as a cheap concentration detector: a candidate whose
+edge lives in 2 of 251 symbols fails it, and that is a failure mode the desk's per-cell gauntlet
+does not currently name.
+
+**THREE LIMITS, and the third is the one that would do damage if ignored:**
+- It saturates — consistency hits 1.000 by true IC = 0.05, so it detects the PRESENCE of IC and
+  cannot grade its strength. It is a screen, never a score.
+- The 0 → 0.05 transition was not sampled; its detection floor is unmeasured.
+- **It is a WITHIN-SAMPLE stability statistic and must never be reported as out-of-sample
+  evidence.** It tests that the realized full-sample IC sign reproduces on subsets of the *same*
+  sample — close to a t-test on the daily IC series. It is a diagnostic, it carries no promotion
+  authority, and per L1.60 it must not be attached to any gate as a threshold in either direction.
+
+### 2. DESIGN RULE from the refutation (graveyard, same date)
+
+A noise-injection sensitivity test must be scored on the **slope of `|IC|` against the analytic
+attenuation curve `1/√(1+k²)` across ≥3 noise levels** — a real factor tracks that line with slope
+≈ 1 — and never on a single retention level against a fixed bar. The level is a property of the
+injected `k` alone (measured: 0.9936 / 0.9030 / 0.6959 / 0.4523 against predicted 0.9950 / 0.8944 /
+0.7071 / 0.4472, at true IC = 0.30), so a fixed bar tests the test's own configuration. This joins
+s16's two block-permutation rules as the third entry in the desk's null-design ledger.
+
+### 3. CORPUS PRIOR — the class is cost-blind as well as multiplicity-blind
+
+Same 14-repo corpus, same mechanical method as s16. **11 of 14 repos contain ZERO core-cost
+vocabulary** (transaction cost, slippage, commission, fee, bid-ask, half-spread, net/after cost,
+cost model) in any `.py`/`.md`/`.ipynb`, against a positive control of 2,531 "sharpe" mentions and
+"turnover" firing in 12 of 14. Of the three with any hits, only ONE applies a cost to a reported
+number:
+
+- `Miasyster/QuantGPT` — **real and applied**: `backtest.py` deducts `turnover × cost_rate` per
+  rebalance. But the 0.3% default is an A-share retail convention (its own docstring: "commission +
+  stamp tax + slippage") and does not transfer to an MT5 CFD book.
+- `gyx09212214-prog/worldquant-harness` — the **same code**, not an independent observation.
+- `zhutoutoutousan/worldquant-miner` — **declared, never applied**: `mini-quant/alpha_backtesting_system.py:32-35`
+  stores `commission=0.001` and `slippage=0.0001`; neither attribute is read anywhere in the repo,
+  and `process_signal`, the only consumer (called at line 221), has a body of `pass`. The costs are
+  decorative, and a reader grepping for a cost model would find one.
+
+**Operational consequence, and it compounds with s16's:** every performance number from this ground
+is the output of an unpriced search reported gross. Multiplicity-blind makes the number
+unpriceable; cost-blind makes it unrealisable. These are independent defects and both hold class-wide.
+The standing prior for this seat is unchanged in direction and strengthened in force: an artifact
+from this class enters as a hypothesis with no better prior than a randomly drawn cell.
+
+### 4. CORRECTION to s16's stated n
+
+s16 reported its census over n = 14. Two of those repos are near-duplicates: QuantGPT and
+worldquant-harness share **34 byte-identical** `.py`/`.md`/`.ipynb` files (29.8% of the smaller
+repo). A sha256 pairwise scan over all 91 repo pairs found this was the only pair above 10% overlap.
+**The class is 13 independent observations, not 14.** s16's headline is not overturned — 13
+independent zeros carry the same verdict — but any future significance statement over this class
+must use 13, and this is the failure mode of counting repos as observations without checking they
+are distinct.
+
+---
+
+## BRAIN s18 (2026-08-29) — the empirical failure-mode taxonomy of a compiled expression language, and the one class the desk's generator leaves unenumerated
+
+**Source:** `zhutoutoutousan/worldquant-miner` @ `6a0c9433`, Apache-2.0,
+`generation_two/core/template_validator.py` (1,837 lines) + `compiler_knowledge.json`.
+**DERIVES-FROM:** NONE (checked) — no other repo in the 13-repo permissive class carries an
+error-classification layer; s17's duplicate-pair scan found no sibling of this file.
+**Tier:** executable (probe: `data/brain_hunter_s18_validator_probe.py`, results
+`data/brain_hunter_s18_validator_probe.json`).
+
+### What is actually worth taking
+
+Not the code — the code is largely dead (see the graveyard entry of the same date). What is worth
+taking is the **error taxonomy**, because it was not designed, it was *paid for*: each class is a
+distinct rejection message the author hit often enough against a real simulator to write a
+dedicated repair arm for. Eight classes, in the order the file handles them:
+
+| # | class | what the compiler rejected | MT5 / desk analogue |
+|---|---|---|---|
+| 1 | `unknown_variable` | identifier not bound in scope | n/a — the desk composes callables, not text |
+| 2 | `invalid_field` | field id not in the region/delay universe | **live**: a feature absent for a symbol at that timeframe |
+| 3 | `syntax_error` / `unexpected character` | malformed expression, usually a missing comma | n/a by construction |
+| 4 | `type_error` / scope mismatch | REGULAR vs MATRIX vs VECTOR operator applied to the wrong field type | **`needs_panel`** — the desk already has this one, and it is the only one it has |
+| 5 | event-input incompatibility | cross-sectional/arithmetic operator applied to an event-shaped (sparse, irregularly-stamped) field | **live and uncovered**: the MT5 analogue is a calendar/event feature (macro releases, rollover stamps) fed to `rank`/`zscore`, which are defined on a dense panel |
+| 6 | arity (`invalid number of inputs`) | operator called with the wrong parameter count | n/a — Python signatures enforce it |
+| 7 | **missing lookback** | a windowed operator invoked without its window | **live and uncovered — see below** |
+| 8 | unknown operator | name not in the operator set | n/a |
+
+Classes 1, 3, 6 and 8 cannot occur on this desk *by construction*, and that is a real
+architectural advantage worth recording rather than a gap: `combination_engine` enumerates typed
+`Combination` dataclasses, so there is no text layer in which a lexical or arity error can exist.
+Class 4 is covered by `CROSS_SECTIONAL`/`needs_panel`, whose docstring already names the exact
+failure the BRAIN author hit ("a CS transform silently computed on a single symbol degenerates to
+a constant"). **Two transfer and are not covered: class 5 and class 7.**
+
+### Class 7 is the one with a number attached — the desk's transform windows are hardcoded and are not trials
+
+`libs/alpha_factory/evaluator.py:91-94` fixes the lookback of both windowed transforms:
+
+```
+if tf == "ts_rank": return x.rolling(60, min_periods=30).rank(pct=True)
+if tf == "decay":   return x.ewm(halflife=10, min_periods=10).mean()
+```
+
+`60` and `10` are free parameters of the hypothesis. They are **not fields of `Combination`, not
+part of `Combination.key`, and therefore not counted in `CombinationSpace.n_trials`.** Today that
+is honest — one point on the axis is enumerated and one trial is paid for. It stops being honest
+the moment anyone tunes either constant, because the deflation would not know a second point was
+tried. This is the L1.60 shape (a threshold living inside a stage rather than in the policy),
+found here only because BRAIN's taxonomy names lookback as a first-class failure class rather
+than an implementation detail.
+
+**Disposition — the recommendation, for a seat that is not research-frozen:** promote the window
+to a field of `Combination` with today's values as the sole default, so `key` and `n_trials`
+carry it. That is a *no-op on the enumerated space today* and makes any future window sweep pay
+its own multiplicity. It is deliberately NOT a proposal to sweep windows now: adding a second
+window point multiplies the space by 2 and must earn that through the same gates as anything else.
+
+### Class 5 — the event-input analogue, logged as a named gap not a fix
+
+The MT5 analogue is exact: a macro-calendar or rollover feature is *event-shaped* (values exist on
+a sparse, irregular subset of bars), and `rank`/`zscore` in `evaluator.transform` operate on the
+dense panel row, so an event feature entering a CS transform is ranked against bars where it does
+not exist. Whether that occurs today depends on how the calendar features are forward-filled
+before they reach the panel, which this seat did not measure and does not claim. **Named as a
+measurement, not a defect:** for each event-shaped feature reaching `enumerate_space`, what
+fraction of panel rows carry a real (not forward-filled) observation? A CS transform over a column
+that is ≥90% carried-forward is class 5 wearing MT5 clothes. Routed to the inbox rather than the
+watchlist because it is an engine question, not a hypothesis.
+
+### Adoptable, cheap, and the reason this file was worth reading at all
+
+The taxonomy itself is the deliverable: it is the list of ways an expression generator produces
+*well-formed-looking candidates that are semantically void*, discovered by someone else's
+simulator budget. The desk's generator is immune to half of it and already handles one more. That
+is a genuinely good result to be able to state with evidence, and it retires the recurring worry
+that `combination_engine` "has no validator at all" — it has no *parser*, which is why it needs no
+validator for classes 1/3/6/8.
+
+## BRAIN s19 (2026-08-29) — the evaluation-layer census of the permissive generator class: 7 of 14 repos never compute a number at all
+
+s18 handed this seat item 1: *what do the other 11 repos report a factor ON, and does the class
+share ONE copied evaluation harness* — in which case s16's "13 independent zeros on multiplicity
+control" would be fewer than 13 independent observations. Both halves are now answered, by
+measurement rather than by reading, from the 14 already-local shallow clones (**zero network this
+run**). Reproduce with `data/brain_hunter_s19_eval_census.py`.
+
+### Answer 1 — there is NO shared evaluation harness. s16's independence holds.
+
+AST-hashed every metric-computing function body in all 14 repos and cross-matched by hash.
+**19 cross-repo duplicate metric functions, and all 19 are the single already-known
+`Miasyster_QuantGPT` ↔ `gyx09212214-prog_worldquant-harness` byte-identical pair** (s17 part 3).
+Not one metric function is shared by any other pair of repos. The copying s17 found is confined to
+that one fork; the class did not converge on a common evaluator.
+
+### Answer 2 — but 7 of 14 have no evaluation layer to control, which is the bigger finding
+
+Taxonomy of the 14 (`.py` files only; the census counts API surface and local-statistic surface
+separately, so "delegated" is a measured property, not an impression):
+
+| class | n | what it means |
+|---|---|---|
+| **DELEGATED** | 7 | zero local statistics. Reads `.get('sharpe')` / `.get('fitness')` / `/alphas/{id}/recordsets/pnl` back from the platform API and reports THAT. |
+| **LOCAL** | 4 (3 independent) | computes IC/Sharpe/returns itself. QuantGPT + harness are one codebase, so 3 distinct evaluators exist in the class. |
+| **NONE** | 3 | pure generators — no evaluation vocabulary anywhere (`nutdnuy`, `seuzxh`, `mohitprashant`). |
+
+The delegated seven are `0xceb1_brain-learn`, `NewAmorend_AlphaGen-Agent`,
+`slydg_Lightweight-Alpha-Miner`, `xiao634zhang_wq-factor-miner`,
+`zeron-G_worldquant-alpha-research-agent` (all five read platform `sharpe`/`fitness` keys), plus
+`aircrushin_wq-alpha-agent` and `angel4angelov-glitch_wq-alpha-pipeline` (both fetch the
+platform's PnL recordset and only compute a *correlation* on it — dedup, not evaluation).
+
+**This REFINES s16 rather than overturning it.** "Zero multiplicity control" in a repo that
+computes no statistic is structurally guaranteed and therefore uninformative — you cannot deflate
+a number you never produced. The informative population on the multiplicity axis is the **3
+independent local evaluators**, and all 3 still have zero deflation. The class-wide claim survives
+on a smaller, honest n; the correct statement is "3 of 3 evaluators that compute anything apply no
+multiplicity correction, and the other 11 delegate or abstain".
+
+### What the delegation actually means, and it is the transferable lesson
+
+A repo in the DELEGATED class reports the vendor's **in-sample simulation metric**, judged against
+the vendor's **submission filter** (Sharpe ≥ 1.25, turnover band, fitness) — the exact threshold
+this seat's brief forbids importing. So for half the class, every published number inherits *all*
+of the vendor's process properties (IS-only, gross of this desk's costs, a filter calibrated for an
+operator who runs OOS afterwards and can afford false positives) and *none* of its later
+validation. The number is not weak evidence; it is a different quantity wearing a Sharpe's name.
+
+**Desk transfer, and it is a live one:** the desk has its own delegation seams — any place a
+verdict is read back from a producer rather than recomputed at the consumer. The GAP-FIXER cycle
+already named the dominant desk defect as *a verdict computed then discarded by the layer above*;
+this is its mirror image, *a verdict imported then reported as if locally earned*. L1.60's "import
+the number, never restate it" is correct precisely because the imported number must keep its own
+provenance attached. Worth one targeted audit: every desk consumer of an externally-computed
+performance statistic should carry the producing gate's identity in the same record.
+
+### One adoptable negative-result detail: `NaN → 0` inside an independence gate
+
+`angel4angelov-glitch/src/wq_pipeline/correlation.py:115-123` replaces NaN with **0.0** before
+`np.corrcoef`, and feeds the result to `greedy_dedup` at a correlation threshold. Two alphas with
+the same missing history therefore share a fabricated flat segment and correlate *upward*; the
+dedup then discards genuinely independent alphas as duplicates. The bias runs in the direction
+that costs the most — it shrinks the kept set. The desk's own independence checks should use
+pairwise-complete observations and a minimum-overlap floor, never a zero fill; naming it here
+because the failure is silent and produces a smaller, more confident-looking survivor set.
+
+### NOT done, said plainly
+
+- s18 item 2 (the 25 no-licence repos, census-only) is **untouched for a fifth session**.
+- The class-5 forward-fill measurement from s18 is still **unmeasured** (engine question; this
+  seat is research-frozen).
+- The BRAIN-scoped collector arm is now **ELEVEN sessions old** (s9's gap). Naming it again
+  without fixing it remains the finding; it belongs to a non-frozen seat.
+
+---
+
+## 2026-08-29 (BRAIN HUNTER s19) — the 14-repo class has **three** evaluation designs, not fourteen: s16's class-wide prior is real but its evidence is ~4x weaker than booked
+
+**What was asked** (s18 NEXT-GROUND item 1): what does each of the 14 permissively-licensed BRAIN
+generator repos report a factor ON, and does the class share ONE copied evaluation harness — which
+would collapse s16's "14 of 14 independent zeros" on multiplicity control?
+
+**Method** (`data/brain_hunter_s19_eval_census.py`, artifact
+`data/brain_hunter_s19_eval_census.json`): walk every `.py` in all 14 already-local shallow
+clones; per file count platform-API surface (`api.worldquantbrain.com`, `/simulations`) vs
+local-statistic surface (`.corr(`, `spearmanr`, `np.corrcoef`, `.pct_change(`, `cumprod`);
+AST-parse and SHA1 the **body** of every metric-computing function; cross-match hashes across
+repos. 2,264 `.py` files, 4,466 functions, 71 metric functions hashed. **Zero network.**
+
+**The answer, and it is not the one the question expected.**
+
+1. **No shared harness across the class — with exactly one exception, already known.** 19
+   duplicate metric-function bodies were found and **all 19 are the QuantGPT ↔
+   `worldquant-harness` pair** (s12's known 34-file rename-fork). Not one hash is shared by any
+   other combination of repos. So the class did *not* copy one evaluation layer.
+
+2. **But 8 of 14 have NO evaluation layer at all.** `brain-learn`, `AlphaGen-Agent`,
+   `Quant-Alpha-Hypotheses`, `brain-paper-to-alpha-plugin`, `quant-factor-skill`,
+   `Lightweight-Alpha-Miner`, `wq-factor-miner`, `worldquant-alpha-research-agent`: zero local
+   statistic surface, and every one of them POSTs the expression to
+   `api.worldquantbrain.com/simulations` and reads `sharpe`/`fitness`/`turnover`/`returns`/`margin`
+   straight back off the response. They do not evaluate factors; they **ask the platform**.
+   `zhutoutoutousan_worldquant-miner` (306 API hits, 6 metric funcs) is functionally a ninth.
+
+3. **Distinct evaluation designs in the class: three.** (a) WorldQuant's own simulator, shared by
+   9 repos — one design, used nine times; (b) the QuantGPT/harness harness, one design shipped
+   twice; (c) `aznikline_alpha-mining-system` — the only repo with **zero** API surface and a real
+   local train/test Rank-IC split. (`aircrushin`, `angel4angelov` carry one metric function each
+   on top of an API path and are rounding error.)
+
+**CONSEQUENCE FOR THE DESK — a downgrade of desk-held evidence, not a new find.** s16 booked "14 of
+14 permissive generator repos have ZERO multiplicity control" as a standing prior. The *finding*
+survives (the vocabulary scan is unchanged and correct). Its *strength* does not: on the evaluation
+axis these are not 14 independent people independently omitting multiplicity accounting. Nine of
+them omit it because **they never wrote an evaluator** — the omission is inherited from the
+platform, which is one observation, not nine. The honest restatement is: **the platform's own
+reported fitness is the class's dominant evaluation, and it carries no multiplicity correction;
+plus two independent local harnesses that also carry none.** n≈3, not n=14.
+
+- **Action:** amend the s16 prior in this inbox (2026-08-29, fact 1) to carry n≈3 distinct designs.
+  The operational conclusion is UNCHANGED (any artifact from this ground is the output of an
+  unpriced search and enters as a randomly-drawn cell) — but the desk should not cite "14 of 14"
+  as if it were 14 independent confirmations. This is the L1.7 duty run against our own finding.
+- **Why it also strengthens one thing:** the class's cost-blindness (s17) and multiplicity-blindness
+  now have a single named upstream cause rather than fourteen coincidences, which makes the prior
+  *more* mechanistic even as it makes it *less* replicated.
+
+**SECOND-ORDER, and it is the item worth carrying:** if 9 of 14 report the platform's own fitness,
+then this ground's numbers are not merely uncorrected — they are non-reproducible off-platform by
+construction, because the desk cannot re-run the evaluator that produced them. That is a permanent
+property of the ground, not a defect of a repo, and it caps how much any published number from a
+BRAIN generator repo can ever be worth to this desk. Mechanism, operator semantics and failure
+taxonomies remain fully minable; **reported performance from this ground is worth zero and should
+be treated as absent, not as weak.**
+
+## 2026-08-29 (free-data run w) — three method rules, each found by a defect it actually caused
+
+**1. AN OFFSET-SCAN ARGMIN OVER UNEQUAL-n HOURS CAN BE WON BY A PARTIAL BAR.** Measuring the
+London auction hour on XPDUSD, hour 00 returned the lowest MAE (7.32) and beat the true hour 15
+(7.67) — because hour 00 has **n=959** against a modal **n≈1,686**: it is a session-open partial bar
+that exists on only a subset of days, so its argmin is computed over a *different population*. The
+true hour was identifiable only as a clean local minimum against its neighbours (14: 14.36, 16:
+11.28) and by matching XPTUSD exactly. **RULE: every offset scan on this desk must require n-parity
+(a minimum fraction of the modal n) before accepting an argmin, and should report the local-minimum
+structure, not just the winner.** This is sharper than the existing `EURTRY` caveat: there the weak
+case was flagged by a low discrimination ratio; here **the winner itself was the artifact**.
+
+**2. A VERSIONED DOCUMENT URL SERVES A FROZEN VINTAGE AT HTTP 200, FOREVER, WITH NO ERROR.** The
+World Bank Pink Sheet lives at `thedocs.worldbank.org/en/doc/<hash>-00500<YEAR>/related/…xlsx`. The
+prior year's path still returns **HTTP 200, 778 kB, a valid xlsx that parses cleanly** — ending
+eight months stale. A collector that hardcodes the link is silently frozen and never raises.
+**RULE: for any versioned-document source, re-grep the link from its landing page on every pull AND
+assert the file's own `Updated as of` string against `max(period)`.** This is the desk's "empty
+artifact asserts absence" class **inverted** — a *full, valid, wrong-vintage* artifact asserts
+currency, which is the harder direction to catch because every sanity check passes.
+
+**3. A SOURCE CAN ENCODE "DID NOT ANSWER" AS ZERO — L1.28a INSIDE SOMEBODY ELSE'S DATA.** The LBMA
+forecast survey publishes a non-participating analyst as `Range $0 - $0, Average $0`. Including
+those cells moved the 2026 gold consensus by **−9.7%** and the dispersion by **3.4x**, with no
+exception and an entirely plausible-looking output. The desk's own law says UNMEASURED and ZERO must
+never render identically; the same test must be applied to every ingested source, not only to the
+desk's own metrics. **RULE: on ingest, check whether the source's null sentinel is a numeric value,
+and assert it explicitly.** (Prior instances of the sentinel family in this desk's record: the
+World Bank's missing marker is the literal string `…`, not blank and not NaN — a naive
+`errors='coerce'` silently zeroes it too.)
+
+**4. §13 IS CHECKED BEFORE ADOPTION, NOT AFTER — AND THE CHECK IS THE PUBLISHER'S TERMS PAGE, NOT
+AN INFERENCE FROM THE ENDPOINT BEING OPEN.** `lbma_auction_prices_json` was carried in the universe
+map as **adopted, verified-clean**, since 2026-08-25/27, with a `license` field reading *"LBMA
+publishes benchmark prices free for reference … non-commercial reference use only"*. That was an
+assumption. The publisher's own page states a licence from IBA is required to **obtain, use or
+redistribute** historical benchmark data, *including for pricing and valuation activities*, and that
+the historical tables were **moved behind a licence wall** while the chart's backing JSON stayed
+open. Re-graded `excluded-licensed` this run and the local archive deleted. **RULE: an open endpoint
+is never evidence of a licence. Before any source is graded adopted, its publisher's terms/licence
+page must be opened and quoted verbatim into the map entry — and "free to access" and "free to use"
+must be recorded as two separate fields.**
+
+## 2026-08-29 — BRAIN s19 — the denominator rule, paid for by this seat's own retracted prior
+
+**Origin:** `data/brain_hunter_s19_evaluation_axis.json`. s16 published "0 of 14 permissive BRAIN
+generator repos carry any multiplicity control" as a corpus-level prior. s19 measured the
+population that statement quantifies: **10 of the 13 authorships compute no factor metric at all**
+— every `sharpe` in them is `.get()` off the platform's simulation response or a literal. They
+cannot carry a multiplicity control because they have no evaluation stage. The prior's honest form
+is **n=3, not 13**.
+
+**THE TRANSFERABLE RULE, and it binds this desk's own censuses:** a vocabulary grep over a corpus
+measures *the corpus that could have used the vocabulary*. Before reporting "0 of N do X", measure
+how many of the N are even in a position to do X — otherwise the headline number is an absence
+statistic wearing the costume of a finding, and it inflates in exactly the direction that flatters
+the searcher (L1.57; WS-005 class). **Concretely: every `0 of N` line this desk publishes from a
+grep census should carry its eligible-N next to its N.** That is one extra measurement per census
+and it is what separates "they all overlooked it" from "they were never doing it".
+
+**And the second half — point the instrument where the exposure lives.** This class outsources its
+statistics AND its out-of-sample to WorldQuant's simulator, so its multiplicity exposure is not in
+its code at all: it is the count of simulations fired, which s16 tabulated one column away
+(`gen_scale_hits`) and never joined to the multiplicity column. A grep-shaped instrument was
+pointed at a scale-shaped quantity. Named for s20 as the one live question left on this ground.
+
+**Not a defect claim against the desk:** the desk's own `n_trials` accounting is a count of
+generated cells, i.e. already the scale-shaped instrument. This is a reporting-discipline item for
+census output, not an engine item, and it is stated as a rule to apply, not an investigation.
+
+### 2026-08-29 (free-data run x) — method findings
+
+1. **A CONSISTENCY RATIO BETWEEN TWO PUBLISHED COLUMNS IS A FREE ERROR DETECTOR, and it caught a
+   real one.** Where a source publishes both a quantity and a value, their ratio implies a price the
+   source never publishes — diffable against the desk's own tape. On LBMA clearing this proved the
+   unit mapping, the calendar alignment and the absence of scale error in ONE test (gold corr
+   0.999982), and then flagged silver 2024-05 as a **published-value error** (+6.55%) that no
+   internal check could see. **Generalise: for every adopted source with ≥2 numeric columns, derive
+   the implied third quantity and diff it.** Cheap, and it audits the publisher rather than the parser.
+2. **TEST YOUR OWN EXPLANATION OF A RESIDUAL BEFORE RECORDING IT.** My first read of that 6.55% was
+   value-weighting in a volatile month. It failed its own control: another month with an identical
+   within-month CV deviated 0.94%, and corr(|dev|, CV) was only +0.20. Had I not tested it, a real
+   published error would have been filed as a known-benign artifact — the most expensive kind of
+   wrong entry, because it *closes* the question.
+3. **PRINTING PRECISION MASQUERADES AS MARKET NOISE.** Silver's whole 0.72% dispersion was the value
+   column's one-decimal-in-billions quantisation (±0.67% at ~7.5bn) while gold's was 0.13% at ~38bn.
+   **Before attributing dispersion to a market, compute the quantisation implied by the printed
+   precision** — the same series can look 5× noisier purely from magnitude.
+4. **A SINGLE COLUMN CAN CARRY TWO DATE ENCODINGS.** LBMA's vault file holds 79 raw Excel serials
+   and 41 `YYYY-MM` strings in one column; a text-only reader keeps 41, drops 79, and returns a
+   gap-free-*looking* series that passes every emptiness check. **Branch on cell type, and assert
+   parsed-row-count against the source's own stated start date** (which caught it here: the publisher
+   says July 2016, the parser must reach July 2016).
+5. **DISTINGUISH THE EDGE FROM THE POLICY, IN BOTH DIRECTIONS.** LBMA 403s ClaudeBot but serves
+   robots.txt to a browser UA disallowing only `/cache/`; IMF 403s *every* UA including full browser
+   headers, from both hosts, at the Akamai edge. The first is a UA filter over a permissive policy;
+   the second is a datacentre-IP wall. **Neither is a §13 exclusion** — recording either as "walled"
+   loses a legitimate source (the free-data-g lesson, recurring). Probe with ≥2 header profiles
+   before grading, and record WHICH wall it is.
+6. **AN OPEN ENDPOINT ON THE SAME HOST CAN HAVE A DIFFERENT LICENCE FROM ITS NEIGHBOUR.** LBMA's
+   benchmark price requires an IBA licence in explicit terms; LBMA's OWN statistical publications on
+   the same site carry only a liability disclaimer. Run (w)'s withdrawal of the price was correct AND
+   the vault/clearing files are legitimately usable. **Grade the DATASET, never the host** — the
+   host-level generalisation would have cost the desk both.
+7. **WAYBACK CDX ENUMERATES POPULATIONS A LIVE SITE HIDES (OP-098, re-confirmed on a new ground).**
+   13/13 direct probes for LBMA's pre-2023 survey years returned 404; CDX returned per-analyst PDFs
+   back to 2009 and HTML to 2003. **A 404 sweep is evidence about the LIVE site only — never about
+   the existence of the data.** Run the CDX enumeration before grading any back-history absent.
+8. **NEVER WHOLE-FILE-REWRITE A SHARED JSON STATE FILE TO SET ONE KEY — I did, and I could not
+   afterwards prove I had lost nothing.** I set `last_data_axis_dig` in `data/cadence_state.json`
+   with a `json.load` → mutate → `json.dump(indent=1)` round-trip. The file was `M` in the working
+   tree at session start and was byte-identical to HEAD afterwards, i.e. **my write silently
+   normalised away whatever the working-tree difference was.** It resolved benignly here (two
+   sibling worktrees refreshed at 12:48 and 13:59 the same day are byte-identical to HEAD, and HEAD
+   already carried the value I was setting), but **the benign outcome was luck, not method** — a
+   concurrent writer's edit in the preceding hour would have been destroyed with no trace and no
+   error. `cadence_state.json` has multiple racing writers across ≥5 checkouts (the same unlocked
+   multi-writer shape already recorded for `macro_state.json`). **Fix: set one key with a targeted
+   in-place edit, and diff against `git show HEAD:<path>` BEFORE writing so a working-tree
+   difference is seen rather than overwritten.** A reformat is indistinguishable from a revert at
+   the point of reading — which is precisely why it passes review.
+
+## 2026-08-29 — BRAIN hunter s20: the "advertised capability, silently inert" pattern, with a desk-shaped test
+
+Two independent defects in one function made `aznikline/alpha-mining-system`'s neutralization a
+plain demean 100% of the time while its README advertised industry/size neutralization: a producer
+writing a **constant** into the grouping column (so the dummies are shape `(n,0)`), and a consumer
+whose `np.hstack` **always raises** on a 1-D intercept, caught by a bare `except:` returning a
+fallback that is a plausible-looking number. Neither half is visible from the output — the returned
+Series has the right index, the right dtype and a sane distribution.
+
+**The transferable test, and it is cheap:** for every desk transform that has a *fallback path*,
+assert that the PRIMARY path actually executed — not that the output is well-formed. A fallback
+that fires on 100% of calls and a fallback that never fires produce identical-looking artifacts,
+which is the WS-005 shape (absence read as a clean verdict) wearing a `try/except`.
+
+Desk transfer check for the specific instance was run this session and is NULL (zero
+`lstsq`/`resid`/`polyfit` under a bare `except:` in `libs/alpha_factory` or `desks/mt5/research`).
+The GENERAL instrument — a fallback-taken counter on transforms that have one — is not built and
+is proposed here; it belongs to a seat that is not research-frozen.
+Evidence: `data/brain_hunter_s20_group_axis_and_gen_scale.json`.
+
+---
+
+## THE SCALE-HOMOGENEITY SCREEN — a one-line falsifier for every scoring function on this desk
+**Raised: 2026-08-29, BRAIN HUNTER s21. Evidence: `data/brain_hunter_s21_fitness_layer.json`.**
+
+**The mechanism.** A composite ranking objective is well-posed only if **every term has the same
+degree of homogeneity in position scale**. Mix a scale-FREE reward (Sharpe, IC, correlation,
+hit-rate, t-stat) with a scale-DEPENDENT penalty (turnover in price units, notional traded,
+absolute P&L, drawdown in currency) and the objective's optimum is *trade nothing* — while every
+component metric still prints a plausible value and the optimiser reports steady progress.
+
+**Why it is not hypothetical.** Measured on `zhutoutoutousan/worldquant-miner`'s 100,000-evaluation
+GA (`0.4·sharpe + 0.4·ic − 0.2·mean(|diff|)`): fitness falls monotonically −0.2598 → −9.8873 as the
+exposure multiplier goes 1e-6 → 100 while Sharpe and IC stay constant to 1e-15, and the GA
+converges on `rank` at |weight| ≈ 0.013 **identically on pure noise and on real EURUSD H1** — with
++0.0% improvement over 1,500 evaluations on the real arm. The objective's shape, not the data,
+produced the answer.
+
+**The falsifier, and it costs one line:**
+```
+assert score(k * signal) == score(signal)   for all k > 0
+```
+A score that fails this is a scale test wearing a performance name. (The dual check: a score that
+is invariant under `signal → -signal` cannot learn direction — the same GA's Sharpe and turnover
+terms are sign-blind, leaving an |IC| ≤ 0.03 term to decide long vs short.)
+
+**What is asked.** Enumerate every ranking/scoring/selection function on the money path — the
+gauntlet composites, promoter slot ordering, `edge_search`'s objective, generator selection
+pressure — and run both checks. **Not a proposed rewrite: a proposed measurement**, with UNMEASURED
+counted as zero (L1.28a).
+
+**Desk exposure already checked (1 of N):** `libs/alpha_factory/wq_operators.fitness()` PASSES —
+`sharpe · sqrt(|annual_return| / max(turnover, floor))` is a ratio and the floor bounds the
+degenerate corner. It also has **zero callers outside tests**, so it is one of the 227
+TESTED-but-unwired capabilities (III.16). Named by a research-frozen seat, not fixed.
+
+**A second, narrower defect from the same read, worth its own check:** the source's selection test
+is `if fitness > best_fitness`, which is False for NaN forever — so a NaN-producing branch is
+*silently deleted from the search space* rather than scored badly. On real 5-digit FX prices that
+silently removed 25% of its operator set (`delta` → `diff` hits exact zeros → `pct_change` → inf →
+NaN) while working perfectly on the author's random test data. **Any desk selector that compares
+with `>` against a running best should count its NaNs and report them, or an entire arm can vanish
+with no error and no log line.**
+
+## 2026-08-29 — free-data run (x) — three method findings, each with its fix
+
+**1. A CORRECT ROW COUNT IS NOT EVIDENCE A TABLE PARSE WORKED.** Extracting the LBMA back-year
+forecast PDFs, a rank-walking parser recovered the row counts *exactly* (24 gold, 20 each
+silver/platinum/palladium — matching the document's own stated contributor count) while every
+extracted VALUE was fiction (recomputed gold mean 150.04 vs the document's published 880.74). The
+cause: character-level kerning makes the between-column separator a single space *identical* to the
+intra-number space, so both the naive parse and the de-kerned parse yield plausible numbers.
+**FIX:** any PDF table extractor on this desk must (a) bin glyphs by `Tm`/`TJ` x-coordinate rather
+than by whitespace, and (b) validate against a total printed inside the document itself where one
+exists. Structural agreement (row counts, column counts) must never be accepted as value validation
+— it is the failure mode that *looks* like success.
+
+**2. LIVENESS AND VINTAGE ARE SEPARATE PROPERTIES, AND A DOCUMENT-HASH URL CONFLATES THEM.** The
+World Bank Pink Sheet is served from `thedocs.worldbank.org/en/doc/<hash>-<vintage>/…`. A stale
+hash returns **HTTP 200 with a well-formed 778 KB workbook forever**, and the stale file's own
+"Updated on" header disagreed with its content by **twelve months**. Neither the status code, the
+byte count, nor the document's own stamp detects it. **FIX:** for any vintage-keyed document
+source, resolve the URL from the publisher's landing page on every run and never store it; take
+liveness as `max(observation date)` **per series**, never from a header. Applies to any collector
+the desk writes against `thedocs.worldbank.org` or a similar CDN-hashed document store.
+
+**3. UA-KEYED BLOCKS RUN IN BOTH DIRECTIONS, AND ONE OF THEM DOES NOT LOOK LIKE A BLOCK.** On
+`fred.stlouisfed.org`, requests carrying a browser User-Agent failed in 0.12 s with **curl exit
+code 000** — a connection-level rejection with no HTTP status, which reads as "the network is
+down". The identical URL with curl's *default* UA returned HTTP 200. Meanwhile `robots.txt` on the
+same host returned a 385-byte Akamai 403 throughout, so a robots-first check grades the whole host
+WALLED while the data door is open. **FIX:** the desk's recorded lesson is "send browser headers to
+get past bot walls"; it needs the symmetric case added — **vary the UA in BOTH directions before
+believing a wall, grade the DOOR not the HOST, and treat curl `000` as a possible header rejection
+rather than a network fault.**
+
+## 2026-08-29 — THE HOMOGENEITY FALSIFIER, generalised into a standing screen over the desk's own scorers (BRAIN hunter s22)
+
+**Origin, and it is the point of this organ:** s21 derived a one-line general falsifier from a
+BRAIN generator (`zhutoutoutousan/worldquant-miner`) whose 100,000-evaluation GA had its optimum at
+zero exposure, and applied it to exactly ONE desk function. s22 pointed it at the desk. The
+mechanism transferred; the equity factor never would have.
+
+**THE SCREEN.** A composite ranking objective is well-posed only if **every term has the same
+degree of homogeneity in position scale**. Mixing a scale-free reward (Sharpe, IC, hit-rate,
+correlation, t-stat) with a scale-dependent penalty (raw turnover in price/notional units, absolute
+P&L, drawdown in currency) produces an objective whose optimum is "trade nothing" — and the
+optimiser finds it while every component metric still reads plausibly. Mixing the other way (a
+floored denominator, a clamped bound) opens the opposite corner and rewards raw size. The test is
+one line and needs no data: **`score(k·s)` must equal `score(s)` for all `k > 0`, or the score is a
+scale test wearing a performance name.**
+
+**RUN, with the BRAIN objective reproduced as a POSITIVE CONTROL** (it must fail, and it does:
+−0.0313 → −14.92 across k = 1e−3 → 100). Probe `data/brain_hunter_s22_homogeneity_screen.py`,
+results `data/brain_hunter_s22_homogeneity_screen.json`.
+
+| desk scorer | verdict |
+|---|---|
+| `libs/portfolio/capital_competition.score` | **SCALE-INVARIANT** — `edge_bps/vol_bps`, both degree 1 |
+| `libs/stage14/score.institutional_portfolio_score` | **SCALE-INVARIANT** — every input `_clip01`'d |
+| `libs/signal_engine/alpha_competition_engine._score` | **CLEAN** (adjudicated) — `strength` is bounded 0..1 conviction; the raw curve is the clamp saturating, not exposure entering |
+| `libs/self_improvement/weight_optimizer._score` | **CLEAN** (adjudicated) — same shape, four bounded factors |
+| `libs/alpha_factory/wq_operators.fitness` | **INVARIANT ABOVE THE FLOOR, INVERTED BELOW IT** — see note |
+| `libs/validation/screen_admission.rank_score` | **FAILS — MONOTONE-DECREASING, optimum at zero exposure** → R0742 |
+
+**The floor corner is a finding in its own right.** `wq_operators.fitness` uses
+`max(turnover, floor=0.125)`, which the desk added to bound the trade-nothing corner. It does — and
+below the floor the denominator stops tracking the position, so the score becomes monotone
+*increasing* in exposure (0.0588 → 0.1859 → 0.4648 over k = 1e−3 → 0.1, flat thereafter). A clamp
+placed to close one degenerate corner opens its mirror. Harmless today: zero callers outside tests
+(III.16, one of the 227), but it must be known before anything wires it.
+
+**The failing one is on the money path and is filed as R0742**: `rank_score` orders candidates for
+scarce forward clocks and subtracts `1.0 × turnover` — a bare float with no declared unit — from a
+dimensionless Sharpe. Measured ordering inversion: candidate A (oos 1.40, 0.08 turnover/day) beats
+B (oos 1.10, 0.02/day) under a fraction-per-day convention and under an absent field, and **loses**
+to B under trades-per-day, annualised, or notional. Same economics, different clock holder, decided
+by a convention nothing declares.
+
+**ADOPT THE FALSIFIER AS A STANDING TEST, not a one-off audit.** It is data-free, costs
+microseconds, and catches the class before an optimiser is pointed at it. The desk has now watched
+this exact defect kill two external generators (s20's random target, s21's inhomogeneous objective)
+and found one instance in its own promotion path on the first sweep.
+
+### BRAIN HUNTER s23 — 2026-08-29 — a repo tree carries two `universe/` directories and a live screen reads the wrong one
+
+Not a BRAIN mechanism; found while pointing s22's liquidity-tier work at the desk's own tape, and it
+is the more expensive of the two findings. The tree holds **`desks/mt5/universe/` (24 `*_H1.parquet`)
+and `desks/mt5/data/universe/` (251)**. Same filenames, same schema, different contents: on both
+`XAUUSD_H1` and `EURUSD_H1` the two copies are `git hash-object`-DIVERGED, the shadow copy is 2026-08-23
+and the canonical one 2026-08-29.
+
+**One live reader:** `scripts/run_cot_change_screen.py:37` sets `_H1_DIR = _ROOT / "desks/mt5/universe"`.
+Its `gold` and `gold`/`silver` legs are the only two `"h1"` entries in `_LEGS`, both are present in the
+shadow directory, so **the screen does not fail — it succeeds on a six-day-stale tape** and emits a
+preregistered KILL verdict (`_BAR = -1.96`) from prices that are not the desk's prices. L1.44:
+a decision is only as live as its inputs, and this one reads green either way.
+
+**The latent half is larger than the live half.** Eight of the ten `_LEGS` currently route through
+FRED. The moment any of them is moved to the desk's own tape — which is the obvious upgrade, since
+FRED `DEX*` is a daily fixing and the desk holds H1 — the leg lands in a directory holding 24 of 251
+symbols and the missing 227 read as absence, not as a wrong path (WS-005).
+
+**FIX, one line, filed as R0743** (this seat is research-frozen and did not apply it):
+`_H1_DIR = _ROOT / "desks/mt5/data/universe"`, then re-run and compare the pooled `dx1` t against the
+recorded verdict in `docs/research/COT_SCREEN_RESULT.md` — if the verdict moves, the recorded one was
+produced by the stale copy.
+
+**THE GENERALISATION, which is the part worth keeping.** A duplicated data directory is invisible to
+every check the desk runs: both paths exist, both parse, both return non-empty frames, and the
+reader's own logs cannot distinguish them. The cheap standing test is structural rather than
+statistical — **assert that no two directories in the tree hold the same bar filename** — and it
+costs a `find | basename | sort | uniq -d`. Whoever is not research-frozen should wire it beside the
+existing artifact fences; a grep for `mt5/universe` outside `data/` is the same check in one line.
+
+---
+
+## 2026-08-29 — PROSPECTOR s20: the fix that closed GAP #210(b) reads a field name that does not exist, and the test encodes the same wrong name
+
+**Provenance: VERIFIED.** Primary source opened this run:
+`https://www.mql5.com/en/docs/python_metatrader5/mt5symbolinfo_py` (MQL5 official Python API
+reference, the vendor's own document). Corroborated in-repo by a second, independent desk producer.
+
+### 1. THE DEFECT — one wrong attribute name, and every guard built to catch it points the other way
+
+`desks/mt5/mt5desk/tape.py:124` (added **today**, commit `96d028c8`, the CRO cycle that closed
+GAP #210(b)):
+
+```python
+"freeze_level": _opt_int(info, "freeze_level"),
+```
+
+**`symbol_info()` has no attribute `freeze_level`. The field is `trade_freeze_level`.** Verbatim
+from the vendor's own example output: `trade_stops_level=0, trade_freeze_level=0, trade_exemode=1`.
+
+The desk already knew this. `desks/mt5/side_channels/broker_physics_miner.py:144` reads
+`info.trade_freeze_level` off the same object. **Two producers, same call, two names, one wrong** —
+and the wrong one is the one that just entered the money path.
+
+**WHY IT WILL NEVER BE CAUGHT BY THE DEFENCE BUILT FOR IT.** `_opt_int` is the WS-005 guard: absent
+is `None`, never `0`, precisely so *"we did not read it"* cannot render as *"the broker published
+zero"*. Against a misspelled name that guard **inverts**: it converts a permanent lookup failure
+into a clean, well-formed, doctrinally-correct `None` on 100% of rows, forever. The column will
+read as *"this broker does not publish a freeze level"* — the exact collapse the comment three
+lines above it was written to prevent.
+
+**AND THE TEST ENCODES THE BUG.** `desks/mt5/tests/test_compendium_data.py:44` builds its fake
+`symbol_info` with `freeze_level=0` and asserts `row["freeze_level"] == 0` (line 53). The test
+passes, will always pass, and tests the misspelling rather than the API. A test can encode a wrong
+convention and a guard-test can pass without ever reaching the guard.
+
+### 2. THE EXACT PATCH (named, not applied — this seat is research-frozen; money path)
+
+```
+desks/mt5/mt5desk/tape.py:124
+-        "freeze_level": _opt_int(info, "freeze_level"),
++        "freeze_level": _opt_int(info, "trade_freeze_level"),
+
+desks/mt5/tests/test_compendium_data.py:44   fake field  freeze_level=0  -> trade_freeze_level=0
+   (line 53's assertion on row["freeze_level"] is CORRECT and stays: the output key is the desk's,
+    the input key is the vendor's. That distinction is what the current test erases.)
+```
+The regression test that would have caught it, and should land in the same commit: **assert the
+producer reads only names present in the vendor's namedtuple** — construct the fake from the
+documented field list, not from the desk's output keys. A fake built out of the code's own
+expectations can never falsify the code's own expectations.
+
+**Costs nothing to verify when it runs:** the tape has one file on disk
+(`2026-08-27.parquet`) and it predates the whole nine-field block — `trade_mode`,
+`margin_initial`, `trade_stops_level`, `freeze_level`, `volume_max`, `volume_limit` and `spread`
+are **ABSENT COLUMNS**, not null ones (measured this run: 1,908 rows, 248 symbols, 11 columns).
+So the fix lands before a single row is written with the broken name, if it lands before the
+Windows task is registered. After that, every historical row is unrecoverable — this is
+point-in-time data, and a night's freeze level is unbuyable once the hour passes.
+
+### 3. THE LARGER FINDING — `symbol_info()` publishes **96 fields**; the desk records **22**
+
+Full field list read from the vendor reference this run. The desk's producers (tape 20, registry
+12, broker_physics_miner 2) touch **22 distinct fields of 96, in a call it already makes hourly at
+zero marginal cost**. GAP #210(b) closed "11 of ~20"; the real denominator is 96. The nine highest-
+value unrecorded fields, each free in the same call:
+
+| field | what it is | why the desk's absence of it is load-bearing |
+|---|---|---|
+| **`trade_exemode`** | 0=Request 1=Instant 2=Market 3=Exchange | **This is the DELAY axis** the open backlog row asked for — the broker's own declaration of whether a fill can be requoted/delayed. Recorded nowhere. See §4. |
+| **`path`** | the broker's own instrument-tree taxonomy string | **A free, exogenous, point-in-time GROUPING.** BRAIN s11/s24/s25 spent five sessions building and sweeping cluster groupings off `1−corr`; the broker publishes its own partition and no seat has ever read it. It is not derived from returns, so it cannot inherit the return matrix's own structure — the one weakness every clustering arm on this desk shares. |
+| **`spread_float`** | fixed vs floating spread (bool) | The cost surface applies one spread regime to all 251 symbols. A fixed-spread symbol has **no spread-widening tail**; a floating one does. This is a per-symbol cost-model switch, published, unread. |
+| **`trade_tick_value_profit` / `trade_tick_value_loss`** | ASYMMETRIC tick values | The desk records only `trade_tick_value`. If these differ on any symbol, **every P&L the desk computes is wrong on one side** and correct on the other — the hardest class of unit error to notice, because half the trades check out. |
+| **`start_time` / `expiration_time`** | contract start / expiry | Energy and softs CFDs **expire and roll**. A backtest spanning a roll it cannot see is a backtest on a discontinuous series. Unmeasured, so currently reads as "no symbol expires". |
+| **`trade_liquidity_rate` / `price_volatility`** | broker-published liquidity and vol | The **LIQUIDITY-TIER** half of the same backlog row — which BRAIN s24 killed at 0.953 *using a 3.5-second spread poll as its proxy*. The broker publishes the quantity directly. The tier was refuted on a proxy, never on this. |
+| **`filling_mode` / `order_mode` / `expiration_mode`** | which order types/fills the symbol permits | The execution model assumes every order type is available on every symbol. Published per-symbol, unread. |
+| **`margin_hedged` / `margin_hedged_use_leg`** | hedged-position margin | Sizing input for any two-legged sleeve; the desk has none of it. |
+| **`session_deals` / `session_volume` / `session_turnover`** | venue activity | The only activity measure the broker gives on a CFD book that has no public tape. |
+
+**The habit this adds:** when a producer wraps a vendor call, census the vendor's field list against
+what the producer writes *before* grading the producer complete. GAP #210(b) was closed against the
+count of fields someone remembered, not against the count the API publishes — which is why "11 of
+20" read as an 80% fix of a 23% problem.
+
+### 4. THE BACKLOG ROW THIS RESOLVES
+
+*"DELAY and LIQUIDITY-TIER as declared UNIVERSE axes"* (BRAIN hunter s22) — the last pending
+verification in `source_backlog`. **VERIFIED, and the answer is that both axes are PUBLISHED BY THE
+BROKER AND DISCARDED BY THE DESK**, not absent:
+- **DELAY** → `trade_exemode` (+ `trade_stops_level`/`trade_freeze_level` bounding where a stop may
+  legally sit). Captured by no producer.
+- **LIQUIDITY-TIER** → `trade_liquidity_rate`, `price_volatility`, `session_volume`. BRAIN s24
+  killed the tier at 0.953 built out of `median_spread_pts` — which is itself a **3.5-second
+  `symbol_info` poll mislabelled a median** (s24, same seat). **A refutation of a proxy is not a
+  refutation of the axis** (L1.16a): the kill stands on the constructed tier, and the broker's own
+  liquidity fields have never been read. Re-entry is gated on the named enabling change — the
+  fields landing on disk.
+
+Both halves route to the same one-line patch surface: the nine-field block in
+`contract_terms_row`, which is **already written, already correct in shape, and inert until the
+Windows task is registered** (GAP #210, principal-gated, `data/PRINCIPAL_ACTION.md`). Every field
+in §3 is a one-line addition to a block that has not yet run — the cheapest moment in its life.
+
+---
+
+## s28 (2026-08-29) — TWO PROCESS IMPORTS FROM THE ALTERNATIVE-IMPLEMENTATION LAYER
+
+**1. TYPE-CHECK EXPRESSIONS BEFORE EVALUATING THEM** (from `AshSwing/FastPlus`, MIT, TEXT only).
+The operator set is a typed algebra (Matrix / Vector / Group / constants) with a hard rule that a
+signal must be Matrix-compatible — full census in
+`data/brain_hunter_s28_operator_typespec.json`, detail in
+`docs/research/search_operator_library.md`. The desk's generator has no type discipline, so a
+malformed expression is discovered by EVALUATING it. A parse-time check costs microseconds and
+saves two things the desk pays for: compute, and **trial count** — a candidate that could never
+have been well-formed should never have entered the multiplicity denominator. Concrete step:
+give each operator in the desk's library a declared `(arg_types) -> return_type` and reject at
+construction. Cheap, mechanical, and it makes an illegal cell unrepresentable rather than
+merely unprofitable.
+
+**2. `keep_for_learning` AS A DISPOSITION** (from `i9880612/alpha-garden`, MIT). Its screen has
+four outcomes — `discard`, `keep_for_learning`, `submit_queue`, `auto_submit` — and the second
+is the one the desk lacks a name for: a candidate that fails the bar but still updates
+field/operator weights for the next generation. The desk's graveyard already holds the material
+(L1.17: every failure preserved as structured knowledge) but **nothing reads it back into
+generation** — the loop from graveyard to generator prior is open. This is not a bar change and
+must not become one: the disposition is about what a REJECTED candidate teaches, never about
+letting it through. Route: a generator prior that consumes `docs/graveyard.md` outcomes.
+
+**NOT IMPORTED:** neither repo's thresholds, Sharpe/fitness bands or auto-submit path. Those are
+an in-sample submission filter for an operator that runs its own OOS afterwards (L1.6).
+
+---
+
+## BRAIN s29 — 2026-08-29 — three method imports from `efJerryYang/worldquant-brain-simulator` (GPL-3.0, mined as TEXT)
+
+**1. TRUNCATION MUST BE APPLIED TO NORMALISED WEIGHTS — and the desk has no truncation at all.**
+The repo clips raw alpha before normalising, which makes the cap a function of expression scale
+(the BRAIN s21 scale-homogeneity defect, third sighting). The correct order is
+demean → normalise → clip → **re-normalise**. The import is not their bug, it is the missing step:
+the desk's cross-sectional cells have NO per-name weight cap, so a thin MT5 cross-section
+(s28: ~140 names, and far fewer inside a ward-k24 peer group) can concentrate the book on one
+symbol with no ceiling. This is a CONCENTRATION control on a live-money path, it is cheap, and
+its falsifier is direct: re-run the s28 cells with a 1%/2%/5% cap and report the Sharpe and the
+max single-name weight for each. Route: a seat that can write `libs/` (this one is research-frozen).
+
+**2. A PIT LIQUIDITY UNIVERSE FILTER, which is not the liquidity GROUPING s24 killed.**
+`rolling_90d_sum(log(volume × close))` per symbol, ranked as of the PREVIOUS day, top-N kept;
+plus two hygiene rules worth copying verbatim — drop each symbol's first 89 rows (window burn-in)
+and drop any DATE whose cross-section is below a floor. The desk's cells today rank whatever has
+a bar that day, so the population changes shape with the calendar rather than by rule. MT5
+analogue is immediate (`tick_volume × close`). Falsifier: does a top-N-by-liquidity population
+change the s28 cell verdicts? If not, the desk learns its results are not a liquidity artefact,
+which is worth knowing either way.
+
+**3. THE DEAD-SETTINGS AUDIT AS A STANDING CHECK.** Four of this repo's twelve settings are
+parsed and never read, and one of them (`neutralization`) silently voids the exact axis a reader
+would come to it for. The desk has the same failure mode (BRAIN s7; the `data/RECORDERS_OFF`
+family). The mechanical check is one line and has no false negatives worth caring about: for every
+key in a config schema, assert at least one reader outside the loader. Route: `ops/` fence.
+
+**NOT IMPORTED (L1.6):** no threshold, no fitness bar, no booksize, no submission path.
+
+### 2026-08-29 — BRAIN s29: three method imports, one of them the desk's own recurring defect
+
+1. **A rule read off the sample that produced it must be re-tested on features that sample never
+   saw, with the sign declared first.** s28 stated its neutraliser rule off the same six cells that
+   suggested it; s29 declared the predicted sign for six NEW features in the script before running,
+   plus an explicit falsifier (6/6, since a coin flip reaches 6/6 at p=1/64). It came back 5/6 and
+   the rule died. Under the old habit — measure, then narrate the pattern — the rule would have been
+   carried forward as established. **The cheap part is writing the prediction down; the expensive
+   part is not having done it.** Adopt as standing practice for any rule inferred from a screen.
+2. **A refutation that names the binding constraint outranks a confirmation that does not.** s29b
+   killed coarse rank as a turnover lever, but the same table showed persistent `lowvol_20` turning
+   over 0.586 against `reversal_1`'s 1.467 on identical machinery — which locates the turnover in
+   the feature's autocorrelation, not the operator. **Always run the contrast that can localise the
+   cause, not only the arm that can win.** The kill left s30 with a better-motivated target than a
+   pass would have.
+3. **`neutralization` read into a variable that is never used** (`worldquant-brain-simulator
+   simulate.py:257`): four advertised modes, one implemented, no error, and the setting *looks*
+   wired because it is read. This is the desk's own dominant defect class — a verdict computed then
+   discarded — found in the wild. **Grep suggestion for the fence seat, not buildable under this
+   seat's freeze:** flag any `settings.get(...)`/config read whose result is assigned and never
+   subsequently referenced. That is a mechanical check with no false-positive story, and the desk
+   has been bitten by this shape repeatedly (30 fences into devnull; a 2-part gate reported by its
+   non-binding half).
+
+Also imported from the same repo: `keep_for_learning`-style honesty — the author's hidden README
+TODO admits *"Truncation correctness (current not necessarily working)"* and that results differ
+from the platform. **A source that documents its own brokenness is more usable than a confident
+one**, and the admission is what stopped the truncation semantics being imported as a spec.
+
+## 2026-08-29 (free-data y) — `libs/research/pdf_text.py` hangs forever on a class of real PDFs (catastrophic backtracking)
+
+**Symptom:** `extract()` never returns on JPX daily-report PDFs. An **84 KB** file did not finish
+in 55 s; a 4 MB one did not finish in 120 s. It does not error, it does not warn — it hangs, so a
+caller with no timeout stalls indefinitely and a caller with a timeout records "extraction failed"
+for a file that is perfectly extractable.
+
+**Cause** (`faulthandler` stack → `_stream_text`, line 89, i.e. `_SHOW_RE.finditer`): the `arr`
+branch of `_SHOW_RE` is
+
+```
+rb"|\[(?P<arr>(?:\\.|[^\]])*)\]\s*TJ"
+```
+
+`\\.` and `[^\]]` **overlap** — a backslash matches both — so every backslash in a stream doubles
+the backtracking paths whenever the `]` … `TJ` tail fails. The `lit` branch is written correctly
+(`[^\\()]` excludes the backslash and is unambiguous); the `arr` branch just lost the `\\` from
+its negated class.
+
+**Measured, isolated from the PDFs** (`n` = trailing backslash-pairs, no match possible):
+
+| n | current regex | with the fix |
+|---|---|---|
+| 18 | 0.053 s | 0.000 s |
+| 20 | 0.194 s | 0.000 s |
+| 22 | 0.821 s | 0.000 s |
+| 24 | 3.139 s | 0.000 s |
+
+Clean doubling per character — exponential. 40 such characters is ~36 days.
+
+**THE EXACT PATCH** (one character class, `libs/research/pdf_text.py` line ~52):
+
+```diff
+-    rb"|\[(?P<arr>(?:\\.|[^\]])*)\]\s*TJ"             # [ .. ] TJ
++    rb"|\[(?P<arr>(?:\\.|[^\\\]])*)\]\s*TJ"           # [ .. ] TJ
+```
+
+**Verified**: with that one substitution monkey-patched in, the three JPX PDFs that previously hung
+extracted in **0.1 s / 0.4 s / 0.4 s** (`{'streams': 68, 'decoded': 68, 'failed': 0}`, 91,385
+chars) and the output decodes to correct text. NOT APPLIED — this dig runs under the research
+freeze (docs/research/* and data/* only). It is a two-minute change for whoever owns `libs/`.
+
+**Same-commit test** (the desk's own rule): the fixtures could not show this — the file's own
+comment records that an identical quadratic blowup in the stream-finder was caught by a positive
+control, not by fixtures. Add a **timing** control: assert `_SHOW_RE.search(b'[' + b'a\\\\'*40)`
+returns in < 0.1 s. A correctness fixture will pass either way.
+
+**Second, smaller finding in the same file:** `extract()` has no cmap support at all. JPX's Latin
+glyphs and digits come back CID-encoded and decode with a uniform `+29` codepoint shift, which the
+caller must know to apply; the Japanese glyphs use a per-font cmap the shift does not touch. The
+file carries 7 `/ToUnicode` streams and 14 `/BaseFont` entries that `extract()` never reads. Also,
+because it emits text in stream order with no positional information, table columns concatenate
+(`64,01065,66063,67065,510`) — a positional parse off the `Td`/`TD` operands is needed before any
+JPX table can be read as a table.
+
+---
+
+## BRAIN HUNTER s30 (2026-08-29) — two methodology imports and one self-diagnosis
+
+Source: `AshSwing/FastPlus` (MIT) operator registry →
+`data/brain_hunter_s28_operator_typespec.json` (s28 census, re-read this session). Nothing installed.
+
+**1. TURNOVER IS A SPECIFIED QUANTITY, NOT A DISCOVERED ONE.** The platform ships three
+`ts_target_tvr_*` operators (`_decay`, `_hump`, `_delta_limit`) whose entire job is: *you state the
+turnover you want, the operator solves for the smoothing parameter* (optimising λ inside a stated
+`lambda_min, lambda_max`). The desk's approach to the same constraint — s29b, s30c — is a **grid
+over the smoothing parameter, reading turnover off as an outcome**. Both find a point on the same
+curve; the difference is that one of them makes turnover an input to the research question and the
+other leaves it an output to be discovered per cell.
+
+This matters here more than it does there. s29b established that **turnover is what kills every
+cell in this family**, and a desk whose binding constraint is a cost quantity should be
+parameterising by that quantity directly — every cell run at a *fixed, comparable* turnover
+instead of at whatever turnover it happens to produce. That also makes cells comparable across
+features, which the current design does not.
+**Not proposed as a build** (this seat is frozen, and an unwired build is a defect): proposed as
+the shape of the next cost experiment. The falsifier is cheap — if solving for λ at a fixed target
+tvr produces the same break-even bp as the best grid point, the import buys nothing but
+comparability, and that should be stated rather than assumed.
+
+**2. A CODE GAP FILED AS A DATA GAP FOR SIX SESSIONS — the self-diagnosis, and it is the more
+expensive of the two.** s11–s28 recorded "the desk has no grouping map" as a data-acquisition
+problem and spent six sessions hunting taxonomies and arguing over cluster k. The registry shows
+`Group` is a **produced type** — `bucket()` makes one out of any numeric field the desk already
+owns. The actual blocker was always that **12 of the 14 group-consuming operators are not
+implemented** (confirmed this session against a primary typed registry, matching s28's secondary
+count). Six sessions of effort went to the wrong side of the pipeline because the gap was
+mis-classified once and every later session inherited the classification.
+
+**The generalisable defect, which is what belongs in this inbox:** *a missing capability and a
+missing input are indistinguishable from downstream* — both present as "we can't run this cell".
+The desk has no gate that forces the question **"is this absence a DATA gap or a CODE gap?"** at
+the moment a gap is carded, and the two route to entirely different seats (a miner vs a `libs/`
+seat). A gap carded to the wrong seat is not slow — it is **permanently unworked**, because the
+seat that receives it cannot fix it and the seat that could never sees it. Recommend the gap-card
+schema carry a required `blocker_kind: data | code | licence | compute` field, and that
+`data_axis_watchlist.md` entries whose blocker is `code` be mirrored to the build queue rather
+than living only where miners read.
+
+## 2026-08-29 — free-data run (z) — three collector-layer method findings
+
+**1. Normalise the path before grading a documented endpoint dead (NEW, generalises).**
+Eurex's own public page documents `https://api.developer.deutsche-boerse.com/eurex-prod-graphql`,
+which returns `404 Not Found`. The **same URL with a trailing slash** returns `200`. A whole
+verified-clean source (3,007 products, settlement prices, holiday calendar) sat one character away
+from being graded destroyed-at-source. This is the inverse of the MNB-WSDL class the desk already
+logged (*a live descriptor in front of a dead service*): here the **descriptor is wrong and the
+service is alive**. **Fix:** any probe that grades a documented endpoint dead on a 404 must first
+retry with/without trailing slash before the verdict is recorded.
+
+**2. `curl -L` does not follow a JavaScript redirect — and the result is a constant-size 200.**
+HKEX's `dmrarchive.asp?YYMMDD=` returns a **696-byte 200 for every date ever requested**, which
+reads as "the archive exists but holds nothing". It is a `window.location` redirect to
+`dmararchive.asp` (one extra `a`). This is now the **fourth** distinct shape of "a 200 whose byte
+count is not content" the desk has catalogued (JS-challenge page, soft-404, stooq proof-of-work
+interstitial, and now the JS-only redirect). **Fix:** the existing rule already covers it — a
+collector must assert **parsed row shape**, never status code and never size. What is new is that
+a *constant size across all inputs* is itself a positive detector: if every distinct query returns
+byte-identical length, the response is a shell, not data. Cheap to assert, and it would have
+caught this immediately.
+
+**3. Identify the clock with an offset scan before grading a residual "unexplained".**
+Run (y) adopted JPX only as *needs-monitoring* because a ~1% residual against the desk's JPN225
+tape could not be explained, correctly refusing to join on date. This run hit the identical
+situation on HKEX — naive daily-close join gave return correlation **0.4956** — and resolved it:
+a 24-hour offset scan peaked at **0.9257** with the basis sd simultaneously halving, identifying
+the desk's broker-EET stamp against the HKEX 16:30 HKT session close. **The residual was a clock,
+not a data fault.** Two independent statistics peaking at the same hour is what separates a clock
+identification from a curve fit. **Action:** run the same scan on JPX before its grade is
+revisited — it is the named next ground, and the method is now demonstrated on a sister source.
+
+**4. Sort-order bug worth naming because it understates source quality 8x.** Picking the front
+contract by *row order* instead of by *parsed contract month* gave correlation 0.118 against the
+correct 0.926. A source-quality verdict is only as good as the join key; a bad join reads exactly
+like a bad source, and the bad source gets graded and abandoned.
+
+---
+
+## 2026-08-30 — free-data run (aa) — `libs/research/pdf_text.py` HANGS on a 393KB PDF; one-token patch, MEASURED
+
+**Defect (CONFIRMED, not suspected).** `libs.research.pdf_text.extract()` does not return on
+`sif_dyr_20260827.pdf` (393 KB, JPX/OSE daily report, the source the desk ADOPTED on 2026-08-29).
+Measured: `timeout 60` → **rc=124** (two further runs killed at 120s and 180s). The file is not
+exotic — it is a stock AGPL-free exchange PDF and the desk's own adopted feed.
+
+**Root cause — catastrophic backtracking, and it is the SAME class the file's own comment already
+documents for `_STREAM_START`.** In `_SHOW_RE` (line ~50) the array branch is:
+
+```
+rb"|\[(?P<arr>(?:\\.|[^\]])*)\]\s*TJ"
+```
+
+`\\.` and `[^\]]` **overlap**: a backslash matches both alternatives, so every `[` with no
+matching `]` costs exponential time in the number of backslashes before it — and compressed PDF
+content streams are full of both. The `lit` branch on the line above is already written correctly
+(`[^\\()]` excludes the backslash); only the `arr` branch was missed.
+
+**THE PATCH — one token, `[^\]]` → `[^\\\]]`:**
+
+```
+rb"|\[(?P<arr>(?:\\.|[^\\\]])*)\]\s*TJ"
+```
+
+**Measured after the patch (isolated: library code unchanged except this one class, verified by
+`orig != patched`): 0.73 s, 90,840 chars, `{'streams': 68, 'decoded': 68, 'failed': 0}`.**
+From >60 s (never finishes) to 0.73 s, zero streams lost.
+
+**Why this is worth a commit rather than a note.** This is a research-freeze run so I did not
+touch `libs/`, but the blast radius is real: the JPX/OSE daily report is an **adopted** source and
+this is the only PDF extractor on the box, so every future JPX cycle either hangs or silently
+falls to a timeout — and a timeout in a collector reads downstream as *"the source returned
+nothing"*, i.e. exactly the empty-artifact-asserts-absence class (prospector s11). The regression
+test writes itself: extract this PDF (or any 300KB+ PDF with unbalanced `[` in a content stream)
+under a 10 s budget and assert `failed == 0`.
+
+**Related, and unfixed:** the fix comment in the file's header explains this exact hazard for
+`_STREAM_START` ("the obvious regex … goes quadratic on real PDFs … fixtures could not show that;
+the positive control did") and the sibling regex two lines below it still carries the bug. **A
+fix applied to one reader and not swept to its siblings** — the same shape as free-data s8's
+macro-reader finding. Worth grepping for other `(?:\\.|[^X])*` alternations in the repo.
+
+## 2026-08-30 — PROSPECTOR s21 — the vendor changelog is a source of DATED SEMANTICS, and the desk had none of it
+
+**1. R0747 (scheduled 2026-08-31) — financing charges 469 nights per 365 days.** Full evidence in
+`prospector_coverage.md` (s21). The structural point for this inbox: `rollover_nights()` is the
+function that prices every overnight hold on the desk, it is wired into `swap_exposure.py`, and
+**no test asserts the number it returns.** The module's docstring reasons the weekend correctly and
+names "2/7 — about 29%" as the error to avoid; the loop then commits it with the sign flipped.
+A docstring that states the intent is not a test of the intent, and here the two disagree by 28.5%.
+
+**2. Four dated drawdown-definition changes (2010 b299, 2023 b4040, 2026-04-16 b5800, 2026-04-24
+b5830), two of them eight days apart and in opposite directions.** Any MT5-sourced track record is
+on one of five definitions depending on when it was scraped. This must be applied at ingest as a
+dated step function by the six track-record seeds returning 2026-09-03/05, not rediscovered once
+per seed.
+
+**3. NEW METHOD, generalisable beyond this vendor — mine the CHANGELOG, not only the reference.**
+A vendor's field reference tells you what a field is *now*; its build archive tells you *when the
+field was born and when its meaning changed*. Both of this run's findings came out of the archive
+and neither is visible from the reference page s20 read. Standing addition to the source-grading
+habit: when a source is graded, ask whether it publishes a dated change history, and mine that too.
+Applies immediately to every institutional source the desk holds.
+
+**4. The desk's universe registry declares NO trading-session or intraday-BREAK field** (15 fields
+censused across 251 symbols). The broker publishes both, free, as structured JSON —
+`data/broker/fusion_trading_conditions.json`, Session Times 30 × 17. Scheduled index-CFD breaks
+(e.g. `AUS200 daily 05:30–06:10`) are holes a gap/overnight feature reads as market events, and the
+desk is running `overnight_gap_decay_*` shadow ledgers now. Candidate axis and candidate control.
+
+**5. Route lesson: a constant-byte 404 across every input is an SPA shell, and the sitemap is the
+door.** All `fusionmarkets.com` legal/spec paths return 1,453,459 bytes on any input; the real
+paths are capitalised and the tables are Next.js flight-encoded JSON, not HTML. The dead
+`pricing/swap-rates` scrape should be re-pointed at this extractor before the source is called dead.
+
+## 2026-08-30 — free-data ab — `median_spread_pts` is mispriced on 8 symbols, and 4 of them are OVERSTATED (silent gate false-negatives)
+
+**Field:** `median_spread_pts` in `desks/mt5/data/universe/universe.json`. `cost_surface.py`'s own
+docstring: *"the number every gate, certificate, stress scenario and forward"* uses. 19 non-test
+readers (`run_hunt12/13/14/15/22/23`, `calibrate_engine`, `execution_resolver`, `swap_exposure`,
+`alpha_habitat`, `cost_surface`, `curve_strategy_screen`, `carry_state`). **It has never been
+diffed against an external source.**
+
+**Ground truth now available, free and keyless:** forexbenchmark.com, an independent 30-day all-in
+(spread + commission) measurement of **FusionMarkets specifically**, 54 FX/metals symbols. Card and
+endpoint in `data/data_universe_map.json` → `forexbenchmark_broker_spread_benchmark`. Artifact:
+`data/free_data/forexbenchmark_fusion_spreads_20260830.json`.
+
+**Control already run — do not re-derive the false version.** The naive diff says 35/51 symbols are
+wrong. That is an artifact of comparing an all-in number to a raw-spread field: adding
+`7.00 / (tick_value * 10)` pips of commission moves agreement from **16/51 to 43/51** and the median
+ratio from 0.35 to 1.16. **The registry field is raw-by-design; most consumers are fine.**
+
+**The 8 that survive the control:**
+
+| symbol | independent all-in (pips) | desk + commission | ratio |
+|---|---|---|---|
+| USDINR | 632.21 | 4.48 | **0.01** (141× understated) |
+| USDRUB | 23,173.24 | 2,163.27 | 0.09 |
+| XAGUSD | 2.61 | 0.56 | 0.22 |
+| USDCZK / USDNOK | 164.63 / 50.47 | 65.30 / 20.31 | 0.40 |
+| GBPCHF | 0.795 | 20.56 | **25.9× overstated** |
+| NZDJPY | 1.138 | 16.00 | 14.1× |
+| CADCHF | 0.955 | 10.91 | 11.4× |
+| AUDCHF | 1.133 | 12.06 | 10.6× |
+
+**Why the overstatements are the urgent half.** An understated cost produces a false positive that
+dies loudly on a forward clock. **An overstated cost kills the edge AT the gate and leaves no
+record** — four CHF/JPY crosses have been charged 10–26× their true cost on every backtest the desk
+has run over them, and every edge that died there is invisible (the L1.25 class).
+
+**Proposed fix (three parts, none applied — this was a research-freeze run):**
+1. **A fence** — `check_cost_reference.py`: pull the forexbenchmark table, apply the commission
+   control, and fail on any symbol where `|log(desk+comm / independent)| > log(3)`. Today it reds on
+   8 of 51. Floor it at 8 and ratchet down. This is the instrument the field has never had (L1.46).
+2. **Repair the 16 zeros** in `universe.json` (EURUSD, GBPUSD, USDJPY, AUDUSD, USDCHF, USDCAD,
+   AUDCAD, AUDJPY, AUDSGD, EURAUD, EURCAD, EURCHF, EURGBP, GBPCAD, HKDJPY, NZDCAD, NZDUSD, USDHKD…).
+   R0728 recorded this for two symbols; it is 16 on the symbols with an external reference, and the
+   call sites paper over it with an inconsistent per-site `max(..., 0.05)` floor — a fabricated
+   number that differs by caller.
+3. **Add a swap field to the registry.** `universe.json` carries no carry cost at all, so a
+   spread-ranked screen rates **USDINR as an ordinary exotic when its combined broker take is
+   −199.9 %/yr** (measured from `carry_state.json`, `swap_mode 1`, validated against a G10 control
+   that clusters at −1.1 to −1.3 %/yr across 172 sides). USDBRL −71.9, USDTRY −69.5, USDIDR −66.9,
+   USDKRW −40.9. The non-deliverable currencies price non-deliverability into the **swap**, and the
+   desk's cost model cannot see it.
+
+**Also free and adopted this run:** `data/free_data/fusion_us_share_cfd_ticker_map.json` — real
+`tickerCode` + `exchange` for **100 of the desk's 103 US share CFDs**, from the broker's own
+published spec sheet. The desk had no name→ticker mapping; this is the join key R0691 (close-to-
+close returns on 122/251 dividend-paying symbols) needs to build a dividend adjustment.
+
+---
+
+## 2026-08-30 — BRAIN HUNTER s32 — formula names are not semantics; fixtures make ports falsifiable
+
+Alpha158 supplied three silent-error calibers (`ROC` reciprocal orientation, slope normalised by
+current close, and volume ratios divided by the current bar) that cannot be recovered safely from
+factor names. Standing method: read the implementation before translating a named factor, and use
+the repository's committed golden-output fixtures as an independent port test. The fixture does
+not validate alpha; it validates arithmetic, cheaply separating implementation error from economic
+failure.
+## 2026-08-30 — BRAIN HUNTER s33 — freeze the executable experiment, not its label (UPGRADE)
+
+**Source/process.** Public MIT `nutdnuy/brain-sim-lib` at
+`5658174f0a3630253e80cfe0828f2755679f526b`, read as text only. Its useful construct is not a
+BRAIN threshold: `payloads.py` hashes canonical JSON containing the expression and **every**
+`SimulationSettings` field, and `cache.py` keys completed experiments by that hash. A changed
+setting is a changed experiment. Nothing was installed or executed and no BRAIN account/API was
+touched.
+
+**MT5 analogue and measured defect.** The external lane does not freeze the equivalent payload:
+`merge_hypotheses._identity` is `symbol + family + params`; `external_gauntlet._cache_key` adds
+only the last complete day; certificates/shadow specs again carry only symbol, selector, family
+and params. The local audit in `data/brain_hunter_s33_identity_audit.json` measured **20,410 / 20,410**
+docket rows and **42 / 42** certificate shadow specs missing all three already-declared identity
+fields: `code_hash`, `config_hash`, `data_snapshot`. The current cache contains one `.npz` whose
+mtime is 2026-08-27 00:44 UTC; **33** commits have touched the gauntlet/shadow/family path since
+then. That commit count is exposure, not proof that every commit changed signal semantics. The
+structural failure is enough: a family-code/config change can reuse an intraday series or append
+forward observations under semantics different from the certificate, while
+`ResearchArtifact.fingerprint()` elsewhere in this repo explicitly says code/config/data are part
+of strategy identity.
+
+**Economic disposition: UPGRADE, exact patch owed outside this research-only freeze.** Create one
+canonical external-spec fingerprint over symbol, family, params, family-constructor source hash,
+resolved-input/config hash and data snapshot. Use it in merge identity, gauntlet cache keys,
+certificates and shadow rows. `shadow_forward` must compare the live fingerprint with the
+certificate before every replay: mismatch stops the old clock, re-gauntlets the changed candidate
+and starts a fresh preregistered window only on pass. Regression: edit one family constructor
+without changing symbol/family/params and prove the old cache misses and the old certificate cannot
+append. This changes no bar; it prevents stale false positives/negatives and protects untouched
+forward evidence.
+## 2026-08-30 — BRAIN HUNTER s34 — failure cohorts need typed distance-to-failure, not names alone
+
+Public MIT `nutdnuy/brain-sim-lib` at
+`5658174f0a3630253e80cfe0828f2755679f526b` exposes a useful negative-mining schema: **17** summary
+columns, **7** transport statuses, and three semicolon-delimited check-name rollups
+(`failed_checks`, `warning_checks`, `pending_checks`). Raw submit/poll JSONL retains payload and
+transport context, full alpha-detail JSON retains the response body, and optional untyped
+recordsets retain `pnl`/`sharpe`. The summary alone discards each check's numeric value, threshold
+and body, so it can count failure names but cannot measure distance to a bar or distinguish a
+near-failure from a structural one. [§33: screened ->
+`data/brain_hunter_s34_failure_cohorts_and_pit_audit.json`]
+
+**Transfer, not import:** any desk failure-cohort export should persist candidate identity,
+pipeline stage, typed failure code, observed value, governing threshold, units, evidence window,
+PIT timestamp and full raw verdict reference. BRAIN check names and submission thresholds are
+facts about its process and must never become this desk's gates. Exact measurement before any
+build: census those fields across the canonical ten-gate certificate and graveyard exports; if
+all are already durable, KEEP and close this item, otherwise UPGRADE the existing exporter and
+prove a cohort query can recover value-minus-threshold without parsing prose. This is a
+throughput repair because typed failure distance routes near-survivors and descendants without
+re-reading raw logs. SOURCE: `results.py`, `batch.py`, `models.py`, `tests/test_results.py` and
+Tutorial 7. DERIVES-FROM: NONE declared for the result-store schema (checked).
+
+## 2026-08-30 — BRAIN HUNTER s35 — R0602 repair has four pre-implementation falsifiers
+
+Do **not** copy the public `openalpha` active-book picker literally. Its stated objective is right,
+but four implementation choices would make the desk's missing candidate-vs-deployed admission test
+misrule precisely when it first matters: it refuses one incumbent, truncates to the 200 highest
+standalone Sharpes before marginal value is measured, treats a least-squares failure as maximum
+independence, and consumes an unversioned PnL cache forever. Exact evidence and MT5/Fusion mapping:
+`data/brain_hunter_s35_active_book_correlation_audit.json`. [§33: screened ->
+`data/brain_hunter_s35_active_book_correlation_audit.json`]
+
+This refines existing recommendation **R0602**; it does not create a duplicate. The exact repair
+test is now: with one incumbent, a redundant candidate is rejected; with a numerically singular
+incumbent matrix, the verdict is UNMEASURED; a lower-standalone/high-marginal candidate remains in
+the population; and changing the incumbent return-panel vintage invalidates the decision input.
+Production input is the point-in-time Fusion net-R panel (bid/ask, fills, spread, commission, swap,
+markout), not a BRAIN threshold or its PnL convention. Measured current state remains weak:
+`data/live_cohort_pnl.npz` is absent and `data/portfolio_admission.json` says 3/3 against an EMPTY
+BOOK, explicitly reducing the result to positive standalone Sharpe.
+
+## 2026-08-30 — BRAIN HUNTER s37 — robustness denominators start before selection; sensitivity memory is append-only
+
+Public MIT `ljb189/wq-alpha-skill` at
+`62c91e5920bfd53284a7be4407fda9d01ca05df0` supplies a useful failure specimen, not a workflow to
+import. Its R117 report starts with 12 candidates, passes 8 through IS and 3 through submission,
+then calls the robustness pass rate **3/8 = 37.5%**. The function can only see IS-pass rows with a
+parsed submission check; the full preregistered rate is **3/12 = 25%**. Under the source's own
+30% pass-rate and 0.05 margin rules, that denominator changes the label from `overfit` to
+`marginal` (reported mean margin 0.00207). [§33: screened ->
+`data/brain_hunter_s37_conditional_denominator_audit.json`]
+
+**KEEP/strengthen the desk's existing full-trial rule:** every robustness, survivor-yield and
+failure-cohort denominator begins with the frozen preregistered population and carries explicit
+stage attrition. Missing/timeout rows remain typed outcomes, never disappear from the denominator.
+The same source's parameter memory is a second negative transfer: it assigns one record to
+`parameter_name × value`, so a later expression/field/round silently overwrites the earlier one.
+Any desk sensitivity view must be an append-only set of full experiment identities; aggregation is
+a derived view with candidate, field, setting, data-vintage and outcome strata visible. No build is
+raised here because this session did not measure the desk committing either defect; the exact
+determining measurement is a census of canonical trial/cohort exports for preregistered-N,
+stage-attrition and duplicate `parameter × value` identities before an implementation change.
+
+**MT5 scope:** this is methodology over every terminal-enumerated Fusion symbol, not an alpha.
+Source equity fields apply only to Fusion US-share CFDs at D1 with PIT corporate identity, peer
+group, EPS/short-volume/text vintages, next-available bid/ask execution, spread, commission,
+slippage/partial-fill markout and swap. `translate_to_mt5("industry neutral ...")` returned
+asset-class/currency-risk-bucket neutralisation; its other process terms returned no table match
+and are recorded as methodology, not fabricated mappings. Zero constructions and zero desk
+target-horizon cells were tried.
+
+## 2026-08-31 — BRAIN HUNTER s41 — candidate conservation must surround every search loop
+
+Two permissively licensed BRAIN reimplementations independently expose the same failure class the
+desk's full-trial law exists to prevent. MIT `0xceb1/brain-learn` pre-marks every initial expression
+as evaluated and then filters evaluated expressions out of evaluation, so all N initial candidates
+receive `-inf` without a simulation. Its advertised seed memory also moves the prior pickle aside
+and writes an empty list because the accepted RPN argument is never stored. Apache-2.0
+`Milkyway688/wq_auto_backtests` collapses experiment identity to expression alone, silently drops
+unmatched batch children through `zip(group, children)`, omits group-submit failures from its durable
+SQLite/CSV buffer, and censors the unattempted remainder after three consecutive single-mode errors.
+Exact static traces: `data/brain_hunter_s41_trial_conservation_screen.json`. [§33: screened]
+
+**Transfer, not import.** KEEP and strengthen one invariant around every desk generator: freeze the
+full candidate population before execution; key a cell by signal semantics + symbol + side +
+session/horizon + regime + code/config/data/cost fingerprints; and reconcile
+`planned = completed + failed + blocked + explicitly_unattempted` before a run can publish yield.
+A retryable transport failure is not an economic failure, and a missing child is UNMEASURED rather
+than absent. This converges with s33's payload-identity upgrade and s37's full-population denominator,
+so it creates no duplicate recommendation. The determining test is a forced short child list plus a
+failed batch submit: both must leave typed rows, and changing only a Fusion cost/config field must
+produce a new experiment identity. No BRAIN threshold or private screen transfers to the canonical
+ten-gate path.
+
+## 2026-08-31 — BRAIN HUNTER s42 — conservation extends through remote job identity and retries
+
+Public MIT `angel4angelov-glitch/wq-alpha-pipeline` at `98e763a` independently implements the good
+half of s41: one SQLite row per planned grid cell, typed
+`QUEUED/RUNNING/COMPLETE/FAILED/TIMEOUT`, raw verdict retention and check result/value/limit triplets.
+The convergence strengthens the existing repair; it does not create a new recommendation.
+
+Its failures specify two extra falsifiers for that repair. First, the “full settings” dedup key omits
+pasteurization, unit/NaN handling, language, instrument type, visualization, code version, data
+vintage and costs, so changed semantics can reuse a terminal result. Second, the runner accepts a
+simulation timeout without forwarding it, stores the remote simulation location only after the
+future finishes, stops tracking a watchdog-expired future while it continues remotely, and bulk
+requeues structural and transport failures identically. A retry can therefore resubmit a live remote
+job while the local row count still looks conserved.
+
+**Strengthened determining test:** freeze full Fusion cell identity including code/config/data/cost
+fingerprints; force a watchdog expiry after the remote job id is returned; prove that id is persisted
+before polling, that retry resumes rather than resubmits it, and that structural failures remain
+terminal while typed transport failures alone are retryable. Reconcile both local cells and unique
+remote jobs. Evidence: `data/brain_hunter_s42_static_heuristic_and_active_cohort_screen.json`.
+
+## 2026-08-31 — BRAIN HUNTER s43 — a full in-memory history is still an erased history
+
+Apache-2.0 `Liu-Ming-Yu/alpha-forge` at `922d8d34` makes the strongest public claim on this
+ground so far: every generated expression receives provenance and every admission/rejection is
+written to JSONL. The static path disproves the durable half. `mine_alphas()` accumulates the
+entire history in process memory; the CLI calls it to completion and only then opens the output
+with `"w"`. An evaluation exception, OOM or killed worker therefore leaves **zero typed rows** for
+every attempt before the failure. A complete history that exists only after clean return is not
+failure memory. [§33: screened]
+
+The same read strengthens the existing s33/s41/s42 repair rather than creating another organ:
+
+- provenance omits the code commit, data hash/vintage, requested and loaded universe, date window,
+  target horizon, search/gate config and executable-cost fingerprint;
+- missing/empty symbol stores are silently skipped, so the requested universe can contract without
+  a missing-symbol row or an identity change;
+- the advertised walk-forward aggregate both steers evolutionary parent selection and admits the
+  result, so it is inner selection evidence, not untouched OOS;
+- the cross-run baseline loader is explicitly unused, and missing baseline correlation is treated
+  as acceptable, so independence pressure resets every invocation.
+
+**Strengthened determining test:** prewrite full-identity `PLANNED` rows, force-kill after candidate
+*k*, reconcile every planned cell after restart, and prove that changing only a Fusion contract,
+cost, horizon, data vintage, universe member or code commit changes identity. Persist requested vs
+loaded terminal rosters with typed absences; load the active/historical accepted population before
+correlation admission; reserve untouched post-selection evidence for the canonical universal
+forward engine. No external threshold or private admission gate transfers. Exact traces:
+`data/brain_hunter_s43_alpha_forge_failure_memory_screen.json`.
+
+## 2026-08-31 — BRAIN HUNTER s44 — checkpoints preserve work only when the checkpoint survives
+
+MIT `microsoft/RD-Agent` at `6762f84f` is the nearest implementation on alpha-forge's declared
+Qlib/RD-Agent lineage. It independently converges on the good half of the existing conservation
+repair: hypotheses and experiments are logged before execution, every successful workflow step
+gets a resumable snapshot, and declared `FactorEmptyError`/`CoderError` outcomes are converted to
+feedback and appended to the experiment trace. This strengthens s41-s43's requirement to create
+identity before evaluation and to type expected failures. It creates no new recommendation.
+
+The same source supplies the missing crash falsifier. A generic undeclared exception is re-raised
+before terminal feedback; `LoopBase.dump` opens the final checkpoint directly with `wb` and
+`pickle.dump`; restart blindly loads the latest pickle; and `checkout=True` deletes all later
+session and log objects. Step-frequency checkpointing is therefore not append-only failure memory.
+The strengthened test must kill during serialization, reject the partial generation, atomically
+fall back to the last checksum-valid checkpoint, and preserve the prewritten full-identity trial
+row. Rollback may restore controller state but may never truncate the evidence ledger.
+
+No third-party agent code or pickle was executed or imported. The transferable shape is a typed,
+schema-versioned, data-only `PLANNED -> RUNNING -> terminal` ledger plus separately replaceable
+controller checkpoints. Exact static traces:
+`data/brain_hunter_s44_rdagent_failure_memory_screen.json`. [§33: screened]
+
+## 2026-08-31 — BRAIN HUNTER s46 — immutable shards still need an atomic birth
+
+MIT `rbudnar/open-autoresearch` at `d65b3317` independently supplies the strongest positive
+storage shape yet: one immutable JSON shard per experiment, corrections as new child records,
+derived JSONL/tree views, parent-cycle validation and content-hashed promotion references. This
+strengthens the existing s33/s41-s45 repair; it does not create a competing organ or gate.
+
+The writer is the falsifier. `write_record()` checks `out_path.exists()` and then calls
+`Path.write_text()` directly on the final path. It does not exclusively create the shard and does
+not write+fsync a temporary file before atomic replacement. A kill during serialization can leave
+a malformed final-name shard, while the protocol's single-writer rule is not implemented by a lock
+or broker in the inspected writer. More importantly, the loop records after a run: no full-identity
+`PLANNED` row is reserved before evaluation, so a crash before the logger runs still erases the
+candidate completely. [§33: screened ->
+`data/brain_hunter_s46_open_autoresearch_ledger_screen.json`]
+
+**Strengthened determining test:** reserve the complete terminal-enumerated Fusion cell before
+evaluation; force-kill both during candidate evaluation and during shard serialization; restart;
+prove `planned = completed + failed + blocked + explicitly_unattempted`, and prove every visible
+final shard is checksum-valid. Run two writers against the same identity and prove exactly one
+exclusive creation succeeds. Controller rollback remains a separate replaceable checkpoint and may
+never truncate evidence. No external threshold, maturity label or promotion rule transfers.
+
+## 2026-08-31 — BRAIN HUNTER s47 — a held-out set stops being held out when every candidate sees it
+
+MIT `K-Dense-AI/scientific-agent-skills` at `1dd0fccf` independently confirms three useful process
+shapes: create a pending hypothesis identity before dispatch, preserve pruned branches with reasons,
+and separate executor result from the inferred lesson. Its Arbor state manager also supplies three
+falsifiers that matter more than its labels.
+
+First, `cmd_init` leaves `best_test_score = None`, never scores the initial artifact, and
+`cmd_merge.better()` passes any first finite score when the prior is absent. The first candidate can
+therefore lose to the starting artifact and still become `M_best`. Second, every later merge exposes
+the same test score to the coordinator and updates the next comparison. That test cohort has become
+adaptive selection evidence after its first use; calling it held out does not restore untouchedness.
+Third, `_save()` uses a fixed `.tmp` name and whole-object replacement without fencing or
+compare-and-swap, while abandoned `running` nodes have no restart reconciliation. Atomic rename is
+not candidate conservation and is not multi-writer safety.
+
+**Transfer:** baseline evidence must exist and bind to the full experiment identity before any
+candidate; a missing baseline is UNMEASURED, not a pass. Dev evidence may guide the search, but an
+exposed confirmation cohort must retire from promotion authority or be replaced by a preregistered
+fresh cohort/validated anytime-sequential design. Every prewritten Fusion identity must reconcile to
+a typed terminal outcome after restart. No third-party agent tool was installed, imported or run.
+Exact traces: `data/brain_hunter_s47_arbor_htr_state_screen.json`. [§33: screened]
+
+## 2026-09-03 — BRAIN HUNTER s48 — the reviewer that re-executes, and the store that stops re-derivation
+
+AgonAlpha (arXiv 2608.11250v1, "Autonomous Alpha Discovery via Prompt Economy and Scalable
+Agentic Search") is on the same thread as s44–s47 and is the first artifact to name three shapes as
+first-class architecture rather than incidental plumbing. Its claimed BRAIN results (Fitness 9.50,
+Sharpe 3.48, SPECTACULAR across 5 users / 6 backends) are external IN-SAMPLE submission ore —
+recorded as a fact about their process, never a gate (L1.6). No formula, threshold, grade or
+attempt-inflated ratchet is imported. What transfers is engine structure, and only if it moves a
+measured number:
+
+1. **Search over FROZEN artifacts, not formulas.** The mining loop retrieves prior hypotheses,
+   executable expressions, platform evidence, rationales AND review status — so a candidate that was
+   already screened is found before it is re-derived. The desk has the store (recommendation ledger,
+   §33 backlog, graveyard) and a lexical retriever (`vault_search`, BM25) but the dig loop does not
+   query it as a *pre-generation* step; re-derivation surfaces only downstream as a dedup hit.
+
+2. **Fresh-context adversarial reviewer with re-execution + veto.** The reviewer does not read the
+   producer's numbers; it RECOMPUTES from the frozen expression in a context that never saw the
+   producer's cached state, and can veto. Note the deliberate tension with the promotion rule
+   "import the number, never restate it": that rule binds the CONSUMER (a gate must import an
+   upstream gate's verdict, not re-state it); this binds the VERIFIER (must recompute, not import).
+   Both hold — the split is consumer-vs-verifier, and conflating them is how a producer's bug
+   launders through a reviewer that only re-reads.
+
+3. **Pending-aware budget allocation.** Evaluation budget is weighted by in-flight PENDING
+   candidates, not only completed ones. The desk's `MAX_FORWARD_SLOTS=12` is a static cap; a
+   pending-aware version would weight a new candidate's slot claim by its expected marginal
+   independence from what is already pending, so correlated pending work does not crowd the book.
+
+**Determining test (all three are CONVERSION-THROUGHPUT claims, none change a verdict):** measure
+duplicate-hypothesis rate and survivors-per-compute-unit before/after (a) wiring artifact retrieval
+as a pre-generation step and (b) forcing the verify stage to recompute in a fresh context. If
+neither moves, refuted for this desk. Video `g-Iwbrw0MXg` (4 claimed gold alphas) is video_locked —
+18 routes 403/500/timeout, formulas behind a lead-magnet PDF, not chased. No third-party agent tool
+installed, imported or run. Exact traces: `data/brain_hunter_s48_agonalpha_engine_screen.json`.
+[§33: screened]
+
+## BRAIN s49 — 2026-09-03 — capacity is a causal question the desk answers with a dead proxy
+
+**Source:** arXiv 2608.08405v1, *Robustness or Crowding: Experimental Design for Trading Strategy
+Capacity* (public abstract, from the desk's own prefetched corpus). SOURCE: arXiv Portfolio
+Management atom row 133. DERIVES-FROM: NONE (checked) — this is not a restatement of the desk's
+`crowding.py` docstring; the docstring asserts the level/residual split, the paper proves what the
+split can and cannot identify and prices the cost.
+
+**The mechanism, stated so it can be implemented without the source.** Capacity is a causal
+question about deployed capital, and two features of the problem interact to constrain any answer:
+
+1. **The same-date design is self-defeating for the aggregate effect.** Comparing parallel
+   implementations on the same date removes market-wide shocks — that is what makes the comparison
+   credible. But the crowding created by the strategy's *own* accumulated position is common to
+   those implementations too, and an arbitrary date effect absorbs it exactly. A same-date design
+   recovers one implementation's **private response at the prevailing level of aggregate
+   positioning**, never the aggregate effect. Reaching the aggregate requires either
+   implementations with deliberately different exposure to that position, or variation in it over
+   time. There is no estimator that gets it from same-date comparison alone.
+2. **A fixed holding period understates the eventual effect**, because deployed capital erodes the
+   edge gradually rather than at once. The paper characterises how far, and how to correct.
+
+**Why this matters here, and it is not decoration.** `libs/research/crowding.py` computes exactly
+the same-date residual (our rate minus the same-instant cross-section). Its docstring already
+claims the split — "level is the market; residual is ours" — so the paper is *convergent evidence*
+that the desk's design is right, and simultaneously names the blind spot the design cannot escape:
+the residual arm is provably blind to cohort-wide crowding, and no amount of tape accrual fixes it.
+Second, the desk's forward window is a **fixed 14 days** (L1.58). Any capacity erosion measured
+across it is therefore a **lower bound** on the eventual effect, and should be reported as one.
+
+**L1.6 note, explicitly.** This is an attenuation *correction* — the measured effect understates
+the truth — never a bar loosening. No in-sample Sharpe bar, fitness grade or submission threshold
+was imported from this or any artifact this session.
+
+**Determining test (before/after, so this is not an opinion):** on the desk's own forward archive,
+regress realised per-sleeve expectancy against days-since-first-trade for sleeves whose size was
+increased, and compare the 14-day slope against the slope over the full live window. If the 14-day
+slope is materially flatter, the fixed-window understatement is real on this desk's data and the
+correction is worth carrying; if it is not distinguishable, the import is diagnostic only. **The
+population must exist before the test means anything** — see the routing note below, because it
+currently does not.
+
+**Routing — the three confirmed defects this artifact surfaced (traces:
+`data/brain_hunter_s49_capacity_identification_screen.json`):**
+
+- **R0750 — the MT5 crowding miner has been dead 9 days on a permanent IndexError.**
+  `desks/mt5/research/crowding_miner.py:97` and `:105` index `top_stars` unguarded; when a GitHub
+  query returns zero results the key is present as `[]`, so the `[0]` default never applies and
+  indexing raises. Four sibling expressions (98/101/102/104) already carry the `(... or [0])[0]`
+  guard. Both reproduced. The query rotation is deterministic, so the failing cycle recurs forever.
+- **R0751 — the MT5 book has no market-data crowding instrument at all.** `check_crowding.py`
+  returns FLAT-BOOK/rc=2 off a Binance USD-M perp tape frozen at 2026-08-20 whose collector is
+  idled by `data/RECORDERS_OFF` — permanently banned ground. Its `next_action` ("the tape keeps
+  accruing so the measure is live the day a position opens") is false in both clauses. WS-005
+  class. The publicity miner is not a substitute: it counts GitHub stars for a *keyword* and never
+  touches price, fills, financing or the desk's own positions.
+- **R0752 — `translate_to_mt5()` is empty across the entire capacity vocabulary**, so every
+  capacity-class finding routes as an unmapped data gap by default.
+
+**The compound consequence, which is the actual finding.** L1.18a makes capacity parity absolute
+and §42 routes crowding evidence to a fence and a review. Both crowding organs are dead, on
+different universes, for different reasons — and *neither death is visible from its own output*:
+one reports FLAT-BOOK (which reads as "nothing to measure yet"), the other's state file is
+mtime-fresh and content-stale by 13 days. The desk's capacity assumption is uninstrumented, which
+is precisely the condition `check_crowding.py`'s own docstring was written to end.
+
+**Deferred, named rather than dropped:** OOQI (arXiv 2608.10410v1) — specification-driven pipeline
+synthesis, satisfaction rate treated as a statistical object with deflation for search width. A
+fourth engine-shape card of the class s48 already delivered three of; re-enter when the conversion
+backlog is not the binding constraint. And arXiv 2608.08625v1 (retained hidden excess in
+price-limited markets) predicts a same-sign next-day mean return after a limit close, scaling with
+band width — the MT5 analogue is CME daily price limits on energy and softs, which is unscreenable
+today because the desk's softs symbols carry zero bars (FREE-DATA e).
+
+## s50 — the estimator's sampling grid is part of the hypothesis, and must be reported with it
+**2026-09-03, BRAIN HUNTER s50. Adopted as methodology, from arXiv 2608.16749v1 pointed at the
+desk's own tape.** A published cross-asset parameter table is the cheapest falsifiable thing a
+paper can give you, because the desk can compute the same statistic on its own data and the
+comparison needs no permission, no vendor and no forward clock. This one paid immediately — but
+what it paid was a defect in the desk's measurement, not a market fact.
+
+**The transferable rule, which is not specific to Hurst.** Any statistic estimated from a
+*derived* daily series (realized variance, realized skew, jump counts, intraday range, effective
+spread) inherits the estimation error of that derivation, and where the error is lag-independent it
+biases the scaling exponent DOWNWARD. Instruments differ in session length — 24h FX at ~24 H1
+bars/day versus US share CFDs at ~6.5 — so any cross-asset comparison of such a statistic is
+confounded by session length **by construction**, and the confound produces a plausible, orderly,
+publishable-looking ranking. The desk's run produced exactly such a ranking and it was wrong.
+
+**Make it operational, three rules:**
+1. **Report the k-curve, never the point estimate.** Recompute the statistic on k evenly spaced
+   intraday slots for a ladder of k and publish the curve. A curve still rising at the finest k
+   available means the tape cannot identify the parameter, and that is a verdict — "UNMEASURED",
+   per L1.28a — not a number to be used with a caveat attached.
+2. **The within-symbol control outranks the cross-symbol correlation.** Both were run here; the
+   cross-symbol arm (ρ=+0.814) is suggestive and confoundable, the within-symbol arm (asset fixed,
+   days fixed, only precision varied, monotone in 6/6) is decisive. Prefer designs that hold the
+   asset fixed and vary only the instrument of measurement.
+3. **Never compare a derived-series statistic across instruments of different session length**
+   without first showing the k-curves have converged for both.
+
+**Where this bites next, unprompted by the paper.** The same confound applies anywhere the desk
+computes a daily statistic from intraday bars and compares it across the universe — volatility
+targeting and Kelly's gamma, realized-vol regime classification, any cross-sectional rank of a
+realized moment, and the volatility trails of standing intelligence family (a). Those uses were not
+audited this session and are NOT claimed clean; the audit is the named next work, and until it runs
+their status is UNMEASURED rather than fine.
+
+## External factor redundancy is unmeasured — internal-only independence cannot see a free premium (BRAIN HUNTER s52, 2026-09-03)
+
+**The gap, verified in code.** `desks/mt5/mt5desk/independence.py` measures `k_eff` strictly from
+the desk's **own** sleeve ledger: `daily_returns(rows)` → `mean_pairwise_corr` → `effective_bets`.
+A grep across `libs/`, `scripts/` and `desks/` finds **no external factor benchmark of any kind**.
+
+**Why that is a real hole and not a tidiness complaint.** A sleeve can be perfectly uncorrelated
+with every other sleeve in the book — scoring full marks on marginal independence — and still be a
+repackaging of a free, public, century-old factor premium such as Currencies Carry. Internal-only
+correlation cannot detect this **by construction**: the desk owns no copy of the public factor, so
+there is nothing for the sleeve to correlate *with*. L1.61 requires selection to optimise marginal
+independence directly; against the book only, that optimisation is blind in exactly the direction
+that costs the most — paying research capital for a premium obtainable for free.
+
+**The instrument now exists and is free.** AQR's asset-class factor legs (see the s52 card in
+`data_axis_watchlist.md`; files at `data/external/aqr/`) cover Currencies, Commodities and Equity
+indices back to 1926.
+
+**Proposed use — DIAGNOSTIC, with NO pass/fail path.** Regress a candidate's *backtest monthly*
+returns on its matching legs (FX sleeves → Currencies V/M/C; metals+energy → Commodities V/M/C;
+indices → Equity indices V/M/C/D) and report residual alpha **alongside** the existing verdict.
+
+**Explicitly not a gate (L1.60).** No screen, searcher or miner may apply a private threshold in
+either direction, and this must not become one. It is proposed on the exact precedent this seat's
+brief already names: `wq_operators.fitness()` is carried as a diagnostic with no pass/fail path —
+*do not add one*. It reports a number; the canonical ten gates keep sole authority.
+
+**Known limit, stated up front.** Monthly data only, so this can **never** inform a 14-day forward
+decision — backtest histories exclusively. Vintage restatement (measured: ≤0.051 Sharpe) is
+acceptable for ex-post benchmarking and disqualifying for any live path.
+
+**Research-freeze:** proposed, not applied. No file under `scripts/`, `libs/` or the executor touched.
+
+---
+
+## BRAIN s53 — 2026-09-03 — two extraction defects that both pass a length check
+
+**(1) A URL you already hold must never be re-derived.** The AQR sitemap gives 564 fully-qualified
+`/insights/research/<TYPE>/<slug>` URLs, where TYPE ∈ {journal-article 250, working-paper 113,
+white-papers 73, alternative-thinking 43, tax-aware-investing 31, book 25, trade-publication 18,
+bibliography 7, **video 3**}. I reconstructed `/insights/research/<slug>` from the slug alone and
+got **8/8 HTTP 200s of identical byte length** — all the same soft-404. Byte-identical length
+across all inputs is the shell/soft-404 detector this desk already knows; what is new is that I
+manufactured the condition myself by discarding half of the path I had already fetched.
+**Rule: enumerate from the sitemap's own `<loc>` strings; never rebuild a URL from a component.**
+
+**(2) Stripping tags destroyed the only server-rendered content on this host.** With the correct
+URLs all 12 probe pages returned "OK" with 8,400–16,400 chars of extracted text. **That text is
+100% fraud-warning and disclosure boilerplate.** The article body is client-side JS and is absent
+from the HTML; the abstract exists only in `<meta name="description">` and `<meta
+property="og:description">` — i.e. inside an *attribute*, which a `<[^>]+>` stripper deletes by
+construction. A length check, a non-empty check and a soft-404 string check all pass. **Rule: on
+any JS-rendered host, read `<meta>` attributes BEFORE stripping tags, and grade content by whether
+the extracted text differs across pages — not by how much of it there is.** This is the s51
+landing-page audit defect one layer down: there, 43.8% of a corpus was landing pages; here a page
+that is *not* a landing page still yields zero content and looks identical to a good read.
+
+**Consequence, and it is the deliverable:** applying (1)+(2) makes the whole 564-item layer
+readable in one pass — `data/external/aqr/research_abstracts.json` (url, type, title, abstract,
+pdf links per item). Enumerating hosts by sitemap and harvesting `<meta>` descriptions is now the
+standing first move for every JS-rendered research host this seat meets, `man.com` next (s51's
+still-owed second hop, where the "needs JS" grade was assigned on exactly this evidence).
+
+**(3) The trend-horizon grid buys ~2 effective factors, not 4 — measured, and it is stable.**
+Vol-scaled time-series momentum at lookbacks {21, 63, 126, 252} trading days, built on the desk's
+own daily-resampled MT5 tape with a 60%-of-group population guard, gives an eigenvalue-based
+effective factor count of **k_eff = 1.76–2.15 in every one of seven asset classes**
+(Commodities 1.76, Forex Exotics 1.99, Indices 2.06, Forex 2.09, Crypto CFD 2.14, Equities 2.15,
+ALL 1.83). Adjacent-horizon correlations run 0.53–0.69, distant ones 0.08–0.42, and the structure
+is near-identical across classes that share no instruments. **Reading:** a searcher that sweeps
+four lookbacks is exploring roughly two independent directions, so a horizon grid is a weaker
+diversifier than its cardinality suggests, and the marginal-independence scoring L1.61 mandates
+should see that. Gross annualised Sharpe by horizon is monotone increasing in lookback almost
+everywhere (ALL: 0.08 / −0.15 / 0.23 / 0.58), but **nothing here approaches the desk's bar** — the
+largest |t| in the whole table is 2.63 (Commodities L126, gross of costs), against a deflated
+threshold of 5.236. **This is a diagnostic on the `wq_operators.fitness()` precedent and must not
+acquire a pass/fail path (L1.60): no screen, searcher or miner may turn k_eff into a threshold in
+either direction.** Artifact: `data/brain_hunter_s53_tsmom_horizon_redundancy.json`.
+
+## BRAIN s55 — 2026-09-03 — a permutation control stops being a null the moment the policy smooths
+
+**(1) The finding, and it is a general rule about controls, not about momentum.** A time-permuted
+signal preserves that series' **full-sample mean**. Any long-memory smoother downstream — EWM,
+partial adjustment, a slow filter — drives the permuted position toward that mean, so the
+"control" becomes a full-sample drift oracle available from bar 1. Measured on the desk's own MT5
+FX tape (76 FX symbols, 8,318 days, TSMOM L=63, gross, 12 draws per cell,
+`data/brain_hunter_s55c_permutation_leak.json`):
+
+| smoother a | permuted-sign control | i.i.d. ±1 control | explicit full-sample-mean-sign oracle |
+|---|---|---|---|
+| 1.0 (none) | 0.232 | −0.040 | 0.735 |
+| 0.1 | 0.717 | −0.002 | 0.735 |
+| 0.01 | **1.087** | −0.073 | 0.699 |
+| 0.001 | **1.050** | −0.076 | 0.658 |
+
+A valid null is invariant in `a` at ~0. The i.i.d. arm is; the permuted arm is not, and its
+`a`-dependence **is** the leak. At `a`=0.001 it *exceeds* the sign-oracle because permutation
+preserves the mean's magnitude as well as its sign.
+
+**(2) It had already produced a false refutation, in this same session.** Run under the permuted
+control (`data/brain_hunter_s55b_static_control.json`), the control beat real momentum in **16/16**
+cells at z down to **−38.1**. Read at face value that is a decisive refutation of TSMOM on the FX
+book. It is an artifact of the control. Any seat that had stopped at s55b would have graveyarded
+a family on a lookahead.
+
+**(3) Honest negative on the desk's own permutation null.**
+`libs/validation/random_baseline.py:matched_random_positions` permutes the **position** series and
+is **not** an instance of this defect: it applies no downstream smoother and explicitly decomposes
+exposure from timing (`exposure_share`), which is the correct handling — the docstring's
+exposure-matching argument is sound. It is nonetheless the live surface, because any future caller
+that smooths its output inherits the leak silently and nothing would say so. **Fix (carded R0765,
+not applied — research freeze):** pair every permutation null with a mean-zero i.i.d. control, and
+assert the null's smoother-invariance as the test that the control is actually null.
+
+**(4) What this leaves of s54's Gârleanu–Pedersen test.** With a valid control the market verdict
+is unchanged and now properly attributed: at `a`=0.001 the real signal returns gross Sharpe
+0.41–0.51 against an honest static vol-scaled always-long book at **0.35**, so the momentum timing
+buys ~0.06–0.16 gross Sharpe and **every** cell is negative net of the tape's own spread beyond
+`a` ≥ 0.05. **No pass/fail path is attached to any number here (L1.60).**
+
+## s57 (2026-09-03) — variance-ratio streakiness as a candidate-SELECTION diagnostic
+
+**Source:** AQR *Alternative Thinking* 2025 Issue 2, "The Hidden Value of Streaky Returns in
+Stock Portfolios" (PSG; Fattouche/Hecht/Kelly/Liew/Sachdev), extracted from
+`data/external/aqr/pdftext/the-hidden-value-of-streaky-returns-in-stock-portfolios.txt`.
+**DERIVES-FROM:** NONE (checked) — the desk holds no prior VR/streakiness note; `vault_search`
+returns nothing on "variance ratio streakiness". Readable only after the R0769 extractor fix;
+the pre-fix extraction of this file was 20,486 chars vs 39,392 and the mechanism section was in
+the discarded half.
+
+**Mechanism, not formula.** Streakiness — a return stream performing well or badly for extended
+runs — is a *complexity* risk (hard to hold, hard to size, monthly risk understates true risk).
+AQR's claim is that the marketplace PAYS for bearing it: high variance-ratio factors realise
+~2x the long-run Sharpe of low-VR factors on the Jensen-Kelly-Pedersen 153-factor database.
+The transferable part is not the equity factors — it is the STATISTIC (VR(q) = Var(q-sum)/(q·Var(1)))
+used as a property of a *strategy's own return stream*, which is universe-independent.
+
+**Measured on MT5 ground** (`data/brain_hunter_s57_streakiness.py`, screen +control artifacts).
+250 symbols × 4 TSMOM lookbacks (24/72/168/336 H1 bars), VR(q=20) on the first half of each
+stream, Sharpe on the disjoint second half. Sign declared POSITIVE before measurement.
+
+| arm | result |
+|---|---|
+| VR_first → Sharpe_second | ρ = **+0.167**, p = 1.1e-7 (3/4 lookbacks sig.) |
+| tercile hi vs lo mean Sharpe | −0.140 vs −0.468, Welch t = 4.35 |
+| circularity control (both full-sample) | ρ = +0.135 — *weaker* than the disjoint arm |
+| persistence control: VR_first → Sharpe_first | ρ = +0.025, **p = 0.43** |
+| partial, controlling Sharpe_first | +0.165 |
+| bounce control: VR_first → lag-1 autocorr(returns) | **ρ = +0.290** |
+| partial, controlling lag-1 autocorr | **+0.092**, p = 0.003 |
+
+**Verdict.** The sign replicates and is not circular and not symbol-quality persistence — but
+~45% of it is bid-ask bounce, and **both terciles are negative gross**, so this ranks an
+unprofitable population. Under L1.57 that is not a card and gets no clock. **Route: adopt VR as
+a reported diagnostic on generated candidates (alongside turnover and fitness), never as a gate
+and never as a threshold** — same standing as `wq_operators.fitness()`, which deliberately has
+no pass/fail path.
+
+## BRAIN s60 — the gauntlet reports a single-offset Sharpe and no implementation error bar
+
+The refutation is in `docs/graveyard.md::rebalance_offset_timing_luck_as_craftsmanship_alpha`:
+rebalance-offset dispersion is sampling noise (placebo out-dispersed the real signal, 1.49 vs
+1.03–1.36 × the shared-data null bound), so it is NOT a trial dimension and must NOT reach
+`deflated_sharpe`. Two things survive as measurement practice.
+
+**1. The error bar the desk does not print.** On the 126d arm a monthly MT5 TSMOM sleeve scores
+Sharpe **0.076** or **0.392** depending only on which trading day of the month it rebalances —
+a choice no candidate record contains. The gauntlet reports whichever draw the constructor
+happened to code, as a point estimate. Under LAWS ("everything is an estimate; give value,
+uncertainty and confidence — never a point estimate dressed as a fact") that number is
+missing its uncertainty, and the uncertainty is ±0.05–0.09 Sharpe *before* any statistical
+sampling error is added.
+
+**2. The free variance reduction.** Averaging the 21 offset sleeves (the standard overlapping-
+portfolio construction) raises Sharpe by **+0.0079 (252d)** and **+0.0089 (126d)** vs the mean
+individual offset — sign as declared, but economically ~zero, and the placebo also gains +0.0026,
+so *the return gain is not the reason to do it*. The reason is that the ensemble has no offset
+draw to be lucky or unlucky in: it removes the ±0.09 reporting noise at zero cost in turnover
+terms per unit of the same signal.
+
+**Route: a REPORTED DIAGNOSTIC, no pass/fail path** — the same standing as `wq_operators.fitness()`
+and s57's variance ratio. For any candidate whose construction has a discretionary rebalance phase,
+report the offset-ensemble Sharpe alongside the constructed one, and the cross-offset spread as
+the implementation error bar. NEVER as a gate, NEVER as a threshold, and specifically NEVER as a
+trial count — the placebo control is what forbids that.
+
+**Not an edge in either direction (L1.57).** The underlying sleeve is Sharpe 0.21–0.29 gross over
+19.3 years on 122 symbols, before costs. 0 cards, 0 survivors, 0 forward clocks, no multiplicity
+incurred. Artifacts: `data/brain/s60_timing_luck.py`, `data/brain_hunter_s60_timing_luck.json`.

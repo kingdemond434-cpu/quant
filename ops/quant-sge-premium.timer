@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily 07:45 UTC (15:45 Beijing, just after the SGE day-session close 15:30) SGE premium capture
+
+[Timer]
+OnCalendar=*-*-* 07:45:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -154,12 +154,74 @@ def measure_k_eff(rows: Iterable[dict],
                f"rho<={rho_upper:.3f} (95% upper bound, not the point estimate)")
 
 
+def factor_k_eff(exposures: "Mapping[str, float]") -> tuple[float | None, str]:
+    """Effective bets from CURRENCY LEGS, not from realised return correlation.
+
+    TWO SLEEVES CAN CORRELATE AT ZERO AND STILL BE ONE TRADE. `measure_k_eff` reads realised
+    daily returns, which is the right measurement and an incomplete one: correlation is
+    backward-looking and estimated on the quiet sample, so four sleeves each secretly SHORT USD
+    measure as four bets for as long as the dollar does not move -- and then move together on the
+    day it does. `libs/risk/fx_factors.py` decomposes the book into currency legs and was measured
+    on the live survivor set reporting `n_effective 1.019 across 17 sleeves`: seventeen positions
+    behaving as one bet, while an asset-class view put 28 of 45 certificates in a single FX bucket
+    and said nothing at all.
+
+    THAT MODULE HAD ZERO NON-TEST CALLERS. It described itself as "a MEASUREMENT, not a gate and
+    not a sizer" -- true, and exactly why nothing ever changed because of it.
+
+    It still sizes nothing. Sizing stays in the gateway, the only thing that knows Fusion tick
+    value and contract size -- the knowledge whose absence produced the CADJPY incident (believed
+    1.26% risk, actual 7.41%). What it now does is constrain BREADTH, which is what `heat_budget`
+    scales total risk by. None is returned whenever the decomposition cannot be trusted, and None
+    never widens a budget.
+    """
+    try:
+        from libs.risk.fx_factors import effective_bets as fx_effective_bets
+    except ImportError as exc:
+        return None, f"factor k_eff UNMEASURED: {type(exc).__name__}: {exc}"
+    if not exposures:
+        return None, "factor k_eff UNMEASURED: no per-symbol exposures supplied"
+    try:
+        k = float(fx_effective_bets(exposures))
+    except Exception as exc:                                        # noqa: BLE001
+        return None, f"factor k_eff UNMEASURED: {type(exc).__name__}: {exc}"
+    if not math.isfinite(k) or k < 1.0:
+        return None, f"factor k_eff UNMEASURED: decomposition returned {k!r}"
+    return k, f"factor k_eff {k:.2f} from {len(exposures)} symbol exposure(s), currency-leg net"
+
+
+def _floor_by_factor(k: float | None, why: str,
+                     exposures: "Mapping[str, float] | None") -> tuple[float | None, str]:
+    """The smaller of return breadth and currency-factor breadth, and which bound bound it."""
+    if exposures is None:
+        return k, why
+    k_fac, fac_why = factor_k_eff(exposures)
+    if k_fac is None:
+        return k, f"{why}; {fac_why} (return breadth unchanged)"
+    if k is None:
+        # Returns unmeasurable but the legs are known. The factor number is real evidence and can
+        # only ever TIGHTEN against the base budget, so reporting it alone cannot widen anything.
+        return k_fac, f"{why}; {fac_why} -- factor breadth is the only measured bound"
+    if k_fac < k:
+        return k_fac, f"{fac_why} BINDS below return breadth ({why})"
+    return k, f"{why}; {fac_why} (return breadth binds)"
+
+
 def measure_from_ledger(rows: Iterable[dict], acc: dict[str, Any] | None = None,
-                        min_overlap: int = MIN_PAIR_OVERLAP) -> tuple[float | None, str]:
-    """`measure_k_eff` over one account's rows only.
+                        min_overlap: int = MIN_PAIR_OVERLAP,
+                        exposures: "Mapping[str, float] | None" = None,
+                        ) -> tuple[float | None, str]:
+    """`measure_k_eff` over one account's rows only, floored by currency-factor breadth.
 
     Mixing demo and live fills would compute the book's independence from trades taken on two
     different books. See mt5desk.provenance.
+
+    THE CAPITAL NUMBER IS THE MINIMUM OF THE TWO BREADTHS. Return correlation and currency
+    exposure answer different questions, and a book is only as diversified as its worse answer:
+    taking returns alone lets four expressions of one dollar view buy the heat of four
+    independent bets. `exposures` is optional, and its ABSENCE never raises the budget -- an
+    unmeasured factor breadth leaves the return-based number exactly as it was, the same
+    fail-closed direction every other rail here takes.
     """
     rows = list(rows)
     if acc is not None:
@@ -167,6 +229,8 @@ def measure_from_ledger(rows: Iterable[dict], acc: dict[str, Any] | None = None,
         kept = [r for r in rows if same_account(r, acc)]
         if len(kept) != len(rows):
             k, why = measure_k_eff(kept, min_overlap)
+            k, why = _floor_by_factor(k, why, exposures)
             return k, why + f" [{len(kept)}/{len(rows)} rows from the account in hand]"
         rows = kept
-    return measure_k_eff(rows, min_overlap)
+    k, why = measure_k_eff(rows, min_overlap)
+    return _floor_by_factor(k, why, exposures)

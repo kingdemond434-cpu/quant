@@ -52,19 +52,14 @@ def test_the_three_steps_run_in_order(cyc, monkeypatch):
 
 
 def test_the_real_step_order_is_shadow_then_promoter_then_markout():
-    """Pins the module's own STEPS, not just the fixture's.
-
-    export_aurum was appended 2026-08-22 and runs LAST on purpose: it exports findings derived
-    from today's cycle, so it must see the promoter's output rather than yesterday's. The
-    load-bearing part is RELATIVE order -- shadow before promoter before markout -- not absolute
-    position: futures_curves/curve_strategies were legitimately prepended 2026-08-26 (unrelated
-    data-fetch steps, no dependency on shadow/promoter/markout), which broke a stricter
-    names[:3]==[...] version of this assertion that this replaced without catching a real bug.
-    A REORDERING of shadow/promoter/markout among themselves still fails this."""
+    """Pins the module's own STEPS. The cycle has since grown legitimate stages (curve
+    compendium, reconciler, execution, portfolio, decay, dashboard export) -- the LAW here was
+    never "exactly three steps", it is the ORDER: evidence accrues (shadow) before anyone
+    promotes on it, and markouts are measured after the promoter acts, never instead of it."""
     names = [n for n, _ in daily_cycle.STEPS]
-    assert names.index("shadow") < names.index("promoter") < names.index("markout"), (
-        "the promoter must read state shadow has already written, and markout must read what "
-        "the promoter decided")
+    for required in ("shadow", "promoter", "markout"):
+        assert required in names, f"the {required} step vanished from the daily cycle"
+    assert names.index("shadow") < names.index("promoter") < names.index("markout")
     assert "export_aurum" in names and names[-1] == "export_aurum"
 
 

@@ -1,0 +1,471 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Trader Workstation (TWS) | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+  "published": "2026-09-04T06:12:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php",
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "6f530e521d70b612e861",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Leveraged Covered Call | Fig Leaf Call - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/leveraged-covered-call",
+  "published": "2026-09-04T06:12:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34de286862335fde9ae2",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Call Spread | Bull Call Spread - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/long-call-spread",
+  "published": "2026-09-04T06:12:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13f198e10924d1de5d7d",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Put Spread | Bull Put Spread - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/long-put-spread",
+  "published": "2026-09-04T06:12:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5dc2a7f54b87b2cfc10b",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Short Call Spread | Bear Call Spread - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/short-call-spread",
+  "published": "2026-09-04T06:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "01485972dd8339f16f91",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Short Put Spread | Bull Put Spread - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/short-put-spread",
+  "published": "2026-09-04T06:12:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2130479108c12251b0d3",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Straddle Option Strategy - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/long-straddle",
+  "published": "2026-09-04T06:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "765ee5fb398d1d8c8f77",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Strangle Option Strategy - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/long-strangle",
+  "published": "2026-09-04T06:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93659c54a709f8663850",
+  "host": "www.optionsplaybook.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u56fd\u5bb6\u5916\u6c47\u7ba1\u7406\u5c40\u95e8\u6237\u7f51\u7ad9",
+  "url": "http://www.safe.gov.cn/",
+  "published": "2026-09-04T06:12:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "08d48f4ab386106dec07",
+  "host": "www.safe.gov.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ForexSpeedUp software that open trades with one click",
+  "url": "https://forexspeedup.com/",
+  "published": "2026-09-04T06:13:31+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forexspeedup.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "59cd109669169275a724",
+  "host": "forexspeedup.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Trade Copier 4 | The Best Local Trade Copier",
+  "url": "https://forexcopier.com/products/fcopier3",
+  "published": "2026-09-04T06:13:33+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forexcopier.com/download/downloadLinkTradeCopier4",
+   "https://forexcopier.com/download/downloadLinkRemoteCopier2Provider"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "20384da607f2ee087214",
+  "host": "forexcopier.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Choosing World Development Indicators: A Guide to Indicator Selection \u2013 Choosing World Development Indicators",
+  "url": "https://wb-decis.github.io/wdi-indicator-selection/",
+  "published": "2026-09-04T06:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0de1ea5cf573f2101588",
+  "host": "wb-decis.github.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ForexSpeedUp software that open trades with one click",
+  "url": "https://forexspeedup.com",
+  "published": "2026-09-04T06:14:03+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forexspeedup.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "59cd109669169275a724",
+  "host": "forexspeedup.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Axi EU: Online Trading Broker - CFDs &amp; Forex in Europe",
+  "url": "https://axicopytrading.onelink.me/b9Tx/lmrzb0ow?af_qr=true",
+  "published": "2026-09-04T06:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef50cd956e45e4f1232a",
+  "host": "axicopytrading.onelink.me"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade Forex CFDs Online / Axi EU",
+  "url": "https://www.axi-solaris.com/eu/trade/cfds/forex",
+  "published": "2026-09-04T06:14:14+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "090bd39c2aa4090e493f",
+  "host": "www.axi-solaris.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Handluj kontraktami CFD na rynku Forex online / Axi PL",
+  "url": "https://www.axi-solaris.com/pl/trade/cfds/forex",
+  "published": "2026-09-04T06:14:17+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "64693153667a07bac6cb",
+  "host": "www.axi-solaris.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Accounts / Axi EU",
+  "url": "https://www.axi-solaris.com/eu/trading-accounts",
+  "published": "2026-09-04T06:14:18+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a45832873553faa80f78",
+  "host": "www.axi-solaris.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Konto handlowe / Axi PL",
+  "url": "https://www.axi-solaris.com/pl/trading-accounts",
+  "published": "2026-09-04T06:14:20+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d0fac2f6ffa083954b1d",
+  "host": "www.axi-solaris.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Axi Professional / Axi EU",
+  "url": "https://www.axi-solaris.com/eu/trading-accounts/professional-account",
+  "published": "2026-09-04T06:14:22+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6f25f852a95f156da27c",
+  "host": "www.axi-solaris.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MetaTrader 4 Download - MT4 App for PC, Mac, Android, iPhone",
+  "url": "https://www.axi-solaris.com/eu/trading-platforms/metatrader-4",
+  "published": "2026-09-04T06:14:26+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://download.mql5.com/cdn/web/metaquotes.software.corp/mt4/MetaTrader4.pkg.zip",
+   "https://download.mql5.com/cdn/web/axicorp.financial.services/mt4/axi4setup.exe"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f3f48e22667a012a6c49",
+  "host": "www.axi-solaris.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u200eAxi Trading Platform App - App Store",
+  "url": "https://apps.apple.com/app/axi-trading-platform/id1537332269",
+  "published": "2026-09-04T06:14:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://apps.apple.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "790b1aecd6761cd462fe",
+  "host": "apps.apple.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Copier Remote 2 | \u7121\u6599\u3067\u30c7\u30e2\u3092\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9",
+  "url": "https://forexcopier.jp/products/fcremote2",
+  "published": "2026-09-04T06:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forexcopier.jp/download/downloadLinkTradeCopier4",
+   "https://forexcopier.jp/download/downloadLinkRemoteCopier2Provider",
+   "https://forexcopier.jp/download/downloadLinkRemoteCopier2Receiver"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "4febe83b4db38238e3d7",
+  "host": "forexcopier.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Trade Copier 4 | 0.1 \u79d2\u3067\u30b3\u30d4\u30fc",
+  "url": "https://forexcopier.jp/products/fcopier3",
+  "published": "2026-09-04T06:14:28+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forexcopier.jp/download/downloadLinkTradeCopier4",
+   "https://forexcopier.jp/download/downloadLinkRemoteCopier2Provider"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "81f96c2d9fdc6b4afa4d",
+  "host": "forexcopier.jp"
+ }
+]

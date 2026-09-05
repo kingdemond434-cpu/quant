@@ -1,8 +1,8 @@
 {
- "updated_at": "2026-08-17T00:38:52.422815+00:00",
- "status": "CONTROLLER_FAILED_CHECKPOINTED",
- "reason": "Controller rc=1; exact state checkpointed and transferred; inspect data/cro_ai_logs/midnight_codex_20260817T003841Z.log",
- "controller_rc": 1,
- "pipeline_rc": 1,
+ "updated_at": "2026-09-04T03:27:41.391242+00:00",
+ "status": "RUNNING_PIPELINE",
+ "reason": "Deterministic frontier is running; controller has not started",
+ "controller_rc": -1,
+ "pipeline_rc": -1,
  "persistent_workers_controller_independent": true
 }

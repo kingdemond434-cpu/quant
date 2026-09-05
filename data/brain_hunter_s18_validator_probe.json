@@ -1,0 +1,82 @@
+{
+ "repo": "zhutoutoutousan/worldquant-miner",
+ "sha": "6a0c9433d888c792b9fcaa80ba8e82c0c9aa6e87",
+ "licence": "Apache-2.0",
+ "aggressive_event_input_fix": [
+  {
+   "input": "rank(close)",
+   "after_pass_1": "ts_rank(close)",
+   "fixed_point_at_pass": 2,
+   "changed_at_all": true
+  },
+  {
+   "input": "add(anl4_estimate_eps, anl4_actual_eps)",
+   "after_pass_1": "ts_add(anl4_estimate_eps, anl4_actual_eps)",
+   "fixed_point_at_pass": 2,
+   "changed_at_all": true
+  },
+  {
+   "input": "ts_rank(close, 20)",
+   "after_pass_1": "ts_rank(close, 20)",
+   "fixed_point_at_pass": 1,
+   "changed_at_all": false
+  },
+  {
+   "input": "group_rank(close, sector)",
+   "after_pass_1": "group_rank(close, sector)",
+   "fixed_point_at_pass": 1,
+   "changed_at_all": false
+  },
+  {
+   "input": "winsorize(close, 4)",
+   "after_pass_1": "winsorize(close, 4)",
+   "fixed_point_at_pass": 1,
+   "changed_at_all": false
+  },
+  {
+   "input": "zscore(close)",
+   "after_pass_1": "zscore(close)",
+   "fixed_point_at_pass": 1,
+   "changed_at_all": false
+  }
+ ],
+ "fix_input_count_error": [
+  {
+   "input": "ts_corr(close, open, 20)",
+   "error": "Invalid number of inputs : 3, should be exactly 2 input(s)",
+   "after_pass_1": "ts_corr(close, open, 20)",
+   "fixed_point_at_pass": 1,
+   "changed_at_all": false
+  },
+  {
+   "input": "rank(close)",
+   "error": "Invalid number of inputs : 1, should be at least 2 input(s)",
+   "after_pass_1": "rank(close, 1)",
+   "fixed_point_at_pass": 2,
+   "changed_at_all": true
+  },
+  {
+   "input": "ts_mean(close, 20)",
+   "error": "Invalid number of inputs : 2, should be exactly 1 input(s)",
+   "after_pass_1": "ts_mean(close)",
+   "fixed_point_at_pass": 2,
+   "changed_at_all": true
+  }
+ ],
+ "classify_error_from_message": {
+  "Unknown variable: foo": "unknown_variable",
+  "Invalid field xyz": "invalid_field",
+  "Syntax error near )": "syntax_error",
+  "Type mismatch": "type_error",
+  "Operator add does not support event inputs": "unknown_error",
+  "Invalid number of inputs : 2, should be exactly 1 input(s)": "unknown_error",
+  "Unexpected character ',' at position 12": "unknown_error",
+  "Operator ts_mean requires a lookback window": "unknown_error"
+ },
+ "unclassifiable_classes": [
+  "Invalid number of inputs : 2, should be exactly 1 input(s)",
+  "Operator add does not support event inputs",
+  "Operator ts_mean requires a lookback window",
+  "Unexpected character ',' at position 12"
+ ]
+}

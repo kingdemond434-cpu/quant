@@ -1,0 +1,59 @@
+[
+  {
+    "source": "mql5_forum",
+    "title": "Single-symbol EA (XAUUSD only) fails Market validation on EURUSD - &quot;no trading operations&quot; - how did others get this approved?",
+    "url": "https://www.mql5.com/en/forum/515220",
+    "symbols": [
+      "XAUUSD",
+      "EURUSD"
+    ],
+    "confidence": 0.2
+  },
+  {
+    "source": "mql5_forum",
+    "title": "GOLD, Gold and XAUUSD",
+    "url": "https://www.mql5.com/en/forum/393267",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "confidence": 0.2
+  },
+  {
+    "source": "mql5_forum",
+    "title": "Single-symbol EA (XAUUSD only) fails Market validation on EURUSD - &quot;no trading operations&quot; - how did others get this approved?",
+    "url": "https://www.mql5.com/en/forum/515220",
+    "symbols": [
+      "XAUUSD",
+      "EURUSD"
+    ],
+    "confidence": 0.2
+  },
+  {
+    "source": "mql5_forum",
+    "title": "GOLD, Gold and XAUUSD",
+    "url": "https://www.mql5.com/en/forum/393267",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "confidence": 0.2
+  },
+  {
+    "source": "mql5_forum",
+    "title": "Single-symbol EA (XAUUSD only) fails Market validation on EURUSD - &quot;no trading operations&quot; - how did others get this approved?",
+    "url": "https://www.mql5.com/en/forum/515220",
+    "symbols": [
+      "XAUUSD",
+      "EURUSD"
+    ],
+    "confidence": 0.2
+  },
+  {
+    "source": "mql5_forum",
+    "title": "GOLD, Gold and XAUUSD",
+    "url": "https://www.mql5.com/en/forum/393267",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "confidence": 0.2
+  }
+]

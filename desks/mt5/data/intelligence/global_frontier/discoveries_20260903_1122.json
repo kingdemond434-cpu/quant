@@ -1,0 +1,12 @@
+[
+ {
+  "source": "global_frontier",
+  "kind": "stub",
+  "title": "fetched OK and matched no selector -- markup moved or the data is rendered client-side; needs a parser or an API, not a retry",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T11:22:14+00:00",
+  "needs_selector_work": true
+ }
+]

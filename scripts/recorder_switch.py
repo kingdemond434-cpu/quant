@@ -64,3 +64,42 @@ def wait_while_disabled(label: str = "recorder") -> bool:
         time.sleep(POLL_S)
     print(f"{label}: RECORDERS_OFF cleared -- resuming", flush=True)
     return True
+
+
+# --- CHEAP PARKING (2026-09-03) ---------------------------------------------------------------
+# The idle-rather-than-exit contract above is right and is preserved. What was wrong is WHERE the
+# idling happened: every one of these entry points imported its heavy third-party stack --
+# pandas, websockets, the exchange clients -- and only THEN checked the flag. So a recorder that
+# had been switched off nine days earlier still held its whole interpreter resident: measured
+# 2026-09-03, `liquidation_listener` 105MB and `run_cashcarry_executor` 216MB, on a swapless
+# 3814MB box that was oom-killing 184 units a day. Three units' worth of "off" cost ~320MB of the
+# memory whose absence was killing the research organs.
+#
+# `park_before_imports` is called at the TOP of an entry point, before any heavy import, so a
+# parked process is a bare interpreter (~12MB) rather than a loaded one. Everything the original
+# design promised still holds: it does not exit, so systemd never restart-loops or floods the
+# journal, and it returns the moment the flag is cleared, so resuming stays a non-root operation.
+#
+# STDLIB ONLY, ON PURPOSE. Anything imported here would be imported by a parked process too,
+# which is the entire defect this function exists to remove.
+
+_PARK_POLL_SECONDS = 30
+
+
+def park_before_imports(label: str, poll: float = _PARK_POLL_SECONDS) -> None:
+    """Block while data/RECORDERS_OFF exists. Returns when it is cleared.
+
+    Call this BEFORE the module's heavy imports, from a `if __name__ == "__main__":` block at the
+    top of the file -- so an import by a test or a tool never parks, and only an actual run does.
+    """
+    import time as _time
+    from pathlib import Path as _Path
+
+    flag = _Path(__file__).resolve().parent.parent / "data" / "RECORDERS_OFF"
+    if not flag.exists():
+        return
+    print(f"{label}: data/RECORDERS_OFF present -- parked before loading its stack "
+          f"(holding no library memory; resumes when the flag is cleared)", flush=True)
+    while flag.exists():
+        _time.sleep(poll)
+    print(f"{label}: RECORDERS_OFF cleared -- loading and resuming", flush=True)

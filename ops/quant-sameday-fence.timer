@@ -1,0 +1,9 @@
+[Unit]
+Description=Same-day fence hourly at :20
+
+[Timer]
+OnCalendar=*:20
+Persistent=true
+
+[Install]
+WantedBy=timers.target

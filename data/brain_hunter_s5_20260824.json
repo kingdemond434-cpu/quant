@@ -1,0 +1,91 @@
+{
+  "generated_at": "2026-08-24T15:07:48Z",
+  "seat": "BRAIN_HUNTER",
+  "session": 5,
+  "authority": "research/catalogue only; zero promotion, sizing or capital authority",
+  "active_destination": "Fusion Markets MT5",
+  "sources": [
+    {
+      "url": "https://github.com/zhutoutoutousan/worldquant-miner/blob/master/paper/chapters/crypto-trading-strategies.tex",
+      "license": "Apache-2.0 repository; read as text, no code executed",
+      "section": "Low-Liquidity Crypto Lottery Strategy",
+      "section_status": "EXHAUSTED_2026-08-24"
+    },
+    {
+      "url": "https://github.com/zl3311/alpha-mining",
+      "license": "MIT for code, methodology, session narratives, knowledge-base structure and author analysis; DATA-NOTICE reserves/cautions submitted alpha expressions and platform-derived field metadata",
+      "section": "POSTMORTEM.md, DATA-NOTICE.md and 28-file dead_zones index",
+      "section_status": "POSTMORTEM_AND_RIGHTS_EXHAUSTED_2026-08-24; DEAD_ZONE_INDEX_EXHAUSTED_AND_CONTENT_MINED_AS_AUTHOR_ANALYSIS"
+    }
+  ],
+  "source_boundary": {
+    "public_only": true,
+    "credentials_used": false,
+    "brain_api_called": false,
+    "third_party_code_executed": false,
+    "submitted_formulas_copied": false,
+    "platform_field_metadata_ingested": false
+  },
+  "external_archive_measurements": {
+    "mining_sessions": 63,
+    "approx_simulations": 53000,
+    "book_records": 68,
+    "dead_zones": 28,
+    "patterns": 29,
+    "warning": "All performance figures are in-sample BRAIN backtests selected after search; they are ore and carry no Fusion evidence authority."
+  },
+  "findings": [
+    {
+      "id": "BH-S5-F1",
+      "title": "The low-liquidity lottery section is a fixed heuristic, not a source-backed mechanism",
+      "evidence": "The full section hardcodes liquidity<10000, volume<50000, 24h price change>100%, holders<100, age<7d, then buys after a 50% recent increase with 50% TP/30% SL/1h hold. It cites no dataset, backtest, cost model, point-in-time construction or forced counterparty.",
+      "verdict": "KILLED_AS_MT5_HYPOTHESIS; retained as negative process evidence",
+      "why": "A scam/pump label does not explain who must buy after the pump or why a Fusion counterparty cannot stop. The rule buys the condition it calls suspicious and omits spread, gaps, contract survival and listing selection.",
+      "translate_to_mt5_result": [],
+      "fusion_mapping": "NO CURRENT EXACT ANALOGUE. Closest surface would be thin/new Fusion share CFDs, but the current 23-symbol universe has no share-CFD listing cohort or point-in-time delisting history.",
+      "named_data_gap": "Complete Fusion share-CFD symbol history with first/last tradable timestamps, point-in-time contract specs, bid/ask ticks, volume or tick-volume semantics, corporate actions, minimum lot and executable spread/swap.",
+      "promotion_authority": "none"
+    },
+    {
+      "id": "BH-S5-F2",
+      "title": "Update cadence determines which transformations are meaningful",
+      "evidence": "Across the public dead-zone notebook, daily rolling regression fields remained high-turnover despite decay, while subtracting overlapping windows, delta/std normalization and fast sign gates on quarterly fields produced near-zero or negative results. The recurring failure mechanism is cadence mismatch: a slow field is flat between updates, so rolling differences amplify update-day noise.",
+      "verdict": "SCREENED_AS_TRANSFERABLE_METHOD, NOT AN ALPHA RESULT",
+      "translate_to_mt5_result": [],
+      "fusion_mapping": "For Fusion FX/metals, weekly CFTC COT and scheduled macro releases must be stamped at first availability and treated as event changes or slow regime states, never fabricated into daily observations. Exact symbols: EURUSD, GBPUSD, USDJPY, XAUUSD and related mapped futures; H1/D1 decisions only after release; costs from observed Fusion spread, tick value and swap.",
+      "point_in_time_constraint": "COT reference Tuesday is unavailable until the official Friday release; macro revisions require vintage/first-seen values.",
+      "screen_scope": "Methodology/code audit only. No new trading hypothesis was registered, so no Stage-A survivor claim or multiplicity trial was created."
+    },
+    {
+      "id": "BH-S5-F3",
+      "title": "Correlation budget belongs to economic cores, not syntax or sign flips",
+      "evidence": "The archive's own dead zones show that negating one anchor did not escape a shared analyst/intraday core (~0.94 correlation), and fresh weak legs could not rescue strong saturated cores. Its postmortem independently identifies correlation-to-book as the binding transition after signal generation.",
+      "verdict": "CONFIRMS_EXISTING_DESK_DIRECTION; NO NEW BUILD CLAIM",
+      "translate_to_mt5_result": [],
+      "fusion_mapping": "Fusion candidates must be compared on timestamp-aligned net sleeve returns against the existing MT5 book. An exact polarity inversion is a duplicate (absolute correlation one), not independent alpha. Existing consumers include libs/stage15/contribution.py and libs/portfolio/capital_competition.py.",
+      "screen_scope": "Repository audit found book-relative/absolute-correlation consumers already present; the finding changes search emphasis, not a gate or threshold."
+    },
+    {
+      "id": "BH-S5-F4",
+      "title": "External research state must be snapshotted before access disappears",
+      "evidence": "The archive lost platform access after its last normal session and had no durable points/rank/leaderboard snapshot or lock trace. The author explicitly identifies 'I can always look it up later' as the costliest process error.",
+      "verdict": "SCREENED_PROCESS_EVIDENCE",
+      "fusion_mapping": "For public MT5 leaderboards/competitions, capture dated public histories, rule versions, failure cohorts and source availability; a current winner screenshot is never a history.",
+      "point_in_time_constraint": "Capture first_seen and source timestamp separately; disappearance is not evidence of a prior value."
+    }
+  ],
+  "video": {
+    "fetched": 0,
+    "locked": 0,
+    "reason": "No video-shaped artifact encountered in the sections mined."
+  },
+  "next_unexhausted_ground": [
+    "zl3311/alpha-mining session narratives: sample early/middle/late sessions for how the search policy changed before and after the correlation wall",
+    "worldquant-miner stone_age alpha_generator.py and machine_lib.py: failure modes in generation-one",
+    "worldquant-miner generation_two fast_expr_ast.py, expression_compiler.py and template_validator.py: validation refusal paths",
+    "worldquant-miner paper-zh versus English chapter diff",
+    "Gradzki-Wojcik-Lessmann CC-BY article negative-results tables",
+    "yli188/WorldQuant_alpha101_code mechanism-only read under its no-licence boundary",
+    "192-fork layer and jglazar/notes API tree walk"
+  ]
+}

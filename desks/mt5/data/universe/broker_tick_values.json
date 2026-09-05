@@ -1,0 +1,30 @@
+{
+ "_note": "tick_value AS REPORTED BY THE BROKER (MetaTrader5 symbol_info.trade_tick_value), recovered from desks/mt5/data/universe/universe.json at commit 305b2a2d before three competing producers deleted the field from all 197 symbols. The venue's own number beats any derivation, so the repair prefers these and derives only what is not here (L1.4).",
+ "_source": "git 305b2a2d23931fc95cf50e613cc0509306a7996f (2026-08-26T11:00Z)",
+ "_account_ccy": "EUR",
+ "tick_value": {
+  "XAUUSD": 0.8632298608473467,
+  "XAGUSD": 4.316149304236733,
+  "EURUSD": 0.8632298608473467,
+  "GBPUSD": 0.8632298608473467,
+  "USDJPY": 0.541791052862553,
+  "EURJPY": 0.541791052862553,
+  "GBPJPY": 0.541791052862553,
+  "AUDUSD": 0.8632298608473467,
+  "USDCAD": 0.6223937262712392,
+  "USDCHF": 1.0647812939222285,
+  "NZDUSD": 0.8632298608473467,
+  "EURGBP": 1.1696316829830289,
+  "EURCHF": 1.0647812939222285,
+  "AUDJPY": 0.5417851821752675,
+  "CADJPY": 0.5417851821752675,
+  "NZDJPY": 0.5417851821752675,
+  "CHFJPY": 0.5417851821752675,
+  "AUDNZD": 0.5097723356748877,
+  "NZDCAD": 0.6223937262712392,
+  "EURAUD": 0.6136023365976979,
+  "GBPAUD": 0.6136023365976979,
+  "BTCUSD": 0.008632298608473466,
+  "ETHUSD": 0.008632298608473466
+ }
+}

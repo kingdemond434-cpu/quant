@@ -1,0 +1,61 @@
+{
+ "source": "Japan Ministry of Finance -- Foreign Exchange Intervention Operations",
+ "source_urls": {
+  "landing": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/index.html",
+  "headline_csv": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/foreign_exchange_intervention_operations.csv",
+  "quarterly_index": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/quarter/index.html",
+  "monthly_index": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/monthly/index.html"
+ },
+ "collected_utc": "2026-08-28",
+ "collected_by": "free_data_alternatives_miner",
+ "units": "amount_jpy_bn = JPY billions, total for the day",
+ "coverage": "daily events parsed from the QUARTERLY releases 2023Q1-2026Q2 (2022 quarterly pages 404 on the official index)",
+ "zero_quarters_confirmed": "quarters with no daily table state 'Total amount ... 0' explicitly -- absence here is a measured zero, not a gap",
+ "known_defect": "the headline Historical Data CSV UNDER-REPORTS: it holds 2 of the 4 daily events in 2024 and 1 of the 3 in 2026. The quarterly releases are authoritative for daily granularity.",
+ "publication_lag": "monthly aggregate ~2 days after a 27th-to-26th window; daily breakdown only at the quarterly release, ~40 days after quarter end (Q1-2023 released 2023-05-10)",
+ "s13": "clean -- Japanese government publication, no robots.txt on www.mof.go.jp, pages carry meta robots index,follow",
+ "events": [
+  {
+   "quarter": "2024_2Qe",
+   "date": "2024-04-29",
+   "amount_jpy_bn": 5918.5,
+   "operation": "the US dollar (sold) the Japanese yen (bought)"
+  },
+  {
+   "quarter": "2024_2Qe",
+   "date": "2024-05-01",
+   "amount_jpy_bn": 3870.0,
+   "operation": "the US dollar (sold) the Japanese yen (bought)"
+  },
+  {
+   "quarter": "2024_3Qe",
+   "date": "2024-07-11",
+   "amount_jpy_bn": 3167.8,
+   "operation": "the US dollar (sold) the Japanese yen (bought)"
+  },
+  {
+   "quarter": "2024_3Qe",
+   "date": "2024-07-12",
+   "amount_jpy_bn": 2367.0,
+   "operation": "the US dollar (sold) the Japanese yen (bought)"
+  },
+  {
+   "quarter": "2026_2Qe",
+   "date": "2026-04-30",
+   "amount_jpy_bn": 6278.7,
+   "operation": "the US dollar (sold) the Japanese yen (bought)"
+  },
+  {
+   "quarter": "2026_2Qe",
+   "date": "2026-05-04",
+   "amount_jpy_bn": 780.2,
+   "operation": "the US dollar (sold) the Japanese yen (bought)"
+  },
+  {
+   "quarter": "2026_2Qe",
+   "date": "2026-05-06",
+   "amount_jpy_bn": 4675.9,
+   "operation": "the US dollar (sold) the Japanese yen (bought)"
+  }
+ ]
+}

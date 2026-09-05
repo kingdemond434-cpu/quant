@@ -15,7 +15,12 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
-
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; a commit that changes this file's LENGTH while it is running resumes execution inside
+# a line. Measured on 63680c05 (ops/run_frontier_rotation.sh): comment text ran as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. Only the exit INSIDE the
+# group ends the process before bash reads another byte. Do not unwrap; add nothing after `}`.
+{
 mkdir -p data/cro_ai_logs docs/research
 LOG="data/cro_ai_logs/commit_audit_$(date -u +%Y%m%dT%H%M).log"
 DIFF="docs/research/recent_changes.md"
@@ -88,3 +93,6 @@ if [ "$RC" = "0" ] && [ "$INBOX_AFTER" -gt "$INBOX_BEFORE" ]; then
 else
     echo "commit-audit: NO-QUORUM (rc=$RC, substantive=${SUBST:-unparsed}, inbox unchanged) -- zero seats replied, so there is NOTHING to triage and NO row is owed. This is the honest degraded outcome, not a failure to convert." >> "$LOG"
 fi
+
+exit $?
+}

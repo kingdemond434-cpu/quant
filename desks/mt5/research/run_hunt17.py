@@ -429,9 +429,10 @@ def wf_oos(h4: pd.DataFrame, sigs: list, costs: Costs) -> list[float]:
 
 def battery(h4: pd.DataFrame, sigs: list, costs: Costs) -> dict:
     r = run_backtest(h4, sigs, costs).stats()
-    r2 = run_backtest(h4, sigs, Costs(costs.spread_per_lot * 2,
-                                      costs.commission_per_lot * 2,
-                                      costs.contract_oz)).stats()
+    # DERIVE, NEVER REBUILD: a positional rebuild drops `quote_per_account` back to 1.0 and
+    # un-does the account-currency conversion, so the 2x stress landed BELOW the baseline on
+    # every JPY cross (measured 2026-08-27). Commission is contractual and does not widen.
+    r2 = run_backtest(h4, sigs, costs.stressed(2.0)).stats()
     wf = wf_oos(h4, sigs, costs)
     defl = r["t_stat"] - E_MAX
     gate = (r["n"] > 60 and defl > 2 and r["profit_factor"] > 1.05
@@ -446,7 +447,9 @@ def battery(h4: pd.DataFrame, sigs: list, costs: Costs) -> dict:
 def resample(h1: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     agg = {"open": "first", "high": "max", "low": "min", "close": "last"}
     h4 = h1.resample("4h").agg(agg).dropna()
-    d1 = h1.resample("D").agg(agg).dropna()
+    # L1.68 (GAP 132): the Sunday H1 stub bars are genuine market time at H1/H4 but resample
+    # into a fake sixth "D1" bar; declared-and-excluded at consumption, never from disk.
+    d1 = families.d1_session_filtered(h1.resample("D").agg(agg).dropna())
     return h4, d1
 
 

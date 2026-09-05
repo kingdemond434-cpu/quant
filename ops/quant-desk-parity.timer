@@ -1,0 +1,9 @@
+[Unit]
+Description=Desk code parity every 30 minutes
+
+[Timer]
+OnCalendar=*:11/30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

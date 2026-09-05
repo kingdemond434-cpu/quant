@@ -1,0 +1,1018 @@
+Table of Contents
+ContentsTable of Contents 
+2
+ 3
+Components of Transactions Costs  4
+Explicit Costs 5
+Implicit Costs  
+7
+Capturing All Costs   13
+Maximizing Net Returns: A Balancing Act 14
+Conclusion
+ 19
+ 21
+References
+ 26
+Disclosures
+ 26
+
+T
+ransactions Costs: Practical Application
+ 
+3
+critical aspect of implementing any investment 
+transactions costs when evaluating investment 
+strategies can be a very challenging task. 
+pitfalls one might face when trying to compare 
+costs across managers. As we walk through 
+section by highlighting the key questions 
+These questions serve as an evaluation 
+comparisons across managers. Absent such a 
+framework, investors are left with only naïve 
+result in suboptimal investment choices. By 
+transactions costs. 
+
+4 
+Transactions Costs: Practical ApplicationComponents of Transactions Costs 
+measuring transactions costs, as well as how 
+they optimize the implementation of their 
+transactions costs. Much literature has been 
+on portfolio returns. However, because no 
+transactions costs for any given investment 
+It is important to begin analyzing transactions 
+measure, as these generally relate to the 
+As we will now see, receiving summary 
+
+ 
+Transactions Costs: Practical Application
+ 
+5Explicit Costs1 
+ These of course would have to satisfy the safe-harbor provisions in Section 28(e) of the Securities and Exchange Act of 1934, as 
+amended (15 U.S.C. § 78bb(e)).A Simpler Point of Comparison, 
+ 
+but Not SimpleExplicit costs, such as commissions, fees,  
+relative ease. 
+When analyzing explicit costs, commissions 
+are usually the focus. Commissions are 
+ 
+important to note that some counterparties 
+share. Achieving lower commissions by using 
+circumstances, obtaining lower commission 
+rates may not be the most optimal, as investors 
+In some cases, to gain operational or cost 
+In these cases, commission rates can be 
+important that the strength of these terms 
+maintain a competitive process to serve as a 
+check against unfair cost structures. 
+1 In these 
+along to the investor. If managers use soft 
+arrangements by requiring reporting of the 
+In some cases, commission rates are not 
+example is the use of swaps in investment 
+strategies. In this case, commissions are 
+
+6 
+Transactions Costs: Practical Application 
+report these to investors. Otherwise, 
+2  
+ensure proper settlement, as well as regulatory 
+some countries. Managers may use swaps 
+2 
+Managers may choose to incorporate these costs into their implicit cost calculations (which will discussed later in this paper) or in some 
+other way. Most important is that these are captured, not necessarily where they are allocated.
+purchase exchange memberships on behalf of 
+When comparing managers, explicit costs, 
+particularly commissions, may be more 
+Key Questions to Ask Managers:  
+How are counterparty terms affected by the commission rates you report?
+investors?
+
+ 
+Do commission expenses include implied commissions from swap transactions?
+ 
+What additional measures are taken to optimize underlying fees and/or taxes?
+
+ 
+Transactions Costs: Practical Application
+ 
+7Implicit Costs Many Approaches: All Defensible, 
+ 
+All Problematic
+the appropriateness of some measures may 
+on ways to compare this aspect of transactions 
+costs across managers. 
+Despite the ambiguity in measuring 
+implicit costs, managers can still apply the 
+transactions costs of a given strategy, managers 
+possible net returns for their investors. We will 
+across managers. Generally, implicit costs 
+3 Much of the 
+the concepts.VWAP vs. Pre-Trade Price
+measures in reporting implicit costs. However, 
+Lets ask the question: Does an implicit cost of 
+ 
+Exhibit 1 3 
+The term benchmark is commonly used when discussing transactions costs analysis. However, as described in Appendix A, unlike 
+generally not standardized nor readily accessible.
+
+8 
+Transactions Costs: Practical Application
+session in a hypothetical market. The markets 
+requires the choice of a reference price. We 
+incorporates all the price changes over the 
+over the course of the execution. 
+when a manager is only a small percentage Exhibit 1
+Measuring Transactions Costs: VWAP vs. Pre-Trade Price
+or losses within a portfolio.
+$9
+9.
+50
+$1
+00
+.0
+0
+$1
+00
+.5
+0
+$1
+01
+.0
+0
+$1
+01
+.5
+0
+$1
+02
+.0
+0
+$1
+02
+.5
+0
+$1
+03
+.0
+0Price
+Time
+Mark
+et Mid
+Ex
+ecuted Price
+Arriv
+al Price
+VW
+AP
+Av
+er
+age Ex
+ecution Price
+Av
+er
+age Ex
+ecution Price: $101.40
+VW
+AP: $101.33
+Pr
+e-
+Tr
+ade Price: $100.00
+Cost 
+vs
+. Pr
+e-
+Tr
+ade Price: 
+$1.40
+Cost 
+vs
+. 
+VW
+AP: 
+$0.07
+
+Tr
+ansactions Costs: Practical Application
+ 
+9
+may be appropriate as it accounts for the 
+more appropriate as the manager is more 
+across managers requires consistency in the 
+Benchmarking to the Closing Price  
+Inadvisable for Measuring Market Impact 
+alternative strategies in swap form. Often, 
+guarantee to match the closing benchmark 
+price. This can make a closing price benchmark 
+attractive for investors who have to report 
+or governing committees, but in actuality, 
+net performance for the investor, as we will 
+show later. The main issue is that the closing 
+using this approach may appear low, true 
+Exhibit 2
+as market impact accumulates, but because 
+it becomes apparent that the actual implicit 
+hence m
+aking t
+hat b
+enchmark i
+nappropriate 
+also shows that the market price falls at the 
+on in the execution, when there was less market 
+
+10
+ 
+Transactions Costs: Practical Application
+thereby creating a perverse incentive for that 
+party to actually maximize market impact, 
+which can lower investors' net returns.
+impact are important concepts in general for 
+scope of this paper, it is particularly important 
+to highlight these in the context of closing price 
+benchmarks. Exhibit 2
+Measuring Transactions Costs: Pre-Trade Price vs. Closing Price
+$78
+$79
+$80
+$81
+$82
+$83
+$84
+$85
+$86
+$87Market Price
+Hypothetical Trading Period
+Market Price
+Post-Trade
+Reversion (g)Cost vs. 
+Pre-Trade
+Price (e)First Trading Session
+Market ClosedN
+ext Trading Session
+(a)
+(b)
+(c)
+(d)
+Average
+Fill vs.
+Pre-Trade
+Price (f) 
+Start of Order 
+ExecutionRelevant Prices 
+Pre-Trade (a) 
+80.05
+Average Fill (b) 
+83.91
+Market Close (c) 
+84.98
+Post-Reversion (d) 
+81.25
+Relevant Cost Measures
+Guaranteed vs. Close 
+0.00
+Guaranteed vs. Pre-Trade (e) 
+4.93
+Average Fill vs. Pre-Trade (f) 
+3.86
+ 
+Other Relevant Measurements 
+Post-Trade Reversion (g) 
+3.72
+or losses within a portfolio.
+
+ 
+Transactions Costs: Practical Application
+ 
+11Same Benchmark, Different 
+ 
+Reported CostsThere is no single best way to measure  
+implicit transactions costs, but it is still 
+among the various approaches. Even if two 
+Exhibit 3 shows 
+how for a hypothetical asset, resetting the 
+A
+A
+1, BP2, 
+3
+relative to each using the average execution 
+1, EP23
+Exhibit  3
+Differing Methodologies for Measuring Transactions Costs
+Hypothetical Upward-Trending Asset 
+Hypothetical Asset Price
+Method A
+Method B
+EPABPAAverage
+Execution Price
+Average
+Execution PriceMarket
+Open
+Market
+Closed
+Time
+Trade 
+ 
+Average 
+ 
+Cost vs. 
+Number 
+Quantity 
+Price 
+Benchmark 
+Benchmark Price
+1 
+120 
+$6.60 
+$5.00 
+$192
+ 
+Total: 
+$6.60 
+$5.00 
+$192
+Hypothetical Asset Price
+BP1BP2BP3EP1EP2EP3Market
+Open
+Market
+Closed
+Time
+Trade 
+ 
+Average 
+ 
+Cost vs. 
+Number 
+Quantity 
+Price 
+Benchmark 
+Benchmark Price
+1 
+40 
+$5.50  
+$5.00  
+$20
+2 
+40 
+$6.55  
+$6.25  
+$12
+3 
+40 
+$7.75  
+$6.90  
+$34
+  
+$6.60  
+$6.05  
+$66
+Sub Order #3
+Sub Order #2
+Sub Order #1
+$4.00
+$4.50
+$5.00
+$5.50
+$6.00
+$6.50
+$7.00
+$7.50
+$8.00
+$4.00
+$4.50
+$5.00
+$5.50
+$6.00
+$6.50
+$7.00
+$7.50
+$8.00
+or losses within a portfolio.
+
+12
+ 
+Transactions Costs: Practical Application
+Key Questions to Ask Managers:  
+Which benchmark is used to measure implicit cost?
+ 
+How is the appropriateness of the benchmark determined?
+
+ 
+How are sequential executions for the same investment decision benchmarked?
+allow for appropriate comparison?
+Importantly, there is not necessarily a right 
+costs across managers, an investor cannot 
+Lining Up Reported Costs
+exists in reporting transactions costs means 
+that managers may not report costs in a 
+way that is consistent from the perspective 
+of the investor. However, managers, or the 
+have the capability to report costs in more 
+with costs across managers, one approach 
+to help increase comparability is to see 
+
+ 
+Transactions Costs: Practical Application
+ 
+13Capturing All Costs  
+to changes in the portfolio managers market 
+activity, such as currency sweeps as a result of 
+complete picture. 
+higher the potential opportunity cost from not 
+Whats missing in the picture is the opportunity 
+cost in terms of forgone returns to the investor of 
+Another interesting point here is that by not 
+are more likely to be against him. Conversely, 
+into further lost opportunity for investors. 
+worth highlighting here as it is important in 
+Hence, obtaining a complete estimate of 
+an investment manager makes in creating 
+transactions costs can vary even among 
+the results may not be suitable for the purpose of 
+Key Questions to Ask Managers:  
+Are all trades included?
+ 
+What is the percentage of trade orders not fully executed?
+
+14
+ 
+Transactions Costs: Practical ApplicationMaximizing Net Returns: A Balancing ActWhat ultimately matters is not how much 
+investors pay but how much they receive. In 
+The Role of Alpha Decay 
+of transactions costs. Exhibit 4
+ shows two 
+see that high Sharpe ratio strategies exhibit 
+that waiting to execute over some number of 
+Sharpe ratio strategy. While these are 
+hypothetical examples, in practice, investment Exhibit 4
+Alpha Decay Explained 
+Different Strategies Exhibit Different Alpha Decay Rates
+or losses within a portfolio.
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+1.2
+1.4
+1.6
+05
+10
+15
+20
+25
+30
+Gross Sharpe Ratio
+Days Lagged
+Short-Term Signal
+Long-Term Signal
+High Sharpe Ratio,
+Low CapacityExample: Statistical ArbitrageModerate Sharpe Ratio,
+High CapacityExamples: Global Macro, 
+Long Short Equity
+
+ 
+Transactions Costs: Practical Application
+ 
+15Exhibit 5
+Hypothetical Investment Strategies 
+Note that in this example, we are not 
+taking into account transactions costs. 
+it, assuming no transactions costs. What 
+higher
+ transactions costs 
+Sharpe ratio strategy necessarily has worse 
+investor will experience a worse return after 
+taking into account transactions costs from 
+investing in the higher Sharpe ratio strategy. 
+within a single manager, as a single manager 
+There is little one can infer about a managers 
+practical perspective, comparing market 
+or losses within a portfolio. 
+Sharpe Ratio, 
+Net and Gross of Transactions Costs
+0.0
+0.5
+1.0
+1.5
+2.0
+High Sharpe,
+Low Capacity
+Moderate Sharpe,
+High Capacity
+Sharpe Ratio, Net of Transactions Costs
+Transactions Cost Impact
+Lowe
+r 
+Tr
+ansactions Costs
+Sharpe Ratio, 
+Net of Transactions Costs
+HigherT
+r
+ansactions Costs
+Sharpe Ratio, 
+Net of Transactions Costs
+
+16
+ 
+Transactions Costs: Practical ApplicationExhibit 5
+lower capacity strategy might exhibit higher 
+capacity strategy that has lower transactions 
+the investment strategies we research.
+Lower Trading Costs Indicate Manager 
+Trading Skill (for a Given Alpha Decay) 
+the manager might incur in capturing the 
+Exhibit 6
+Exhibit 6
+The Interaction between Alpha Decay and Trading Aggressiveness 
+$1
+00
+$1
+01
+$1
+02
+$1
+03
+$1
+00
+$1
+01
+$1
+02
+$1
+03Pric
+e
+Pric
+eTime
+TimeAl
+ph
+a Capture:
+ $1
+.2
+8
+Tr
+ansactio
+n Cost
+: $1
+.7
+2
+Al
+ph
+a Capture:
+ $2
+.0
+5
+Tr
+a
+nsactio
+n Cost
+: $0
+.9
+5
+Al
+ph
+a Capture:
+ ($
+0.
+10
+)
+Tr
+a
+nsactio
+n Cost
+: $0
+.6
+0
+Al
+ph
+a Capture:
+ $0
+.1
+5
+Tr
+ansactio
+n Cost
+: $0
+.3
+5
+Mark
+et 
+Pr
+ic
+eE
+xpec
+te
+d Pr
+ic
+eE
+xe
+cution
+Av
+erag
+e Ex
+ecut
+io
+n Pr
+ic
+e
+Ag
+gr
+essi
+ve                        
+ 
+Tr
+adin
+g                             
+ Pa
+ti
+en
+t
+ Slow   
+           Al
+ph
+a D
+ecay  
+           Fa
+st
+or losses within a portfolio. 
+
+ 
+Transactions Costs: Practical Application
+ 
+17
+whereas being patient allows the manager 
+Conversely, for a strategy with a high rate 
+more aggressive the manager, the greater 
+Importantly, note that the more patiently 
+bears are higher than for a slower alpha 
+skill by comparing transactions costs of 
+making an evaluation. Only across managers 
+Exhibit 7
+transactions costs to achieve the optimal net 
+alpha. By focusing only on capturing alpha, 
+capturing high gross returns. Similarly, by 
+emphasizing the goal of lowering transactions 
+give up some of the alpha of the strategy. It 
+is only by focusing on net returns that the 
+Exhibit 7
+Trading Skill Is About Maximizing Net Alpha
+or losses within a portfolio. 
+Maximizing Gross Alpha
+Net Alpha = 0.30%
+Trading Too Fast
+Maximizing Net Alpha
+Net Alpha = 0.39%
+Trading Just Right
+Minimizing Transactions Costs
+Net Alpha = 0.36%
+Trading Too Slow
+0.00%
+0.10%
+0.20%
+0.30%
+0.40%
+0.50%
+0.60%
+Time to Complete the Trade
+Expected Gross Alpha
+Expected Net Alpha
+Expected Transactions Costs
+
+18
+ 
+Transactions Costs: Practical Application
+improving process.
+levels of transactions costs across managers. 
+Its also important to recognize that 
+comparing levels of transactions costs absent 
+alpha to investors. 
+Thus, for the investor, it is important to 
+approach manager evaluation by ensuring 
+each has the appropriate processes in place  
+strategies across managers.
+Key Questions to Ask Managers:  
+What is the alpha decay rate of the strategy?
+ 
+For the given alpha decay rate, what is a reasonable expectation of transactions costs for the 
+strategy?
+ 
+How is the aggressiveness of trading determined?
+
+ 
+How are trade-offs between transactions costs and opportunity costs evaluated?
+
+ 
+Transactions Costs: Practical Application
+ 
+19ConclusionOn the surface, it may seem that an attempt 
+analysis may be impractical given the 
+explicit costs, while generally observable 
+their part, come with far greater complexity 
+strategies even when using the services of 
+cant glean valuable insights from having 
+costs with their managers. Our view is 
+because cost measurement is only one aspect 
+how material transactions costs are to their 
+of these costs is a core competency with a 
+making process. 
+to pose to investment managers to more 
+accurately assess transactions costs. We 
+investors to garner important information 
+here as well.
+
+20
+ 
+Transactions Costs: Practical Application
+Summary of Key Questions to Ask Managers:  
+What is the alpha decay rate of the strategy?
+ 
+How do your transactions costs break down between explicit and implicit?
+ 
+How are counterparty terms affected by the commission rates you report?
+ 
+Do you use soft dollar arrangements, and if so, how do these help maximize investment returns? 
+
+ 
+Do commission expenses include implied commissions from swap transactions?
+ 
+What additional measures are taken to optimize underlying fees and/or taxes?
+ 
+Which benchmark is used to measure implicit cost?
+ 
+How is the appropriateness of the benchmark determined?
+
+ 
+How are sequential executions for the same investment decision benchmarked?
+allow for appropriate comparison?
+ 
+Are all trades included?
+ 
+What is the percentage of trade orders not fully executed?
+the alpha decay rate of the strategy?
+ 
+For the given alpha decay rate, what is a reasonable expectation of transactions costs for the 
+strategy?
+ 
+How is the aggressiveness of trading determined?
+
+ 
+How are trade-offs between transactions costs and opportunity costs evaluated?
+
+ 
+Transactions Costs: Practical Application
+ 
+21 Primer on Measuring Implicit Transactions Costs
+on measuring implicit transactions costs.Spreads At the core of all markets is the concept of a 
+the prices that someone is willing to buy from 
+to complete a transaction. 
+In Exhibit A1
+that in many OTC markets, prices are not 
+from a market maker, thereby revealing 
+information that the market maker may 
+Exhibit A1
+Market Prices and SpreadsSource: AQR. For illustrative purposes only and not representative 
+of actual portfolio trading, nor does it indicate the possibility of 
+102
+98
+100
+Prevailing Ask
+Prevailing Bid
+MidPrice
+Full Spread = 4
+101
+Executed Price
+Half Spread = 2
+Effective Spread = 1
+
+22
+ 
+T
+ransactions Costs: Practical ApplicationVWAP
+it has become a prevalent benchmark for 
+implicit costs. Managers typically compare 
+However, this inherently means that the 
+is that as the manager participates at a higher 
+a larger impact upon prices, the managers 
+executions also become a larger portion of 
+Exhibit A2
+Exhibit A2
+VWAP Cost of a Single Trade
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+0
+1,000
+2,000
+3,000
+4,000
+5,000
+6,000
+7,000
+8,000
+9,000Price
+TimeVolume
+Trader's Volume
+Other Participant's Volume
+Trader's Execution End
+Market Price
+Interval VWAP
+Day VWAP
+Average Trade Fill Price
+Trader's Execution Start
+Average Trade Fill Price        104.26
+Interval VWAP        104.02
+Day VWAP        101.86
+        Cost vs. Interval VWAP              0.24
+               Cost vs. Day VWAP              2.40
+o
+r losses within a portfolio.
+
+T
+ransactions Costs: Practical Application
+ 
+23
+capture transactions costs.Pre-Trade Price
+issue. This benchmark involves using the 
+prevailing market price prior to the start of any 
+1.
+D
+ecision price: 
+2.
+Ar
+rival price:
+3.
+S
+tart price: 
+prior to the start of execution, they are not 
+in various parts of the investment process. 
+the subset of price movements from when the 
+A common way to measure them is to use 
+ 
+however, is that all the executions of the 
+ 
+ 
+having the largest variance in measurement 
+because it incorporates all other changes in 
+the market, many of which will be entirely 
+while the market as a whole is rising, it will 
+for the cost measurement to be negative if 
+transactions costs.
+In Exhibit A3
+Although there is a large move against the 
+to expect to realize similar costs in the future. 
+
+24
+ 
+Transactions Costs: Practical ApplicationExhibit A3
+Cost vs. Arrival Price of a Single Trade
+or losses within a portfolio.
+96
+98
+100
+102
+104
+106
+108
+Average Price 
+103.2
+Cost vs. Arrival Price 
+3.2
+Exhibit A4
+ 
+Cost vs. Arrival Price of Many Trades
+or losses within a portfolio.
+Average Cost 
+0.7
+Standard Error 
+1.6
+96
+98
+100
+102
+104
+106
+108
+Exhibit A4
+ 
+enter into the measurement. There are a 
+number of large positive measurements, but 
+observations shows that it is not statistically 
+
+T
+ransactions Costs: Practical Application
+ 
+25
+of observations to make a reliable assessment 
+but the higher the noise of the measurement. 
+References
+December 5.
+Financial 
+Analysts Journal
+Journal of Portfolio 
+Management
+
+26
+ 
+T
+ransactions Costs: Practical Application
+Disclosures
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+ &56W>"  7ÿöS* : ?@<	 #"J    _ KK _ L   : :+%'*+3>7'7733>323267#"&54>54&#"7M!!ES^2@1K-!%	49<6/=ve$1hÀ§3;pII'moa,&:B#!;HPK@&C[kv;  ÿöJð  5 =@:.-J   g _ K _ L 42
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+  Back to the Table of Contents
+
+Transactions Costs: 
+Practical Application
+
+Executive Summary 
+strategy, whether active or passive. When evaluating investment strategies, 
+
+the implications of them when comparing costs across managers. It also 
+
+that is meant to make the analysis more substantive. Saied Hedayati
+Managing Director
+Brian Hurst 
+Principal
+Erik Stamelos 
+Managing Director

@@ -89,6 +89,22 @@ FINANCING_VERSION = "financing-2026-08-19-a"
 ROLLOVER_HOUR_UTC = 22
 
 #: Monday=0, so 2 is Wednesday: the T+2 stamp that carries the weekend on spot FX and metals.
+#:
+#: A DEFAULT, NOT A UNIVERSAL, and it was written as one. The broker publishes the real answer per
+#: symbol in `swap_rollover3days`, and measured on this desk's own contract-terms tape it disagrees
+#: with Wednesday on the MAJORITY of the universe:
+#:
+#:     swap_rollover3days == 3 (Wednesday)    98 symbols   <- this default is right for these
+#:     swap_rollover3days == 5 (Friday)      150 symbols   <- and wrong for these
+#:
+#: Wednesday is correct for spot FX and metals, which is where this module was measured, and the
+#: Friday group is dominated by the share and index CFDs the desk had no sleeve on when this was
+#: written. `rollover_nights(triple_weekday=...)` has always accepted the per-symbol value and
+#: nothing ever supplied one; `desks/mt5/research/carry_state.triple_weekday_for()` is that supply,
+#: and `carry_state.json` carries it per symbol as `triple_swap_weekday`.
+#:
+#: Getting it wrong does NOT change a symbol's annual financing cost -- it moves 2/7 of that cost
+#: onto the wrong trades, so a per-sleeve gate cannot see the error at all.
 TRIPLE_SWAP_WEEKDAY = 2
 
 #: Nights charged on the triple stamp. Three, not two: the weekend is two extra nights on top of

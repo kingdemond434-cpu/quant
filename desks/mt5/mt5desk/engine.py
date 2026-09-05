@@ -6,7 +6,7 @@ All times UTC. No lookahead: signals computed on closed bars only, entries at ne
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 import pandas as pd
@@ -39,9 +39,101 @@ class Costs:
     # Fusion Zero's published contract is USD 2.25 per lot per side ($4.50 round turn).
     commission_per_lot: float = 2.25
     contract_oz: float = 100.0
+    #: PRICE UNITS PER UNIT OF ACCOUNT CURRENCY, per lot -- the second unit trap, found
+    #: 2026-08-26. `spread_per_lot` round-trips correctly because it was built as
+    #: `pts * tick_size * contract_size` and the engine divides by contract_size again, landing
+    #: back on a price-unit spread. `commission_per_lot` does NOT: it is a currency amount, and
+    #: dividing it by contract_size treats one unit of the account's currency as one unit of
+    #: PRICE. That is only true when the symbol is quoted in the account's own currency.
+    #:
+    #: On a EUR account, CADJPY prices in yen: one yen of price is worth 0.005418 EUR, so a
+    #: 7.00 EUR round-turn commission is 0.01292 yen of price -- and the engine was charging
+    #: 7.00/100000 = 0.00007. 184x too little, on the JPY crosses where this desk's surviving
+    #: edges actually live, in the direction that manufactures survivors.
+    #:
+    #: Defaults to 1.0, which is exactly today's arithmetic, so no existing call site changes
+    #: silently. `from_symbol()` sets it from tick_value and is the only correct constructor.
+    quote_per_account: float = 1.0
 
     def per_oz_roundtrip(self) -> float:
-        return self.spread_per_lot + self.commission_per_lot * 2.0
+        """Round-trip cost per lot, in the convention the engine divides by `contract_oz`.
+
+        The commission is converted from account currency into that convention; the spread is
+        already in it. See `quote_per_account`.
+        """
+        return (self.spread_per_lot
+                + self.commission_per_lot * 2.0 * float(self.quote_per_account))
+
+    def stressed(self, spread_mult: float) -> Costs:
+        """A cost-stress variant of THIS cost model -- widen the spread, keep everything else.
+
+        THE DEFECT THIS CLOSES, measured live 2026-08-27 on the certificate path. Every stress
+        scenario on this desk rebuilt `Costs(...)` positionally from three fields of an existing
+        one, so the FOURTH field -- `quote_per_account` -- silently reverted to its 1.0 default.
+        That default exists so adding the field moved no existing call site; in a re-derivation it
+        instead un-does the conversion the baseline already applied. `universal_gate`'s x3
+        scenario on CADJPY: baseline round trip 1699.29, "x3" as written 607.00, x3 correct
+        1899.29. The gate built to prove a candidate survives THREE TIMES its costs was testing
+        it at 0.36x -- strictly weaker than the baseline it is supposed to stress, on the JPY
+        crosses where this desk's live family actually sits.
+
+        Deriving with `replace` makes the whole class unreachable: a field added later is carried
+        by construction, and no call site has to remember it. Commission is deliberately NOT
+        scaled -- it is contractual and does not widen with market stress, so multiplying it
+        models nothing that happens (see `from_symbol`).
+        """
+        return replace(self, spread_per_lot=self.spread_per_lot * float(spread_mult))
+
+    @classmethod
+    def from_symbol(cls, meta: dict, mult: float = 1.0,
+                    commission_per_lot: float = 2.25, *,
+                    spread_pts: float | None = None) -> Costs:
+        """Costs for one symbol from its universe.json metadata.
+
+        `mult` scales the SPREAD ONLY. Commission is contractual and does not
+        widen, so stressing it models nothing that happens. mult=2.0 is the
+        honest baseline rather than a stress: a round trip crosses the spread on
+        the way in and again on the way out, and a median is a median -- half of
+        all fills are worse than it.
+
+        `spread_pts` OVERRIDES `median_spread_pts` with a spread the caller measured for the
+        state it is actually trading in -- in practice the fill hour, from
+        `desks/mt5/research/cost_surface.py`. The third unit trap, found 2026-08-29: that
+        registry field is the median over ALL hours, and spread is not a constant of a symbol.
+        Measured on this desk's own tape, `family_overnight_gap_decay` fills at broker hour 01
+        (its signal is the first bar of the day and `wait_bars=1` moves the fill on by one), a
+        book carrying ~3% of the day's peak tick volume: USDZAR's pooled 329 pts against 2,028
+        pts on its own fill bars, EURZAR's 310 against 1,918 -- 6.2x, with the p90 at 17-20x.
+        Re-priced at the fill-hour spread with `mult` held equal on both arms, both sleeves --
+        certified, and on live forward clocks -- go from +0.25R to NEGATIVE.
+
+        It defaults to None, which reproduces today's arithmetic exactly, so no existing call
+        site changes silently. That is the same discipline `quote_per_account` documents above,
+        and for the same reason: this class is on the money path and a default that moves an
+        existing number is a silent re-pricing of the live book.
+
+        None is also what the surface returns for a cell it has not MEASURED, and the fallback
+        to the pooled scalar there is deliberate and is the honest one -- it leaves the caller
+        exactly where it is today rather than inventing a number. `check_cost_surface.py` is
+        what stops that fallback becoming invisible: it reports the cell UNMEASURED rather than
+        OK (L1.28a), so an unpriced hour is a named gap and not a clean verdict.
+        """
+        cs = float(meta.get("contract_size", 1e5))
+        ts = float(meta.get("tick_size", 0.0))
+        pts = (float(spread_pts) if spread_pts is not None
+               else float(meta.get("median_spread_pts", 0.0)))
+        spread = pts * ts * cs
+        # PRICE UNITS PER UNIT OF ACCOUNT CURRENCY. `tick_value` is one tick's worth in account
+        # currency for one lot, so `cs * ts / tick_value` is how many price units one unit of
+        # account currency buys -- 1.0 for a symbol quoted in the account's own currency, ~185
+        # for a JPY cross on a EUR account. WITHOUT tick_value there is no conversion and the
+        # commission would silently revert to the 184x undercharge, so its absence falls back to
+        # 1.0 and is REPORTED rather than assumed away: see scripts/check_universe_registry.py.
+        tv = float(meta.get("tick_value", 0.0) or 0.0)
+        qpa = (cs * ts / tv) if (tv > 0 and cs > 0 and ts > 0) else 1.0
+        return cls(spread_per_lot=max(spread * mult, 0.05),
+                   commission_per_lot=commission_per_lot, contract_oz=cs,
+                   quote_per_account=qpa)
 
     @classmethod
     def from_symbol(cls, meta: dict, mult: float = 1.0,
@@ -170,9 +262,25 @@ def run_backtest(
     o = df["open"].to_numpy()
     h = df["high"].to_numpy()
     l = df["low"].to_numpy()
-    idx = df.index.to_numpy()
-    # epoch-ns lookups: tz-proof
-    idx_ns = idx.astype("datetime64[ns]").astype("int64")
+    # KEEP THE PANDAS INDEX. `df.index.to_numpy()` on a tz-AWARE index returns an object array
+    # of Timestamps and warns "no explicit representation of timezones available for
+    # np.datetime64" -- benign in production, but under `filterwarnings = error` it turns the
+    # look-ahead guards into failures, and it is the kind of implicit coercion that would quietly
+    # strip the clock off `entry_time` if numpy ever chose datetime64 instead. Indexing a
+    # DatetimeIndex yields the same tz-aware Timestamps with nothing implicit about it.
+    idx = df.index
+    # epoch-ns lookups: tz-proof. `asi8` is UTC epoch-ns for an aware index and wall-clock ns for
+    # a naive one, which is exactly what the previous astype chain produced for each.
+    # UNIT-PROOF, NOT JUST TZ-PROOF. `asi8` returns the index's OWN resolution: nanoseconds for
+    # datetime64[ns], but MILLISECONDS for datetime64[ms] -- and `pd.Timestamp(...).value` below
+    # is always nanoseconds. A producer rewrote every universe parquet with a ms-resolution index
+    # (2026-08-27), so `searchsorted` compared 1.52e12 against 1.52e18 and placed EVERY signal
+    # past the end of the array: locs == len(idx) for all of them, every signal discarded as
+    # out-of-range, ZERO trades from 4,360 valid signals -- silently, on every cell, on both
+    # boxes. It read downstream as "this cell has too few observations to judge", which is how it
+    # survived: the gauntlet dropped 118 of 122 cells as untestable and nothing said why.
+    # `as_unit("ns")` pins the comparison to one resolution regardless of what wrote the file.
+    idx_ns = np.asarray(pd.DatetimeIndex(idx).as_unit("ns").asi8, dtype="int64")
     sig_ns = np.array(
         [pd.Timestamp(s.time).value for s in signals], dtype="int64"
     )

@@ -11,7 +11,10 @@ _Seeded 2026-07-18; rotation rule: >=40% of budget to least-recently-covered._
 | Theses & dissertations | **2026-08-12** | 2 | **run 7 FIRST REAL EXECUTION: 15/15 repositories stamped, 7 graveyard candidates, a cost-breakeven ladder that exists in no publication, ZERO cards by decision** | The 08-05 seat died at a checklist with every row PENDING; run 7 finished it. **Central claim TESTED, not assumed: free graveyard entries TRUE (5 of 6 items → a usable negative); free hypotheses FALSE; data chapters TRUE but worthless (all commodity feeds); "journals launder failures" REFUTED — the journal version PROMOTED the negatives to the abstract.** Reformulation for run 8: hunt the intermediate SENSITIVITY TABLE (gross printed next to net), never the failure narrative. **ROUTE T-6: every ETD AGGREGATOR refused this box (OATD/CORE 403, NDLTD 503, IEEE 418, DART-Europe PERMANENTLY CLOSED 2025-02-03) while every INSTITUTIONAL repository served 200 — aggregator routing is why prior seats read full corpora as empty.** NOT-REACHED: CN, MIT/Berkeley/Stanford, ETH, BASE, EThOS, OpenThesis. |
 | Failed-replication literature | **2026-08-12** | 5 | **11 findings; 4 graveyard rows + 1 corroboration; 3 method rails; NK-004 at HIGH** | Richest family. Run 4 closed both stranded carry-overs: F11 upgraded via the OP-026 RePEc route (size-death corroboration into the graveyard), F8's PubPeer layer mined (+103% citation stacking quantified, author-level nodes named). Run 6 delta: **the wave GREW — "Datestamping the Bitcoin and Ethereum Bubbles" (FRL 2018, GSADF classic) RETRACTED + Naeem-cluster FRL 2024 retraction** (graveyard `lit_retraction_wave_2026_datestamping_naeem`); the 07-31 "nothing beyond the Lucey cluster" null is SUPERSEDED. **RUN 7 MECHANISED IT AND THE HONEST HEADLINE IS THAT THE WAVE KILLS ALMOST NOTHING:** full Crossref/RW corpus (71,743 rows, 65 MB) DOWNLOADED AND PARSED from this box, two verified routes, licence graded (no explicit CC0 for the CSV → internal screening only, not redistribution). Core finance = **55 retractions in the DB's entire history, 45 INTEGRITY-ONLY (82%) vs 10 FRAUD/DATA**; all 12 Lucey rows carry a byte-identical rogue-editor string with ZERO data-side tokens — mechanisms untouched. **★ It ships with its own contraindication: Andersen–Bondarenko VPIN is IN the DB and the desk cites it (inbox #66 + the EXHAUSTED order-flow verdict) — a FALSE POSITIVE (technical retraction, republished JFM 17:1–46), so a naive retracted⇒discard screen would have destroyed a valid live prior.** Slicing trap caught: RW has no `Business - Finance` category (finance sits under `Business - Economics`) — a grep on "Finance" returns a confident wrong ZERO. Contamination measured NULL: 0 of 221 `Cites Retracted Work` rows touch crypto/asset pricing. **The 4-run "−0.31" carry-over is CLOSED: Brigida Table 13, Level-1, Δ(TVL/MarketCap), Q4 α −0.31 p=0.45 — run 2's record VINDICATED.** NEXT: published replication/comment papers (Critical Finance Review, JF/JFE/RFS "Comment on…"), never walked. |
 | Non-English academic | **2026-08-12** | 4 | see LIT_d + run-4 addendum | Run 4: J-STAGE `ファンディングレート` → **exactly 0 results** — the JP academic corpus has never used the funding-rate loanword; JP perp-mechanism knowledge lives ENTIRELY in the practitioner web. J-STAGE crypto-derivatives sub-corpus graded EXHAUSTED-BY-ABSENCE. NOTE: kimchi clock REFUTED 2026-07-30 (R0051) — the KR academic layer's load-bearing status is retired; 오정훈 resume point downgraded to context-only. Run 6: J-STAGE 暗号資産裁定/仮想通貨裁定/マーケットメイク all policy-only (DRY, corroborates exhaustion-by-absence); ペアトレード the exception → JSAI 2020 cointegration-instability note (consumed into card 27's prior). CiNii proper + JP thesis layer still untouched. **RUN 7 CORRECTION, and it is a big one: the KOREAN THESIS LAYER IS NOT EMPTY — the prior seats' zeros were a ROUTING ARTIFACT (T-6: every ETD aggregator refuses this box; every institutional repository serves 200). A Kookmin doctoral work on BTC spot-vs-perp arbitrage was read in full and graveyarded on its own numbers. Any non-EN corpus previously graded empty VIA AN AGGREGATOR must be re-opened — an aggregator's silence is a route fact, never a corpus verdict.** |
-| AI/agent/LLM methods (cs.LG/cs.AI/evals) | **2026-08-12** | 4 | **Run 4: 8 findings → 5 inbox items (#85–#89) + R0187–R0191, aimed at LIVE wounds** | Paid again, harder: exact e-process recipe for the Stage-B ×4.9 peeking wound; IRT de-welding for the welded gauntlet (certify_gauntlet already emits the response matrix); calibrated soft-voting replacing the singleton-discarding plurality filter; debate cancellation RE-CONFIRMED on 2025-26 evidence. Venue verdicts logged (METR rich; Epoch thin-for-methods; OpenReview workshops rich; CN tech reports thin-for-methods). Run 6: **13 findings → 6 entries (R0453–R0458), all 4 carry-overs closed, run-4's 2606.03437 record CORRECTED (ownership bias); COLM = richest never-visited venue (standing revisit); NeurIPS eval-of-agents = dated revisit ~2026-10; memory-products do-not-adopt null carded; MemAgents listing bot-gated, ground mined via citation graph.** **RUN 7 (expansion ~43%, 16 findings, 4 do-not-adopt nulls): ★ the run's most important output is a TOOLING-INTEGRITY finding — `WebFetch` on `arxiv.org/pdf/` SILENTLY FABRICATES (4/4 fetches contradicted the verbatim abstracts; one pointed the OPPOSITE direction) while `arxiv.org/html/` was clean 11/11 → standing rule **OP-057**; the parent's adversarial re-test found the route sometimes REFUSES instead, which makes it WORSE — the caller cannot tell which they got. Also: `model_upgrade.py` has NO same-model control arm while the desk auto-upgrades its own seats (90–96% of SAME-MODEL forks diverge at temp 0, arXiv 2608.08239); "anytime validity is free" (2501.03982) sequentializes the existing t-test with a BIT-IDENTICAL bar; empirical Bayes on the rejected 434 finally separates "welded gate" from "empty generator"; e-backtesting as a SHADOW monitor only (no rail touched). COLM regraded **RICH-as-index / BLOCKED-as-source** (OpenReview bot gate; 2 of 4 shortlisted read via arXiv mirrors, 2 blocked and PROVED absent by a 0-result API query, not by failure to find). Non-EN parity run on CN/JP/KR/RU: genuinely low yield, reported as a negative rather than padded. Best never-visited ground was the **Anthropic Engineering blog**, not an academic venue. SEAT'S CLOSING JUDGEMENT, recorded as this family's rotation verdict: *"the real bottleneck is not literature — seven findings across runs 6–7 compute from artifacts ALREADY ON DISK and none has been run."*** |
+| AI/agent/LLM methods (cs.LG/cs.AI/evals) | **2026-08-25** | 5 | **Run 4: 8 findings → 5 inbox items (#85–#89) + R0187–R0191, aimed at LIVE wounds** | Paid again, harder: exact e-process recipe for the Stage-B ×4.9 peeking wound; IRT de-welding for the welded gauntlet (certify_gauntlet already emits the response matrix); calibrated soft-voting replacing the singleton-discarding plurality filter; debate cancellation RE-CONFIRMED on 2025-26 evidence. Venue verdicts logged (METR rich; Epoch thin-for-methods; OpenReview workshops rich; CN tech reports thin-for-methods). Run 6: **13 findings → 6 entries (R0453–R0458), all 4 carry-overs closed, run-4's 2606.03437 record CORRECTED (ownership bias); COLM = richest never-visited venue (standing revisit); NeurIPS eval-of-agents = dated revisit ~2026-10; memory-products do-not-adopt null carded; MemAgents listing bot-gated, ground mined via citation graph.** **RUN 7 (expansion ~43%, 16 findings, 4 do-not-adopt nulls): ★ the run's most important output is a TOOLING-INTEGRITY finding — `WebFetch` on `arxiv.org/pdf/` SILENTLY FABRICATES (4/4 fetches contradicted the verbatim abstracts; one pointed the OPPOSITE direction) while `arxiv.org/html/` was clean 11/11 → standing rule **OP-057**; the parent's adversarial re-test found the route sometimes REFUSES instead, which makes it WORSE — the caller cannot tell which they got. Also: `model_upgrade.py` has NO same-model control arm while the desk auto-upgrades its own seats (90–96% of SAME-MODEL forks diverge at temp 0, arXiv 2608.08239); "anytime validity is free" (2501.03982) sequentializes the existing t-test with a BIT-IDENTICAL bar; empirical Bayes on the rejected 434 finally separates "welded gate" from "empty generator"; e-backtesting as a SHADOW monitor only (no rail touched). COLM regraded **RICH-as-index / BLOCKED-as-source** (OpenReview bot gate; 2 of 4 shortlisted read via arXiv mirrors, 2 blocked and PROVED absent by a 0-result API query, not by failure to find). Non-EN parity run on CN/JP/KR/RU: genuinely low yield, reported as a negative rather than padded. Best never-visited ground was the **Anthropic Engineering blog**, not an academic venue. SEAT'S CLOSING JUDGEMENT, recorded as this family's rotation verdict: *"the real bottleneck is not literature — seven findings across runs 6–7 compute from artifacts ALREADY ON DISK and none has been run."*** **RUN 10 (2026-08-25, compact by design — 2 searches + 2 depth reads; the run-8 de-prioritisation was scoped to run 8 and the standing dig brief re-mandates this frontier): the verification-gap survey (2608.05179) EXTERNALLY VALIDATES the two-stage law as the frontier's strongest-known design (held-out temporal validation), grades debate/panel consensus WEAK, and names within-batch template collapse as the unaudited failure — which the desk's novelty gate indeed does not measure; false-success rates measured (45–48%/75.8%, judges mechanically blind, TF-IDF beats them 4–8× — 2606.09863). Output shape is CONVERSION, not citations: 2 exact patches with owners → R0656; both compute from instruments already on disk (novelty-gate embedding; anti-rubber-stamp fence).** |
+
+| **MT5-native microstructure (FX / metals / indices / energy)** | **2026-08-25** | **2** | **run 9 FIRST VISIT — the family the mandate created. 2 mechanisms dug to citations+replication, BOTH EV-REJECTED (honest zero cards); 1 hard confound recovered; 1 negative-space seam named** | **OPENED BY THE MT5 UNIVERSE MANDATE (2026-08-18), and it re-values the whole forgotten-literature seam: pre-2015 FX/commodity microstructure was previously mineable only as a TRANSFER PRIOR onto crypto; on the MT5 universe it is DIRECT EVIDENCE on the desk's own instruments, transfer discount gone.** Ground walked run 9: the **session-fix** class (`session_fix_liquidity`, one of the six MT5-native classes named in `418c1c91`). **FX 4pm WMR fix** — mechanism REAL and forced (FX-hedged equity index funds must rebalance hedges; Melvin–Prins JFM 2015, Evans JBF 2018 / MPRA 58151: partial reversals around the Fix, larger at end-of-month, present in **all 21 pairs**); **survived the 2015 reform** per **Ito–Yamada NBER w23327 "Did the Reform Fix the London Fix Problem?"** — *volume spike gone, price-dynamics anomalies persist*, banks moved to passive execution; **BUT measurably crowding out** — practitioner month-end saving **$575.33/mm (2023) → $319.5/mm (2024), ≈−45% YoY**, several pairs ~−60% below the 45-month average, crowding+netting named as cause (RELAYED, source 403'd). **Gold PM fix** — pre-2015 leakage documented (Caminschi–Heaney, *J. Futures Markets* 2014); reform to ICE electronic auction 2015-03-20; **post-reform exploitability literature NOT FOUND on the routes tried** (see §38 note). **★ The most valuable single artifact was the LBMA's own REBUTTAL of Abrantes-Metz** — it supplies a HARD CONFOUND no affirmative paper states: **the PM fix at 15:00 London IS 10:00 New York, the US data-release cluster**, so any measured "gold fix effect" is entangled with the macro calendar. **CORRECTION LOGGED AGAINST MY OWN FIRST READ:** the two pre-registered *"To fix or not to fix"* papers (Pacific-Basin Finance J., 2024/25) are **benchmark-DESIGN studies** (is the 5-min window representative?), **NOT anomaly-decay replications** — a search summary conflated them and the error was caught by reading the actual scope. Do not cite them as refuting the anomaly. Routes: NBER abstract pages CLEAN; **ScienceDirect 403 (paywall — not circumvented, charter 13)**; **`WebFetch` on raw PDFs returned undecodable binary 3/3 (NBER, MPRA, EFMA) — consistent with OP-057's PDF-route warning**; efmaefm.org fails TLS cert verification from this box. |
+| **Positioning & hedging-pressure (COT/TFF) literature** | **2026-08-25** | **1** | **run 10 FIRST VISIT: level channel killed CONVERGENTLY (lit + desk 41y), CHANGE channel EV-QUEUED (card 40, 0.0032), 2 graveyard entries** | KRT *JF 2020* two-premium structure; replication state checked: Maréchal *JFM 2023* — insurance/LEVEL premium decays 0.43→0.34 and "eventually vanishes" (CONVERGES with `COT_SCREEN_RESULT.md` pooled t=−0.64, GHR replication), liquidity/CHANGE premium ROBUST to risk adjustments and financialization; RT2012 already saw change-correlation weakening — decay watch in the falsifier. Desk has never charged the CHANGE construction (the 24 trials were level×{comm,noncomm}). Open self-archived draft: acfr.aut.ac.nz P3.pdf. BoE WP 2025 (liquidity×monetary policy) downloaded, UNREADABLE on-box (extractor object-stream limitation, 2nd instance this run). NOT MINED: JP leg (TOCOM/J-STAGE commodity-hedging literature, native terms) — named next-ground; basis-momentum named as data-gap (no futures-curve data on a CFD desk). |
 
 **Rotation note (the ≥40%-to-least-recently-covered rule), updated 2026-08-12 (run 7 — SUPERSEDES
 run 6's).** **Theses layer B is CLOSED** (15/15 stamped, carried since seeding) and the **arXiv
@@ -1493,3 +1496,364 @@ GH001 large-file reject was the only thing that stopped it.** Repaired with `git
 Lesson recorded as **L0166** (accepted-uninjected, reason on the record); `desk_lessons.jsonl`
 deliberately NOT staged by this run — it carries the sibling's uncommitted edits (R0423 discipline);
 L0166's line rides with their next commit.
+
+---
+
+## RUN 9 — session note (2026-08-19, litminer standing daily; WRITE-FIRST per completion contract)
+
+**GATE:** `[§33] BACKLOG-CLEAR` — all 27 carded finds disposed, mining authorised. Generation priors
+read (`data/mine_generation_priors.json`): favour = `data_axis_watchlist.md` (60.7% conversion, 37/61),
+starve = none.
+
+**THE RUN-8 NEXT-GROUND LIST IS VOID AND THIS RUN SAYS SO BEFORE TAKING ANY OF IT.** Run 8 closed
+(2026-08-18 19:38) naming six next grounds, all crypto-shaped (carry↔liquidation on BTC, kimchi
+numerics, COT-BTC). Between then and now the principal issued the **MT5 UNIVERSE MANDATE
+(2026-08-18, CLAUDE.md)**: the desk's universe is the full MT5/Fusion market — FX majors/crosses/
+exotics, gold, silver, metals, equity indices, energy, softs, US share CFDs — and *"no crypto-exchange
+universe may EVER be hunted again — no miner, hunter, query, channel list, scoring vocabulary, or
+research mandate may target crypto-exchange-native opportunities."* Verified as real and extensive,
+not a draft: `418c1c91` (six MT5-native mechanism classes), `647b8445` + `96ceaf71` (every
+miner/hunter/brain prompt off crypto), `e4630a0d` (both standing intelligence mandates retargeted),
+`0fe62549` (crypto autodiscovery slices retired, MT5 hunt pipeline wired), `fbf94ea1` (live
+cash-carry executor RETIRED, principal order).
+Resuming run 8's list would have been **resume-do-not-restart discipline executed straight into a
+banned universe** — the failure mode where obedience to the local contract violates the global one.
+Rotation debt (SSRN/OP-026a, replication venues, theses) is asset-agnostic and SURVIVES; the
+asset-specific items are retired here, not silently dropped.
+
+**ITEMS TAKEN THIS RUN (backlog/decision first, per RESUME contract):**
+
+1. **[BACKLOG — the only item awaiting a DECISION, not a test] Glassnode / CryptoQuant
+   vendor-replacement**, pending a legitimacy/policy call since it was catalogued.
+   `source_backlog_next.py` reports **0 pending technical verification**, so this is the whole
+   backlog-verification duty this cycle. The MT5 mandate is dispositive input. Decide and record —
+   including the §38 consequence (an exclusion spawns a replacement hunt) — rather than leaving it
+   to age a third week.
+   **Also this item:** audit whether `647b8445`'s claim *"every miner/hunter/brain prompt off
+   crypto"* actually covered THIS seat. `docs/research/LITERATURE_SPEC.md` is dated **Jul 18** and
+   its MISSION step 4 still binds me to *"map each surviving mechanism to crypto-perp data the desk
+   HAS"* — a research mandate targeting the banned universe, which is the exact artifact class the
+   mandate names. A migration that claims "every" and misses one is a denominator claim the desk
+   cannot cash (L1.57/L1.60 shape). Route what I find; the freeze bars me from editing `scripts/`.
+
+2. **[PRIMARY DIG — forgotten-literature archaeology, RE-VALUED BY THE MANDATE]**
+   The MAX-EXTRACTION addendum defines its class (a) as *"pre-2015 microstructure/FX/commodities
+   mechanisms whose CRYPTO application was never tested."* **The mandate inverts that clause's
+   value and this is the most important thing in this note.** That literature was worth mining as a
+   *transfer prior* — decades of evidence on an asset the desk did not trade, needing a risky
+   crypto-transfer assumption to pay. On the MT5 universe it is **direct evidence on the desk's own
+   instruments**: a validated 1998 FX or gold-fix mechanism now needs NO transfer at all. The
+   transfer discount that suppressed this whole seam is gone, and the seam is finite and
+   one-time-exhaustible.
+   **Target: `session_fix_liquidity`** — one of the six MT5-native classes (`418c1c91`), the
+   4pm WMR London FX fix / LBMA gold fix. Chosen because it is the rare mechanism with (i) a NAMED
+   compelled participant who cannot stop (passive/index mandates benchmarked to the fix print),
+   (ii) a **regulatory natural experiment** (FSB 2014 recommendations; the fix window widened
+   1min→5min on 2015-02-15) giving a pre/post decay test the desk did not have to pay for, and
+   (iii) a genuine adversarial literature incl. critiques. Citation chains ≥2 levels BACKWARD and
+   FORWARD; replication/critique scan MANDATORY before any card. Executable on desk-declared
+   instruments (XAUUSD/EURUSD/GBPUSD/USDJPY 41/38/16/20 refs in-repo).
+
+3. **[SEARCH-SPACE EXPANSION ≥25% — AI/METHODS FRONTIER]** The engine-is-a-dig-target clause.
+   Hunt autonomous-research METHODS that improve HOW this desk discovers → `improvement_inbox.md`,
+   never the trading gauntlet. Bias to what is measurable here (eval design, multi-agent
+   verification, blind-spot search), not model-release news.
+
+**DIVERGENT QUERIES (STEP -1, ≥2 of budget must be queries a DIFFERENT searcher would run):**
+- **DQ1 (the skeptic / replication hunter):** who REFUTED the fix-effect? Search for failed
+  replications, comments and "the effect disappeared after 2015" papers BEFORE reading the
+  affirmative literature, so the graveyard prior is set before I can be impressed.
+- **DQ2 (the regulator, not the quant):** read the FCA/FSB/BIS *enforcement and reform* documents
+  as PRIMARY microstructure sources — they contain trader-level mechanism description (chatroom
+  transcripts, order-handling practice) that no academic paper reconstructs. Facts are not
+  copyrightable; enforcement findings are public.
+- **DQ3 (the non-English academic):** JP/RU/CN-language work on the Tokyo fix and gold-fix windows
+  — J-STAGE, CyberLeninka. The Tokyo 9:55 JST fix is a documented, *separately-regulated* fix that
+  the English literature under-covers.
+
+**TIMESTAMP-ALIGNMENT PRE-DECLARATION (binding before any cell is computed):** any fix-window study
+must declare the fix's LOCAL clock (London 16:00 with BST/GMT switching; Tokyo 09:55 JST) mapped to
+UTC bar stamps, and DST transitions handled explicitly — a fixed UTC offset silently misaligns the
+window for ~half the year. Declared here so it cannot be chosen after seeing results (L1.46).
+
+**RESOLUTION LOG (updated as each item resolves — never held in context to write at the end):**
+- [ ] Item 1 — Glassnode/CryptoQuant decision + litminer-prompt migration audit
+- [ ] Item 2 — session_fix_liquidity literature, dug to citations + replication
+- [ ] Item 3 — AI/methods frontier
+- [ ] Coverage table + cadence stamp + commit (explicit paths only — SHARED TREE, 3 sibling pids)
+
+### RUN 9 — RESOLUTION LOG (closed)
+- [x] **Item 1a — Glassnode/CryptoQuant legitimacy decision: DISPOSED.** Backlog re-read from the
+  tool afterwards: `0 pending verification, 0 pending a legitimacy decision` (was 1). Discharged by
+  the NEED disappearing under the MT5 mandate, **not** by ratifying the T1-b licence ruling — that
+  remains the principal's act and is untouched. §38 replacement named and ledgered.
+- [x] **Item 1b — migration audit: 14 of 25 prompt surfaces still order the banned universe.**
+  → **R0692**, inbox **#121**.
+- [x] **Item 2 — session-fix literature: dug to citations + replication. ZERO CARDS, honestly.**
+  Novelty gate PASSED (252 real priors, nearest sim 0.19–0.20 vs 0.70 threshold); **EV gate
+  REJECTED both** candidates (0.0001 vs threshold 0.002) and rejected them again under generous
+  sensitivities (breadth=9 & un-crowded → 0.0005; gold + new-data-axis → 0.0001).
+- [x] **Item 2 by-product — the EV gate's own instrument audited rather than obeyed** → **R0693**,
+  inbox **#122**.
+- [x] **Item 3 — AI/methods frontier** → inbox **#123**.
+- [x] Coverage table (new MT5-native family row), cadence stamp, commit (explicit paths).
+
+## RUN 9 CLOSE — routing totals, depth line, honest defects, next ground
+
+**ROUTING TOTALS:** **0 mechanism cards** (both candidates EV-rejected before compute — the spec's
+*"ZERO cards is valid and creditable"* case, and the gate did its job) · **1 backlog item DISPOSED**
+(the desk's only open legitimacy/policy row, aged since 07-26) · **2 ledger rows R0692–R0693** ·
+**3 inbox entries #121–#123** · **1 new coverage family** (MT5-native microstructure) · **1 §38
+replacement hunt opened with a precise free target** (CFTC COT disaggregated for the metals/energy/FX
+complex, repointing a builder that already exists and is defective) · cadence stamped.
+
+**WHAT I VERIFIED MYSELF vs RELAYED.** VERIFIED (ran it, read the artifact): the 25-surface roster
+and the 14/5/6 hard/soft/clean split (resolved `_prompt_surfaces()` live, then re-read the actual
+offending lines rather than trusting my own regex — which is how `kimi_hunter.py` was cleared as a
+**false positive of my first pass**); the migration's true file list from `git show --stat`; the
+backlog transition 1→0 re-read from the tool after the edit; the novelty gate against **252** priors
+with an assertion that the corpus was non-empty first (the worktree-blind class); every EV-gate
+number and the breadth double-charge table; `NARROW_BREADTH_LINE = 5.0`. **RELAYED, flagged:** the
+month-end saving figures ($575.33/mm → $319.5/mm, −45%) — **thefullfx.com returned 403 and I did not
+re-derive them**; Ito–Yamada's findings (NBER abstract page, not the PDF — the PDF was undecodable);
+Michelberger–Witte's ~10 bps (ar5iv HTML, clean route); Evans' reversal structure (search-surfaced
+abstract, MPRA PDF undecodable).
+
+**DEPTH LINE (mandated).** *Item 2* — skeptic-query-first → affirmative literature → **2-level
+citation chain** (Caminschi–Heaney → its EFMA follow-up → the LBMA rebuttal; Melvin–Prins → Evans →
+Ito–Yamada) → **replication/decay scan** → **practitioner decay series** → **instrument audit of the
+gate that judged it**. Depth changed the answer **three times**: (1) the surface story "reform killed
+the fix effect" is **wrong** — Ito–Yamada finds the price anomalies persisted and the *volume*
+signature is what died; (2) the crowding evidence that actually kills it commercially came from a
+**practitioner** source, not the academy; (3) the **rebuttal** — the document nobody cites — supplied
+the 10:00-NY confound that would have contaminated any gold test the desk ran. A surface pass would
+have carded a "reform-proof mechanism" on Ito–Yamada alone. *Item 1* — claim → the desk's own roster
+→ per-file grading → reading the offending lines → false-positive correction.
+
+**HONEST DEFECTS OF THIS RUN.**
+1. **+2 ledger rows into a repair-mode backlog** (266 open at start, 109 past grace). Both are
+   defect-closers with exact patches and one is migration-blocking; consolidation considered and
+   rejected (different owners: prompt surfaces vs `alpha_economics`). Recorded, not excused.
+2. **I could not open three primary PDFs** (NBER w23327, MPRA 58151, EFMA 0580) — two returned
+   undecodable binary, one failed TLS verification. So the two most quantitative claims in this run
+   rest on **abstracts and search summaries, not verbatim text**. Consistent with **OP-057**; the
+   affected numbers are marked RELAYED above rather than laundered into the coverage row.
+3. **The gold seam is NAMED, not mined.** I documented that no post-2015 LBMA-auction exploitability
+   study surfaced on the routes tried, which under the free-frontier rule is a *route* finding, **not
+   a corpus verdict** — the same error the run-7 aggregator lesson corrects. It is next ground, not a
+   null.
+4. **I did not re-derive the −45% decay.** It is the single number that decides whether the FX
+   mechanism is worth any future slot, and it is relayed from a 403'd page.
+5. **Item 3 was thinner than the ≥25% mandate deserves** — two findings, both routed, but the methods
+   frontier got the tail of the run rather than a parallel share of it.
+
+**NEXT UN-EXHAUSTED GROUND (run 10, in order).**
+1. **The gold seam, properly**: post-2015 LBMA electronic-auction microstructure — via SSRN's OP-026a
+   RePEc ladder, institutional repositories and author self-archives (the routes that *work* from this
+   box), **not** aggregators. Carry the 10:00-NY confound in as a pre-registered control.
+2. **The other five MT5-native classes**, none of which has ever had a literature pass:
+   `fx_carry_rate_differential`, `central_bank_event_surprise`, `commodity_inventory_supply`,
+   `overnight_gap_risk_premium`, `producer_hedging_flow` (the last is the §38 replacement's own
+   mechanism — COT commercial hedging — so it pays twice).
+3. **SSRN via OP-026a end-to-end** — rotation-owed since 07-26, now **two runs** overdue, and it is
+   the route the gold seam needs anyway.
+4. **Replication/comment papers** (Critical Finance Review, JF/JFE/RFS "Comment on…") — never walked;
+   now re-aimed at FX/commodity microstructure rather than crypto.
+5. **Forgotten-literature archaeology at its new value**: pre-2015 FX/metals mechanisms are now
+   DIRECT evidence. This is the seam the mandate just made cheap, and it is finite.
+6. **`research_agenda.json`'s `do_not_repeat` is 100% crypto-targeted** (50 rows, all crypto or
+   crypto-conditioning) — it needs the same migration audit as the prompt surfaces. Named here so it
+   is not lost; not ledgered, to avoid a third row in repair-mode.
+
+**WHICH ARTIFACT ON DISK IS DIFFERENT BECAUSE OF WHAT WAS MINED (§33 standing test):**
+`docs/research/data_axis_watchlist.md` (card 7 disposed, §38 hunt opened — the legitimacy queue is
+now empty), `recommendation_ledger.json` (R0692–R0693), `improvement_inbox.md` (+#121/#122/#123),
+`literature_coverage.md` (new MT5-native family row + this note), `data/cadence_state.json` stamped.
+
+---
+
+## RUN 10 — session note (2026-08-25, litminer standing daily; WRITE-FIRST per completion contract)
+
+**GATE:** `[§33] BACKLOG-CLEAR` — all 9 carded finds disposed, mining authorised. Source backlog:
+0 pending verification, 9 deferred (none due before 2026-08-26); backlog-first duty SATISFIED with
+nothing workable. Governing docs re-read this run: `docs/RESEARCH.md` (consolidated 2026-08-25),
+`docs/LAWS.md` via injection. Universe = MT5/Fusion ONLY.
+
+**RESTORATION PERFORMED BEFORE THIS NOTE (R0742 two-halves class):** run 9's coverage note
+(commit `ddfe7ab9`, 2026-08-19) was NOT an ancestor of this branch — its 175-line session note,
+MT5-native family row, and ledger rows R0692/R0693 never landed on this lineage. The coverage-doc
+half is restored above by clean `git apply` (parent state verified byte-identical first). The
+ledger half: this lineage's ledger max is **R0652** (651 rows) — the R069x ids belong to a diverged
+lineage; per the collision law (content over id), the two findings are re-graded against CURRENT
+code below and re-raised fresh ONLY where still live:
+- **R0692 substance (prompt surfaces ordering the banned universe): PARTIALLY REPAIRED since.**
+  `docs/DIGGING_CHARTER.md:45` still prints "the desk is crypto-only" but LAWS §1 (2026-08-25
+  consolidation) names that exact clause VOID — governed-void, text present. `ops/brain_hunter_prompt.txt`
+  MIGRATED (line 6 disclaims older crypto passages). **STILL LIVE: `prompts/external_panel_prompt.txt:18`
+  = "Venue: Binance spot + USDT-perpetuals (currently testnet; live imminent)" with a live consumer
+  (`scripts/run_external_panel.py`)** — a decision organ briefed on a banned-universe premise.
+  → re-raised this run (row id in resolution log).
+- **R0693 substance (EV gate double-charges breadth): STILL LIVE, one claim CORRECTED.** Verified
+  at `libs/research/alpha_economics.py`: `p_survive` multiplies `_PRIORS["narrow_breadth"]=0.25`
+  for ANY tagged idea AND `ev_score` multiplies `breadth_f=(breadth/20)**0.5` — both charge breadth.
+  CORRECTION vs run 9's framing: "the MT5 universe sits entirely below NARROW_BREADTH_LINE=5.0" is
+  CONTRADICTED by the 2026-08-19 measured MT5 N_eff = 13.37 (prospector breadth audit) — the live
+  defect is the structural double-charge + silent no-artifact rejection, NOT a universe-wide 4x.
+  → re-raised with corrected framing.
+
+**SHARED TREE:** live sibling session present (ccd-cli pid 2267864); dirty files are all
+desks/mt5/* + data/intelligence/* (none mine). Landing route per standing memory: detached
+worktree at close, explicit paths only.
+
+### ITEMS TAKEN THIS RUN (bounded breadth; depth MAXED per item)
+
+0. **INBOX FIRST (spec mission 1):** 2 unread papers (2608.18022 EVaR/tempered-stable,
+   2608.17808 adjoint policy iteration) — triage to mechanism-or-discard. [small]
+1. **THE GOLD SEAM, PROPERLY + SSRN/OP-026a LADDER END-TO-END** (run-9 next-ground #1 + #3 fused —
+   same route; rotation debt now 3 runs). Post-2015 LBMA electronic-auction microstructure via
+   RePEc/IDEAS ladder, institutional repositories, author self-archives — NOT aggregators. Carry
+   the 10:00-NY macro-release confound as a pre-registered control on anything found. DQ1 fold-in:
+   the LITIGATION layer (gold-fix manipulation suits produced open expert reports with
+   microstructure detail nobody in academia cites).
+2. **PRODUCER_HEDGING_FLOW literature pass** (first of the five never-passed MT5-native classes;
+   pays twice — it is the §38 replacement's own mechanism). Hedging-pressure premia in
+   commodities/FX: the pre-2015 forgotten layer (Bessembinder 1992, de Roon–Nijman–Veld 2000,
+   Kang–Rouwenhorst–Tang) → modern replication/decay layer → failed-replication scan. Forgotten
+   literature is now DIRECT evidence on MT5 instruments (transfer discount gone).
+3. **AI/AUTONOMOUS-RESEARCH METHODS FRONTIER — parallel share, not tail** (run-9 defect 5 repaid;
+   ≥25% mandate). Agent/eval/multi-agent/research-automation frontier since ~08-12 (last real
+   methods pass run 7), mined for THIS desk's engine: panel design, eval discipline, prompt/agent
+   architecture. DQ3 fold-in: the NEGATIVE layer — failure analyses and inflated-self-assessment
+   evals of LLM research agents, not the capability-marketing layer.
+
+**DIVERGENT QUERIES (STEP -1, ≥2 of budget spent on these):** DQ1 (litigation forensics — court
+documents as microstructure source, not papers): folded into item 1. DQ2 (non-EN academic: CN gold
+benchmark internationalization / SGE–LBMA linkage studies, JP commodity hedging-pressure via
+J-STAGE native terms): folded into items 1–2. DQ3 (methods skeptic: agent-failure/negative-result
+evals): folded into item 3.
+
+**PREREGISTRATION — gotobi/Tokyo-fix coarse screen (constants fixed HERE, before any computation;
+screen-on-discovery duty on a mechanism surfaced mid-run):** Hypothesis: USDJPY drifts UP into the
+09:55 JST Tokyo fix (nakane) on gotobi days (JST day-of-month %5==0, business days) — importer USD
+settlement demand (Ito–Yamada NBER w22820; Bessho–Sugimoto–Suzuki arXiv 2301.13204: drift onset
+~03:00 JST on EBS 2018–2020). Window: log(open@JST10:00 / open@JST03:00) per day, H1 bars from
+`desks/mt5/data/universe/USDJPY_H1.parquet`. CLOCK: parquet labels are SERVER time mislabeled UTC
+(measured this run: zero Sunday bars, Friday→23:00, NFP spike at labeled hour 15 on two
+instruments); conversion = labeled wall − 7h → America/New_York wall → true UTC → JST (+9). ±1h
+edge slop accepted for a coarse screen. Test: one-sided Welch t (gotobi > non-gotobi).
+Decision cell: FULL sample. Diagnostics: 2018–2020 (paper window) and 2021+ (post-paper OOS)
+splits. Trials charged: 3. Costs: 1× median entry-bar spread (points×0.001 JPY) per round trip.
+KILL: full-sample one-sided p > 0.05 OR net-of-cost gotobi mean ≤ 0 → negative screen, graveyard
+prior with the JP retail-crowding note. No other windows, days, pairs or horizons will be tried
+this run. Artifact: `data/gotobi_screen.json`.
+
+**RESOLUTION LOG (updated as items close):**
+- [x] Item 0 inbox triage — 2 papers, both DISCARD (generic portfolio-math, no counterparty);
+      triage comment written into feed_inbox.md
+- [x] Item 1 CLOSED — gold seam: post-2015 exploitability literature measured NEAR-EMPTY
+      (Crain 2020 ACRN open + EFMA2017_0580 unreadable = the entire found layer; Crain's 19 refs
+      contain zero post-2015 exploitability studies, 1 citer total). Mechanism layer CONVERGENT
+      (Osler–Turnbull JBF 2026 model + Ito–Yamada JIMF 2018 verbatim abstract: predictability is
+      an equilibrium property of benchmark execution). IBA per-round transparency reports exist;
+      historical bulk LICENCE-GATED (§13), daily reuse-terms unresolved. Tokyo-fix instance
+      surfaced → preregistered coarse screen RUN on own tape: 2018–2020 replicates (+5.33bp/d,
+      t=2.55), 2021+ DEAD (+0.43bp < 1.02bp cost) → graveyard `gotobi_nakane_drift` with named
+      re-open triggers. CARD 39 minted [§33: screened -> data/gotobi_screen.json]. EN-ROUTE
+      DEFECT: universe parquet timestamps are server-time mislabeled UTC (gateway.py:1268),
+      proven on 2 instruments (NFP spike labeled hour 15, zero Sunday bars) → ledger row this run.
+- [x] Item 2 CLOSED — producer_hedging_flow: LEVEL/insurance channel dead CONVERGENTLY
+      (desk 41y t=−0.64 + Maréchal JFM 2023 "eventually vanishes") → graveyard upgraded;
+      CHANGE/liquidity channel (KRT JF 2020, robust in Maréchal) untested on desk →
+      **EV-QUEUED 0.0032 vs 0.002 bar, CARD 40** [§33: carded; prereg+Stage-A owed next cycle].
+      Basis-momentum named as data-gap (no curve data on a CFD desk). JP leg (TOCOM/J-STAGE
+      hedging literature) NOT mined this run — named next-ground, not faked.
+- [ ] Item 3 AI-methods frontier
+- [ ] R0692/R0693 re-raises (fresh ids)
+- [ ] coverage table + cadence stamp + detached-worktree commit (explicit paths)
+
+## RUN 10 CLOSE — routing totals, verified-vs-relayed, depth line, honest defects, next ground
+
+**RESOLUTION LOG FINAL:** Items 0/1/2 closed above. Item 3 CLOSED — verification-gap survey
+(2608.05179) + false-success study (2606.09863) read to depth; 2 consolidated inbox entries;
+R0656 raised with two exact patches (within-batch entropy audit; lexical false-success fence);
+coverage row bumped with the run-8 de-prioritisation tension addressed inline. R0692/R0693
+re-raises DONE (R0654/R0655, content-graded against HEAD, one run-9 claim corrected). Run 9's
+lost coverage-note restored by clean git apply (verified byte-identical parent first).
+
+**ROUTING TOTALS:** **2 cards minted** (#39 session-fix/auction family [§33: screened ->
+data/gotobi_screen.json]; #40 COT-change liquidity premium [§33: carded, EV-QUEUED 0.0032 —
+first litminer EV-queue since the MT5 migration]) · **1 preregistered screen EXECUTED same-run**
+(gotobi: replicated 2018–2020, dead 2021+; 3 trials charged) · **2 graveyard entries**
+(`gotobi_nakane_drift` new with named re-open triggers; `cot_hedging_pressure_level` upgraded to
+literature-convergent) · **4 ledger rows R0653–R0656** (clock provenance; EV-gate double-charge
+re-raise; banned-universe panel prompt; engine patches) · **2 inbox entries** (verification-gap;
+false-success) · **2 research-memory rows** · **1 inbox batch triaged** (2 papers, both discards)
+· **coverage table: 2 rows bumped + 1 new family row** · cadence stamped.
+
+**VERIFIED MYSELF vs RELAYED:** VERIFIED: Ito–Yamada verbatim abstract (RePEc page); Maréchal
+verbatim abstract (OpenAlex inverted index); Crain full-PDF on disk (abstract page + valid
+%PDF-1.7, 864KB — INTERIOR unread, extractor failed on fonts); every gotobi number (computed
+here from the desk's own parquet, clock-corrected); the clock defect (3 independent measurements:
+Sunday-bar absence, Friday hours, NFP spike hour on 2 instruments; gateway.py:1268 read at HEAD);
+EV-gate arithmetic (_PRIORS/_BASE_P read, ev_score executed); ledger rows re-read after write;
+false-success rates (verbatim abstract). RELAYED, flagged: Maréchal's 0.43→0.34 decay numbers
+(search synthesis; open draft named for verbatim upgrade); ResearchClawBench ~20% (search
+synthesis); Osler–Turnbull model detail (EconPapers abstract paraphrase — Brandeis PDF 403,
+Wiley 403); verification-gap survey percentages (WebFetch extraction of the HTML, not hand-read).
+
+**DEPTH LINE (mandated).** *Item 1* — search → RePEc/EconPapers → OpenAlex reference graph
+(Crain's 19 refs classified) → forward-citation graph (Ito–Yamada's 12 citers mapped) → licence
+gate on the surfaced data axis → **a THIRD fix instance (Tokyo nakane) surfaced from the chain →
+its open full-text read (ar5iv) → preregistered screen on own tape same-run → graveyard with
+re-open triggers**. Depth converted a literature pass into a measured desk verdict and caught the
+clock-provenance defect no surface read would have touched. *Item 2* — prior-integration first
+(the 41y kill re-read) → KRT citers scanned → the ONE direct revisit paper identified and its
+split verdict extracted → construction-level gap named (change vs level) → EV gate run → card
+with prereg constants. *Item 3* — 2 searches → 2 depth reads → patches routed with owners.
+BREADTH-THEATER CHECK: 0 sources touched-once-and-abandoned; every opened lead resolved to a
+verdict, a card, a row, or a named next-ground.
+
+**HONEST DEFECTS OF THIS RUN:**
+1. **+4 ledger rows into a repair-mode backlog.** All four carry exact patches and named owners;
+   the two engine patches were consolidated into one row deliberately. Recorded, not excused.
+2. **The gotobi screen's decision cell passed at p=0.0499 and I routed it to the graveyard
+   anyway** — on the OOS diagnostic (2021+ dead, gross < cost). That is a JUDGMENT overriding a
+   preregistered pass: defensible (the prereg promised kill-on-negative, not gauntlet-on-positive;
+   current-regime net expectancy is negative), but it is the kind of discretion the prereg
+   discipline exists to constrain. Recorded so the next seat can re-litigate WITH the artifact.
+3. **Crain 2020 and BoE 2025 sit on disk UNREAD in the interior** — the on-box extractor fails on
+   font-subset and object-stream PDFs (GAP#70 limitation, 2 instances this run). The enabling fix
+   (a real PDF lib in the venv) is install-frozen for this seat; NOT ledgered as its own row this
+   run to hold the row count — named here for the capability seat.
+4. **The JP/TOCOM leg of item 2 and the EFMA2017_0580 identity remain unmined** — named
+   next-ground, not silently dropped.
+5. **Semantic Scholar 429'd on first touch; OpenAlex carried the whole citation load** — single
+   point of dependence for graph work from this box, noted as route fact.
+
+**NEXT UN-EXHAUSTED GROUND (run 11, in order):**
+1. **Card 40 prereg + Stage-A screen** (if the alpha org has not taken it) — constants are in the
+   card; reuse run_cot_screen.py parser.
+2. **XAUUSD/major-pairs M1 pull around fix/auction windows** (gateway serves M1; the clock fix
+   R0653 first) → the WMR month-end and LBMA-auction screens card 39 names.
+3. **EFMA2017_0580 identity** via the EFMA 2017 Athens programme page; then author self-archive.
+4. **JP leg**: TOCOM gold hedging + J-STAGE native-term pass (仲値/ヘッジ圧力/当業者) — the
+   region-parity debt of items 1–2.
+5. **Replication/comment papers** (Critical Finance Review, JF/JFE/RFS "Comment on…") re-aimed at
+   FX/commodity microstructure — rotation-owed since run 8.
+6. **Two Sigma/DE Shaw practitioner residuals** (family row names them unmined).
+7. Dated: NeurIPS eval-of-agents ~2026-10; COLM accepted-list each run; Molnar halving-clock
+   Oct–Nov 2026 (watch-only).
+
+**WHICH ARTIFACT ON DISK IS DIFFERENT BECAUSE OF WHAT WAS MINED (§33 standing test):**
+`data/gotobi_screen.json` (new, preregistered screen + clock evidence), `docs/graveyard.md` (+2),
+`docs/research/data_axis_watchlist.md` (cards 39–40), `docs/research/recommendation_ledger.json`
+(R0653–R0656), `docs/research/improvement_inbox.md` (+2 consolidated), `docs/research/feed_inbox.md`
+(batch cleared), this file (run-9 note restored + coverage rows + this note), 2 research-memory
+rows, `data/cadence_state.json` stamped.
+
+**POST-CLOSE LINE-CITATION CORRECTION (same run, 19:35Z):** the sibling's `6a73f7fe`
+("gateway/promoter: repo catches up to Contabo live code") landed mid-run and shifted gateway.py —
+R0653's cited lines are stale ONE HOUR after writing. At `b239108d` the defect is at
+**gateway.py:1213 AND :1415 (two bar-export sites, both `utc=True` on server epochs; ticks
+:1311)**. Grep `utc=True` rather than trusting any line number; the patch in R0653 applies to
+BOTH bar sites.

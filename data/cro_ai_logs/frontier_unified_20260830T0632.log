@@ -1,0 +1,149 @@
+=== frontier-unified attempt Sun Aug 30 06:32:59 AM UTC 2026 ===
+=== frontier-unified start Sun Aug 30 06:33:21 AM UTC 2026 ===
+
+# UNIFIED FRONTIER MINER -- 2026-08-30
+
+## ALLOCATION (the reasoning is the deliverable)
+
+I took ONE ground today and worked it to the bottom: **creator / track-record (RESEARCH §4)**.
+It is the desk's measured best source class (the Davidd/RFT/Saleh corpora produced 94 stage-A
+survivors and the only exact ten-gate certificate on disk) and it carried a debt named in the
+owed-next-run section of BOTH the 08-28 and 08-29 logs -- "FX Blue wave 4+ still wants a timer,
+not a manual run ... it is not correctly deprioritised twice in a row." It has now been
+deprioritised twice; a third would make the debt a decision nobody made.
+
+Triage found something that changed the allocation before I dug: **the ground I was about to
+mine by hand was already wired to an hourly timer that has produced nothing but 404s for 79
+consecutive runs**, while the miner that actually works has no timer at all. That is an exact
+inversion of effort and capital, and repairing it is worth more than any new breadth I could
+have bought with the same hour. So this run is a CONVERSION run: three wired repairs, each with
+an artifact, rather than a new-finds run.
+
+### Grounds NOT worked, each named (skipping is a decision)
+
+- **cn / ru / jp / kr / ar / br** -- last real (>=1500b) regional logs are `cn` 2026-08-25 (5d)
+  and `ru` 2026-08-25 (5d, 118b stub); the rest are 131-byte stubs back to 2026-08-22. None is
+  yet past the 7-day starvation floor, so none is owed a floor pass TODAY. `cn` and `ru` cross
+  it on 2026-09-01 and are the first claim on the next run's budget. Named here so the debt
+  carries rather than ages out.
+- **en** -- last real log 2026-08-25; covered indirectly by the free-data seat's 08-29/08-30
+  runs (2 commits in the last 12h). No owed debt, and its ground is not starving.
+- **The M15/H-005 arm and the intraday CB arm** (owed 08-28 AND 08-29) -- still blocked on the
+  same thing: the desk has no M15/M5 tape for the majors. It is an ACQUISITION item, not a
+  mining item, and no amount of frontier budget converts it. Restated in OWED NEXT RUN.
+
+## FINDING 1 -- an hourly miner has fetched a 404 for 79 consecutive runs, and the module's own
+## fail-soft contract is what made it invisible
+
+`desks/mt5/side_channels/seed_miners.py::mine_fxblue` fetches `https://www.fxblue.com/users`.
+That URL is a 404 and has been throughout the retained window:
+
+    79 discoveries_*.json files, 2026-08-27T00:22 -> 2026-08-30T06:22
+    79 rows total, kind=fetch_error, 79/79
+    single cause: "404 Client Error: Not Found for url: https://www.fxblue.com/users"
+    rows of real content, ever: ZERO
+
+**The mechanism of invisibility is the interesting part and it generalises to all sixteen Seed
+Drop 2 miners.** The module's stated contract is that a source whose page shape drifts "degrades
+to raw-capture rows flagged `needs_selector_work` -- corpus either way". That is a good contract
+for a DRIFTED SELECTOR and a fatal one for a DEAD ENDPOINT: both render as a non-empty
+discoveries file with a `needs_selector_work` flag, so a file arriving every hour reads as a
+healthy channel to anything counting files or bytes. A 404 is not a selector problem and no
+amount of selector iteration will fix it. This is the desk's `health = usable output` rule
+(gap-wirer e) arriving one layer too late.
+
+**The route was already on disk, in this desk's own tree, unadopted.**
+`desks/mt5/scripts/fxblue_track_record_miner.py` documents at the top of the file that FX Blue
+offers NO population route of its own (its sitemap lists exactly one user, `/users/example`) and
+that the working enumerator is the Wayback CDX URL index -- 5,076 handles, already cached at
+`desks/mt5/data/intelligence/fxblue/population.txt`. The hourly miner was reaching for a
+directory page that the deep miner had already established does not exist.
+
+**REPAIR (applied, verified live):** `mine_fxblue` now reads the cached population and emits 40
+`track_record` rows per run against the working `api.fxblue.com/wl/view.aspx` route, rotating the
+window by the hour so successive runs point at different ground (L1.61 -- coverage is a cycle,
+not a sweep). Verified: 40 rows, first `achab-fxg93`, last `airhopper_forex`. 79 runs of zero
+became 40 rows/hour. If the population cache is ever absent or empty the miner now says so as a
+`fetch_error` with the repair named, rather than as a selector complaint.
+
+## FINDING 2 -- the twice-deferred timer, built and armed
+
+The productive miner had harvested **1,056 of 5,077 handles (20.8%)** across seven manual waves
+and had no schedule. Every previous log asked for a timer and every previous run did the harvest
+by hand.
+
+**REPAIR (applied, running):**
+- Added `--cursor-file` to `fxblue_track_record_miner.py`: a persistent position into a
+  deterministic **stride-7 interleave** of the population. The lanes are concatenated, so the
+  slice at any cursor is block-SPREAD (the population is block-structured -- contiguous
+  bulk-registered `22-*` runs, which is why a contiguous slice measures one block rather than
+  the population) while the cycle still reaches every handle exactly once and then laps.
+- The cursor advances **only after publication**. A cursor advanced before the write turns a
+  crashed run into permanently skipped ground -- a silent coverage hole (L1.51), and the exact
+  shape of failure this ground has already produced once.
+- `ops/quant-fxblue-harvest.{service,timer}`, installed and `enable --now`: 60 handles every 2
+  hours -> the full 5,077 population in ~7 days, then laps onto newer data forever.
+
+Verified live, not asserted: first service run `cursor: 0/5077`, `20/60 data=7 shell=13 dead=0
+failed=0` -- real records, not shells-only. Next scheduled fire 08:19 UTC.
+
+## FINDING 3 -- 75.3% of the practitioner corpus handed to the extractor is JavaScript, and the
+## truncation cap means the best pages lose their prose entirely
+
+`data/intelligence/gpt_practitioner_corpus.jsonl` is 4.0 MB and grows hourly. Measured:
+
+    430 rows
+    rows with any `text`:            0
+    total `text` chars in the file:  0
+    share of file bytes in `description`: 92%  (3,782,649 of ~4.1M)
+
+The 262 youtube rows are the known-dead transcript route (104 `captionTracks absent`, 90
+zero-byte caption bodies, 68 HTTP 429) and are correctly recorded as failures. The other 183
+rows -- `site`, `atom`, `x` -- carry their content in `description`, and that is where the defect
+is: `libs/research/public_strategy_hunter.py` built it with
+
+    text = re.sub(r"<[^>]+>", " ", payload.decode(...))
+
+which strips the `<script>` and `<style>` TAGS and keeps everything BETWEEN them. Measured over
+the 183 rows: **2,751,623 of 3,652,268 description chars (75.3%) are JavaScript-shaped**, and
+**51 of 183 rows hit the 50,000-char cap**. Head-of-document scripts come FIRST, so on precisely
+the richest pages the cap was spent on the bundle and the prose was truncated away. The
+extractor was not reading a page; it was reading a build artifact.
+
+**REPAIR (applied, measured against the live page):** strip `<script>/<style>/<noscript>/
+<template>` BODIES and HTML comments before the tag strip. On `man.com/maninstitute`:
+
+    before: "window.dataLayer = window.dataLayer || []; window.dataLayer.push({"traffic_t":..."
+    after:  "Man Insights | Man Group Funds Funds Fund centre Investor resources Document..."
+
+The character count only falls 25,465 -> 20,571 on that page, which is the point worth keeping:
+the win is not volume, it is that the first 50,000 chars are now content. A byte count would have
+scored this repair as a small regression.
+
+## CONVERGENCE
+
+Findings 1 and 3 are the same defect in two costumes and I am recording that rather than counting
+them as two independent discoveries: **a producer emitting a well-formed artifact that contains
+none of the thing it exists to collect**, certified healthy by file arrival (1) or by byte growth
+(3). Neither would fail any emptiness check the desk currently runs. The generalisable test is
+the one already in the desk's own vocabulary -- health is USABLE OUTPUT -- and neither channel
+had an instrument for it.
+
+## OWED NEXT RUN
+
+1. **`cn` and `ru` cross the 7-day starvation floor on 2026-09-01** -- both are owed a floor pass
+   (owed cards toward conversion, never new breadth) on the next run. Do not let the floor lapse.
+2. **The remaining fifteen Seed Drop 2 miners have not been audited for finding 1's failure
+   shape.** `mine_fxblue` was found by accident while triaging a different debt. A pass that
+   classifies every `discoveries_*` stream as {real rows / drifted selector / DEAD ENDPOINT} is
+   owed, and it is a script, not a judgement call. This is the honest residual: I fixed one
+   instance of a class and did not sweep the class.
+3. **M15/M5 tape for the majors** -- blocks the H-005 M15 arm (owed 08-29) and the intraday arm
+   of the 08-28 CB refutation (owed twice). Acquisition, not mining; it will not clear itself.
+4. **The FX Blue corpus is a hypothesis SOURCE that has produced hypotheses only once.** With the
+   timer now running, the population reaches 100% in ~7 days; the conversion pass over the
+   mechanism charts (hour-of-day, symbol, duration, sizing) into preregistered hypotheses is the
+   next real claim on this ground, and it is what makes the timer worth having.
+5. Still owed and untouched, third run running: the **body-line `[§33:]` parser fix**
+   (engineering-owned), **Myfxbook `/members/*` and Collective2 `/strategies/*` under OP-098**,
+   the **Darwinex metrics XHR** respecting the `/api` robots bar. Named, not done.

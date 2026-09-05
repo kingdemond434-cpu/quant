@@ -1,0 +1,9 @@
+[Unit]
+Description=Gate + cycle watchdog every 15 minutes
+
+[Timer]
+OnCalendar=*:2,17,32,47
+Persistent=true
+
+[Install]
+WantedBy=timers.target

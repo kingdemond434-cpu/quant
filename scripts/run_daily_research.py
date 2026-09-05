@@ -1,4 +1,7 @@
-"""Daily research batch -- CRYPTO-ONLY, spawned by the always-on executor.
+"""Daily research batch -- CRYPTO-ONLY, RETIRED 2026-08-25, halts on the universe mandate.
+
+See `_mandate_halt`. This chain contradicted docs/LAWS.md for months while still presenting
+itself as the spawned daily research engine; it now refuses to run and says why.
 
 Runs the forward-accumulating pipeline in order, isolating each step so one failure does not abort
 the rest. The authoritative step list is `_STEPS` below -- read that, not this paragraph.
@@ -88,7 +91,59 @@ _STEPS = [
 ]
 
 
+#: The canonical universe (docs/LAWS.md:40-45, consolidation of 2026-08-25): the desk's sole
+#: traded and hunted ground is the full MT5/Fusion universe, and "No crypto-exchange-native
+#: universe" is stated there in bold. Crypto reference data is admissible only where it
+#: measurably informs an MT5 instrument.
+_MANDATE_DOC = "docs/LAWS.md"
+_OVERRIDE_ENV = "QUANT_ALLOW_RETIRED_CRYPTO_CHAIN"
+
+
+def _mandate_halt() -> str | None:
+    """Refuse to run if the canonical universe still forbids this chain's ground.
+
+    SPLIT-BRAIN, RESOLVED IN THE ONLY PLACE THAT MATTERS. This file's own docstring says
+    CRYPTO-ONLY and its `_STEPS` say "MT5 abandoned.", while `docs/LAWS.md` says the opposite in
+    bold and `docs/RESEARCH.md` agrees with LAWS. A repo cannot hold two universes: whichever a
+    reader happens to open first becomes what they believe, and this chain still presents itself
+    as the spawned daily research engine.
+
+    Deleting it was the other option and is worse. Deletion loses the crypto-era work that some
+    of it still encodes, and -- more importantly -- a deleted file cannot TELL anyone why it is
+    gone. A file that halts and cites the law converts a silent contradiction into an explicit,
+    auditable refusal, which is what "one truth" actually requires.
+
+    The override exists because a deliberate archaeological run is legitimate; needing to set an
+    environment variable named after the retirement is the point.
+    """
+    import os
+
+    if os.environ.get(_OVERRIDE_ENV):
+        return None
+    root = Path(__file__).resolve().parent.parent
+    laws = root / _MANDATE_DOC
+    try:
+        text = laws.read_text("utf-8")
+    except OSError:
+        # Absence is never permission. If the law cannot be read, the retired chain stays halted.
+        return (f"cannot read {_MANDATE_DOC} to confirm the universe mandate; refusing to run a "
+                f"crypto-only chain on an unverified mandate")
+    if "No crypto-exchange-native universe" in text or "MT5/Fusion Markets universe" in text:
+        return (f"HALTED BY MANDATE. {_MANDATE_DOC} makes the full MT5/Fusion universe the desk's "
+                f"sole traded and hunted ground and forbids crypto-exchange-native ground. This "
+                f"chain is CRYPTO-ONLY and its own step list says 'MT5 abandoned.' -- it is a "
+                f"retired path preserved for audit, not a live research engine. Nothing here has "
+                f"run against the canonical universe since 2026-08-25.\n"
+                f"  The live MT5 research cadence is the hourly cycle and the gauntlet.\n"
+                f"  To run this deliberately for archaeology: {_OVERRIDE_ENV}=1")
+    return None
+
+
 def main() -> None:
+    halt = _mandate_halt()
+    if halt is not None:
+        print(halt)
+        raise SystemExit(0)      # a correct refusal is not a failure
     print(f"=== QuantDaily {datetime.now(tz=UTC).isoformat()} ===")
     results: list[tuple[str, str]] = []
     failed: list[dict[str, object]] = []

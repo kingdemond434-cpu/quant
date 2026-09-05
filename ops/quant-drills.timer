@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for restored organ: drills
+
+[Timer]
+OnCalendar=*-*-* 03:40:00
+Persistent=true
+Unit=quant-drills.service
+
+[Install]
+WantedBy=timers.target

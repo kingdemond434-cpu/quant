@@ -1,0 +1,9 @@
+[Unit]
+Description=FX Blue harvest every 2h (60 handles/run -> full 5,077 population in ~7 days, then laps)
+
+[Timer]
+OnCalendar=*-*-* 00/2:19:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

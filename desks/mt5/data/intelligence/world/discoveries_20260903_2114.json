@@ -1,0 +1,701 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data License Agreement",
+  "url": "https://www.quantrocket.com/terms/data/",
+  "published": "2026-09-03T21:12:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantrocket.com/favicons/manifest.json",
+   "https://www.quantrocket.com/docs/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a390becaad2ab7505796",
+  "host": "www.quantrocket.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Mining: Theories, Algorithms, and Examples - 1st Edition - Nong Y",
+  "url": "https://www.crcpress.com/Data-Mining-Theories-Algorithms-and-Examples/Ye/p/book/9781439808382",
+  "published": "2026-09-03T21:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0214f1f4d6211cb74b55",
+  "host": "www.crcpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LBMA Precious Metal Prices | LBMA",
+  "url": "https://www.lbma.org.uk/prices-and-data",
+  "published": "2026-09-03T21:12:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.lbma.org.uk/humans.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dddc1537d14a1413be95",
+  "host": "www.lbma.org.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u8d22\u7ecf\u5feb\u8baf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://kuaixun.eastmoney.com/wh.html",
+  "published": "2026-09-03T21:12:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "25c59860f163a6ebe42c",
+  "host": "kuaixun.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://eu-live.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-03T21:12:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://eu-live.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c547826b5f18730996a5",
+  "host": "eu-live.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Yahoo is dead, long live Yahoo!",
+  "url": "https://tradingwithpython.blogspot.com/2017/05/yahoo-is-dead-long-live-yahoo.html",
+  "published": "2026-09-03T21:12:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8474b0291ae482c55c38",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: A simple statistical edge in SPY",
+  "url": "https://tradingwithpython.blogspot.com/2016/02/a-simple-statistical-edge-in-spy.html",
+  "published": "2026-09-03T21:12:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a6bb8a76367bd093a577",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Trading VXX with nearest neighbors prediction",
+  "url": "https://tradingwithpython.blogspot.com/2014/11/trading-vxx-with-nearest-neighbors.html",
+  "published": "2026-09-03T21:12:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7ef706a6b5a2907e9db5",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Simple backtesting module",
+  "url": "https://tradingwithpython.blogspot.com/2014/07/simple-backtesting-module.html",
+  "published": "2026-09-03T21:13:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea84a428daf0b9baf953",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: backtesting",
+  "url": "https://tradingwithpython.blogspot.com/search/label/backtesting",
+  "published": "2026-09-03T21:13:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "90957f546c65fab69123",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Boosting performance with Cython",
+  "url": "https://tradingwithpython.blogspot.com/2014/06/even-with-my-old-pc-amd-athlon-ii-3gb.html",
+  "published": "2026-09-03T21:13:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5139b43ed4b80b147241",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Backtesting dilemmas: pyalgotrade review",
+  "url": "https://tradingwithpython.blogspot.com/2014/05/backtesting-dilemmas-pyalgotrade-review.html",
+  "published": "2026-09-03T21:13:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "08dd894648656936b592",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantivity | Uncommon Returns through Quantitative and Algorithmic Trading",
+  "url": "https://quantivity.wordpress.com",
+  "published": "2026-09-03T21:13:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6df66eb7ef3dae9de744",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About | Quantivity",
+  "url": "https://quantivity.wordpress.com/about/",
+  "published": "2026-09-03T21:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1cedf800af83a99403c6",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multi-Asset Market Regimes | Quantivity",
+  "url": "https://quantivity.wordpress.com/2012/11/09/multi-asset-market-regimes/",
+  "published": "2026-09-03T21:13:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9f10db21496d637cc7d2",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uncategorized | Quantivity",
+  "url": "https://quantivity.wordpress.com/category/uncategorized/",
+  "published": "2026-09-03T21:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7e102f766a641a1ecbda",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Implicit Momentum Bias | Quantivity",
+  "url": "https://quantivity.wordpress.com/2012/10/25/implicit-momentum-bias/",
+  "published": "2026-09-03T21:13:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8d549ac229cc5f7761c0",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Volume Clock, Gaps, and GOOG | Quantivity",
+  "url": "https://quantivity.wordpress.com/2012/10/23/volume-clock-gaps-and-goog/",
+  "published": "2026-09-03T21:13:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50a0bcaa4ca52b54a913",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Macro Matters and Orthodoxy | Quantivity",
+  "url": "https://quantivity.wordpress.com/2012/05/09/macro-matters-and-orthodoxy/",
+  "published": "2026-09-03T21:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3ee29e0765cc413d1f90",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Glossary &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/glossary",
+  "published": "2026-09-03T21:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5b65069f13e268348d85",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Examining Short Term Reversals in Stocks &#8211; Part 1 (Returns Data) &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/examining-short-term-reversals-in-stocks-part-1-returns-data/?replytocom=2",
+  "published": "2026-09-03T21:13:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e6f5919c2889970e0d17",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Examining Short Term Reversals in Stocks &#8211; Part 1 (Returns Data) &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/examining-short-term-reversals-in-stocks-part-1-returns-data/?replytocom=6",
+  "published": "2026-09-03T21:13:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "291031d08401bcafd7f1",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Examining Short Term Reversals in Stocks &#8211; Part 1 (Returns Data) &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/examining-short-term-reversals-in-stocks-part-1-returns-data/?replytocom=4",
+  "published": "2026-09-03T21:13:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e15c6a9112cd7222a9b7",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Examining Short Term Reversals in Stocks &#8211; Part 1 (Returns Data) &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/examining-short-term-reversals-in-stocks-part-1-returns-data/?replytocom=7",
+  "published": "2026-09-03T21:13:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bf85f29f56195a79c0ce",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Examining Short Term Reversals in Stocks &#8211; Part 1 (Returns Data) &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/examining-short-term-reversals-in-stocks-part-1-returns-data/?replytocom=5",
+  "published": "2026-09-03T21:13:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5750ea7745ff8027d260",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Examining Short Term Reversals in Stocks &#8211; Part 1 (Returns Data) &#8211; The Sober Quant",
+  "url": "https://www.thesoberquant.com/examining-short-term-reversals-in-stocks-part-1-returns-data/?replytocom=8",
+  "published": "2026-09-03T21:13:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e296f485a850005c62ca",
+  "host": "www.thesoberquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - Hispatrading Magazine",
+  "url": "https://hispatrading.es/edicion-actual/",
+  "published": "2026-09-03T21:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "65735d0d9a300169a52b",
+  "host": "hispatrading.es"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "COLABORADORES EN ESTE N\u00daMERO - Hispatrading Magazine",
+  "url": "https://hispatrading.es/colaboradores-en-esta-edicion/",
+  "published": "2026-09-03T21:13:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14934cc73df12d54bdbf",
+  "host": "hispatrading.es"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic trading results | Day trading strategies | Quant Trading",
+  "url": "https://quantsavvy.com/algorithmic-trading-results/",
+  "published": "2026-09-03T21:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b3b48fd4da452371a200",
+  "host": "quantsavvy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algo Trading Strategies",
+  "url": "https://quantsavvy.com/",
+  "published": "2026-09-03T21:13:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae8c9088b0300f6ecc5b",
+  "host": "quantsavvy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Best Day Trading System | Auto Trading FAQ",
+  "url": "https://quantsavvy.com/algo-trading-faq/",
+  "published": "2026-09-03T21:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "365dd52159dd60ea163d",
+  "host": "quantsavvy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investing tips Archives - Quant Savvy",
+  "url": "https://quantsavvy.com/category/investing-tips/",
+  "published": "2026-09-03T21:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cbc3e222a459b7000f7a",
+  "host": "quantsavvy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Popular Archives - Quant Savvy",
+  "url": "https://quantsavvy.com/category/popular/",
+  "published": "2026-09-03T21:14:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "078f70e37e05f81b4657",
+  "host": "quantsavvy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free and paid plans for Historical Prices and Fundamental Financial Data API",
+  "url": "https://eodhd.com/pricing-quantpedia?via=quantpedia",
+  "published": "2026-09-03T21:14:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "593ae1faa1d91f648048",
+  "host": "eodhd.com"
+ }
+]

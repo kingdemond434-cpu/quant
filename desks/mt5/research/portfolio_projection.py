@@ -21,8 +21,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from mt5desk import families
+from mt5desk.engine import Costs, run_backtest
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
@@ -47,34 +47,101 @@ def cell_trades(sym: str, win: str, state: str | None, h1: pd.DataFrame,
 
 
 def load_h12_survivors() -> list[dict]:
-    """The hunt12 survivor cells. RAISES when the report is absent — it must never return [].
-
-    **THE EMPTY LIST SILENTLY TRUNCATED THE BOOK.** Five of the nine deployed sleeves are hunt12
-    cells; the other four are gold. `reports/` is gitignored (.gitignore:118), so this file is
-    absent on every fresh clone AND on the VPS — measured 2026-08-20, `swap_exposure.py` refuses
-    all five AUDCAD cells on both. Where it was absent, this returned [], `build_sleeves` built a
-    GOLD-ONLY four-sleeve book, and `main` wrote it over the nine-sleeve artifact, recomputing
-    mean_corr, n_eff and port_sharpe consistently on the truncation. No error anywhere, and
-    nothing downstream able to tell it from the real answer.
-
-    That is the WS-005 shape aimed at the artifact the whole book ranking rests on. An absent
-    input must produce a refusal, not a smaller book (L1.28a).
-
-    **RUN `research/run_hunt12.py` FIRST.** It writes this file — and it was itself dead with a
-    missing import until 2026-08-19 (commit 82db21fc), which is why the report was never
-    regenerated and the committed projection went stale.
-    """
     p = BASE / "reports" / "hunt12_partial.json"
     if not p.exists():
+        # AN ABSENT REPORT IS A REFUSAL, NOT A SMALLER BOOK. This returned [] on every fresh
+        # clone (the report is gitignored), main() then built a GOLD-ONLY four-sleeve book and
+        # overwrote the committed nine-sleeve artifact -- recomputing mean_corr, n_eff and
+        # port_sharpe consistently on the truncated book, so nothing downstream could tell.
         raise SystemExit(
-            f"REFUSING to project: {p} is absent, so the hunt12 survivor cells cannot be loaded.\n"
-            "Five of the nine deployed sleeves live in that file. Returning an empty list here "
-            "would build a GOLD-ONLY book and overwrite the nine-sleeve artifact with it, and "
-            "nothing downstream could tell the difference.\n"
-            "reports/ is gitignored, so this file never travels with the repo. Regenerate it: "
-            "python research/run_hunt12.py")
+            f"REFUSING to project a portfolio without {p}: hunt12_partial.json is absent, and "
+            f"an empty survivor list would silently produce a GOLD-ONLY book presented as the "
+            f"whole desk. Run research/run_hunt12.py on the desk box to produce the report."
+        )
     saved = json.loads(p.read_text(encoding="utf-8"))
     return [c for c in saved.get("all", []) if c.get("gate")]
+
+
+def load_universal_survivors() -> list[dict]:
+    """UNIVERSAL_SURVIVORS.json -> survivor records. Fail-closed: missing or
+    unreadable -> [] (never assume survivors)."""
+    p = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+    if not p.exists():
+        return []
+    try:
+        return list(json.loads(p.read_text(encoding="utf-8")).get("survivors", {}).values())
+    except Exception:
+        return []
+
+
+def h18_survivor_sleeves() -> tuple[list[dict], list[dict]]:
+    """h18 UNIVERSAL survivors -> sleeves, each REQUIRED to pass the
+    signal-information gate (reports/signal_gate_<stem>.json, verdict
+    INFORMED on the exact cell). Fail-closed: missing report, NULL or SPARSE
+    verdict, or any rebuild error -> survivor EXCLUDED with a reason."""
+    survivors = load_universal_survivors()
+    meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
+    from research.run_hunt17 import FAMILIES as F17
+    from research.run_hunt17 import PARAMS as F17_PARAMS
+    from research.run_hunt17 import resample as r17resample
+    sleeves: list[dict] = []
+    excluded: list[dict] = []
+    for rec in survivors:
+        hunt = rec.get("hunt", "")
+        if not hunt.startswith("hunt18_"):
+            continue
+        stem = Path(hunt).stem
+        cell = rec.get("cell", "")
+        parts = cell.split(".")
+        sym = parts[0] if parts else ""
+        fam = parts[1] if len(parts) > 1 else ""
+        side = 1 if len(parts) < 3 or parts[2] == "1" else -1
+        fn = F17.get(fam)
+        if not fn:
+            excluded.append({**rec, "why": "family no longer registered"})
+            continue
+        try:
+            report = json.loads((BASE / "reports" / hunt).read_text("utf-8"))
+        except Exception:
+            excluded.append({**rec, "why": "experiment report unreadable"})
+            continue
+        params = dict(report.get("params") or {})
+        if not params and report.get("param") is not None:
+            pl = F17_PARAMS.get(fam)
+            if pl:
+                params = dict(pl[int(report["param"])])
+        sg = BASE / "reports" / f"signal_gate_{stem}.json"
+        if not sg.exists():
+            excluded.append({**rec, "why": "no signal gate report"})
+            continue
+        try:
+            sgdata = json.loads(sg.read_text("utf-8"))
+        except Exception:
+            excluded.append({**rec, "why": "signal gate report unreadable"})
+            continue
+        vd = next((c for c in sgdata.get("cells", []) if c.get("cell") == cell), None)
+        if not vd:
+            excluded.append({**rec, "why": "signal gate cell absent"})
+            continue
+        if vd.get("verdict") != "INFORMED":
+            excluded.append({**rec, "why": f"signal gate {vd.get('verdict')}"})
+            continue
+        try:
+            h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
+            h4, d1 = r17resample(h1)
+            sigs = fn(h4, d1, side, **params)
+            # GAP 114 (re-applied 2026-08-26 after the unification reverted it): 0.48 is
+            # dollars-per-OUNCE and this field is dollars-per-LOT; the direct constructor is
+            # how that unit error stayed for months. from_symbol prices from universe.json.
+            costs = Costs.from_symbol(meta[sym], mult=2.0)
+            r = run_backtest(h4, sigs, costs)
+        except Exception as e:
+            excluded.append({**rec, "why": f"rebuild error {e!r}"})
+            continue
+        sleeves.append(dict(name=f"{stem}.{cell}", sym=sym, win=stem, state=cell,
+                            r=[t.r_multiple for t in r.trades],
+                            dates=[pd.Timestamp(t.entry_time).date() for t in r.trades]))
+    return sleeves, excluded
 
 
 def build_sleeves() -> list[dict]:
@@ -83,20 +150,9 @@ def build_sleeves() -> list[dict]:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     sleeves = []
     h1g = families._h1(pd.read_parquet(UNI / "XAUUSD_H1.parquet"))
-    # GAP 114: this read `Costs(spread_per_lot=0.48, ...)` until 2026-08-20. 0.48 is dollars per
-    # OUNCE in a field that wants dollars per LOT, so the engine divided by contract_size 100 and
-    # charged gold 0.0048/oz against a measured 0.16/oz median -- 3% of its real spread, on every
-    # gold row in the artifact the whole book ranking rests on.
-    #
-    # `Costs.from_symbol` was written to end exactly this and this call site never adopted it
-    # (row 110's defect class). `research/calibrate_engine.py` confirms both halves with a
-    # known-answer probe: the old constant recovers 0.2099x of the planted cost and FAILS,
-    # from_symbol recovers 0.9166x and passes. mult=2.0 is the honest baseline, not a stress --
-    # a round trip crosses the spread on the way in and again on the way out.
-    #
-    # MEASURED EFFECT on the gold half: annualised Sharpe 2.92 -> 2.32, 2.05 -> 1.43,
-    # 1.78 -> 1.19, and gold_ny_open flips +0.0157R -> -0.0475R. Gold-only portfolio Sharpe
-    # 2.49 -> 1.52. One of the four gold sleeves is a loser at its true spread.
+    # GAP 114: `Costs(spread_per_lot=0.48, ...)` charged gold 0.0048/oz against a measured
+    # 0.16/oz median -- 3% of its real spread, on every projected trade. from_symbol recovers
+    # the real number; mult=2.0 is the honest baseline, not a stress.
     gold_costs = Costs.from_symbol(meta["XAUUSD"], mult=2.0)
     for wname, wp in GOLD_WINDOWS.items():
         tr = cell_trades("XAUUSD", wname, None, h1g, gold_costs, None)
@@ -155,7 +211,7 @@ def build_daily(sleeves: list[dict]) -> pd.DataFrame:
                          dtype=float)
     for s in sleeves:
         d = pd.Series(s["r"], index=pd.Index(s["dates"]))
-        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays).fillna(0.0)
+        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays)
     return daily
 
 

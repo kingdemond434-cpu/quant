@@ -1,3 +1,9 @@
+> **SUPERSEDED 2026-08-25 (principal consolidation order).** Operative law now lives in
+> [docs/LAWS.md](/docs/LAWS.md) and [docs/RESEARCH.md](/docs/RESEARCH.md); dispositions in
+> [docs/MANDATE_COVERAGE.md](/docs/MANDATE_COVERAGE.md). This file is the unabridged ANNEX —
+> consult it for detail, never for standing orders; on conflict the compact documents govern.
+> The MT5 UNIVERSE MANDATE (LAWS §1) voids every crypto-universe clause herein.
+
 # ELITE-QUANT AI INTELLIGENCE / CAPABILITY-RECOVERY / FUTURE-FRONTIER MANDATE
 
 **STATUS: PERMANENT STANDING POLICY.** Principal directive, 2026-08-13. Applies to ALL general

@@ -1,0 +1,970 @@
+[
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (16/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=16",
+  "published": "2026-09-03T07:12:37+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "fc125c96f9dcb443a632",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (24/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=24",
+  "published": "2026-09-03T07:12:40+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "ca9381ecf1642efcead3",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (36/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=36",
+  "published": "2026-09-03T07:12:41+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "0689d2d5e23da672a4ad",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (55/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=55",
+  "published": "2026-09-03T07:12:43+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "ee258d5f6790b23220d5",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (85/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=85",
+  "published": "2026-09-03T07:12:45+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "7c25be48b764c6d91663",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (6/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=6",
+  "published": "2026-09-03T07:12:47+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "79446174fa6266a7ac5f",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (8/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=8",
+  "published": "2026-09-03T07:12:49+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "729f416d2fe26fe7e004",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.21 Monte Carlo for Trading Systems",
+  "url": "https://aligrithm.com/monte-carlo-for-trading-systems/",
+  "published": "2026-09-03T07:12:50+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "b3b0d57ffca418cfb0e8",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.22 Permutation Tests for Indicator Significance",
+  "url": "https://aligrithm.com/permutation-tests-for-indicator-significance/",
+  "published": "2026-09-03T07:12:52+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "e17f2e0395c950c48fe2",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.23 CSCV: A Direct Probability of Backtest Overfit",
+  "url": "https://aligrithm.com/cscv-a-direct-probability-of-backtest-overfit/",
+  "published": "2026-09-03T07:12:54+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "4630b73a1e6a4e6f4e61",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.30 How to Evaluate a Strategy Beyond Net Profit",
+  "url": "https://aligrithm.com/how-to-evaluate-a-strategy-beyond-net-profit/",
+  "published": "2026-09-03T07:12:56+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "8dd89bb19877d787f694",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.32 The Backtest Integrity Checklist",
+  "url": "https://aligrithm.com/the-backtest-integrity-checklist/",
+  "published": "2026-09-03T07:12:58+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "18f4bd5295890280d622",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "6.39 Why Traders Should Analyze Indicators Mathematically",
+  "url": "https://aligrithm.com/why-traders-should-analyze-indicators-mathematically/",
+  "published": "2026-09-03T07:13:00+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "328522999ef8335bc591",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Retrospective Simulation in Trading: Testing Strategies Beyond Realized Price Paths",
+  "url": "https://blog.quantinsti.com/retrospective-simulation-trading/",
+  "published": "2026-09-03T07:13:01+00:00",
+  "symbols": [
+   "SENSEX"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "f34aa2e05532511de2d4",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "ARIMA Model for Stock Price Forecasting | Backtest Trading Strategies with Python",
+  "url": "https://blog.quantinsti.com/forecasting-stock-returns-using-arima-model/",
+  "published": "2026-09-03T07:13:03+00:00",
+  "symbols": [
+   "ARFIMA",
+   "SARIMA"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "0b3850c9deccfca7c7b1",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Historical Market Data Sources",
+  "url": "https://blog.quantinsti.com/financial-market-data-providers/",
+  "published": "2026-09-03T07:13:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "49254a657eb96defd48d",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "LLM &amp; Generative AI for Sentiment Analysis in Finance",
+  "url": "https://blog.quantinsti.com/llm-generative-ai-sentiment-analysis-finance/",
+  "published": "2026-09-03T07:13:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "2f791604da7dc5b6a09c",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading Fundamentals: Developing a Conceptual Approach",
+  "url": "https://blog.quantinsti.com/introduction-trading/",
+  "published": "2026-09-03T07:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "0a95525b225397a67e35",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Essential Books on Algorithmic Trading",
+  "url": "https://blog.quantinsti.com/books-algorithmic-trading/",
+  "published": "2026-09-03T07:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "f8189d692034d65f337f",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Index Futures - A Brief Guide!",
+  "url": "https://blog.quantinsti.com/index-futures/",
+  "published": "2026-09-03T07:13:13+00:00",
+  "symbols": [
+   "NASDAQ"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "4b36ad329ae19a1ec954",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "ETFs &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/category/etfs/",
+  "published": "2026-09-03T07:13:16+00:00",
+  "symbols": [
+   "UPDATE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "6d8d7c767a9bc7bd1b08",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Rotation &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/category/rotation/",
+  "published": "2026-09-03T07:13:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "557bbcf1d152c00d9b55",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Bear Markets Through the Decades &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/bear-markets-through-the-decades/",
+  "published": "2026-09-03T07:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "d00779f160f4a416d099",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Sell in August and Go Away &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/sell-in-august-and-go-away/",
+  "published": "2026-09-03T07:13:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "e3ef830311229ab9005d",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Mean Reversion &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/category/mean-reversion/",
+  "published": "2026-09-03T07:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "91d19933cc73670036ac",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trend Following &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/category/trend-following/",
+  "published": "2026-09-03T07:13:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "5ba9cb277d9062acd054",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "2023 Rally &#8211; How Strong Is It? &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/2023-rally-how-strong-is-it/",
+  "published": "2026-09-03T07:13:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "25cd554f5d976ca9adf0",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: SPX Iron Condor - 2019 Q1 Review",
+  "url": "https://dtr-trading.blogspot.com/2019/06/spx-iron-condor-2019-q1-review.html",
+  "published": "2026-09-03T07:13:29+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "c1ec86f6704a4d983497",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: SPX Iron Condor - 2018 Review",
+  "url": "https://dtr-trading.blogspot.com/2019/05/spx-iron-condor-2018-review.html",
+  "published": "2026-09-03T07:13:31+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "cf87caf6fc07c3b9a122",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: Backtest Results",
+  "url": "https://dtr-trading.blogspot.com/search/label/Backtest%20Results",
+  "published": "2026-09-03T07:13:33+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "d1d41b180e0e6ed8153c",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: Backtesting",
+  "url": "https://dtr-trading.blogspot.com/search/label/Backtesting",
+  "published": "2026-09-03T07:13:35+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "749aee3c139c5b0f26c6",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: Iron Condor",
+  "url": "https://dtr-trading.blogspot.com/search/label/Iron%20Condor",
+  "published": "2026-09-03T07:13:37+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "vault_sha": "cdab9406cfb1155062ce",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: Options Trading",
+  "url": "https://dtr-trading.blogspot.com/search/label/Options%20Trading",
+  "published": "2026-09-03T07:13:40+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "429049aeb3d2205bd161",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: Quarterly Review",
+  "url": "https://dtr-trading.blogspot.com/search/label/Quarterly%20Review",
+  "published": "2026-09-03T07:13:41+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "583c958293a67e73a9a8",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Our Clients and References | QuantPedia",
+  "url": "https://quantpedia.com/references/",
+  "published": "2026-09-03T07:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "788a999ec00f9952b538",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "FAQ | QuantPedia",
+  "url": "https://quantpedia.com/how-it-works/faq/",
+  "published": "2026-09-03T07:13:44+00:00",
+  "symbols": [
+   "FSCORE"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "39e890f7cf61e09df777",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "A Comprehensive List of Tools for Quantitative Traders | QuantPedia",
+  "url": "https://quantpedia.com/links-tools/",
+  "published": "2026-09-03T07:13:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "7da69f31a798f372482b",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "calendar anomaly | QuantPedia",
+  "url": "https://quantpedia.com/tag/calendar-anomaly/",
+  "published": "2026-09-03T07:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "1d5274adb34c7aec5eb4",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Deltaray Blog Tag: Strategy Library \u2013 Page 2 | Options Tutorials, Research &amp; Release Notes",
+  "url": "https://blog.deltaray.io/tags/strategies/page/2/",
+  "published": "2026-09-03T07:13:55+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "624662e06353d4ca635f",
+  "host": "blog.deltaray.io"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Skew This: NetZero | Deltaray Blog | Options Tutorials, Research &amp; Release Notes",
+  "url": "https://blog.deltaray.io/netzero-skew-this",
+  "published": "2026-09-03T07:13:57+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "e525c4b870ec7317e60a",
+  "host": "blog.deltaray.io"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Announcements - QuantConnect.com",
+  "url": "https://www.quantconnect.com/blog/",
+  "published": "2026-09-03T07:13:58+00:00",
+  "symbols": [
+   "LEAGUE",
+   "SEARCH"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "6ce8d573468b7807e1e3",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Open Source Algorithmic Trading Platform. - QuantConnect.com",
+  "url": "https://www.quantconnect.com/?ref=radovanvojtko",
+  "published": "2026-09-03T07:13:59+00:00",
+  "symbols": [
+   "AGENTS",
+   "ASSETS",
+   "ASSIST"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "2e7c1ce7d025fe7af5da",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QuantConnect Pricing Page - QuantConnect.com",
+  "url": "https://www.quantconnect.com/pricing/?ref=radovanvojtko",
+  "published": "2026-09-03T07:14:02+00:00",
+  "symbols": [
+   "SELECT"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "0f55bfb1baa7b01be524",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "OpenSourceQuant &#8211; OpenSourceQuant",
+  "url": "https://opensourcequant.wordpress.com/author/jaymon0703/",
+  "published": "2026-09-03T07:14:14+00:00",
+  "symbols": [
+   "MEBOOT",
+   "NAREIT"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "68e1c5d7486790140c40",
+  "host": "opensourcequant.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Uncategorized &#8211; OpenSourceQuant",
+  "url": "https://opensourcequant.wordpress.com/category/uncategorized/",
+  "published": "2026-09-03T07:14:17+00:00",
+  "symbols": [
+   "MEBOOT",
+   "NAREIT"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "4f70a8395083fae29af9",
+  "host": "opensourcequant.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QuantConnect Pricing Page - QuantConnect.com",
+  "url": "https://www.quantconnect.com/pricing/",
+  "published": "2026-09-03T07:14:19+00:00",
+  "symbols": [
+   "SELECT"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "337af5fc7c30e3bf0d84",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QuantConnect Research Publications - QuantConnect.com",
+  "url": "https://www.quantconnect.com/research/",
+  "published": "2026-09-03T07:14:21+00:00",
+  "symbols": [
+   "LEAGUE",
+   "SEARCH"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "448f57800f4a8c25562a",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quant Fiction &#8211; Telling Stories with Data",
+  "url": "https://quantfiction.com",
+  "published": "2026-09-03T07:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "48b33a5a7f3277ca80af",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantitative Content Analysis of Bitcoin Facebook Groups &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2019/09/30/quantitative-content-analysis-of-bitcoin-facebook-groups/",
+  "published": "2026-09-03T07:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "5e951dc1781a2ae3a882",
+  "host": "quantfiction.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Contract-Specific Trading Costs and Optimal Execution Strategy &#8211; Quant Fiction",
+  "url": "https://quantfiction.com/2019/08/17/contract-specific-trading-costs-and-optimal-execution-strategy/",
+  "published": "2026-09-03T07:14:29+00:00",
+  "symbols": [
+   "ETHUSD",
+   "XBTUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "a5d153623bbe13725b8f",
+  "host": "quantfiction.com"
+ }
+]

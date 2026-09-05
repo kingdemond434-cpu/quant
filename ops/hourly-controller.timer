@@ -1,0 +1,10 @@
+[Unit]
+Description=Run hourly controller every hour
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=hourly-controller.service
+
+[Install]
+WantedBy=timers.target

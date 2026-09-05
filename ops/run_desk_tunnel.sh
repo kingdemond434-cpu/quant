@@ -1,0 +1,72 @@
+#!/bin/bash
+# QUICK TUNNEL for the desk dashboard -- a public HTTPS URL with no root, no zone, no DNS.
+#
+# WHY NOT THE NAMED TUNNEL. `desk.quanttt.xyz` was CNAMEd to this box's own tunnel, but requests
+# never reached the connector (its log stayed empty while the edge returned 404): the hostname is
+# still bound to the pre-existing `quant-dash` tunnel at Cloudflare's routing layer, and that
+# tunnel is driven by a ROOT unit this box's user cannot reload -- `sudo` is refused here by
+# design. Rather than leave the dashboard blocked on a restart nobody can perform, this uses a
+# quick tunnel: Cloudflare mints its own trycloudflare.com hostname, so there is no hostname to
+# contend over and no privilege to acquire.
+#
+# The URL changes whenever the tunnel reconnects from scratch, so it is written to
+# data/desk_url.txt on every start -- read that file, never guess. Access is still gated by the
+# dashboard's token (--require-token), which is what actually protects the equity data; the
+# tunnel only provides transport and TLS.
+set -u
+cd /home/quant/quant-platform
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; a commit that changes this file's LENGTH while it is running resumes execution inside
+# a line. Measured on 63680c05 (ops/run_frontier_rotation.sh): comment text ran as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. Only the exit INSIDE the
+# group ends the process before bash reads another byte. Do not unwrap; add nothing after `}`.
+{
+URL_FILE=data/desk_url.txt
+LOG=data/desk_tunnel.log
+: > "$LOG"
+
+# --config IS MANDATORY HERE. cloudflared silently reads ~/.cloudflared/config.yml when no
+# config is given, and that file names the PRE-EXISTING tunnel whose ingress serves a different
+# hostname. So `--url` was being overridden: the connector registered happily, logged zero
+# incoming requests, and every request 404'd at the edge because the hostname belonged to the
+# other tunnel. Pointing at an isolated config is what makes --url actually take effect.
+# --protocol http2, NOT the QUIC default. Measured 2026-08-29: the connector registered
+# happily at hel01 and then dropped every connection with
+# "failed to accept QUIC stream: timeout: no recent network activity", reconnecting every ~20
+# seconds for hours. systemd reported active (running) for three days throughout, so every
+# health check passed while the dashboard served 404 to the outside world -- alive and useless,
+# the same shape as the sweep that breathed without computing.
+# QUIC rides UDP, which this path evidently will not keep open; http2 rides TCP and does not
+# have that failure mode. Losing a little throughput on a dashboard is not a cost worth
+# defending.
+# THE NAMED TUNNEL, so the address never changes. This ran a QUICK tunnel, which mints a random
+# trycloudflare.com name on EVERY restart -- so each restart silently invalidated the principal's
+# bookmark and cost a round trip to hand over a new link. Meanwhile dash.quanttt.xyz, configured
+# in ~/.cloudflared/config.yml with credentials present since July, was never the thing running,
+# so it returned 404 to anyone who tried it (verified 2026-08-29).
+# Tested before switching: the named tunnel registers four connections (hel01, hel02, dme05 x2)
+# over http2 and dash.quanttt.xyz answers 200. Stable name, no manual step, ever again.
+# FLAG ORDER MATTERS: --logfile and --loglevel are GLOBAL flags and must precede the `tunnel`
+# subcommand. Placed after `run`, cloudflared prints its help text and exits, which systemd
+# reports as the unit "activating" forever while the dashboard stays 404.
+/usr/local/bin/cloudflared --no-autoupdate --config /home/quant/.cloudflared/config.yml \
+    --protocol http2 --logfile "$LOG" --loglevel info \
+    tunnel run &
+CF_PID=$!
+
+for _ in $(seq 1 40); do
+  # A named tunnel prints no URL -- its hostname is the config's, and it is FIXED.
+  URL=$(grep -oE 'hostname: *[a-z0-9.-]+' /home/quant/.cloudflared/config.yml 2>/dev/null \
+        | head -1 | awk '{print "https://"$2}')
+  if [ -n "${URL:-}" ]; then
+    printf '%s\n' "$URL" > "$URL_FILE"
+    echo "desk dashboard public at: $URL/desk.html?k=<key from data/secrets/dashboard_token.txt>"
+    break
+  fi
+  sleep 2
+done
+[ -s "$URL_FILE" ] || echo "WARNING: no URL captured; see $LOG"
+wait $CF_PID
+
+exit $?
+}

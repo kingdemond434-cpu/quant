@@ -1,0 +1,440 @@
+[
+  {
+    "id": "ext_github_XAUUSD_momentum_basic",
+    "source": "external_github",
+    "symbol": "XAUUSD",
+    "family": "momentum_basic",
+    "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes ste",
+    "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
+    "confidence": 0.40399999999999997,
+    "patterns": [
+      "momentum"
+    ],
+    "created": "2026-08-25T20:54:32.210550+00:00"
+  },
+  {
+    "id": "ext_github_XAUUSD_session_range_breakout",
+    "source": "external_github",
+    "symbol": "XAUUSD",
+    "family": "session_range_breakout",
+    "description": "High Risk-to-Reward Forex & Gold (XAUUSD) trading strategy for MetaTrader 4 (MT4). Built on 100% non-repainting signals, multi-timeframe volatility filtering, and systematic risk management. Includes ",
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
+    "confidence": 0.40399999999999997,
+    "patterns": [
+      "EMA"
+    ],
+    "created": "2026-08-25T20:54:32.210581+00:00"
+  },
+  {
+    "id": "ext_reddit_XAUUSD_session_range_breakout",
+    "source": "external_reddit",
+    "symbol": "XAUUSD",
+    "family": "session_range_breakout",
+    "description": "Question of FVGS AND OB, XAUUSD",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "resistance",
+      "order block"
+    ],
+    "created": "2026-08-25T20:54:32.210601+00:00"
+  },
+  {
+    "id": "ext_reddit_EURUSD_session_range_breakout",
+    "source": "external_reddit",
+    "symbol": "EURUSD",
+    "family": "session_range_breakout",
+    "description": "Thoughts on EURUSD",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "scalp",
+      "swing",
+      "trend"
+    ],
+    "created": "2026-08-25T20:54:32.210608+00:00"
+  },
+  {
+    "id": "ext_reddit_XAUUSD_momentum_basic",
+    "source": "external_reddit",
+    "symbol": "XAUUSD",
+    "family": "momentum_basic",
+    "description": "Monday price actin prediction (XAUUSD). Thoughts ?",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "reversal",
+      "momentum"
+    ],
+    "created": "2026-08-25T20:54:32.210616+00:00"
+  },
+  {
+    "id": "ext_reddit_USDJPY_session_range_breakout",
+    "source": "external_reddit",
+    "symbol": "USDJPY",
+    "family": "session_range_breakout",
+    "description": "Waiting to Buy from 159.22- USDJPY (H1)",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "breakout",
+      "resistance",
+      "EMA"
+    ],
+    "created": "2026-08-25T20:54:32.210624+00:00"
+  },
+  {
+    "id": "ext_central_bank_USDJPY_session_range_breakout",
+    "source": "external_central_bank",
+    "symbol": "USDJPY",
+    "family": "session_range_breakout",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T20:54:32.210631+00:00"
+  },
+  {
+    "id": "ext_forexfactory_USDJPY_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "USDJPY",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210643+00:00"
+  },
+  {
+    "id": "ext_forexfactory_XAUUSD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "XAUUSD",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210646+00:00"
+  },
+  {
+    "id": "ext_forexfactory_USDCHF_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "USDCHF",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210650+00:00"
+  },
+  {
+    "id": "ext_forexfactory_EURUSD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "EURUSD",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210652+00:00"
+  },
+  {
+    "id": "ext_forexfactory_GBPUSD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "GBPUSD",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210655+00:00"
+  },
+  {
+    "id": "ext_forexfactory_AUDUSD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "AUDUSD",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210658+00:00"
+  },
+  {
+    "id": "ext_forexfactory_NAS100_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "NAS100",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210661+00:00"
+  },
+  {
+    "id": "ext_forexfactory_NZDUSD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "NZDUSD",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210664+00:00"
+  },
+  {
+    "id": "ext_forexfactory_USDCAD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "USDCAD",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210669+00:00"
+  },
+  {
+    "id": "ext_forexfactory_US500_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "description": "Medium impact USD event: Treasury Sec Bessent Speaks",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210672+00:00"
+  },
+  {
+    "id": "ext_forexfactory_AUDNZD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "AUDNZD",
+    "family": "session_range_breakout",
+    "description": "High impact AUD event: CPI m/m",
+    "url": "",
+    "confidence": 0.7,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210681+00:00"
+  },
+  {
+    "id": "ext_forexfactory_AUDCAD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "AUDCAD",
+    "family": "session_range_breakout",
+    "description": "High impact AUD event: CPI m/m",
+    "url": "",
+    "confidence": 0.7,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210685+00:00"
+  },
+  {
+    "id": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "description": "High impact AUD event: CPI m/m",
+    "url": "",
+    "confidence": 0.7,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210687+00:00"
+  },
+  {
+    "id": "ext_forexfactory_EURAUD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "EURAUD",
+    "family": "session_range_breakout",
+    "description": "High impact AUD event: CPI m/m",
+    "url": "",
+    "confidence": 0.7,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210690+00:00"
+  },
+  {
+    "id": "ext_forexfactory_AUDJPY_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "AUDJPY",
+    "family": "session_range_breakout",
+    "description": "High impact AUD event: CPI m/m",
+    "url": "",
+    "confidence": 0.7,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210693+00:00"
+  },
+  {
+    "id": "ext_forexfactory_CADJPY_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "CADJPY",
+    "family": "session_range_breakout",
+    "description": "Medium impact JPY event: Tokyo Core CPI y/y",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210718+00:00"
+  },
+  {
+    "id": "ext_forexfactory_NZDJPY_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "description": "Medium impact JPY event: Tokyo Core CPI y/y",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210721+00:00"
+  },
+  {
+    "id": "ext_forexfactory_CHFJPY_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "CHFJPY",
+    "family": "session_range_breakout",
+    "description": "Medium impact JPY event: Tokyo Core CPI y/y",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210848+00:00"
+  },
+  {
+    "id": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "GBPJPY",
+    "family": "session_range_breakout",
+    "description": "Medium impact JPY event: Tokyo Core CPI y/y",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210852+00:00"
+  },
+  {
+    "id": "ext_forexfactory_EURJPY_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "EURJPY",
+    "family": "session_range_breakout",
+    "description": "Medium impact JPY event: Tokyo Core CPI y/y",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210858+00:00"
+  },
+  {
+    "id": "ext_forexfactory_NZDCAD_session_range_breakout",
+    "source": "external_forexfactory",
+    "symbol": "NZDCAD",
+    "family": "session_range_breakout",
+    "description": "High impact CAD event: GDP m/m",
+    "url": "",
+    "confidence": 0.7,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210863+00:00"
+  },
+  {
+    "id": "ext_seasonality_US500_session_range_breakout",
+    "source": "external_seasonality",
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "description": "Seasonal pattern 'sell_in_may' active (month 8)",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210887+00:00"
+  },
+  {
+    "id": "ext_seasonality_NAS100_session_range_breakout",
+    "source": "external_seasonality",
+    "symbol": "NAS100",
+    "family": "session_range_breakout",
+    "description": "Seasonal pattern 'sell_in_may' active (month 8)",
+    "url": "",
+    "confidence": 0.4,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210890+00:00"
+  },
+  {
+    "id": "ext_seasonality_GBPUSD_session_range_breakout",
+    "source": "external_seasonality",
+    "symbol": "GBPUSD",
+    "family": "session_range_breakout",
+    "description": "GBPUSD historically bullish in month 8 (avg 0.001%)",
+    "url": "",
+    "confidence": 0.6,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210895+00:00"
+  },
+  {
+    "id": "ext_seasonality_EURUSD_session_range_breakout",
+    "source": "external_seasonality",
+    "symbol": "EURUSD",
+    "family": "session_range_breakout",
+    "description": "EURUSD historically bullish in month 8 (avg 0.000%)",
+    "url": "",
+    "confidence": 0.6,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210898+00:00"
+  },
+  {
+    "id": "ext_seasonality_AUDCAD_session_range_breakout",
+    "source": "external_seasonality",
+    "symbol": "AUDCAD",
+    "family": "session_range_breakout",
+    "description": "AUDCAD historically bullish in month 8 (avg 0.001%)",
+    "url": "",
+    "confidence": 0.6,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210902+00:00"
+  },
+  {
+    "id": "ext_seasonality_BTCUSD_session_range_breakout",
+    "source": "external_seasonality",
+    "symbol": "BTCUSD",
+    "family": "session_range_breakout",
+    "description": "BTCUSD historically bullish in month 8 (avg 1.417%)",
+    "url": "",
+    "confidence": 0.6,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210906+00:00"
+  },
+  {
+    "id": "ext_shipping_US500_momentum_basic",
+    "source": "external_shipping",
+    "symbol": "US500",
+    "family": "momentum_basic",
+    "description": "BDI: 926 (neutral)",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210913+00:00"
+  },
+  {
+    "id": "ext_shipping_NAS100_momentum_basic",
+    "source": "external_shipping",
+    "symbol": "NAS100",
+    "family": "momentum_basic",
+    "description": "BDI: 926 (neutral)",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210916+00:00"
+  },
+  {
+    "id": "ext_shipping_AUDUSD_momentum_basic",
+    "source": "external_shipping",
+    "symbol": "AUDUSD",
+    "family": "momentum_basic",
+    "description": "BDI: 926 (neutral)",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210919+00:00"
+  },
+  {
+    "id": "ext_shipping_NZDUSD_momentum_basic",
+    "source": "external_shipping",
+    "symbol": "NZDUSD",
+    "family": "momentum_basic",
+    "description": "BDI: 926 (neutral)",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [],
+    "created": "2026-08-25T20:54:32.210922+00:00"
+  }
+]

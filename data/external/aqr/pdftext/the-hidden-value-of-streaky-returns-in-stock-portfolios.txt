@@ -1,0 +1,2150 @@
+ 
+PSG
+ 
+Portfolio Solutions Group
+ 
+ 
+ 
+Alternative Thinking
+ 
+2025
+ 
+| 
+Issue 2
+ 
+The Hidden Value of 
+Streaky Returns in Stock 
+Portfolio
+s
+ 
+ 
+Executive Summary
+ 
+Return streams that can perform 
+well or poorly for an extended 
+period of time 
+ 
+so called streaky 
+returns 
+ 
+are more difficult to stick 
+with and 
+comprehend. 
+These 
+additional complexities associated 
+with streaky returns suggest they 
+should be avoided, all else equal.
+ 
+But all else is not equal. The
+ 
+marketplace 
+tends to 
+compensate
+ 
+this additional complexity risk with 
+a higher
+-
+than
+-
+normal risk
+-
+adjusted 
+return, suggesting streaky returns 
+should be embraced by investors.  
+ 
+This insight is confirmed using the 
+most comprehensive long
+-
+short 
+stock selection factor database 
+from
+ 
+Jensen, Kelly, and Pedersen (
+2023
+): 
+a portfolio of factors exhibiting 
+-
+run 
+Sharpe ratio that is 
+approximately
+ 
+double that of "low streakiness" 
+factors.
+ 
+
+ 
+ 
+Contents
+ 
+Introduction
+ 
+3
+ 
+What Does Streakiness Look Like In Practice?
+ 
+4
+ 
+Measuring Streakiness With the Variance Ratio
+ 
+6
+ 
+Which Investment Themes Exhibit Properties of Streakiness?
+ 
+7
+ 
+Do Streaky Returns Earn Higher Sharpe Ratios?
+ 
+8
+ 
+Do the Results Hold Up Out
+-
+of
+-
+Sample? Yes.
+ 
+10
+ 
+Conclusion
+ 
+11
+ 
+References
+ 
+12
+ 
+Disclosures
+ 
+13
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+About the Portfolio Solutions Group
+ 
+The Portfolio Solutions Group (PSG) provides thought leadership to the broader investment 
+community and custom analyses to help AQR clients achieve better portfolio 
+outcomes.
+ 
+ 
+We thank Charles Fattouche, Pete Hecht, Bryan Kelly, John Liew, and Mehul Sachdev for their work on 
+this paper. We also thank Elliott Coleman, Antti Ilmanen, Thom Maloney, and Daniel Villalon for 
+helpful comments
+.
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+3
+ 
+ 
+Introduction
+ 
+Streaky return factors, which are return streams 
+that can perform well or poorly for extended 
+periods, 
+are challenging
+ 
+for investors to 
+comprehend
+ 
+and stick with. Their short
+-
+term 
+persistence often
+ 
+leads investors to fall prey to 
+behavioral biases. When a factor underperforms 
+validity due to loss aversion, often leading to 
+premature exits. Conversely, recency bias can 
+make investors overly confident in 
+the factor after 
+a strong streak, potentially leading to il
+l
+-
+timed 
+entries. In short, the streakiness of the factor 
+makes it harder to know when to stay invested or 
+cut losses. This uncertainty can make it 
+emotionally challenging to hold the position, 
+especially if peer or market pressure builds up to 
+abandon the 
+strategy. 
+ 
+In theory, capturing the true behavior of streaky 
+factors requires a longer horizon. However, in 
+practice, investors often lack sufficient data to 
+make informed decisions based on longer 
+horizons
+.
+ 
+This presents greater complexity when 
+considering streaky returns from a risk 
+management perspective, as short horizons (for 
+example, monthly returns) understate their true 
+long
+-
+term risk.
+ 
+ 
+These complexities, both in terms of return 
+predictability and risk, might suggest avoiding 
+streaky returns. However, our findings indicate 
+that return streams exhibiting these complexities 
+realize
+ 
+above
+-
+average 
+risk
+-
+adjusted returns
+. In 
+other words, the marketplace compensates 
+investors willing to bear the complexity risk 
+associated with streaky returns. Using the long
+-
+short stock selection factor database from Jensen, 
+Kelly, and Pedersen (
+JKP
+), we document that a 
+realizes 
+a long
+-
+run Sharpe ratio that is 
+approximately
+ 
+double that 
+of
+ 
+a portfolio of "low 
+streakiness" factors.
+1
+ 
+Our research suggests streaky returns should be 
+embraced by investors. However, in practice, 
+earning this premium will be difficult as it 
+requires strong conviction, a long
+-
+term mindset, 
+and patience
+ 
+ 
+ 
+qualities needed to hold a return 
+stream that is harder to 
+comprehend
+ 
+and at 
+times, harder to stick with.
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+1
+ 
+The 
+JKP factors
+, developed by Jensen, Kelly, and Pedersen, 
+make up
+ 
+a comprehensive set of 153 characteristics or factors 
+clustered into 13 themes, as detailed in their 2023 paper "Is There a Replication Crisis in Finance?"
+ 
+These factors are constructed 
+from data across 93 countries and are designed to analyze and 
+capture
+ 
+various financial characteristics and their impacts. The JKP 
+factors are used to study the performance of different financial metrics and their influence on market behavior, providing va
+luable 
+insights for financial analysis and investment strategies.
+ 
+ 
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+4
+ 
+ 
+What 
+D
+oes 
+S
+treakiness 
+L
+ook 
+L
+ike in 
+P
+ractice?
+Let's start with a concrete example demonstrating 
+the properties of a streaky return stream. A 
+streaky return is one that experiences long
+-
+lived 
+shocks, where
+ 
+positive or negative shocks tend to 
+persist
+, leading to extended periods of 
+outperformance or underperformance. This 
+property is exhibited by the free cash flow
+-
+to
+-
+price
+ 
+(
+FCF
+-
+to
+-
+price
+) 
+long
+-
+short
+ 
+factor
+, one of the 153
+ 
+stock selection
+ 
+factors 
+from 
+the JKP
+ 
+database
+.
+2
+ 
+ 
+During 2020, the factor consistently 
+underperformed
+ 
+(
+Exhibit 1
+)
+. Is this because 
+FCF
+-
+to
+-
+price
+ 
+is a bad signal, or is this because 
+FCF
+-
+to
+-
+price
+ 
+experienced a negative shock 
+which 
+persisted? The answer is unclear during this time 
+period, which 
+demonstrates
+ 
+why streaky returns 
+are more difficult to stick with and 
+comprehend
+.
+ 
+Exhibit 
+1
+:
+ 
+Free Cash Flow to 
+Price
+ 
+Factor Suffered Poor Returns in 2020
+ 
+Monthly returns of the 
+FCF
+-
+to
+-
+price
+ 
+l
+ong
+-
+short
+ 
+factor, January 1, 2020 
+ 
+December 31, 202
+0
+ 
+Sources: 
+AQR, 
+Jensen, Kelly, and Pederson (2023).
+ 
+Past performance is not a guarantee of future performance.
+ 
+Performance shown is 
+gross of fees.
+ 
+Hypothetical data has certain inherent limitations, some of which are disclosed in the appendix.
+ 
+2
+ 
+F
+ree cash flow
+-
+to
+-
+price 
+is the accounting ratio used to 
+determine long and short positions on individual stocks within the long
+-
+short 
+factor portfolio
+. 
+By buying 
+high FCF
+-
+to
+-
+price stocks and shorting 
+low FCF
+-
+to
+-
+price
+ 
+stocks, the factor captures
+ 
+the 
+spread between 
+value and growth stocks
+ 
+(
+Lakonishok et al. 
+1994).
+ 
+-7%
+-6%
+-5%
+-4%
+-3%
+-2%
+-1%
+0%
+1%
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+5
+ 
+ 
+However, over a longer timeframe, we can see 
+that the 
+FCF
+-
+to
+-
+price
+ 
+long
+-
+short
+ 
+factor realized an 
+above averag
+e re
+turn 
+ 
+roughly double the
+ 
+average r
+eturn of the typical 
+long
+-
+short
+ 
+factor
+3
+ 
+(
+Exhibit 2
+).
+ 
+                                                                
+With 20/20 hindsight,
+ 
+the underperformance 
+during 2020 was due to a negative shock 
+persisting, and sticking with the complex, streaky 
+FCF
+-
+to
+-
+price would have been compensated over 
+the long run.
+ 
+E
+xhibit 2: 
+FCF
+-
+to
+-
+Price
+ 
+Realized Above Average Expected Return
+s
+4
+Monthly returns of the FCF
+-
+to
+-
+p
+rice long
+-
+short factor, January 1, 1973 
+ 
+December 31, 2023
+ 
+So
+urces
+: AQR, Jensen, Kelly, and Pederson (2023).
+ 
+The yellow box encloses the period between January 1, 2020 
+-
+ 
+December 31, 
+2020,
+ 
+during which FCF
+-
+to
+-
+Past performance is not a guarantee of future 
+performance. Performance shown is gross of fees. Hypothetical data has certain inherent limitations, some of which are disclo
+sed in 
+the appendix.
+ 
+ 
+ 
+3
+ 
+The typical long
+-
+short factor refers to factors in the JKP database of 153 stock selection factors dating back to 1973.
+ 
+4
+ 
+FCF
+-
+to
+-
+price realized an annualized average return of 6.3%, compared to 3.1% across all JKP factors. The 3.1% average return 
+across JKP factors is scaled to the volatility of the FCF
+-
+to
+-
+price factor for the purposes of 
+comparison.
+ 
+-20%
+-15%
+-10%
+-5%
+0%
+5%
+10%
+15%
+20%
+1972
+1977
+1982
+1987
+1992
+1997
+2002
+2007
+2012
+2017
+2022
+Annualized Return of
+FCF
+-
+to
+-
+Price: 6.3%
+Annualized Return of Average JKP Factor: 3.1%
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+6
+ 
+ 
+Measuring Streakiness with the 
+Variance 
+Ratio
+It is common practice amongst investors to use 
+short horizon
+ 
+returns to measure 
+long horizon
+ 
+risk by scaling the variance of the 
+short horizon
+ 
+returns (e.g.
+,
+ 
+variance of monthly returns ×12). 
+This practice, however, implicitly assumes that 
+short horizon
+ 
+returns are independently 
+distributed over time, meaning that a current 
+shock has no impact on future returns. For return 
+streams that experience long
+-
+lived shocks, i.e. 
+s
+, 
+short horizon
+ 
+risk 
+underestimate
+s
+ 
+true 
+long horizon
+ 
+risk. This is a 
+f
+undamental property of persistent or streaky 
+return streams. A better measure for these returns 
+would be 
+long horizon
+ 
+risk derived from longer
+-
+horizon returns (e.g.
+,
+ 
+the variance of annual 
+returns). 
+ 
+Return streams can be independent over time, 
+persistent, or mean
+-
+reverting. For independently 
+distributed returns, risk estimated using 
+long 
+horizon
+ 
+returns and 
+short horizon
+ 
+returns will be 
+identical. In other words, the variance ratio
+ 
+defined as the variance of annual returns divided 
+by the variance of monthly returns ×
+ 
+12 
+ 
+will be 
+equal to one
+ 
+(Lo and MacKinlay, 1988)
+. 
+ 
+long horizon
+ 
+risk will exceed the 
+short horizon
+ 
+risk, resulting in a variance ratio greater than 
+one. Conversely, for mean
+-
+reverting return 
+streams, the variance ratio falls below one 
+because the short
+-
+run measures do not capture 
+the risk
+-
+reducing effect of reversals 
+ 
+where bad 
+short
+-
+term performance is offset by higher 
+expected future returns. For these reasons, the 
+variance ratio will serve as our objective measure 
+of streakiness.
+ 
+ 
+ 
+Exhibit 
+3
+: 
+The Significance of a Variance Ratio
+5
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Sources: 
+AQR
+, Lo and MacKinlay (1988)
+.
+ 
+For illustrative purposes only.
+ 
+ 
+5
+ 
+The variance ratio could more generally be represented as 
+ 
+ 
+where 
+ 
+represents the length of the period the variance ratio 
+is calculated for. This analysis focuses on 
+ 
+= 12, meaning the variance ratio compares the variance of 12
+-
+month, or annual returns, 
+to the variance of monthly returns scaled by 12, or annualized monthly returns.
+ 
+0.0
+ 
+1.0
+ 
+Variance Ratio 
+ 
+Streaky
+ 
+Independently Distributed
+ 
+Mean Reverting
+ 
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+7
+ 
+ 
+Which Investment Themes Exhibit 
+Properties of Streakiness?
+ 
+Now that we have our objective measure of 
+streakiness, the variance ratio, it's natural to ask 
+which investment themes tend to exhibit high 
+levels of "streakiness
+.
+" To answer this question, 
+we studied the most comprehensive 
+long
+-
+short
+ 
+stock selection factor database 
+from JKP
+. 
+        
+This database contains 153 long
+-
+short factors 
+dating back to 1973
+ 
+and
+ 
+spanning 13 broad 
+investment themes: accruals, debt issuance, 
+investment, low leverage, low risk, momentum, 
+profit growth, profitability, quality, seasonality, 
+short
+-
+term reversal, size, and value.
+ 
+ 
+Exhibit 
+4
+: 
+Debt Issuance, Accruals, and Profitability Among Themes Exhibiting Streakiness
+ 
+Variance Ratio Distribution Across Themes, January 1, 1973 
+ 
+December 31, 2023
+ 
+ 
+ 
+Variance Ratio
+ 
+Sharpe Ratio
+ 
+ 
+ 
+0.2 Quantile
+ 
+Median
+ 
+0.8 Quantile
+ 
+Median 
+(Annual)
+ 
+Median 
+ 
+(
+Ann.
+ 
+Monthly)
+ 
+Debt 
+Issuance
+ 
+1.1
+ 
+1.8
+ 
+2.0
+ 
+0.6
+ 
+0.7
+ 
+Accruals
+ 
+1.3
+ 
+1.6
+ 
+1.7
+ 
+0.4
+ 
+0.6
+ 
+Profitability
+ 
+1.3
+ 
+1.5
+ 
+1.7
+ 
+0.3
+ 
+0.3
+ 
+Low Leverage
+ 
+1.2
+ 
+1.4
+ 
+1.7
+ 
+0.0
+ 
+0.0
+ 
+Investment
+ 
+1.1
+ 
+1.4
+ 
+1.6
+ 
+0.4
+ 
+0.4
+ 
+Profit Growth
+ 
+1.0
+ 
+1.4
+ 
+1.6
+ 
+0.3
+ 
+0.4
+ 
+Value
+ 
+1.2
+ 
+1.4
+ 
+1.5
+ 
+0.3
+ 
+0.4
+ 
+Size
+ 
+1.2
+ 
+1.2
+ 
+1.3
+ 
+0.0
+ 
+0.0
+ 
+Quality
+ 
+1.0
+ 
+1.2
+ 
+1.4
+ 
+0.4
+ 
+0.4
+ 
+Seasonality
+ 
+1.0
+ 
+1.1
+ 
+1.5
+ 
+0.2
+ 
+0.2
+ 
+Low Risk
+ 
+1.0
+ 
+1.0
+ 
+1.0
+ 
+0.1
+ 
+0.1
+ 
+Momentum
+ 
+0.8
+ 
+1.0
+ 
+1.2
+ 
+0.3
+ 
+0.3
+ 
+Short
+-
+Term Reversal
+ 
+0.8
+ 
+0.9
+ 
+1.4
+ 
+0.1
+ 
+0.1
+ 
+Sources: 
+AQR, Jensen, Kelly, and Pedersen (2023). Annual Sharpe 
+ratios were calculated using annual or 12
+-
+month returns and 
+annualized monthly Sharpe ratios were calculated using monthly returns scaled by 12. Each theme analyzed is an equal
+-
+weighted 
+portfolio of its relevant factors. Note that factors are dollar neutra
+l but may contain positive or negative equity beta.  Past 
+performance is not a guarantee of future performance. Performance shown is gross of fees. Hypothetical data has certain inher
+ent 
+limitations, some of which are disclosed in the appendix.
+When examining the 13 investment themes, we find 
+that debt issuance, 
+accruals, 
+and profitability have 
+the highest median variance ratios, indicating the 
+highest degree of streakiness (
+Exhibit 4
+). 
+Interestingly, the majority of investment themes 
+display some 
+level of streakiness. Only low risk, 
+momentum, and short
+-
+term reversal have median 
+variance ratios of 1.0 or less.
+ 
+ 
+More Streaky
+ 
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+8
+ 
+ 
+ 
+Do Streaky Returns Earn Higher Sharpe 
+Ratios?
+ 
+Streaky returns are harder to stick with and 
+comprehend
+, but these additional complexities 
+could be compensated in the marketplace. We 
+investigate this hypothesis by running a cross
+-
+sectional regression of 
+annualized 
+monthly 
+Sharpe ratio
+s
+ 
+on 
+its
+ 
+variance ratio
+s
+, our 
+measure of "streakiness
+.
+"
+ 
+When looking across the 
+153 
+long
+-
+short
+ 
+factors, do we find that higher 
+variance ratio factors realize higher monthly 
+annualized Sharpe ratios? Yes. There is a clear 
+economically and statistically significant positive 
+relationship between risk
+-
+adjusted retur
+n and the 
+variance ratio (
+Exhibit 5
+)
+ 
+Exhibit 
+5
+: 
+Higher Variance Ratio Factors Realized Higher Risk
+-
+Adjusted Returns
+ 
+January 1, 1973 
+ 
+December 31, 2023
+ 
+ 
+A:
+ 
+Plotting
+ 
+Variance Ratios and 
+Annualized Monthly Sharpe Ratios
+ 
+of JKP Factors
+ 
+ 
+ 
+B:
+ 
+In
+-
+Sample Regression Results for Annualized Monthly Sharpe Ratios
+ 
+ 
+ 
+Variance Ratio
+ 
+ 
+Intercept
+ 
+t
+-
+statistic
+ 
+Beta
+ 
+t
+-
+statistic
+ 
+Annualized Monthly SR
+ 
+-
+0.20
+ 
+-
+2.38
+ 
+0.40
+ 
+6.39
+ 
+S
+ources
+: Jensen, Kelly, and Pedersen (2023).
+ 
+Annualized 
+m
+onthly Sharpe 
+r
+atios were 
+calculated using monthly returns scaled by 12.
+ 
+For illustrative purposes only. 
+ 
+While 
+annualized monthly
+ 
+Sharpe ratios are the 
+most common risk
+-
+adjusted return metrics used 
+by investors, they are less appropriate when 
+studying the impact of persistence on the 
+risk/return relationship. Why? Short
+-
+run 
+measures of risk, such as annualized monthly 
+volatility (or variance), understate the true long
+-
+term risk of a streaky return stream. In theory, the 
+-0.6
+-0.4
+-0.2
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+1.2
+1.4
+0.0
+0.5
+1.0
+1.5
+2.0
+2.5
+Annualized Monthly Sharpe Ratio
+Variance Ratio
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+9
+ 
+ 
+streaky return could have an
+ 
+elevated 
+annualized 
+monthly
+ 
+(i.e. short
+-
+term) Sharpe ratio while 
+simultaneously having a normal annual (i.e. long
+-
+term) Sharpe ratio
+ 
+ 
+because 
+the denominator of 
+the annual (i.e. long
+-
+term) Sharpe ratio will 
+appropriately
+ 
+reflect the additional riskiness of a 
+persistent factor return.
+ 
+ 
+To test whether streaky returns are compensated 
+with higher Sharpe ratios after properly 
+accounting for their higher long
+-
+term risk, we 
+rerun the cross
+-
+sectional regressions from before 
+but use annual (i.e. long
+-
+term) Sharpe ratios, 
+instead of annualized
+ 
+monthly
+ 
+(i.e. short
+-
+term) 
+Sharpe ratios, as our dependent variable. While 
+the annual Sharpe ratio results are somewhat 
+attenuated, we still find an economically and 
+statistically significant positive
+ 
+relationship 
+between long
+-
+term risk
+-
+adjusted returns and 
+the 
+variance ratio (
+Exhibit 6
+).
+6
+Exhibit 
+6
+: 
+Higher 
+Variance Ratio Factors Realized Higher
+ 
+ 
+Risk
+-
+Adjusted Returns
+ 
+January 1, 1973 
+ 
+December 31, 2023
+ 
+A: Plotting Varianc
+e 
+Ratios and
+ 
+A
+nnual Sharpe Ratios
+ 
+of JKP Factor
+s
+ 
+ 
+ 
+B: In
+-
+Sample Regression Results for Annual Sharpe Ratios
+ 
+ 
+ 
+Variance Ratio
+ 
+ 
+Intercept
+ 
+t
+-
+statistic
+ 
+Beta
+ 
+t
+-
+statistic
+ 
+Annual SR
+ 
+-
+0.05
+ 
+-
+0.68
+ 
+0.26
+ 
+4.68
+ 
+Sources
+: Jensen, Kelly, and Pedersen (2023). Annual Sharpe ratios were calculated using annual or 12
+-
+month returns.
+ 
+Past 
+performance is not a guarantee of future 
+performance. Performance shown is gross of fees. Hypothetical data has certain inherent 
+limitations, some of which are disclosed in the appendix.
+ 
+ 
+ 
+6
+ 
+The results are robust for variance ratios with longer time horizon. We also find a similar relationship when isolating facto
+rs within 
+each investment theme. Additionally, we tested splitting the sample period into non
+-
+overlapping sub
+-
+periods to ensure th
+at results did 
+not weaken over time and while we observe a modest reduction in significance, the results remain strong.
+ 
+-0.6
+-0.4
+-0.2
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+1.2
+0.0
+0.5
+1.0
+1.5
+2.0
+2.5
+Annual Sharpe Ratio
+Variance Ratio
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of 
+Streaky Returns in Stock Portfolios
+ 
+ 
+10
+ 
+ 
+Do the Results Hold Up Out of Sample? 
+Yes.
+ 
+In the 
+previous 
+section, we documented the 
+positive 
+in
+-
+sample 
+relationship between long
+-
+term risk
+-
+adjusted returns and degree of 
+streakiness (as proxied by the variance ratio). In 
+this section, we investigate whether the 
+relationship holds out
+-
+of
+-
+sample. 
+ 
+Instead of running one full
+-
+sample cross
+-
+sectional regression, we form 
+top
+, middle, and 
+bottom variance ratio (VR) portfolios by looking 
+backwards annually and sorting factors by 
+variance ratio into 
+top
+, middle, and bottom 
+terciles
+ 
+using 
+an expanding window
+. 
+ 
+Consistent with the in
+-
+sample results, we find 
+that the out
+-
+of
+-
+sample 
+top tercile
+ 
+variance ratio 
+portfolio (i.e.
+,
+ 
+high streakiness) realizes a 
+significantly higher short
+-
+ 
+and long
+-
+term Sharpe 
+ratio when compared to the 
+bottom tercile
+ 
+variance ratio portfolio. The portfolio holding the 
+-
+run 
+Sharpe ratio that is 
+approximately
+ 
+double that of 
+the "low streakiness" factor portfolio (
+Exhibit 7
+).
+ 
+ 
+Both 
+the in
+-
+sample and out
+-
+of
+-
+sample evidence 
+support the hypothesis that the marketplace 
+compensates investors willing to bear the 
+complexity risk associated with streaky returns.
+ 
+ 
+Exhibit 
+7
+: 
+Portfolio Holding the Highest Variance Ratio 
+(VR) 
+Factors Outperforms
+7
+ 
+Variance Ratio
+-
+Sorted Portfolio Results, January 1, 2004 
+ 
+December 31, 2023
+8
+ 
+ 
+Bottom 
+VR
+ 
+Middle
+ 
+VR
+ 
+Top
+ 
+VR
+9
+ 
+Average Variance Ratio
+ 
+0.93
+ 
+1.20
+ 
+1.63
+ 
+Annual Sharpe Ratio
+ 
+0.2
+9
+ 
+0.4
+5
+ 
+0.
+56
+ 
+Annualized Monthly Sharpe Ratio
+ 
+0.2
+3
+ 
+0.6
+8
+ 
+0.
+85
+ 
+Sources: 
+Jensen, Kelly, and Pedersen 
+(2023). Bottom, middle, and top VR refer to hypothetical portfolios of factors realizing bottom, 
+middle, and top tercile variance ratios (VRs). All portfolios are rebalanced at the end of each year, when variance ratios ca
+n be 
+updated with new returns data
+ 
+added to the expanding sample.
+ 
+Past performance is not a guarantee of future performance. 
+Performance shown is gross of fees. Hypothetical data has certain inherent limitations, some of which are disclosed in the ap
+pendix.
+ 
+7
+ 
+The annualized monthly volatility and worst drawdown for the bottom VR portfolio 
+were 
+5.2
+% and 
+-
+16.8%, respectively. For the top 
+VR portfolio, they were 1.8% and 
+-
+6.4%, respectively
+.
+ 
+8
+ 
+Sample selected began in 2004 
+so that at
+ 
+least 30 years of variance ratio data 
+informed
+ 
+.
+ 
+ 
+9
+ 
+Differences between the annual and annualized monthly Sharpe ratios of the top and bottom VR portfolios were statistically 
+significant at t
+-
+statistics of 2.67 and 2.78.
+ 
+A long
+-
+short VR factor (i.e. long the top VR portfolio and short the bottom VR portfolio) has 
+statistically significant and economically meaningful alpha versus Fama
+-
+French factors plus momentum (from the Ken French Data 
+Library).
+ 
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+11
+ 
+ 
+Conclusion
+ 
+Return streams that recover less quickly from 
+shocks, i.e. streaky returns, are harder to stick with 
+and 
+comprehend
+. Streaky returns 
+may 
+go through 
+longer periods of underperformance after 
+experiencing 
+a negative shock that persists
+, which 
+make them more challenging to maintain exposure 
+to. Furthermore, streaky returns have higher long
+-
+run risk (i.e.
+,
+ 
+unconditional volatility) and therefore, 
+generate
+ 
+ 
+over time
+, 
+complicating statistical analysis and intuitive 
+understanding
+.
+ 
+Yet, this very
+ 
+"complexity risk
+ 
+may earn investors 
+an 
+additional risk premium, leading to above 
+average risk
+-
+adjusted returns. 
+In our analysis, w
+e 
+find that streakier 
+long
+-
+short
+ 
+factors realize higher 
+Sharpe ratios, whether 
+we use
+ 
+short horizon 
+(monthly) return
+s 
+or long horizon (twelve
+-
+month) 
+return
+s
+ 
+to measure volatility. 
+In other words, 
+markets appear 
+to compensate investors for bearing 
+the uncertainty and discomfort of investing in 
+streaky factors.
+ 
+The optimal response for investors is not to shun 
+streaky strategies but to embrace them, provided 
+they do so thoughtfully. 
+That means conducting 
+rigorous research to verify that the strategy offers 
+genuine long
+-
+term compensation 
+despite i
+ts 
+drawdowns, adopting a truly long
+-
+term horizon, and 
+mitigating the emotional strain through 
+diversification.
+ 
+Ultimately, success with streaky return streams 
+hinges on a deeper level of understanding 
+and
+ 
+a 
+willingness to look beyond short
+-
+term 
+underperformance
+, recognizing the potential for 
+higher rewards in the long run.
+ 
+ 
+ 
+ 
+ 
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+12
+ 
+ 
+References
+ 
+Jensen, T.I, Kelly, B., and Pedersen, L.H. (2023). Is There A Replication Crisis in Finance?,
+ 
+The 
+Journal 
+of Finance, 
+78:2465:2518.
+ 
+Lakonishok, J., Shleifer, A., & Vishny
+, R. W. (1994). Contrarian investment, extrapolation, and risk. 
+The 
+J
+ournal of 
+F
+inance
+, 49 (5), 1541
+1578.
+ 
+Lo, A. W., & MacKinlay
+, A. C. (1988). Stock Market Prices do not Follow Random Walks: Evidence from a 
+Simple Specification Test. 
+The Review of Financial Studies
+, 
+1
+(1), 41
+6
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+13
+ 
+ 
+Disclosures
+ 
+This document has been provided to you solely for information purposes and does not constitute an offer or solicitation of an
+ 
+offer or 
+any advice or recommendation to purchase any securities or other financial instruments and may not be construed as such. 
+The 
+factual information set forth herein has been obtained or derived from sources believed by the author and AQR Capital Managem
+ent, 
+-
+inclusive and is not guaranteed as to its accuracy and is not t
+o be regarded as a 
+ormation 
+serve as the basis of any investment decision. This document is not to be reproduced or redistributed w
+ithout the written consent of 
+AQR. The information set forth herein has been provided to you as secondary information and should not be the primary source 
+for 
+any investment or allocation decision.
+ 
+Past performance is not a reliable indicator of future performance.
+ 
+This presentation is not research and should not be treated as research. This presentation does not represent valuation judgm
+ents 
+with respect to any financial instrument, issuer, security, or sector that may be described or referenced herein and does not
+ 
+represent 
+a formal or official view of AQR.
+ 
+The views expressed reflect the current views as of the date hereof, and neither the author nor AQR undertakes to advise you 
+of any 
+changes in the views expressed herein. It should not be assumed that the author or AQR will make investment recommendations 
+in the 
+future that are consistent with the views expressed 
+herein or
+ 
+use any or all of the techniques or methods of analysis described herein 
+in managing client accounts. AQR and its affiliates may have positions (long or short) or engage in securities tra
+nsactions that are not 
+consistent with the information and views expressed in this presentation.
+ 
+The information contained herein is only as current as of the date indicated and may be superseded by subsequent market event
+s or 
+for other reasons. Charts and graphs provided herein are for illustrative purposes only. The information in this presentation
+ 
+has been
+ 
+developed internally and/or obtained from sources believed to be reliable; however, neither AQR nor the author guarantees the
+ 
+accuracy, adequacy, or completeness of such information. Nothing contained herein constitutes investment, legal, tax, or 
+other advice, 
+nor is it to be relied on in making an investment or other decision.
+ 
+There can be no assurance that an investment strategy will be successful. Historic market trends are not reliable indicators 
+of actual 
+future market behavior or future performance of any particular investment, which may differ materially, and should not be
+ 
+relied upon 
+as such. This presentation should not be viewed as a current or past recommendation or a solicitation of an offer to buy or s
+ell any 
+securities or to adopt any investment strategy.
+ 
+The information in this 
+document 
+might contain projections or other forward
+-
+looking statements regarding future events, targets, 
+forecasts, or expectations regarding the strategies described herein and is only current as of the date indicated. There is n
+o 
+assurance that such events or tar
+gets will be achieved and might be significantly different from that shown here. The information in 
+this document
+, including statements concerning financial market trends, is based on current market conditions, which will f
+luctuate 
+and may be superseded by subsequent market events or for other reasons. Performance of all cited indices is calculated on a t
+otal 
+return basis with dividends reinvested.
+ 
+The investment strategy and themes discussed herein may be unsuitable for investors depending on their specific investment 
+objectives and financial situation. Please note that changes in the rate of exchange of a currency might affect the value, pr
+ice, or 
+income of an investment adversely. Neither AQR nor the author assumes any duty to, nor undertakes to update forward
+-
+looking 
+statements. No representation or warranty, express or implied, is made or given by or on behalf of AQR, the author, or any ot
+her 
+per
+son as to the accuracy and completeness or fairness of the information contained in this presentation, and no responsibility 
+or 
+liability is accepted for any such information. By accepting this 
+document 
+in its entirety, the recipient acknowledges its understanding 
+and acceptance of the foregoing statement. Diversification does not eliminate the risk of experiencing investment losses.
+ 
+Broad
+-
+based securities indices are unmanaged and are not subject to fees and expenses typically associated with managed accounts 
+or investment funds. Investments cannot be made directly in an index.
+ 
+k 
+prices.
+ 
+HYPOTHETICAL PERFORMANCE RESULTS HAVE MANY INHERENT LIMITATIONS, SOME OF WHICH ARE DESCRIBED BELOW. 
+NO REPRESENTATION IS BEING MADE THAT ANY ACCOUNT WILL OR IS LIKELY TO ACHIEVE PROFITS OR LOSSES SIMILAR TO 
+THOSE SHOWN. IN FACT, THERE ARE FREQUENTLY SHARP 
+DIFFERENCES BETWEEN HYPOTHETICAL PERFORMANCE 
+RESULTS AND THE ACTUAL RESULTS SUBSEQUENTLY ACHIEVED BY ANY PARTICULAR TRADING PROGRAM.
+ 
+ONE OF THE LIMITATIONS OF HYPOTHETICAL PERFORMANCE RESULTS IS THAT THEY ARE GENERALLY PREPARED WITH 
+THE BENEFIT OF HINDSIGHT. IN ADDITION, HYPOTHETICAL TRADING DOES NOT INVOLVE FINANCIAL RISK, AND NO 
+HYPOTHETICAL TRADING RECORD CAN COMPLETELY ACCOUNT FOR T
+HE IMPACT OF FINANCIAL RISK IN ACTUAL TRADING. 
+FOR EXAMPLE, THE ABILITY TO WITHSTAND LOSSES OR TO ADHERE TO A PARTICULAR TRADING PROGRAM IN SPITE OF 
+TRADING LOSSES ARE MATERIAL POINTS WHICH CAN ALSO ADVERSELY AFFECT ACTUAL TRADING RESULTS. THERE ARE 
+NUMERO
+US OTHER FACTORS RELATED TO THE MARKETS IN GENERAL OR TO THE IMPLEMENTATION OF ANY SPECIFIC 
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+14
+ 
+ 
+TRADING PROGRAM WHICH CANNOT BE FULLY ACCOUNTED FOR IN THE PREPARATION OF HYPOTHETICAL PERFORMANCE 
+RESULTS AND ALL OF WHICH CAN ADVERSELY AFFECT ACTUAL TRADING RESULTS.
+ 
+The hypothetical performance results 
+contained herein represent the application of the quantitative models as currently in effect on the date first written above,
+ 
+and there 
+can be no assurance that the models will remain the same in the future or that an a
+pplication of the current models in the future will 
+produce similar results because the
+ 
+relevant market and economic conditions that prevailed during the hypothetical performance 
+for this 
+period, may vary depending on 
+the date it is run. Hypothetical performance results are presented for illustrative purposes only. In 
+addition, our transaction cost assumptions utilized in backtests,
+ 
+ain of 
+the assumptions have been made for modeling purposes and are unlikely to be realized. No representation or warranty is made 
+as to 
+the reasonableness of the assumptions made or that all assumptions used in achieving the returns have been stated or fully 
+considered.
+ 
+Changes in the assumptions may have a material impact on the hypothetical returns presented. Actual advisory fees for product
+s 
+offering this strategy may vary.
+ 
+Gross performance results do not reflect the deduction of investment advisory fees and other expenses, which would reduce an 
+ 
+There is a risk of substantial loss associated with trading commodities, futures, options, derivatives, and other financial i
+nstruments. 
+Before trading, investors should carefully consider their financial position and risk tolerance to determine whether th
+e proposed 
+trading style is appropriate. Investors should realize that when trading futures, commodities, options, derivatives, and othe
+r financial 
+instruments, one could lose the full balance of their account. It is also possible to lose more than the ini
+tial deposit when trading 
+derivatives or using leverage. All funds committed to such a trading strategy should be purely risk capital.
+ 
+ 
+Information for clients in Australia
+ 
+AQR Capital Management, LLC, is exempt from the requirement to hold an Australian Financial Services License under the 
+ 
+Corporations Act 2001, pursuant to ASIC Class Order 03/1100 as continued by ASIC Legislative Instrument 2016/396 (as 
+ 
+extended by amendment). AQR is regulated by the Securities and Exchange Commission ("SEC") under United States of America 
+ 
+laws and those laws may differ from Australian laws.
+ 
+Information for clients in Canada
+ 
+This material is being provided to you by AQR Capital Management, LLC, which provides investment advisory and management 
+ 
+ 
+under applicable Canadian securities laws. No securities commission or similar authority in Canada has reviewed this 
+ 
+presentation or has in any way passed upon the merits of any securities referenced in this presentation and any representatio
+n 
+ 
+to the contrary is an offence.
+ 
+ 
+ 
+exemption in certain provinces of Canada. Investments in the AQR funds may be made by eligible private placement 
+ 
+to 
+ 
+applicable Canadian private placement offering documents, which will be provided to you upon request by AQR Investments. 
+ 
+AQR Capital Management, LLC serves as the investment fund manager and/or adviser to the AQR funds and is entitled to 
+ 
+receive fees in connection therewith. No securities commission or similar authority in Canada has reviewed this presentation 
+or 
+ 
+has in any way passed upon the merits of any securities referenced in this presentation and any representation to the contrar
+y 
+ 
+is an offence.
+ 
+Information for clients in Middle East
+ 
+AQR Capital Management (Europe) LLP (DIFC Representative Office) is regulated by the Dubai Financial Services Authority of 
+ 
+the Dubai International Financial Centre as a Representative Office (firm reference number: F007651). Its principal place of 
+ 
+business is Gate Village 10, Level 3, Unit 4, DIFC, Dubai, UAE.
+ 
+This marketing communication is distributed on behalf of AQR Capital Management, LLC.
+ 
+Information for clients in the United Kingdom
+ 
+The information set forth herein has been prepared and issued by AQR Capital Management (Europe) LLP, a UK limited 
+ 
+liability partnership with its office at 15 Bedford St, Covent Garden, London, WC2E 9HE, which is authorised and regulated by
+ 
+ 
+ 
+Information for clients in the EEA
+ 
+AQR in the European Economic Area is AQR Capital Management (Germany) GmbH, a German limited liability company 
+ 
+d 
+ 
+ith
+ 
+offices at Marie
+-
+Curie
+-
+Str. 24
+-
+28, 60439, Frankfurt am Main und Graurheindorfer Str. 108, 53117 Bonn, to provide the services of 
+ 
+investment advice (Anlageberatung) and investment broking (Anlagevermittlung) pursuant to the German Securities Institutions 
+ 
+ 
+European Economic Area can be found here: https://ucits.aqr.com/Legal
+-
+and
+-
+Regulatory.
+ 
+ 
+Information for clients AQR Capital Management (Asia)
+ 
+This presentation may not be copied, reproduced, republished, posted, transmitted, disclosed, distributed or disseminated, in
+ 
+
+Alternative Thinking 2025 | Issue 2
+: 
+The Hidden Value of Streaky Returns in Stock Portfolios
+ 
+ 
+15
+ 
+ 
+whole or in part, in any way without the prior written consent of AQR Capital Management (Asia) Limited (together with its 
+ 
+al 
+ 
+and informational purposes only and do not constitute and should not be construed as an offering of advisory services or as a
+n 
+ 
+invitation, inducement or offer to sell or solicitation of an offer to buy any securities, related financial instruments or f
+inancial 
+ 
+products in any jurisdiction. Investments described herein will involve significant risk factors which will be set out in the
+ 
+offering 
+ 
+documents for such investments and are not described in this presentation. The information in this presentation is general on
+ly 
+ 
+and you should refer to the final private information memorandum for complete information. To the extent of any conflict 
+ 
+between this presentation and the private information memorandum, the private information memorandum shall prevail. The 
+ 
+contents of this presentation have not been reviewed by any regulatory authority in Hong Kong. You are advised to exercise 
+ 
+caution and if you are in any doubt about any of the contents of this presentation, you should obtain independent professiona
+l 
+ 
+advice.
+ 
+AQR Capital Management (Asia) Limited is licensed by the Securities and Futures Commission ("SFC") in the Hong Kong Special 
+ 
+Administrative Region of the People's Republic of China ("Hong Kong") pursuant to the Securities and Futures Ordinance (Cap 
+ 
+571) (CE no: BHD676).
+ 
+AQR Capital Management (Asia) Limited
+ 
+Unit 2023, 20/F, One IFC, 1 Harbour View Street, Central Hong Kong, Hong Kong
+ 
+Licensed and regulated by the Securities and Futures Commission of Hong Kong (CE no: BHD676).
+ 
+Information for clients in APAC
+ 
+China
+ 
+whether by sale or subscription, in the People's Republic of China (the "PRC"). Any fund that this document may relate to is 
+not 
+ 
+being offered or sold directly or indirectly in the PRC to or for the benefit of, legal or natural persons of the PRC.
+ 
+Further, no legal or natural persons of the PRC may directly or indirectly purchase any shares/units of any AQR managed 
+ 
+ 
+who come into possession of this document are required by the issuer and its representatives to observe these restrictions.
+ 
+Singapore
+ 
+Any fund that this document may relate to and any fund related prospectus that this document may relate to has not been 
+ 
+registered as a prospectus with the Monetary Authority of Singapore. Accordingly, this document and any other document 
+ 
+or material in connection with the offer or sale, or invitation for subscription or purchase, of shares may not be circulated
+ 
+or 
+ 
+distributed, nor may the shares be offered or sold, or be made the subject of an invitation for subscription or purchase, 
+ 
+whether directly or indirectly, to 
+persons in Singapore other than (i) to an institutional investor pursuant to Section 304 of the 
+ 
+ 
+conditions of, any other applicable provision of the SFA.
+ 
+Korea
+ 
+any representation with respect to the eligibility of any recipients of this document to acquire any interest in a related AQ
+R 
+ 
+fund under the laws of Korea, including but without limitation the Foreign Exchange Transaction Act and Regulations 
+ 
+thereunder.
+ 
+Any related AQR fund has not been registered under the Financial Investment Services and Capital Markets Act of Korea, 
+ 
+and any related fund may not be offered, sold or delivered, or offered or sold to any person for re
+-
+offering or resale, directly 
+ 
+or indirectly, in Korea or to any resident of Korea except pursuant to applicable laws and regulations of Korea.
+ 
+Japan
+ 
+Any fund that this document may relate to has not been and will not be registered pursuant to Article 4, Paragraph 1 of the 
+ 
+Financial Instruments and Exchange Law of Japan (Law no. 25 of 1948, as amended) and, accordingly, none of the fund 
+ 
+shares nor any interest therein may be offered or sold, directly or indirectly, in Japan or to, or for the benefit, of any 
+ 
+Japanese person or to others for re
+-
+offering or resale, directly or indirectly, in Japan or to any Japanese person except 
+ 
+under circumstances which will result in compliance with all applicable laws, regulations and guidelines promulgated by the 
+ 
+relevant Japanese governmental and regulatory authorities and in effect at the relevant time. For this purpose, a
+ 
+ 
+of Japan.
+ 
+ 
+ 
+ 
+ 
+ 
+www.aqr.com
+ 
+ 
+AQR
+ 
+Capital
+ 
+Management,
+ 
+LLC
+      
+One
+ 
+Greenwich
+ 
+Plaza,
+ 
+Greenwich,
+ 
+CT
+ 
+06830
+      
+P
+ 
++1.203.742.3600
+      
+F
+ 
++1.203.742.3100
+ 
+ 
+
+ja¥@HØËÓöa  
+Ý  @ JDK   E L
++#3773ju-""-uZw\w  Ý   @ JDK  E L
++#377373#'-hXp%*`*%pXh-QAZ´:zz:´þ¦  ¡Ý  @
+ JDK  E L
++#77''3773#'Ô!'j!b!!b!j'é.53'&33&'2S	-$7667$-	þ|i'>.	X=<U66U<=X	.>'i|Ø	*!&
+
+&!*	   4ÿ+  1 v@"JK°PX@! _ <K_ 6K  _  > L@ g _ <K  _  > LY@  
+,@Ke+   7ÿöS* : ?@<	 #"J    _ KK _ L   : :+%'*+3>7'7733>323267#"&54>54&#"7M!!ES^2@1K-!%	49<6/=ve$1hÀ§3;pII'moa,&:B#!;HPK@&C[kv;  ÿöJð  5 =@:.-J   g _ K _ L 42
+.&4  !ÿöß    N uK°PX@ ba?>	
+J	%$JK°PX@ ba?>	
+J	%$J@ba?>	
+J	%$JYYK°PX@0
+	
+h 	 	g ]  5K]6LK°PX@<
+	
+h 	 	g ]  5K ]6K ]6LK°PX@<
+	
+h 	 	g 5K ]  5K ]6K _ ;L@?   ~
+	
+h 	 	g ]  5K ]6K _ ;LYYY@.OO  OuOutrfd_]CA<:421/
+ùë¤åpþ±N^@,ÍÀÀÈ!:0>1   S  -Í ' ¡°+X@§D%$§D&ª% ¸ÿð@H	JQe¿e&C3t

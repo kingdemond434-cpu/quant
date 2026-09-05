@@ -153,7 +153,7 @@ def _fee_attribution(closes: list[dict[str, Any]], since_ms: int) -> dict[str, A
     prevent.
     """
     try:
-        from libs.execution import binance_testnet as _fut
+        import libs.execution.binance_testnet as _fut
         events = _fut.commission_events(since_ms)
     except Exception as e:                       # venue unreachable is not a fee defect
         return {"error": f"{type(e).__name__}: {e}",

@@ -136,6 +136,8 @@ GOVERNED_GLOBS: tuple[str, ...] = (
 #: CONTAIN a prompt rather than being one: the daily CRO cycle and the recommendation worker both
 #: build a multi-kilobyte instruction block inline, and a rule that lives only there is exactly as
 #: load-bearing as one in a .txt.
+from libs.doctrine.corpus import doctrine_files, doctrine_text  # noqa: E402
+
 GOVERNED_FILES: tuple[str, ...] = (
     "ops/principal_doctrine.txt",
     "ops/CRO_CONSTITUTION.md",
@@ -478,10 +480,32 @@ def governed_files(root: Path | str = ".") -> list[str]:
 
 
 def scan(root: Path | str = ".") -> dict[str, dict[str, str]]:
-    """rel path -> {invariant id: carrying words} for the corpus as it stands right now."""
+    """rel path -> {invariant id: carrying words} for the corpus as it stands right now.
+
+    CO-INJECTED FILES ARE SCANNED AS ONE PAYLOAD (2026-08-28). `ops/brain_env.sh` concatenates
+    several files into a single doctrine string before any organ sees it, so a rule sitting in
+    either half reaches every organ identically -- the unit of the guarantee is the payload, not
+    the file. Scanning them separately made the principal's 2026-08-25 consolidation, which moved
+    the law text from `ops/principal_doctrine.txt` into `docs/LAWS.md` and changed brain_env.sh in
+    the same breath, report TWELVE invariants "DROPPED" when not one organ had lost a line.
+
+    That false red is the dangerous half. A ratchet stuck red about a relocation cannot say the
+    one thing it exists to say -- that a rule genuinely stopped reaching the organs -- and
+    `max_audit.check_ci_gate` already records what an unactionable red costs: it recurs, gets
+    skimmed, and buries a real one.
+
+    NOTHING IS WEAKENED. A rule deleted from EVERY member of the payload is still absent from the
+    concatenation and still fails by name, with the words that used to carry it. What no longer
+    fails is text moving between two files an organ receives as one string.
+    """
     base = Path(root)
     out: dict[str, dict[str, str]] = {}
+    group = set(doctrine_files(base))
+    payload = doctrine_text(base) if group else ""
     for rel in governed_files(base):
+        if rel in group:
+            out[rel] = scan_text(payload)
+            continue
         try:
             text = (base / rel).read_text("utf-8", errors="ignore")
         except OSError:

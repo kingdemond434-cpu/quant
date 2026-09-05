@@ -1,0 +1,8 @@
+[Unit]
+Description=Run Quant Capability Ratchet every 12 hours
+[Timer]
+OnCalendar=*:0/12
+Persistent=true
+RandomizedDelaySec=120
+[Install]
+WantedBy=timers.target

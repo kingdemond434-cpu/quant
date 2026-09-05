@@ -347,7 +347,45 @@ def _sync_state(equity: float) -> dict[str, float | str]:
     return s
 
 
+_MANDATE_DOC = "docs/LAWS.md"
+_OVERRIDE_ENV = "QUANT_ALLOW_RETIRED_CRYPTO_CHAIN"
+
+
+def _mandate_halt() -> str | None:
+    """Refuse to run: this executor works ground the canonical universe retired.
+
+    docs/LAWS.md:40-45 makes the full MT5/Fusion universe the desk's sole traded and hunted
+    ground. This file is a Binance Futures testnet executor and it also SPAWNS
+    `run_daily_research.py` detached, so leaving it runnable kept a whole retired chain one
+    invocation away from live -- "not scheduled" was never the same as "cannot run".
+
+    Halting rather than deleting: a deleted file cannot tell anyone why it went, and this one
+    still encodes crypto-era execution work worth reading. Same override as the chain it spawns,
+    named after the retirement so using it is a deliberate act.
+    """
+    import os
+
+    if os.environ.get(_OVERRIDE_ENV):
+        return None
+    root = Path(__file__).resolve().parent.parent
+    try:
+        text = (root / _MANDATE_DOC).read_text("utf-8")
+    except OSError:
+        return (f"cannot read {_MANDATE_DOC} to confirm the universe mandate; refusing to run a "
+                f"crypto-exchange executor on an unverified mandate (absence is never permission)")
+    if "No crypto-exchange-native universe" in text or "MT5/Fusion Markets universe" in text:
+        return (f"HALTED BY MANDATE. {_MANDATE_DOC} forbids crypto-exchange-native ground; this "
+                f"is a Binance testnet executor and it spawns the retired daily research chain. "
+                f"Retired 2026-08-25, preserved for audit.\n"
+                f"  To run deliberately for archaeology: {_OVERRIDE_ENV}=1")
+    return None
+
+
 def main() -> None:
+    halt = _mandate_halt()
+    if halt is not None:
+        print(halt)
+        raise SystemExit(0)      # a correct refusal is not a failure
     ap = argparse.ArgumentParser()
     ap.add_argument("--minutes", type=float, default=120.0)
     ap.add_argument("--interval", type=float, default=300.0)

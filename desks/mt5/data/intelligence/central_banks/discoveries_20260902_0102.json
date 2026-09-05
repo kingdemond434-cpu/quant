@@ -1,0 +1,21 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-09-02T01:00:00+00:00",
+    "title": "Bank of Japan Accounts (August 31)",
+    "link": "http://www.boj.or.jp/en/statistics/boj/other/acmai/release/2026/ac260831.htm",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  }
+]

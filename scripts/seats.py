@@ -120,6 +120,66 @@ def _page(msg: str) -> None:
         return
 
 
+
+#: Set to "1" to force free seats, "0" to forbid them. Unset = decide from the balance, which is
+#: the behaviour that keeps the desk running without anyone having to notice the card ran out.
+_FREE_ENV = "QUANT_FREE_TIER"
+
+#: Cache the balance check: every organ resolving seats would otherwise hit the credits endpoint,
+#: and a research pass resolves seats many times.
+_FREE_CACHE: dict[str, Any] = {}
+_FREE_TTL_S = 900
+
+
+def _free_tier_active() -> bool:
+    """Is the paid balance exhausted? Cached, and fails toward FREE.
+
+    Fails toward free deliberately. If the balance cannot be read, the choice is between running
+    the desk's research on a free model and not running it at all -- and this desk has just spent
+    an unknown number of weeks in the second state without noticing.
+    """
+    import os
+    import time
+
+    env = os.environ.get(_FREE_ENV)
+    if env is not None:
+        return env == "1"
+    now = time.time()
+    if _FREE_CACHE.get("at", 0) + _FREE_TTL_S > now:
+        return bool(_FREE_CACHE.get("free"))
+    free = True
+    try:
+        import urllib.request
+
+        from libs.research.free_panel import _load_key
+
+        req = urllib.request.Request("https://openrouter.ai/api/v1/credits",
+                                     headers={"Authorization": f"Bearer {_load_key()}"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            data = json.loads(r.read()).get("data", {})
+        total = float(data.get("total_credits") or 0)
+        used = float(data.get("total_usage") or 0)
+        free = used >= total          # overdrawn -> free seats
+    except Exception:
+        free = True                   # unreadable -> free, see docstring
+    _FREE_CACHE.update({"at": now, "free": free})
+    return free
+
+
+def _free_seats(n: int) -> list[dict[str, Any]]:
+    """Zero-cost provider records shaped exactly like roster entries, so callers see no difference."""
+    try:
+        from libs.research.free_panel import HEAVY, LIGHT, available
+    except ImportError:
+        return []
+    pool = available(HEAVY) + available(LIGHT)
+    if not pool:
+        return []
+    return [{"model": m, "base_url": "https://openrouter.ai/api/v1",
+             "name": m.split("/")[0], "free_tier": True}
+            for m in pool[:max(1, n)]]
+
+
 def resolve(preferred: list[str], n: int | None = None, *, distinct_labs: bool = True,
             role: str = "", roster: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """Provider records for a logical seat request, substituting for upgraded-away models.
@@ -128,6 +188,27 @@ def resolve(preferred: list[str], n: int | None = None, *, distinct_labs: bool =
     organ changed shape, not just that something did.
     """
     provs = roster if roster is not None else load_roster()
+
+    # FREE-TIER SUBSTITUTION (2026-08-29). Every organ that resolves a seat here was dead: the
+    # OpenRouter balance read 60 purchased / 60.59 used, so each one 402'd, and the roles that
+    # matter most -- hypothesis generation, cold audit, code review, blind research -- had simply
+    # stopped. `hypothesis_queue.jsonl` had NEVER been created in the desk's history.
+    #
+    # ONE SUBSTITUTION HERE REACHES EVERY ORGAN. Six scripts resolve seats through this function,
+    # each carrying prompts that took months to develop. Rewriting twelve call sites would have
+    # diverged twelve prompts; swapping the MODEL under them keeps every prompt exactly as
+    # written and only changes who answers it.
+    #
+    # A free model is weaker than a flagship. It is infinitely stronger than a 402, and every
+    # answer it gives faces the same downstream gates, so the failure mode is wasted trials
+    # rather than false certificates.
+    if _free_tier_active():
+        free = _free_seats(len(preferred) if n is None else n)
+        if free:
+            print(f"  seats[{role or '?'}]: FREE TIER -- balance exhausted, serving "
+                  f"{len(free)} zero-cost model(s) under the same prompts")
+            return free
+
     by_id = {str(p["model"]): p for p in provs}
     chosen, subs = resolve_ids(preferred, list(by_id), n, distinct_labs=distinct_labs)
     if subs:

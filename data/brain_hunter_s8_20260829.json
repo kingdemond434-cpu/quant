@@ -1,0 +1,75 @@
+{
+  "session": "BRAIN HUNTER s8",
+  "date": "2026-08-29",
+  "ground": "next-ground item 1 + 2 from s7 (docs/research/prospector_coverage.md)",
+  "s13_boundary": "public GitHub API + raw.githubusercontent.com only. No api.worldquantbrain.com call, no login, no authenticated surface. CrisperX repo carries NO LICENCE (all rights reserved) -- read for MECHANISM ONLY, statistics computed over it, not one expression copied into this desk.",
+  "primary_source": {
+    "repo": "github.com/CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon",
+    "stars": 85,
+    "licence": "NONE (all rights reserved) -- mechanism-only read",
+    "created": "2023-10-13",
+    "pushed": "2023-10-30",
+    "files": ["README.md (1444B)", "alpha50.csv (14891B)"],
+    "claim": "50 alphas that pass the platform's mutual-correlation test when submitted together"
+  },
+  "measured_structure_of_the_50": {
+    "n_alphas": 50,
+    "n_distinct_data_fields": 50,
+    "n_distinct_operators": 8,
+    "operator_counts": {"rank": 28, "ts_mean": 18, "ts_zscore": 2, "sum": 1, "delay": 1, "group_rank": 1, "ts_av_diff": 1, "ts_corr": 1},
+    "median_formula_length_chars": 20,
+    "min_max_formula_length_chars": [13, 137],
+    "field_families": {"mdf_* model-derived": 22, "fnd6_* fundamentals": 18, "price/volume (close/high/vwap/volume/adv20)": 6, "ratios+analyst+sector (current_ratio, return_assets, income, fam_est_eps_rank, sector)": 5},
+    "sharpe": {"min": 1.25, "median": 1.25, "max": 1.29},
+    "turnover": {"min": 0.0109, "median": 0.0205, "max": 0.2121},
+    "fitness": {"min": 1.0, "median": 1.15, "max": 2.18},
+    "settings_spread": {
+      "Region": {"USA": 50},
+      "Delay": {"1": 50},
+      "Universe": {"TOP200": 27, "TOP1000": 12, "TOP500": 9, "TOP3000": 2},
+      "Neutralization": {"Subindustry": 19, "Market": 17, "Sector": 8, "Industry": 4, "None": 2},
+      "Truncation": {"0.01": 39, "0.02": 5, "0.03": 2, "0.08": 2, "0.007": 1, "0.001": 1},
+      "Decay": {"1": 20, "10": 12, "0": 4, "80": 3, "and 11 singleton values incl 13, 18, 52, 55, 65, 70, 78, 90, 95": 11}
+    }
+  },
+  "findings": [
+    {
+      "id": "BH-S8-F1",
+      "title": "Mutual independence in the reference artifact is bought ENTIRELY with FIELD breadth, not with construction cleverness",
+      "evidence": "50 alphas, 50 distinct data fields, 8 operators of which rank+ts_mean cover 46/50; median formula 20 characters. The README's 'unique method' that found 'over 400' such alphas is, structurally, enumerate the field catalogue and wrap each field in rank().",
+      "why_it_matters": "Marginal independence (L1.18, L1.61) is this desk's scarcest axis and it has been attacked from the OPERATOR side for six sessions (OP-093..OP-101). The one published artifact whose explicit purpose is constructing a mutually-independent set says the currency is the DATA FIELD. Two alphas over the same field cannot be independent however different their operators; two rank()s over different fields are independent almost by construction.",
+      "mt5_translation": "The desk's independence bottleneck is a DATA-AXIS problem, not a search-operator problem. It validates the free-data mining seats over further operator expansion, and it is what made this session go and count the desk's own field intake -- which is BH-S8-F2."
+    },
+    {
+      "id": "BH-S8-F2",
+      "title": "The desk's live generic discovery engine consumes ZERO external fields -- the whole axis raises and is swallowed",
+      "evidence": "edge_search.resolve_inputs('XAUUSD', ...) raises TypeError('Cannot join tz-naive with tz-aware DatetimeIndex') at edge_search.py:296 (cross-section pd.concat). 173/197 universe H1 parquets are tz-naive, 24 tz-aware UTC -- the partial-sync generation split of 2026-08-28. Caller at :612 catches it into a print and continues on pure OHLCV. Proof from the OUTPUT: today's edge_search_results.json (3543 hypotheses, written 05:55) has ZERO features matching 'ext_'.",
+      "collateral": "The raise DISCARDS the peer/lead/corr keys already built above it -- one family's failure destroys 1..N-1 (the gap-wirer-b class).",
+      "ledger": "R0715"
+    },
+    {
+      "id": "BH-S8-F3",
+      "title": "Even with the tz fault repaired, the macro and COT readers point at shapes that do not exist",
+      "evidence": "edge_search.py:370 keeps TOP-LEVEL numerics from desks/mt5/data/macro_state.json, which is nested (updated/series/states/differentials) with ZERO top-level numerics -- the 22 FRED series sit one level down. edge_search.py:375 reads cot_tff.json/cot.json/cot_disagg.json; the artifacts are DIRECTORIES of per-currency parquet. Both axes are named first-class in RESEARCH.md section 2 and both contribute nothing.",
+      "the_class": "orthogonal_sweep.py:_macro_series diagnosed and FIXED the identical macro defect on 2026-08-28 and names it verbatim in its docstring. The sibling consumer of the same file was never checked -- a fix landed in one reader and the class was not swept.",
+      "also": "list(macro.items())[:6] is a hardcoded cap on the exact axis F1 identifies as the bottleneck, and pd.Series(float(v), index=index) would broadcast today's scalar across all history -- zero variance plus a look-ahead in the conditioning variable, which orthogonal_sweep records as 'worse than the failure'.",
+      "ledger": "R0716, R0717"
+    },
+    {
+      "id": "BH-S8-F4",
+      "title": "The published performance column is a mass point at the submission bar, not a distribution",
+      "evidence": "Sharpe min = median = 1.25 = the platform's stated submission threshold, max 1.29; 50/50 clear it and none clears it by much. Decay carries eleven singleton non-round values (13, 18, 52, 55, 65, 70, 78, 90, 95) across a 4-axis settings grid (Universe x Decay x Truncation x Neutralization), so each 'alpha' is the argmax over an unreported per-alpha settings search.",
+      "why_it_matters": "This is a live demonstration of exactly what this desk's trial-accounting law exists to catch, produced by a process the crowd treats as authoritative. RECORDED AS A FACT ABOUT THEIR PROCESS, NEVER AS A GATE FOR OURS (L1.6): the numbers are uninformative about edge and informative only about the filter."
+    },
+    {
+      "id": "BH-S8-F5",
+      "title": "Neutralization is near-universal there and absent here -- a measured base rate for OP-101",
+      "evidence": "48/50 alphas carry a neutralization setting (Subindustry 19, Market 17, Sector 8, Industry 4); only 2 run None. wq_operators.py still has no neutralization function of any kind (verified by s7, unchanged).",
+      "mt5_translation": "OP-101's within-asset-class demeaning is buildable today on universe.json's asset_class (248/251 labelled) with zero new data. This artifact supplies the base rate that makes it a default rather than an option."
+    }
+  ],
+  "null_results": [
+    "efJerryYang/worldquant-brain-simulator alpha_pool/expression.py -- 404 on the main branch at the path s7 recorded. Path is stale or the file sits under a different tree; NOT graded absent, re-resolve the tree listing next session before re-attempting."
+  ],
+  "video": {"fetched": 0, "locked": 0, "note": "no video route attempted; s5's SOURCE-wall at 93.75% on the BRAIN lecture corpus unchanged and not re-probed"}
+}

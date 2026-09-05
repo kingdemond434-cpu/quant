@@ -1,0 +1,1388 @@
+{
+ "hypothesis": "H-20260828-005",
+ "generated_at": "2026-08-29T06:29:55.482952+00:00",
+ "family": "retail_overlap_reversal",
+ "symbols": [
+  "EURUSD",
+  "GBPUSD",
+  "USDJPY"
+ ],
+ "grid": [
+  {
+   "rr": 1.0,
+   "ttl_bars": 2,
+   "mode": "fade"
+  },
+  {
+   "rr": 1.0,
+   "ttl_bars": 2,
+   "mode": "follow"
+  },
+  {
+   "rr": 1.0,
+   "ttl_bars": 4,
+   "mode": "fade"
+  },
+  {
+   "rr": 1.0,
+   "ttl_bars": 4,
+   "mode": "follow"
+  },
+  {
+   "rr": 1.5,
+   "ttl_bars": 2,
+   "mode": "fade"
+  },
+  {
+   "rr": 1.5,
+   "ttl_bars": 2,
+   "mode": "follow"
+  },
+  {
+   "rr": 1.5,
+   "ttl_bars": 4,
+   "mode": "fade"
+  },
+  {
+   "rr": 1.5,
+   "ttl_bars": 4,
+   "mode": "follow"
+  }
+ ],
+ "trials_declared": 24,
+ "m15_arm": "UNMEASURED -- no M15 parquets on this box; H1 arm only",
+ "result": {
+  "hunt": "H-20260828-005",
+  "n_cells": 24,
+  "n_trials": 31,
+  "trial_count_basis": "measured_effective_cells_x_campaign_multiplier",
+  "trial_census": {
+   "n_raw": 24,
+   "n_effective": 4.35,
+   "inflation": 5.52,
+   "sr0_raw": 0.0979,
+   "sr0_effective": 0.0473,
+   "threshold_relief": 0.0506,
+   "method": "null_calibrated_participation_ratio",
+   "why": "observed participation rank 4.26; fixed 8-permutation independent-null rank 23.49; calibrated to 4.35 of 24 trials",
+   "guard": "both counts are reported deliberately. Lowering N makes every threshold easier, so the correction must be visible and defensible, not silent."
+  },
+  "program_level": {
+   "pbo": 0.3295,
+   "spa_p": 0.827
+  },
+  "survivors_passing_all": 0,
+  "n_judged": 24,
+  "n_unmeasured": 0,
+  "unmeasured_note": "cells whose signals produced fewer than 60 daily observations were NOT judged; they are recorded as UNMEASURED verdicts, never as failures. A high count is a fact about the SEARCH (candidates that fire too rarely to test), not evidence against the edges.",
+  "gate_fails": {
+   "in_sample_screen": 15,
+   "deflated_sharpe": 24,
+   "reality_check_spa": 24,
+   "cpcv": 15,
+   "walk_forward": 19,
+   "stress_costs": 15,
+   "lockbox": 18,
+   "expected_value": 15
+  },
+  "verdicts": [
+   {
+    "cell": "EURUSD.retail_overlap_reversal.p=3d0b14e498727548",
+    "sym": "EURUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1252,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.101
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.1004,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0837,
+      "stability": 0.0
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0844
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0837
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0844
+     }
+    }
+   },
+   {
+    "cell": "EURUSD.retail_overlap_reversal.p=740a56ed36f32fa4",
+    "sym": "EURUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1252,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0383
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0385,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0664,
+      "stability": 0.0
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0318
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0664
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0318
+     }
+    }
+   },
+   {
+    "cell": "EURUSD.retail_overlap_reversal.p=7b6a01a30ccf0e0f",
+    "sym": "EURUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1252,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.1094
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.1092,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0837,
+      "stability": 0.0
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0992
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0837
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0992
+     }
+    }
+   },
+   {
+    "cell": "EURUSD.retail_overlap_reversal.p=a38375f15a8a54e2",
+    "sym": "EURUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1252,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0207
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0207,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0588,
+      "stability": 0.0
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0187
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0588
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0187
+     }
+    }
+   },
+   {
+    "cell": "EURUSD.retail_overlap_reversal.p=6e73607524a99a21",
+    "sym": "EURUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1252,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": true,
+      "sharpe": 0.007
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0001,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": true,
+      "mean_oos_sharpe": 0.0073,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": true,
+      "oos_sharpe": 0.0292,
+      "stability": 0.75
+     },
+     "stress_costs": {
+      "passed": true,
+      "exp_x3": 0.0066
+     },
+     "lockbox": {
+      "passed": true,
+      "lockbox_sharpe": 0.0292
+     },
+     "expected_value": {
+      "passed": true,
+      "ev": 0.0066
+     }
+    }
+   },
+   {
+    "cell": "EURUSD.retail_overlap_reversal.p=d79573e842fcf315",
+    "sym": "EURUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1252,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": true,
+      "sharpe": 0.0112
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0001,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": true,
+      "mean_oos_sharpe": 0.0104,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0221,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": true,
+      "exp_x3": 0.0101
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0221
+     },
+     "expected_value": {
+      "passed": true,
+      "ev": 0.0101
+     }
+    }
+   },
+   {
+    "cell": "EURUSD.retail_overlap_reversal.p=8253f927ddd66260",
+    "sym": "EURUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1252,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": true,
+      "sharpe": 0.0012
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": true,
+      "mean_oos_sharpe": 0.0013,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": 0.0218,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": true,
+      "exp_x3": 0.0013
+     },
+     "lockbox": {
+      "passed": true,
+      "lockbox_sharpe": 0.0218
+     },
+     "expected_value": {
+      "passed": true,
+      "ev": 0.0013
+     }
+    }
+   },
+   {
+    "cell": "EURUSD.retail_overlap_reversal.p=c013545a5d14d1fe",
+    "sym": "EURUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1252,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": true,
+      "sharpe": 0.024
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0007,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": true,
+      "mean_oos_sharpe": 0.0237,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0147,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": true,
+      "exp_x3": 0.0244
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0147
+     },
+     "expected_value": {
+      "passed": true,
+      "ev": 0.0244
+     }
+    }
+   },
+   {
+    "cell": "GBPUSD.retail_overlap_reversal.p=3d0b14e498727548",
+    "sym": "GBPUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1188,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0587
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0584,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0465,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0482
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0465
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0482
+     }
+    }
+   },
+   {
+    "cell": "GBPUSD.retail_overlap_reversal.p=740a56ed36f32fa4",
+    "sym": "GBPUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1188,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0514
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0517,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0723,
+      "stability": 0.0
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.042
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0723
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.042
+     }
+    }
+   },
+   {
+    "cell": "GBPUSD.retail_overlap_reversal.p=7b6a01a30ccf0e0f",
+    "sym": "GBPUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1188,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0585
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0585,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0402,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0524
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0402
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0524
+     }
+    }
+   },
+   {
+    "cell": "GBPUSD.retail_overlap_reversal.p=a38375f15a8a54e2",
+    "sym": "GBPUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1188,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0424
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0423,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0684,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0377
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0684
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0377
+     }
+    }
+   },
+   {
+    "cell": "GBPUSD.retail_overlap_reversal.p=6e73607524a99a21",
+    "sym": "GBPUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1188,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0086
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0085,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": true,
+      "oos_sharpe": 0.0018,
+      "stability": 0.5
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0077
+     },
+     "lockbox": {
+      "passed": true,
+      "lockbox_sharpe": 0.0018
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0077
+     }
+    }
+   },
+   {
+    "cell": "GBPUSD.retail_overlap_reversal.p=d79573e842fcf315",
+    "sym": "GBPUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1188,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": true,
+      "sharpe": 0.0011
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": true,
+      "mean_oos_sharpe": 0.001,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0351,
+      "stability": 0.5
+     },
+     "stress_costs": {
+      "passed": true,
+      "exp_x3": 0.001
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0351
+     },
+     "expected_value": {
+      "passed": true,
+      "ev": 0.001
+     }
+    }
+   },
+   {
+    "cell": "GBPUSD.retail_overlap_reversal.p=8253f927ddd66260",
+    "sym": "GBPUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1188,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": true,
+      "sharpe": 0.0056
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0001,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": true,
+      "mean_oos_sharpe": 0.0052,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": true,
+      "oos_sharpe": 0.0207,
+      "stability": 0.75
+     },
+     "stress_costs": {
+      "passed": true,
+      "exp_x3": 0.0057
+     },
+     "lockbox": {
+      "passed": true,
+      "lockbox_sharpe": 0.0207
+     },
+     "expected_value": {
+      "passed": true,
+      "ev": 0.0057
+     }
+    }
+   },
+   {
+    "cell": "GBPUSD.retail_overlap_reversal.p=c013545a5d14d1fe",
+    "sym": "GBPUSD",
+    "family": "retail_overlap_reversal",
+    "days": 1188,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": true,
+      "sharpe": 0.0002
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": true,
+      "mean_oos_sharpe": 0.0001,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0353,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": true,
+      "exp_x3": 0.0002
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0353
+     },
+     "expected_value": {
+      "passed": true,
+      "ev": 0.0002
+     }
+    }
+   },
+   {
+    "cell": "USDJPY.retail_overlap_reversal.p=3d0b14e498727548",
+    "sym": "USDJPY",
+    "family": "retail_overlap_reversal",
+    "days": 1040,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.1638
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.1635,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.1466,
+      "stability": 0.0
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.1269
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.1466
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.1269
+     }
+    }
+   },
+   {
+    "cell": "USDJPY.retail_overlap_reversal.p=740a56ed36f32fa4",
+    "sym": "USDJPY",
+    "family": "retail_overlap_reversal",
+    "days": 1040,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0332
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0339,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0352,
+      "stability": 0.5
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0256
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0352
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0256
+     }
+    }
+   },
+   {
+    "cell": "USDJPY.retail_overlap_reversal.p=7b6a01a30ccf0e0f",
+    "sym": "USDJPY",
+    "family": "retail_overlap_reversal",
+    "days": 1040,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.1434
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.1436,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.1385,
+      "stability": 0.0
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.1218
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.1385
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.1218
+     }
+    }
+   },
+   {
+    "cell": "USDJPY.retail_overlap_reversal.p=a38375f15a8a54e2",
+    "sym": "USDJPY",
+    "family": "retail_overlap_reversal",
+    "days": 1040,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0351
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0351,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0279,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0298
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0279
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0298
+     }
+    }
+   },
+   {
+    "cell": "USDJPY.retail_overlap_reversal.p=6e73607524a99a21",
+    "sym": "USDJPY",
+    "family": "retail_overlap_reversal",
+    "days": 1040,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.105
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.1056,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.081,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0877
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.081
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0877
+     }
+    }
+   },
+   {
+    "cell": "USDJPY.retail_overlap_reversal.p=d79573e842fcf315",
+    "sym": "USDJPY",
+    "family": "retail_overlap_reversal",
+    "days": 1040,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": true,
+      "sharpe": 0.0297
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0032,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": true,
+      "mean_oos_sharpe": 0.0292,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": true,
+      "oos_sharpe": 0.0271,
+      "stability": 0.75
+     },
+     "stress_costs": {
+      "passed": true,
+      "exp_x3": 0.0249
+     },
+     "lockbox": {
+      "passed": true,
+      "lockbox_sharpe": 0.0271
+     },
+     "expected_value": {
+      "passed": true,
+      "ev": 0.0249
+     }
+    }
+   },
+   {
+    "cell": "USDJPY.retail_overlap_reversal.p=8253f927ddd66260",
+    "sym": "USDJPY",
+    "family": "retail_overlap_reversal",
+    "days": 1040,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": false,
+      "sharpe": -0.0855
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": false,
+      "mean_oos_sharpe": -0.0861,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": false,
+      "oos_sharpe": -0.0732,
+      "stability": 0.25
+     },
+     "stress_costs": {
+      "passed": false,
+      "exp_x3": -0.0797
+     },
+     "lockbox": {
+      "passed": false,
+      "lockbox_sharpe": -0.0732
+     },
+     "expected_value": {
+      "passed": false,
+      "ev": -0.0797
+     }
+    }
+   },
+   {
+    "cell": "USDJPY.retail_overlap_reversal.p=c013545a5d14d1fe",
+    "sym": "USDJPY",
+    "family": "retail_overlap_reversal",
+    "days": 1040,
+    "passed": false,
+    "stages": {
+     "economic_prior": {
+      "passed": true,
+      "message": "H-20260828-005 retail flow concentration / dealer inventory",
+      "mechanism_status": "NAMED"
+     },
+     "in_sample_screen": {
+      "passed": true,
+      "sharpe": 0.0257
+     },
+     "deflated_sharpe": {
+      "passed": false,
+      "dsr": 0.0021,
+      "sr0": 0.1142,
+      "n_trials": 31
+     },
+     "pbo": {
+      "passed": true,
+      "pbo": 0.3295
+     },
+     "reality_check_spa": {
+      "passed": false,
+      "p_value": 0.827
+     },
+     "cpcv": {
+      "passed": true,
+      "mean_oos_sharpe": 0.0257,
+      "folds": 15
+     },
+     "walk_forward": {
+      "passed": true,
+      "oos_sharpe": 0.0378,
+      "stability": 0.75
+     },
+     "stress_costs": {
+      "passed": true,
+      "exp_x3": 0.0243
+     },
+     "lockbox": {
+      "passed": true,
+      "lockbox_sharpe": 0.0378
+     },
+     "expected_value": {
+      "passed": true,
+      "ev": 0.0243
+     }
+    }
+   }
+  ],
+  "swept_at": "2026-08-29T06:29:55.481635+00:00"
+ }
+}

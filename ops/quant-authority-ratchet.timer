@@ -1,0 +1,9 @@
+[Unit]
+Description=Authority ratchet every 10 minutes
+
+[Timer]
+OnCalendar=*:2/10
+Persistent=true
+
+[Install]
+WantedBy=timers.target

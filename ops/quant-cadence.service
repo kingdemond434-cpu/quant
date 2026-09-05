@@ -7,6 +7,10 @@ Description=Quant cadence engine (fires what is due, enforces the floors)
 After=network-online.target
 
 [Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
 User=quant
 WorkingDirectory=/home/quant/quant-platform
 Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
@@ -16,6 +20,21 @@ ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/run_cadence.py
 # An organ that fails must not take the timer down with it: the next tick is the retry, and a
 # disabled timer is a silence nobody notices.
 SuccessExitStatus=0 1
+# CONTAIN THE OOM, because an uncapped unit does not choose its own victim (2026-08-28).
+# This unit was OOM-killed 35 times in 36 hours on a 3.8GB box shared with the live MT5
+# terminal, the cash-carry executor and several concurrent agent sessions. With no MemoryMax
+# the CGROUP is not the boundary: the kernel picks by badness score across the WHOLE box, so
+# the process that dies for cadence's allocation may be one holding live positions. A cap makes
+# the failure land inside this cgroup, where the death log already records it by unit name.
+#
+# 1200M, not 700M: cadence's measured peak is 936M, so this must not bind on an idle box -- the
+# point is to bound the blast radius, never to make the engine fail sooner. Progress is durable
+# per-duty now (_DurableState), so a contained kill costs the remaining duties, not the cycle.
+# 2026-09-01 (corrected): sized from the TRUE 24h maximum (1126M), not the most recent
+# reading. An earlier pass sized off the last peak and left the throttle BELOW the real
+# working set on nine units -- permanent reclaim, which is a slow kill, not a margin.
+MemoryHigh=1407M
+MemoryMax=1914M
 ProtectSystem=strict
 ProtectHome=read-only
 ReadWritePaths=/home/quant/quant-platform/data /home/quant/quant-platform/web /home/quant/quant-platform/docs

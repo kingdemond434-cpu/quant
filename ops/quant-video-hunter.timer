@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily creator/video hunter slot
+
+[Timer]
+OnCalendar=*-*-* 10:30:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

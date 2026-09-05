@@ -46,11 +46,7 @@ def test_risk_per_trade_spends_exactly_the_stated_tolerance():
 def test_a_worse_drawdown_estimate_produces_a_smaller_q():
     """Monotonicity, so a future revision to the book's worst drawdown moves size the right way."""
     assert risk_per_trade(dd_r=50.0) < Q_OPT < risk_per_trade(dd_r=20.0)
-    # Bracket widened with the tolerance itself (0.35 -> 0.642, principal 2026-08-22). The
-    # ASSERTION is monotonicity, not a particular level, so the bracket has to straddle whatever
-    # tolerance is declared -- pinning it to the old one would make this test a second, silent
-    # copy of the risk policy, which is the exact defect this module exists to prevent.
-    assert risk_per_trade(tolerance=0.20) < Q_OPT < risk_per_trade(tolerance=0.80)
+    assert risk_per_trade(tolerance=0.20) < Q_OPT < risk_per_trade(tolerance=0.50)
 
 
 def test_the_book_cannot_absorb_a_meaningful_drawdown_haircut():
@@ -60,15 +56,9 @@ def test_the_book_cannot_absorb_a_meaningful_drawdown_haircut():
     puts the base budget under that and amputates a validated leg."""
     floor_q, legs = 0.0104, 3
     assert risk_per_trade(dd_r=BOOK_WORST_DD_R * 1.22) * legs >= floor_q * legs
-    # THE HEADROOM CLAIM INVERTED WHEN THE TOLERANCE ROSE, and that is a real finding rather than
-    # a test to relax: at a 64.2% tolerance a 1.5x drawdown haircut DOES still clear the 0.01-lot
-    # floor, so a safety factor on the in-sample -33.7R is now affordable where at 35% it was not.
-    # Recorded as the arithmetic it is -- the original assertion said "no safety factor fits", and
-    # at this tolerance that statement is simply false.
-    haircut_15 = risk_per_trade(dd_r=BOOK_WORST_DD_R * 1.5) * legs
-    assert haircut_15 >= floor_q * legs, (
-        "a 1.5x haircut no longer fits -- if the tolerance is lowered again this flips back and "
-        "the safety-factor argument in gateway_config_fallback.py must be re-read")
+    assert risk_per_trade(dd_r=BOOK_WORST_DD_R * 1.5) * legs < floor_q * legs, (
+        "a 1.5x haircut now fits -- the account grew, so a safety factor is affordable; "
+        "revisit BOOK_WORST_DD_R")
 
 
 def test_no_consumer_hardcodes_its_own_risk_budget():
@@ -91,36 +81,11 @@ def test_no_consumer_hardcodes_its_own_risk_budget():
         "risk budget hardcoded instead of imported:\n  " + "\n  ".join(offenders))
 
 
-def test_the_budget_does_not_exceed_half_measured_kelly():
+def test_the_budget_is_far_below_measured_full_kelly():
     """Measured full Kelly on the 3-leg gold book is 6.00%. Kelly is computed FROM an in-sample
-    edge and is the point of MAXIMUM sensitivity to that edge being overstated, so the budget must
-    not cross it.
-
-    THE CEILING WAS 1.5% AND IS NOW 3.0% -- HALF KELLY -- BY THE PRINCIPAL'S EXPLICIT AND REPEATED
-    DECISION, 2026-08-22. The old bound's message said raising it "is a claim about forward
-    evidence and needs live trades behind it, not a backtest", and that precondition is NOT met:
-    shadow holds zero trades. The decision was made anyway, with the evidence and the objection
-    both recorded in gateway_config_fallback.py, and this test is rewritten to the new declared
-    policy rather than deleted -- a guard that is quietly removed stops being a decision anyone
-    can find later.
-
-    WHAT KEPT IT AT HALF KELLY RATHER THAN HIGHER. Growth measured on 5,731 real gold trades, by
-    true edge as a fraction of backtest: 3% is the LARGEST per-trade risk whose worst case across
-    x1.00/x0.75/x0.50/x0.33/x0.25/x0.15 is still non-negative. 3.5% returns -7% at x0.15 and 5%
-    returns -33%. Half Kelly is therefore not a round number here, it is the last size that
-    survives being wrong about the edge -- which is the only property worth fencing.
-
-    WHAT THIS COSTS, so the next reader does not have to re-derive it: at x0.25 3% earns exactly
-    what 2% earns (+27% both) while carrying 15 more points of drawdown, and the five-year
-    bad-decile outcome on $5,000 is $3,836 against $6,241 at 2%.
-    """
-    # Compared with a float epsilon, not exactly. Q_OPT is the output of
-    # 1-(1-tol)**(1/33.7) and lands 2.6e-12 above KELLY/2 for the tolerance that solves to
-    # exactly 3%; failing on that would be testing IEEE-754, not the risk policy. The epsilon is
-    # 1e-9 -- a millionth of a basis point, far below any size the venue can express.
-    KELLY = 0.06
-    assert 0 < Q_OPT <= KELLY / 2 + 1e-9, (
-        f"Q_OPT={Q_OPT} exceeds HALF of measured full Kelly ({KELLY:.0%}). Past the true optimum "
-        "the geometric rate FALLS, and at 2x Kelly it goes negative while every backtest number "
-        "still looks excellent. Raising the budget beyond half Kelly is not more aggression, it "
-        "is less money -- and it needs forward evidence, which shadow does not yet hold.")
+    edge and is the point of maximum sensitivity to that edge being overstated, so the budget
+    must sit well under it. Half Kelly (3%) is still a -68% historical drawdown."""
+    assert 0 < Q_OPT <= 0.015, (
+        f"Q_OPT={Q_OPT} is at or above half of measured full Kelly (6.00%). At 3% the historical "
+        "path draws down 68%, at 5.5% it draws down 91%. Raising this is a claim about forward "
+        "evidence and needs live trades behind it, not a backtest.")

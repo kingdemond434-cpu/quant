@@ -21,8 +21,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from libs.execution import binance_spot_testnet as spot
-from libs.execution import binance_testnet as fut
+import libs.execution.binance_spot_testnet as spot
+import libs.execution.binance_testnet as fut
 
 _ROOT = Path(__file__).resolve().parent.parent
 _TRADES = _ROOT / "data" / "cashcarry_trades.json"

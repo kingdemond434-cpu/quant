@@ -115,54 +115,30 @@ def test_coverage_counts_usable_separately_from_present():
 
 
 def test_the_real_universe_on_disk_classifies_cleanly():
-    """Against the actual universe.json, so the classifier is checked on real names.
-
-    THE PIN HERE USED TO BE `len(usable) == 19` AND `stale == [AUDCAD, AUDNZD, NZDCAD]`, and both
-    halves were retired by a genuine universe refresh rather than by a regression:
-
-      - the stale summary metadata was fixed upstream, so AUDNZD and NZDCAD now carry real bar
-        counts and there is no unusable symbol left to name;
-      - EURAUD and GBPAUD were added;
-      - AUDCAD WAS DROPPED FROM THE VENUE SNAPSHOT ENTIRELY.
-
-    That last one is not cosmetic and is asserted separately below -- hunt12 published five
-    AUDCAD survivors, so the desk holds gated cells naming an instrument the broker no longer
-    lists. The count is deliberately NOT re-pinned to 23: a fixed number here fails on every
-    legitimate universe refresh and teaches whoever is on shift to edit the number rather than
-    read it, which is how the previous pin died. What must hold is that every symbol classifies
-    and every symbol is usable; growth is expected.
-    """
+    """Against the live universe.json -- the whole broker offering, so the classifier is checked
+    on real names. This test used to pin `usable == 19` from the 22-symbol era; the law is now
+    the WHOLE offering ("maximum classes, no limitations"), so the pins are floors and breadth --
+    coverage ratchets UP (L1.50) and an exact count would make growth read as a failure."""
     import json
     p = _DESK / "data" / "universe" / "universe.json"
     if not p.exists():
         pytest.skip("universe.json not present")
-    raw = json.loads(p.read_text(encoding="utf-8"))
-    inst = classify_all(raw)
+    inst = classify_all(json.loads(p.read_text(encoding="utf-8")))
     unknown = [i.symbol for i in inst if i.asset_class == "unknown"]
     assert not unknown, f"unclassified symbols in the live universe: {unknown}"
-    usable = sorted(i.symbol for i in inst if i.usable)
-    stale = sorted(i.symbol for i in inst if not i.usable)
-    assert not stale, (
-        f"symbols present but unusable: {stale}. Every symbol carried real bar counts at the "
-        f"2026-08-20 refresh, so an unusable one is stale summary metadata to chase, not a pin "
-        f"to widen")
-    assert len(usable) >= 19, f"universe shrank below the 2026-08 floor: {usable}"
-
-
-def test_audcad_left_the_universe_and_its_survivors_are_therefore_unpriceable():
-    """A gated cell naming an instrument the venue no longer lists cannot reach capital.
-
-    hunt12 published five AUDCAD survivors. AUDCAD is absent from the current snapshot, so any
-    consumer that does `meta[sym]` on a survivor list raises KeyError mid-run -- which is how
-    `portfolio_projection` died rather than reporting a smaller book. The refusal has to be
-    explicit and named (L1.28a): the sleeve is UNPRICEABLE, which is a real answer, and is not
-    the same as the sleeve being absent or having failed.
-    """
-    import json
-    p = _DESK / "data" / "universe" / "universe.json"
-    if not p.exists():
-        pytest.skip("universe.json not present")
-    raw = json.loads(p.read_text(encoding="utf-8"))
-    assert "AUDCAD" not in raw, (
-        "AUDCAD is back in the venue snapshot -- delete this test and re-admit its hunt12 "
-        "survivors through the universal gate rather than assuming the old results still stand")
+    usable = [i for i in inst if i.usable]
+    assert len(usable) >= 240, f"usable coverage may only ratchet UP, got {len(usable)}"
+    # Usable breadth for the classes whose cost model is measured today. Index and equity rows
+    # arrived from the whole-broker expansion WITHOUT tick_value (the collector never asked MT5
+    # for it -- fixed in expand_universe.py the same day), so demanding their usable-breadth
+    # here would assert data that is still being collected; they are pinned as PRESENT, and the
+    # moment the collection lands these move into the usable loop below and RATCHET (L1.50).
+    # RATCHET (L1.50). The 2026-08-27 collection brought the whole broker offering with
+    # tick_value attached -- 251 symbols, 248 costed -- so equity, index, soft and bond moved
+    # from "present but uncostable" to USABLE and may never silently fall back.
+    classes = {i.asset_class for i in usable}
+    for cls in ("fx_major", "fx_cross", "fx_exotic", "metal", "crypto",
+                "equity", "index", "soft", "bond"):
+        assert cls in classes, f"asset class {cls} has zero usable symbols"
+    unknown_usable = [i.symbol for i in usable if i.asset_class == "unknown"]
+    assert not unknown_usable, f"tradable symbols the classifier cannot name: {unknown_usable}"

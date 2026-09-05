@@ -1,0 +1,231 @@
+{
+  "session": "brain_hunter_s28",
+  "date": "2026-08-29",
+  "what": "first consumption of mt5_grouping_map by a SIGNAL rather than a ruler",
+  "eval_years": [
+    2019,
+    2026
+  ],
+  "min_names": 8,
+  "trials_run": 72,
+  "multiplicity_note": "every cell tried is reported, winners and losers; no bar applied here (L1.60) -- trial count is handed to the gauntlet, never screened on locally",
+  "costs_note": "sharpe_gross is BEFORE costs. bp_per_unit_turnover_to_zero is the round-trip cost in bp that takes the cell to zero; compare against the symbol's real spread.",
+  "cells": {
+    "reversal_1|universe": {
+      "days": 2380,
+      "mean_names": 140.6,
+      "sharpe_gross": 0.51,
+      "t_stat": 1.566,
+      "ann_return": 0.05419,
+      "daily_turnover": 1.449,
+      "bp_per_unit_turnover_to_zero": 1.484
+    },
+    "reversal_1|ward_k24": {
+      "days": 2380,
+      "mean_names": 129.2,
+      "sharpe_gross": 0.759,
+      "t_stat": 2.332,
+      "ann_return": 0.05902,
+      "daily_turnover": 1.467,
+      "bp_per_unit_turnover_to_zero": 1.596
+    },
+    "reversal_1|asset_class": {
+      "days": 2380,
+      "mean_names": 139.2,
+      "sharpe_gross": 0.694,
+      "t_stat": 2.133,
+      "ann_return": 0.05697,
+      "daily_turnover": 1.474,
+      "bp_per_unit_turnover_to_zero": 1.534
+    },
+    "reversal_1|currency_quote": {
+      "days": 1616,
+      "mean_names": 72.8,
+      "sharpe_gross": 0.465,
+      "t_stat": 1.177,
+      "ann_return": 0.01186,
+      "daily_turnover": 1.28,
+      "bp_per_unit_turnover_to_zero": 0.368
+    },
+    "reversal_1|random_k24": {
+      "draws": 8,
+      "sharpe_mean": 0.504,
+      "sharpe_sd": 0.043
+    },
+    "mom_5|universe": {
+      "days": 1767,
+      "mean_names": 13.3,
+      "sharpe_gross": 0.03,
+      "t_stat": 0.079,
+      "ann_return": 0.0044,
+      "daily_turnover": 0.985,
+      "bp_per_unit_turnover_to_zero": 0.177
+    },
+    "mom_5|ward_k24": {
+      "days": 1767,
+      "mean_names": 12.7,
+      "sharpe_gross": -0.12,
+      "t_stat": -0.318,
+      "ann_return": -0.01717,
+      "daily_turnover": 0.986,
+      "bp_per_unit_turnover_to_zero": 0.691
+    },
+    "mom_5|asset_class": {
+      "days": 1767,
+      "mean_names": 13.3,
+      "sharpe_gross": -0.017,
+      "t_stat": -0.044,
+      "ann_return": -0.00244,
+      "daily_turnover": 0.988,
+      "bp_per_unit_turnover_to_zero": 0.098
+    },
+    "mom_5|currency_quote": {
+      "status": "UNMEASURED (too few bars)"
+    },
+    "mom_5|random_k24": {
+      "draws": 8,
+      "sharpe_mean": -0.095,
+      "sharpe_sd": 0.036
+    },
+    "mom_20|universe": {
+      "days": 1585,
+      "mean_names": 12.7,
+      "sharpe_gross": 0.475,
+      "t_stat": 1.191,
+      "ann_return": 0.0743,
+      "daily_turnover": 0.33,
+      "bp_per_unit_turnover_to_zero": 8.927
+    },
+    "mom_20|ward_k24": {
+      "days": 1585,
+      "mean_names": 12.2,
+      "sharpe_gross": 0.339,
+      "t_stat": 0.85,
+      "ann_return": 0.05273,
+      "daily_turnover": 0.332,
+      "bp_per_unit_turnover_to_zero": 6.293
+    },
+    "mom_20|asset_class": {
+      "days": 1585,
+      "mean_names": 12.7,
+      "sharpe_gross": 0.475,
+      "t_stat": 1.191,
+      "ann_return": 0.0743,
+      "daily_turnover": 0.33,
+      "bp_per_unit_turnover_to_zero": 8.927
+    },
+    "mom_20|currency_quote": {
+      "status": "UNMEASURED (too few bars)"
+    },
+    "mom_20|random_k24": {
+      "draws": 8,
+      "sharpe_mean": 0.236,
+      "sharpe_sd": 0.044
+    },
+    "mom_60|universe": {
+      "days": 1219,
+      "mean_names": 12.0,
+      "sharpe_gross": -0.69,
+      "t_stat": -1.517,
+      "ann_return": -0.09984,
+      "daily_turnover": 0.214,
+      "bp_per_unit_turnover_to_zero": 18.516
+    },
+    "mom_60|ward_k24": {
+      "days": 1219,
+      "mean_names": 11.5,
+      "sharpe_gross": -0.824,
+      "t_stat": -1.812,
+      "ann_return": -0.11969,
+      "daily_turnover": 0.218,
+      "bp_per_unit_turnover_to_zero": 21.767
+    },
+    "mom_60|asset_class": {
+      "days": 1219,
+      "mean_names": 12.0,
+      "sharpe_gross": -0.69,
+      "t_stat": -1.517,
+      "ann_return": -0.09984,
+      "daily_turnover": 0.214,
+      "bp_per_unit_turnover_to_zero": 18.516
+    },
+    "mom_60|currency_quote": {
+      "status": "UNMEASURED (too few bars)"
+    },
+    "mom_60|random_k24": {
+      "draws": 8,
+      "sharpe_mean": -0.818,
+      "sharpe_sd": 0.049
+    },
+    "accel|universe": {
+      "days": 1585,
+      "mean_names": 12.7,
+      "sharpe_gross": -0.104,
+      "t_stat": -0.26,
+      "ann_return": -0.0154,
+      "daily_turnover": 0.375,
+      "bp_per_unit_turnover_to_zero": 1.631
+    },
+    "accel|ward_k24": {
+      "days": 1585,
+      "mean_names": 12.2,
+      "sharpe_gross": 0.026,
+      "t_stat": 0.064,
+      "ann_return": 0.00378,
+      "daily_turnover": 0.376,
+      "bp_per_unit_turnover_to_zero": 0.399
+    },
+    "accel|asset_class": {
+      "days": 1585,
+      "mean_names": 12.7,
+      "sharpe_gross": -0.104,
+      "t_stat": -0.26,
+      "ann_return": -0.0154,
+      "daily_turnover": 0.375,
+      "bp_per_unit_turnover_to_zero": 1.631
+    },
+    "accel|currency_quote": {
+      "status": "UNMEASURED (too few bars)"
+    },
+    "accel|random_k24": {
+      "draws": 8,
+      "sharpe_mean": 0.017,
+      "sharpe_sd": 0.038
+    },
+    "lowvol_20|universe": {
+      "days": 1585,
+      "mean_names": 12.7,
+      "sharpe_gross": 0.484,
+      "t_stat": 1.213,
+      "ann_return": 0.07662,
+      "daily_turnover": 0.164,
+      "bp_per_unit_turnover_to_zero": 18.549
+    },
+    "lowvol_20|ward_k24": {
+      "days": 1585,
+      "mean_names": 12.2,
+      "sharpe_gross": 0.47,
+      "t_stat": 1.177,
+      "ann_return": 0.07363,
+      "daily_turnover": 0.164,
+      "bp_per_unit_turnover_to_zero": 17.766
+    },
+    "lowvol_20|asset_class": {
+      "days": 1585,
+      "mean_names": 12.7,
+      "sharpe_gross": 0.484,
+      "t_stat": 1.213,
+      "ann_return": 0.07662,
+      "daily_turnover": 0.164,
+      "bp_per_unit_turnover_to_zero": 18.549
+    },
+    "lowvol_20|currency_quote": {
+      "status": "UNMEASURED (too few bars)"
+    },
+    "lowvol_20|random_k24": {
+      "draws": 8,
+      "sharpe_mean": 0.455,
+      "sharpe_sd": 0.028
+    }
+  }
+}

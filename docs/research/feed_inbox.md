@@ -190,10 +190,21 @@ batch; the two neural-methods papers share a family (not independent), and the t
 items converge only on ground already carded (listing events) -- convergence with an ALREADY-CARDED
 axis buys nothing new. No promotion. -->
 
-## Entropic Value-at-Risk portfolio optimization for tempered stable Lévy processes
-- 2026-08-18 · http://arxiv.org/abs/2608.18022v1
-- We develop parametric Entropic Value-at-Risk (EVaR) portfolio optimization for tempered stable Lévy returns. We derive portfolio cumulant-generating functions and weight-dependent admissible moment-generating-function domains under two multivariate constructions: a multivariate normal tempered stable approach and an independent component factorization. These expressions allow portfolio EVaR to be evaluated from fitted asset- or component-level parameters without repeated portfolio-level distribution fitting. We construct minimum-EVaR portfolios and two entropic reward--risk portfolios. We test
+<!-- 2026-08-25: batch of 2 q-fin papers (2608.18022, 2608.17808, dated 08-18) triaged and
+cleared by litminer run 10. Both DISCARD, class GENERIC TOOLING/THEORY, NO EDGE:
+  * 2608.18022 EVaR portfolio optimization under tempered-stable Lévy returns -- a risk-measure/
+    optimizer method; names no counterparty forced to trade; desk sizing is robust-Kelly under the
+    sealed rails, and a coherent-risk-measure swap is an ARCHITECTURE change with no evidence path
+    through the gauntlet. Not carded, not queued.
+  * 2608.17808 self-consistent adjoint policy iteration for constrained dynamic portfolio choice --
+    continuous-time control theory (OL-BPTT adjoint + HJB); no mechanism, no data edge, no
+    counterparty. Not carded.
+No mechanism cards from this batch; zero-card honesty per spec. -->
 
-## Self-Consistent Adjoint Policy Iteration for Constrained Dynamic Portfolio Choice
-- 2026-08-18 · http://arxiv.org/abs/2608.17808v1
-- We develop simulation-based policy iteration for continuous-time portfolio choice with predictable returns and convex constraints. Each outer step re-evaluates a fixed-latent OL-BPTT adjoint after deployment and solves the constrained update. Shifted-adjoint cancellation controls the adjoint--HJB Hamiltonian-gradient discrepancy by the policy-improvement residual. For CRRA portfolios, exact HJB policy iteration identifies the optimal reduced value factor, while population OL-BPTT iteration converges globally under an occupation-measure relative-error condition. A theorem-matched audit yields a
+## Tabular Deep Learning for Algorithmic Trading: Cross-Regime Bayesian Optimisation for Equity Signal Generation
+- 2026-08-27 · http://arxiv.org/abs/2608.27076v1
+- Algorithmic trading now represents a market exceeding $20 billion, where even marginal gains in signal robustness can translate into economically significant returns. Existing evaluations of equity prediction models do not explicitly target regime robustness during hyperparameter selection. Five model classes are trained on daily observations from approximately 300 large-cap US equities over eleven years, with Bayesian optimisation configured to target trading performance across three statistically different market regimes. Regime-robust hyperparameter selection is associated with out-of-sampl
+
+## Output-Only Identification and Spectral Monitoring of Coupled Feedback Networks with Known Time-Varying Actuation
+- 2026-08-26 · http://arxiv.org/abs/2608.25844v1
+- Coupled feedback networks are often monitored channel by channel even though cross-channel paths alter both stability margins and transmitted disturbances. We study identification of a structured feedback matrix L_t = Phi diag(gamma_t) in an output-only setting: no commanded, probing, or reference input exists -- only temporally separated outputs and the scheduling gains gamma_t are observed, while the coupling response Phi and the clearing-window inputs are not. Identification rests jointly on the persistent excitation of the observed pre-window output and on two structural features separatin
