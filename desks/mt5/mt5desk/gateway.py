@@ -1348,6 +1348,62 @@ def _family_chart(s: dict) -> tuple[str, object, int]:
     return tf, getattr(mt5, attr), max(bars, 60)
 
 
+def _family_constructor(family: str) -> tuple[object | None, str | None]:
+    """(constructor, population) for a certified family, or (None, None) when nothing answers.
+
+    THE RESOLUTION IS `executables`', NOT `run_hunt16.FAMILIES`'. This executor read the hunt16
+    mapping alone, so `executables.GATEWAY_FAMILY_POPULATIONS` had to read `("hunt16",)` and every
+    certificate outside it was a named `executor_gap` that could never become a live row. Measured
+    2026-09-05 against the canon: 45 orthogonal, 20 `families`, 1 hunt16 -- one executable
+    certificate out of sixty-six, which is the whole reason the dashboard read `promotion_ready 0`
+    while the canon was full.
+    """
+    try:
+        from mt5desk import executables
+        return executables.resolve_family(family), executables.population_of(family)
+    except Exception as exc:                                            # noqa: BLE001
+        log(f"FAMILY-EXEC: executables unavailable ({type(exc).__name__}: {exc})")
+        return None, None
+
+
+def _family_takes_side(fn: object) -> bool:
+    """Whether this family can be told a direction -- `family_call`'s answer, not a second one."""
+    try:
+        from mt5desk.family_call import accepts_side
+        return accepts_side(fn)
+    except Exception:                                                   # noqa: BLE001
+        return False
+
+
+def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None, str]:
+    """The keyword params a non-hunt16 certified cell is called with, or (None, reason).
+
+    ONE RECONSTRUCTION, THREE CONSUMERS. `family_inputs.resolve` is what the gauntlet's
+    `build_cell` and the forward clock both use to rebuild swap terms, peer bars, factor bars,
+    macro and COT series from a cell's own stored params. The executor uses the same call, so a
+    sleeve is handed live exactly the inputs its certificate was earned on; a fourth copy of that
+    mapping here is the drift this desk keeps paying for.
+
+    FAIL CLOSED: a family whose inputs cannot be rebuilt returns None with the reason and the
+    caller refuses the row by name. An empty dict is a valid answer -- a price-only family needs
+    nothing beyond bars -- and is not a gap.
+    """
+    params = dict(s.get("params") or {})
+    try:
+        from mt5desk.family_inputs import resolve, strip_identity_keys
+    except Exception as exc:                                            # noqa: BLE001
+        return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
+    try:
+        call_params = strip_identity_keys(family, params)
+        extra, why = resolve(str(s["symbol"]), family, params, bars)
+    except Exception as exc:                                            # noqa: BLE001
+        return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
+    if extra is None:
+        return None, why
+    call_params.update(extra)
+    return call_params, ""
+
+
 def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
     """Execute hunt-certified family sleeves with replay-faithful semantics (GAP 124).
 
@@ -1380,10 +1436,18 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
     for s in fam_sleeves:
         name, family, selector = s["name"], s.get("family"), s.get("selector")
         side = 1 if str(s.get("side", "LONG")).upper() == "LONG" else -1
-        if family not in FAMILIES or selector not in WINDOWS:
-            log(f"[{name}] FAMILY-EXEC refused: family/selector has no exact executable")
+        # WHICH POPULATION, AND THEREFORE WHICH REPLAY. `hunt16` cells are windowed and take their
+        # parameterisation from `WINDOWS[selector]`; `families` and `orthogonal` cells carry their
+        # own params and are replayed by `shadow_forward` with no window filter at all. Resolving
+        # the constructor through `executables` rather than `FAMILIES` alone is what took the
+        # executor from one executable certificate to all of them.
+        fam_fn, population = _family_constructor(str(family or ""))
+        if fam_fn is None:
+            log(f"[{name}] FAMILY-EXEC refused: no constructor for family {family!r} on this box")
             continue
-        sig_hour = family_signal_hour(WINDOWS[selector])
+        if population == "hunt16" and selector not in WINDOWS:
+            log(f"[{name}] FAMILY-EXEC refused: hunt16 selector {selector!r} has no window")
+            continue
         tf, tf_const, n_bars = _family_chart(s)
         if tf_const is None:
             # REFUSED BY NAME, never traded on a substitute chart. This is the one outcome that
@@ -1397,13 +1461,40 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             continue
         # The last CLOSED bar: current in-progress bar is excluded, exactly as replay sees it.
         closed = h1_frame(h1).iloc[:-1]
-        last_bar = family_bar_due(closed, sig_hour)
+        if population == "hunt16":
+            # ONE DECISION A DAY AT THE CERTIFIED HOUR. A hunt16 cell is defined by its window, so
+            # the executor asks for the window's signal bar and nothing else.
+            last_bar = family_bar_due(closed, family_signal_hour(WINDOWS[selector]))
+            call_params: dict | None = None
+        else:
+            # NO HOUR FILTER, BECAUSE THE CLOCK APPLIES NONE. `shadow_forward` calls these families
+            # over the whole frame and backtests every signal they emit -- the family itself owns
+            # when it fires. Imposing a window here would trade a filtered version of a strategy
+            # certified unfiltered, so the executor considers the newest closed bar and acts only
+            # if the family put a signal ON it. `last_signal_bar` is what stops a repeat.
+            last_bar = closed.index[-1] if len(closed) else None
+            call_params, why = _family_call_params(s, str(family), closed)
+            if call_params is None:
+                # SKIP LOUDLY, NEVER RUN SHORT OF AN INPUT. `family_carry` returns [] without its
+                # swap terms, which reads as "this mechanism never fires" rather than "nobody gave
+                # it what it needs" -- the misreading that hid carry for the life of this desk.
+                log(f"[{name}] FAMILY-EXEC refused: runtime inputs unavailable ({why}); "
+                    f"this is a wiring gap, not a null signal")
+                continue
+            if side < 0 and not _family_takes_side(fam_fn):
+                # The forward engine refuses to ENROL such a certificate; the executor refuses to
+                # trade it, for the same reason: running it long would put capital in the opposite
+                # direction to the one that was certified.
+                log(f"[{name}] FAMILY-EXEC refused: certificate is SHORT and family {family!r} "
+                    f"takes no `side` -- refusing to trade it LONG")
+                continue
         if last_bar is None:
             continue
         srec = gstate.setdefault(name, {})
         step = family_signal_step(closed, last_bar, last_signal_bar=srec.get("last_signal_bar"),
                                   want_state=s.get("state"), side=side,
-                                  family_fn=FAMILIES[family], day_states_fn=day_states)
+                                  family_fn=fam_fn, day_states_fn=day_states,
+                                  call_params=call_params)
         if step.mark:
             srec["last_signal_bar"] = str(last_bar)
         if step.note:
@@ -1438,7 +1529,10 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         # The theoretical book sees every intent, armed or not, so netting is measured in shadow.
         _book_target(name, s["symbol"], side * lot, f"family_market/{family}/{selector}",
                      price=entry_ref)
-        ttl_until = family_ttl_until(last_bar, g.ttl_bars)
+        # THE HOLD IS IN THIS CHART'S BARS. `engine.py` counts `ttl_bars` in index positions, so
+        # twelve bars is twelve hours on H1 and one hour on M5; passing the chart's own bar length
+        # is what keeps a promoted M5 sleeve from holding twelve times its certified duration.
+        ttl_until = family_ttl_until(last_bar, g.ttl_bars, _BAR_MINUTES.get(tf, 60))
         order_desc = family_order_desc(side, lot, s["symbol"], g, ttl_until)
         if not armed:
             log(f"[{name}] WOULD PLACE (generic exec "

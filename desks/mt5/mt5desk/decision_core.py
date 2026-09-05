@@ -1262,15 +1262,26 @@ def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
 
 def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,
                        want_state: object, side: int, family_fn: Any,
-                       day_states_fn: Any) -> FamilyStep:
+                       day_states_fn: Any, call_params: dict | None = None) -> FamilyStep:
     """The replay-faithful signal decision for one family sleeve at its signal bar.
 
     FAITHFUL TO THE REPLAY OR NOT AT ALL: the signal comes from the SAME family function the
-    forward clock replays (`family_fn`, a `run_hunt16.FAMILIES` entry), filtered to this bar and
-    to the same day-state condition (`day_states_fn`, `run_hunt12.day_states`). A bar already
-    considered is skipped without a mark; a state mismatch is marked and named; a failed signal
-    computation is named and NOT marked, so the next pass tries again; no signal is marked
-    silently.
+    forward clock replays, filtered to this bar and to the same day-state condition
+    (`day_states_fn`, `run_hunt12.day_states`). A bar already considered is skipped without a
+    mark; a state mismatch is marked and named; a failed signal computation is named and NOT
+    marked, so the next pass tries again; no signal is marked silently.
+
+    `call_params` SELECTS WHICH REPLAY, because the desk has two and they are different contracts
+    rather than variants of one:
+
+      None   the hunt16 call, `FAMILIES[fam](df, side)` -- positional, unparameterised, because a
+             hunt16 cell takes its parameterisation from `WINDOWS[selector]` at sweep time. This
+             is what `qquant_shadow` replays and what this function has always done, so passing
+             nothing leaves every existing caller byte-identical.
+      a dict the `mt5desk.families` / `families_orthogonal` call, which takes keyword params and a
+             keyword side. `mt5desk.family_call` owns both shapes so this module and
+             `shadow_forward` cannot drift; an EMPTY dict still selects this shape, and is the
+             correct call for a price-only orthogonal family rather than a missing one.
     """
     if last_signal_bar == str(last_bar):
         return FamilyStep(mark=False)                          # this bar already considered
@@ -1279,7 +1290,10 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
         if got != want_state:
             return FamilyStep(mark=True, note=f"no trade: day state {got} != {want_state}")
     try:
-        sigs = [g for g in family_fn(closed, side) if pd.Timestamp(g.time) == last_bar]
+        from mt5desk.family_call import hunt16_signals, signals
+        raw = (hunt16_signals(family_fn, closed, side) if call_params is None
+               else signals(family_fn, closed, side=side, params=call_params))
+        sigs = [g for g in raw if pd.Timestamp(g.time) == last_bar]
     except Exception as exc:
         return FamilyStep(mark=False,
                           note=f"FAMILY-EXEC signal computation failed ({exc}); skipped")
@@ -1295,9 +1309,22 @@ def family_entry(g: object, side: int, bid: float, ask: float) -> tuple[float, f
     return entry_ref, abs(entry_ref - float(g.stop))
 
 
-def family_ttl_until(last_bar: pd.Timestamp, ttl_bars: int) -> str:
-    """The replay's time exit: `ttl_bars` hours after the entry bar's open, as ISO text."""
-    return (last_bar + pd.Timedelta(hours=int(ttl_bars) + 1)).isoformat()
+def family_ttl_until(last_bar: pd.Timestamp, ttl_bars: int, bar_minutes: int = 60) -> str:
+    """The replay's time exit: `ttl_bars` BARS after the entry bar's open, as ISO text.
+
+    BARS, NOT HOURS, and the distinction became real the day the executor learned M1..D1. This
+    read `pd.Timedelta(hours=ttl_bars + 1)`, which is exactly right on H1 and wrong on every other
+    chart: `engine.py` counts a signal's `ttl_bars` in INDEX POSITIONS (`for j in range(i, i +
+    ttl)`), so twelve bars is twelve hours on H1, one hour on M5, and twelve DAYS on D1. An M5
+    sleeve would have held its position twelve times too long and a D1 sleeve closed it
+    twenty-four times too early -- in both cases a different strategy from the certified one,
+    under the certified one's name, which is the defect class the family executor exists to refuse.
+
+    `bar_minutes` DEFAULTS TO 60 so every existing H1 caller resolves to the identical timestamp
+    it always has, including the `+ 1` -- the entry is at the open of the bar AFTER the signal
+    bar, so the hold begins one bar later than `last_bar` and the offset counts from the signal.
+    """
+    return (last_bar + pd.Timedelta(minutes=(int(ttl_bars) + 1) * int(bar_minutes))).isoformat()
 
 
 def family_order_desc(side: int, lot: float, symbol: str, g: object, ttl_until: str) -> str:

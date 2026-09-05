@@ -25,6 +25,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import families
+from mt5desk.family_call import signals as family_signals
 
 BASE = Path(__file__).resolve().parent.parent
 # This engine is called both as ``research.shadow_forward`` and as a script on the desk box.
@@ -138,19 +139,14 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
 def _accepts_side(fn) -> bool:
     """Can this family function be told which way to trade?
 
-    Asked of the SIGNATURE rather than discovered by catching TypeError, because the
-    existing `except TypeError: fam_fn(..., side=1)` fallback cannot tell "this family
-    takes no side" from "something inside it raised TypeError" -- and under the second
-    reading it would silently re-run a short certificate long.
+    THE BODY MOVED TO `mt5desk.family_call` 2026-09-05, unchanged, and this is now the alias.
+    The gateway's universal family executor has to ask the identical question before it trades a
+    certified short, and two copies of "does this family take a side" is exactly the drift that
+    ends with a short cell running long on one machine and refused on the other. The name stays
+    here because this module's own callers read it.
     """
-    try:
-        import inspect
-        sig = inspect.signature(fn)
-    except (TypeError, ValueError):
-        return False
-    if "side" in sig.parameters:
-        return True
-    return any(p.kind is p.VAR_KEYWORD for p in sig.parameters.values())
+    from mt5desk.family_call import accepts_side
+    return accepts_side(fn)
 
 
 def _runnable_side(run: dict, fam: str) -> str | None:
@@ -608,12 +604,14 @@ def main() -> None:
             # byte-identical to what it has always been and no running clock changes behaviour
             # because this landed. `_runnable_side` has already refused any short whose family
             # has no `side` parameter, so reaching here with SHORT means it takes one.
+            #
+            # THE CALL ITSELF MOVED TO `mt5desk.family_call` 2026-09-05, branch for branch, so the
+            # gateway's universal family executor invokes a certified family the way the clock
+            # that certified it did. Two call shapes for one constructor is not a style question:
+            # the shape decides whether a short runs short, and a divergence would show up only as
+            # a sleeve trading differently live than it was certified.
             _short = str(side).upper() == "SHORT"
-            try:
-                sigs = (fam_fn(h1, side=-1, **call_params) if _short
-                        else fam_fn(h1, **call_params))
-            except TypeError:
-                sigs = fam_fn(h1, side=-1 if _short else 1, **call_params)
+            sigs = family_signals(fam_fn, h1, side=-1 if _short else 1, params=call_params)
             # THE WINDOW RUNS ON THE COST BASIS IT FROZE WITH. Rebuilding costs from live universe
             # metadata every cycle meant the spread re-measure (~2x/day) changed cost_hash and
             # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them

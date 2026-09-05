@@ -1997,6 +1997,20 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             else float("inf"))
     nt = no_trade(prev_book, funded, gain)
     nt["held"] = {k: round(v, 8) for k, v in held.items()}
+    # PUBLISHED, BECAUSE ANOTHER LAYER HAS TO PRICE THE SAME MOVE. `macro.interrupt.should_fire`
+    # asks "is acting NOW worth more than waiting for the fast clock", and its economic gate needs
+    # log-wealth per day at risk -- which is this number, the gap between what the new solve is
+    # worth and what the desk is actually holding. It was reachable only as
+    # `benefit_over_horizon / horizon_days`, so the macro layer passed None and every interrupt
+    # decision died at "expected gain not priced by the allocator". A derived field would also
+    # break silently the day NO_TRADE_HORIZON_DAYS changes.
+    #
+    # NON-FINITE IS PUBLISHED AS None, not as a large number. `gain` is +inf when the held book is
+    # currently ruinous and has no growth rate to improve on; that is the right answer for the
+    # no-trade filter (move off it) and an unusable one for an economic gate that compares a gain
+    # to a cost. None means "cannot price", which the interrupt reads as HOLD and the fast clock
+    # handles on its own schedule.
+    nt["gain_per_day"] = round(gain, 10) if math.isfinite(gain) else None
     proposed_book = dict(funded)
     book, funded = bind_verdict(nt, prev_book, held, book, funded)
     opp = opportunity(free, funded, HEAT_TARGET)

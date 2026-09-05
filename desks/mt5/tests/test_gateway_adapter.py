@@ -314,8 +314,15 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
     else:
         enable.unlink(missing_ok=True)
     fam = signals or (lambda closed, side: [_signal(closed.index[-1])])
-    monkeypatch.setitem(sys.modules, "research.run_hunt16", SimpleNamespace(
-        FAMILIES={"fam": fam}, WINDOWS={"asia": {"signal_at": sig_hour, "range_start": 0}}))
+    hunt16 = SimpleNamespace(FAMILIES={"fam": fam},
+                             WINDOWS={"asia": {"signal_at": sig_hour, "range_start": 0}})
+    monkeypatch.setitem(sys.modules, "research.run_hunt16", hunt16)
+    # THE RESOLVER READS IT UNPREFIXED. `run_family_sleeves` imports `research.run_hunt16`, but it
+    # now resolves the constructor through `mt5desk.executables`, whose `hunt16_families()` does
+    # `from run_hunt16 import FAMILIES` -- the spelling the desk box's sys.path gives it. Stubbing
+    # only the prefixed name left `population_of("fam")` returning None, so the harness's family
+    # was refused as an orphan and every family test failed for a path reason.
+    monkeypatch.setitem(sys.modules, "run_hunt16", hunt16)
     monkeypatch.setitem(sys.modules, "research.run_hunt12", SimpleNamespace(
         day_states=states or (lambda closed: {})))
     ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "GENERIC_EXEC_ENABLED": enable,
@@ -328,7 +335,8 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
           "_record_exec_outcome": lambda *a, **k: book.append(("outcome", *a)),
           "close_positions": lambda st, symbol: closes.append(("close", symbol)),
           "_logs": logs, "_intents": intents, "_book": book, "_closes": closes}
-    return _exec(("run_family_sleeves", "_family_chart"), ns)
+    return _exec(("run_family_sleeves", "_family_chart", "_family_constructor",
+                  "_family_takes_side", "_family_call_params"), ns)
 
 
 def _sleeve(**over) -> dict:
@@ -415,8 +423,16 @@ def test_the_executor_refuses_what_it_cannot_replay_exactly(tmp_path, monkeypatc
                     sig_hour=_sig_hour(rows))
     st = {"armed": True}
     ns["run_family_sleeves"](st, [_sleeve(family="nope"), _sleeve(selector="nope")], 10_000.0)
-    assert ns["_logs"].count(f"[{_NAME}] FAMILY-EXEC refused: family/selector has no exact "
-                             "executable") == 2
+    # TWO CAUSES, TWO MESSAGES. This asserted one line ("family/selector has no exact executable")
+    # for both, which sends the reader to the wrong place half the time: an unresolvable family is
+    # an ORPHAN CERTIFICATE -- no code on this tree answers to the name -- while an unknown
+    # selector is a hunt16 WINDOW that was never wired. Different defects, different fixes, and
+    # the universal executor made the distinction load-bearing: a non-hunt16 family legitimately
+    # has no window and must not be refused for lacking one.
+    assert (f"[{_NAME}] FAMILY-EXEC refused: no constructor for family 'nope' on this box"
+            in ns["_logs"])
+    assert (f"[{_NAME}] FAMILY-EXEC refused: hunt16 selector 'nope' has no window"
+            in ns["_logs"])
     short = _fake_mt5(_rows(n=10))
     ns = _family_ns(tmp_path, short, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows))
     ns["run_family_sleeves"]({"armed": True}, [_sleeve()], 10_000.0)

@@ -44,7 +44,9 @@ for _p in (str(_DESK), str(_ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from macro import attribution, expression, factors, interrupt, replay, sources  # noqa: E402
+from macro import (  # noqa: E402
+    allocator_price, attribution, expression, factors, interrupt, replay, sources,
+)
 from macro.assess import assess, recent_vectors  # noqa: E402
 from macro.credibility import CredibilityModel  # noqa: E402
 from macro.ledger import MACRO_DIR, EventLedger, write_json_atomic  # noqa: E402
@@ -161,6 +163,12 @@ def one_pass(*, ledger: EventLedger | None = None, fetch: bool = True,
     # -- 6: the interrupt decision ------------------------------------------------------------
     decision = None
     top = max(scored, key=lambda a: a.record.importance, default=None)
+    # THE HOOK IS LANDED (2026-09-05). This read `expected_gain_per_day=None, expected_turnover=
+    # 0.0` with the note "None until the hook is landed" -- and None is HOLD, so every interrupt
+    # decision this layer ever made died at the same gate, whatever the event was. The allocator
+    # already computed both numbers on every normal pass and simply never published the gain;
+    # `allocator_price` reads its own solve rather than estimating anything here.
+    gain_per_day, turnover, price_why = allocator_price.price_the_move()
     if top is not None:
         d = interrupt.should_fire(
             importance=top.record.importance,
@@ -168,12 +176,10 @@ def one_pass(*, ledger: EventLedger | None = None, fetch: bool = True,
             unpriced_fraction=top.priced.unpriced_fraction,
             decay_half_life_s=top.record.decay_half_life_s,
             capital_authority=top.record.capital_authority,
-            # The allocator prices the move, not this layer. None until the hook is landed and
-            # a gain estimate is available -- and None means HOLD, which is the safe default.
-            expected_gain_per_day=None, expected_turnover=0.0,
+            expected_gain_per_day=gain_per_day, expected_turnover=turnover,
             history=interrupt.history_from_log())
         decision = {"fire": d.fire, "reason": d.reason, "detail": d.detail,
-                    "event_id": top.record.event_id}
+                    "event_id": top.record.event_id, "priced_by_allocator": price_why}
         if d.fire:
             interrupt.request(event_ids=[top.record.event_id], decision=d,
                               importance=top.record.importance,

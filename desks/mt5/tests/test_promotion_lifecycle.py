@@ -152,9 +152,21 @@ def test_the_authority_set_is_recorded_as_drift_never_a_block(desk, monkeypatch)
 
 def test_a_family_clock_promotes_as_family_market_or_names_its_executor_gap(desk, monkeypatch):
     """Every lane, every family. A matured clock of a family the gateway's executor runs is
-    written LIVE with exec=family_market and its exact identity; one the executor cannot run
-    yet is NOT written as a row the book would fund and hold as air -- the gap is named on the
-    clock (`executor_gap`) and the candidate promotes on the run the executor widens."""
+    written LIVE with exec=family_market and its exact identity; one the executor CANNOT run is
+    not written as a row the book would fund and hold as air -- the gap is named on the clock
+    (`executor_gap`) and the candidate promotes on the run the executor widens.
+
+    THE RUN THAT WIDENS IT HAPPENED, 2026-09-05. This test asserted that `overnight_gap_decay`
+    promotes to nothing because it lives in the `orthogonal` population -- true of the executor
+    that existed, and 65 of the desk's 66 certificates were held out the same way. The universal
+    executor resolves all three populations through `executables`, so an orthogonal clock now
+    promotes exactly like a hunt16 one, which is the outcome this test's own docstring predicted.
+
+    THE PROPERTY IS UNCHANGED and is what still gets asserted: an executable family becomes a
+    `family_market` row carrying its exact identity, and a family the executor genuinely cannot
+    run is refused by name and left as a candidate. The second case is now a family no code on
+    this tree answers to, which is the honest remaining gap.
+    """
     ids = {
         "AUDNZD.dav_range_filter_adx.afternoon": {
             "symbol": "AUDNZD", "selector": "afternoon", "family": "dav_range_filter_adx",
@@ -162,17 +174,30 @@ def test_a_family_clock_promotes_as_family_market_or_names_its_executor_gap(desk
         "EURZAR.overnight_gap_decay.asia": {
             "symbol": "EURZAR", "selector": "asia", "family": "overnight_gap_decay",
             "params": {}, "side": "LONG"},
+        "EURZAR.a_family_no_code_answers_to.asia": {
+            "symbol": "EURZAR", "selector": "asia", "family": "a_family_no_code_answers_to",
+            "params": {}, "side": "LONG"},
     }
     monkeypatch.setattr(promoter, "clock_identities", lambda: ids)
     desk.shadow({k: dict(_GOOD) for k in ids})
     promoter.main()
-    (s,) = desk.sleeves()
-    assert s["name"] == "AUDNZD.dav_range_filter_adx.afternoon"
+    rows = {s["name"]: s for s in desk.sleeves()}
+
+    # The hunt16-population clock, exactly as before.
+    s = rows["AUDNZD.dav_range_filter_adx.afternoon"]
     assert s["exec"] == "family_market" and s["family"] == "dav_range_filter_adx"
     assert s["side"] == "SHORT" and s["selector"] == "afternoon" and s["params"] == {"adx": 20}
-    gap = desk.read_shadow()["EURZAR.overnight_gap_decay.asia"]
+
+    # THE ORTHOGONAL CLOCK NOW REACHES CAPITAL, by the same path and carrying the same identity.
+    o = rows["EURZAR.overnight_gap_decay.asia"]
+    assert o["exec"] == "family_market" and o["family"] == "overnight_gap_decay"
+    assert o["selector"] == "asia" and o["side"] == "LONG"
+
+    # AND THE BOUNDARY STILL EXISTS. A certificate for a family with no constructor is an orphan.
+    assert "EURZAR.a_family_no_code_answers_to.asia" not in rows
+    gap = desk.read_shadow()["EURZAR.a_family_no_code_answers_to.asia"]
     assert gap["status"] == "PROMOTION CANDIDATE"          # still a candidate, never blocked
-    assert "orthogonal" in gap["executor_gap"]
+    assert "no constructor" in gap["executor_gap"]
 
 
 # --------------------------------------------------------------------- promote
