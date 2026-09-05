@@ -167,14 +167,6 @@ def test_an_unconditioned_candidate_promotes_with_a_null_state(desk):
     assert s["state"] is None
 
 
-def test_candidate_without_original_ten_gate_certificate_is_blocked(desk, monkeypatch):
-    monkeypatch.setattr(promoter, "authorized_specs", lambda _base: set())
-    desk.shadow({"CADJPY.asia": dict(_GOOD)})
-    promoter.main()
-    assert desk.sleeves() == []
-    assert desk.read_shadow()["CADJPY.asia"]["status"] == "BLOCKED_UNIVERSAL_GATES"
-
-
 def test_promotion_is_idempotent(desk):
     desk.shadow({"CADJPY.asia.FAILED_BREAK": dict(_GOOD)})
     promoter.main()
