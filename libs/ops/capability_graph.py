@@ -959,21 +959,57 @@ def reachability(nodes: tuple[Node, ...] = NODES) -> dict[str, Any]:
     return result
 
 
-STAGES = ("CODED", "WIRED", "RUNNING", "DECISION_AFFECTING", "MEASURED")
+STAGES = ("CODED", "WIRED", "RUNNING", "DECISION_AFFECTING", "MEASURED", "LIVE_LEARNING")
 RUNNING_WINDOW_S = 3 * 24 * 3600
+
+#: Artifacts carrying REALISED outcomes -- what the market actually did with the desk's money.
+#: A module reading one of these is reading consequences, not its own opinion. Prefix-matched.
+OUTCOME_ARTIFACTS: tuple[str, ...] = (
+    "desks/mt5/data/fills", "desks/mt5/data/execution_algo_outcomes.jsonl",
+    "desks/mt5/data/forward", "desks/mt5/data/shadow", "desks/mt5/data/trades",
+    "desks/mt5/reports/RESEARCH_PNL.json", "desks/mt5/reports/pf_allocation.json",
+    "desks/mt5/data/gateway_state.json", "desks/mt5/data/decision_ledger.jsonl",
+    "desks/mt5/data/counterfactual", "desks/mt5/data/module_rent.jsonl",
+)
 
 
 def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
-    """Per node: CODED -> WIRED -> RUNNING -> DECISION_AFFECTING -> MEASURED, each a fact.
+    """Per node: CODED -> WIRED -> RUNNING -> DECISION_AFFECTING -> MEASURED -> LIVE_LEARNING.
 
     CODED               the module exists
     WIRED               every declared read has a producer (or is box data) and every write a
                         reader -- the check() has no fatal finding naming this node
     RUNNING             at least one of its written artifacts was refreshed inside the window
     DECISION_AFFECTING  a path from one of its writes reaches an authority node
-    MEASURED            a ledger line values what it does: a rail in MISSED_GROWTH, a filter in
-                        FILTER_VALUE, a term in the attribution, or its own report carrying a
-                        measured verdict field
+    MEASURED            a ledger PRICES THIS MODULE BY NAME: a MODULE_RENT verdict of EARNS or
+                        COSTS, a rail in MISSED_GROWTH, a filter in FILTER_VALUE, a term in the
+                        attribution. Not "it exists and matters" -- somebody put a number on it.
+    LIVE_LEARNING       the loop closes back onto the module: it reads a REALISED-OUTCOME artifact
+                        and updates state it later consumes itself, so what the market did changes
+                        what it does next
+
+    TWO FREE PASSES WERE REMOVED HERE, 2026-09-05, AND THEY MATTERED MORE THAN THE MISSING RUNG.
+
+    1. `measured = bool(n.authority) or ...`. Authority was being read as measurement, which is
+       exactly backwards: authority is what makes a node DECISION_AFFECTING, and the more capital a
+       node moves the MORE it needs a number on it, not less. Measured on this tree before the fix:
+       all ten MEASURED nodes were free passes and not one appeared in any ledger -- seven via this
+       line (gateway, pf_allocator, promoter, universal_gate, state_admission_run, regime_monitor,
+       feature_roi).
+    2. A node's own output carrying a `verdict` / `rails` / `categories` key counted as its
+       measurement. That is self-certification: a module that writes a report saying it has a
+       verdict was thereby credited with having been measured. The remaining three MEASURED nodes
+       (capital_modifier_score, counterfactual_markout, missed_growth) came in this way.
+
+    So the repo's headline "7 MEASURED" -- quoted approvingly in an outside audit as evidence the
+    desk measures its organs -- was an artifact of the instrument, not a reading of the desk. The
+    count drops when this runs, and the drop IS the finding: it is the distance between the
+    architecture and the evidence, which is the whole thing the ladder exists to show. A number
+    that only ever goes up is not a measurement.
+
+    An absent ledger reads UNMEASURED, never MEASURED (L1.28a). MODULE_RENT.json is written by the
+    daily cycle on the trading host, so in a container it is simply absent and every node honestly
+    reads below MEASURED rather than being credited by default.
     """
     findings = check(nodes)["findings"]
     named = {f["node"] for f in findings if f["check"] in
@@ -982,7 +1018,10 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
     measured_names: set[str] = set()
     for rel in ("reports/MISSED_GROWTH.json", "reports/FILTER_VALUE.json",
                 "reports/allocator_attribution.json", "reports/CAPITAL_MODIFIERS.json",
-                "reports/RESEARCH_PRODUCTIVITY.json", "reports/MODULE_RENT.json"):
+                # MODULE_RENT is deliberately NOT in this list: the generic loop reads a report's
+                # KEYS, which would credit a module whose rent row says UNMEASURED. It is read
+                # verdict-aware just below.
+                "reports/RESEARCH_PRODUCTIVITY.json"):
         try:
             doc = json.loads((DESK / rel).read_text("utf-8"))
             measured_names |= set(map(str, (doc.get("rails") or doc.get("filters") or
@@ -991,6 +1030,22 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
                                             or {}).keys()))
         except (OSError, ValueError):
             continue
+    # MODULE_RENT is the ledger built for exactly this question, so its VERDICT is read rather
+    # than its mere presence: a row reading UNMEASURED or NOT_BINDING is the rent ledger saying it
+    # could not price the module, and crediting that as MEASURED would re-introduce the free pass
+    # through the one report that explicitly refuses to fold UNMEASURED into a pass.
+    rent_priced: set[str] = set()
+    try:
+        rent = json.loads((DESK / "reports" / "MODULE_RENT.json").read_text("utf-8"))
+        rows = rent.get("modules") or {}
+        it = rows.items() if isinstance(rows, dict) else (
+            (r.get("module"), r) for r in rows if isinstance(r, dict))
+        for mod, row in it:
+            if isinstance(row, dict) and str(row.get("verdict", "")).upper() in {"EARNS", "COSTS"}:
+                rent_priced.add(str(mod))
+    except (OSError, ValueError, AttributeError):
+        pass
+    measured_names |= rent_priced
     now = datetime.now(tz=UTC).timestamp()
     out: dict[str, dict[str, Any]] = {}
     for n in nodes:
@@ -1012,27 +1067,37 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
                 continue
         decision = bool(n.authority) or any(
             (reach.get(w) or {}).get("reaches_authority") for w in n.writes)
-        measured = bool(n.authority) or any(
-            (n.name in measured_names) or any(k.startswith(n.name) for k in measured_names)
-            for _ in (0,))
-        if not measured:
-            for w in n.writes:
-                try:
-                    doc = json.loads((ROOT / w).read_text("utf-8"))
-                except (OSError, ValueError, IsADirectoryError):
-                    continue
-                if isinstance(doc, dict) and any(k in doc for k in
-                                                 ("verdict", "filters", "rails", "categories",
-                                                  "unused_upside_heat", "value_logw_per_day")):
-                    measured = True
-                    break
-        stage = "CODED" if not coded else ("WIRED" if not running else
-                                           ("RUNNING" if not decision else
-                                            ("DECISION_AFFECTING" if not measured else "MEASURED")))
+        # A LEDGER PRICES THIS MODULE BY NAME. No authority pass, no self-certification.
+        measured = (n.name in measured_names) or any(k.startswith(n.name) for k in measured_names)
+        # LIVE_LEARNING: the loop closes back onto the module. It must read something the market
+        # actually did, AND carry that into state it consumes itself -- a module that reads fills
+        # and writes a report nobody feeds back has learned nothing, it has only reported.
+        reads_outcome = any(r.startswith(o) or o.startswith(r)
+                            for r in n.reads for o in OUTCOME_ARTIFACTS)
+        feeds_itself = bool(set(n.writes) & set(n.reads))
+        live_learning = measured and reads_outcome and feeds_itself
         if not coded:
             stage = "MISSING"
+        elif not wired:
+            # Previously this branch read WIRED whenever the node was merely not running, so an
+            # unwired node with a fatal DEAD_PRODUCER finding still reported WIRED. Nothing is
+            # currently mislabelled by it, which is exactly why it would have gone unnoticed.
+            stage = "CODED"
+        elif not running:
+            stage = "WIRED"
+        elif not decision:
+            stage = "RUNNING"
+        elif not measured:
+            stage = "DECISION_AFFECTING"
+        elif not live_learning:
+            stage = "MEASURED"
+        else:
+            stage = "LIVE_LEARNING"
         out[n.name] = {"coded": coded, "wired": wired, "running": running,
-                       "decision_affecting": decision, "measured": measured, "stage": stage}
+                       "decision_affecting": decision, "measured": measured,
+                       "live_learning": live_learning,
+                       "reads_outcome": reads_outcome, "feeds_itself": feeds_itself,
+                       "stage": stage}
     return out
 
 
