@@ -36,11 +36,41 @@ _GW_SRC = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
 _GW_TREE = ast.parse(_GW_SRC)
 
 
+def _is_literal(node: ast.AST) -> bool:
+    """A module-level assignment safe to carry into the harness: literals only, no calls."""
+    try:
+        ast.literal_eval(node)
+    except (ValueError, SyntaxError, TypeError):
+        return False
+    return True
+
+
 def _exec(names: tuple[str, ...], ns: dict) -> dict:
     """Exec the named gateway functions over a namespace seeded with the real decision core, so
-    a bare name the adapter uses resolves to the same object the gateway imports."""
+    a bare name the adapter uses resolves to the same object the gateway imports.
+
+    MODULE-LEVEL LITERAL CONSTANTS COME TOO, and they did not before. The harness carried only
+    FunctionDefs, so a gateway function that read a module constant raised NameError inside
+    `<gw>` -- which is a harness gap reported as a product failure, and it reads exactly like the
+    change under test being broken. Measured 2026-09-05: `run_family_sleeves` gained
+    `_family_chart` (which reads `_FAMILY_TF_ATTR`, `_BARS_PER_HOUR`, `_FAMILY_H1_BARS`,
+    `_FAMILY_MAX_BARS`) and two passing tests began failing on a NameError for the helper, not for
+    anything either test was about.
+
+    Restricted to `ast.literal_eval`-able values on purpose: a module-level `Path(...)` or a
+    computed constant would need the gateway's own imports, and quietly evaluating arbitrary
+    module-level code here would make this harness a second, divergent copy of the gateway's
+    import machinery. Anything non-literal a test needs is still seeded explicitly through `ns`.
+    """
     seed = {k: v for k, v in vars(dc).items() if not k.startswith("__")}
     seed["_core"] = dc
+    for node in _GW_TREE.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                and isinstance(node.targets[0], ast.Name) and _is_literal(node.value):
+            seed.setdefault(node.targets[0].id, ast.literal_eval(node.value))
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) \
+                and node.value is not None and _is_literal(node.value):
+            seed.setdefault(node.target.id, ast.literal_eval(node.value))
     seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"
@@ -298,7 +328,7 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
           "_record_exec_outcome": lambda *a, **k: book.append(("outcome", *a)),
           "close_positions": lambda st, symbol: closes.append(("close", symbol)),
           "_logs": logs, "_intents": intents, "_book": book, "_closes": closes}
-    return _exec(("run_family_sleeves",), ns)
+    return _exec(("run_family_sleeves", "_family_chart"), ns)
 
 
 def _sleeve(**over) -> dict:
@@ -390,7 +420,10 @@ def test_the_executor_refuses_what_it_cannot_replay_exactly(tmp_path, monkeypatc
     short = _fake_mt5(_rows(n=10))
     ns = _family_ns(tmp_path, short, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows))
     ns["run_family_sleeves"]({"armed": True}, [_sleeve()], 10_000.0)
-    assert f"[{_NAME}] FAMILY-EXEC: bars unavailable; skipped" in ns["_logs"]
+    # The chart is NAMED in this message now that the executor runs the whole M1..D1 ladder.
+    # "bars unavailable" on a desk hunting seven charts does not say which bars, and the first
+    # question about a missing read is always which chart it was for.
+    assert f"[{_NAME}] FAMILY-EXEC: H1 bars unavailable; skipped" in ns["_logs"]
     # A degenerate stop and a zero lot each stop the order before the venue.
     flat = _fake_mt5(rows)
     ns = _family_ns(tmp_path, flat, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows),
