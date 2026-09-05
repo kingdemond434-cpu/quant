@@ -57,8 +57,33 @@ def _rows(doc) -> list[dict]:
     return out
 
 
+#: Rows one compile pass will carry. A bound on MEMORY, not a view of what matters: it is applied
+#: newest-file-first and whatever it drops is COUNTED and reported, never silently discarded.
+MAX_ROWS_PER_PASS = 250_000
+
+
 def recent_rows(now: datetime) -> list[tuple[str, dict]]:
-    """Newest artifact per source plus the merged latest corpus, exact-row deduplicated."""
+    """EVERY discovery artifact in the window, exact-row deduplicated.
+
+    THIS READ ONLY THE NEWEST FILE PER SOURCE DIRECTORY, and it was the largest conversion loss on
+    the desk. Measured 2026-09-05: 5,524 discovery files inside the 7-day window holding 102,915
+    rows, of which the compiler opened 60 files and saw 1,594 rows. **98.5% of everything the
+    miners produced never reached the compiler at all** -- not rejected, not deepened, not
+    graveyarded: unread. The docket looked like a funnel narrowing on merit and was mostly a
+    directory listing sorted by mtime.
+
+    A miner that writes one artifact per run kept only its last run; a miner that writes one per
+    source kept only whichever landed last. Both are the common shape here, which is why the loss
+    was near-total rather than partial.
+
+    THE DEDUPLICATION IS WHAT MAKES READING EVERYTHING SAFE, and it already existed: rows are keyed
+    on a sha256 of their exact content, so a row repeated across fifty files is carried once. The
+    old behaviour was not protecting against duplicates -- the dedup was -- it was discarding
+    distinct rows.
+
+    NEWEST FIRST, so if `MAX_ROWS_PER_PASS` binds it is the oldest discoveries that wait for the
+    next pass rather than an arbitrary slice, and the shortfall is reported rather than hidden.
+    """
     cutoff = now - timedelta(days=WINDOW_DAYS)
     found: list[tuple[str, dict]] = []
     seen: set[str] = set()
@@ -67,10 +92,8 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
             continue
         paths = [root / "latest_discoveries.json"]
         for directory in sorted(p for p in root.iterdir() if p.is_dir()):
-            files = sorted(directory.glob("discoveries_*.json"),
-                           key=lambda p: p.stat().st_mtime, reverse=True)
-            if files:
-                paths.append(files[0])
+            paths.extend(sorted(directory.glob("discoveries_*.json"),
+                                key=lambda p: p.stat().st_mtime, reverse=True))
         for path in paths:
             try:
                 if datetime.fromtimestamp(path.stat().st_mtime, tz=UTC) < cutoff:
@@ -85,6 +108,11 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                 seen.add(digest)
                 source = str(row.get("source") or path.parent.name or "unknown")
                 found.append((source, row))
+                if len(found) >= MAX_ROWS_PER_PASS:
+                    print(f"compiler: MAX_ROWS_PER_PASS ({MAX_ROWS_PER_PASS:,}) reached; older "
+                          f"discoveries wait for the next pass. This is a memory bound being "
+                          f"hit, not a judgement -- raise it or shorten WINDOW_DAYS.")
+                    return found
     return found
 
 
