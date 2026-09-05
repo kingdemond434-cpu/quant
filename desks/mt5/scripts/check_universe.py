@@ -1,8 +1,9 @@
+import os
 import subprocess, json
 
 # 1. Get current universe
 r = subprocess.run(
-    ["ssh", "quant@95.216.191.70",
+    ["ssh", os.environ.get("QUANT_VPS", "quant@VPS_HOST_REDACTED"),
      "cat /home/quant/quant-platform/desks/mt5/data/universe/universe.json"],
     capture_output=True, text=True, timeout=15
 )
@@ -14,7 +15,7 @@ for k in sorted(uni.keys()):
 
 # 2. Get parquet files
 r2 = subprocess.run(
-    ["ssh", "quant@95.216.191.70",
+    ["ssh", os.environ.get("QUANT_VPS", "quant@VPS_HOST_REDACTED"),
      "ls /home/quant/quant-platform/desks/mt5/data/universe/*_H1.parquet 2>/dev/null | xargs -I{} basename {} _H1.parquet | sort"],
     capture_output=True, text=True, timeout=15
 )

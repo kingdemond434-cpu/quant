@@ -240,3 +240,23 @@ desks/mt5/data/intelligence/central_banks/bis_speeches/
 # FX Blue RAW harvest waves: ~14MB per 350-account wave and re-harvestable in ~40min
 # from a public keyless route. The committed artifact is mechanism_digest.jsonl.gz.
 desks/mt5/data/intelligence/fxblue/track_records*.jsonl
+
+# Regime-fit memo. Purely a cache: every entry is keyed on the bar it was fitted on and is
+# reproducible by refitting, so committing it would push an hourly-churning blob through the
+# box's sync for no recoverable information. The STATE VECTOR itself (state_vector.json) is a
+# record of what the desk believed at a moment and stays tracked.
+desks/mt5/data/state_fits.json
+
+# `reports/` above is ignored because reports are measurements. STATE_ADMISSION.json is not a
+# measurement, it is a DECISION: `pf_allocator._live_state` reads it and withdraws a state
+# dimension's access to the posterior when that dimension is in the graveyard. A `!` negation
+# cannot reach inside an excluded directory, so the file is force-added once and tracked
+# thereafter -- git reports changes to a tracked file regardless of these rules, which is exactly
+# the behaviour wanted: the box's re-judged verdicts travel back with its hourly sync.
+
+# Discovery-loop caches (2026-09-04): fetched public READMEs, content-addressed feature blocks
+# and the typed research memory are rebuilt by their engines; none is a decision record.
+desks/mt5/data/repo_cache/
+desks/mt5/data/features/
+desks/mt5/data/memory/
+desks/mt5/data/deep_forest_seen.json

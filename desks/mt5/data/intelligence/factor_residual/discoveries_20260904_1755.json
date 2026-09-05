@@ -1,0 +1,69 @@
+{
+ "source": "factor_residual",
+ "generated_at": "2026-09-04T17:55:54.364780+00:00",
+ "tests_run": 936,
+ "discoveries": [
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "CHFJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDCHF",
+     "USDJPY"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 3.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "CHFJPY regressed on USDCHF + USDJPY (triangle): CHFJPY is USDCHF against USDJPY up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
+   "title": "CHFJPY.triangle residual revert z>=3.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 754,
+    "gross_per_trade": 0.00077824,
+    "net_per_trade": 0.00072655,
+    "cost_frac": 5.169e-05,
+    "t_non_overlapping": 8.813,
+    "t_naive_overlapping": 5.443,
+    "t_deflated_within_sweep": 5.716,
+    "tests_this_sweep": 936,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  },
+  {
+   "source": "factor_residual",
+   "kind": "factor_residual",
+   "symbol": "EURGBP",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "EURUSD",
+     "GBPUSD"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 8,
+    "side_mode": "revert"
+   },
+   "mechanism": "EURGBP regressed on EURUSD + GBPUSD (triangle): EURGBP is EURUSD against GBPUSD up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.0 sigma.",
+   "title": "EURGBP.triangle residual revert z>=2.0 h=8",
+   "url": "",
+   "evidence": {
+    "n_independent": 1572,
+    "gross_per_trade": 0.00028305,
+    "net_per_trade": 0.00023728,
+    "cost_frac": 4.577e-05,
+    "t_non_overlapping": 5.419,
+    "t_naive_overlapping": 3.843,
+    "t_deflated_within_sweep": 2.322,
+    "tests_this_sweep": 936,
+    "screen": "causal betas, non-overlapping t, net of round trip, self-deflated"
+   }
+  }
+ ]
+}

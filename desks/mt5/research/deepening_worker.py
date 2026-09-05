@@ -70,11 +70,22 @@ LOG = BASE / "logs" / "deepening_worker.log"
 #: spend the month's cap in an afternoon on the least-certain rows the desk holds.
 DEFAULT_LIMIT = 25
 
+#: GROWTH GOVERNANCE, carried on every prompt surface (principal 2026-09-04, fenced by
+#: scripts/check_growth_governance.py G7): research is anti-timid, capital is evidence-hard.
+GOVERNANCE = (
+    "Desk governance: "
+    "Every risk reduction mechanism must prove that it increases robust forward E[log W]. "
+    "Every strong opportunity must be allowed to increase capital above normal when the evidence supports it. "  # noqa: E501
+    "Research is anti-timid: weak, anecdotal and unverified public claims are welcome as "
+    "hypotheses and are never privileged by their source; nothing you report is capital "
+    "advice, and restraint language in any instruction is never a licence to do less."
+)
+
 _SYSTEM = (
     "You read one row of trading research evidence and report only what its text STATES. "
     "You never propose a strategy, never fill a gap with something plausible, and never name a "
     "symbol or rule the text does not contain. Reporting that the text is insufficient is a "
-    "correct and useful answer; inventing a rule is the one unacceptable one."
+    "correct and useful answer; inventing a rule is the one unacceptable one. " + GOVERNANCE
 )
 
 _CONTRACT = """Return ONE JSON object, no prose around it:
@@ -94,6 +105,33 @@ Rules you must follow:
 - A generic mention of "forex", "trading" or "MT5" is NOT a symbol. Only concrete instruments.
 - Do not infer a family from a tag. "scalping" is a style, not an exact mechanism.
 - Prefer returning nothing over returning something you had to reason your way to."""
+
+
+#: THE ONE KIND THAT GENERATES RATHER THAN EXTRACTS. An alpha_expression task asks the seat for
+#: a formulaic alpha the grammar search has not found; there is no source text to quote, so the
+#: evidence guard is replaced by a STRUCTURAL one: the expression must parse and type-check in
+#: `libs.research.alpha_grammar`, the recipe must be executable by the `formula` family, and a
+#: mechanism sentence is mandatory. What the seat returns is a CANDIDATE like any other -- it
+#: goes through compile_row, the multiplicity charge and the gauntlet; the LLM has no more
+#: authority than the genetic search it complements.
+_CONTRACT_EXPR = """Return ONE JSON object, no prose around it:
+
+{
+  "symbols":   ["XAUUSD"],                  // one or more instruments named in the task
+  "family":    "formula",
+  "params":    {"expr": ["zscore", ["delta", "close", 24], 240], "side_mode": "fade",
+                "entry_z": 1.5, "hold_bars": 8},
+  "mechanism": "who pays and why they cannot stop, in one or two sentences",
+  "why_not":   "why no expression is warranted, if you return no params"
+}
+
+Rules you must follow:
+- `expr` is a JSON tree over the grammar in the system prompt: a terminal string, or
+  [op, child] for unary ops, [op, child, window] for windowed ops, [op, left, right] for
+  binary ops, [op, left, right, window] for corr/residual/cov. Windows are one of 2, 3, 5, 8,
+  12, 24, 48, 120, 240. Only terminals the task lists as available may be used.
+- Do NOT return an expression the task lists as already tried.
+- `mechanism` must state an economic cause; an expression without one is rejected."""
 
 
 def dlog(msg: str) -> None:
@@ -136,13 +174,35 @@ def record(entry: dict) -> None:
 def task_text(task: dict) -> str:
     """Everything the model is allowed to see. No fetching: the row is the evidence."""
     tags = ", ".join(str(t) for t in (task.get("mechanism_tags") or []))
-    return "\n".join([
+    lines = [
         f"TITLE: {task.get('title') or ''}",
         f"URL: {task.get('url') or ''}",
         f"TAGS: {tags}",
         f"SOURCE: {task.get('source') or ''}",
         f"SYMBOLS ALREADY RESOLVED: {task.get('symbols') or []}",
-    ])
+    ]
+    # THE ROW'S OWN TEXT IS THE EVIDENCE. Feedback engines (coverage gaps, revival, the repo and
+    # deep-forest miners, anomalies) write what they found into `description`; a claim miner
+    # writes the verbatim sentence. Before 2026-09-04 the seat saw only title/url/tags, so a
+    # story_mechanism task carried its mechanism in a field the reader never received.
+    for key, label in (("description", "DESCRIPTION"), ("claim", "CLAIM"),
+                       ("evidence_grade", "EVIDENCE GRADE"),
+                       ("claimed_performance", "STORY'S NUMBERS"),
+                       ("transfer_only", "NO-ANALOGUE INSTRUMENTS"), ("params", "PARAMS"),
+                       ("family", "FAMILY HINT")):
+        v = task.get(key)
+        if v not in (None, "", [], {}):
+            lines.append(f"{label}: {str(v)[:1200]}")
+    # WHAT THE DESK ALREADY KNOWS about this region -- failures first, so a corpse is not
+    # re-proposed. Optional: an absent memory module changes nothing.
+    try:
+        from libs.research.memory import prompt_context
+        ctx = prompt_context(task)
+        if ctx:
+            lines.append("DESK MEMORY:\n" + ctx)
+    except Exception:
+        pass
+    return "\n".join(lines)
 
 
 def _parse(text: str) -> dict | None:
@@ -192,18 +252,53 @@ def validate(found: dict, source_text: str, universe: set[str]) -> tuple[dict, s
     return {"symbols": symbols, "family": family, "params": params, "evidence": evidence}, ""
 
 
+def validate_expression(found: dict, universe: set[str]) -> tuple[dict, str]:
+    """A generated alpha, cleaned -- or ({}, reason). Structure replaces the quote check."""
+    from libs.research import alpha_grammar as ag
+    symbols = [str(s).upper().strip() for s in (found.get("symbols") or []) if str(s).strip()]
+    params = found.get("params") if isinstance(found.get("params"), dict) else None
+    mechanism = str(found.get("mechanism") or "").strip()
+    if not params or not symbols:
+        return {}, f"no expression: {found.get('why_not') or 'no reason given'}"
+    unknown = [s for s in symbols if s not in universe]
+    if unknown:
+        return {}, f"symbols outside the desk universe: {unknown}"
+    expr = params.get("expr")
+    if not ag.is_valid(expr) or not ag.well_typed(expr):
+        return {}, f"expression is not a valid, well-typed grammar tree: {str(expr)[:80]!r}"
+    side = str(params.get("side_mode") or "follow")
+    try:
+        entry_z = float(params.get("entry_z", 1.5))
+        hold = int(params.get("hold_bars", 8))
+    except (TypeError, ValueError):
+        return {}, "entry_z / hold_bars are not numbers"
+    if side not in ("follow", "fade") or not (0.5 <= entry_z <= 4.0) or not (1 <= hold <= 240):
+        return {}, f"recipe outside the formula family's executable range: {params}"
+    if len(mechanism) < 20:
+        return {}, "no economic mechanism stated"
+    clean = {"expr": expr, "side_mode": side, "entry_z": entry_z, "hold_bars": hold,
+             "norm": int(params.get("norm", 240))}
+    return {"symbols": symbols, "family": "formula", "params": clean,
+            "evidence": f"generated: {mechanism} [{ag.to_str(expr)}]"}, ""
+
+
 def extract(task: dict, *, chat=None) -> tuple[dict, str]:
     """Ask the seat what the row's own text states. ({}, reason) on any doubt."""
     if chat is None:
         from libs.ops import llm_seat
         chat = llm_seat.chat
     text = task_text(task)
-    reply, err = chat(f"{text}\n\n{_CONTRACT}", system=_SYSTEM, max_tokens=700, temperature=0.0)
+    kind = str(task.get("kind") or "")
+    system = _SYSTEM_BY_KIND.get(kind, _SYSTEM)
+    contract = _CONTRACT_EXPR if kind == "alpha_expression" else _CONTRACT
+    reply, err = chat(f"{text}\n\n{contract}", system=system, max_tokens=700, temperature=0.0)
     if err:
         return {}, f"seat error: {err}"
     found = _parse(reply)
     if found is None:
         return {}, "reply was not a JSON object"
+    if kind == "alpha_expression":
+        return validate_expression(found, known_symbols())
     return validate(found, text, known_symbols())
 
 
@@ -214,6 +309,22 @@ def work_task(task: dict, universe: set[str], *, chat=None) -> tuple[list[dict],
     `compile_row`. Nothing here writes a candidate itself, so no guard in the compiler can be
     skipped by coming through this door.
     """
+    # A MUTATION TASK ALREADY CARRIES ITS RECIPE (survivor_distiller: parent certificate, one
+    # grid step, the operator named). Asking a seat to "extract" it would be paying to be told
+    # what the row says; it goes straight to the compiler, which still owns the admission.
+    if (str(task.get("kind") or "") == "mutation" and isinstance(task.get("family"), str)
+            and isinstance(task.get("params"), dict) and task.get("symbols")):
+        enriched = dict(task)
+        enriched.setdefault("mechanism", f"mutation of {task.get('parent')} by "
+                                         f"{task.get('operator')}")
+        candidates, disposition = compile_row(str(task.get("source") or "unknown"),
+                                              enriched, universe)
+        if not candidates:
+            return [], f"STILL_{disposition}"
+        for c in candidates:
+            c["deepened"] = True
+            c["evidence"] = f"exact recipe on the task: {task.get('operator')}"
+        return candidates, f"RECOVERED_{disposition}"
     found, why = extract(task, chat=chat)
     if not found:
         return [], f"REJECTED: {why}"
@@ -237,6 +348,175 @@ def work_task(task: dict, universe: set[str], *, chat=None) -> tuple[list[dict],
     return candidates, f"RECOVERED_{disposition}"
 
 
+def voi_order(tasks: list[dict]) -> list[dict]:
+    """Work the tasks with the highest expected value of information first.
+
+    THE QUEUE WAS FIFO. 882 tasks and a 25-per-run limit meant a coverage gap the allocator
+    asked about yesterday sat behind a month of low-grade crawler rows. Value of information for
+    a task is what a certificate from it would be worth times how likely one is:
+
+        P(certify | family)   `funnel_census`'s Beta posterior for the task's family hint, or
+                              the pooled rate when it names none
+        worth                 a coverage-gap task enters an uncovered state (weight 3);
+                              a fund-playbook A-grade claim carries a strong prior (2);
+                              a plain crawler row is 1
+        novelty               a task whose (symbol, family) region the hypothesis graph has
+                              already buried is discounted by 1 / (1 + n_failed)
+
+    Deterministic, so two runs on the same queue work the same tasks in the same order.
+    """
+    try:
+        from libs.research import funnel_census as fc
+        recs = fc.build(ROOT)
+        p_fam = {}
+        for name, r in recs.items():
+            a, b = r.posterior("certified")
+            p_fam[name] = a / (a + b) if (a + b) > 0 else 0.05
+        pooled = float(sum(p_fam.values()) / max(1, len(p_fam))) if p_fam else 0.05
+    except Exception:
+        p_fam, pooled = {}, 0.05
+    try:
+        from libs.research.hypothesis_graph import Graph
+        graph = Graph()
+        graph.buried()
+    except Exception:
+        graph = None
+    # THE META-MODEL OF RESEARCH SUCCESS: P(survivor | family, symbol, source, ...) from the
+    # graveyard, blended with the pooled family rate wherever the task names enough to ask.
+    # The bandit's 20% exploration floor still applies through `direction`, so the queue
+    # cannot become trapped by its own history.
+    try:
+        from libs.research.graveyard_model import GraveyardModel
+        gm = GraveyardModel().fit(graph.rows()) if graph is not None else None
+        if gm is not None and gm.n < 50:
+            gm = None
+    except Exception:
+        gm = None
+
+    def _score(t: dict) -> float:
+        fam = str(t.get("family") or "")
+        p = p_fam.get(fam, pooled)
+        if gm is not None and fam and t.get("symbols"):
+            try:
+                pm = gm.premortem({"family": fam, "symbol": str(t["symbols"][0]),
+                                   "source": str(t.get("source") or ""),
+                                   "params": dict(t.get("params") or {})})
+                if pm.get("p_survivor") is not None:
+                    p = 0.5 * p + 0.5 * float(pm["p_survivor"])
+            except Exception:
+                pass
+        src = str(t.get("source") or "")
+        # A gap the desk's OWN ledgers found (an uncovered state, a dead session phase) is worth
+        # entering: 3. An exit hypothesis from measured excursions, or an A-grade fund claim,
+        # carries a strong prior: 2. A plain crawler row is 1.
+        # The exit and action ledgers (2026-09-04) are measured on the desk's own trades and
+        # carry the same prior as excursions. A deep-forest or repo claim that names an
+        # instrument the desk quotes and comes from a competition record, an interview, code or
+        # a transcript sits between a crawler row and a measured gap: 1.5.
+        strong_story = (src in ("deep_forest", "repo_miner") and bool(t.get("symbols"))
+                        and str(t.get("evidence_grade")) in ("COMPETITION_RECORD", "INTERVIEW",
+                                                             "CODE", "VIDEO_TRANSCRIPT"))
+        worth = 3.0 if src in ("regime_coverage", "opportunity_curve") else (
+            2.0 if src in ("excursions", "exit_accounts", "action_counterfactuals")
+            or (src == "fund_playbook" and str(t.get("evidence_grade")) == "A")
+            else (1.5 if strong_story else 1.0))
+        novelty = 1.0
+        if graph is not None and fam and t.get("symbols"):
+            try:
+                pf = graph.prior_failures(str(t["symbols"][0]), fam, dict(t.get("params") or {}))
+                novelty = 1.0 / (1.0 + float(pf.get("n_failed", 0)))
+            except Exception:
+                pass
+        # THE BANDIT'S SHARE for this task's research direction (uniform budget = 1.0), so the
+        # queue works the directions that have been earning certificates per unit of cost.
+        try:
+            from libs.research.bandit import arm_weight
+            direction = arm_weight(src, str(t.get("kind") or "") or None)
+        except Exception:
+            direction = 1.0
+        return p * worth * novelty * direction
+
+    return sorted(tasks, key=lambda t: (-_score(t), task_id(t)))
+
+
+#: Specialist system prompts by task kind. One seat, three roles: the prospector reads a row for
+#: DATA it names, the mechanism reader for an exact RULE, the red team for why a claim would
+#: fail. Each is the same contract with a different question, which is what makes them
+#: comparable and keeps the extraction guard (verbatim evidence) applying to all three.
+_SYSTEM_BY_KIND = {
+    "coverage_gap": (
+        "You are given a market STATE in which no known mechanism pays, and the families already "
+        "tried there. Propose ONE family from the desk's registry and exact parameters whose "
+        "economic cause is specific to that state, or say why none is plausible. Never propose "
+        "a re-parameterisation of a family listed as already losing there."),
+    "fund_claim": (
+        "You read a public claim about how a named fund trades. Report only the mechanism the "
+        "text STATES, as a family and parameters the desk can test, and quote the span. A claim "
+        "with no testable mechanism is reported as such; you never fill it in."),
+    "data_source": (
+        "You read a row for DATA SOURCES it names: series, feeds, files, APIs. Report each with "
+        "the verbatim span that names it and what quantity it carries. Never infer a source."),
+    "dead_phase": (
+        "You are given a SESSION PHASE (a range of broker hours) in which no sleeve on the desk "
+        "has positive conditional expectancy, and what was measured there. Propose ONE family "
+        "from the desk's registry and exact parameters whose economic cause is specific to that "
+        "phase -- who is forced to trade then, what is rebalanced, which venue opens or closes -- "
+        "or say why none is plausible. Never a re-parameterisation of what already loses there."),
+    "exit_hypothesis": (
+        "You are given a certified sleeve whose trades give back a measured fraction of their "
+        "favourable excursion before exit. Propose ONE exit rule (trail, partial, time stop) as "
+        "exact parameters for a NEW cell that keeps the certified entry unchanged, or say why "
+        "the excursion pattern does not support one. Never change the entry."),
+    "sizing_hypothesis": (
+        "You are given a certified sleeve whose measured counterfactuals say a different size "
+        "would have raised E[log W]. State the exact sizing rule the evidence supports as a "
+        "capital modifier (kind, multiplier, condition) and quote the numbers; never propose a "
+        "size change the row's own measurement does not show."),
+    "repo_mechanism": (
+        "You read a verbatim MECHANISM CLAIM from a public repository's README (licence and "
+        "provenance given). Report only the mechanism the text STATES, as a registered family "
+        "and exact parameters the desk can test on an MT5 instrument, quoting the span. Concept "
+        "only: never copy code, never invent a rule the text does not state, and reject a claim "
+        "that names no testable rule."),
+    "story_mechanism": (
+        "You read a verbatim claim from a practitioner story -- a trader interview, a competition "
+        "record, a forum or community post, a video transcript -- in Chinese or English, with the "
+        "instrument already mapped to its MT5 analogue where one exists. A dubious story can "
+        "still name a TESTABLE mechanism: state it as a registered family and exact parameters "
+        "on the analogue instrument (or, for a no-analogue instrument, on the closest MT5 asset "
+        "class named in the row), quoting the span. The story's own performance numbers are NOT "
+        "evidence and must not raise your confidence. Reject when the text states no rule."),
+    "revival": (
+        "You are given a BURIED region (symbol, family, parameters), the failure class it died "
+        "of, and what has changed since. Say whether a re-test as a NEW pre-registered cell is "
+        "warranted by the stated change alone, with the exact recipe unchanged; never "
+        "re-parameterise, never argue from the original result."),
+    "anomaly": (
+        "You are given a data-first ANOMALY: a conditional regularity with its condition, "
+        "horizon, sample and t-statistic, and no mechanism. Name the economic mechanism that "
+        "would produce it (who pays, why they cannot stop) and the registered family that "
+        "expresses it with exact parameters, or say that no mechanism is plausible. An anomaly "
+        "without a named mechanism is an observation, not a candidate."),
+    "model_pairing": (
+        "You are given a feature-set x model pairing with a measured out-of-sample gain net of "
+        "its complexity tax. State the ONE state-conditioned family recipe that would use it "
+        "(which family, which parameters, which condition), or say why the pairing does not "
+        "translate into a tradeable rule."),
+    "mutation": (
+        "You are given a certified cell and a proposed parameter mutation inside the survivor "
+        "prior. Say whether the mutation keeps the stated mechanism intact and give the exact "
+        "recipe, or reject it as a re-parameterisation without an economic reason."),
+    "alpha_expression": (
+        "You are asked for ONE formulaic alpha as a JSON expression tree over the desk's alpha "
+        "grammar (terminals: close, open, high, low, ret, range, body, activity, spread, and the "
+        "driver roles usd, rates, risk, gold, oil, growth; operators: neg, abs, sign, delay, "
+        "delta, mean, std, min, max, ts_rank, zscore, decay, sum, add, sub, mul, div, corr, "
+        "residual, cov; windows 2..240) with a side_mode (follow|fade) and the economic mechanism "
+        "it expresses. Return it as family 'formula' with params {expr, side_mode, entry_z, "
+        "hold_bars}. Never emit an expression you cannot justify economically."),
+}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
@@ -251,7 +531,7 @@ def main() -> int:
         return 0
 
     done = worked_ids()
-    pending = [t for t in tasks if task_id(t) not in done]
+    pending = voi_order([t for t in tasks if task_id(t) not in done])
     dlog(f"queue={len(tasks)} already-decided={len(done)} pending={len(pending)} "
          f"limit={args.limit}")
     if args.dry_run:
@@ -269,7 +549,7 @@ def main() -> int:
         tid = task_id(task)
         try:
             candidates, disposition = work_task(task, universe)
-        except Exception as exc:                                  # noqa: BLE001
+        except Exception as exc:
             # One bad row must not end the run: the rest of the batch is still worth working,
             # and the failure is recorded so it is not silently retried forever.
             candidates, disposition = [], f"ERROR: {type(exc).__name__}: {exc}"

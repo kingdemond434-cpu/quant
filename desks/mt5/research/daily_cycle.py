@@ -170,6 +170,156 @@ def _cost_fields() -> None:
         raise RuntimeError(f"refresh_cost_fields returned {rc}")
 
 
+def _factor_residual() -> None:
+    """Strip every instrument to its economic drivers and propose what the residual pays.
+
+    RUNS RIGHT AFTER THE BARS AND THE COST FIELDS, because it needs both: the panel is built from
+    the refreshed H1 parquets and every expectancy is scored against `Costs.from_symbol`, which is
+    empty until `cost_fields` has filled `tick_value`.
+
+    DAILY, NOT HOURLY, AND THAT IS A STATISTICAL CHOICE RATHER THAN A BUDGET ONE. The sweep takes
+    seconds, so cadence is not about compute -- it is about multiplicity. Re-running 936 tests
+    every hour would search 24x harder per day while charging the same deflation, which is the
+    quiet way to manufacture a survivor. The inputs are H1 bars and driver relationships that move
+    on a scale of weeks; once a day is as often as this has anything new to say.
+
+    PROPOSES ONLY. The donation lands in data/intelligence/factor_residual/ and the ordinary
+    hourly compiler admits it as EXACT_RECIPE, so every proposal still faces the ten gates.
+    """
+    from research import factor_residual_engine
+
+    rep = factor_residual_engine.run()
+    dlog(f"factor residual: {rep['hypotheses_measured']}/{rep['hypotheses_stated']} claims "
+         f"measured, {rep['tests_run']} tests, {rep['cells_proposed']} proposed")
+
+
+def _state_admission() -> None:
+    """Re-judge every state dimension against the trades that have accrued since yesterday.
+
+    RUNS BEFORE SHADOW, so the verdicts the allocator reads today are based on every trade closed
+    up to yesterday rather than on a report from whenever someone last ran it by hand. The whole
+    point of the test is that it moves as the evidence does: a dimension that is UNDERPOWERED at
+    487 trades is not underpowered forever, and one that looks fine today can be measured worse
+    next month. A verdict nobody refreshes is a verdict nobody should act on.
+    """
+    import state_admission_run
+
+    doc = state_admission_run.run()
+    dlog(f"state admission: {doc['n_trades']} trades, "
+         f"{len(doc['admitted'])} allowed, {len(doc['graveyard'])} in the graveyard"
+         + (f" ({', '.join(doc['graveyard'])})" if doc["graveyard"] else ""))
+
+
+def _proposers() -> None:
+    """The proposer sweeps that hand the gauntlet cells it would never otherwise see.
+
+    Each is a PROPOSER in the `factor_residual_engine` sense: it runs a family over the desk's
+    bars, scores against cost, deflates by its own search, and donates survivors into the miner
+    contract. None admits anything. Daily, because cadence is multiplicity. A failure in one
+    must not cost the others their run, so each is fenced.
+    """
+    # THE BANDIT SETS THE BUDGETS. Each proposer belongs to a research direction; its time budget
+    # is the base budget scaled by that direction's share (uniform = 1.0), clipped so no arm is
+    # ever starved to zero -- the exploration floor is what keeps a cold arm alive.
+    import inspect
+    try:
+        from libs.research.bandit import arm_weight
+    except Exception:
+        def arm_weight(source, kind=None):                        # type: ignore[misc]
+            return 1.0
+    for name in ("plumbing_miner", "transition_alpha", "weak_signal_compiler",
+                 "fund_playbook", "microstructure_miner", "alpha_evolution",
+                 "style_premia_sweep", "cross_asset_graph", "anomaly_factory",
+                 "tail_alpha_search", "survivor_distiller", "factor_model_coevolution"):
+        try:
+            mod = __import__(name)
+            kwargs = {}
+            if "budget_s" in inspect.signature(mod.run).parameters:
+                base = float(inspect.signature(mod.run).parameters["budget_s"].default or 1200.0)
+                kwargs["budget_s"] = float(min(3600.0, max(300.0, base * arm_weight(name))))
+            rep = mod.run(**kwargs)
+            dlog(f"{name}: " + (f"{rep.get('tests_run', '?')} tests, "
+                                 f"{rep.get('cells_proposed', rep.get('donated_rows', '?'))} "
+                                 "proposed" + (f" (budget {kwargs['budget_s']:.0f}s)"
+                                               if kwargs else "")
+                                 if isinstance(rep, dict) else "ran"))
+        except ModuleNotFoundError:
+            dlog(f"{name}: not present on this tree")
+        except Exception as exc:
+            dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
+
+
+def _world_miners() -> None:
+    """Public systems and the deep forest, read for MECHANISM CLAIMS before the proposers run.
+
+    The repo miner reads watched repositories (GitHub and Gitee) and the deep-forest miner reads
+    Chinese practitioner ground -- competition records, trader interviews, platform communities,
+    Q&A/blog/social, code hosts, video transcripts -- by search-engine and platform routes the
+    link-following crawler cannot reach. Both emit deepening tasks (repo_mechanism,
+    story_mechanism) and the deep-forest miner feeds every URL it finds into the crawler's
+    frontier, so the ground keeps growing between runs. Off the box the network is absent; each
+    records that and rebuilds its queue from its ledger.
+    """
+    for name, kwargs in (("repo_miner", {}), ("deep_forest_miner", {"budget_s": 900.0})):
+        try:
+            mod = __import__(name)
+            rep = mod.run(**kwargs)
+            dlog(f"{name}: " + (f"network={rep.get('network')} tasks="
+                                 f"{rep.get('tasks_queued', rep.get('tasks', '?'))} "
+                                 f"claims_new={rep.get('claims_new', '-')}"
+                                 if isinstance(rep, dict) else "ran"))
+        except ModuleNotFoundError:
+            dlog(f"{name}: not present on this tree")
+        except Exception as exc:
+            dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
+
+
+def _research_bandit() -> None:
+    """Which research directions earn the next unit of compute -- written before the proposers
+    and the deepening worker read it."""
+    try:
+        import research_bandit
+        d = research_bandit.run()
+        top = sorted(d["shares"].items(), key=lambda kv: -kv[1])[:3]
+        dlog("research bandit: " + ", ".join(f"{a}={s:.0%}" for a, s in top))
+    except Exception as exc:
+        dlog(f"research_bandit FAILED (non-fatal): {type(exc).__name__}: {exc}")
+
+
+def _state_research_feedback() -> None:
+    """Coverage map -> research instructions; prospector -> acquisition queue; resurrection;
+    the live manifest; research-productivity metrics. Every one reads artifacts the earlier steps
+    have just refreshed, which is why they run late in the cycle."""
+    for name in ("excursions", "counterfactual_markout", "action_counterfactuals",
+                 "exit_accounts", "alpha_genome", "opportunity_curve",
+                 "regime_coverage", "data_prospector", "resurrection", "research_productivity",
+                 "research_pnl", "mutation_yield", "drift_monitor", "revival_engine",
+                 "missed_growth", "capital_modifier_score", "execution_intelligence",
+                 "live_manifest"):
+        try:
+            mod = __import__(name)
+            out = mod.run() if hasattr(mod, "run") else mod.write()
+            if name == "live_manifest":
+                v = mod.verify()
+                dlog(f"live manifest: chain ok={v.get('ok')} entries={v.get('entries')}")
+            elif isinstance(out, dict):
+                dlog(f"{name}: " + ", ".join(f"{k}={out[k]}" for k in
+                                             ("n_uncovered", "n_hibernated", "bottleneck")
+                                             if k in out))
+        except Exception as exc:
+            dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
+    # THE TYPED RESEARCH MEMORY is rebuilt from the artifacts the steps above refreshed, so the
+    # deepening worker's next prompt carries today's failures, survivors and methods (idempotent;
+    # a re-run adds nothing).
+    try:
+        from libs.research.memory import build_from_artifacts
+        m = build_from_artifacts()
+        dlog(f"research memory: {m.get('added', m)}" if isinstance(m, dict)
+             else "research memory built")
+    except Exception as exc:
+        dlog(f"research memory FAILED (non-fatal): {type(exc).__name__}: {exc}")
+
+
 def _futures_curves() -> None:
     """Accrue real contract curves so roll/calendar hypotheses stop remaining prose-blocked."""
     import fetch_futures_curves
@@ -240,10 +390,14 @@ def _zentech() -> None:
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
 STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
+         ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
+         ("world_miners", _world_miners), ("proposers", _proposers),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
+         ("state_admission", _state_admission),
          ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("decay", _decay),
+         ("state_research_feedback", _state_research_feedback),
          ("zentech", _zentech), ("conservation", _conservation),
          ("export_aurum", _export_aurum))
 

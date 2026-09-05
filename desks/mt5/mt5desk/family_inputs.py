@@ -75,6 +75,80 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             extra["peer"] = peer
             return extra, "ok"
 
+        if family == "ensemble":
+            # Members are ordinary cells; the runner rebuilds each through the gauntlet's own
+            # build_cell so a member's inputs are resolved by the same rule as everything else.
+            # The identity (members, weights, threshold) passes through untouched -- it IS the
+            # certificate.
+            try:
+                from research.weak_signal_compiler import _runner_factory
+            except ImportError:
+                from weak_signal_compiler import _runner_factory  # type: ignore[no-redef]
+            import json as _json
+            from pathlib import Path as _Path
+            try:
+                meta = _json.loads((_Path(__file__).resolve().parent.parent / "data" / "universe"
+                                    / "universe.json").read_text("utf-8"))
+            except (OSError, ValueError):
+                return None, "universe.json unreadable; ensemble members cannot be rebuilt"
+            if not call.get("members"):
+                return None, "ensemble has no members on the candidate"
+            extra["_runner"] = _runner_factory(meta)
+            return extra, "ok"
+
+        if family == "formula":
+            # Driver terminals are resolved by ROLE, first available instrument per role, the
+            # same registry the residual engine uses -- so `usd` means USDX here and everywhere.
+            try:
+                from mt5desk.economic_drivers import ROLES
+
+                from libs.research.alpha_grammar import DRIVER_TERMINALS, terminals_in
+            except ImportError as exc:
+                return None, f"alpha grammar unavailable: {exc}"
+            need = [t for t in terminals_in(call.get("expr")) if t in DRIVER_TERMINALS]
+            drivers: dict[str, Any] = {}
+            for t in need:
+                for cand in ROLES.get(t.upper(), ()):
+                    b = inputs._bars(str(cand))
+                    if b is not None:
+                        drivers[t] = b
+                        break
+                if t not in drivers:
+                    return None, f"no bars for driver role {t}"
+            extra["drivers"] = drivers
+            return extra, "ok"
+
+        if family == "lead_lag":
+            drv = call.get("driver_symbol")
+            if not drv:
+                return None, "no driver_symbol on the candidate"
+            b = inputs._bars(str(drv))
+            if b is None:
+                return None, f"driver bars unavailable for {drv}"
+            extra["driver"] = b
+            return extra, "ok"
+
+        if family == "style_premia":
+            # Carry needs the instrument's own rollover; defensive needs the risk driver. Each
+            # style refuses without its input, so both are supplied when they exist and the
+            # family decides what it can run.
+            try:
+                from libs.data.datahub import desk_hub
+                q = desk_hub().get("terms.swap_diff", symbol=sym)["payload"]
+                extra["swap_diff"] = float(q.value)
+            except Exception:
+                extra["swap_diff"] = None
+            try:
+                from mt5desk.economic_drivers import ROLES
+                for cand in ROLES.get("RISK", ()):
+                    b = inputs._bars(str(cand))
+                    if b is not None:
+                        extra["risk"] = b
+                        break
+            except Exception:
+                pass
+            return extra, "ok"
+
         # pca_residual TAKES THE SAME `factors` ARGUMENT and was never listed here, so it was
         # handed factors=None on every sweep and every one of its 301 cells failed to build with
         # "parquet missing or build failed" -- a message that names the wrong cause, because the

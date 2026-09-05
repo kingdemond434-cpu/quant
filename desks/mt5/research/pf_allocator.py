@@ -52,6 +52,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk.gateway_config_fallback import MAX_SLEEVE_HEAT_SHARE  # noqa: E402
+
 from libs.portfolio.robust_elog import (  # noqa: E402
     AllocationResult,
     SleeveEvidence,
@@ -105,6 +107,23 @@ IMPLAUSIBLE_ANNUAL_PCT = 5000.0
 #: sounds. See `regime_state` for the measurement that made both necessary.
 REGIME_MIN_SHARE = 0.08
 REGIME_MAX_SHARE = 0.60
+
+#: Horizon, IN DAYS, the world population is drawn for. The regime that matters for sizing is the
+#: one that will prevail while the book is HELD, not the one holding at the instant of the solve:
+#: an edge can be excellent inside a trend and terrible around its termination.
+#:
+#: ONE DAY, AND THAT IS MEASURED RATHER THAN CHOSEN. `data/pf_forecast_log.jsonl` records the book
+#: this allocator actually solved on each pass. Over its 87 booked passes the median pass-to-pass
+#: total-variation change is 0.0006 -- the no-trade region and turnover cost make the book very
+#: sticky -- and it drifts 0.18 from its starting composition within half a day before flattening.
+#: So a book solved now is still substantially the same book a day out, and is not obviously the
+#: same book much beyond that. The log spans 1.6 days, so it cannot support a longer claim, and
+#: guessing one would be picking a number to suit an answer.
+#:
+#: `REGIME_TERM_STRUCTURE` is reported in the artifact but never used for sizing, so the horizon
+#: can be re-chosen against evidence later without anyone having to re-derive what it changes.
+REGIME_FORECAST_H = 1
+REGIME_TERM_STRUCTURE = (1, 2, 5, 21)
 
 
 def _log(msg: str) -> None:
@@ -248,8 +267,9 @@ def live_days_by_sleeve() -> dict[str, int]:
     return {k: len(v) for k, v in days.items()}
 
 
-def regime_state(daily: pd.DataFrame) -> tuple[tuple[str, ...], tuple[tuple[str, float], ...]]:
-    """Per-day regime label over the matrix's own clock, and today's regime probabilities.
+def regime_state(daily: pd.DataFrame,
+                 ) -> tuple[tuple[str, ...], tuple[tuple[str, float], ...], dict[str, Any]]:
+    """Per-day regime label over the matrix's own clock, and the regime mix to SIZE AGAINST.
 
     PROBABILITIES, NOT A LABEL. `libs/regime/engine.py` already cross-checks an HMM against a GMM
     and dampens confidence on disagreement; what the allocator needs from it is the POSTERIOR, so
@@ -257,12 +277,28 @@ def regime_state(daily: pd.DataFrame) -> tuple[tuple[str, ...], tuple[tuple[str,
     wholesale into whichever state the classifier called this minute. A classifier that flickers
     then costs a little weight, not the whole book.
 
-    Fitted on XAUUSD daily closes -- the desk's dominant instrument and the one every sleeve's
-    session structure is defined against. Returns empty tuples when the engine cannot fit, in
-    which case `sample_worlds` draws unconditioned worlds and says so in the artifact.
+    AND NOT TODAY'S PROBABILITIES EITHER (fixed 2026-09-04). This used the FILTERED posterior --
+    P(Z_t | data now) -- so the desk sized a book it holds for days against the regime holding at
+    the instant of the solve. `GaussianHMM` has estimated a full transition matrix by Baum-Welch
+    since it was written and nothing had ever read it. `libs.regime.transitions` propagates the
+    posterior forward `REGIME_FORECAST_H` days through an age-conditioned hazard -- so a trend
+    eighteen days old and a trend two days old are no longer given the same chance of surviving --
+    and the world population is drawn from THAT distribution.
+
+    THE RISK RESPONSE IS THE OBJECTIVE'S, NOT A KNOB'S. When a transition is likely the forward
+    distribution is flatter than the filtered one, so the worlds span more regimes, so E[log W]
+    sizes down of its own accord. No entropy multiplier, no hand-set haircut around transitions:
+    the uncertainty enters where every other uncertainty on this desk enters.
+
+    STILL FITTED ON XAUUSD DAILY CLOSES, which is a real limitation and not a design: EURUSD can
+    be trending while gold ranges. A per-asset regime hierarchy is the next piece of work; this
+    function's contract does not change when it arrives. Returns empty tuples when the engine
+    cannot fit, in which case `sample_worlds` draws unconditioned worlds and says so.
     """
+    diag: dict[str, Any] = {}
     try:
         from libs.regime.engine import RegimeEngine
+        from libs.regime.transitions import forecast as regime_forecast
 
         px = pd.read_parquet(BASE / "data" / "universe" / "XAUUSD_H1.parquet")
         col = next((c for c in ("close", "Close", "c") if c in px.columns), None)
@@ -280,12 +316,31 @@ def regime_state(daily: pd.DataFrame) -> tuple[tuple[str, ...], tuple[tuple[str,
         by_day = {str(d): lab[int(j)] for d, j in zip(close.index, eng.hmm_states, strict=True)}
         labels = tuple(by_day.get(str(d)[:10], "") for d in daily.index)
 
-        # Today's probabilities: the last filtered posterior, summed onto LABELS rather than
-        # latent state indices, because two states can carry the same economic label.
+        # The filtered posterior is the STARTING point, summed onto LABELS rather than latent
+        # state indices because two states can carry the same economic label.
         post = eng.posteriors[-1]
-        raw: dict[str, float] = {}
+        filtered: dict[str, float] = {}
         for j, pj in enumerate(post):
-            raw[lab[int(j)]] = raw.get(lab[int(j)], 0.0) + float(pj)
+            filtered[lab[int(j)]] = filtered.get(lab[int(j)], 0.0) + float(pj)
+
+        fc = regime_forecast(eng.hmm.transmat, post, lab, eng.hmm_states,
+                             horizons=REGIME_TERM_STRUCTURE)
+        raw = dict(fc.p_ahead.get(REGIME_FORECAST_H) or filtered)
+        diag = {
+            "horizon_days": REGIME_FORECAST_H,
+            "filtered_now": {k: round(v, 4) for k, v in filtered.items()},
+            "forward": {str(h): {k: round(v, 4) for k, v in d.items()}
+                        for h, d in fc.p_ahead.items()},
+            "p_leave": {str(h): round(v, 4) for h, v in fc.p_leave.items()},
+            "entropy": {str(h): round(v, 4) for h, v in fc.entropy.items()},
+            "regime_age_days": fc.age_bars,
+            "duration_weight": round(fc.duration_weight, 4),
+            "note": fc.note,
+        }
+        _log(f"regime age={fc.age_bars}d P(leave in {REGIME_FORECAST_H}d)="
+             f"{fc.p_leave.get(REGIME_FORECAST_H, float('nan')):.1%} "
+             f"entropy={fc.entropy.get(REGIME_FORECAST_H, 0.0):.2f} "
+             f"duration_weight={fc.duration_weight:.2f} ({fc.note})")
 
         # A FILTER POSTERIOR OF 1.0 IS A HARD SWITCH WEARING A PROBABILITY'S CLOTHES, and this
         # engine produces them: measured 2026-09-02 it returned bull/high_vol at 100.0%, which
@@ -318,16 +373,21 @@ def regime_state(daily: pd.DataFrame) -> tuple[tuple[str, ...], tuple[tuple[str,
             rest = sum(v for k, v in probs.items() if k != top) or 1.0
             probs = {k: (REGIME_MAX_SHARE if k == top else v + spill * v / rest)
                      for k, v in probs.items()}
-        _log(f"regime raw={ {k: round(v, 3) for k, v in raw.items()} } conf={conf:.2f} "
+        _log(f"regime forward({REGIME_FORECAST_H}d)="
+             f"{ {k: round(v, 3) for k, v in raw.items()} } conf={conf:.2f} "
              f"-> used={ {k: round(v, 3) for k, v in probs.items()} }")
+        diag["used"] = {k: round(v, 4) for k, v in probs.items()}
+        diag["engine_confidence"] = round(conf, 4)
         covered = sum(1 for x in labels if x)
         if covered < 0.5 * len(labels):
             _log(f"regime labels cover only {covered}/{len(labels)} matrix days; unconditioned")
-            return (), ()
-        return labels, tuple(sorted(probs.items(), key=lambda kv: -kv[1]))
+            diag["unconditioned_because"] = f"labels cover {covered}/{len(labels)} matrix days"
+            return (), (), diag
+        return labels, tuple(sorted(probs.items(), key=lambda kv: -kv[1])), diag
     except Exception as exc:
         _log(f"regime engine unavailable ({type(exc).__name__}: {exc}); worlds are unconditioned")
-    return (), ()
+        diag["unconditioned_because"] = f"{type(exc).__name__}: {exc}"
+    return (), (), diag
 
 
 def join_forward(columns: list[str], forward: dict[str, dict[str, float]],
@@ -421,12 +481,26 @@ def search_trials() -> dict[str, int]:
             out.update({str(k): int(n) for k, n in v.items() if isinstance(n, (int, float))})
         elif isinstance(v, (int, float)):
             out["external"] = int(v)
+    # THE LIFETIME LEDGER (Quanti's discipline): the desk's whole history of trials per family,
+    # taken as the LARGER of the gate report's count and the lifetime count. A tightening only.
+    try:
+        from libs.research.experiment_ledger import lifetime
+        life = lifetime(write=False)
+        for fam, n in (life.get("by_family") or {}).items():
+            out[f"family:{fam}"] = max(int(out.get(f"family:{fam}", 0)), int(n))
+        out["lifetime_total"] = max(int(out.get("lifetime_total", 0)),
+                                    int(life.get("lifetime_trials", 0)))
+    except Exception:                                            # noqa: BLE001
+        pass
     return out
 
 
 def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     live: dict[str, int],
-                    trials: dict[str, int] | None = None) -> list[SleeveEvidence]:
+                    trials: dict[str, int] | None = None,
+                    phase: str | None = None,
+                    trades_by_sleeve: dict[str, list[dict]] | None = None,
+                    broker_utc_offset_h: int = 0) -> list[SleeveEvidence]:
     """Fold backtest, certified, forward and live evidence into one record per sleeve.
 
     THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
@@ -471,8 +545,103 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             # honest 2x baseline); this is the per-trade scale used to size the UNCERTAINTY
             # around it, never a second charge.
             cost_r=0.05,
+            # THE HOUR, AS THE NARROWEST LEVEL OF A SHRINKAGE THAT ALREADY EXISTED. Empty unless
+            # a phase and this sleeve's own trades were supplied, and empty means the posterior
+            # behaves exactly as it did before -- a caller that does not know the hour is not
+            # penalised for saying so. `_posterior_mu` shrinks this at k=40, so a six-trade
+            # bucket moves the estimate slightly and forty move it fully.
+            state_r=_state_returns(name, phase, trades_by_sleeve, broker_utc_offset_h),
+            state_key=phase or "",
         ))
     return out
+
+
+def _state_returns(name: str, phase: str | None,
+                   trades_by_sleeve: dict[str, list[dict]] | None,
+                   broker_utc_offset_h: int) -> np.ndarray:
+    """This sleeve's realised R for trades entered in `phase`, or empty when unknown.
+
+    Returns EMPTY rather than zeros on every failure path. A zero-filled state series would read
+    to the posterior as measured evidence of no edge at this hour, which is a claim; absence is
+    not, and the unconditional mean is the honest answer when the hour is unknown.
+    """
+    if not phase or not trades_by_sleeve:
+        return np.array([], dtype=float)
+    rows = trades_by_sleeve.get(name)
+    if not rows:
+        return np.array([], dtype=float)
+    try:
+        from session_phase import returns_in_phase
+        base = returns_in_phase(rows, phase, broker_utc_offset_h=broker_utc_offset_h)
+    except Exception as exc:
+        _log(f"state conditioning unavailable for {name}: {type(exc).__name__}: {exc}")
+        return np.array([], dtype=float)
+    # THE OTHER ADMITTED DIMENSIONS NARROW THE SAME BUCKET. Session was the only dimension that
+    # reached the posterior; event and weekday were judged by `state_admission` and, where not
+    # buried, may condition too. Each admitted dimension's CURRENT bucket is read from the
+    # state vector and the sleeve's trades are filtered to those whose own point-in-time label
+    # matches -- the same labellers the admission test used, so a dimension conditions here on
+    # exactly the terms it was judged on. k_state = 40 protects the narrower bucket as before.
+    extra = _admitted_extra_dims()
+    if not extra:
+        return base
+    try:
+        from session_phase import _entry_hour  # noqa: F401  (kept for parity with returns_in_phase)
+
+        from libs.regime.state_admission import Trade, build_labeller
+        keep = []
+        fns = {d: build_labeller(d) for d, _cur in extra}
+        for r in rows:
+            when = str(r.get("entry_time") or r.get("opened_at") or "")
+            if not when:
+                continue
+            t = Trade(sleeve=name, when=when, r=float(r.get("r_multiple", 0.0)))
+            ok = True
+            for d, cur in extra:
+                fn = fns.get(d)
+                if fn is None or fn(t) != cur:
+                    ok = False
+                    break
+            if ok:
+                keep.append(r)
+        if not keep:
+            return base
+        return returns_in_phase(keep, phase, broker_utc_offset_h=broker_utc_offset_h)
+    except Exception as exc:
+        _log(f"extra-dimension conditioning unavailable for {name}: "
+             f"{type(exc).__name__}: {exc}; session-only bucket used")
+        return base
+
+
+_EXTRA_DIMS_CACHE: tuple[float, tuple] = (0.0, ())
+
+
+def _admitted_extra_dims() -> tuple[tuple[str, str], ...]:
+    """(dimension, current bucket) for every admitted non-session dimension, from the artifacts.
+
+    Read once per pass (mtime-cached): the admission report says which dimensions may condition,
+    the state vector says which bucket each is in right now. A dimension missing from either is
+    simply not applied -- absence is not a claim.
+    """
+    global _EXTRA_DIMS_CACHE
+    try:
+        adm_p = BASE / "reports" / "STATE_ADMISSION.json"
+        sv_p = BASE / "data" / "state_vector.json"
+        key = adm_p.stat().st_mtime + sv_p.stat().st_mtime
+        if key == _EXTRA_DIMS_CACHE[0]:
+            return _EXTRA_DIMS_CACHE[1]
+        adm = json.loads(adm_p.read_text("utf-8"))
+        sv = json.loads(sv_p.read_text("utf-8"))
+        allowed = set(adm.get("admitted") or []) - {"session"}
+        from datetime import datetime as _dt
+        now_bucket = {"event": str((sv.get("event") or {}).get("phase") or ""),
+                      "weekday": _dt.now(UTC).strftime("%a")}
+        out = tuple((d, now_bucket[d]) for d in sorted(allowed)
+                    if now_bucket.get(d))
+        _EXTRA_DIMS_CACHE = (key, out)
+        return out
+    except Exception:
+        return ()
 
 
 def worst_dd_r(daily: pd.DataFrame) -> dict[str, float]:
@@ -536,13 +705,22 @@ def no_trade(current: dict[str, float], proposed: dict[str, float],
     names = set(current) | set(proposed)
     moved = {n: proposed.get(n, 0.0) - current.get(n, 0.0) for n in names}
     turnover = 0.5 * sum(abs(v) for v in moved.values())
-    cost = turnover * TURNOVER_COST_R
+    # THE INERTIA RAIL IS CALIBRATED BY ITS OWN LEDGER LINE. `missed_growth` bills what holding
+    # cost or saved each day; a rail that persistently costs growth has its multiplier walked
+    # down inside [0.5, 2.0] (libs.portfolio.rails), so the desk rebalances sooner. Never up.
+    try:
+        from libs.portfolio.rails import rail_multiplier as _rail_mult
+        inertia_mult = _rail_mult("position_inertia")
+    except Exception:
+        inertia_mult = 1.0
+    cost = turnover * TURNOVER_COST_R * inertia_mult
     benefit = max(gain_per_day, 0.0) * NO_TRADE_HORIZON_DAYS
     go = benefit > cost
     return {
         "verdict": "REBALANCE" if go else "NO CHANGE",
         "turnover": round(turnover, 6),
         "cost": round(cost, 8),
+        "inertia_multiplier": round(inertia_mult, 4),
         "benefit_over_horizon": round(benefit, 8),
         "horizon_days": NO_TRADE_HORIZON_DAYS,
         "largest_moves": dict(sorted(((k, round(v, 5)) for k, v in moved.items() if abs(v) > 1e-5),
@@ -619,9 +797,141 @@ def opportunity(free: AllocationResult, book: dict[str, float],
     }
 
 
+def fill_floor(book: AllocationResult, ev: list[SleeveEvidence], target: float,
+               ub: dict[str, float], family_of: dict[str, str], *,
+               cfg: WorldConfig, worlds: Worlds) -> tuple[AllocationResult, dict[str, Any]]:
+    """Hold the resolved heat; yield the per-sleeve bounds, in order, until it is funded.
+
+    FLOOR FILL (principal, 2026-09-04): the resolved heat -- 20% floor, growth above it to the
+    ceiling -- is what the book HOLDS, not what it reports as a shortfall. When the per-sleeve
+    bounds cannot fund it, the bounds yield in the order of how little each was ever proven to
+    earn: the drawdown-derived leg first, then the mechanism cap, then the single-sleeve share
+    cap, and last a proportional scale of the solved book. Every relaxation is returned in the
+    note and billed by `missed_growth` as that rail's opportunity cost. The one thing the fill
+    never overrides is the ruin guard: a candidate wiped out in a sampled world is skipped, and
+    the caller's ruin check still runs on whatever is returned.
+    """
+    note: dict[str, Any] = {"needed": False}
+    short = target - book.total_heat
+    if not (math.isfinite(book.mean_log_growth) and short > 1e-4):
+        return book, note
+    share_cap = MAX_SLEEVE_HEAT_SHARE * target
+    levels = (("drawdown_bound", dict.fromkeys(ub, share_cap), True),
+              ("family_cap", dict.fromkeys(ub, share_cap), False),
+              ("share_cap", dict.fromkeys(ub, target), False))
+    g_before = book.mean_log_growth
+    for level, bnd, keep_family in levels:
+        try:
+            cand = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=target, cfg=cfg,
+                            worlds=worlds, max_per_sleeve=bnd, warm_start=book.heat or None)
+            if keep_family:
+                capped = enforce_family_cap(cand.heat, family_of, cand.total_heat)
+                if not all(math.isinf(v) for v in capped.values()):
+                    tight = {k: min(bnd.get(k, math.inf), capped.get(k, math.inf))
+                             for k in bnd}
+                    cand = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=target, cfg=cfg,
+                                    worlds=worlds, max_per_sleeve=tight,
+                                    warm_start=cand.heat or None)
+        except ValueError:
+            continue                                  # these bounds cannot fund it; next level
+        if not math.isfinite(cand.mean_log_growth):
+            continue
+        if cand.total_heat > book.total_heat + 1e-6:
+            book = cand
+            note = {"needed": True, "relaxed": level,
+                    "growth_gap": round(cand.mean_log_growth - g_before, 8)}
+        if book.total_heat >= target - 1e-4:
+            break
+    if book.total_heat > 0 and book.total_heat < target - 1e-4:
+        scale = target / book.total_heat
+        scaled = {k: v * scale for k, v in book.heat.items()}
+        sc = score_book(ev, scaled, cfg=cfg, worlds=worlds)
+        if math.isfinite(sc["mean_log_growth"]):
+            book = AllocationResult(
+                heat=scaled, total_heat=float(sum(scaled.values())),
+                robust_score=sc["robust_score"], mean_log_growth=sc["mean_log_growth"],
+                cvar_log_growth=sc["cvar_log_growth"], annual_growth_pct=sc["annual_growth_pct"],
+                prob_annual_loss=sc["prob_annual_loss"], marginal=book.marginal,
+                iterations=book.iterations, converged=book.converged,
+                note="floor filled by proportional scale of the bounded solve")
+            note = {"needed": True, "relaxed": "proportional",
+                    "growth_gap": round(sc["mean_log_growth"] - g_before, 8)}
+    return book, note
+
+
 # ---------------------------------------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------------------------------------
+
+
+def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
+    """The phase now, each sleeve's own trades, and the broker's clock offset.
+
+    RETURNS (None, {}, 0) ON ANY DOUBT, and that is the whole safety property: an unknown state
+    yields an EMPTY conditional series, which `_posterior_mu` treats exactly as it treated every
+    solve before conditioning existed. A wrong phase would be worse than no phase -- it would
+    price every sleeve against an hour the desk is not in -- so nothing here guesses.
+
+    THE OFFSET IS READ, NEVER ASSUMED. The desk measured its own feed at broker EET, three hours
+    ahead of UTC in summer (mt5desk/families.py `_h1`, 2026-08-29). A hardcoded 0 would mislabel
+    every bucket by three hours without raising anything, so when the live terminal cannot be
+    asked the answer is "no state", not "assume UTC".
+    """
+    try:
+        from datetime import datetime as _dt
+
+        from session_phase import phase_at
+    except ImportError as exc:
+        _log(f"state: session_phase unavailable ({exc}); solving unconditioned")
+        return None, {}, 0
+
+    # Live terminal, then the recorded measurement, then nothing. The rule lives in
+    # `session_phase` so the state-vector builder resolves the SAME clock this does; two answers
+    # to "what time does the broker think it is" is how a cell gets certified in one clock and
+    # traded in another.
+    from session_phase import broker_utc_offset_h
+    off, off_source = broker_utc_offset_h()
+    if off is None:
+        _log("state: broker UTC offset unknown -- solving unconditioned rather than assuming UTC")
+        return None, {}, 0
+
+    phase = phase_at(_dt.now(UTC), broker_utc_offset_h=off)
+
+    # THE GRAVEYARD BINDS. `state_admission_run` judges each state dimension walk-forward on the
+    # desk's own realised trades: does conditioning on it predict trades it has NEVER SEEN better
+    # than not conditioning? A dimension measured WORSE loses its access here, not in a report
+    # somebody reads. Fails open to conditioning as before when no report exists, because
+    # withdrawing a dimension on the strength of a missing file would be substituting one
+    # unmeasured decision for another.
+    try:
+        from state_admission_run import read_graveyard
+        barred, why = read_graveyard()
+        _log(f"state admission: {why}")
+        if "session" in barred:
+            _log("state: session conditioning is in the GRAVEYARD -- measured worse out of "
+                 "sample, so this pass solves without it")
+            return None, {}, off
+    except Exception as exc:
+        _log(f"state admission unreadable ({type(exc).__name__}: {exc}); conditioning stands")
+
+    # PER-SLEEVE TRADES, KEYED THE WAY THE BOOK IS KEYED. The shadow ledgers are
+    # ledger_<SYM>_<window>.json and the allocator's columns are the sleeve names, so the join is
+    # on the file stem. A ledger that does not match a column is simply unused -- never merged
+    # into a neighbouring sleeve, which would attribute one edge's hours to another.
+    trades: dict[str, list[dict]] = {}
+    for d in (BASE / "reports" / "shadow", ROOT / "backups" / "moat" / "shadow_ledgers"):
+        if not d.is_dir():
+            continue
+        for f in sorted(d.glob("ledger_*.json")):
+            try:
+                rows = json.loads(f.read_text("utf-8"))
+            except Exception:
+                continue
+            if isinstance(rows, list) and rows:
+                trades.setdefault(f.stem[len("ledger_"):], []).extend(
+                    r for r in rows if isinstance(r, dict) and "r_multiple" in r)
+    return phase, trades, off
+
 
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
@@ -635,15 +945,61 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     forward, fwd_acct = join_forward([str(c) for c in daily.columns], forward)
     trials = search_trials()
     _log(f"search intensity for deflation: {trials or 'UNMEASURED (no deflation applied)'}")
-    ev = sleeve_evidence(daily, forward, live, trials)
+    # ------------------------------------------------ THE STATE THE BOOK IS BEING SOLVED FOR
+    # THE MATHEMATICS WAS WIRED AND THE CALL WAS NOT. `sleeve_evidence` grew `phase` and
+    # `trades_by_sleeve`, and `_posterior_mu` grew the state level of its hierarchy -- and this
+    # line still passed neither, so every solve ran on an empty state and the conditioning was
+    # arithmetic nobody reached. "It is London open, therefore this posterior" was true in the
+    # library and false in production, which is the desk's most repeated defect wearing new code.
+    phase, trades_by_sleeve, broker_off = _live_state()
+    _log(f"state: phase={phase or 'UNKNOWN'} broker_utc_offset={broker_off:+d}h "
+         f"sleeves_with_trades={len(trades_by_sleeve)}")
+    ev = sleeve_evidence(daily, forward, live, trials, phase=phase,
+                         trades_by_sleeve=trades_by_sleeve, broker_utc_offset_h=broker_off)
     dd = worst_dd_r(daily)
 
-    labels, probs = regime_state(daily) if mode in ("heavy", "normal") else ((), ())
+    # THE STATE VECTOR ENTERS AS INFORMATION, NOT AS AUTHORITY. `state_vector_build` fits the
+    # per-asset, per-factor and per-clock states the hourly cycle can afford and this reads the
+    # artifact in milliseconds. It is RECORDED here and its id is available to stamp on orders;
+    # what draws the scenario worlds is still the global regime below, unchanged. A new state
+    # dimension takes capital authority by improving calibration or marginal E[log W] against the
+    # existing gates -- never by being plausible, and never in the change that introduces it.
+    state_vec, sv_why = (None, "not read on the fast clock")
+    if mode in ("heavy", "normal"):
+        try:
+            from state_vector_build import load as _load_sv
+            state_vec, sv_why = _load_sv()
+        except Exception as exc:
+            state_vec, sv_why = None, f"{type(exc).__name__}: {exc}"
+        _log(f"state vector: {sv_why}")
+
+    labels, probs, regime_diag = (regime_state(daily) if mode in ("heavy", "normal")
+                                  else ((), (), {"skipped": f"{mode} clock"}))
+    # CRISIS SEVERITY, MEASURED RATHER THAN ASSUMED. `crisis_common_share` IS the pairwise
+    # correlation the crisis worlds impose (a one-factor overlay with share s has pairwise
+    # correlation exactly s), and it was the constant 0.55 with nothing behind it. The book's own
+    # return matrix can be asked. The calibration RATCHETS ONLY UPWARD: a quiet sample never
+    # licenses modelling crises as gentler than the standing assumption, because that is how a
+    # book finds out its real correlations at the worst possible moment.
+    cov_cal = None
+    try:
+        from libs.portfolio.conditional_covariance import calibrate as _calibrate_cov
+        _base = WorldConfig()
+        _hist = daily.to_numpy(dtype=float)
+        cov_cal = _calibrate_cov(_hist, labels or None,
+                                 standing_share=_base.crisis_common_share,
+                                 standing_vol_mult=_base.crisis_vol_mult)
+        _log(f"crisis calibration: common_share={cov_cal.crisis_common_share:.3f} "
+             f"vol_mult={cov_cal.crisis_vol_mult:.2f} ({cov_cal.note})")
+    except Exception as exc:
+        _log(f"crisis calibration unavailable ({type(exc).__name__}: {exc}); constants stand")
+
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
                       # The fast clock buys its speed here and nowhere else: a smaller world
                       # population, never a shortcut through the posterior or the crisis worlds.
                       n_worlds=256 if heavy else 128,
-                      n_rows=384 if heavy else 256)
+                      n_rows=384 if heavy else 256,
+                      **(cov_cal.as_overrides() if cov_cal else {}))
 
     cachef = CACHE / "worlds.npz"
     worlds: Worlds | None = None
@@ -711,6 +1067,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
 
     # 3. THE BOOK, at the heat the law resolved.
     fam_share: dict[str, float] = {}
+    fill_note: dict[str, Any] = {"needed": False}
     if verdict.total_heat <= 0:
         book = AllocationResult(heat={}, total_heat=0.0, robust_score=0.0, mean_log_growth=0.0,
                                 cvar_log_growth=0.0, annual_growth_pct=0.0, prob_annual_loss=0.0,
@@ -718,9 +1075,15 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     else:
         ub = {k: min(v, verdict.total_heat) for k, v in
               per_sleeve_bounds(dd, verdict.total_heat).items()}
-        book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat, cfg=cfg,
-                        worlds=worlds, max_per_sleeve=ub,
-                        warm_start=current_book() or None)
+        try:
+            book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat, cfg=cfg,
+                            worlds=worlds, max_per_sleeve=ub,
+                            warm_start=current_book() or None)
+        except ValueError as exc:
+            # The bounds cannot fund the mandate at all. Not a failed pass: the floor fill below
+            # starts from the free solve and yields the bounds until the resolved heat is held.
+            _log(f"bounded solve refused ({exc}); the floor fill starts from the free optimum")
+            book = free
 
         # MECHANISM CONCENTRATION, enforced by re-solving under tightened bounds rather than
         # priced. Measured 2026-09-02 the first solved book held 97% of its heat in one family;
@@ -734,8 +1097,27 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             if all(math.isinf(v) for v in capped.values()):
                 break                                   # every mechanism already inside the cap
             tight = {k: min(ub.get(k, math.inf), capped.get(k, math.inf)) for k in ub}
-            book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat, cfg=cfg,
-                            worlds=worlds, max_per_sleeve=tight, warm_start=book.heat or None)
+            try:
+                book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat,
+                                cfg=cfg, worlds=worlds, max_per_sleeve=tight,
+                                warm_start=book.heat or None)
+            except ValueError as exc:
+                _log(f"family-capped solve refused ({exc}); the floor fill decides the cap")
+                break
+        # FLOOR FILL (principal, 2026-09-04): the resolved heat -- 20% floor, growth above it to
+        # the ceiling -- is what the book HOLDS, not what it reports as a shortfall. When the
+        # per-sleeve bounds cannot fund it, the bounds yield, in the order of how little each
+        # was ever proven to earn: the drawdown-derived leg first, then the mechanism cap, then
+        # the single-sleeve share cap, and last a proportional scale of the solved book. Every
+        # relaxation is written to the artifact and billed by `missed_growth` as that rail's
+        # opportunity cost. The one thing the fill never overrides is the ruin guard below: a
+        # filled book that is wiped out in a sampled world is still not a book.
+        held_before = book.total_heat
+        book, fill_note = fill_floor(book, ev, verdict.total_heat, ub, family_of,
+                                     cfg=cfg, worlds=worlds)
+        if fill_note.get("needed"):
+            _log(f"FLOOR FILL: bounded solve held {held_before:.2%} of the "
+                 f"{verdict.total_heat:.2%} resolved; {fill_note}")
         for name, h in book.heat.items():
             if h > 1e-6:
                 fam = family_of.get(name, "?")
@@ -792,6 +1174,83 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     nt["held"] = {k: round(v, 8) for k, v in held.items()}
     opp = opportunity(free, funded, HEAT_TARGET)
 
+    # ------------------------------------------------------ THE BASELINE CONTEST, EVERY PASS
+    # A dynamic allocator sits above every edge and reallocates, so it can destroy compounding
+    # faster than any single sleeve can. It therefore has to beat the answers anyone could have
+    # written in an afternoon -- equal weight, inverse vol, risk parity, and doing nothing --
+    # on THESE worlds, at EQUAL total heat, before it is allowed to size a position.
+    # The gateway reads the certificate this writes; without a fresh passing one it keeps
+    # ranking with the optimiser and sizing with Q_OPT exactly as it does today.
+    fallback: dict[str, Any] = {}
+    try:
+        from libs.portfolio.allocator_proof import certify, contest
+        proof = contest(ev, funded, current_book(), cfg=cfg, worlds=worlds)
+        certify(proof, root=ROOT, book=funded)
+        # THE FLOOR'S FALLBACK: the best baseline at the same total heat, carried on the
+        # artifact so a failed or stale proof changes who allocates the floor, never whether.
+        best = str(proof.get("best_baseline") or "")
+        fb_book = (proof.get("books") or {}).get(best) or {}
+        if best and fb_book:
+            fallback = {"name": best, "book": {k: round(float(v), 6) for k, v in fb_book.items()
+                                               if float(v) > 1e-6}}
+        _log(f"proof: {'PASS' if proof['passed'] else 'FAIL'} -- {proof['why']}")
+    except Exception as exc:
+        # A failed contest must never take the allocation pass with it: the book is still worth
+        # publishing for ranking and total heat. What it loses is the right to SIZE, which is
+        # exactly the fail-closed direction.
+        proof = {"passed": False, "why": f"{type(exc).__name__}: {exc}"}
+        _log(f"proof: FAILED TO RUN -- {proof['why']}")
+
+    # THE AGGRESSION GOVERNOR'S AUDIT AND THE KELLY SURFACE: why the deployed heat is what it
+    # is, and how much more the worlds would bear. Report-only -- `heat_policy.resolve` is the
+    # lever -- but UNUSED_UPSIDE is a verdict `missed_growth` will not let stand.
+    ks_doc: dict[str, Any] = {}
+    aggression: dict[str, Any] = {}
+    try:
+        from mt5desk.gateway_config_fallback import MAX_DRAWDOWN_TOLERANCE as _DD_TOL
+
+        from libs.portfolio.aggression import explain as _explain
+        from libs.portfolio.kelly_surface import surface as _surface
+        if funded:
+            ks_doc = _surface(worlds, funded, tolerance=_DD_TOL, alpha=cfg.cvar_alpha)
+            ks_doc["rows"] = ks_doc.get("rows", [])[::2]          # every second grid point
+        aggression = _explain(floor=HEAT_TARGET, ceiling=HEAT_HARD_CEILING,
+                              total_heat=book.total_heat, free_optimum=free.total_heat,
+                              readiness=ready, proof_passed=bool(proof.get("passed")),
+                              surface=ks_doc, book=funded, ev=ev)
+        _log(f"aggression: A={aggression['A']:.2f} {aggression['verdict']} "
+             f"tail_max={ (aggression['components']['tail_safety'] or {}).get('heat_tail_max')}")
+    except Exception as exc:
+        aggression = {"error": f"{type(exc).__name__}: {exc}"}
+        _log(f"aggression audit unavailable: {aggression['error']}")
+    # THE FOUR HEATS AND THE WORLDS-BASED TRADE VALUE: what the nominal heat is really made of
+    # (covariance / latent-factor / tail), and what moving from the held book buys on these
+    # worlds net of turnover -- the inertia rail's own measurement.
+    effective_heat: dict[str, Any] = {}
+    trade_value: dict[str, Any] = {}
+    try:
+        from libs.portfolio.latent_factors import effective as _effective
+        from libs.portfolio.multiperiod_worlds import trade_value as _trade_value
+        if funded:
+            effective_heat = _effective(ev, funded)
+            trade_value = _trade_value(worlds, prev_book, funded)
+            _log(f"effective heat: nominal={effective_heat.get('nominal')} "
+                 f"eff={effective_heat.get('effective')} n_eff={effective_heat.get('n_eff')}; "
+                 f"trade value {trade_value.get('verdict')} ({trade_value.get('trade_value')})")
+    except Exception as exc:                                         # noqa: BLE001
+        effective_heat = {"error": f"{type(exc).__name__}: {exc}"}
+    # THE AI CAPITAL MODIFIER LEDGER: what the state conditioning claimed for each funded
+    # sleeve this pass, so each category can later prove its increment.
+    try:
+        from libs.portfolio.capital_modifiers import record as _record_modifiers
+        _mods = _record_modifiers(ev, funded, phase or "")
+        if _mods:
+            _log("capital modifiers: " + ", ".join(
+                f"{c}={sum(1 for m in _mods if m['category'] == c)}"
+                for c in ("STRONG_VETO", "REDUCE", "NORMAL", "BOOST", "STRONG_BOOST")))
+    except Exception as exc:
+        _log(f"capital modifier ledger not written: {type(exc).__name__}: {exc}")
+
     art: dict[str, Any] = {
         "generated_utc": datetime.now(UTC).isoformat(),
         "mode": mode,
@@ -810,6 +1269,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "curve": [[round(h, 4), round(g, 8)] for h, g in sorted(curve.items())],
         },
         "book": funded,
+        "proof": {"passed": bool(proof.get("passed")), "why": proof.get("why", ""),
+                  "best_baseline": proof.get("best_baseline", ""),
+                  "scores": {k: (v.get("mean_log_growth") if isinstance(v, dict) else None)
+                             for k, v in (proof.get("scores") or {}).items()}},
+        # The best baseline at the same heat: `gateway.allocator_book` sizes the floor with it
+        # whenever the dynamic weights have no fresh passing proof.
+        "book_fallback": fallback,
+        "floor_fill": fill_note,
+        "aggression": aggression,
+        "kelly_surface": ks_doc,
+        "effective_heat": effective_heat,
+        "trade_value_worlds": trade_value,
         # WHICH MECHANISMS HOLD THE BOOK. A single-family book is a single bet however many
         # sleeves it is spread across, and that is invisible from the sleeve list alone.
         "mechanism_mix": {k: round(v, 6)
@@ -825,7 +1296,28 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         },
         "no_trade": nt,
         "opportunity": opp,
-        "regime": {"probabilities": dict(probs), "conditioned": bool(labels)},
+        # `probabilities` is the FORWARD mix the worlds were drawn from; `transition` carries the
+        # filtered posterior beside it, so the two can never be confused by a later reader and
+        # the size of the forward adjustment is always visible rather than inferred.
+        "regime": {"probabilities": dict(probs), "conditioned": bool(labels),
+                   "transition": regime_diag},
+        # The world as the desk described it when this book was solved. `state_vector_id` is what
+        # ties a fill, weeks later, back to the conditions the decision was made under.
+        "state_vector": ({"id": state_vec.id, "at": state_vec.at, "why": sv_why,
+                          **state_vec.to_dict()} if state_vec is not None
+                         else {"id": None, "why": sv_why}),
+        # What the crisis worlds assumed, and the measurement behind it. Recorded so the
+        # correlation the book is being stressed at is a number anyone can check.
+        "crisis_calibration": ({
+            "crisis_common_share": cov_cal.crisis_common_share,
+            "crisis_vol_mult": cov_cal.crisis_vol_mult,
+            "stress_regime": cov_cal.stress_regime,
+            "note": cov_cal.note,
+            "by_regime": {k: {"n_days": v.n_days, "mean_corr": round(v.mean_corr, 4),
+                              "mean_vol": round(v.mean_vol, 6),
+                              "diversification_ratio": round(v.diversification_ratio, 4)}
+                          for k, v in cov_cal.by_regime.items()},
+        } if cov_cal else {"note": "calibration unavailable; standing constants used"}),
         "evidence": {
             "sleeves": len(ev), "rows": int(daily.shape[0]),
             "with_forward": sum(1 for e in ev if e.forward_days > 0),

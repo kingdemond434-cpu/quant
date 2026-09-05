@@ -8245,7 +8245,143 @@
     "orderflow",
     "volatility"
    ]
+  },
+  {
+   "source": "opportunity_curve",
+   "kind": "dead_phase",
+   "title": "Book earns nothing in NY_CLOSE (18-20 UTC)",
+   "description": "Session phase NY_CLOSE, hours 18-20 on the UTC clock: 30 realised trades, 1 sleeves measured, none with positive shrunk expectancy. Measured: xau_m15_anti_momentum -0.00R (n=9). Propose a mechanism whose economic cause is specific to this phase (who is forced to trade then, what is being rebalanced, which venue opens or closes) -- not a re-parameterisation of what already loses here.",
+   "phase": "NY_CLOSE",
+   "hours": "18-20",
+   "status": null,
+   "consumer": "plumbing_miner / microstructure_miner / research brains"
+  },
+  {
+   "source": "regime_coverage",
+   "kind": "coverage_gap",
+   "title": "No positive-expectancy mechanism in state global=bull/high_vol|event=NORMAL|weekday=Mon",
+   "description": "State global=bull/high_vol|event=NORMAL|weekday=Mon: 93 realised trades, 1 sleeves measured, none with shrunk conditional expectancy >= 0.05R. Tried here: m15_anti +0.01R (n=12). Families never tested in this state: afternoon, asia, asia_FAILED, asia_NORMAL, carry, dav_range_filter_adx_SHORT_afternoon_NORMAL, discovered, dow. Structural clusters (alpha genome) never tested here: carry/neutral/asia/CHF+NOK, discovered/unknown/asia/CHF+EUR+GBP+USD, reversion/against/asia/AUD+CAD+CHF+DKK+EUR+GBP+MXN+NOK+SEK+USD+. Find an orthogonal mechanism whose economic cause is specific to this state -- not a re-parameterisation of what already loses here.",
+   "state": "global=bull/high_vol|event=NORMAL|weekday=Mon",
+   "families_tried": [
+    "m15_anti"
+   ],
+   "families_never_tried_here": [
+    "afternoon",
+    "asia",
+    "asia_FAILED",
+    "asia_NORMAL",
+    "carry",
+    "dav_range_filter_adx_SHORT_afternoon_NORMAL",
+    "discovered",
+    "dow",
+    "fair_value",
+    "level",
+    "london",
+    "london_am_FAILED",
+    "london_am_NORMAL",
+    "m5_anti_breakout",
+    "m5_anti_momentum",
+    "monday",
+    "overnight_gap_decay",
+    "session_range"
+   ],
+   "clusters_never_tried_here": [
+    "carry/neutral/asia/CHF+NOK",
+    "discovered/unknown/asia/CHF+EUR+GBP+USD",
+    "reversion/against/asia/AUD+CAD+CHF+DKK+EUR+GBP+MXN+NOK+SEK+USD+"
+   ],
+   "status": null,
+   "consumer": "hourly/daily research brains: propose a family + params for this state or reject with a reason"
+  },
+  {
+   "source": "regime_coverage",
+   "kind": "coverage_gap",
+   "title": "No positive-expectancy mechanism in state global=bull/high_vol|event=NORMAL|weekday=Thu",
+   "description": "State global=bull/high_vol|event=NORMAL|weekday=Thu: 85 realised trades, 1 sleeves measured, none with shrunk conditional expectancy >= 0.05R. Tried here: m15_anti +0.00R (n=14). Families never tested in this state: afternoon, asia, asia_FAILED, asia_NORMAL, carry, dav_range_filter_adx_SHORT_afternoon_NORMAL, discovered, dow. Structural clusters (alpha genome) never tested here: carry/neutral/asia/CHF+NOK, discovered/unknown/asia/CHF+EUR+GBP+USD, reversion/against/asia/AUD+CAD+CHF+DKK+EUR+GBP+MXN+NOK+SEK+USD+. Find an orthogonal mechanism whose economic cause is specific to this state -- not a re-parameterisation of what already loses here.",
+   "state": "global=bull/high_vol|event=NORMAL|weekday=Thu",
+   "families_tried": [
+    "m15_anti"
+   ],
+   "families_never_tried_here": [
+    "afternoon",
+    "asia",
+    "asia_FAILED",
+    "asia_NORMAL",
+    "carry",
+    "dav_range_filter_adx_SHORT_afternoon_NORMAL",
+    "discovered",
+    "dow",
+    "fair_value",
+    "level",
+    "london",
+    "london_am_FAILED",
+    "london_am_NORMAL",
+    "m5_anti_breakout",
+    "m5_anti_momentum",
+    "monday",
+    "overnight_gap_decay",
+    "session_range"
+   ],
+   "clusters_never_tried_here": [
+    "carry/neutral/asia/CHF+NOK",
+    "discovered/unknown/asia/CHF+EUR+GBP+USD",
+    "reversion/against/asia/AUD+CAD+CHF+DKK+EUR+GBP+MXN+NOK+SEK+USD+"
+   ],
+   "status": null,
+   "consumer": "hourly/daily research brains: propose a family + params for this state or reject with a reason"
+  },
+  {
+   "source": "regime_coverage",
+   "kind": "coverage_gap",
+   "title": "No positive-expectancy mechanism in state global=bull/high_vol|event=NORMAL|weekday=Wed",
+   "description": "State global=bull/high_vol|event=NORMAL|weekday=Wed: 99 realised trades, 1 sleeves measured, none with shrunk conditional expectancy >= 0.05R. Tried here: m15_anti +0.01R (n=12). Families never tested in this state: afternoon, asia, asia_FAILED, asia_NORMAL, carry, dav_range_filter_adx_SHORT_afternoon_NORMAL, discovered, dow. Structural clusters (alpha genome) never tested here: carry/neutral/asia/CHF+NOK, discovered/unknown/asia/CHF+EUR+GBP+USD, reversion/against/asia/AUD+CAD+CHF+DKK+EUR+GBP+MXN+NOK+SEK+USD+. Find an orthogonal mechanism whose economic cause is specific to this state -- not a re-parameterisation of what already loses here.",
+   "state": "global=bull/high_vol|event=NORMAL|weekday=Wed",
+   "families_tried": [
+    "m15_anti"
+   ],
+   "families_never_tried_here": [
+    "afternoon",
+    "asia",
+    "asia_FAILED",
+    "asia_NORMAL",
+    "carry",
+    "dav_range_filter_adx_SHORT_afternoon_NORMAL",
+    "discovered",
+    "dow",
+    "fair_value",
+    "level",
+    "london",
+    "london_am_FAILED",
+    "london_am_NORMAL",
+    "m5_anti_breakout",
+    "m5_anti_momentum",
+    "monday",
+    "overnight_gap_decay",
+    "session_range"
+   ],
+   "clusters_never_tried_here": [
+    "carry/neutral/asia/CHF+NOK",
+    "discovered/unknown/asia/CHF+EUR+GBP+USD",
+    "reversion/against/asia/AUD+CAD+CHF+DKK+EUR+GBP+MXN+NOK+SEK+USD+"
+   ],
+   "status": null,
+   "consumer": "hourly/daily research brains: propose a family + params for this state or reject with a reason"
+  },
+  {
+   "source": "excursions",
+   "kind": "exit_hypothesis",
+   "title": "EURGBP_discovered_asia: trades reach 0.381R and exit at -0.168R",
+   "description": "26 trades; median MFE 0.381R, median MAE 0.748R, median result -0.168R; P(reach 1R)=0.077, P(reach 2R)=0.038. The exit gives up 0.758R of excursion on the median trade. Propose an exit rule (trail, partial, time stop) as a NEW cell with its own multiplicity charge -- not a re-parameterisation of the certified one.",
+   "symbols": [
+    "EURGBP"
+   ],
+   "sleeve": "EURGBP_discovered_asia",
+   "status": null,
+   "consumer": "exit_sweep / research brains"
   }
  ],
- "consumer": "hourly/daily research brains must recover a falsifiable rule or reject"
+ "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
+ "opportunity_curve_tasks_at": "2026-09-04T21:08:53.457331+00:00",
+ "regime_coverage_tasks_at": "2026-09-04T21:09:16.489653+00:00",
+ "excursions_tasks_at": "2026-09-04T21:09:17.554744+00:00"
 }

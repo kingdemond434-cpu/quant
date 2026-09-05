@@ -1,3 +1,4 @@
+import os
 import subprocess
 code = r'''
 import re
@@ -72,7 +73,7 @@ print("Done")
 '''
 
 proc = subprocess.run(
-    ["ssh", "quant@95.216.191.70", "/home/quant/quant-platform/.venv/bin/python -c \"" + code + "\""],
+    ["ssh", os.environ.get("QUANT_VPS", "quant@VPS_HOST_REDACTED"), "/home/quant/quant-platform/.venv/bin/python -c \"" + code + "\""],
     capture_output=True, text=True, timeout=30
 )
 print(proc.stdout)
