@@ -1,12 +1,12 @@
 {
- "signed_utc": "2026-09-05T19:08:21.259642+00:00",
- "signed_by": "timeframe identity: external_gauntlet cache key and promoter clock now carry the chart",
+ "signed_utc": "2026-09-05T19:33:14.719269+00:00",
+ "signed_by": "sizing derivation: heat_policy._DEFAULT_DD_R now cites the 33.7R it inherits",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "6ee630c6d89b2b1c",
   "desks/mt5/research/universal_gate.py": "564b02439b938431",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "830723c7f399411c",
-  "desks/mt5/research/heat_policy.py": "25b9469c860d1fb6",
+  "desks/mt5/research/heat_policy.py": "3a931478a660e85e",
   "desks/mt5/research/promoter.py": "ee8fa6a5fee5fdd2",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
   "libs/portfolio/allocator_proof.py": "ab3cdbd00048bb78",
