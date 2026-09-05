@@ -758,6 +758,55 @@ def current_book() -> dict[str, float]:
             return {}
 
 
+def bind_verdict(nt: dict[str, Any], prev_book: dict[str, float], held: dict[str, float],
+                 book: AllocationResult, funded: dict[str, float],
+                 *, floor: float = HEAT_TARGET, ceiling: float = HEAT_HARD_CEILING,
+                 ) -> tuple[AllocationResult, dict[str, float]]:
+    """Make the no-trade verdict BIND the book that is published. Returns (book, funded).
+
+    Until 2026-09-05 `no_trade` was written beside a `book` that was always the fresh solve, so
+    the gateway sized toward every proposal and the filter was a report about a decision already
+    taken. On a five-minute clock that is churn by construction. The principal's cadence rule is
+    recompute every pass, EXECUTE only when the growth the move buys clears turnover, slippage
+    and the uncertainty buffer -- so NO CHANGE publishes the HELD book with the held book's own
+    growth numbers, and the declined solve rides along as `proposed_book` for the next pass, the
+    dashboard and `missed_growth` (which bills what holding cost or saved).
+
+    The one thing a verdict may never do is hold the desk BELOW the mandated floor or ABOVE the
+    ceiling: a held book outside the band is a defect the filter has no authority over, and the
+    solve goes out unchanged with the reason on `nt["why_not_binding"]`. A held book the worlds
+    cannot score is not a book to keep either. `nt["binding"]` says which way it went.
+    """
+    nt["binding"] = False
+    if nt.get("verdict") != "NO CHANGE":
+        return book, funded
+    held_total = float(sum(float(v) for v in prev_book.values()))
+    if not prev_book or not math.isfinite(float(held.get("mean_log_growth", float("nan")))):
+        nt["why_not_binding"] = "no scorable held book to keep"
+    elif held_total < floor - 1e-4 or held_total > ceiling + 1e-4:
+        nt["why_not_binding"] = (f"held book at {held_total:.2%} is outside the mandated "
+                                 f"[{floor:.0%}, {ceiling:.0%}] band")
+    else:
+        nt["binding"] = True
+        kept = AllocationResult(
+            heat={k: float(v) for k, v in prev_book.items() if float(v) > 1e-5},
+            total_heat=held_total,
+            robust_score=float(held["robust_score"]),
+            mean_log_growth=float(held["mean_log_growth"]),
+            cvar_log_growth=float(held["cvar_log_growth"]),
+            annual_growth_pct=float(held["annual_growth_pct"]),
+            prob_annual_loss=float(held["prob_annual_loss"]),
+            marginal=dict(book.marginal),
+            note=(f"held: the no-trade filter declined the solve (benefit "
+                  f"{float(nt.get('benefit_over_horizon', 0.0)):.6f} < cost "
+                  f"{float(nt.get('cost', 0.0)):.6f})"))
+        _log(f"NO CHANGE binds: publishing the held book at {held_total:.2%}; the solve "
+             f"({sum(funded.values()):.2%}) is carried as proposed_book")
+        return kept, {k: round(v, 6) for k, v in kept.heat.items() if v > 1e-5}
+    _log(f"NO CHANGE not binding: {nt['why_not_binding']}; the solve is published")
+    return book, funded
+
+
 def opportunity(free: AllocationResult, book: dict[str, float],
                 target: float) -> dict[str, Any]:
     """Opportunity density and the heat gap -- what research is asked to go and find.
@@ -1128,6 +1177,61 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                  f"{top[1] / max(book.total_heat, 1e-9):.0%} of the book")
     funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
 
+    # ---------------------------------------------------- THE POSTERIOR MULTI-PERIOD BOOK
+    # `libs/portfolio/posterior_growth` solves the same objective over a POSTERIOR on worlds --
+    # mean and covariance uncertainty, the winner's-curse shrinkage the evidence carries -- across
+    # T periods with turnover priced and ruin/stop-out bounded on the same sampled paths. It is a
+    # CHALLENGER, not a second authority: it takes the funded book's place only when `compare`
+    # says it beats that book on identical paths with the bootstrap CI excluding zero -- rule 1
+    # ("every risk reduction mechanism must prove that it increases robust forward E[log W]")
+    # applied to the swap itself. Its certificate is written to the artifact either way, so a
+    # posterior that keeps losing the contest is a measured fact and not a silent organ.
+    posterior: dict[str, Any] = {}
+    if funded and worlds is not None:
+        try:
+            from libs.portfolio.posterior_growth import compare as _pg_compare
+            from libs.portfolio.posterior_growth import sample_paths as _pg_paths
+            from libs.portfolio.posterior_growth import solve as _pg_solve
+            _pg_prev = current_book()
+            _pg_paths_ = _pg_paths(ev, n_paths=400, horizon=max(1, int(NO_TRADE_HORIZON_DAYS)),
+                                   worlds=worlds, seed=seed)
+            _pbook = _pg_solve(ev, h_prev=_pg_prev, paths=_pg_paths_,
+                               floor=float(verdict.total_heat), ceiling=HEAT_HARD_CEILING,
+                               caps=per_sleeve_bounds(dd, HEAT_HARD_CEILING),
+                               turnover_cost=TURNOVER_COST_R)
+            _cmp = _pg_compare(_pbook, funded, _pg_paths_, h_prev=_pg_prev,
+                               turnover_cost=TURNOVER_COST_R, seed=seed)
+            posterior = {"certificate": _pbook.certificate(), "vs_funded": _cmp,
+                         "adopted": False}
+            _log(f"posterior book: {_pbook.total_heat:.2%} heat, binding={_pbook.binding}, "
+                 f"E[logW]/day={_pbook.elogw_per_day:+.5f} (p10 {_pbook.elogw_p10:+.5f}); "
+                 f"dE vs funded {_cmp['delta_elogw_per_day']:+.5f} "
+                 f"CI [{_cmp['ci_lo']:+.5f}, {_cmp['ci_hi']:+.5f}] -> "
+                 f"{'ADOPT' if _cmp.get('beats') else 'funded book stands'}")
+            if _cmp.get("beats") and _pbook.h:
+                sc = score_book(ev, _pbook.h, cfg=cfg, worlds=worlds)
+                book = AllocationResult(
+                    heat=dict(_pbook.h), total_heat=float(_pbook.total_heat),
+                    robust_score=float(sc["robust_score"]),
+                    mean_log_growth=float(sc["mean_log_growth"]),
+                    cvar_log_growth=float(sc["cvar_log_growth"]),
+                    annual_growth_pct=float(sc["annual_growth_pct"]),
+                    prob_annual_loss=float(sc["prob_annual_loss"]),
+                    note=(f"posterior multi-period book adopted: dE[log W] "
+                          f"{_cmp['delta_elogw_per_day']:+.5f}/day with the CI excluding 0; "
+                          f"binding={_pbook.binding}"))
+                funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+                posterior["adopted"] = True
+                if _pbook.binding == "ruin_guard":
+                    # The one mechanism licensed below the resolved floor, and it has just
+                    # proved its dE[log W] on the same paths -- said out loud, never quietly.
+                    _log(f"POSTERIOR RUIN GUARD: the adopted book holds {_pbook.total_heat:.2%},"
+                         f" below the resolved {verdict.total_heat:.2%}; p_ruin at the floor "
+                         f"breached eps and the reduction raised robust E[log W]")
+        except Exception as exc:
+            posterior = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+            _log(f"posterior book unmeasured: {posterior['why']}")
+
     # A BOOK THE OPTIMISER CANNOT SCORE IS NOT A BOOK. The mandated solve can come back -inf --
     # a book that is wiped out in at least one sampled world -- and publishing that would hand
     # `gateway.allocator_heat()` a total heat with no growth behind it. Measured 2026-09-02: the
@@ -1172,6 +1276,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             else float("inf"))
     nt = no_trade(prev_book, funded, gain)
     nt["held"] = {k: round(v, 8) for k, v in held.items()}
+    proposed_book = dict(funded)
+    book, funded = bind_verdict(nt, prev_book, held, book, funded)
     opp = opportunity(free, funded, HEAT_TARGET)
 
     # ------------------------------------------------------ THE BASELINE CONTEST, EVERY PASS
@@ -1258,7 +1364,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "armed": ARMED.exists(),
         "advisory": not ARMED.exists(),
         "heat": {
-            "total": round(verdict.total_heat, 6),
+            # `total` is the heat of the book PUBLISHED below -- the number the gateway caps at
+            # and the fence checks the book sums to. When the no-trade verdict binds, that is
+            # the held book; `resolved` keeps the target this pass solved for either way.
+            "total": round(book.total_heat if nt.get("binding") else verdict.total_heat, 6),
+            "resolved": round(verdict.total_heat, 6),
+            "held": bool(nt.get("binding")),
             "free_optimum": round(verdict.free_optimum, 6),
             "target": verdict.target, "hard_ceiling": verdict.hard_ceiling,
             "binding": verdict.binding, "certified": verdict.certified,
@@ -1269,6 +1380,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "curve": [[round(h, 4), round(g, 8)] for h, g in sorted(curve.items())],
         },
         "book": funded,
+        # The solve this pass produced, whether or not the verdict let it out. Equal to `book`
+        # on a REBALANCE pass; the declined move on a binding NO CHANGE.
+        "proposed_book": proposed_book,
         "proof": {"passed": bool(proof.get("passed")), "why": proof.get("why", ""),
                   "best_baseline": proof.get("best_baseline", ""),
                   "scores": {k: (v.get("mean_log_growth") if isinstance(v, dict) else None)
@@ -1278,6 +1392,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "book_fallback": fallback,
         "floor_fill": fill_note,
         "aggression": aggression,
+        "posterior_growth": posterior,
         "kelly_surface": ks_doc,
         "effective_heat": effective_heat,
         "trade_value_worlds": trade_value,

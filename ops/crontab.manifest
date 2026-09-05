@@ -2854,3 +2854,10 @@ SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_cryp
 # A writer that stages outside the tree and publishes in one pass declares ORPHAN-SAFE and
 # stops reporting; today that is fxblue_track_record_miner and cohort_and_identity.
 41 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_orphanable_writers.py >> data/cro_ai_logs/orphanable_writers_fence.log 2>&1
+
+# HOURLY DISCOVERY (principal 2026-09-05: every miner, proposer and data organ hourly at
+# minimum). One pass an hour, each organ in its own subprocess on a bandit-weighted budget behind
+# the memory guard; the :05 pipeline compiles what the pass donated. The daily cycle keeps its
+# full-budget runs. EVIDENCE: desks/mt5/reports/HOURLY_DISCOVERY.json (per-organ status),
+# desks/mt5/data/hourly_discovery_state.json (ordering by staleness).
+SYSTEMD unit="quant-hourly-discovery.timer" on="*:35" exec="ops/run_hourly_discovery.sh"

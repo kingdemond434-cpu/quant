@@ -136,6 +136,7 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
             books.setdefault(k, b)
     except Exception:
         pass
+    posterior_cert: dict[str, Any] | None = None
     if worlds is not None:
         try:
             from libs.portfolio.multiperiod_worlds import plan
@@ -144,6 +145,26 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
             s = sum(h_now.values())
             if s > 0:
                 books.setdefault("multiperiod", {k: v * total / s for k, v in h_now.items()})
+        except Exception:
+            pass
+        # THE POSTERIOR CHALLENGER: the multi-period book solved over a posterior on worlds,
+        # rescaled to the same total heat. When pf_allocator has already adopted it as the
+        # dynamic book the two are one book, and a rival identical to the contestant is not a
+        # rival -- it would make the margin unbeatable -- so it is only entered when distinct.
+        try:
+            from libs.portfolio.multiperiod_worlds import plan_posterior
+            mp = plan_posterior(worlds, incumbent or {}, target=total, cap=max(total, 1e-9),
+                                ev=ev)
+            posterior_cert = mp.get("certificate")
+            h_now = {k: v for k, v in mp["h_now"].items() if v > 0}
+            s = sum(h_now.values())
+            if s > 0:
+                cand = {k: v * total / s for k, v in h_now.items()}
+                keys = set(cand) | set(dynamic)
+                same = all(abs(float(cand.get(k, 0.0)) - float(dynamic.get(k, 0.0))) < 1e-6
+                           for k in keys)
+                if not same:
+                    books.setdefault("posterior", cand)
         except Exception:
             pass
 
@@ -167,6 +188,7 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
                f"(needs > {need:.6f}, margin {MARGIN_FRAC:.0%})")
     return {"passed": bool(passed), "why": why, "best_baseline": best_name,
             "scores": scored, "total_heat_equalised": total,
+            "posterior_certificate": posterior_cert,
             # THE BOOKS THEMSELVES, so a failed proof can hand the floor to the best baseline
             # rather than to nothing (gateway.allocator_book reads `book_fallback`).
             "books": {k: {str(n): float(v) for n, v in b.items()} for k, b in books.items()}}

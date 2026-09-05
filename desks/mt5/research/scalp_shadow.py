@@ -18,9 +18,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
+from desks.mt5.research import forward_verdict  # noqa: E402
 from desks.mt5.research import scalp_family_expansion as families  # noqa: E402
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
-from desks.mt5.research.shadow_admission import authorized_specs  # noqa: E402
 
 DESK = Path(__file__).resolve().parents[1]
 DATA = DESK / "data" / "universe"
@@ -134,12 +134,15 @@ def run(now: datetime | None = None) -> dict:
     prior_sleeves = _previous_sleeves()
     source = _source()
     authority = bool(source.get("promotion_authority"))
-    gate_authority = authorized_specs(DESK)
-    admitted = {
-        name: value for name, value in CANDIDATES.items()
-        if ("XAUUSD", name, None, "gold_scalp", False) in gate_authority
-    }
-    blocked_names = sorted(set(CANDIDATES) - set(admitted))
+    # EVERY DECLARED CANDIDATE GETS A REAL FORWARD CLOCK (principal decision 2026-08-23, carried
+    # from the branch the box runs; reaffirmed 2026-09-04). The ten-gate gauntlet has no path
+    # that certifies an M5/M15 scalp spec -- no `gold_scalp` certificate can exist -- so gating
+    # SHADOW admission on one quarantined the whole lane and produced no evidence at all. The
+    # lane's certificate is its own forward clock: Fusion-native bars, the canon maturity bar
+    # (50 trades, or 14 days with 20), positive expectancy and the drawdown bound, judged only
+    # after the frozen pre-registration boundary. Promotion (research/promoter.py) reads that.
+    admitted = dict(CANDIDATES)
+    blocked_names: list[str] = []
     state: dict = {
         "updated_at": now.isoformat(timespec="seconds"),
         "shadow_start": SHADOW_START.isoformat(), "source": source,
@@ -213,6 +216,15 @@ def run(now: datetime | None = None) -> dict:
         exp = float(np.mean(rs)) if rs else None
         max_dd = _drawdown(rs)
         matured = n >= 50 or (days >= 14 and n >= 20)
+        # THE UNIFIED VERDICT'S DIAGNOSTICS ride on the row -- effective n, the always-valid
+        # lower bound, significance -- so the allocator and a reader can see how much of the
+        # forward record is independent evidence. They inform; the canon bar above decides.
+        try:
+            fv = forward_verdict.verdict(rs, days)
+            diagnostics = {k: fv.get(k) for k in ("n_eff", "n_eff_basis", "seq_lower_bound",
+                                                  "significant", "independent", "reason")}
+        except Exception as exc:                                  # a diagnostic never fails a clock
+            diagnostics = {"error": f"{type(exc).__name__}: {exc}"}
         if last_bar < SHADOW_START:
             status = "WAITING_FOR_FORWARD_BARS"
         elif stale_source:
@@ -235,7 +247,8 @@ def run(now: datetime | None = None) -> dict:
             "first_trade_at": _first_forward_trade(records) or _prior.get("first_trade_at"),
             "status": status, "timeframe": tf, "choice": choice.__dict__,
             "n": n, "n_historical": n_historical, "days": days,
-            "expectancy_r": exp, "max_drawdown_r": max_dd,
+            "expectancy_r": exp, "max_drawdown_r": max_dd, "forward_verdict": diagnostics,
+            "certificate": "forward_clock (no backtest gauntlet exists for M5/M15 scalps)",
             "last_source_bar": last_bar.isoformat(), "matured": matured,
             "source_trading_lag_hours": lag_hours, "source_stale": stale_source,
             "promotion_authority": authority,

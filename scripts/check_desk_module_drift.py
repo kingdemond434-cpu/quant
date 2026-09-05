@@ -54,56 +54,11 @@ MODULES = [
     # and what may be promoted. Neither was watched, and both were just changed to open
     # the cure lane beyond one family -- a revert here silently re-closes it.
     # The one forward verdict all three engines call, and the portfolio-contribution
-
-
-
-
-
-
-
     # multiplier the gateway sizes with. Both are NEW modules, which is exactly the class
-
-
-
-
-
-
-
     # the healer used to skip: absent on the box scored the same as an unreachable box.
-
-
-
-
-
-
-
     "desks/mt5/research/forward_verdict.py",
-
-
-
-
-
-
-
     "desks/mt5/mt5desk/portfolio_weight.py",
-
-
-
-
-
-
-
     "desks/mt5/mt5desk/sizing.py",
-
-
-
-
-
-
-
-
-
-
     "desks/mt5/research/shadow_admission.py",
     "desks/mt5/research/promoter.py",
     "desks/mt5/side_channels/promoter_fixed.py",
@@ -158,6 +113,11 @@ MODULES = [
     # follow the import graph will always be missing exactly the module nobody thought about --
     # and here it was missing the one that decides what the book keeps holding.
     "desks/mt5/research/daily_cycle.py",
+    # Every step the daily chain imports, as tests/ops/test_desk_module_drift_covers_the_daily_chain
+    # enforces: a step added to STEPS without a line here decays on the box unwatched.
+    "desks/mt5/research/conservation_ledger.py",
+    "desks/mt5/research/research_bandit.py",
+    "desks/mt5/research/state_admission_run.py",
     "desks/mt5/research/decay_monitor.py",
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
@@ -203,6 +163,54 @@ MODULES = [
     "desks/mt5/moat/moat_silver.py",
     # The task installer lives on the box beside the PowerShell it registers.
     "desks/mt5/scripts/install_moat_miner_task.ps1",
+    # THE BOX'S OWN SYNC AND THE MONEY PATH IT RUNS (2026-09-05). sync_shadow_to_git.ps1 was
+    # fixed on 2026-09-03 and the fix was inert for two days: the script that fetches code on the
+    # box is the script that was broken, so the box could never fetch its own repair (no
+    # "mt5 shadow state sync" commit has reached the remote since 2026-08-26). This channel is
+    # the one that still works -- ssh from the VPS -- so it carries the sync script and every
+    # module the gateway, the promoter and the forward clocks import. The scalp executor and the
+    # netting ledger are here because a promotion that reaches `sleeves.json` on the box with an
+    # executor the box does not have is a certified sleeve that can never trade.
+    "desks/mt5/scripts/sync_shadow_to_git.ps1",
+    "desks/mt5/scripts/sync_to_vps.ps1",
+    "desks/mt5/mt5desk/gateway.py",
+    "desks/mt5/mt5desk/gateway_config_fallback.py",
+    "desks/mt5/mt5desk/scalp_exec.py",
+    "desks/mt5/mt5desk/netting.py",
+    "desks/mt5/mt5desk/execution_policy.py",
+    "desks/mt5/mt5desk/execution_registry.py",
+    "desks/mt5/mt5desk/fill_surface.py",
+    "desks/mt5/mt5desk/risk_units.py",
+    "desks/mt5/mt5desk/position_manager.py",
+    "desks/mt5/mt5desk/provenance.py",
+    "desks/mt5/mt5desk/independence.py",
+    "desks/mt5/mt5desk/multiplicity.py",
+    "desks/mt5/mt5desk/config.py",
+    "desks/mt5/research/run_gateway_loop.py",
+    "desks/mt5/mt5desk/release_identity.py",
+    "desks/mt5/scripts/smoke_release.py",
+    "desks/mt5/research/shadow_cycle.py",
+    "desks/mt5/research/external_shadow.py",
+    "desks/mt5/research/scalp_family_expansion.py",
+    "desks/mt5/research/scalp_reverse_engineering.py",
+    "desks/mt5/research/pf_allocator.py",
+    "desks/mt5/research/heat_policy.py",
+    "desks/mt5/research/allocation.py",
+    "desks/mt5/research/live_manifest.py",
+    "desks/mt5/research/run_hunt12.py",
+    "desks/mt5/research/run_hunt16.py",
+    "desks/mt5/research/qquant_gates.py",
+    "desks/mt5/research/universal_gate.py",
+    "libs/portfolio/robust_elog.py",
+    "libs/portfolio/allocator_proof.py",
+    "libs/portfolio/posterior_growth.py",
+    "libs/portfolio/multiperiod_worlds.py",
+    "libs/portfolio/rails.py",
+    "libs/portfolio/capital_modifiers.py",
+    "libs/portfolio/kelly_surface.py",
+    "libs/portfolio/challengers.py",
+    "libs/portfolio/aggression.py",
+    "libs/risk/fx_factors.py",
 ]
 
 

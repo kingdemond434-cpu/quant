@@ -86,6 +86,61 @@ TARGETS = [
           marker="reports/DONE_allocation", match="allocation.py"),
 ]
 
+#: THE CAPITAL BRAIN'S CLOCK (2026-09-05). `research/pf_allocator.py` was the sizing authority on
+#: paper and ran on nobody's schedule: not this supervisor, not the gateway loop, not the hourly
+#: or daily cycle, not a VPS unit. The gateway fails closed on a `pf_allocation.json` older than
+#: an hour, so the solved book -- the whole state -> solve -> sizing chain the audit traced --
+#: never sized a position; the desk fell back to the derived formula every pass and reported the
+#: allocator ARMED. A decision organ with no clock is a claim, not a capability.
+#:
+#: The allocator's own cadences (its docstring): fast ~5 min re-solves on the cached world
+#: population, normal ~15 min rebuilds evidence and the no-trade filter, heavy hourly resamples
+#: the worlds and re-measures the growth curve. ONE allocator process at a time; the mode is the
+#: most overdue of the three. The gateway consumes the newest book every minute and the
+#: no-trade filter, not this clock, decides whether the book is worth trading toward
+#: (dE[log W] > turnover + slippage + the uncertainty buffer). The principal's target is capital
+#: following the freshest information state every minute; this is the honest solve cadence.
+PERIODIC = [
+    {"name": "pf_allocator", "match": "pf_allocator.py",
+     "script": "research/pf_allocator.py",
+     "cadence_s": {"fast": 300, "normal": 900, "heavy": 3600}},
+]
+
+
+def _allocator_mode(state: dict, now: float, cadence: dict[str, int]) -> str | None:
+    """The most overdue mode, heaviest first; None when nothing is due yet."""
+    for mode in ("heavy", "normal", "fast"):
+        last = float((state.get(f"pf_allocator_{mode}") or {}).get("last_spawn", 0) or 0)
+        if now - last >= cadence[mode]:
+            return mode
+    return None
+
+
+def tick_periodic(state: dict, now: float, spawn) -> list[str]:
+    """Launch every periodic job that is due and not already running. `spawn(name, args)`
+    returns a pid; injected so a test can pin the cadence without a process."""
+    launched: list[str] = []
+    for p in PERIODIC:
+        if (BASE / "data" / f"HOLD_{p['name']}").exists():
+            continue
+        if is_running(p["match"]):
+            continue
+        mode = _allocator_mode(state, now, p["cadence_s"])
+        if mode is None:
+            continue
+        args = ["-u", "-W", "ignore", p["script"], "--mode", mode]
+        pid = spawn(p["name"], args)
+        if pid is None:
+            continue
+        state[f"{p['name']}_{mode}"] = {"last_spawn": now, "pid": pid}
+        # a heavy pass carries the normal and fast work, a normal pass the fast work
+        if mode == "heavy":
+            state["pf_allocator_normal"] = {"last_spawn": now, "pid": pid}
+        if mode in ("heavy", "normal"):
+            state["pf_allocator_fast"] = {"last_spawn": now, "pid": pid}
+        launched.append(f"{p['name']}:{mode}")
+    return launched
+
 
 def log(msg: str) -> None:
     line = f"{datetime.now(UTC).isoformat()} {msg}"
@@ -195,6 +250,31 @@ def main() -> int:
                 log(f"supervisor: respawned {t['name']} pid={proc.pid}")
             except Exception as e:
                 log(f"supervisor: FAILED to spawn {t['name']}: {e!r}")
+        def _spawn(name: str, args: list[str]):
+            try:
+                CHILD_LOGS.mkdir(parents=True, exist_ok=True)
+                py = sys.executable if os.name != "nt" else PYW
+                kwargs: dict = {"stderr": subprocess.STDOUT}
+                if os.name == "nt":
+                    kwargs["creationflags"] = subprocess.DETACHED_PROCESS \
+                        | subprocess.CREATE_NEW_PROCESS_GROUP
+                else:
+                    kwargs["start_new_session"] = True
+                # the child inherits its own copy of the log handle; ours closes here
+                with open(CHILD_LOGS / f"{name}_super.log", "ab") as sl:
+                    proc = subprocess.Popen([str(py), *args], cwd=str(BASE), stdout=sl,
+                                            **kwargs)
+                log(f"supervisor: launched {name} {' '.join(args[-2:])} pid={proc.pid}")
+                return proc.pid
+            except Exception as e:
+                log(f"supervisor: FAILED to launch {name}: {e!r}")
+                return None
+
+        try:
+            if tick_periodic(state, now, _spawn):
+                STATE.write_text(json.dumps(state), encoding="utf-8")
+        except Exception as e:
+            log(f"supervisor: periodic tick failed: {e!r}")
         time.sleep(30)
 
 
