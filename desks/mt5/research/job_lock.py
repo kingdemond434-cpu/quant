@@ -21,6 +21,82 @@ STALE_SECONDS = 45 * 60
 ADMIT_PATIENCE_SECONDS = 12 * 60
 ADMIT_RECHECK_SECONDS = 45
 
+#: How many past runs of a job are kept when correcting its declared need. Enough to outlast one
+#: unusually small docket, short enough that a job which genuinely got lighter is believed within
+#: a few hours rather than being held to a peak it no longer reaches.
+PEAK_HISTORY = 8
+
+
+def peak_rss_mb() -> int | None:
+    """This process's HIGH-WATER RSS, or None where the platform will not say.
+
+    The high-water mark, not the current reading: a job that touched 4.9GB and released it still
+    needed 4.9GB, and admitting the next one on the trough is how the box gets starved.
+    """
+    try:
+        for line in Path("/proc/self/status").read_text("utf-8").splitlines():
+            if line.startswith("VmHWM:"):
+                return int(line.split()[1]) // 1024
+    except (OSError, ValueError, IndexError):
+        pass
+    try:
+        import resource
+        # ru_maxrss is KB on Linux, bytes on macOS. Both are the high-water mark.
+        kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        return int(kb // 1024) if kb > 1 << 20 else int(kb) // 1024 or None
+    except Exception:
+        return None
+
+
+def _peaks_path(name: str) -> Path:
+    return LOCK_ROOT / f"{name}.peaks.json"
+
+
+def observed_peaks(name: str) -> list[int]:
+    """What this job has actually used on its last runs, newest last."""
+    try:
+        rows = json.loads(_peaks_path(name).read_text("utf-8"))
+        return [int(v) for v in rows if isinstance(v, (int, float)) and v > 0][-PEAK_HISTORY:]
+    except (OSError, ValueError, TypeError):
+        return []
+
+
+def record_peak(name: str, mb: int) -> None:
+    """Append one run's high-water RSS. Best effort: a ledger that cannot be written must never
+    cost the run that was trying to write it."""
+    try:
+        LOCK_ROOT.mkdir(parents=True, exist_ok=True)
+        rows = [*observed_peaks(name), int(mb)]
+        _peaks_path(name).write_text(json.dumps(rows[-PEAK_HISTORY:]), encoding="utf-8")
+    except (OSError, ValueError, TypeError):
+        pass
+
+
+def measured_need_mb(name: str, declared: int) -> tuple[int, str]:
+    """The memory this job should be ADMITTED on: its declared figure, corrected upward by what
+    it has actually used.
+
+    WHY (measured 2026-09-05). `external_gauntlet` declared 1200MB -- a figure taken from a
+    1926MB peak in August and never revisited -- and was found holding 4882MB on an 8GB box, ten
+    minutes into a legitimate run. Admission passed on 1200MB of headroom and the process then
+    grew to four times its declaration, leaving 280MB free, so `edge_search` (2000MB) and
+    `orthogonal_sweep` (1250MB) could not start and their artifacts went 28 and 23 hours stale.
+    The guard was not wrong; the number it was given was, and nothing measured that.
+
+    The module's own rule was already written down beside the constant -- "tighten it from
+    observed successful runs, never from another guess" -- and had no mechanism. This is the
+    mechanism. It only ever raises: a declaration is a FLOOR, so a job cannot talk its way into
+    a box that cannot hold it, and a job that has grown is held to what it grew to.
+    """
+    peaks = observed_peaks(name)
+    if not peaks:
+        return declared, f"declared {declared}MB (no run measured yet)"
+    worst = max(peaks)
+    if worst <= declared:
+        return declared, f"declared {declared}MB (worst of {len(peaks)} runs: {worst}MB)"
+    return worst, (f"declared {declared}MB but the worst of {len(peaks)} measured runs was "
+                   f"{worst}MB -- admitting on what it actually uses")
+
 
 def _owner_state(path: Path) -> str:
     """"DEAD", "ALIVE" or "UNKNOWN" for the process named in the lock.
@@ -150,6 +226,9 @@ def exclusive_job(name: str, need_mb: int = 0) -> Iterator[bool]:
     from the crash it prevents, and this desk has been burned by exactly that ambiguity.
     """
     if need_mb > 0:
+        need_mb, need_why = measured_need_mb(name, need_mb)
+        if need_mb > 0:
+            print(f"{name}: {need_why}")
         # MEDIAN OF THREE, NOT ONE SAMPLE. Free memory on this box is a sawtooth: the searcher
         # builds primitives for a symbol, peaks, emits, releases. Measured 2026-08-28, a single
         # reading said 55MB while readings seconds either side said 1,605MB -- and the backfill
@@ -248,6 +327,14 @@ def exclusive_job(name: str, need_mb: int = 0) -> Iterator[bool]:
     try:
         yield True
     finally:
+        # WHAT IT ACTUALLY USED, recorded before anything else, so the next admission is made on
+        # measurement instead of on a comment. A job that overran its declaration says so.
+        _hwm = peak_rss_mb()
+        if _hwm:
+            record_peak(name, _hwm)
+            if need_mb and _hwm > need_mb:
+                print(f"{name}: PEAK {_hwm}MB exceeded the {need_mb}MB it was admitted on -- "
+                      f"the next run is admitted on {_hwm}MB")
         # Never delete a successor's lock after a stale-owner race.
         try:
             current = json.loads(path.read_text("utf-8"))

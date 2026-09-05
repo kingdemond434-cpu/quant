@@ -224,3 +224,53 @@ def test_an_ancient_lock_with_an_unknown_owner_still_falls_back_to_age(tmp_path,
         assert granted is True, (
             "a lock the desk cannot judge must still time out, otherwise an unreadable or "
             "foreign lock blocks the job forever")
+
+
+# ------------------------------------------------- admission on what a job ACTUALLY uses
+
+def test_a_job_is_admitted_on_its_measured_peak_not_its_declaration(tmp_path, monkeypatch):
+    """MEASURED 2026-09-05. `external_gauntlet` declared 1200MB -- taken from a 1926MB peak in
+    August and never revisited -- and was found holding 4882MB ten minutes into a legitimate run
+    on an 8GB box. Admission passed on 1200MB of headroom, the process grew to four times its
+    declaration, 280MB was left, and `edge_search` (2000MB) and `orthogonal_sweep` (1250MB) could
+    not start: their artifacts went 28 and 23 hours stale. The guard was right; its number was
+    stale, and nothing measured that.
+    """
+    import job_lock as jl
+    monkeypatch.setattr(jl, "LOCK_ROOT", tmp_path)
+    assert jl.measured_need_mb("gauntlet", 1200)[0] == 1200        # nothing measured yet
+    jl.record_peak("gauntlet", 4882)
+    need, why = jl.measured_need_mb("gauntlet", 1200)
+    assert need == 4882 and "actually uses" in why
+
+
+def test_the_declaration_is_a_floor_and_a_light_run_never_lowers_it(tmp_path, monkeypatch):
+    """It may only RAISE. A job cannot talk its way into a box that cannot hold it, and one
+    small docket does not undo the peak the job is capable of reaching."""
+    import job_lock as jl
+    monkeypatch.setattr(jl, "LOCK_ROOT", tmp_path)
+    jl.record_peak("gauntlet", 300)
+    assert jl.measured_need_mb("gauntlet", 1200)[0] == 1200        # below the floor: floor wins
+    jl.record_peak("gauntlet", 4882)
+    jl.record_peak("gauntlet", 310)
+    assert jl.measured_need_mb("gauntlet", 1200)[0] == 4882        # the peak still stands
+
+
+def test_the_history_is_bounded_so_a_job_that_got_lighter_is_believed(tmp_path, monkeypatch):
+    """Held to its peak, but not forever: past PEAK_HISTORY runs the old peak leaves the window."""
+    import job_lock as jl
+    monkeypatch.setattr(jl, "LOCK_ROOT", tmp_path)
+    jl.record_peak("gauntlet", 4882)
+    for _ in range(jl.PEAK_HISTORY):
+        jl.record_peak("gauntlet", 400)
+    assert 4882 not in jl.observed_peaks("gauntlet")
+    assert jl.measured_need_mb("gauntlet", 1200)[0] == 1200
+
+
+def test_an_unwritable_ledger_never_costs_the_run(tmp_path, monkeypatch):
+    """Note-taking that fails is worth strictly less than the job it was taking notes about."""
+    import job_lock as jl
+    monkeypatch.setattr(jl, "LOCK_ROOT", tmp_path / "nope" / "\0bad")
+    jl.record_peak("gauntlet", 4882)                                # must not raise
+    assert jl.observed_peaks("gauntlet") == []
+    assert jl.measured_need_mb("gauntlet", 1200) == (1200, "declared 1200MB (no run measured yet)")

@@ -1,8 +1,8 @@
 {
- "signed_utc": "2026-09-05T12:44:35.514261+00:00",
- "signed_by": "promoter degrades when the executor registry is absent (2026-09-05: the healer shipped promoter.py to the box one minute before mt5desk/executables.py was on its list); signed in session",
+ "signed_utc": "2026-09-05T13:01:44.404026+00:00",
+ "signed_by": "gauntlet capped at its declared 1200MB (measured holding 4882MB on an 8GB box, starving every other leg); signed in session",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "beec055a5f4357f2",
+  "desks/mt5/scripts/external_gauntlet.py": "a916da8c17a1be8f",
   "desks/mt5/research/universal_gate.py": "564b02439b938431",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "830723c7f399411c",
