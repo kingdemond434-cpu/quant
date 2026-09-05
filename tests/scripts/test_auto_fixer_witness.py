@@ -12,6 +12,7 @@ every five minutes.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -86,3 +87,44 @@ def test_the_real_sweep_witness_is_the_artifact_the_breach_names():
     """The mapping is only useful if it names the file check_research_health actually watches."""
     assert auto_fixers.WITNESS["SWEEP"].name == "orthogonal_candidates.json"
     assert "hypotheses" in str(auto_fixers.WITNESS["SWEEP"])
+
+
+#: Fixer classes whose repair is provable by an artifact. A RATCHET: it may rise, never fall.
+#: Measured 2026-09-05 at 14 of 21, up from 1. It was 15 for a moment, until
+#: `test_every_witness_is_the_artifact_its_own_breach_names` rejected a QUEUES entry:
+#: check_research_health raises no QUEUES breach at all, so there was no
+#: complaint for that witness to correspond to. The gap was costing exactly what the WITNESS
+#: docstring predicted: SEARCH sat 35.2h stale and GAUNTLET 58.3h on the live dashboard, both with
+#: a fixer wired and running on the 30-minute health timer, neither repairing anything, and
+#: nothing in the desk able to tell that from a repair that worked.
+MIN_WITNESSED = 14
+
+
+def test_witness_coverage_only_ever_improves() -> None:
+    """A fixer with no witness can report ATTEMPTED forever. That is honest -- UNWITNESSED is a
+    real answer -- but it is not a state to drift back into: every class that CAN be proved should
+    be, and the six that remain (BREADTH, FAMILIES, FORWARD, ROI, SEATS, STALL-WATCH) are analyses
+    with no single producing artifact rather than gaps anyone chose to leave."""
+    assert len(auto_fixers.WITNESS) >= MIN_WITNESSED, (
+        f"witness coverage fell to {len(auto_fixers.WITNESS)} of {len(auto_fixers.FIXERS)}; a "
+        f"repair that stops being provable is a repair that can silently stop working"
+    )
+
+
+def test_no_witness_names_a_class_that_has_no_fixer() -> None:
+    """Dead config in the other direction: a witness for a class nothing repairs would never be
+    consulted, and would read as coverage the desk does not have."""
+    orphan = sorted(set(auto_fixers.WITNESS) - set(auto_fixers.FIXERS))
+    assert not orphan, f"witness entries with no fixer: {orphan}"
+
+
+def test_every_witness_is_the_artifact_its_own_breach_names() -> None:
+    """The witness and the complaint must not drift apart. `check_research_health` is the only
+    thing that raises these classes, so if it does not mention the file, proving that file moved
+    proves nothing about the breach that was raised."""
+    health = (Path(auto_fixers.__file__).parent / "check_research_health.py").read_text("utf-8")
+    for cls, path in sorted(auto_fixers.WITNESS.items()):
+        assert path.name in health, (
+            f"WITNESS[{cls!r}] points at {path.name}, which check_research_health never reads -- "
+            f"so a fix could be 'proved' by a file unrelated to the breach it answered"
+        )

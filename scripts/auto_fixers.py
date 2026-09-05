@@ -336,8 +336,53 @@ FIXERS["QUEUES"] = fix_queues
 #: A class with NO witness is reported UNWITNESSED, never as success: not knowing whether a
 #: repair landed is a different fact from knowing it did (L1.28a), and folding them together is
 #: the whole defect one level up.
+#: EXTENDED FROM ONE CLASS TO EIGHT, 2026-09-05, and the gap was costing exactly what the note
+#: above predicted it would. Twenty-two classes had fixers and ONE had a witness, so twenty-one
+#: repairs could report ATTEMPTED forever without anyone able to tell a fixer that works from one
+#: that does nothing. Measured on the live dashboard the same day: SEARCH 35.2h stale and GAUNTLET
+#: 58.3h stale, both with a fixer wired, both running on the 30-minute health timer, neither
+#: repairing anything, and nothing in the desk able to say so -- the SWEEP lesson repeating in the
+#: two classes beside it because only SWEEP had been given the instrument.
+#:
+#: Each entry is the artifact whose staleness IS the breach `check_research_health` prints, so the
+#: witness and the complaint cannot drift apart: if the fix worked, the file the breach named has
+#: moved. A class stays out of this map only when its repair has no single observable artifact
+#: (SEATS, MEMORY, STALL-WATCH), and those keep reporting UNWITNESSED, which is the honest answer
+#: rather than a silent pass.
 WITNESS: dict[str, Path] = {
     "SWEEP": DESK / "data" / "hypotheses" / "orthogonal_candidates.json",
+    "SEARCH": DESK / "data" / "hypotheses" / "edge_search_results.json",
+    # GAUNTLET and BACKLOG share `fix_gauntlet`, so they share its witness: the canon's own file,
+    # whose `swept_at` is what the breach reads.
+    "GAUNTLET": DESK / "reports" / "UNIVERSAL_SURVIVORS.json",
+    "BACKLOG": DESK / "reports" / "UNIVERSAL_SURVIVORS.json",
+    "DOCKET": DESK / "data" / "hypotheses" / "external_survivors.json",
+    "MINERS": DESK / "data" / "hypotheses" / "mined_targets.json",
+    "MOAT": DESK / "data" / "moat_coverage.json",
+    # SHADOW and PULL both breach on the off-box view being stale, and both fixers exist to make
+    # the builder run again; the file it writes is the only thing that proves either did.
+    "SHADOW": ROOT / "web" / "desk_state.json",
+    "PULL": ROOT / "web" / "desk_state.json",
+    # MOAT-BUILDER's fixer runs the MT5-DeskState task, and the state file is the only thing that
+    # proves the task did more than start.
+    "MOAT-BUILDER": ROOT / "web" / "desk_state.json",
+    # CLOCKS: the breach counts BLOCKED rows read out of the off-box desk_state view, NOT out of
+    # the registry -- so desk_state is what must advance for the repair to be provable. Caught by
+    # `test_every_witness_is_the_artifact_its_own_breach_names` after I first wired this to
+    # sleeve_registry.json, which check_research_health never opens: the fix would have been
+    # "proved" by a file unrelated to the breach it answered, which is the same class of defect as
+    # judging a fixer by its launch.
+    "CLOCKS": ROOT / "web" / "desk_state.json",
+    # QUEUES is deliberately absent: `check_research_health` raises no QUEUES breach at all, so
+    # there is no complaint for a witness to correspond to. Adding one would assert coverage of a
+    # thing this organ never reports.
+    # The three data feeds each name the artifact their own breach reads, so a re-run that fetched
+    # nothing is visible instead of being reported as a repair. ff_calendar_vintage is a
+    # DIRECTORY on purpose: its mtime moves when a new vintage lands, which is precisely the
+    # event "the feed produced" means here.
+    "DATA-MACRO": DESK / "data" / "macro_state.json",
+    "DATA-COT": ROOT / "data" / "cot_zcache.parquet",
+    "DATA-EVENTS": DESK / "data" / "intelligence" / "ff_calendar_vintage",
 }
 
 
