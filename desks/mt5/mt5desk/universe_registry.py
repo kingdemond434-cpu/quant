@@ -90,6 +90,84 @@ QUOTE_CCY_SEED = frozenset({
 #: producers records it today; `check_universe_registry` reports every symbol that needs it.
 VENUE_CCY_FIELD = "currency_profit"
 
+# ================================= THE BAR LADDER, IN ONE PLACE =================================
+#
+# EVERY CHART, NOT ONE (principal 2026-09-05: "m1 m5 m15 m30 h1 h4 d1 all possible every type of
+# mechanism n chart for all always ... this was a serious flaw we had abt the h1 only").
+#
+# WHY THE LADDER LIVES IN THE REGISTRY MODULE. Which charts a symbol has is a REGISTRY FACT --
+# `expand_universe` writes `timeframes` / `timeframes_thin` per symbol and every consumer asks the
+# registry rather than probing the filesystem. Putting the ladder anywhere else would give the
+# desk a second spelling of it, and this module exists precisely because three producers once
+# held three spellings of one registry. It is stdlib-only, so `families`, the sweep, the gauntlet
+# and the forward engine can all import it without an import cycle.
+#
+# H1 IS THE REFERENCE ROW AND THE ADMISSION ROW, and both meanings are deliberate:
+#   * REFERENCE, because every bar-counted default in `families*.py` was written for an hourly
+#     bar. `scale_bars` converts those defaults to another chart's bar rate and is the IDENTITY
+#     at H1, so no H1 cell moves by a single parameter because this ladder exists.
+#   * ADMISSION, because a symbol that cannot support the ten gates hourly is not in the universe
+#     at all (`expand_universe`), so `<SYM>_H1.parquet` remains the thing whose absence means
+#     "this desk does not have this instrument".
+TIMEFRAMES: tuple[str, ...] = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
+
+#: Minutes of market time one bar of each chart spans. The ONE conversion table.
+TIMEFRAME_MINUTES: dict[str, int] = {
+    "M1": 1, "M5": 5, "M15": 15, "M30": 30, "H1": 60, "H4": 240, "D1": 1440,
+}
+
+#: The chart whose parameters every family default is written in, and the chart whose bars decide
+#: whether a symbol is in the universe at all.
+REFERENCE_TIMEFRAME = "H1"
+#: Minutes in the reference bar. Named so `scale_bars` reads as an intention rather than a 60.
+REFERENCE_MINUTES = TIMEFRAME_MINUTES[REFERENCE_TIMEFRAME]
+
+#: Bars an H1 chart must carry to be admitted (`expand_universe.MIN_BARS`). Quoted here so
+#: `min_bars_for` derives every other chart's floor from the SAME wall-clock span rather than
+#: from a second opinion about how much history is enough.
+#:
+#: THE DEFECT THIS FIXES, and it would have emptied a whole lane silently. A single flat
+#: `MIN_BARS = 3000` applied per timeframe is not one rule -- it is seven different rules, because
+#: 3,000 bars is four months of H1 and TWELVE YEARS of D1. Six years of D1 is ~1,560 bars, so
+#: every symbol on the desk would have recorded `D1:1560` as a THIN chart and the daily lane --
+#: the swing lane, the one the principal named -- would have been empty on all 250 symbols with
+#: nothing anywhere saying why. Deriving the floor from the span makes the rule the same rule on
+#: every chart: "at least as much market time as 3,000 hourly bars", i.e. ~125 trading days.
+H1_ADMISSION_BARS = 3000
+
+
+def timeframe_minutes(timeframe: str) -> int:
+    """Minutes one `timeframe` bar spans. Raises on a chart this desk does not know.
+
+    Raising rather than defaulting is the point: a silent fallback to 60 would let an unknown
+    chart be treated as hourly, which is exactly the collapse (a fine chart quietly becoming H1)
+    that makes two different cells share one identity.
+    """
+    try:
+        return TIMEFRAME_MINUTES[str(timeframe).upper()]
+    except KeyError:
+        raise KeyError(f"unknown timeframe {timeframe!r}; the ladder is {TIMEFRAMES}") from None
+
+
+def scale_bars(n_bars: float, timeframe: str, *, minimum: int = 1) -> int:
+    """An H1-written bar count re-expressed on `timeframe`, preserving the WALL-CLOCK span.
+
+    `scale_bars(120, "M5")` is 1,440 -- the same five days `hold_bars=120` means on H1. At H1 it
+    is the identity by construction, which is what lets a wall-clock parameter be rescaled for
+    the fine and slow charts without moving a single hourly cell.
+
+    `minimum` floors the result at one bar: a wall-clock span shorter than one bar of the chart
+    cannot be expressed on it, and rounding to zero would silently delete the parameter.
+    """
+    scaled = float(n_bars) * REFERENCE_MINUTES / float(timeframe_minutes(timeframe))
+    return max(int(minimum), int(round(scaled)))
+
+
+def min_bars_for(timeframe: str, *, h1_floor: int = H1_ADMISSION_BARS) -> int:
+    """Bars this chart needs to carry the SAME market time `h1_floor` hourly bars carry."""
+    return scale_bars(h1_floor, timeframe)
+
+
 _ALNUM = re.compile(r"[^A-Z0-9]")
 
 

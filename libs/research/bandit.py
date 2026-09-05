@@ -110,9 +110,23 @@ SOURCE_ARM: dict[str, str] = {
     "alpha_evolution:graveyard_derived": "failure_derived",
     "alpha_evolution:causal_derived": "cross_asset_signal",
     "alpha_evolution:claims_derived": "external_screen",
+    # THE BREADTH LANE (2026-09-05). `alpha_breadth` names the alpha clusters nobody in the book
+    # occupies, so its yield is a family never run before; the other two condition on a state --
+    # the book's own drawdown, and the states in which a surviving edge is stronger or absent --
+    # which is what `conditional_state_edge` is for.
+    "alpha_breadth": "new_mechanism",
+    "drawdown_alpha": "conditional_state_edge",
+    "survivor_neighbourhood": "conditional_state_edge",
 }
 KIND_ARM: dict[str, str] = {
     "coverage_gap": "conditional_state_edge", "dead_phase": "conditional_state_edge",
+    # The breadth lane's task kinds, so a task still routes to an arm when its source name is
+    # rewritten. An empty cluster is a new mechanism; a drawdown state and a survivor's state are
+    # both a conditional edge.
+    "empty_alpha_cluster": "new_mechanism", "drawdown_state_target": "conditional_state_edge",
+    "drawdown_alpha_candidate": "conditional_state_edge",
+    "survivor_state_strength": "conditional_state_edge",
+    "survivor_state_dead": "conditional_state_edge",
     "exit_hypothesis": "exit_improvement", "data_source": "alt_data_hypothesis",
     "fund_claim": "new_mechanism", "alpha_expression": "new_mechanism",
     "failure_lesson": "failure_derived", "model_pairing": "model_architecture",

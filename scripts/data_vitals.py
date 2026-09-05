@@ -48,12 +48,14 @@ PROVENANCE = {
         "timestamp_verified": False,
         "note": "rows carry '23:55 CST (UTC+8) assumed'. Alignment vs the USD/CNY reference is "
                 "ASSUMED. Feeds M_STRUCTURAL_BARRIER, one of two ALIVE mechanisms."},
-    "oi_ls_history.jsonl": {"collection": "binance futures API", "regenerable": True,
-                            "timestamp_verified": True, "note": "daily archive"},
-    "onchain_metrics.jsonl": {"collection": "public chain API", "regenerable": True,
-                              "timestamp_verified": True, "note": "public, no moat"},
-    "coinmetrics_flows.jsonl": {"collection": "coinmetrics community API", "regenerable": True,
-                                "timestamp_verified": True, "note": "public tier"},
+    # THREE CRYPTO-EXCHANGE PROVENANCE ROWS REMOVED 2026-09-05 (universe mandate):
+    # oi_ls_history.jsonl (Binance futures open-interest and long/short ratios),
+    # onchain_metrics.jsonl (public chain API) and coinmetrics_flows.jsonl (Coin Metrics
+    # community tier). All three collectors were deleted with the crypto-exchange desk and none
+    # of the files is on disk, so the rows described the provenance of data that can no longer
+    # arrive. The two organs that still consumed coinmetrics_flows as a BTC price
+    # (scripts/screen_fred_macro_axis.py, scripts/stage_a_executor.py) were repointed the same
+    # day onto the MT5 desk's own BTCUSD bars.
     "venue_divergence_shadow.jsonl": {"collection": "self-recorded multi-venue poll",
                                       "regenerable": False, "timestamp_verified": True,
                                       "note": "point-in-time capture; cannot be backfilled"},
@@ -64,7 +66,6 @@ PROVENANCE = {
 # live-feed latency rules produced 9 DEAD flags of which only one was real -- and an alarm that
 # fires mostly on non-problems trains its reader to ignore it.
 _ARTIFACT_KIND = {
-    "oi_ls_history.jsonl": ("STATIC", "historical backfill, ends 2023-12-03 BY DESIGN"),
     "cny_otc_premium_history.jsonl": ("STATIC", "wayback backfill; live feed is cny_premium.jsonl"),
     "experiment_registry.jsonl": ("DERIVED", "harvested from git; timestamps are commit dates"),
     "panel_verdicts.jsonl": ("EVENT_LOG", "appended per panel run, not a feed"),
@@ -228,14 +229,14 @@ EXTRA_SOURCES = {
         "feeds": "A001 live carry entry gate. PROXY, and the link is causal: the executor calls "
                  "current_funding() every cycle and cannot complete one without it, so a stalled "
                  "heartbeat IS a dead funding feed"},
-    "oi_ls_live (Binance positioning)": {
-        "kind": "JSON_STATE", "path": "data/oi_ls_live_heartbeat",
-        "field": None, "cadence_s": 3600,
-        "feeds": "M_FORCED_DELEVERAGE -- live crowding; the static archive ends 2023-12-03"},
-    "defi_lending (Aave/Compound/Morpho)": {
-        "kind": "JSON_STATE", "path": "data/defi_lending_heartbeat",
-        "field": None, "cadence_s": 3600,
-        "feeds": "M_FORCED_DELEVERAGE -- leverage build-up upstream of perp funding"},
+    # TWO LIVE ROWS REMOVED 2026-09-05 (universe mandate): "oi_ls_live (Binance positioning)" and
+    # "defi_lending (Aave/Compound/Morpho)". Both fed M_FORCED_DELEVERAGE off crypto-exchange and
+    # on-chain endpoints; both collectors are deleted, so each row could only ever emit a DEAD
+    # verdict about a feed that is supposed to be dead. A liveness scorer that reports a
+    # deliberate absence as a failure trains its reader to ignore the rows that matter -- the
+    # exact "alarm that fires mostly on non-problems" this file's own _ARTIFACT_KIND note names.
+    # The MT5 positioning equivalent is CFTC COT (scripts/fetch_cot.py), which is a weekly
+    # publication rather than a live feed and belongs to the freshness fences, not to DQS.
     "cashcarry_exec_heartbeat (executor)": {
         "kind": "JSON_STATE", "path": "data/cashcarry_exec_heartbeat",
         "field": None, "cadence_s": 120,

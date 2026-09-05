@@ -170,9 +170,39 @@ def test_the_frozen_identity_records_the_direction_actually_replayed() -> None:
 def test_a_short_is_passed_on_the_first_call_not_only_the_fallback() -> None:
     """A family accepting `side` with a long default never reaches a TypeError
     fallback -- so fixing only the fallback fixes nothing for exactly the
-    families that can take a side."""
+    families that can take a side.
+
+    ASKED OF THE BEHAVIOUR, NOT THE SOURCE TEXT (2026-09-05). This grepped
+    `shadow_forward.py` for the literal call, which stopped being true the day
+    the gateway's universal executor needed to make the SAME call and the shape
+    moved to `mt5desk.family_call` so the two could not drift. A source-text
+    fence cannot survive the refactor that makes the property MORE true, and it
+    was never the property: what matters is that a short arrives at the family
+    on the first attempt, wherever the call is written.
+    """
+    from mt5desk.family_call import signals
+    seen: list[dict] = []
+
+    def fam(df, **kw):
+        seen.append(dict(kw))
+        return []
+
+    signals(fam, "BARS", side=-1, params={"rr": 2.0})
+    assert seen == [{"side": -1, "rr": 2.0}], "the short did not reach the family first time"
+    # And the long call still omits `side` entirely, which is what keeps every
+    # running clock byte-identical to the call that started it.
+    seen.clear()
+    signals(fam, "BARS", side=1, params={"rr": 2.0})
+    assert seen == [{"rr": 2.0}]
+
+
+def test_the_forward_engine_makes_that_call_rather_than_a_second_copy_of_it() -> None:
+    """One call shape, or a short cell runs short on one machine and long on the
+    other. `shadow_forward` must DELEGATE, not re-implement."""
     text = (RESEARCH / "shadow_forward.py").read_text(encoding="utf-8")
-    assert "fam_fn(h1, side=-1, **call_params) if _short" in text
+    assert "family_signals(fam_fn, h1" in text
+    assert "fam_fn(h1, side=-1, **call_params)" not in text, (
+        "the inline call came back: there are two shapes again")
 
 
 # ------------------------------- 5. two causes of refusal are not one message

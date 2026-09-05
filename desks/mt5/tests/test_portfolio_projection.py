@@ -48,7 +48,7 @@ class TestTheLiveModuleIsTheOneUnderResearch:
 
     def test_the_live_modules_data_directory_exists(self) -> None:
         sys.path.insert(0, str(_DESK / "research"))
-        import portfolio_projection as pp          # noqa: PLC0415
+        pp = _live_projection()
         assert pp.UNI.is_dir(), f"UNI resolved to {pp.UNI}, which does not exist"
         assert (pp.UNI / "universe.json").is_file()
 
@@ -67,6 +67,29 @@ class TestTheLiveModuleIsTheOneUnderResearch:
         assert "def main" not in dup, "the duplicate should not carry a runnable projection"
 
 
+def _live_projection():
+    """The LIVE projection, loaded by path rather than by name.
+
+    `import portfolio_projection` is ambiguous on this tree: the module name exists at two depths
+    (`desks/mt5/` and `desks/mt5/research/`) and which one an import resolves to is decided by
+    sys.path ORDER, not by intent. It resolved to the superseded top-level stub here, so a test
+    written about the live loader was asserting against a file whose whole purpose is to not be
+    the live loader -- and failed with `has no attribute BASE`, which reads like the live module
+    lost an attribute rather than like the wrong module was imported.
+
+    That ambiguity is the same trap this file's own docstring describes one level up. Loading by
+    path removes it: this test now names the file it means.
+    """
+    import importlib.util                                    # noqa: PLC0415
+
+    path = _DESK / "research" / "portfolio_projection.py"
+    spec = importlib.util.spec_from_file_location("_live_portfolio_projection", path)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 class TestAnAbsentSurvivorReportIsARefusalNotASmallerBook:
     """`reports/hunt12_partial.json` is gitignored, so it is absent on every fresh clone. The
     loader returned [] there, main() built a GOLD-ONLY book from four sleeves, and the write
@@ -74,14 +97,14 @@ class TestAnAbsentSurvivorReportIsARefusalNotASmallerBook:
     port_sharpe consistently on the truncated book, so nothing downstream could tell."""
 
     def test_it_raises_rather_than_returning_an_empty_list(self, monkeypatch) -> None:
-        import portfolio_projection as pp          # noqa: PLC0415
+        pp = _live_projection()
         monkeypatch.setattr(pp, "BASE", Path("/nonexistent-desk-root"))
         with pytest.raises(SystemExit) as e:
             pp.load_h12_survivors()
         assert "REFUSING" in str(e.value)
 
     def test_the_refusal_names_what_is_missing_and_where_to_run_it(self, monkeypatch) -> None:
-        import portfolio_projection as pp          # noqa: PLC0415
+        pp = _live_projection()
         monkeypatch.setattr(pp, "BASE", Path("/nonexistent-desk-root"))
         with pytest.raises(SystemExit) as e:
             pp.load_h12_survivors()

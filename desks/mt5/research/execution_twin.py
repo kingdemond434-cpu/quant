@@ -25,6 +25,27 @@ trading box does). It applies nothing: the recalibration it reports is consumed 
 `engine.Costs` and `external_gauntlet.costs_for` still charge the registry's spread with a
 hand-set `mult` -- and that wiring is the next handoff, named in the report under `consumers`.
 
+THE FILL CORPUS (2026-09-05, the principal's second order). "Turn every live fill into
+proprietary data ... for every execution retain full market state, reason for entry, strategy
+DNA, posterior edge estimate, predicted distribution, spread, slippage, regime, cross-asset
+state, MAE, MFE, path after entry, exit reason, alternative exits, counterfactual entries,
+realized R, prediction error." That row is a JOIN, not a new capture point: this pass already
+holds the intent-versus-fill half, the decision ledger holds the reason and the DNA, the
+decision dataset holds the world and the priced alternatives, `excursions.jsonl` holds MAE and
+MFE, and the tick tape holds the post-fill path. `libs.execution.fill_corpus` assembles them
+into one append-only record per execution and reports, field by field, what is NOT yet captured
+-- because an unrecorded fill cannot be recovered later and a capture gap is only fixable
+forward.
+
+ON TOP OF THE CORPUS, THREE MEASUREMENTS, EVERY ONE GATED. `alpha_capture` (realised edge over
+predicted frictionless edge, per sleeve, session and symbol, plus adverse selection),
+`execution_choice_model` (E[post-fill alpha | style, spread, vol, momentum, session]) and
+`meta_label` (SKIP / 0.5x / 1x / 1.5x / MAX). The last two are HARNESSES first: each computes
+the sample its own power calculation demands and reports UNMEASURED with the shortfall until the
+corpus reaches it. Neither is wired to anything that sends an order, and the meta-labeler can
+never re-admit a signal a gate refused -- it is a sizing refinement strictly downstream of
+admission, and its unfitted state is a no-op on the upside.
+
     python3 research/execution_twin.py [--budget-s N] [--symbols XAUUSD,EURUSD]
 """
 from __future__ import annotations
@@ -45,7 +66,11 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 
 from mt5desk import execution_registry  # noqa: E402
 
+from libs.execution import alpha_capture as ac  # noqa: E402
 from libs.execution import digital_twin as dt  # noqa: E402
+from libs.execution import execution_choice_model as ecm  # noqa: E402
+from libs.execution import fill_corpus as fc  # noqa: E402
+from libs.execution import meta_label as ml  # noqa: E402
 
 #: The gateway's three ledgers (declared on the gateway node of the capability graph).
 INTENTS = BASE / "data" / "order_intents.jsonl"
@@ -57,6 +82,20 @@ UNIVERSE = BASE / "data" / "universe" / "universe.json"
 STATE = BASE / "data" / "execution_twin_state.json"
 CASES = BASE / "data" / "execution_twin_cases.jsonl"
 REPORT = BASE / "reports" / "EXECUTION_TWIN.json"
+#: THE FILL CORPUS and the ledgers it joins. All five are written by organs that already own
+#: them; this pass only reads them and writes the joined row.
+CORPUS = BASE / "data" / "fill_corpus.jsonl"
+DECISIONS = BASE / "data" / "decision_ledger.jsonl"
+DATASET = BASE / "data" / "decision_dataset.jsonl"
+EXCURSIONS = BASE / "data" / "excursions.jsonl"
+
+#: Corpus columns the meta-labeler is allowed to scan. Kept SHORT and declared here rather than
+#: discovered from the row, because the Bonferroni charge is linear in the number of columns
+#: looked at and a scan that quietly widens is a scan whose gate quietly loosens.
+META_LABEL_FEATURES: tuple[str, ...] = (
+    "posterior_edge_r", "spread_frac_at_decision", "vol_frac", "momentum_z", "slip_r",
+    "predicted_p_fill", "latency_decision_to_send_ms",
+)
 
 YIELD_PREFIX = "YIELD "
 #: The counters this organ yields, by name, for the hourly pass.
@@ -159,6 +198,189 @@ def _append_cases(cases: list[dt.TwinCase], path: Path) -> int:
     return len(new)
 
 
+# --------------------------------------------------------------------------- the fill corpus
+def _when(x: Any) -> datetime | None:
+    """A ledger timestamp as an aware UTC datetime, or None. Naive strings are read as UTC --
+    every ledger on this desk writes UTC, and guessing a local zone would move a markout's t0."""
+    if isinstance(x, datetime):
+        return x if x.tzinfo else x.replace(tzinfo=UTC)
+    if not isinstance(x, str) or not x.strip():
+        return None
+    try:
+        d = datetime.fromisoformat(x.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=UTC)
+
+
+def _tickets(intents: list[dict[str, Any]], cases: list[dt.TwinCase]) -> dict[str, int]:
+    """intent_id -> broker ticket. The deal ledger joins on the ticket and a `TwinCase` does not
+    carry one, so without this map every corpus row's EXIT half would be empty.
+
+    Two rules, mirroring `digital_twin.join_cases` exactly: an intent that carries an explicit
+    `intent_id` is looked up by it; a synthetic id ends in `|<ticket>` by construction, so the
+    tail is the ticket. A tail that is not an integer yields nothing rather than a guess.
+    """
+    explicit = {str(r.get("intent_id")): r.get("ticket") for r in intents if r.get("intent_id")}
+    out: dict[str, int] = {}
+    for c in cases:
+        raw = explicit.get(c.intent_id)
+        if raw is None:
+            tail = c.intent_id.rsplit("|", 1)[-1]
+            raw = tail if tail.lstrip("-").isdigit() else None
+        try:
+            if raw is not None and not isinstance(raw, bool):
+                out[c.intent_id] = int(raw)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _tape_markouts(cases: list[dt.TwinCase], tickets: dict[str, int],
+                   deals: list[dict[str, Any]] | None) -> tuple[dict[str, dict[str, Any]], str]:
+    """Post-fill markouts, MAE, MFE and the sampled path, from the tick tape. ({}, why) if none.
+
+    A MARKOUT NEEDS A REAL FILL TIMESTAMP, and only a deal row carries one. Approximating it from
+    the intent time would be fine at five minutes and meaningless at one second, which is exactly
+    the horizon adverse selection lives on -- so a case with no deal contributes nothing here and
+    is reported as a capture gap instead. The tape is READ ONLY, through `recorders.tape_store`,
+    and its absence is a reason, never an exception: this organ must keep running on a container
+    that has no tape.
+    """
+    if not deals:
+        return {}, "no deal ledger: no fill carries a timestamp a markout can start from"
+    try:
+        from recorders.tape_store import TapeStore
+        from recorders.tick_recorder import DEFAULT_TAPE_ROOT
+    except Exception as exc:
+        return {}, f"tick tape unavailable ({type(exc).__name__}: {exc})"
+    store = TapeStore(Path(DEFAULT_TAPE_ROOT))
+    have = set(store.symbols())
+    if not have:
+        return {}, f"tick tape at {store.root} holds no symbol-days yet"
+    by_ticket = {t: r for r in deals if (t := r.get("order")) is not None}
+    out: dict[str, dict[str, Any]] = {}
+    day_cache: dict[tuple[str, str], Any] = {}
+    for c in cases:
+        tk = tickets.get(c.intent_id)
+        d = by_ticket.get(tk) if tk is not None else None
+        if d is None or c.symbol not in have or c.stop_frac is None or c.stop_frac <= 0:
+            continue
+        t0 = _when(d.get("entry_time") or d.get("time"))
+        px = d.get("entry_price") if d.get("entry_price") is not None else d.get("fill_price")
+        if t0 is None or px is None:
+            continue
+        day = t0.date().isoformat()
+        key = (c.symbol, day)
+        if key not in day_cache:
+            try:
+                day_cache[key] = store.read_day(c.symbol, day)
+            except Exception:
+                day_cache[key] = None
+        df = day_cache[key]
+        if df is None or getattr(df, "empty", True):
+            continue
+        stop_px = float(c.stop_frac) * float(c.price_ref)
+        times = df["time_msc"].astype("int64").tolist()
+        bid, ask = df["bid"].tolist(), df["ask"].tolist()
+        fill_ms = t0.timestamp() * 1000.0
+        row: dict[str, Any] = {"source": f"tape:{store.root.name}", "fill_time": t0.isoformat()}
+        row.update(fc.markouts_from_ticks(times, bid, ask, fill_ms=fill_ms,
+                                          fill_price=float(px), direction=c.direction,
+                                          stop_distance=stop_px))
+        t1 = _when(d.get("exit_time"))
+        row.update(fc.excursions_from_ticks(
+            times, bid, ask, fill_ms=fill_ms,
+            exit_ms=(t1.timestamp() * 1000.0 if t1 is not None else None),
+            fill_price=float(px), direction=c.direction, stop_distance=stop_px))
+        out[c.intent_id] = row
+    return out, ("" if out else "no fill fell inside a recorded symbol-day of the tape")
+
+
+def _append_corpus(records: list[fc.FillRecord], path: Path) -> int:
+    """Append corpus rows whose key is new or whose resolution changed. Append-only, last row
+    per key is the truth -- the same rule the case dataset follows, for the same reason: a fill's
+    exit, its excursions and its counterfactuals all arrive AFTER the fill did."""
+    last: dict[str, str] = {}
+    for r in _rows(path):
+        rec = fc.record_from_row(r)
+        if rec.key:
+            last[rec.key] = rec.resolution
+    new = [r for r in records if last.get(r.key) != r.resolution]
+    return fc.append_rows(path, new) if new else 0
+
+
+def _corpus_section(cases: list[dt.TwinCase], intents: list[dict[str, Any]],
+                    deals: list[dict[str, Any]] | None, write: bool
+                    ) -> tuple[dict[str, Any], list[fc.FillRecord]]:
+    """Build the hour's corpus rows, append the new ones, and report what they do and do not
+    carry. Returns (the completeness report, the RESOLVED records) so the pass reads the corpus
+    once. Every input ledger is optional: an absent one costs columns, never the pass."""
+    tickets = _tickets(intents, cases)
+    marks, mark_why = _tape_markouts(cases, tickets, deals)
+    records = fc.build_records(
+        cases, decisions=_rows(DECISIONS), deals=deals or [],
+        dataset_rows=_rows(DATASET), excursions=_rows(EXCURSIONS),
+        markouts=marks, tickets=tickets)
+    appended = _append_corpus(records, CORPUS) if write else 0
+    # THE CORPUS IS READ ONCE PER PASS and the resolved records are handed back with the report,
+    # so the capture ratio and the two models do not each re-read and re-parse the file. A pass
+    # that reads its own dataset three times gets slower exactly as the asset gets valuable.
+    latest: dict[str, fc.FillRecord] = {}
+    for r in _rows(CORPUS):
+        rec = fc.record_from_row(r)
+        latest[rec.key] = rec                            # append-only: the last row per key wins
+    resolved = list(latest.values()) or records
+    comp = fc.completeness(resolved)
+    comp.update({"path": str(CORPUS), "appended_this_pass": appended,
+                 "built_this_pass": len(records), "markouts": {
+                     "n": len(marks), "why": mark_why,
+                     "reads_today": ("TapeStore.read_day(symbol, day) -> DataFrame"
+                                     "[time_msc, bid, ask] in PRICE units. Works; this is what "
+                                     "the markouts above came from."),
+                     "wants": [
+                         # THE TAPE HANDOFF, stated in the report so the recorder's owner can see
+                         # what the corpus needs rather than being told in a message nobody keeps.
+                         "read_window(symbol, from_ms, to_ms) -> the same frame for a SLICE. A "
+                         "markout needs [fill, fill+5min]; decoding a whole symbol-day per fill "
+                         "is the difference between seconds and minutes once fills are frequent.",
+                         "covers(symbol, from_ms, to_ms) -> bool, true only when no gap row "
+                         "overlaps the window. Without it a markout is silently computed ACROSS "
+                         "a RECORDER_DOWN hole and reads as a real price move.",
+                         "the aggressor flag on each tick (MT5 TICK_FLAG_BUY/SELL) is already in "
+                         "`flags`; libs/execution/passive_impact.py needs one branch on it and "
+                         "nothing further from the recorder.",
+                     ]}})
+    return comp, resolved
+
+
+def _models_section(records: list[fc.FillRecord]) -> dict[str, Any]:
+    """The two gated models: the conditional execution choice and the meta-labeler.
+
+    BOTH ARE HARNESS-FIRST. Each reports its fitted surface when the corpus supports one and
+    UNMEASURED with the exact shortfall when it does not, and `requirements` prices every
+    conditioning tier so "not yet" comes with a number the desk can plan against.
+    """
+    surface = ecm.fit(records)
+    labeler = ml.fit(records, features=META_LABEL_FEATURES)
+    return {
+        "execution_choice": {
+            **surface.to_row(),
+            "requirements": ecm.requirements(),
+            "wired_to": ("NOTHING. mt5desk/execution_policy.choose remains the only chooser on "
+                         "the money path; this surface is advisory until its own gate opens and "
+                         "a consumer is named here."),
+        },
+        "meta_label": {
+            **labeler.to_row(),
+            "requirements": ml.requirements(n_features=len(META_LABEL_FEATURES)),
+            "wired_to": ("NOTHING. It cannot re-admit a signal a gate refused (gate_passed=False "
+                         "returns SKIP at 0.0x unconditionally) and it cannot upsize while "
+                         "UNMEASURED, so an unfitted labeler is a no-op on the upside."),
+        },
+    }
+
+
 def _gaps(cases: list[dt.TwinCase], n_outcomes: int) -> list[str]:
     """What the ledgers do not carry yet, measured on this hour's cases -- the handoff list."""
     gaps: list[str] = []
@@ -224,6 +446,11 @@ def run(symbols: list[str] | set[str] | None = None, budget_s: float | None = No
                 "symbols_unmeasured": 0, "donated_rows": 0}
 
     donated = _append_cases(cases, CASES)
+    # THE FILL CORPUS. Built from this hour's cases joined to every other ledger that has
+    # something to add, appended when new or newly resolved, and reported by COMPLETENESS rather
+    # than by row count -- a corpus that is 40% populated and says so is worth more than one that
+    # looks full because absent columns were defaulted. A filtered run is a probe and writes none.
+    corpus, corpus_records = _corpus_section(cases, intents, deals, write=not want)
     costs = sim_costs(cases)
     recal = dt.recalibration(cases, costs)
     try:
@@ -256,6 +483,12 @@ def run(symbols: list[str] | set[str] | None = None, budget_s: float | None = No
         "impact_proxy": dt.impact_proxy(cases),
         "recalibration": recal,
         "execution_choice_value": dt.execution_choice_value(cases),
+        # THE THREE CORPUS-DERIVED SECTIONS. `alpha_capture` is the single number that says how
+        # much of the research edge survives the broker; the other two are gated harnesses that
+        # report UNMEASURED with their own shortfall until the corpus can support a model.
+        "fill_corpus": corpus,
+        "alpha_capture": ac.report(corpus_records),
+        **_models_section(corpus_records),
         "algo_scoreboard": board,
         "sim_costs": {s: {"slip_frac": c.slip_frac, "p_fill": c.p_fill,
                           "spread_frac": c.spread_frac} for s, c in sorted(costs.items())},

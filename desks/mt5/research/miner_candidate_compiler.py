@@ -57,20 +57,105 @@ def _rows(doc) -> list[dict]:
     return out
 
 
+#: Rows one compile pass will carry. A bound on MEMORY, not a view of what matters: it is applied
+#: newest-file-first and whatever it drops is COUNTED and reported, never silently discarded.
+#:
+#: RAISED 2026-09-05 with the intake widening below. The two roots hold ~223,000 rows inside the
+#: window once every artifact is read (102,915 from `discoveries_*` plus 119,902 from everything
+#: else), so 250,000 would bind within days of normal mining and start deferring real evidence for
+#: a reason that is purely arithmetic.
+#:
+#: AND THE BOUND IT CLAIMS TO BE WAS MEASURED RATHER THAN FEARED. A full pass over the widened
+#: intake -- 178,752 deduplicated rows across both roots -- takes 6.9 seconds at a peak RSS of
+#: 368 MB. The desk box carries 3.1 GB resident of 8.4 GB, so a pass at four times today's intake
+#: still fits with room, which is what this ceiling is set to allow. A number chosen for memory
+#: that nobody ever measured is just a smaller version of the filename filter below.
+MAX_ROWS_PER_PASS = 1_000_000
+
+#: Artifacts under the intelligence roots that are a miner's OWN BOOKKEEPING, not evidence:
+#: cursors, coverage registries, denylists, run checkpoints, population counts. They are matched
+#: by exact filename at the root of a tree, never by substring, because "state" and "coverage" are
+#: also perfectly good words for evidence and a substring rule would silently swallow a source.
+#:
+#: WHY AN EXCLUSION LIST RATHER THAN AN INCLUSION ONE. The old reader admitted only
+#: `discoveries_*.json`, which is an inclusion list, and it is exactly what caused the loss this
+#: module now documents twice: a miner that names its output `signals_*.json` or `articles_*.json`
+#: was not rejected, it was NEVER READ. An inclusion list fails closed against the desk's own
+#: future miners; an exclusion list fails open, and open is the correct direction here because an
+#: unrecognised artifact that holds no rows costs nothing and one that holds rows is evidence.
+_OPERATIONAL_STATE = frozenset({
+    "anomaly_cursor.json", "blocked_sources.json", "coverage_registry.json",
+    "frontier_coverage.json", "frontier_state.json", "gpt_hunter_state.json",
+    "identity_graph.json", "midnight_codex_status.json", "midnight_completion.json",
+    "midnight_completion_checkpoint.json", "midnight_morning_report.json",
+    "mt5_midnight_state.json", "regional_hunters_state.json", "scheduled_chat_assimilation.json",
+    "seed_miners_state.json", "source_populations.json", "survivor_funnel.json",
+    "video_channel_coverage.json",
+})
+
+
+def _is_operational_state(rel: Path) -> bool:
+    """Is this artifact a miner's bookkeeping rather than its evidence?
+
+    Only at the ROOT of an intelligence tree (`len(rel.parts) == 1`). A file with one of these
+    names inside a source directory is that source's output and is read: the names are generic
+    enough that a per-source `coverage_registry.json` would plausibly hold rows.
+    """
+    return len(rel.parts) == 1 and rel.name in _OPERATIONAL_STATE
+
+
 def recent_rows(now: datetime) -> list[tuple[str, dict]]:
-    """Newest artifact per source plus the merged latest corpus, exact-row deduplicated."""
+    """EVERY discovery artifact in the window, exact-row deduplicated.
+
+    THIS READ ONLY THE NEWEST FILE PER SOURCE DIRECTORY, and it was the largest conversion loss on
+    the desk. Measured 2026-09-05: 5,524 discovery files inside the 7-day window holding 102,915
+    rows, of which the compiler opened 60 files and saw 1,594 rows. **98.5% of everything the
+    miners produced never reached the compiler at all** -- not rejected, not deepened, not
+    graveyarded: unread. The docket looked like a funnel narrowing on merit and was mostly a
+    directory listing sorted by mtime.
+
+    A miner that writes one artifact per run kept only its last run; a miner that writes one per
+    source kept only whichever landed last. Both are the common shape here, which is why the loss
+    was near-total rather than partial.
+
+    AND THEN THE FILENAME WAS STILL A FILTER. Reading every `discoveries_*.json` fixed the first
+    loss and left a second, larger one untouched: the glob is an INCLUSION LIST, and a miner that
+    names its output anything else was not rejected -- it was never read. Measured hours after the
+    first fix, 119,902 rows in 583 artifacts inside the same window, none of them reaching the
+    compiler:
+
+        anomalies_*.json      97,405   the desk's OWN measured anomalies, fully structured
+        mql5_*.json            7,569   catalogue rows
+        quantocracy_*.json     6,908   blogosphere index
+        macrosynergy_prs.json  2,363
+        codebase_*.json        1,715   crawler output
+        signals_*.json         1,630   crawler output
+        forum_*.json             654   crawler output
+        videos_*.json            544   crawler output
+
+    The principal's rule is the general form of that measurement: anything a crawler or miner
+    produces that is not already a direct candidate gets reverse-engineered and sent to the
+    gauntlet. So the read is now EVERY json artifact under either root, at any depth, minus a
+    short list of named operational-state files -- an exclusion list, which fails OPEN against a
+    miner nobody has written yet, where the inclusion list failed closed against every one of them.
+
+    THE DEDUPLICATION IS WHAT MAKES READING EVERYTHING SAFE, and it already existed: rows are keyed
+    on a sha256 of their exact content, so a row repeated across fifty files is carried once. The
+    old behaviour was not protecting against duplicates -- the dedup was -- it was discarding
+    distinct rows.
+
+    NEWEST FIRST, so if `MAX_ROWS_PER_PASS` binds it is the oldest discoveries that wait for the
+    next pass rather than an arbitrary slice, and the shortfall is reported rather than hidden.
+    """
     cutoff = now - timedelta(days=WINDOW_DAYS)
     found: list[tuple[str, dict]] = []
     seen: set[str] = set()
     for root in INTEL_ROOTS:
         if not root.exists():
             continue
-        paths = [root / "latest_discoveries.json"]
-        for directory in sorted(p for p in root.iterdir() if p.is_dir()):
-            files = sorted(directory.glob("discoveries_*.json"),
-                           key=lambda p: p.stat().st_mtime, reverse=True)
-            if files:
-                paths.append(files[0])
+        paths = sorted((p for p in root.rglob("*.json")
+                        if p.is_file() and not _is_operational_state(p.relative_to(root))),
+                       key=lambda p: p.stat().st_mtime, reverse=True)
         for path in paths:
             try:
                 if datetime.fromtimestamp(path.stat().st_mtime, tz=UTC) < cutoff:
@@ -85,6 +170,11 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                 seen.add(digest)
                 source = str(row.get("source") or path.parent.name or "unknown")
                 found.append((source, row))
+                if len(found) >= MAX_ROWS_PER_PASS:
+                    print(f"compiler: MAX_ROWS_PER_PASS ({MAX_ROWS_PER_PASS:,}) reached; older "
+                          f"discoveries wait for the next pass. This is a memory bound being "
+                          f"hit, not a judgement -- raise it or shorten WINDOW_DAYS.")
+                    return found
     return found
 
 
@@ -105,6 +195,24 @@ def resolve_symbols(row: dict, universe: set[str]) -> list[str]:
         elif len(token) == 3 and token.isalpha():
             out.update(s for s in universe if len(s) == 6 and token in (s[:3], s[3:]))
     return sorted(out)
+
+
+def _lead_lag_lag(row: dict) -> int | None:
+    """The lag, in bars, an anomaly row measured -- from the row, never assumed.
+
+    The scanner writes it two ways and both are read: `horizon` as an integer, and encoded in the
+    condition text (`lead_lag_BNBUSD_lag1`). A row that carries neither returns None and goes to
+    deepening, because a lead-lag recipe without a lag is not a rule -- it is the shape of one.
+    """
+    horizon = row.get("horizon")
+    if isinstance(horizon, int) and 1 <= horizon <= 168:
+        return horizon
+    cond = str(row.get("condition") or "")
+    if "_lag" in cond:
+        tail = cond.rsplit("_lag", 1)[-1]
+        if tail.isdigit() and 1 <= int(tail) <= 168:
+            return int(tail)
+    return None
 
 
 def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
@@ -168,6 +276,50 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
         return ([_candidate(s, "carry", {"input_symbol": s}, source, row,
                             "broker-native swap differential is a directly measured carry premium")
                  for s in symbols], "STRUCTURED_CARRY")
+
+    # THE DESK'S OWN ANOMALY SCANNER IS A STRUCTURED SOURCE, and it is the largest one there is:
+    # 97,405 of the 119,902 rows the compiler could not previously see are `anomalies_*.json`.
+    # A lead-lag row names both instruments, the lag and the sign of the measured relationship,
+    # which is a complete `family_lead_lag` recipe -- `driver_symbol`, `lag`, `direction` -- and
+    # nothing about it is guessed from prose. That distinction is the whole rule of this module:
+    # the scanner MEASURED that BNBUSD at lag 1 leads BCHUSD at |t|=38.6 over n=44,237, the same
+    # class of evidence as a swap differential or a COT print.
+    #
+    # AN UNNAMED MECHANISM IS STILL NOT A CANDIDATE, and this does not change that. The rows carry
+    # `mechanism_status: UNNAMED` and their own note says "an OBSERVATION, not a candidate"; what
+    # makes this one admissible is not that the desk believes the correlation, it is that the row
+    # specifies an EXACT EXECUTABLE RULE and the gauntlet's ten gates are the thing that decides
+    # whether it survives. Every other anomaly shape -- a conditional return with no family hint,
+    # `hour_q0-0.05` and the external-series conditions -- still goes to DEEPENING, which is where
+    # a mechanism gets named, and that is the majority of the file.
+    if kind == "anomaly" and symbols and row.get("against"):
+        hint = str(row.get("family_hint") or "").lower()
+        peer = str(row["against"]).upper().replace("/", "").strip()
+        if peer in universe and hint == "lead_lag":
+            lag = _lead_lag_lag(row)
+            if lag is not None:
+                corr = row.get("corr")
+                direction = "opposite" if isinstance(corr, (int, float)) and corr < 0 else "same"
+                return ([_candidate(s, "lead_lag",
+                                    {"driver_symbol": peer, "lag": lag, "direction": direction},
+                                    source, row,
+                                    "a measured lead-lag between two instruments can transmit "
+                                    "through a shared factor, a common venue or quote latency")
+                         for s in symbols if s != peer], "STRUCTURED_LEAD_LAG")
+        if peer in universe and hint == "cross_asset_residual":
+            # The scanner measures the residual on the family's OWN defaults -- a 240-bar lookback
+            # at 2sd -- so only what it actually varied is written onto the recipe: the factor it
+            # measured against and the horizon it measured over. Restating a default as a param
+            # would freeze today's default into every candidate and silently fork the two the day
+            # the family's changes.
+            hold = row.get("horizon")
+            if isinstance(hold, int) and 1 <= hold <= 168:
+                return ([_candidate(s, "cross_asset_residual",
+                                    {"factor_symbols": [peer], "ttl_bars": hold},
+                                    source, row,
+                                    "a measured cross-instrument residual can revert when the "
+                                    "shared factor reasserts itself")
+                         for s in symbols if s != peer], "STRUCTURED_CROSS_ASSET_RESIDUAL")
 
     if source_l == "correlations" and len(symbols) >= 2:
         candidates = []

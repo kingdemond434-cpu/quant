@@ -41,8 +41,28 @@ REMOTE = "contabo-mt5"
 #: run_external_pipeline's REMOTE_MODULES plus the PowerShell the box runs on a schedule; a
 #: module missing from here is one that can silently decay back to the box's own stale branch.
 MODULES = [
+    # THE TICK TAPE runs on the box (it needs the terminal) and none of it was shipped here, so
+    # every module below could decay back to whatever the box happened to have. The tape is the
+    # desk's one unrebuildable asset -- an unrecorded tick cannot be recovered in 2029 -- which
+    # makes silent drift on the recorder more expensive than on anything else in this list.
+    "desks/mt5/recorders/__init__.py",
+    "desks/mt5/recorders/tick_source.py",
+    "desks/mt5/recorders/tape_store.py",
+    "desks/mt5/recorders/tick_recorder.py",
+    "desks/mt5/recorders/tick_integrity.py",
+    "desks/mt5/recorders/tape_features.py",
+    "desks/mt5/recorders/vol_archive.py",
+    "desks/mt5/recorders/install_tape_tasks.ps1",
+    "desks/mt5/mt5desk/microstructure.py",      # tape_features' import closure
+    "desks/mt5/research/free_data.py",          # vol_archive's fallback chain
     "desks/mt5/mt5desk/families.py",
     "desks/mt5/mt5desk/families_orthogonal.py",
+    # THE BAR LADDER, and `families.py` now imports it AT MODULE SCOPE (2026-09-05). That is the
+    # dangerous shape this list exists for: a new import of an UNWATCHED module. If the box holds
+    # a copy without `TIMEFRAME_MINUTES`, `import mt5desk.families` raises ImportError and every
+    # family on the desk -- the whole hunt, not one organ -- goes dark with a message about a
+    # constant. `expand_universe` and the sweep read the same module for the same ladder.
+    "desks/mt5/mt5desk/universe_registry.py",
     "desks/mt5/mt5desk/engine.py",
     "desks/mt5/mt5desk/universe.py",
     "desks/mt5/research/job_lock.py",
@@ -132,6 +152,13 @@ MODULES = [
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
     "desks/mt5/research/shadow_forward.py",
+    # THE BAR SOURCE `shadow_forward` REPLAYS ON, unwatched until now. It gained a `timeframe`
+    # argument on 2026-09-05 and the forward loop passes it for every clock, so a stale copy
+    # raises TypeError on the FIRST sleeve of every pass -- the whole forward book reads
+    # BLOCKED_SLEEVE_ERROR with a message about an argument, which is the shape of failure this
+    # list exists to make impossible. It is also the only module that decides whether a replay
+    # carries promotion authority.
+    "desks/mt5/research/h1_source.py",
     # Imported by edge_search while rebuilding `discovered` runtime inputs. Its absence blocked
     # seven live EURCHF forward clocks even though family_inputs and shadow_forward both matched.
     "desks/mt5/research/carry_state.py",

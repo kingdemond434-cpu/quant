@@ -88,10 +88,19 @@ def promoted_lot(equity, live_n, dist_usd=None, symbol=GOLD_SYMBOL, info=None):
 
 @pytest.fixture
 def gateway_src(tmp_path, monkeypatch):
+    """Point the fence at a synthetic gateway.
+
+    A TUPLE, NOT A PATH, since the gateway was split into `gateway.py` + `decision_core.py`. The
+    fence audits the UNION of both halves' function tables -- a sizing function now lives in
+    whichever file the split put it in -- so `CRU.GATEWAY` became a tuple and this fixture kept
+    handing it a bare Path. Every test in this file then died on `TypeError: 'PosixPath' object is
+    not iterable`, which is a fixture that was never updated with the code, not a fence that
+    broke: the fence itself is correct and has been correct since the split.
+    """
     def _set(src: str):
         p = tmp_path / "gateway.py"
         p.write_text(src, encoding="utf-8")
-        monkeypatch.setattr(CRU, "GATEWAY", p)
+        monkeypatch.setattr(CRU, "GATEWAY", (p,))
         return p
     return _set
 

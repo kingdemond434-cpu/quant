@@ -34,16 +34,21 @@ goes through. This reader therefore adds no new admission path to the candidate 
 only cause the existing door to open, never bypass it, and every guard the compiler already
 applies still applies. The gauntlet remains the arbiter of profitability.
 
-COSTS ARE BOUNDED BY CONSTRUCTION. `libs.ops.llm_seat` carries the monthly cap and the spend
-ledger; this adds a per-run task limit on top, and an append-only worked-ledger so a task is
-paid for ONCE. Re-running the hour is free for everything already decided.
+WORK IS BOUNDED BY TIME, AND PAID FOR ONCE. `libs.ops.llm_seat` still carries the spend ledger,
+but the desk runs on free tiers so a per-run TASK COUNT no longer protects anything worth
+protecting; the whole queue is worked in value-of-information order until `RUN_BUDGET_SEC` is
+spent. The append-only worked-ledger is what keeps a task from being billed twice, so re-running
+the hour is free for everything already decided and a budget that binds simply defers the least
+informative rows to the next pass.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import os
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -66,9 +71,41 @@ WORKED = BASE / "data" / "hypotheses" / "deepening_worked.jsonl"
 OUT = BASE / "data" / "hypotheses" / "deepened_candidates.json"
 LOG = BASE / "logs" / "deepening_worker.log"
 
-#: A run's ceiling. The queue is 705 deep and grows hourly; working it all in one pass would
-#: spend the month's cap in an afternoon on the least-certain rows the desk holds.
-DEFAULT_LIMIT = 25
+#: A run's ceiling. It WAS a budget decision -- the original note read "the queue is 705 deep and
+#: grows hourly; working it all in one pass would spend the month's cap in an afternoon on the
+#: least-certain rows the desk holds" -- and it is not one any more.
+#:
+#: RE-DERIVED 2026-09-05, on two measurements taken the same day. The compiler was reading 60 of
+#: 5,524 discovery files, so the queue it fed was a fraction of what the miners produce; reading
+#: every artifact took the queue from 882 tasks to 6,350. And nothing had ever run this worker --
+#: no cron row, no cycle call -- so `deepening_worked.jsonl` did not exist and the lifetime
+#: decision count was zero. A 25/hour ceiling against 6,350 queued is 254 hours of uptime, which
+#: is not an hourly conversion loop; it is a queue with a trickle attached.
+#:
+#: THE MONETARY CONSTRAINT IS GONE (principal 2026-09-05: "we r usin all free tiers so its fine
+#: remove budget constraint"), so the COUNT ceiling goes with it: 0 means work the whole queue.
+#: The original note's fear was spending "the month's cap in an afternoon", and on free tiers there
+#: is no month's cap to spend.
+#:
+#: WHAT STILL BOUNDS A RUN IS TIME, NOT MONEY, and pretending otherwise would break the thing this
+#: feeds. `hourly_cycle` calls this in-process and then goes on to mine, heal clocks and write its
+#: marker; a run attempting 6,350 seat calls back to back would still be going when the next hour
+#: began, so the cycle would overlap itself and every leg after this one would stop happening.
+#: Free tiers also rate-limit per minute, so wall clock is the real ceiling whatever the budget is.
+#:
+#: RUN_BUDGET_SEC is therefore the live constraint, and it is strictly MORE throughput than any
+#: count: a fast seat drains far more than 75 in an hour, a slow one is never cut off mid-task,
+#: and `voi_order` still spends the time highest-value-of-information first, so a budget that
+#: binds costs the LEAST informative rows rather than an arbitrary slice.
+#:
+#: Worth writing where it will be read: this is not the real ceiling today either. The desk is
+#: running three seats that have produced NOTHING in seven days and five launches that died in 24
+#: hours. Asking more of a failing seat layer produces more of the same nothing.
+DEFAULT_LIMIT = int(os.environ.get("DEEPEN_LIMIT", "0"))          # 0 = the whole queue
+
+#: Wall clock a single run may spend. 40 minutes inside the 60-minute cycle leaves the remaining
+#: legs their time and absorbs an overrun on the last task without colliding with the next hour.
+RUN_BUDGET_SEC = float(os.environ.get("DEEPEN_RUN_BUDGET_SEC", "2400"))
 
 #: GROWTH GOVERNANCE, carried on every prompt surface (principal 2026-09-04, fenced by
 #: scripts/check_growth_governance.py G7): research is anti-timid, capital is evidence-hard.
@@ -517,12 +554,88 @@ _SYSTEM_BY_KIND = {
 }
 
 
-def main() -> int:
+#: Where the single-flight lock lives, and how long a lock may be held before it is presumed dead.
+#: DERIVED FROM THE RUN BUDGET, not chosen: a run may legitimately hold this for `RUN_BUDGET_SEC`
+#: plus the last task it was already inside when the budget expired, so the stale threshold has to
+#: clear both or a healthy long run would be killed by the next hour's tick. One extra budget is
+#: the margin, which on the default puts the threshold at eighty minutes -- comfortably past any
+#: honest run and comfortably short of leaving a crashed one locked out for a day.
+LOCK = BASE / "data" / "hypotheses" / ".deepening.lock"
+
+
+def _single_flight():
+    """Acquire the run lock, or None when another run holds it.
+
+    A CRASHED RUN MUST NOT LOCK THE DESK OUT FOR EVER, which is the failure mode of every naive
+    lock file: the process dies mid-task, the file stays, and the organ is silently dark until a
+    person notices. So the lock carries its own start time and a run older than the stale
+    threshold is TAKEN OVER with the takeover logged -- an unattended desk cannot wait for someone
+    to clear a file by hand.
+    """
+    stale_after = RUN_BUDGET_SEC * 2.0
+    try:
+        LOCK.parent.mkdir(parents=True, exist_ok=True)
+        if LOCK.exists():
+            try:
+                held = json.loads(LOCK.read_text("utf-8"))
+                age = time.time() - float(held.get("at") or 0.0)
+            except (OSError, ValueError, TypeError):
+                age = stale_after + 1.0                       # unreadable lock is a dead lock
+                held = {}
+            if age <= stale_after:
+                dlog(f"another deepening run holds the lock (pid={held.get('pid')}, "
+                     f"{age:.0f}s old): exiting rather than racing it. The queue is worked once "
+                     f"per hour whichever schedule wins -- MT5-Deepening or hourly_cycle -- and "
+                     f"two runs would choose the same tasks and overwrite each other's output")
+                return None
+            dlog(f"taking over a stale lock ({age:.0f}s > {stale_after:.0f}s): the run holding it "
+                 f"is presumed dead, because an unattended desk cannot wait for a person to "
+                 f"clear a file")
+        LOCK.write_text(json.dumps({"pid": os.getpid(), "at": time.time()}), "utf-8")
+    except OSError as exc:
+        # A LOCK THAT CANNOT BE TAKEN MUST NOT STOP THE WORK. The race it prevents is wasteful,
+        # not dangerous -- the worked-ledger still stops double billing -- so an unwritable path
+        # degrades to the previous behaviour rather than silencing the organ.
+        dlog(f"lock unavailable ({type(exc).__name__}: {exc}); running unlocked")
+        return LOCK
+    return LOCK
+
+
+def _release(lock) -> None:
+    if lock is not None:
+        try:
+            lock.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Acquire the run lock, work the queue, and ALWAYS release -- including on a crash.
+
+    The release is a `finally` rather than a line at the end, because the one run whose lock most
+    needs clearing is the one that died: a lock left by a crash is what turns a wasteful race into
+    a silently dark organ until the stale threshold expires.
+    """
+    lock = _single_flight()
+    if lock is None:
+        return 0
+    try:
+        return _work(argv)
+    finally:
+        _release(lock)
+
+
+def _work(argv: list[str] | None = None) -> int:
+    # `argv` accepts an explicit list so an in-process caller can invoke this without inheriting
+    # ITS argv, matching daily_cycle.main. Added 2026-09-05 when hourly_cycle began draining the
+    # queue: `parse_args()` with no argument reads sys.argv, so `hourly_cycle.py --whatever` would
+    # have been parsed as this worker's flags -- an unrelated caller's arguments silently changing
+    # how much the desk spends on seat calls.
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     ap.add_argument("--dry-run", action="store_true",
                     help="report what would be worked; call no seat and write nothing")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     queue = json.loads(DEEPEN.read_text("utf-8")) if DEEPEN.exists() else {}
     tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
@@ -535,7 +648,7 @@ def main() -> int:
     dlog(f"queue={len(tasks)} already-decided={len(done)} pending={len(pending)} "
          f"limit={args.limit}")
     if args.dry_run:
-        for t in pending[:args.limit]:
+        for t in (pending if args.limit <= 0 else pending[:args.limit]):
             dlog(f"  would work {task_id(t)} [{t.get('source')}] {str(t.get('title'))[:70]}")
         return 0
     if not pending:
@@ -545,7 +658,15 @@ def main() -> int:
     universe = known_symbols()
     recovered: list[dict] = []
     counts: dict[str, int] = {}
-    for task in pending[:args.limit]:
+    started = time.monotonic()
+    for task in (pending if args.limit <= 0 else pending[:args.limit]):
+        # THE BUDGET IS TIME. Checked BEFORE each task so a run never starts work it cannot finish
+        # inside the cycle hosting it; an in-flight task always completes, because abandoning a
+        # seat call mid-flight bills it and records nothing.
+        if time.monotonic() - started > RUN_BUDGET_SEC:
+            dlog(f"run budget {RUN_BUDGET_SEC:.0f}s spent; the remaining tasks carry to the next "
+                 f"hourly pass in VOI order -- nothing is dropped")
+            break
         tid = task_id(task)
         try:
             candidates, disposition = work_task(task, universe)

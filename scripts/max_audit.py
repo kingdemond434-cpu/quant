@@ -3911,6 +3911,24 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/CANONICAL_RELEASE_RECONCILIATION.md":
+        "A DATED MEASUREMENT, taken 2026-09-05T00:02Z and stamped as such in its own first "
+        "paragraph ('this file is the measurement... nothing here is an estimate'). It records the "
+        "three code-line SHAs and the backup refs cut before the merge work, so its content is "
+        "true of that instant and of no other -- a re-work clock on it would schedule rewrites of "
+        "history, the alpha_hunt_20260731 and EXECUTION_QUEUE precedent verbatim. The LIVE version "
+        "of the question it answers ('is it really live?') is carried by running machinery, not by "
+        "this file: release_identity.verdict() answers it every gateway pass and writes "
+        "data/release_identity.json, and the CI seal job keeps RELEASE.json naming the tested SHA.",
+    "docs/research/archive_crypto_era/":
+        "THE RETIRED DESK'S FROZEN RECORD, claimed as a DIRECTORY CLASS because the archive takes "
+        "further files as more of the crypto era is retired into it and an exact-path claim could "
+        "never keep up (the generator precedent above it). Its own README states the terms: "
+        "everything inside is history, not a mandate, and no miner may draw a ground from it. "
+        "These are measured negatives with pre-registered protocols -- the most expensive "
+        "knowledge the desk owns and the cheapest to lose -- so they are kept rather than deleted, "
+        "and nothing inside owes a disposition because nothing inside is live work. The MT5 "
+        "UNIVERSE MANDATE (2026-08-18) is what makes the whole directory terminal.",
     "docs/research/alpha_hunt_20260731.md":
         "FULLY CONVERTED HUNT RECORD (verified by fresh read 2026-08-19). Every rowed candidate "
         "reached a ledger disposition: R0115/R0118/R0119/R0120/R0121 implemented (screens built "
@@ -4163,7 +4181,6 @@ _TERMINAL_ARTIFACTS = {
     "docs/RESEARCH.md": "operative research mandate -- every organ's first standing order, amended by decision only",
     "docs/MANDATE_COVERAGE.md": "terminal disposition map of the consolidation -- a re-consolidation writes a NEW map",
     "docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md": "standing principal mandate -- donation-only flywheel authority limits",
-    "docs/research/MOAT_NODE_SPEC.md": "standing spec -- implementations change by code, the spec by decision",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",
@@ -5776,6 +5793,18 @@ _DIG_DOCS = (
 #: Card-bearing docs deliberately OUT of §33 scope, each with its reason. Kept explicit so the
 #: scope check below can tell "consciously excluded" from "quietly unmonitored".
 _DIG_DOCS_EXCLUDED = {
+    "docs/research/mt5_source_seeds.md":
+        "A SEED MAP, not a card-bearing find doc, and the distinction is the point: the catalogue "
+        "(data_axis_watchlist.md, which IS in _DIG_DOCS) carries graded cards that owe "
+        "verification decisions, and the desk's measured bottleneck is verification, not "
+        "cataloguing. A seed map carries no verification debt, so it can hold hundreds of grounds "
+        "without making that bottleneck worse -- a source only becomes a card by producing "
+        "something, and the card is where the §33 disposition then lives. Tagging seeds as well "
+        "would be a second bookkeeping system over the same item (the feed_inbox precedent). "
+        "Claimed by L1.52 (information mining is permanently active) per its ARTIFACT_GOVERNANCE "
+        "row. It REPLACED crypto_source_seeds.md / offbook_source_seeds.md, deleted under the "
+        "MT5 universe mandate; the structure carried over, the grounds did not, and the rename is "
+        "why this claim was briefly missing.",
     "docs/research/COINM_CONVEXITY_PREREGISTRATION.md":
         "PRE-REGISTRATION record: its card-shaped blocks CITE data_axis_watchlist cards 98/99 "
         "(card 31's split), which live -- and owe their dispositions -- in the watchlist, which "

@@ -39,6 +39,7 @@ The checker runs in CI and fails on any of the first four. Freshness is checked 
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -66,6 +67,24 @@ class Node:
     freshness_s: dict[str, int] = field(default_factory=dict)
     #: State dimensions this node conditions capital on; each must be admitted.
     conditions_on: tuple[str, ...] = ()
+    #: The MODULE_RENT line(s) that price THIS node, when the ledger bills it under another name.
+    #: Empty means "billed under my own name, or not billable yet" -- and which of those is true is
+    #: reported, never assumed.
+    #:
+    #: WHY THIS FIELD EXISTS, measured 2026-09-05. The rent ledger bills MECHANISMS -- rails,
+    #: proposer arms, execution algorithms, allocator components, data sources, state dimensions --
+    #: while this graph names ORGANS. The two vocabularies are almost disjoint: of 62 rent modules
+    #: and 71 nodes, exactly 6 names matched, so even a FULLY populated ledger on the live host
+    #: could never move more than 7 nodes to MEASURED. The rung was structurally unreachable for
+    #: ~90% of the graph, and no amount of accumulated live evidence would have changed that. It
+    #: read as "we have not measured enough yet" when the real answer was "nothing here can be
+    #: measured by name".
+    #:
+    #: A mapping is a CLAIM that the named rent line prices this node's own output. Getting one
+    #: wrong grants MEASURED falsely, which is the same free pass removed from `stages()` on the
+    #: same day, re-entering through a different door. So an unmapped node stays unmapped and is
+    #: counted as debt rather than guessed at.
+    billed_as: tuple[str, ...] = ()
 
 
 #: THE GRAPH. Every path is relative to ROOT. Adding a component means adding it here, and the
@@ -129,11 +148,57 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/reports/shadow/", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
                 # the daily re-judge of every certificate at today's costs: a fresh
                 # COST_REGRADE_FAIL refuses promotion (BLOCKED_COST_REGRADE)
-                "desks/mt5/reports/recertification_audit.json"),
+                "desks/mt5/reports/recertification_audit.json",
+                # THE CAPITAL DOOR (principal 2026-09-05). `admission.candidates[*]` is the
+                # dE[log W] of adding each candidate to the book the desk holds, and the
+                # promoter gives capital to nothing that fails it; `book` and `book_zeroed`
+                # are the current reading a LIVE sleeve is demoted on. A scan older than
+                # `promoter.ADMISSION_MAX_AGE_H` may neither add risk nor remove it.
+                "desks/mt5/reports/pf_allocation.json"),
+         freshness_s={"desks/mt5/reports/pf_allocation.json": 26 * 3600},
          authority=("promotion",)),
     Node("recertify_canon", "desks/mt5/scripts/recertify_canon.py",
          reads=("desks/mt5/reports/UNIVERSAL_SURVIVORS.json", "desks/mt5/data/universe/"),
          writes=("desks/mt5/reports/recertification_audit.json",)),
+    # THE WORLD'S CLOCK, and note what it does NOT claim. Its authority is over WHEN the
+    # allocator solves, never over what the allocator decides -- so it is wired here as a
+    # timing organ, not a sizing one. Every fitted quantity it owns reads UNMEASURED until its
+    # ledger holds real events, and it refuses capital authority to every category until then.
+    Node("macro_intel", "desks/mt5/macro/run_macro_intel.py",
+         # reads its OWN prior state back -- the taxonomy centroids, the credibility
+         # posteriors, the factor basis and the multiplicity charge are all cumulative. That
+         # self-edge is the thing that makes this learn rather than restate.
+         # Named one by one, not as a directory: the fence checks artifacts, and a directory
+         # prefix let three of these read as DEAD_PRODUCER while they were in fact this node's
+         # own memory. `multiplicity.json` is the cumulative Bonferroni charge -- re-read every
+         # pass precisely so re-testing a cell makes admission HARDER, never easier -- and
+         # `event_attribution.jsonl` is where the measured decay half-lives come back from,
+         # which is the loop that lets the interrupt gate ever fire.
+         reads=("desks/mt5/data/universe/", "desks/mt5/data/macro/",
+                "desks/mt5/data/macro/taxonomy.json",
+                "desks/mt5/data/macro/source_credibility.json",
+                "desks/mt5/data/macro/factor_basis.json",
+                "desks/mt5/data/macro/exposures.json",
+                "desks/mt5/data/macro/multiplicity.json",
+                "desks/mt5/data/macro/event_attribution.jsonl",
+                "desks/mt5/data/macro/event_ledger.jsonl"),
+         writes=("desks/mt5/data/macro/event_ledger.jsonl",
+                 "desks/mt5/data/macro/allocator_interrupt.json",
+                 "desks/mt5/data/macro/interrupt_log.jsonl",
+                 "desks/mt5/data/macro/taxonomy.json",
+                 "desks/mt5/data/macro/source_credibility.json",
+                 "desks/mt5/data/macro/factor_basis.json",
+                 "desks/mt5/data/macro/exposures.json",
+                 "desks/mt5/data/macro/multiplicity.json",
+                 "desks/mt5/data/macro/event_attribution.jsonl",
+                 "desks/mt5/reports/MACRO_INTEL.json"),
+         # ITS AUTHORITY IS THE CLOCK, NOT THE BOOK. `research_supervisor.tick_periodic` reads
+         # `allocator_interrupt.json` and may bring the allocator's fast leg forward; nothing
+         # here ever reaches a weight. Declared so the fence measures what this actually
+         # decides -- without it the node reads as ADVISORY_ONLY, which would be wrong in the
+         # dangerous direction: a timing organ that silently gained sizing authority would look
+         # identical to one that never had any.
+         authority=("allocator_solve_timing",)),
     Node("world_causal_graph", "desks/mt5/research/world_causal_graph.py",
          reads=("desks/mt5/data/universe/", "desks/mt5/data/deep_forest_claims.jsonl",
                 "desks/mt5/reports/CROSS_ASSET_GRAPH.json",
@@ -152,7 +217,12 @@ NODES: tuple[Node, ...] = (
     Node("state_admission_run", "desks/mt5/research/state_admission_run.py",
          writes=("desks/mt5/reports/STATE_ADMISSION.json",),
          reads=("backups/moat/shadow_ledgers/", "desks/mt5/data/live_ledger.jsonl"),
-         authority=("conditioning",)),
+         authority=("conditioning",),
+         # The admission run acts ONLY through the dimensions it admits, and MODULE_RENT prices
+         # each dimension by its out-of-sample gain. Without this run no dimension is admitted, so
+         # the dimensions' rent IS this organ's rent -- the same counterfactual, not a proxy for it.
+         billed_as=("state_dimension:session", "state_dimension:event",
+                    "state_dimension:weekday")),
     Node("pf_allocator", "desks/mt5/research/pf_allocator.py",
          writes=("desks/mt5/reports/ALLOCATOR_PROOF.json", "desks/mt5/data/pf_forecast_log.jsonl",
                  "desks/mt5/reports/pf_allocator.json", "desks/mt5/reports/pf_allocation.json",
@@ -193,7 +263,12 @@ NODES: tuple[Node, ...] = (
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
     Node("capital_modifier_score", "desks/mt5/research/capital_modifier_score.py",
          reads=("desks/mt5/data/capital_modifier_ledger.jsonl", "backups/moat/shadow_ledgers/"),
-         writes=("desks/mt5/reports/CAPITAL_MODIFIERS.json",)),
+         writes=("desks/mt5/reports/CAPITAL_MODIFIERS.json",),
+         # This organ IS the AI capital modifier the rent ledger bills: `measure_conditioning`
+         # prices the heat the modifier moved against what that heat then earned, which is the
+         # with/without of this node exactly. "This includes AI" -- the principal, on the day the
+         # rent ledger was written.
+         billed_as=("ai_capital_modifier",)),
     # EXECUTION INTELLIGENCE AND THE RELEASE: the learned fill/slip surface every cost consumer
     # shares, the netting measurement, and the one live SHA every decision is stamped with.
     Node("fill_surface", "desks/mt5/mt5desk/fill_surface.py",
@@ -209,26 +284,47 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/order_intents.jsonl",
                 "desks/mt5/data/theoretical_positions.jsonl"),
          writes=("desks/mt5/reports/NETTING.json", "desks/mt5/reports/NETTING_BOOK.json")),
+    # ALPHA CAPTURE (2026-09-05, the principal's order): realised edge over predicted
+    # FRICTIONLESS edge, per sleeve, session and symbol, trended over its own history. The one
+    # number that separates a strategy that stopped working from a strategy being taken apart
+    # between the decision and the fill. Reads the fill corpus the hourly twin assembles.
     Node("execution_intelligence", "desks/mt5/research/execution_intelligence.py",
          reads=("desks/mt5/data/order_intents.jsonl",
                 "desks/mt5/data/theoretical_positions.jsonl",
-                "desks/mt5/data/execution_algo_outcomes.jsonl", "desks/mt5/reports/markout.json"),
+                "desks/mt5/data/execution_algo_outcomes.jsonl", "desks/mt5/reports/markout.json",
+                "desks/mt5/data/fill_corpus.jsonl",
+                "desks/mt5/data/alpha_capture_history.jsonl"),
          writes=("desks/mt5/reports/FILL_SURFACE.json", "desks/mt5/reports/NETTING.json",
-                 "desks/mt5/reports/NETTING_BOOK.json")),
+                 "desks/mt5/reports/NETTING_BOOK.json", "desks/mt5/reports/ALPHA_CAPTURE.json",
+                 "desks/mt5/data/alpha_capture_history.jsonl")),
     # THE EXECUTION DIGITAL TWIN (2026-09-05): every live intent joined to what the venue did,
     # calibrated, and turned into the correction the simulator should apply. ADVISORY until
     # engine.Costs / external_gauntlet.costs_for read EXECUTION_TWIN.json: when that wiring
     # lands, add the report to the external_gauntlet node's `reads` and drop it from HUMAN_READ
     # so the graph shows the Live -> Simulator path instead of a report a person reads.
+    # THE FILL CORPUS (2026-09-05, the principal's order) is assembled on the SAME clock, because
+    # it is a join over the ledgers this node already reads plus four that resolve late (the
+    # decision ledger, the counterfactual dataset, the excursions and the tick tape). It is the
+    # desk's one unrebuildable asset -- an unrecorded fill cannot be recovered -- and it is
+    # HUMAN_READ on purpose: `execution_intelligence` prices the alpha capture ratio off it, but
+    # neither the conditional execution-choice model nor the meta-labeler is wired to anything
+    # that sends an order, and both are UNMEASURED until the corpus reaches their required n.
+    # When one of them is wired, drop the corpus from HUMAN_READ and declare the consumer here.
     Node("execution_twin", "desks/mt5/research/execution_twin.py",
          reads=("desks/mt5/data/order_intents.jsonl",
                 "desks/mt5/data/execution_algo_outcomes.jsonl",
                 "desks/mt5/data/live_ledger.jsonl", "desks/mt5/data/universe/",
                 "desks/mt5/data/execution_twin_state.json",
-                "desks/mt5/data/execution_twin_cases.jsonl"),
+                "desks/mt5/data/execution_twin_cases.jsonl",
+                "desks/mt5/data/decision_ledger.jsonl",
+                "desks/mt5/data/decision_dataset.jsonl",
+                "desks/mt5/data/excursions.jsonl",
+                "desks/mt5/data/tape/",
+                "desks/mt5/data/fill_corpus.jsonl"),
          writes=("desks/mt5/reports/EXECUTION_TWIN.json",
                  "desks/mt5/data/execution_twin_cases.jsonl",
-                 "desks/mt5/data/execution_twin_state.json")),
+                 "desks/mt5/data/execution_twin_state.json",
+                 "desks/mt5/data/fill_corpus.jsonl")),
     # THE PORTFOLIO GAP (scheduled 2026-09-05; it existed with no clock): what the book cannot
     # fill and where research should point. ADVISORY until the research bandit reads it.
     # THE COUNTERFACTUAL WORLD (2026-09-05, the principal's order): every decision minute joined
@@ -313,11 +409,39 @@ NODES: tuple[Node, ...] = (
     Node("regime_monitor", "desks/mt5/research/regime_monitor.py",
          reads=("desks/mt5/data/live_ledger.jsonl", "desks/mt5/reports/shadow/",
                 "desks/mt5/reports/FILTER_VALUE.json"),
-         writes=("desks/mt5/data/regime_state.json",), authority=("hibernate",)),
+         writes=("desks/mt5/data/regime_state.json",), authority=("hibernate",),
+         # The monitor's only authority is hibernation, and the hibernate RAIL is already billed
+         # daily by missed_growth as E[log W without the rail] - E[log W with it]. The rail cannot
+         # fire without this monitor's regime_state, so "without the rail" and "without the
+         # monitor" are the same world and the rail's ledger line prices this organ directly.
+         billed_as=("regime_hibernate",)),
     Node("regime_coverage", "desks/mt5/research/regime_coverage.py",
          reads=("backups/moat/shadow_ledgers/", "desks/mt5/reports/STATE_ADMISSION.json",
                 "desks/mt5/reports/ALPHA_GENOME.json"),
          writes=("desks/mt5/reports/REGIME_COVERAGE.json",
+                 "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
+    # THE BREADTH LANE (2026-09-05). Three producers answering the principal's three questions --
+    # how many independent bets the book actually is, what pays inside its own worst periods, and
+    # which states of a surviving edge deserve capital. Each reaches a decision the same way
+    # regime_coverage and opportunity_curve do: through the deepening queue, which the worker
+    # reads hourly and whose deepened candidates the gauntlet certifies.
+    Node("alpha_breadth", "desks/mt5/research/alpha_breadth.py",
+         reads=("backups/moat/shadow_ledgers/", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+                "desks/mt5/data/universe/"),
+         writes=("desks/mt5/reports/EFFECTIVE_BREADTH.json",
+                 "desks/mt5/data/effective_breadth.jsonl",
+                 "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
+    # The lane is a CHAIN, not three parallel reports: the breadth ledger owns cluster occupancy
+    # and the drawdown factory reads it rather than recomputing a second answer to the same word;
+    # the survivor miner reads the drawdown's state signature, because a state where a surviving
+    # edge is stronger AND the rest of the book is losing is drawdown alpha the desk already owns.
+    Node("drawdown_alpha", "desks/mt5/research/drawdown_alpha.py",
+         reads=("backups/moat/shadow_ledgers/", "desks/mt5/reports/EFFECTIVE_BREADTH.json"),
+         writes=("desks/mt5/reports/DRAWDOWN_ALPHA.json",
+                 "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
+    Node("survivor_neighbourhood", "desks/mt5/research/survivor_neighbourhood.py",
+         reads=("backups/moat/shadow_ledgers/", "desks/mt5/reports/DRAWDOWN_ALPHA.json"),
+         writes=("desks/mt5/reports/SURVIVOR_NEIGHBOURHOOD.json",
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
     Node("resurrection", "desks/mt5/research/resurrection.py",
          reads=("desks/mt5/data/regime_state.json", "desks/mt5/data/state_vector.json",
@@ -524,6 +648,9 @@ NODES: tuple[Node, ...] = (
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
 #: node advisory. Listed so the check has a definition rather than an opinion.
 HUMAN_READ = frozenset({
+    # The macro layer's report. Read by a person; the layer's one decision edge is the
+    # interrupt above, declared in EXTERNAL_READERS with its reader named.
+    "desks/mt5/reports/MACRO_INTEL.json",
     "desks/mt5/reports/markout.json", "desks/mt5/reports/allocator_attribution.json",
     "desks/mt5/reports/RESURRECTION.json", "desks/mt5/reports/DATA_PROSPECTOR.json",
     "desks/mt5/data/LIVE_MANIFEST.jsonl", "desks/mt5/reports/factor_residual.json",
@@ -540,6 +667,13 @@ HUMAN_READ = frozenset({
     # model reads the report (see the execution_twin node). The portfolio gap likewise until
     # the research bandit reads it.
     "desks/mt5/reports/EXECUTION_TWIN.json", "desks/mt5/data/execution_twin_cases.jsonl",
+    # THE FILL CORPUS and the alpha-capture ratio it prices. Human-read is the HONEST state
+    # today, not a placeholder: the corpus is the collection asset, `ALPHA_CAPTURE.json` is the
+    # measurement a person acts on, and the two models built on it (conditional execution choice,
+    # meta-labeler) are UNMEASURED harnesses wired to nothing that sends an order. The day one of
+    # them is wired, its consumer is declared and the corpus leaves this set.
+    "desks/mt5/data/fill_corpus.jsonl", "desks/mt5/reports/ALPHA_CAPTURE.json",
+    "desks/mt5/data/alpha_capture_history.jsonl",
     # The counterfactual world's report, its versioned dataset and its watermark: advisory
     # until missed_growth reads VETO_ALPHA off the report (see the counterfactual_replay node).
     "desks/mt5/reports/FEATURE_ROI.json", "desks/mt5/reports/MODULE_RENT.json",
@@ -576,6 +710,13 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/EXIT_ACCOUNTS.json", "desks/mt5/reports/ACTION_COUNTERFACTUALS.json",
     "desks/mt5/reports/RESEARCH_PNL.json", "desks/mt5/reports/MUTATION_YIELD.json",
     "desks/mt5/reports/RESEARCH_BANDIT.json",
+    # THE BREADTH LANE'S REPORTS. Each producer's DECISION path is the deepening queue it also
+    # writes; these three files are the evidence a person reads beside it -- nominal against
+    # effective breadth with every reading's status, the book's own drawdown windows and what
+    # earns inside them, and where a surviving edge is stronger or absent. None of them
+    # conditions capital, and listing them here is the claim that they do not.
+    "desks/mt5/reports/EFFECTIVE_BREADTH.json", "desks/mt5/reports/DRAWDOWN_ALPHA.json",
+    "desks/mt5/reports/SURVIVOR_NEIGHBOURHOOD.json",
 })
 
 #: Consumers outside this graph that are known to read an artifact -- the crawler reads the
@@ -600,6 +741,36 @@ EXTERNAL_READERS = {
     "desks/mt5/data/missed_growth.jsonl": "missed_growth (its own append-only memory)",
     "desks/mt5/data/action_counterfactuals.jsonl": "action_counterfactuals (its own memory)",
     "desks/mt5/data/deep_forest_claims.jsonl": "deep_forest_miner (its own append-only memory)",
+    # THE MACRO LAYER'S MEMORY. Each of these is read back by `macro_intel` on its next pass and
+    # by nothing else, which is precisely what makes the layer LEARN rather than restate: the
+    # taxonomy's centroids move with the instances assigned to them, the credibility posteriors
+    # accumulate a source's record, the factor basis is refitted, and the multiplicity charge
+    # only ever grows so that re-testing a cell makes admission harder. Declared here with the
+    # reason rather than left to read as DEAD_PRODUCER, because "nothing reads it" and "only its
+    # own author reads it" are different facts and only one of them is a defect.
+    "desks/mt5/data/macro/taxonomy.json": "macro_intel (its own category centroids)",
+    "desks/mt5/data/macro/source_credibility.json": "macro_intel (its own Beta posteriors)",
+    "desks/mt5/data/macro/factor_basis.json": "macro_intel (its own discovered factor basis)",
+    "desks/mt5/data/macro/exposures.json": "macro_intel (its own admitted category->factor edges)",
+    "desks/mt5/data/macro/multiplicity.json": ("macro_intel (its own never-shrinking Bonferroni "
+                                               "charge; monotone by design)"),
+    "desks/mt5/data/macro/event_attribution.jsonl": ("macro_intel (its own append-only memory; "
+                                                     "the measured decay half-lives come back "
+                                                     "from here, which is the loop that lets the "
+                                                     "interrupt gate ever fire)"),
+    "desks/mt5/data/macro/event_ledger.jsonl": "macro_intel (its own append-only event record)",
+    "desks/mt5/data/macro/allocator_interrupt.json": ("research_supervisor.tick_periodic -- it "
+                                                      "reads this to bring the allocator's fast "
+                                                      "leg forward. The supervisor is a process "
+                                                      "manager, not a graph node, so the edge is "
+                                                      "declared here rather than left to read as "
+                                                      "DEAD_PRODUCER. This is the ONLY artifact "
+                                                      "of this layer that reaches a decision, and "
+                                                      "the decision it reaches is WHEN to solve, "
+                                                      "never what to hold."),
+    "desks/mt5/data/macro/interrupt_log.jsonl": ("macro_intel (its own rate-limit window; an "
+                                                 "interrupt that fires constantly is an "
+                                                 "expensive clock)"),
     "desks/mt5/data/deep_forest_seen.json": "deep_forest_miner (its own seen-ledger)",
     "desks/mt5/data/intelligence/anomaly_cursor.json": "anomaly_miner (its own rotation cursor)",
     "desks/mt5/data/memory/": "deepening_worker.task_text (memory.prompt_context on every prompt)",
@@ -615,6 +786,9 @@ EXTERNAL_READERS = {
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/survivor_distiller/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/features/": "feature_store (content-addressed cache)",
+    "desks/mt5/data/effective_breadth.jsonl": ("alpha_breadth (its own append-only series; a "
+                                               "breadth number with no history cannot say whether "
+                                               "the desk is widening or only adding names)"),
 }
 
 _PATH_RE = re.compile(r"[\"']((?:desks/mt5/|backups/|reports/|data/)[A-Za-z0-9_./-]+)[\"']")
@@ -819,21 +993,57 @@ def reachability(nodes: tuple[Node, ...] = NODES) -> dict[str, Any]:
     return result
 
 
-STAGES = ("CODED", "WIRED", "RUNNING", "DECISION_AFFECTING", "MEASURED")
+STAGES = ("CODED", "WIRED", "RUNNING", "DECISION_AFFECTING", "MEASURED", "LIVE_LEARNING")
 RUNNING_WINDOW_S = 3 * 24 * 3600
+
+#: Artifacts carrying REALISED outcomes -- what the market actually did with the desk's money.
+#: A module reading one of these is reading consequences, not its own opinion. Prefix-matched.
+OUTCOME_ARTIFACTS: tuple[str, ...] = (
+    "desks/mt5/data/fills", "desks/mt5/data/execution_algo_outcomes.jsonl",
+    "desks/mt5/data/forward", "desks/mt5/data/shadow", "desks/mt5/data/trades",
+    "desks/mt5/reports/RESEARCH_PNL.json", "desks/mt5/reports/pf_allocation.json",
+    "desks/mt5/data/gateway_state.json", "desks/mt5/data/decision_ledger.jsonl",
+    "desks/mt5/data/counterfactual", "desks/mt5/data/module_rent.jsonl",
+)
 
 
 def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
-    """Per node: CODED -> WIRED -> RUNNING -> DECISION_AFFECTING -> MEASURED, each a fact.
+    """Per node: CODED -> WIRED -> RUNNING -> DECISION_AFFECTING -> MEASURED -> LIVE_LEARNING.
 
     CODED               the module exists
     WIRED               every declared read has a producer (or is box data) and every write a
                         reader -- the check() has no fatal finding naming this node
     RUNNING             at least one of its written artifacts was refreshed inside the window
     DECISION_AFFECTING  a path from one of its writes reaches an authority node
-    MEASURED            a ledger line values what it does: a rail in MISSED_GROWTH, a filter in
-                        FILTER_VALUE, a term in the attribution, or its own report carrying a
-                        measured verdict field
+    MEASURED            a ledger PRICES THIS MODULE BY NAME: a MODULE_RENT verdict of EARNS or
+                        COSTS, a rail in MISSED_GROWTH, a filter in FILTER_VALUE, a term in the
+                        attribution. Not "it exists and matters" -- somebody put a number on it.
+    LIVE_LEARNING       the loop closes back onto the module: it reads a REALISED-OUTCOME artifact
+                        and updates state it later consumes itself, so what the market did changes
+                        what it does next
+
+    TWO FREE PASSES WERE REMOVED HERE, 2026-09-05, AND THEY MATTERED MORE THAN THE MISSING RUNG.
+
+    1. `measured = bool(n.authority) or ...`. Authority was being read as measurement, which is
+       exactly backwards: authority is what makes a node DECISION_AFFECTING, and the more capital a
+       node moves the MORE it needs a number on it, not less. Measured on this tree before the fix:
+       all ten MEASURED nodes were free passes and not one appeared in any ledger -- seven via this
+       line (gateway, pf_allocator, promoter, universal_gate, state_admission_run, regime_monitor,
+       feature_roi).
+    2. A node's own output carrying a `verdict` / `rails` / `categories` key counted as its
+       measurement. That is self-certification: a module that writes a report saying it has a
+       verdict was thereby credited with having been measured. The remaining three MEASURED nodes
+       (capital_modifier_score, counterfactual_markout, missed_growth) came in this way.
+
+    So the repo's headline "7 MEASURED" -- quoted approvingly in an outside audit as evidence the
+    desk measures its organs -- was an artifact of the instrument, not a reading of the desk. The
+    count drops when this runs, and the drop IS the finding: it is the distance between the
+    architecture and the evidence, which is the whole thing the ladder exists to show. A number
+    that only ever goes up is not a measurement.
+
+    An absent ledger reads UNMEASURED, never MEASURED (L1.28a). MODULE_RENT.json is written by the
+    daily cycle on the trading host, so in a container it is simply absent and every node honestly
+    reads below MEASURED rather than being credited by default.
     """
     findings = check(nodes)["findings"]
     named = {f["node"] for f in findings if f["check"] in
@@ -842,7 +1052,10 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
     measured_names: set[str] = set()
     for rel in ("reports/MISSED_GROWTH.json", "reports/FILTER_VALUE.json",
                 "reports/allocator_attribution.json", "reports/CAPITAL_MODIFIERS.json",
-                "reports/RESEARCH_PRODUCTIVITY.json", "reports/MODULE_RENT.json"):
+                # MODULE_RENT is deliberately NOT in this list: the generic loop reads a report's
+                # KEYS, which would credit a module whose rent row says UNMEASURED. It is read
+                # verdict-aware just below.
+                "reports/RESEARCH_PRODUCTIVITY.json"):
         try:
             doc = json.loads((DESK / rel).read_text("utf-8"))
             measured_names |= set(map(str, (doc.get("rails") or doc.get("filters") or
@@ -851,6 +1064,35 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
                                             or {}).keys()))
         except (OSError, ValueError):
             continue
+    # MODULE_RENT is the ledger built for exactly this question, so its VERDICT is read rather
+    # than its mere presence: a row reading UNMEASURED or NOT_BINDING is the rent ledger saying it
+    # could not price the module, and crediting that as MEASURED would re-introduce the free pass
+    # through the one report that explicitly refuses to fold UNMEASURED into a pass.
+    rent_priced: set[str] = set()
+    #: Every name the rent ledger CAN bill, whatever its verdict. This is the BILLABILITY
+    #: vocabulary and is deliberately verdict-blind: a node the ledger names but reads UNMEASURED
+    #: is waiting on evidence, which is a different problem from one it cannot name at all.
+    #:
+    #: Read from the REGISTRY IN CODE first, not from the generated report. `MODULE_RENT.json` is
+    #: written by the daily cycle on the trading host, so a container that has never run it would
+    #: otherwise report every node unbillable -- turning a host's emptiness into a false wiring
+    #: defect, the mirror of the absent-ledger-reads-MEASURED failure removed above.
+    rent_vocabulary: set[str] = set()
+    with contextlib.suppress(ImportError, AttributeError):
+        from libs.ops.module_rent import MODULES as _RENT_MODULES
+        rent_vocabulary |= {str(m.name) for m in _RENT_MODULES}
+    try:
+        rent = json.loads((DESK / "reports" / "MODULE_RENT.json").read_text("utf-8"))
+        rows = rent.get("modules") or {}
+        it = rows.items() if isinstance(rows, dict) else (
+            (r.get("module"), r) for r in rows if isinstance(r, dict))
+        for mod, row in it:
+            rent_vocabulary.add(str(mod))
+            if isinstance(row, dict) and str(row.get("verdict", "")).upper() in {"EARNS", "COSTS"}:
+                rent_priced.add(str(mod))
+    except (OSError, ValueError, AttributeError):
+        pass
+    measured_names |= rent_priced
     now = datetime.now(tz=UTC).timestamp()
     out: dict[str, dict[str, Any]] = {}
     for n in nodes:
@@ -872,28 +1114,62 @@ def stages(nodes: tuple[Node, ...] = NODES) -> dict[str, dict[str, Any]]:
                 continue
         decision = bool(n.authority) or any(
             (reach.get(w) or {}).get("reaches_authority") for w in n.writes)
-        measured = bool(n.authority) or any(
-            (n.name in measured_names) or any(k.startswith(n.name) for k in measured_names)
-            for _ in (0,))
-        if not measured:
-            for w in n.writes:
-                try:
-                    doc = json.loads((ROOT / w).read_text("utf-8"))
-                except (OSError, ValueError, IsADirectoryError):
-                    continue
-                if isinstance(doc, dict) and any(k in doc for k in
-                                                 ("verdict", "filters", "rails", "categories",
-                                                  "unused_upside_heat", "value_logw_per_day")):
-                    measured = True
-                    break
-        stage = "CODED" if not coded else ("WIRED" if not running else
-                                           ("RUNNING" if not decision else
-                                            ("DECISION_AFFECTING" if not measured else "MEASURED")))
+        # A LEDGER PRICES THIS MODULE BY NAME. No authority pass, no self-certification.
+        # `billed_as` is consulted alongside the node's own name, never instead of it: a node the
+        # ledger happens to name directly stays measured whether or not anyone declared a mapping.
+        keys = (n.name, *n.billed_as)
+        measured = any(k in measured_names or any(m.startswith(k) for m in measured_names)
+                       for k in keys)
+        # BILLABLE is the separate question, and it is the one the ledger's emptiness hides: can
+        # this node be priced AT ALL by a name the rent ledger uses? A node that is decision-
+        # affecting and unbillable will read DECISION_AFFECTING forever, however long the desk
+        # runs, and that is a wiring defect rather than a shortage of evidence.
+        billable = bool(n.billed_as) or n.name in rent_vocabulary or any(
+            r.startswith(n.name) for r in rent_vocabulary)
+        # LIVE_LEARNING: the loop closes back onto the module. It must read something the market
+        # actually did, AND carry that into state it consumes itself -- a module that reads fills
+        # and writes a report nobody feeds back has learned nothing, it has only reported.
+        reads_outcome = any(r.startswith(o) or o.startswith(r)
+                            for r in n.reads for o in OUTCOME_ARTIFACTS)
+        feeds_itself = bool(set(n.writes) & set(n.reads))
+        live_learning = measured and reads_outcome and feeds_itself
         if not coded:
             stage = "MISSING"
+        elif not wired:
+            # Previously this branch read WIRED whenever the node was merely not running, so an
+            # unwired node with a fatal DEAD_PRODUCER finding still reported WIRED. Nothing is
+            # currently mislabelled by it, which is exactly why it would have gone unnoticed.
+            stage = "CODED"
+        elif not running:
+            stage = "WIRED"
+        elif not decision:
+            stage = "RUNNING"
+        elif not measured:
+            stage = "DECISION_AFFECTING"
+        elif not live_learning:
+            stage = "MEASURED"
+        else:
+            stage = "LIVE_LEARNING"
         out[n.name] = {"coded": coded, "wired": wired, "running": running,
-                       "decision_affecting": decision, "measured": measured, "stage": stage}
+                       "decision_affecting": decision, "measured": measured,
+                       "live_learning": live_learning, "billable": billable,
+                       "billed_as": list(n.billed_as),
+                       "reads_outcome": reads_outcome, "feeds_itself": feeds_itself,
+                       "stage": stage}
     return out
+
+
+def unbillable(nodes: tuple[Node, ...] = NODES) -> list[str]:
+    """Decision-affecting nodes no rent line can name -- the debt that time alone never pays.
+
+    Separated from the stage counts because it answers a different question. A DECISION_AFFECTING
+    count falling as evidence accumulates is the desk working; a DECISION_AFFECTING count that
+    CANNOT fall however long the desk runs is a wiring defect, and before `billed_as` existed the
+    two were indistinguishable in every report.
+    """
+    st = stages(nodes)
+    return sorted(name for name, v in st.items()
+                  if v["decision_affecting"] and not v["measured"] and not v["billable"])
 
 
 def generate_status(out_dir: Path = DESK / "reports") -> dict[str, Any]:

@@ -252,3 +252,139 @@ def test_the_latency_grid_matches_the_module_that_prices_latency() -> None:
     grid is what makes one answer usable by the other."""
     from mt5desk.latency import GRID_MS
     assert ms.LATENCY_GRID_MS == GRID_MS
+
+
+# ------------------------------------------ realised variation and jump intensity --
+#: An hour boundary, so a test that says "two hourly bars" gets two rather than three. T0 itself
+#: sits 1,600 seconds into an hour, which is realistic and useless for counting bars.
+HOUR0 = (T0 // 3_600_000) * 3_600_000
+
+
+def _at(frame: pd.DataFrame, start: int = HOUR0) -> pd.DataFrame:
+    out = frame.copy()
+    out["time_msc"] = out["time_msc"] - int(out["time_msc"].iloc[0]) + start
+    return out
+
+
+def _diffusive(n: int = 4000, seed: int = 7, scale: int = 30) -> pd.DataFrame:
+    """A smooth random walk on a 1-second clock, starting on an hour. No jumps by construction."""
+    rng = np.random.default_rng(seed)
+    steps = np.round(rng.normal(0.0, scale, size=n)).astype(np.int64)
+    return _at(_frame(100_000 + np.cumsum(steps), spread_pts=12, step_ms=1000))
+
+
+def test_realised_and_bipower_volatility_agree_when_there_are_no_jumps() -> None:
+    """THE CALIBRATION THAT MAKES THE DECOMPOSITION MEAN ANYTHING. On a pure diffusion RV and BV
+    estimate the same quantity, so a large jump share on a tape with no jumps would mean the
+    statistic is measuring the estimator rather than the market."""
+    rv = ms.realized_variation(_diffusive(), "1h")
+    assert len(rv) >= 1
+    row = rv.iloc[0]
+    assert row["rv_bp"] > 0 and row["bv_bp"] > 0
+    assert abs(row["rv_bp"] - row["bv_bp"]) / row["rv_bp"] < 0.20, (
+        f"rv={row['rv_bp']} bv={row['bv_bp']} on a jump-free tape: the two estimators must "
+        f"agree, or `jump_frac` is reporting estimator noise as market structure")
+    assert row["jump_frac"] < 0.35
+
+
+def test_one_injected_jump_moves_the_jump_share_and_is_counted() -> None:
+    """The whole point of separating RV from BV: a gap and a drift of the same size are the same
+    H1 range and completely different trades."""
+    clean = _diffusive()
+    quiet = ms.realized_variation(clean, "1h").iloc[0]
+
+    jumped = clean.copy()
+    half = len(jumped) // 2
+    for col in ("bid", "ask", "mid"):
+        jumped.loc[jumped.index[half:], col] = jumped[col].iloc[half:] + 0.05   # 5,000 points
+    loud = ms.realized_variation(jumped, "1h").iloc[0]
+
+    assert loud["jump_frac"] > quiet["jump_frac"] + 0.4, (
+        f"a 5,000-point gap moved jump_frac only {quiet['jump_frac']} -> {loud['jump_frac']}")
+    assert loud["rv_bp"] > quiet["rv_bp"]
+    assert loud["n_jumps"] is not None and loud["n_jumps"] >= 1
+
+
+def test_the_jump_threshold_is_not_blinded_by_the_jump_it_is_measuring() -> None:
+    """BIPOWER VARIATION IS NOT ROBUST TO ONE DOMINANT JUMP and the first version of this used it
+    for the threshold. That return enters two of BV's products, inflating the scale, raising the
+    bar, and hiding the event that raised it -- measured on a synthetic tape, the bar containing
+    the only real jump reported the FEWEST. MedRV takes a rolling median of three absolute
+    returns, so a lone jump is discarded rather than averaged in."""
+    clean = _diffusive()
+    base = ms.realized_variation(clean, "1h").iloc[0]["n_jumps"]
+
+    jumped = clean.copy()
+    half = len(jumped) // 2
+    for col in ("bid", "ask", "mid"):
+        jumped.loc[jumped.index[half:], col] = jumped[col].iloc[half:] + 0.05
+    after = ms.realized_variation(jumped, "1h").iloc[0]["n_jumps"]
+
+    assert after >= base, (
+        f"adding a jump took the count from {base} to {after}: the threshold is being set by the "
+        f"jump it is supposed to detect")
+
+
+def test_a_price_grid_too_coarse_for_the_sampling_leaves_the_jump_count_unmeasured() -> None:
+    """When most one-second returns are exactly zero the median-of-three collapses onto the tick
+    and every single-tick move reads as a jump -- 30 an hour on a tape with none. That is a
+    number about the price grid, so no number is emitted (L1.28a)."""
+    flat = _at(_frame(np.repeat([100_000, 100_001], 1800)[:3600], step_ms=1000))
+    rv = ms.realized_variation(flat, "1h")
+    assert len(rv) == 1
+    row = rv.iloc[0]
+    assert row["zero_return_frac"] > ms.RV_MAX_ZERO_FRAC
+    assert row["n_jumps"] is None and row["jump_intensity"] is None
+    assert row["rv_bp"] is not None, "the variance sum is still valid; only the threshold is not"
+
+
+def test_a_bar_with_too_few_returns_states_no_variance_rather_than_a_number() -> None:
+    short = _frame(100_000 + np.arange(10), step_ms=1000)
+    rv = ms.realized_variation(short, "1h")
+    assert len(rv) == 1
+    assert rv.iloc[0]["rv_bp"] is None and rv.iloc[0]["n_returns"] < ms.RV_MIN_RETURNS
+
+
+def test_jump_intensity_is_per_hour_so_the_bar_clock_is_comparable() -> None:
+    """A COUNT IS NOT COMPARABLE ACROSS HORIZONS. Three jumps in a minute and three in an hour
+    are not the same market, and a feature keyed on the raw count would rank M1 and H1 bars on
+    the same scale."""
+    jumped = _diffusive(n=7200)
+    for col in ("bid", "ask", "mid"):
+        jumped.loc[jumped.index[3600:], col] = jumped[col].iloc[3600:] + 0.05
+    hourly = ms.realized_variation(jumped, "1h")
+    assert len(hourly) == 2
+    for _, row in hourly.iterrows():
+        if row["n_jumps"]:
+            assert row["jump_intensity"] == pytest.approx(row["n_jumps"] / 1.0, rel=0.05), (
+                "on an hour-long bar the per-hour intensity IS the count")
+
+
+def test_realised_volatility_is_in_basis_points_so_the_universe_is_comparable() -> None:
+    """Points are the right unit for a COST and the wrong one for a volatility: a point of gold
+    and a point of EURUSD differ by five orders of magnitude, and a cross-sectional vol feature
+    in points would rank the universe by tick size."""
+    a = ms.realized_variation(_diffusive(seed=3), "1h").iloc[0]
+    # The same relative path quoted with a 100x coarser point and a 100x higher level.
+    rng = np.random.default_rng(3)
+    steps = np.round(rng.normal(0.0, 30, size=4000)).astype(np.int64)
+    df = pd.DataFrame({
+        "time_msc": T0 + np.arange(4000, dtype=np.int64) * 1000,
+        "bid": np.round((100_000 + np.cumsum(steps)) * 1e-3, 3),
+        "ask": np.round((100_012 + np.cumsum(steps)) * 1e-3, 3),
+        "last": 0.0, "volume": 0, "flags": 6})
+    b = ms.realized_variation(_at(ms.quote_frame(df, 1e-3)), "1h").iloc[0]
+    assert b["rv_bp"] == pytest.approx(a["rv_bp"], rel=0.02), (
+        "the same relative path must give the same rv_bp whatever the instrument's tick size")
+    assert b["rv_pts"] != pytest.approx(a["rv_pts"], rel=0.5), "rv_pts is deliberately native"
+
+
+def test_bar_statistics_joins_the_path_and_the_variation_on_the_same_bar() -> None:
+    """One table, because 'did the high come first, and was getting there a drift or a gap' is
+    one question and splitting it would make every consumer redo the join."""
+    df = _diffusive(n=7200)
+    out = ms.bar_statistics(df, "1h", POINT)
+    assert {"high_first", "t_high_ms", "mae_pts", "mfe_pts",
+            "rv_bp", "bv_bp", "jump_frac", "n_returns"} <= set(out.columns)
+    assert len(out) == 2
+    assert out.index.is_monotonic_increasing

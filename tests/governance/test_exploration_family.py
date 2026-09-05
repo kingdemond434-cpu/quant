@@ -141,8 +141,13 @@ def test_laws_present_and_mapped():
     const = " ".join(Path("docs/CONSTITUTION.md").read_text("utf-8").replace("**", "").split())
     assert "L1.32 THE UNKNOWN-UNKNOWN ORGANS ARE ONE FAMILY" in const
     assert "L1.33 THE TWO FAMILIES WORK TOGETHER" in const
-    doc = Path("ops/principal_doctrine.txt").read_text("utf-8")
-    assert "L1.32" in doc and "L1.33" in doc
+    # REPOINTED 2026-09-05: the organ-facing address for both laws is docs/LAWS.md since the
+    # 2026-08-25 doctrine compaction ("the sprawling duty text that used to live here is compacted
+    # there ... with zero law regression"). The doctrine still routes organs there by name, which
+    # is asserted too, so the delegation cannot quietly break.
+    laws = Path("docs/LAWS.md").read_text("utf-8")
+    assert "L1.32" in laws and "L1.33" in laws
+    assert "docs/LAWS.md" in Path("ops/principal_doctrine.txt").read_text("utf-8")
     mx = Path("scripts/build_enforcement_matrix.py").read_text("utf-8")
     assert '"L1.32"' in mx and '"L1.33"' in mx
     assert "check_exploration.py" in Path("ops/crontab.manifest").read_text("utf-8")

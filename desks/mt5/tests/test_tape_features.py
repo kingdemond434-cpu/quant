@@ -187,13 +187,33 @@ def test_the_slippage_surface_names_the_constant_it_replaces(rig: ts.TapeStore) 
 def test_the_intrabar_path_is_emitted_per_bar_with_the_order_of_the_extremes(
         rig: ts.TapeStore) -> None:
     rep = tf.run(rig, ["EURUSD"], days_back=0)
-    assert set(rep["intrabar"]) == {"1h", "15min"}
+    assert set(rep["intrabar"]) == set(tf.INTRABAR_FREQS), (
+        "the whole hierarchical clock is emitted, not just the two the desk used to run on")
     assert 0.0 <= rep["intrabar"]["1h"]["high_first_frac"] <= 1.0
     p = tf.INTRABAR / "EURUSD" / "1h" / f"{DAYS[0]}.parquet"
     df = pd.read_parquet(p)
     assert {"high_first", "t_high_ms", "t_low_ms", "mae_pts", "mfe_pts", "path_ticks"} <= set(
         df.columns)
     assert (df["path_ticks"] > 0).all()
+
+
+def test_every_horizon_of_the_bar_clock_lands_and_a_coarser_bar_holds_fewer_of_them(
+        rig: ts.TapeStore) -> None:
+    """The stack is a stack: M1 has the most bars, D1 the fewest, and each one is on disk.
+
+    A frequency that silently produced nothing would leave the report claiming a horizon the
+    desk cannot actually read, which is the producer/consumer collapse in miniature.
+    """
+    rep = tf.run(rig, ["EURUSD"], days_back=0)
+    counts = {f: rep["intrabar"][f]["bars"] for f in tf.INTRABAR_FREQS}
+    assert counts["1min"] > counts["5min"] > counts["15min"] > counts["1h"] >= counts["4h"], counts
+    on_disk = {}
+    for freq in tf.INTRABAR_FREQS:
+        p = tf.INTRABAR / "EURUSD" / tf._freq_dir(freq) / f"{DAYS[0]}.parquet"
+        assert p.exists(), f"{freq} was reported but not written"
+        on_disk[freq] = len(pd.read_parquet(p))
+    assert on_disk["1D"] == 1, "a day holds exactly one D1 bar"
+    assert on_disk["1min"] > on_disk["1h"] > on_disk["1D"]
 
 
 # ------------------------------------------------------------ the integrity gate --

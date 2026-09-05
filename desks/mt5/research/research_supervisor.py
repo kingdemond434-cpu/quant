@@ -24,6 +24,20 @@ from pathlib import Path
 import psutil
 
 BASE = Path(__file__).resolve().parent.parent
+
+# THE EVENT LAYER'S ONLY REACH INTO THE CLOCK, and it is deliberately a soft one. `macro` can
+# ask for the allocator's fast leg to run sooner than its 60s cadence when it measures
+# information decaying faster than that. GUARDED because this file is the desk's watchdog: if
+# the package is absent, half-installed or raises on import, the supervisor must keep restarting
+# everything else exactly as before. A watchdog that dies with its newest dependency is not a
+# watchdog.
+if str(BASE) not in sys.path:
+    sys.path.insert(0, str(BASE))
+try:
+    from macro import interrupt as _macro_interrupt
+except Exception:                                                        # noqa: BLE001
+    _macro_interrupt = None                                              # type: ignore[assignment]
+
 LOGS = BASE / "logs"
 STATE = LOGS / "supervisor_state.json"
 LOG = LOGS / "supervisor.log"
@@ -75,6 +89,14 @@ TARGETS = [
          marker="reports/DONE_crowding_never", match="crowding_miner.py"),
     dict(name="news_desk", args=["-u", "-W", "ignore", "research/news_desk.py"],
          marker="reports/DONE_news_final", match="news_desk.py"),
+    # THE WORLD'S CLOCK. Perpetual watcher: reads sources, scores each item's credibility,
+    # novelty and unpriced fraction into the event ledger, and -- only where it MEASURES
+    # information decaying faster than the allocator's 60s leg -- writes an interrupt request
+    # the supervisor honours above. It never decides an allocation; it decides WHEN the
+    # allocator gets to think. No marker, like the other perpetual desks.
+    dict(name="macro_intel",
+         args=["-u", "-W", "ignore", "-m", "macro.run_macro_intel", "--loop"],
+         marker="reports/DONE_macro_intel_never", match="macro.run_macro_intel"),
     dict(name="signal_gate", args=["-u", "-W", "ignore",
                                    "research/signal_gate.py", "run_hunt18"],
          marker="reports/DONE_signal_gate_never", match="signal_gate.py"),
@@ -150,12 +172,28 @@ def tick_periodic(state: dict, now: float, spawn) -> list[str]:
         if is_running(p["match"]):
             continue
         mode = _allocator_mode(state, now, p["cadence_s"])
+        # ONLY WHERE THE CLOCK SAID NO. An interrupt can make the allocator run sooner; it can
+        # never make it run less, never reach the expensive normal or heavy legs, and never get
+        # past the `is_running` guard above. One request serves exactly once.
+        req = None
+        if mode is None and p["name"] == "pf_allocator" and _macro_interrupt is not None:
+            try:
+                req = _macro_interrupt.pending(
+                    now=now,
+                    consumed_at=float(state.get("macro_interrupt_consumed_at", 0) or 0))
+            except Exception:                                            # noqa: BLE001
+                req = None                    # a broken event layer must not stop the clock
+            if req is not None:
+                mode = "fast"
         if mode is None:
             continue
         args = ["-u", "-W", "ignore", p["script"], "--mode", mode]
         pid = spawn(p["name"], args)
         if pid is None:
             continue
+        if req is not None:
+            state["macro_interrupt_consumed_at"] = float(req.get("requested_at_epoch", now))
+            log(f"supervisor: macro interrupt honoured -- {str(req.get('reason', ''))[:120]}")
         state[f"{p['name']}_{mode}"] = {"last_spawn": now, "pid": pid}
         # a heavy pass carries the normal and fast work, a normal pass the fast work
         if mode == "heavy":

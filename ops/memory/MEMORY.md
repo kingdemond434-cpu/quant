@@ -1,5 +1,22 @@
 # Memory index (refreshed 2026-07-23 -- READ THE TOP BLOCK FIRST)
 
+> **THE "CURRENT STATE" BLOCK BELOW IS DATED 2026-07-23 AND PREDATES THE UNIVERSE RETIREMENT
+> (header added 2026-09-05).** It was written for the crypto-exchange desk, which was RETIRED on
+> 2026-08-18 by standing principal order, so its executor lines (patient-maker opens, BNB burn,
+> carry harvest, maker fill-rate), its forward-clock roster (cashcarry, crypto_combined,
+> defi_utilisation, stablecoin_supply_momentum, cny_premium, kimchi, onchain-throughput) and its
+> integrity duties describe a desk that no longer exists. **Read it as a dated snapshot, never as
+> today's state, and NEVER as a licence to hunt a crypto-exchange venue.**
+>
+> The live desk is `desks/mt5/` on the MT5/Fusion Markets universe; its state is
+> `desks/mt5/docs/MT5_DESK.md` + `MT5_DESK_STATE.json`, and the standing mandate is `CLAUDE.md`
+> and `docs/LAWS.md` S1. The block is kept because a large part of it IS universe-independent and
+> still true — the principal's name and preferences, the model/effort settings, the seat and
+> budget envelope, the dead-man reset procedure requiring all three files, the shadow_sleeves.json
+> roster-vs-registry correction, the "clock-saturation and the slot count measure different things,
+> do not reconcile them" warning, and the measured finding that mass generation is self-defeating
+> so only new DATA AXES are worth generating against. Those transfer. The venues do not.
+
 **CURRENT STATE 2026-07-23 (supersedes stale hooks below):** Principal = **Zaid** (NOT Saqib -- old
 name, corrected 2026-07-17). Max plan ACTIVE; ALL organs fable-5 + --effort max (verified). All
 diggers DAILY via systemd; 7 frontier miners daily (one 15:00Z rotation). OpenRouter funded,

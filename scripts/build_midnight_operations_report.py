@@ -6,7 +6,6 @@ This is an observer.  It never changes a verdict, certificate, clock, allocation
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import tempfile
@@ -48,14 +47,17 @@ def _stamp(value: object) -> datetime | None:
 
 
 def _cell_id(row: dict[str, Any]) -> str:
-    sym = str(row.get("symbol") or row.get("sym") or "")
-    family = str(row.get("family") or "")
-    params = dict(row.get("params") or {})
-    if params and set(params) <= {"rr", "wait_bars"}:
-        return f"{sym}.{family}.rr={params.get('rr', '?')}_wb={params.get('wait_bars', '?')}"
-    payload = json.dumps(params, sort_keys=True, separators=(",", ":"), default=str)
-    digest = hashlib.sha256(payload.encode()).hexdigest()[:16]
-    return f"{sym}.{family}.p={digest}"
+    """The judge's own identity, imported rather than restated -- see reconcile_external_queue.
+
+    A report that names cells by its own spelling reports on cells that do not exist. This one
+    tracked `frontier_identity` correctly and would still have missed the chart: a docket row's
+    `timeframe` is what tells an M5 cell from the H1 cell of the same symbol and family.
+    """
+    from desks.mt5.research.frontier_identity import cell_id as _canonical
+    return _canonical({"sym": str(row.get("symbol") or row.get("sym") or ""),
+                       "family": str(row.get("family") or ""),
+                       "timeframe": row.get("timeframe"),
+                       "params": dict(row.get("params") or {})})
 
 
 def _forward_rows(root: Path) -> dict[str, dict[str, Any]]:

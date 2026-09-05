@@ -26,19 +26,18 @@ def _run_in(tmp_path: Path, monkeypatch: object) -> dict:
 def test_all_feeds_absent_is_no_data_not_ok(tmp_path: Path, monkeypatch: object) -> None:
     rep = _run_in(tmp_path, monkeypatch)
     assert rep["overall"] == "NO-DATA"          # fail-loud: absent feeds never read as healthy
-    assert rep["hedge_integrity"]["verdict"] == "NO-DATA"
+    # A named surface, so "overall NO-DATA" cannot be satisfied by a report with no surfaces in it
+    # at all -- an empty consolidation and a fully-dark one must not look the same.
+    assert rep["trade_forensics"]["verdict"] == "NO-DATA"
 
 
-def test_hedge_violation_is_critical_and_pages(tmp_path: Path, monkeypatch: object) -> None:
-    (tmp_path / "data").mkdir()
-    (tmp_path / "data/hedge_integrity.json").write_text(json.dumps(
-        {"updated": "2026-07-29T00:00:00+00:00",
-         "legs": {"COOKIEUSDT": {"state": "INVERTED"}, "EDUUSDT": {"state": "OK"}}}), "utf-8")
-    rep = _run_in(tmp_path, monkeypatch)
-    assert rep["hedge_integrity"]["verdict"] == "CRITICAL"
-    assert rep["hedge_integrity"]["bad_legs"] == ["COOKIEUSDT"]
-    assert rep["overall"] == "CRITICAL"
-    assert any(r["action"] == "PAGE+PAUSE-OPENS" for r in rep["recommendations"])
+# THE HEDGE-INVARIANT TEST IS GONE, 2026-09-05 (universe mandate), with the surface it pinned.
+# `test_hedge_violation_is_critical_and_pages` fed the layer an INVERTED futures leg on a tracked
+# spot-perp carry and asserted CRITICAL + PAGE+PAUSE-OPENS. Both the producer
+# (scripts/hedge_integrity.py) and the surface in run_execution_intel are deleted: an MT5 book has
+# one net position per symbol, so no leg can be inverted relative to a spot leg that does not
+# exist. The CRITICAL escalation path itself is still pinned, by
+# `test_cost_drift_detected_across_feeds`, so what this test guarded is not now unguarded.
 
 
 def test_cost_drift_detected_across_feeds(tmp_path: Path, monkeypatch: object) -> None:
@@ -121,8 +120,6 @@ def test_fee_attribution_full_coverage_is_ok(tmp_path: Path, monkeypatch: object
 
 def test_no_recommendation_ever_auto_applies(tmp_path: Path, monkeypatch: object) -> None:
     (tmp_path / "data").mkdir()
-    (tmp_path / "data/hedge_integrity.json").write_text(json.dumps(
-        {"legs": {"X": {"state": "MISSING"}}}), "utf-8")
     trades = [{"rt_bps": 90.0} for _ in range(20)]
     (tmp_path / "data/cashcarry_trades.json").write_text(json.dumps(trades), "utf-8")
     (tmp_path / "data/cost_model.json").write_text(json.dumps(

@@ -33,3 +33,35 @@ def test_the_tape_failure_is_still_reported_not_swallowed() -> None:
     """It failed loudly for five days and nothing escalated it -- keep the line, and keep it
     findable, because the next import break will look exactly the same."""
     assert 'print(f"tick tape FAILED:' in SRC
+
+
+# ------------------------------------------------------- the loop that has to never stop, 24/7
+
+LAUNCHER = (DESK / "scripts" / "MT5Hourly.cmd").read_text("utf-8")
+#: The launcher's CODE, with `rem` commentary stripped. The same trap this file already documents
+#: for `hourly_cycle.py`: the comment explaining a defect necessarily contains the defect's text,
+#: so a fence matching the raw file proves nothing about what the box actually executes.
+LAUNCHER_CODE = "\n".join(ln for ln in LAUNCHER.splitlines()
+                          if not ln.strip().lower().startswith("rem"))
+
+
+def test_the_launcher_loops_forever() -> None:
+    """`MT5Hourly.cmd` is the ONLY launcher of the cycle, so a launcher that exits after one pass
+    stops the desk's entire discovery chain until somebody notices."""
+    assert ":loop" in LAUNCHER_CODE and "goto loop" in LAUNCHER_CODE
+    assert "research\\hourly_cycle.py" in LAUNCHER_CODE
+
+
+def test_the_period_is_measured_from_the_hour_not_from_the_end_of_the_pass() -> None:
+    """THE DEFECT THE DEEPENING WORK EXPOSED. `timeout /t 3540` counts from the moment the cycle
+    RETURNS, so the real period is (pass duration + 59 min). A pass that now drains the deepening
+    queue for up to 40 minutes turns an "hourly" loop into one firing every hour and three
+    quarters, sliding further every pass -- and nothing reports it, because the marker is written
+    on every pass so the cycle looks healthy while its cadence halves.
+
+    Sleeping to the top of the next hour makes the period what the name says whatever the pass
+    costs. Asserted on the ARITHMETIC, so a future edit that reintroduces a fixed post-pass wait
+    fails here rather than silently slowing the desk down."""
+    assert "timeout /t 3540" not in LAUNCHER_CODE, "the period runs from the end of the pass"
+    assert "3600.0 - (time.time() %% 3600.0)" in LAUNCHER_CODE
+    assert "max(60.0," in LAUNCHER_CODE, "a zero-cost pass would spin without a floor"

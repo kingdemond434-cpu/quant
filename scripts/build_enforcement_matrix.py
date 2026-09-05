@@ -323,23 +323,37 @@ _MAP: dict[str, list[str]] = {
     # This one asks whether the TIMESTAMPS MEAN WHAT THE SCHEMA IMPLIES, which is the defect class
     # behind kimchi_premium, coinbase_premium_timing and R0060 alike.
     "L1.46": ["scripts/check_clock_provenance.py", "libs/research/clock_provenance.py"],
-    # L1.47 AND L1.64 ARE DELIBERATELY ABSENT FROM THIS MAP, 2026-09-05 (universe mandate), and
-    # this generator will therefore report both UNENFORCED. That is the honest state, not an
-    # oversight to be papered over with a _STANDING or _HUMAN_ONLY entry -- neither law is being
-    # upheld by a human or a runtime mechanism, because neither law has a subject any more:
+    # L1.47 IS MAPPED AGAIN, 2026-09-05, AND THE NOTE THAT UNMAPPED IT WAS FACTUALLY WRONG.
     #
-    #   L1.47 FUNDING CAPTURE  -- "where in the PERP FUNDING CYCLE was the position opened and
-    #                             closed". Its fence (check_funding_capture.py) and its library
-    #                             (libs/research/funding_clock.py) are deleted; funding settlement
-    #                             stamps are a crypto-exchange mechanic with no MT5 analogue that
-    #                             this map could point at today.
-    #   L1.64 MARGIN TOPOLOGY  -- "was the book's capital structure DECIDED", where the structures
-    #                             compared were spot + separately-margined USDT-M perp. Its fence,
-    #                             its library and its consumer (run_capital_plan.py) are deleted.
+    # That note (written hours earlier, same day) said funding settlement stamps are "a
+    # crypto-exchange mechanic with no MT5 analogue that this map could point at today". The
+    # universe registry disagrees: `swap_long` and `swap_short` are recorded for all 251 symbols,
+    # and MT5 swap is a DISCRETE charge applied at the daily rollover, TRIPLED one night a week --
+    # on Wednesday for 98 symbols and Friday for 150, per the broker's own `swap_rollover3days`.
+    # "Discrete payments booked as continuous accruals are expectation errors" is L1.47 verbatim,
+    # and it describes MT5 swap exactly as it described perp funding. The law never lost its
+    # subject; the desk changed venue and nobody re-pointed the map.
     #
-    # The correct repair is a DOCTRINE edit -- retire or rewrite both laws in docs/ -- not a map
-    # entry here. Claiming enforcement this map cannot demonstrate is the exact failure L2.0 was
-    # written to catch, so the hole is left visible and named until doctrine catches up.
+    # It is not a theoretical exposure either. `families_orthogonal.py` sizes a live carry family
+    # off `swap_long - swap_short`, so an accrual error here is a mispriced position rather than a
+    # doctrine footnote. The enforcer below is real, scheduled (06:40/06:50 daily in
+    # ops/crontab.manifest) and refuses rather than reports: `check_carry_state.py` asks whether
+    # any position is carried overnight whose financing the engine charges at zero, exits 2 on
+    # CARRY-UNCHARGED / CARRY-FLIP / UNMEASURED / STALE, and explicitly refuses to call an empty
+    # population OK. `carry_state.py` counts discrete rollover NIGHTS using the broker's per-symbol
+    # triple weekday instead of smearing an annual rate, and reports UNMEASURED rather than
+    # substituting 0.0 for a rate it cannot resolve.
+    "L1.47": ["scripts/check_carry_state.py", "desks/mt5/research/carry_state.py"],
+    #
+    # L1.64 MARGIN TOPOLOGY is NOT mapped, and is classified SUBJECT-RETIRED below rather than
+    # given a fence it does not have. Its law compares "spot wallet + separately-margined USDT-M
+    # perp" -- two wallets on one crypto venue -- and its fence, its library
+    # (libs/portfolio/margin_topology) and its consumer (run_capital_plan.py) are all deleted;
+    # `tests/governance/test_margin_topology_fence.py` already skips for exactly that reason.
+    # Unlike L1.47 there is no MT5 artifact this map could point at, because the desk has never
+    # measured Fusion's own margin construction. Claiming enforcement this map cannot demonstrate
+    # is the failure L2.0 was written to catch, so the classification says what is true and
+    # carries the condition that ends it.
     # L1.47: funding capture. Funding is a DISCRETE payment booked as a CONTINUOUS accrual, and
     # the accrual is UNBIASED IN EXPECTATION -- which is why it survived every review while being
     # wrong on 41.5% of individual closes. The fence differences the two models, measures the
@@ -542,13 +556,24 @@ _MAP: dict[str, list[str]] = {
     # as refusals rather than zeros, and the 7.1% tape coverage is the defect the surface reports.
     "L1.58-r0371": ["libs/research/fee_attribution.py",
                     "tests/test_fee_attribution.py", "scripts/run_execution_intel.py"],
-    # R0303 Upbit purge-proof snapshot (L1.46 unrecoverable-series duty): the venue erases a
-    # market's candle history at delisting (~11.4 KRW markets/yr; AQT/AERGO lost 2026-08-03),
-    # and the desk's own >=120-aligned-day panel filter stacks a second survivorship bias on
-    # top. The collector holds full daily history for every market plus flagged-market 1m,
-    # and its manifest's delist ledger is the treatment group the purge erases.
-    "L1.46-r0303": [
-                    "tests/research/test_upbit_snapshot.py"],
+    # R0303 RETIRED 2026-09-05 (universe mandate). The row read:
+    #
+    #   "L1.46-r0303": ["tests/research/test_upbit_snapshot.py"]
+    #
+    # R0303 was the Upbit purge-proof snapshot -- the venue erases a market's candle history at
+    # delisting (~11.4 KRW markets/yr; AQT/AERGO lost 2026-08-03), so the collector held full
+    # daily history for every market plus flagged-market 1m and its manifest's delist ledger was
+    # the treatment group the purge erases. Upbit is a crypto exchange the desk may never hunt
+    # again; the collector and its test went with that desk in c242249b, leaving this row citing
+    # a path that does not exist -- which check_enforcement_execution.py correctly reported as
+    # "LAWS ENFORCED BY NOTHING: L1.46-r0303", taking a LAW fence red.
+    #
+    # THE LAW IS NOT RETIRED, ONLY THIS ROW. L1.46 (unrecoverable-series duty) keeps its own
+    # enforcement two hundred lines above -- scripts/check_clock_provenance.py plus
+    # libs/research/clock_provenance.py, both present and both run by the law gate. What is
+    # deliberately NOT done is a fake repoint at an MT5 series: a broker does not erase an
+    # instrument's bar history at delisting, so pointing this row at the MT5 universe would
+    # register a duty against a hazard that venue does not have.
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive
@@ -591,9 +616,19 @@ _MAP: dict[str, list[str]] = {
     # bound, plus the measured depeg shortfall: 41.7bps. The refusal value is still 300, so an
     # unreadable input keeps the band SHUT rather than opening it on a fabricated small number
     # (L1.55). Risks measured but deliberately unpriced are named, never inferred as zero.
-    "L1.51-r0375": [
-                    "libs/research/lending_haircut.py",
-                    "tests/research/test_lending_haircut.py"],
+    # CITATION REPAIRED 2026-09-05. `tests/research/test_lending_haircut.py` was deleted with the
+    # fifteen other orphan tests whose `scripts.<module>` imports the purge had removed -- in its
+    # case `scripts.collect_lending_risk_base_rates`, the crypto lending-risk collector. Deleting
+    # it was right (a missing import is a collection error, not a skip, and one interrupts the
+    # whole suite) but it left this citation naming a path that no longer exists, which this
+    # generator correctly reports as a BROKEN REFERENCE rather than quietly dropping.
+    #
+    # The LAW still executes: `libs/research/lending_haircut.py` is live, consumed by
+    # `libs/research/idle_yield.py`, and exercised by `tests/research/test_idle_yield.py`. So the
+    # dead path is removed and the live enforcer stays -- the derivation R0375 replaced a
+    # 300bps constant with, and the 300bps refusal value that keeps the band SHUT on an unreadable
+    # input, are both still fenced. Only the collector that fed one of its inputs is gone.
+    "L1.51-r0375": ["libs/research/lending_haircut.py"],
     # R0102 paper-sleeve auto-spawn: converts corrected Stage-A survivors into costless paper
     # sleeves. L1.6 bounds it (zero promotion authority, zero capital) and L1.18a orders its queue
     # (deployment race -- shortest capacity runway first). It NEVER spawns over the Holm cap: a
@@ -888,6 +923,31 @@ _HUMAN_ONLY: dict[str, str] = {
             "hashes the five clauses evolution may never touch (check_constitution_core.py), so "
             "what is unfenced here is the judgement, not the safety margin",
 }
+#: A law whose SUBJECT left the desk with the retired universe -- not upheld, not violated, not
+#: enforceable, because the thing it governs is not here. Its own status so it can never be read
+#: as ENFORCED, and every entry carries the CONDITION THAT ENDS IT: an exclusion with no path back
+#: is how a law gets quietly dropped, and "ask of any exclusion: what is the path back?" is the
+#: same rule the source backlog's dated deferrals answer with a date.
+#:
+#: This category is narrow ON PURPOSE and is not a home for inconvenient laws. L1.47 was a
+#: candidate for it earlier the same day and does NOT belong here: MT5 swap is a discrete,
+#: weekly-tripled charge recorded for all 251 symbols, so its subject is alive and it is mapped to
+#: a real scheduled fence above. The test for entry is whether an artifact exists that could be
+#: pointed at, not whether pointing at one would be work.
+_SUBJECT_RETIRED: dict[str, str] = {
+    "L1.64": "MARGIN TOPOLOGY. The law compares capital structures that were specific to the "
+             "retired crypto-exchange desk -- long spot in a spot wallet against a short USDT-M "
+             "perp in a separately-margined futures wallet, a construction that 'fell out of "
+             "which connectors were built first'. Its fence, its library "
+             "(libs/portfolio/margin_topology) and its consumer (run_capital_plan.py) were "
+             "deleted in the purge, and tests/governance/test_margin_topology_fence.py already "
+             "skips because the fence cannot import. PATH BACK: the law's QUESTION -- was the "
+             "book's capital structure decided or inherited? -- applies to Fusion with equal "
+             "force, because the account's leverage tier, its margin model and whether it is in "
+             "hedging or netting mode were likewise never chosen by this desk. The moment the "
+             "desk records those from the live account (an MT5 AccountInfo snapshot names all "
+             "three), L1.64 is rewritten against them and leaves this category for a fence.",
+}
 _STANDING: dict[str, str] = {
     "L1.0": "ratchet meta-law -- check_ratchets.py enforces the FLOORS across every measured "
             "property, and run_max_push.py enforces the DIRECTION: one ranked queue of everything "
@@ -1000,7 +1060,9 @@ def build() -> dict[str, Any]:
         refs = _MAP.get(pid, [])
         live = [r for r in refs if _exists(r)]
         broken = [r for r in refs if r not in live]
-        if pid in _HUMAN_ONLY:
+        if pid in _SUBJECT_RETIRED:
+            status, note = "SUBJECT-RETIRED", _SUBJECT_RETIRED[pid]
+        elif pid in _HUMAN_ONLY:
             status, note = "HUMAN-ONLY", _HUMAN_ONLY[pid]
         elif pid in _STANDING:
             status, note = "STANDING", _STANDING[pid]
