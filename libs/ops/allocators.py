@@ -12,6 +12,7 @@ of itself as a hunter. Same question six times -- WHAT IS THE NEXT UNIT OF THIS 
 LOG-WEALTH PER DAY -- and six vocabularies, so a euro of compute and a euro of heat could never
 be traded against each other.
 
+    0  FRONTIER      which external capability do we replicate?  dElog per unit of build effort
     1  INFORMATION   which data do we acquire?          dElog per unit of acquisition + carry
     2  RESEARCH      which hypothesis do we test?       dElog per unit of research effort
     3  COMPUTE       which experiments get resources?   dElog per CPU/GPU hour
@@ -19,9 +20,18 @@ be traded against each other.
     5  CAPITAL       which opportunities get money?     dElog per unit of heat
     6  EXECUTION     how is each position implemented?  dElog per unit of alpha capture
 
-NESTED, NOT PARALLEL, and the order is the dependency: information feeds research, research
-consumes compute, compute produces forecasts, forecasts earn capital, capital is realised through
-execution. A gain at level k is worthless if level k+1 cannot carry it -- which is exactly the
+THE SEVENTH SITS ABOVE THE OTHER SIX (principal 2026-09-05). Every level below asks how to spend
+a resource the desk already has; FRONTIER asks which CAPABILITY the desk should acquire in the
+first place -- the only level whose answers come from outside. A desk with all six lower levels
+working perfectly still converges on the frontier of what it already knows how to do, and the
+seventh is what keeps that from being the ceiling. It is level 0 rather than 7 because it feeds
+information: a replicated capability arrives as new data, new method or new machinery, and is
+spent by the levels below in their own currencies.
+
+NESTED, NOT PARALLEL, and the order is the dependency: the frontier feeds information, information
+feeds research, research consumes compute, compute produces forecasts, forecasts earn capital,
+capital is realised through execution. A gain at level k is worthless if level k+1 cannot
+carry it -- which is exactly the
 failure this desk keeps measuring. 119,902 unread miner rows was an INFORMATION allocator with no
 downstream; 65 unexecutable certificates was a CAPITAL decision no EXECUTION allocator could
 implement; a deepening queue nothing drained was RESEARCH starved of COMPUTE.
@@ -77,6 +87,17 @@ class Allocator:
 
 
 ALLOCATORS: tuple[Allocator, ...] = (
+    Allocator(
+        0, "frontier", "Which external capability deserves replication effort?",
+        "build effort against capabilities the desk does not have at all",
+        "desks/mt5/frontier_intel/frontier_supervisor.py",
+        ("desks/mt5/reports/FRONTIER_INTELLIGENCE.json", "desks/mt5/reports/FRONTIER_GAPS.json"),
+        gap=("the ROI ranking is live and refuses more than it queues -- which is its job -- but "
+             "no imported capability has reached PROVEN, so `frontier_intel`'s own rent is "
+             "UNMEASURED and the mapping from a replicated capability to realised dE[log W] is "
+             "still a claim rather than a measurement. It closes the first time a queued "
+             "candidate is built, challenged and beaten or beats its champion"),
+        feeds=("information",)),
     Allocator(
         1, "information", "Which data do we acquire next?",
         "acquisition effort and carrying cost per source",

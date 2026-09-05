@@ -1,0 +1,85 @@
+# THE WINDOWS BOX'S SCHEDULED TASKS -- the DR floor for the machine that touches money.
+#
+# WHY THIS FILE EXISTS. `ops/crontab.manifest` is the VPS's answer to "can this repo still
+# reconstitute the desk", and `scripts/check_scheduler_manifest.py` keeps it honest. The box had
+# NO equivalent. Measured 2026-09-05 across the whole tree: twenty-five MT5-* tasks are named in
+# code, `stall_watch.ps1` heals eight of them by name every ten minutes, and FIVE OF THOSE EIGHT
+# HAVE NO INSTALLER ANYWHERE IN THIS REPO -- MT5-Gauntlet, MT5-Shadow, MT5-UniversalGate,
+# MT5-QQuantShadow, MT5-ResearchSupervisor. They exist only in one machine's task registry.
+#
+# Two things follow, and both are live today rather than hypothetical:
+#
+#   THE CADENCE IS UNVERIFIABLE. The standing requirement is that the gauntlet judges, the clocks
+#   advance and certificates mint EVERY HOUR. Nothing in this repo can confirm or deny that the
+#   box does it, because nothing here declares when those tasks fire. "It runs hourly" has been
+#   an assumption, not a fact, for as long as the tasks have existed.
+#
+#   A REBUILD LOSES THE RESEARCH LANE. Restore this repo onto a fresh box and the gateway, the
+#   deadman, the tape recorders and the dashboard come back -- they have installers. The gauntlet,
+#   the forward clocks, the universal gate and the supervisor do not come back at all, and nothing
+#   would say so: `stall_watch` would report them missing, which reads identically to a task that
+#   is merely disabled.
+#
+# WHAT THIS FILE IS. One line per task, in the box's own vocabulary, so the tasks can be compared
+# to what the machine actually runs and rebuilt when it is replaced. It is a MANIFEST, not an
+# installer: `scripts/check_box_tasks.py` reads it and reports drift.
+#
+# UNDECLARED IS WRITTEN AS UNDECLARED. The tasks below carrying `trigger=UNDECLARED` do so because this
+# repo does not know their cadence and nobody here may invent one -- a manifest that guessed
+# "hourly" would answer the standing question with a fabrication, and the answer would look exactly
+# like a measurement. Reading the real trigger off the box (`Get-ScheduledTask -TaskName <name> |
+# Select -Expand Triggers`) and pasting it here is a five-minute job that turns five guesses into
+# facts, and until it is done this file says exactly which ones remain guesses.
+#
+# WRITING THIS FILE FOUND THREE INSTALLERS NOBODY HAD LINKED and one task nobody had listed:
+# install_moat_miner_task.ps1, install_contract_terms_task.ps1 and install_cachewarm_task.ps1
+# carry real triggers, and MT5-MoatFence is named as the tape recorder's watchdog with no
+# installer anywhere. That is the manifest earning its place before its fence had even run twice.
+#
+# FORMAT: one `TASK` line per task, whitespace-separated key="value" pairs.
+#   name      the Windows task name, exactly as `stall_watch.ps1` heals it
+#   trigger   the repetition, in plain words, or UNDECLARED
+#   runs      the script or module it executes, repo-relative where one exists
+#   installer the file in THIS repo that registers it, or NONE
+#   lane      money | research | data | ops -- what a failure of it costs
+
+# ---------------------------------------------------------------- money path (never research)
+TASK name="MT5-Gateway"            trigger="continuous loop"      runs="desks/mt5/research/run_gateway_loop.py" installer="NONE" lane="money"
+TASK name="MT5-FusionDeadman"      trigger="UNDECLARED"           runs="scripts/run_deadman_switch.py"         installer="NONE" lane="money"
+TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal64.exe"                        installer="NONE" lane="money"
+
+# ---------------------------------------------------------------------------- the research lane
+# THE FIVE THAT `stall_watch` HEALS AND NOTHING HERE INSTALLS. Whether they run hourly -- the
+# standing requirement -- cannot be answered from this repo until these five triggers are read off
+# the box and written down.
+TASK name="MT5-Gauntlet"           trigger="UNDECLARED" runs="desks/mt5/scripts/external_gauntlet.py"      installer="NONE" lane="research"
+TASK name="MT5-Shadow"             trigger="UNDECLARED" runs="desks/mt5/research/shadow_cycle.py"          installer="NONE" lane="research"
+TASK name="MT5-UniversalGate"      trigger="UNDECLARED" runs="desks/mt5/research/universal_gate.py"        installer="NONE" lane="research"
+TASK name="MT5-QQuantShadow"       trigger="UNDECLARED" runs="desks/mt5/research/qquant_shadow.py"         installer="NONE" lane="research"
+TASK name="MT5-ResearchSupervisor" trigger="UNDECLARED" runs="desks/mt5/research/research_supervisor.py"   installer="NONE" lane="research"
+TASK name="MT5-QQuantGatesCertify" trigger="UNDECLARED" runs="desks/mt5/research/qquant_gates.py"          installer="NONE" lane="research"
+
+# Declared here because their installers are in the repo and were read to write these lines.
+TASK name="MT5-Hourly"             trigger="loop, sleeps to the top of each hour" runs="desks/mt5/research/hourly_cycle.py"     installer="desks/mt5/scripts/MT5Hourly.cmd" lane="research"
+TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/research/deepening_worker.py"  installer="desks/mt5/scripts/install_deepening_task.ps1" lane="research"
+
+# ------------------------------------------------------------------------------- the data moat
+TASK name="MT5-TickRecorder"       trigger="every 1 hour"          runs="desks/mt5/recorders/tick_recorder.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
+TASK name="MT5-TickIntegrity"      trigger="every 1 hour, at :20"  runs="desks/mt5/recorders/tick_integrity.py"  installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
+TASK name="MT5-TapeFeatures"       trigger="every 1 hour, at :40"  runs="desks/mt5/recorders/tape_features.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
+TASK name="MT5-VolArchive"         trigger="UNDECLARED"            runs="desks/mt5/recorders/vol_archive.py"     installer="NONE" lane="data"
+TASK name="MT5-MoatRecorder"       trigger="UNDECLARED"            runs="desks/mt5/moat/moat_recorder.py"   installer="NONE" lane="data"
+TASK name="MT5-MoatSilver"         trigger="UNDECLARED"            runs="desks/mt5/moat/moat_silver.py"      installer="NONE" lane="data"
+TASK name="MT5-MoatMiner"          trigger="every 1 hour"          runs="desks/mt5/moat/moat_miner.py"       installer="desks/mt5/scripts/install_moat_miner_task.ps1" lane="data"
+# Named by install_moat_miner_task.ps1 as the tape recorder's watchdog. Its own installer is not
+# in this repo, which is exactly the class of gap this manifest exists to make countable.
+TASK name="MT5-MoatFence"          trigger="UNDECLARED"            runs="UNKNOWN"                            installer="NONE" lane="data"
+TASK name="MT5-Universe"           trigger="UNDECLARED"            runs="desks/mt5/research/expand_universe.py"  installer="NONE" lane="data"
+TASK name="MT5-ContractTerms"      trigger="every 1 hour"          runs="UNKNOWN"   installer="desks/mt5/scripts/install_contract_terms_task.ps1" lane="data"
+TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="UNKNOWN"   installer="desks/mt5/scripts/install_cachewarm_task.ps1" lane="data"
+
+# -------------------------------------------------------------------------------------- ops
+TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="NONE" lane="ops"
+TASK name="MT5-DeskState"          trigger="UNDECLARED"       runs="scripts/build_zentech_state.py" installer="NONE" lane="ops"
+TASK name="MT5-LocalDashboard"     trigger="at startup"       runs="scripts/serve_dashboard.py"         installer="desks/mt5/scripts/install_local_dashboard.ps1" lane="ops"
+TASK name="MT5-ShadowSync"         trigger="UNDECLARED"       runs="desks/mt5/scripts/MT5Sync.cmd"            installer="NONE" lane="ops"

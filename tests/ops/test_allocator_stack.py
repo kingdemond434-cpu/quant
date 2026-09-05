@@ -14,10 +14,13 @@ import pytest
 from libs.ops import allocators as al
 
 
-def test_all_six_levels_are_declared_in_dependency_order() -> None:
-    assert [a.level for a in al.ALLOCATORS] == [1, 2, 3, 4, 5, 6]
+def test_all_seven_levels_are_declared_in_dependency_order() -> None:
+    """SEVEN, since the frontier allocator landed. It is level 0 rather than 7 because it FEEDS
+    information: every other level spends a resource the desk already has, and this one decides
+    which capability to acquire at all -- the only level whose answers come from outside."""
+    assert [a.level for a in al.ALLOCATORS] == [0, 1, 2, 3, 4, 5, 6]
     assert [a.name for a in al.ALLOCATORS] == [
-        "information", "research", "compute", "forecast", "capital", "execution"]
+        "frontier", "information", "research", "compute", "forecast", "capital", "execution"]
 
 
 def test_every_level_names_a_resource_a_question_and_what_prices_it() -> None:
@@ -73,7 +76,7 @@ def test_the_report_names_the_weakest_link_by_level() -> None:
     """The earliest unwired level, because a break upstream makes every fix below it unbankable."""
     doc = al.report()
     assert doc["weakest_link"] == "forecast"
-    assert sum(doc["counts"].values()) == 6
+    assert sum(doc["counts"].values()) == 7
 
 
 def test_capital_is_the_level_that_actually_works() -> None:

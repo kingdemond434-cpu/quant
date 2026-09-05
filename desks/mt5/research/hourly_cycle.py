@@ -368,6 +368,30 @@ def _costed(name: str, fn):
     return out
 
 
+def frontier() -> dict:
+    """One frontier-miner pass: which external capability is worth replicating next.
+
+    RUN HERE RATHER THAN ON ITS OWN SCHEDULE, and the reason is this desk's most repeated defect
+    rather than convenience: an organ with its own task is an organ whose task can be missing from
+    the box, and `check_box_tasks` measured fourteen tasks whose cadence this repo cannot even
+    verify. A leg of the cycle that already runs hourly and now records its own cost is the one
+    place a new organ is certain to actually run.
+
+    NEVER IDLE (mandate section 70): the pass works the standing capability gaps when no new
+    external finding appears, so a quiet hour still advances the queue.
+    """
+    try:
+        sys.path.insert(0, str(BASE))
+        from frontier_intel import frontier_supervisor
+        doc = frontier_supervisor.one_pass()
+        return {"scouted": doc.get("rows_scouted"), "new": doc.get("new_candidates"),
+                "queued": (doc.get("ranked") or {}).get("n_queued"),
+                "missing_capabilities": doc.get("capability_matrix_missing"),
+                "at": datetime.now(UTC).isoformat()}
+    except Exception as exc:                                            # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
+
+
 def main() -> None:
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
@@ -377,11 +401,12 @@ def main() -> None:
     dp = _costed("deepen", deepen)
     hc = _costed("heal_clocks", heal_clocks)
     m = _costed("mine", mine)
+    fr = _costed("frontier", frontier)
     _costed("frontier_report", lambda: frontier_report(h))
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
-                    "deepening": dp, "heal_clocks": hc, "mine": m,
+                    "deepening": dp, "heal_clocks": hc, "mine": m, "frontier": fr,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
