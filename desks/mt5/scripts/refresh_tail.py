@@ -25,12 +25,46 @@ TERMINAL = terminal_path()
 # still overrides, so a machine keeping its store elsewhere sets one env var.
 OUT = desk_root() / "data" / "universe"
 N_BARS = 200
+#: Every timeframe this desk stores, with its bar length in seconds. The seconds are what let the
+#: fetch SIZE ITSELF against the gap instead of assuming one: 200 bars is eight days at H1 and
+#: sixteen HOURS at M5, so the single constant that worked for hourly bars silently could not
+#: reach back far enough for anything faster.
+TIMEFRAMES: dict[str, int] = {
+    "M1": 60, "M5": 300, "M15": 900, "M30": 1800,
+    "H1": 3600, "H4": 14400, "D1": 86400,
+}
+#: Ceiling on one fetch. The box has 8GB and this runs beside the gauntlet; a year of M1 is 525k
+#: bars and would be a memory event, not a refresh. When the gap exceeds this the run says so
+#: rather than writing a file with a hole in it.
+MAX_FETCH = 50_000
 
 
-def refresh_symbol(sym: str) -> str:
-    pq = OUT / f"{sym}_H1.parquet"
+def _mt5_timeframe(tf: str) -> int | None:
+    return getattr(mt5, f"TIMEFRAME_{tf}", None)
+
+
+def refresh_symbol(sym: str, tf: str = "H1") -> str:
+    """Refresh one (symbol, timeframe) parquet.
+
+    THE TIMEFRAME WAS HARDCODED HERE AND IN THE CALLER'S GLOB, and that is the whole reason the
+    gold scalp sleeves could never mature. MEASURED 2026-09-06: XAUUSD_M5, _M15 and _M1 held no
+    bar after 2026-08-21 23:55, and the three gold scalp sleeves went on their forward clock on
+    2026-08-22. They have therefore had ZERO bars for the entire life of that clock -- which is
+    why all three sat at forward n=0 with 39/65/69 observations tagged historical, and why the
+    answer to "are the two gold sleeves ready" kept being assembled from selection-era rows.
+
+    It was not a quiet market and it was not a state file failing to persist. The instruments
+    they trade had not been updated since the day before they started.
+    """
+    pq = OUT / f"{sym}_{tf}.parquet"
     if not pq.exists():
         return "no-cache"
+    seconds = TIMEFRAMES.get(tf)
+    period = _mt5_timeframe(tf)
+    if seconds is None or period is None:
+        # ABSENCE IS NEVER A PASS. An unknown timeframe is reported, never silently skipped as if
+        # it had been refreshed -- a skip that reads as success is how this failure lasted weeks.
+        return f"unknown-timeframe({tf})"
     old = pd.read_parquet(pq)
     # SELECT BEFORE YOU READ. A symbol absent from Market Watch is not subscribed, so
     # `copy_rates_from_pos` serves whatever history happens to be cached and reports no error --
@@ -40,7 +74,20 @@ def refresh_symbol(sym: str) -> str:
     # of the 295-symbol store sat days stale: not a broken refresher, a subscription nobody asked
     # for. `symbol_select` costs one call and makes the terminal fetch the real tail.
     mt5.symbol_select(sym, True)
-    rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, N_BARS)
+    # SIZE THE FETCH TO THE GAP, NEVER TO A CONSTANT. A fixed 200 bars is eight days at H1 and
+    # sixteen hours at M5, so on a file that had gone sixteen days stale a fixed fetch cannot
+    # reach back to where the history stops -- and `concat` would then write a parquet with a
+    # HOLE in it, which is worse than the stale file it replaced: a gap in bars is invisible to
+    # every reader downstream and silently becomes a gap in a forward record.
+    want = N_BARS
+    if isinstance(old.index, pd.DatetimeIndex) and len(old):
+        last = old.index.max()
+        if last.tz is None:
+            last = last.tz_localize("UTC")
+        gap = (pd.Timestamp.now(tz="UTC") - last).total_seconds()
+        want = max(N_BARS, int(gap // seconds) + N_BARS)
+    capped = min(want, MAX_FETCH)
+    rates = mt5.copy_rates_from_pos(sym, period, 0, capped)
     if rates is None or len(rates) < 2:
         return f"fetch-fail({mt5.last_error()})"
     new = pd.DataFrame(rates)
@@ -60,11 +107,25 @@ def refresh_symbol(sym: str) -> str:
     if isinstance(old.index, pd.DatetimeIndex) and old.index.tz is None:
         old = old.copy()
         old.index = old.index.tz_localize("UTC")
+    # A HOLE MUST NAME ITSELF. If the fetch still could not reach back to where the cache ends,
+    # the file is about to gain a discontinuity. It is still better to hold the new bars than to
+    # stay frozen, so the write proceeds -- but it says GAP, because a silent hole in a bar series
+    # becomes a silent hole in a forward record and nothing downstream can tell the difference
+    # between "no trade fired" and "no bar existed to fire on". That confusion is exactly what
+    # cost the gold scalp sleeves sixteen days.
+    hole = ""
+    if len(old) and isinstance(old.index, pd.DatetimeIndex) and len(new):
+        last_old = old.index.max()
+        if last_old.tz is None:
+            last_old = last_old.tz_localize("UTC")
+        missing = (new.index.min() - last_old).total_seconds()
+        if missing > 2 * seconds:
+            hole = f" GAP {missing / 86400:.1f}d unfetched before {new.index.min()}"
     combined = pd.concat([old, new])
     combined = combined[~combined.index.duplicated(keep="last")].sort_index()
     added = len(combined) - len(old)
     combined.to_parquet(pq)
-    return f"+{added} bars (last {combined.index.max()})"
+    return f"+{added} bars (last {combined.index.max()}){hole}"
 
 
 def main() -> int:
@@ -84,26 +145,46 @@ def main() -> int:
     is_fusion = "fusion" in server_name.lower()
     print(f"Broker server: {server_name} (Fusion={is_fusion})")
 
+    # EVERY PARQUET IN THE LAKE, AT WHATEVER TIMEFRAME ITS NAME DECLARES. The glob was
+    # `*_H1.parquet`, so the six non-H1 files in the store -- XAUUSD at M1/M5/M15 and three FX
+    # crosses at M15 -- were never refreshed by anything, ever. They are not a rounding error:
+    # they are the entire sub-hourly universe, and the gold scalp lane trades on them.
+    #
+    # The timeframe now comes from the FILENAME rather than a constant, so adding a symbol at a
+    # new timeframe makes it eligible immediately, with nothing here to edit. A file whose suffix
+    # this desk does not recognise is REPORTED, never skipped in silence.
     results = []
-    broker_info = {}
-    for pq in sorted(OUT.glob("*_H1.parquet")):
-        sym = pq.stem.replace("_H1", "")
+    broker_info: dict[str, dict] = {}
+    for pq in sorted(OUT.glob("*.parquet")):
+        sym, _, tf = pq.stem.rpartition("_")
+        if not sym:
+            results.append(f"{pq.stem:16s} unparseable-name")
+            print(results[-1], flush=True)
+            continue
         try:
-            status = refresh_symbol(sym)
+            status = refresh_symbol(sym, tf)
         except Exception as e:
             status = f"error:{e}"
-        results.append(f"{sym:8s} {status}")
+        results.append(f"{sym}_{tf:<16s} {status}")
         print(results[-1], flush=True)
-        # Record server for this symbol
-        info = mt5.symbol_info(sym)
-        if info:
+        # Record server for this symbol (once; the broker is a property of the symbol, not of
+        # the timeframe we happen to be holding for it).
+        if sym not in broker_info and mt5.symbol_info(sym):
             broker_info[sym] = {
                 "server": server_name,
                 "is_fusion": is_fusion,
                 "account": getattr(account, "login", 0) if account else 0,
             }
-    ok = sum(1 for r in results if r.split(None, 1)[1].startswith("+"))
-    print(f"\n{ok}/{len(results)} symbols refreshed")
+    ok = sum(1 for r in results if " +" in r)
+    holes = [r for r in results if "GAP" in r]
+    print(f"\n{ok}/{len(results)} (symbol, timeframe) series refreshed "
+          f"across {len(broker_info)} symbol(s)")
+    if holes:
+        # Loud, and listed. A gap that only appears as a suffix on one line of a 300-line log is
+        # a gap nobody reads.
+        print(f"\n{len(holes)} series could not be bridged and now carry a hole:")
+        for row in holes:
+            print(f"   {row}")
 
     # Save broker info for VPS promotion_authority
     broker_info_path = OUT / "broker_info.json"
