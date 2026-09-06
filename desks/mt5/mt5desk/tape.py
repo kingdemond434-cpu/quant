@@ -303,7 +303,7 @@ def main(argv: list[str] | None = None) -> int:
     from mt5desk.config import terminal_path
 
     if mt5.terminal_info() is None and not mt5.initialize(path=terminal_path()):
-        print(f"mt5 init failed: {mt5.last_error()}")
+        print(f"mt5 init failed: {_explain(mt5.last_error())}")
         return 1
 
     uni = _load(DATA / "universe" / "universe.json", {})
@@ -343,3 +343,19 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def _explain(err: object) -> str:
+    """Route the raw MT5 error through the shared explanation -- see h1_source.
+
+    Imported lazily and falling back to the bare error: a diagnostic helper must never be the
+    reason a producer cannot start.
+    """
+    try:
+        from research.h1_source import explain_init_failure
+    except ImportError:
+        try:
+            from h1_source import explain_init_failure  # type: ignore[no-redef]
+        except ImportError:
+            return f"{err}"
+    return explain_init_failure(err)
