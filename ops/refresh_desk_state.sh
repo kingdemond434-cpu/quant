@@ -19,7 +19,13 @@
 set -uo pipefail
 
 ROOT="${QUANT_ROOT:-$HOME/quant-platform}"
-BRANCH="${BOX_SYNC_BRANCH:-desk-sync-clean}"
+# THE BRANCH THE BOX ACTUALLY PUBLISHES TO. Its log says so on every tick: "pulling
+# origin/claude/llm-auto-upgrade-verify-gcjac3". The first version of this script pulled
+# desk-sync-clean -- where the miners' "mt5 desk hourly sync" commits land -- so it would have
+# fetched faithfully every three minutes and never once seen the box's state. Two hourly jobs
+# push to two different branches and only one of them carries the dashboard's inputs; picking the
+# wrong one produces a refresher that works perfectly and delivers nothing.
+BRANCH="${BOX_SYNC_BRANCH:-claude/llm-auto-upgrade-verify-gcjac3}"
 cd "$ROOT" 2>/dev/null || { echo "no checkout at $ROOT"; exit 2; }
 
 git config core.editor true          # an editor opening in a timer job blocks until the timeout
