@@ -29,7 +29,13 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Root      = "C:\opt\quant",
+    # THE REPO THIS SCRIPT WAS LAUNCHED FROM, not a path somebody typed. The default used to be
+    # the literal "C:\opt\quant", which on this box is a 20MB stub holding two loose directories
+    # while the live desk sits elsewhere -- so every run jumped out of the real checkout, failed
+    # every git step against a directory with no .git, and reported a broken repo on a box whose
+    # repo was perfectly fine. Hours went into that. `ops/box-repair.ps1` is IN the repo it
+    # repairs, so its own location is the answer and it cannot be wrong.
+    [string]$Root      = (Split-Path -Parent $PSScriptRoot),
     [string]$Branch    = "claude/llm-auto-upgrade-verify-gcjac3",
     [string]$Terminal  = "C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe",
     [string]$BackupDir = "C:\opt\quant-backup",
