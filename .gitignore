@@ -245,7 +245,11 @@ desks/*/data/recover_candidates.json
 **/gateway_state.json
 **/sleeves.json
 **/regime_state.json
-**/sync_marker.jsonbackups/
+# TWO PATTERNS THAT LOST THEIR NEWLINE. This read `**/sync_marker.jsonbackups/` -- a single rule
+# matching a path that does not exist -- so NEITHER intended exclusion was in force: sync_marker
+# was not ignored, and neither was backups/, which is how a backup directory ends up committed.
+**/sync_marker.json
+backups/
 
 # BIS speech corpus: a 123MB source archive GitHub rejects; the DERIVED
 # cb_tone_series.jsonl is the committed artifact, the zip is re-downloadable
@@ -295,6 +299,20 @@ desks/mt5/data/deep_forest_seen.json
 !desks/mt5/reports/shadow/qquant_shadow_state.json
 !desks/mt5/reports/shadow/external_shadow_state.json
 !desks/mt5/reports/shadow/shadow_state.json
+# THE FILE THE DASHBOARD'S "SILENT" VERDICT IS COMPUTED FROM, allowlisted HERE -- after
+# `**/shadow_health.json` above -- because git applies the LAST matching rule and an allowlist
+# that sits before its own exclusion does nothing at all.
+#
+# MEASURED 2026-09-06, and it cost a day. Line 142 allowlists this file; line 244 re-excludes it
+# 100 lines below. On the trading box PR #47 untracked the runtime state, and from that moment
+# the file was untracked AND ignored: `sync_shadow_to_git.ps1` staged it every 15 minutes, git
+# silently dropped it, and the script honestly logged "no change since last sync" -- 11 days,
+# roughly a thousand runs, every one of them correct. The dashboard read "box has not reported
+# for 266.4h" while the file on disk was 26 minutes old and the desk was recording ticks.
+#
+# Its siblings (account_state, scalp/qquant/external shadow_state) survived only by the accident
+# of their negations sitting below line 244 rather than above it.
+!desks/mt5/reports/shadow/shadow_health.json
 
 # THE DASHBOARD'S OWN DATA, AND THE CANDIDATE ARTIFACTS IT RENDERS (2026-09-06).
 # `web/*` and `**/reports/*` excluded these, so the one file every dashboard reads --
