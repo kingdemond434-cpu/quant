@@ -550,8 +550,12 @@ function pageDesk(){
     const worst = Math.max(...keys.map(k => per[k].age_seconds || 0), 1);
     c1.body.appendChild(meters(keys.map(k => {
       const r = per[k], age = r.age_seconds;
-      return [k, r.at ? "last wrote " + r.at.replace("T", " ").slice(0, 16) : "no clock in this file",
-        has(age) ? -age : 0, has(age) ? dur(age) : "UNMEAS", worst,
+      const sub = r.at ? "last wrote " + r.at.replace("T", " ").slice(0, 16)
+                       : (r.why || (r.status === "ABSENT" ? "never reached this host"
+                                                          : "carries no timestamp"));
+      return [k, sub,
+        has(age) ? -age : 0,
+        has(age) ? dur(age) : (r.status === "ABSENT" ? "ABSENT" : "NO CLOCK"), worst,
         !has(age) ? "warn" : r.status === "FRESH" ? "good" : "bad"];
     })));
   }

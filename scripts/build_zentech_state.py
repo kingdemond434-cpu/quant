@@ -405,12 +405,24 @@ def _box_liveness(now: datetime) -> dict[str, Any]:
     ages: dict[str, Any] = {}
     newest: datetime | None = None
     for rel, fields in BOX_REPORTS:
-        stamp = _timestamp(_find(_read(DESK / rel), *fields))
+        path = DESK / rel
+        stamp = _timestamp(_find(_read(path), *fields))
         name = rel.rsplit("/", 1)[-1]
         if stamp is None:
-            # ABSENCE IS NEVER A PASS (L1.28a). A file that is missing or carries no clock is
-            # UNMEASURED and says so; scoring it as fresh is how a dead organ reads healthy.
-            ages[name] = {"age_seconds": None, "status": "UNMEASURED"}
+            # ABSENCE IS NEVER A PASS (L1.28a) -- AND ABSENT IS NOT THE SAME AS UNSTAMPED.
+            # The first draft printed "no clock in this file" for a file that does not exist on
+            # this host, which reads as "the producer forgot a timestamp" when the truth is "the
+            # producer runs on another machine and its output has never crossed the wire". Those
+            # need opposite responses: one is a code fix, the other is a delivery fix, and
+            # conflating them sends the reader to the wrong machine.
+            ages[name] = {
+                "age_seconds": None,
+                "status": "ABSENT" if not path.exists() else "NO_CLOCK",
+                "why": (f"{rel} does not exist here; it is written on the trading box and "
+                        "reaches this host only through the shadow sync"
+                        if not path.exists() else
+                        f"{rel} exists but carries none of {list(fields)}"),
+            }
             continue
         age = max(0.0, (now - stamp).total_seconds())
         ages[name] = {"age_seconds": round(age), "at": stamp.isoformat(timespec="seconds"),
