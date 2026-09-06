@@ -35,6 +35,11 @@ param(
     [string]$BackupDir = "C:\opt\quant-backup",
     [switch]$SkipBars,
     [switch]$WhatIf,
+    # EVERY CHART THE BROKER OFFERS, because a cell held for want of a download is not evidence
+    # about the cell. H1 is always fetched first and alone so the gauntlet is unblocked within a
+    # minute; the rest follow. Narrow this only when time genuinely matters -- the default is the
+    # whole set on purpose.
+    [string[]]$BarTimeframes = @("H1", "M1", "M5", "M15", "M30", "H4", "D1"),
     # WHICH SIDE OF A CODE CONFLICT WINS -- NAMED BY THE OPERATOR, NEVER GUESSED.
     #
     #   none    (default) refuse, list the files, and leave the merge for a human.
@@ -77,34 +82,64 @@ else {
 
 # ---------------------------------------------------------------- 1. MT5 terminal
 Step "MT5 terminal"
-if (-not (Test-Path $Terminal)) {
-    Fail "terminal64.exe not found at $Terminal -- set -Terminal to its real path"
+# FIND THE TERMINAL, DO NOT ASSUME IT. This step used to be gated entirely on `Test-Path
+# $Terminal`, so a stale default path FAILED the step and skipped the Python probe -- reporting a
+# broken terminal on a box whose bridge was working perfectly. That is the same absence-as-verdict
+# this script exists to stamp out, and it cost a round trip on 2026-09-06.
+#
+# The RUNNING PROCESS is the authority: whatever exe is serving MT5 right now is by definition the
+# right one, whatever any constant says. Only if nothing is running do we fall back to searching
+# the usual install roots, and only then to the passed-in default.
+$running = Get-Process terminal64 -ErrorAction SilentlyContinue
+$found = $null
+if ($running) {
+    $found = ($running | Select-Object -First 1 -ExpandProperty Path -ErrorAction SilentlyContinue)
+    if ($found) { Info "terminal already running from $found" }
+}
+if (-not $found) {
+    $candidates = @($Terminal) + @(
+        "$env:ProgramFiles\*MetaTrader 5*\terminal64.exe",
+        "${env:ProgramFiles(x86)}\*MetaTrader 5*\terminal64.exe",
+        "$env:ProgramFiles\*MetaTrader*\terminal64.exe",
+        "$env:APPDATA\MetaQuotes\Terminal\*\terminal64.exe"
+    )
+    foreach ($c in $candidates) {
+        $hit = Get-Item -Path $c -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($hit) { $found = $hit.FullName; break }
+    }
+    if ($found -and $found -ne $Terminal) { Warn "terminal64.exe is at $found, not the default $Terminal -- pass -Terminal to silence this" }
+}
+if (-not $found) {
+    Warn "terminal64.exe not located on disk (searched Program Files and %APPDATA%\MetaQuotes) -- probing the Python bridge anyway, which is the test that actually matters"
 } else {
-    $running = Get-Process terminal64 -ErrorAction SilentlyContinue
+    $Terminal = $found
     if (-not $running -and -not $WhatIf) {
         Info "starting the terminal"
         Start-Process $Terminal | Out-Null
         Start-Sleep -Seconds 20
     }
-    # THE ONLY TEST THAT MEANS ANYTHING is whether the Python bridge can attach. A running
-    # process is not the same as a reachable terminal: -10003 "Process create failed" is returned
-    # when the exe EXISTS but a Session 0 scheduled task cannot create a GUI process, and the
-    # path in that message sends everyone to check a path that is already correct.
-    $probe = & python -c "import MetaTrader5 as m; print('OK' if m.initialize() else 'ERR '+str(m.last_error()))" 2>&1
-    if ("$probe" -match "OK") { Ok "terminal reachable from Python" }
-    else {
-        Fail "MT5 will not initialize: $probe"
-        Info "If the exe exists this is a SESSION problem, not a path one: terminal64.exe is a GUI process and a scheduled task with LogonType Password/S4U runs in Session 0, where Windows refuses to create one. Fix: schtasks /Change /TN MT5-TerminalBoot /RU Administrator /IT (elevated), or leave the terminal running so initialize() attaches."
-    }
-    # Survive reboots without needing the scheduler at all.
-    $lnk = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\mt5boot.lnk"
-    if (-not (Test-Path $lnk) -and -not $WhatIf) {
-        try {
-            $s = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk)
-            $s.TargetPath = $Terminal; $s.Save()
-            Ok "Startup shortcut created (terminal now survives reboot)"
-        } catch { Warn "could not create Startup shortcut: $($_.Exception.Message)" }
-    }
+}
+# THE ONLY TEST THAT MEANS ANYTHING is whether the Python bridge can attach, so it runs
+# UNCONDITIONALLY now -- a terminal that answers Python is a working terminal whether or not this
+# script managed to locate its exe. A running process is also not the same as a reachable one:
+# -10003 "Process create failed" comes back when the exe EXISTS but a Session 0 scheduled task
+# cannot create a GUI process, and the path in that message sends everyone to check a path that
+# was already correct.
+$probe = & python -c "import MetaTrader5 as m; print('OK' if m.initialize() else 'ERR '+str(m.last_error()))" 2>&1
+if ("$probe" -match "OK") { Ok "terminal reachable from Python" }
+else {
+    Fail "MT5 will not initialize: $probe"
+    Info "If the exe exists this is a SESSION problem, not a path one: terminal64.exe is a GUI process and a scheduled task with LogonType Password/S4U runs in Session 0, where Windows refuses to create one. Fix: schtasks /Change /TN MT5-TerminalBoot /RU Administrator /IT (elevated), or leave the terminal running so initialize() attaches."
+}
+# Survive reboots without needing the scheduler at all. Needs a real target, so it is skipped
+# rather than pointed at a path that was never found.
+$lnk = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\mt5boot.lnk"
+if ($found -and -not (Test-Path $lnk) -and -not $WhatIf) {
+    try {
+        $s = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk)
+        $s.TargetPath = $Terminal; $s.Save()
+        Ok "Startup shortcut created (terminal now survives reboot)"
+    } catch { Warn "could not create Startup shortcut: $($_.Exception.Message)" }
 }
 
 # ---------------------------------------------------------------- 2. conflict markers
@@ -220,11 +255,28 @@ else {
     $dl = Join-Path $Root "desks\mt5\scripts\download_remaining.py"
     if (-not (Test-Path $dl)) { Fail "download_remaining.py absent -- the pull did not land" }
     else {
-        # H1 FIRST AND ALONE BY DEFAULT. Every docket row is H1-undeclared, so H1 is what unblocks
-        # the gauntlet; the other six charts are worth having and are not worth blocking on.
+        # H1 FIRST, THEN EVERY OTHER CHART. H1 is what unblocks the gauntlet's undeclared cells,
+        # so it runs alone first and the registry is usable within a minute even if the rest is
+        # interrupted. But H1 ALONE was leaving the docket half-idle: measured 2026-09-06, 10,961
+        # of 23,627 cells were held as "no bars" purely because their timeframe had never been
+        # downloaded -- cells with a real hypothesis and a tradable symbol, unable to be judged
+        # because nobody had fetched an M15 chart. A cell held for want of a download is not
+        # evidence about the cell.
         & python $dl --timeframes H1
         if ($LASTEXITCODE -eq 0) { Ok "H1 bars and universe.json refreshed" }
         else { Fail "bar download exited $LASTEXITCODE" }
+
+        $rest = @($BarTimeframes | Where-Object { $_ -ne "H1" })
+        if ($rest.Count -gt 0) {
+            # ONE COMMA-JOINED VALUE: `--timeframes` is a single string that the downloader splits
+            # itself (its default is ",".join(TIMEFRAMES)). Passing the charts as separate words
+            # would hand argparse one timeframe and six stray positionals.
+            $spec = $rest -join ","
+            Info "fetching the remaining charts: $spec -- this is the slow leg"
+            & python $dl --timeframes $spec
+            if ($LASTEXITCODE -eq 0) { Ok "$($rest.Count) further timeframe(s) refreshed -- no cell is now held for want of a chart this broker offers" }
+            else { Fail "secondary bar download exited $LASTEXITCODE -- H1 landed, the other charts did not" }
+        }
     }
 }
 
