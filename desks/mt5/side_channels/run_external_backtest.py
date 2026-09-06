@@ -129,14 +129,119 @@ def run_cell(cell: dict) -> dict | None:
         return None
 
 
+def _docket_rows() -> list[dict]:
+    """THE DOCKET, which is the population this stage was always supposed to test.
+
+    THE DEFECT THIS ENDS. This function did not exist; `run_all` read `test_grid.json` and
+    nothing else. Measured 2026-09-06:
+
+        external_survivors.json   23,465 candidates   (the docket, rewritten hourly by merge)
+        test_grid.json               162 rows         (2 families, last written Sep 4)
+        external_backtest_results    147 rows         (what survived those 162)
+
+    So the desk mined, compiled and merged 23,465 candidates an hour and then backtested a
+    two-day-old hand-bridged grid of 162, in two families, forever. The dashboard read "Reached
+    a backtest: 147 (0.75%)" and the funnel looked like a conversion problem. It was not: the
+    docket was never connected to the thing that tests it.
+
+    Every docket row is executable -- family present on 23,465/23,465, symbol on 23,465/23,465,
+    params on 22,664 -- and all 22 families resolve to a constructor, so nothing here is being
+    stretched to fit. `normalize_grid` still has the final say on each row.
+
+    `test_grid.json` is KEPT AND MERGED rather than dropped: it is `bridge_to_hunt`'s product
+    and carries source URLs the docket rows do not. Losing a source of candidates while fixing a
+    throughput bug would be a strange trade.
+    """
+    rows: list[dict] = []
+    for rel, label in (("external_survivors.json", "docket"), ("test_grid.json", "bridge")):
+        path = BASE / "data" / "hypotheses" / rel
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            print(f"  {label}: {rel} absent")
+            continue
+        except (OSError, json.JSONDecodeError) as exc:
+            # NAMED, NOT SWALLOWED. A docket that fails to parse and is silently treated as empty
+            # returns this stage to exactly the 162-row world it just left, with no line saying so.
+            print(f"  {label}: {rel} UNREADABLE ({type(exc).__name__}: {exc})")
+            continue
+        got = doc if isinstance(doc, list) else (doc.get("candidates") or doc.get("rows") or [])
+        got = [r for r in got if isinstance(r, dict)]
+        print(f"  {label}: {len(got):,} row(s) from {rel}")
+        rows.extend(got)
+    return rows
+
+
+def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
+    """Split the grid into what this host can honestly test and what it cannot, BY CAUSE.
+
+    ONE FACT PER SYMBOL, NOT TEN THOUSAND ERRORS. Without this, `run_cell` lets `pd.read_parquet`
+    raise and prints `ERR <sym>.<family>` per cell -- measured 2026-09-06, 10,961 identical lines
+    in one run, which buries every real failure and costs a worker dispatch each. Not a silent
+    skip either: the counts and the symbol names are returned and printed, because a skip nobody
+    can see is indistinguishable from a cell that passed (L1.28a).
+
+    TWO CAUSES, TWO OWNERS, AND THEY MUST NOT BE POOLED:
+
+        no H1 parquet        the bars were never downloaded  -> fix by fetching the symbol
+        no universe metadata bars exist, cost model does not -> fix by extending universe.json
+                             from the terminal's own symbol info
+
+    Measured on this host: 297 distinct docket symbols, of which 36 have both, 198 lack bars
+    (10,961 cells) and 63 have bars but no costs (5,221 cells -- almost entirely US share CFDs:
+    AAPL, ABBV, ACN and the rest). Pooling those into one "held" number would send someone to
+    download bars that are already on disk.
+
+    COSTS ARE NEVER SYNTHESISED TO UNBLOCK A CELL. `Costs.from_symbol` is the money path: a
+    guessed spread turns an unprofitable cell into a certified one, which is the single most
+    expensive lie this pipeline could tell. A symbol without a cost model is held, named, and
+    reported -- never costed by analogy to a "similar" instrument.
+    """
+    have_bars = {p.stem.removesuffix("_H1").upper()
+                 for p in (BASE / "data" / "universe").glob("*_H1.parquet")}
+    have_costs = {str(s).upper() for s in _uni}
+    if not have_bars:
+        # An empty universe directory is not a desk whose every symbol is uncoverable -- it is a
+        # host that has not synced its bars. Holding all 22,571 cells and reporting "no bars for
+        # 297 symbols" would be technically true and useless; say the real thing instead.
+        return grid, {"status": "NO_UNIVERSE_DIR", "tested": 0, "held": len(grid),
+                      "why": "data/universe holds no *_H1.parquet at all on this host"}
+    def _sym(c: dict) -> str:
+        return str(c.get("symbol") or "").upper()
+    testable = [c for c in grid if _sym(c) in have_bars and _sym(c) in have_costs]
+    no_bars = sorted({_sym(c) for c in grid if _sym(c) not in have_bars})
+    no_costs = sorted({_sym(c) for c in grid
+                       if _sym(c) in have_bars and _sym(c) not in have_costs})
+    n_no_bars = sum(1 for c in grid if _sym(c) not in have_bars)
+    n_no_costs = sum(1 for c in grid if _sym(c) in have_bars and _sym(c) not in have_costs)
+    if no_bars:
+        print(f"  {n_no_bars:,} cell(s) HELD -- no H1 parquet for {len(no_bars)} symbol(s): "
+              f"{', '.join(no_bars[:10])}{' ...' if len(no_bars) > 10 else ''}")
+    if no_costs:
+        print(f"  {n_no_costs:,} cell(s) HELD -- bars exist but universe.json carries no cost "
+              f"model for {len(no_costs)} symbol(s): {', '.join(no_costs[:10])}"
+              f"{' ...' if len(no_costs) > 10 else ''}")
+    coverage = {
+        "status": "MEASURED",
+        "docket_symbols": len({_sym(c) for c in grid}),
+        "tested": len(testable), "held": len(grid) - len(testable),
+        "held_no_bars": n_no_bars, "held_no_costs": n_no_costs,
+        "symbols_no_bars": no_bars, "symbols_no_costs": no_costs,
+        "why": ("A cell is testable only where BOTH the H1 bars and the universe cost model "
+                "exist. Costs are never synthesised: a guessed spread can certify an "
+                "unprofitable cell."),
+    }
+    return testable, coverage
+
+
 def run_all() -> list[dict]:
-    grid_file = BASE / "data" / "hypotheses" / "test_grid.json"
-    if not grid_file.exists():
-        print("No test_grid.json. Run bridge_to_hunt.py first.")
+    raw_grid = _docket_rows()
+    if not raw_grid:
+        print("No candidates: neither the docket nor test_grid.json yielded a row.")
         return []
-    raw_grid = json.loads(grid_file.read_text(encoding="utf-8"))
     grid, removed = normalize_grid(raw_grid)
-    print(f"Running {len(grid)} executable test cells ({len(raw_grid)} submitted; "
+    grid, coverage = hold_uncoverable(grid)
+    print(f"Running {len(grid):,} executable test cells ({len(raw_grid):,} submitted; "
           f"{removed} unsupported parameter occurrence(s) removed)...")
 
     # SORTED BY SYMBOL BEFORE THE SPLIT, and that is a throughput decision rather than tidiness.
@@ -193,6 +298,20 @@ def run_all() -> list[dict]:
     out.write_text(json.dumps(results, indent=2, default=str), encoding="utf-8")
 
     survivors = [r for r in results if r["exp_r"] > 0.05 and r["max_dd_r"] > -30]
+
+    # THE COVERAGE GAP IS PUBLISHED, not just printed. A number that exists only in a service
+    # log is a number nobody acts on -- which is how a 162-row grid ran unnoticed beside a
+    # 23,465-row docket for days. The issue board and the dashboard read this file, so "5,221
+    # cells cannot be tested because 63 symbols have no cost model" becomes a work item with a
+    # symbol list instead of a silence.
+    coverage.update({"cells_submitted": len(raw_grid), "cells_run": len(grid),
+                     "cells_produced_result": len(results), "survivors": len(survivors),
+                     "elapsed_s": round(elapsed, 1), "workers": WORKERS,
+                     "measured_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+    cov_path = BASE / "reports" / "BACKTEST_COVERAGE.json"
+    cov_path.parent.mkdir(parents=True, exist_ok=True)
+    cov_path.write_text(json.dumps(coverage, indent=2, default=str), encoding="utf-8")
+
     print(f"\n{len(results)} cells tested, {len(survivors)} survivors in {elapsed:.0f}s")
     for s in sorted(survivors, key=lambda x: -x["exp_r"]):
         print(f"  {s['symbol']:8s} {s['family']:25s} n={s['n']:4d} exp={s['exp_r']:+.4f}R "

@@ -1,5 +1,5 @@
 [Unit]
-Description=Quant desk dashboard (token-gated) for Dell and phone
+Description=Quant desk dashboard (OPEN -- no token) for Dell and phone
 After=network-online.target
 
 [Service]
@@ -11,7 +11,18 @@ Type=simple
 MemoryHigh=280M
 MemoryMax=350M
 WorkingDirectory=/home/quant/quant-platform
-ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/serve_dashboard.py --port 8788 --host 127.0.0.1 --require-token
+# TOKEN REMOVED ON THE PRINCIPAL'S EXPLICIT INSTRUCTION (2026-09-06, "remove the token thing
+# pls man from website"), after being told what it exposes. WHAT THIS MEANS, recorded here
+# because a future reader will find no gate and may assume one was forgotten rather than
+# removed: the tunnel connects to 127.0.0.1, so without --require-token every request arrives
+# as loopback and takes the loopback exemption. dash.quanttt.xyz is then readable by anyone who
+# has the hostname -- live equity, today's P&L, open positions, the whole funnel. There is no
+# second gate behind this one.
+#
+# To restore it, append --require-token and `systemctl --user restart quant-desk-web`. The
+# token file and all three carriers (Bearer header, ?k= query, dk cookie) are untouched in
+# serve_dashboard.py, so restoring is one word.
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/serve_dashboard.py --port 8788 --host 127.0.0.1
 Restart=always
 RestartSec=5
 
