@@ -643,6 +643,17 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def queue_compact() -> dict:
+    """Keep the research queue streamable: archive terminal rows older than a fortnight.
+
+    Compaction is the maintenance half of the streaming fix. Streaming makes a large queue cheap
+    to READ; compaction stops it growing without bound in the first place. Nothing is deleted --
+    a queue that forgets what it tried will try it again, which on this desk means spending the
+    multiplicity budget twice on one hypothesis.
+    """
+    return _producer("queue_store", "research/queue_store.py", ("--compact",))
+
+
 def rebalance_trigger() -> dict:
     """P3/P35/P73: when a rebalance is worth its cost, whether the RL may run, exit domains."""
     return _producer("rebalance_trigger", "research/rebalance_trigger.py")
@@ -760,6 +771,7 @@ def main() -> None:
     # board that is one full hour behind the pass that just produced it.
     ps = _costed("publish_survivors", publish_survivors)
     pd_ = _costed("publish_dashboard", publish_dashboard)
+    qc = _costed("queue_compact", queue_compact)
     rt = _costed("rebalance_trigger", rebalance_trigger)
     ec = _costed("edge_confidence", edge_confidence)
     ro = _costed("research_org", research_org)
@@ -777,7 +789,7 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt, "queue_compact": qc,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
