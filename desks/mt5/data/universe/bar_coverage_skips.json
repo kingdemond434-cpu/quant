@@ -1,0 +1,62 @@
+{
+ "fetched_at": "2026-09-03T00:40:58+00:00",
+ "attempted": 259,
+ "written": 247,
+ "skipped": 12,
+ "reasons": {
+  "WTI": {
+   "reason": "NOT_OFFERED",
+   "detail": "the broker does not quote this symbol on this account"
+  },
+  "BRENT": {
+   "reason": "NOT_OFFERED",
+   "detail": "the broker does not quote this symbol on this account"
+  },
+  "USOIL": {
+   "reason": "NOT_OFFERED",
+   "detail": "the broker does not quote this symbol on this account"
+  },
+  "USTEC": {
+   "reason": "NOT_OFFERED",
+   "detail": "the broker does not quote this symbol on this account"
+  },
+  "SPX500": {
+   "reason": "NOT_OFFERED",
+   "detail": "the broker does not quote this symbol on this account"
+  },
+  "JP225": {
+   "reason": "NOT_OFFERED",
+   "detail": "the broker does not quote this symbol on this account"
+  },
+  "BeyondMeat": {
+   "reason": "NOT_OFFERED",
+   "detail": "the broker does not quote this symbol on this account"
+  },
+  "BlockInc": {
+   "reason": "NOT_OFFERED",
+   "detail": "the broker does not quote this symbol on this account"
+  },
+  "Walgreens": {
+   "reason": "NOT_OFFERED",
+   "detail": "the broker does not quote this symbol on this account"
+  },
+  "SpaceX": {
+   "reason": "INSUFFICIENT_HISTORY",
+   "bars": 394,
+   "min_bars": 1000,
+   "detail": "394 H1 bars is below the 1000 a walk-forward split needs; retry as the symbol ages"
+  },
+  "Palantir": {
+   "reason": "INSUFFICIENT_HISTORY",
+   "bars": 406,
+   "min_bars": 1000,
+   "detail": "406 H1 bars is below the 1000 a walk-forward split needs; retry as the symbol ages"
+  },
+  "Walmart": {
+   "reason": "INSUFFICIENT_HISTORY",
+   "bars": 0,
+   "min_bars": 1000,
+   "detail": "0 H1 bars is below the 1000 a walk-forward split needs; retry as the symbol ages"
+  }
+ }
+}
