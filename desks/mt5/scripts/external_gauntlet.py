@@ -39,6 +39,9 @@ from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from mt5desk.universe_registry import TIMEFRAME_MINUTES as _TF_MINUTES  # noqa: E402
 from research.frontier_identity import cell_id, economic_prior  # noqa: E402
+from research.survivor_publication import (  # noqa: E402
+    unrunnable_reason as _certificate_refusal,
+)
 
 from libs.data.pit import is_stamped  # noqa: E402
 from libs.validation.cpcv import CPCV  # noqa: E402
@@ -1507,8 +1510,18 @@ def main():
                                   "is_universe": True, "hunt": "external_discoveries",
                                   "condition": None, "params": dict(params or {})}
         else:
-            print(f"  NO-SPEC {key}: params {params} match no known window; certificate "
-                  f"written WITHOUT shadow_spec -- it cannot enrol until the selector is wired")
+            print(f"  NO-SPEC {key}: params {params} match no known window; no shadow_spec "
+                  f"can be built for it")
+        # REFUSED RATHER THAN SEALED, and this used to store the row regardless. A certificate
+        # with no shadow_spec is unrunnable for ever -- it cannot enrol, cannot be funded and
+        # cannot be falsified -- while still counting in every survivor total, so the desk
+        # believes it holds an edge it cannot express. The NO-SPEC line above was printed and
+        # the row written anyway, which is why 18 of them accumulated unnoticed. One judge for
+        # every publisher, so a fourth pen inherits the refusal instead of reinventing it.
+        _why = _certificate_refusal(row)
+        if _why:
+            print(f"  REFUSED-UNRUNNABLE {key}: {_why}")
+            continue
         survivors_all[key] = row
 
     # THE SCALP LANE'S CERTIFICATES (scripts/scalp_gauntlet.py): same ten gates, same

@@ -35,6 +35,62 @@ def _atomic_json(path: Path, value: dict[str, Any]) -> None:
             os.unlink(name)
 
 
+def unrunnable_reason(row: dict[str, Any]) -> str | None:
+    """Why this certificate could never be enrolled, or None if it can.
+
+    ONE JUDGE, BECAUSE THERE ARE FOUR PENS. Certificates reach UNIVERSAL_SURVIVORS.json from
+    `publish_qquant_survivors` below, from `scripts/external_gauntlet.py`, from
+    `scripts/full_pipeline.py` and from `side_channels/full_pipeline.py`, and on 2026-09-06 all
+    four disagreed about what a publishable certificate is:
+
+        publish_qquant_survivors      refuses `params is None`          (correct)
+        scripts/external_gauntlet     writes the row with NO shadow_spec at all when the
+                                      selector is unknown -- it prints NO-SPEC and stores it anyway
+        scripts/full_pipeline         writes a shadow_spec with no `params` KEY, plus a hardcoded
+                                      selector "asia" and family "session_range_breakout"
+        side_channels/full_pipeline   writes params, guesses the selector, defaults to "asia"
+
+    So the fence that already existed protected one of four doors, and the other three minted the
+    zombies: 18 certificates that passed all ten gates, are counted in every survivor total,
+    inflate the desk's belief about its own edge, and can never be enrolled, funded or falsified.
+    Fixing the three publishers individually leaves a fourth to be written next month. This is the
+    predicate all of them ask, so a new publisher inherits the refusal by calling one function.
+
+    WHAT IS AND IS NOT A DEFECT:
+
+        no shadow_spec            REFUSED -- nothing to enrol from
+        shadow_spec not a mapping REFUSED -- same, with a clearer cause
+        params absent / None      REFUSED -- the parameterisation that passed was never recorded,
+                                  and guessing one enrols a DIFFERENT strategy than the one
+                                  certified, which is the two-stage law's exact prohibition
+        params == {}              ALLOWED -- the complete parameterisation "family defaults",
+                                  byte-exactly what the gauntlet executed. Excluding it has
+                                  already stranded overnight_gap_decay certificates twice
+                                  (2026-08-27) and over-reported unrunnables as 13 against 6.
+        symbol / family missing   REFUSED -- an identity with no instrument cannot be run
+
+    Returns prose, not a bool, because every caller prints it: a refusal nobody can read is how
+    the NO-SPEC line above came to be ignored for weeks while the rows kept accumulating.
+    """
+    spec = row.get("shadow_spec")
+    if spec is None:
+        return ("carries no `shadow_spec` at all, so there is nothing to enrol from -- the "
+                "publisher sealed a gate verdict without the specification that makes it runnable")
+    if not isinstance(spec, dict):
+        return f"`shadow_spec` is {type(spec).__name__}, not a mapping, so it names no strategy"
+    if "params" not in spec or spec.get("params") is None:
+        return ("`shadow_spec.params` is absent -- the parameterisation that passed the gauntlet "
+                "was never recorded, and enrolling a guessed one would forward-test a DIFFERENT "
+                "strategy than the one certified")
+    if not isinstance(spec.get("params"), dict):
+        return f"`shadow_spec.params` is {type(spec['params']).__name__}, not a mapping"
+    if not str(spec.get("symbol") or "").strip():
+        return "`shadow_spec.symbol` is empty, so the certificate names no instrument to trade"
+    if not str(spec.get("family") or "").strip():
+        return "`shadow_spec.family` is empty, so nothing can resolve a constructor for it"
+    return None
+
+
 def hunt_name(raw: object) -> str:
     """The hunt component of a survivor key, guaranteed to contain no dot.
 
@@ -118,15 +174,19 @@ def publish_qquant_survivors(report: dict[str, Any], reports: Path) -> dict[str,
         spec = _shadow_spec(row)
         if spec is None:
             continue
-        if spec.get("params") is None:
-            # REFUSED RATHER THAN SEALED. A certificate with no parameterization is unrunnable
-            # for ever: enrolment cannot guess it, the allocator cannot fund it, and it spends the
-            # rest of its life inflating the survivor count while reaching no capital. Publishing
-            # it is strictly worse than not publishing it, because the desk then believes it holds
-            # an edge it cannot express. Named on stderr so the sweep that produced it can be
-            # fixed, rather than dropped in silence.
-            print(f"REFUSED-UNRUNNABLE: {row.get('id')} passed all ten gates but its sweep "
-                  f"recorded no `params`; sealing it would mint a certificate nothing can run",
+        # REFUSED RATHER THAN SEALED. A certificate with no parameterization is unrunnable for
+        # ever: enrolment cannot guess it, the allocator cannot fund it, and it spends the rest of
+        # its life inflating the survivor count while reaching no capital. Publishing it is
+        # strictly worse than not publishing it, because the desk then believes it holds an edge
+        # it cannot express. Named on stderr so the sweep that produced it can be fixed.
+        #
+        # THIS USED TO ASK ITS OWN QUESTION (`spec.get("params") is None`) and it was the only
+        # publisher that asked at all. Delegated to the shared judge so all four pens refuse the
+        # same shapes -- a second spelling of the same rule is how the other three came to have a
+        # different one, or none.
+        why = unrunnable_reason({"shadow_spec": spec})
+        if why:
+            print(f"REFUSED-UNRUNNABLE: {row.get('id')} passed all ten gates but {why}",
                   file=sys.stderr)
             continue
         hunt = hunt_name(row.get("hunt"))
