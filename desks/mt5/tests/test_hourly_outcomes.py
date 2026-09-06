@@ -37,3 +37,22 @@ def test_failed_leg_does_not_prevent_next_leg(cycle):
     assert cycle._costed("failed", fail)["status"] == "FAILED"
     assert cycle._costed("next", lambda: {"exit_code": 0}) == {"exit_code": 0}
     assert [r["run"] for r in compute_ledger.rows()] == ["failed", "next"]
+
+
+@pytest.mark.parametrize("operation", ["open_run", "close_run"])
+def test_broken_accounting_does_not_interrupt_work(cycle, monkeypatch, capsys, operation):
+    def fail(*args, **kwargs):
+        raise OSError("ledger offline")
+
+    monkeypatch.setattr(compute_ledger, operation, fail)
+    assert cycle._costed("producer", lambda: {"exit_code": 0}) == {"exit_code": 0}
+    assert "ledger" in capsys.readouterr().out
+
+
+def test_keyboard_interrupt_still_stops_controller(cycle):
+    def interrupt():
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        cycle._costed("interrupted", interrupt)
+    assert compute_ledger.rows()[-1]["outcome"] == "KeyboardInterrupt"

@@ -430,16 +430,32 @@ def _costed(name: str, fn):
     """
     try:
         from libs.ops.compute_ledger import close_run, open_run
-    except Exception:
-        return fn()
-    run = open_run(name, kind="hourly_cycle")
+    except Exception as exc:
+        print(f"{name} compute ledger UNAVAILABLE: {type(exc).__name__}: {exc}", flush=True)
+        open_run = None
+        close_run = None
+    run = None
+    if open_run is not None:
+        try:
+            run = open_run(name, kind="hourly_cycle")
+        except Exception as exc:
+            print(f"{name} compute ledger OPEN FAILED: {type(exc).__name__}: {exc}", flush=True)
+
+    def record(outcome: str) -> None:
+        if run is not None and close_run is not None:
+            try:
+                close_run(run, outcome=outcome)
+            except Exception as exc:
+                print(f"{name} compute ledger CLOSE FAILED: {type(exc).__name__}: {exc}",
+                      flush=True)
+
     try:
         out = fn()
     except KeyboardInterrupt:
-        close_run(run, outcome="KeyboardInterrupt")
+        record("KeyboardInterrupt")
         raise
     except BaseException as exc:
-        close_run(run, outcome=f"{type(exc).__name__}: {exc}"[:200])
+        record(f"{type(exc).__name__}: {exc}"[:200])
         # A producer's explicit non-zero/SystemExit is its verdict, not authority to terminate
         # every independent producer after it.  The ledger and console retain the exact failure;
         # the hourly factory continues so one broken organ cannot manufacture system-wide idle.
@@ -461,7 +477,7 @@ def _costed(name: str, fn):
             outcome = "TIMEOUT"
         elif "exit_code" in out and out["exit_code"] != 0:
             outcome = f"exit_code={out['exit_code']}"
-    close_run(run, outcome=outcome)
+    record(outcome)
     return out
 
 
