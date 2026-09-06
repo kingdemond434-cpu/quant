@@ -69,7 +69,7 @@ def _points(grid: dict) -> list[dict]:
 
 def main() -> int:
     meta_all = json.loads((UNI / "universe.json").read_text("utf-8"))
-    symbols = sorted(p.stem.replace("_H1", "") for p in UNI.glob("*_H1.parquet"))
+    symbols = sorted({p.stem.rpartition("_")[0] or p.stem for p in UNI.glob("*.parquet")})
     rows: list[dict] = []
     trials = 0
     for sym in symbols:

@@ -48,8 +48,8 @@ def mine_seasonality() -> list[dict]:
 
     # Calculate actual seasonality from data
     universe_dir = BASE / "data" / "universe"
-    for sym_file in universe_dir.glob("*_H1.parquet"):
-        sym = sym_file.stem.replace("_H1", "")
+    for sym_file in sorted(universe_dir.glob("*.parquet")):
+        sym = sym_file.stem
         try:
             df = pd.read_parquet(sym_file)
             if len(df) < 1000:

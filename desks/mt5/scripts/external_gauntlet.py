@@ -453,8 +453,16 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
                 # sub-hourly `discovered` cell is conditioned on an HOURLY external series --
                 # true, coarser than the cell, and now written down instead of implied. Wiring
                 # edge_search to the ladder is its own change; nothing here pretends it is done.
-                all_symbols = sorted(p.stem.removesuffix("_H1")
-                                     for p in UNI.glob("*_H1.parquet"))
+                # EVERY SYMBOL IN THE STORE, WHATEVER TIMEFRAME IT IS HELD AT. The glob was
+                # `*_H1.parquet`, so a symbol the desk holds only at M5 or M15 was not merely
+                # loaded at the wrong resolution -- it was not offered as a peer AT ALL, and no
+                # cross-instrument primitive could ever reference it. With the store moving to
+                # the full M1..D1 ladder that would have silently excluded most of it.
+                #
+                # The resolution caveat below still stands and is still the honest thing to say:
+                # `edge_search._close` reads the H1 chart for whichever peers it is given.
+                all_symbols = sorted({p.stem.rpartition("_")[0] or p.stem
+                                      for p in UNI.glob("*.parquet")})
                 call_params["extra"] = resolve_inputs(sym, h1.index, all_symbols)
     except Exception as exc:
         print(f"  INPUT-FAIL {sym}.{family}: {type(exc).__name__}: {exc}")

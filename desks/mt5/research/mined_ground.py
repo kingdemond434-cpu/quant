@@ -65,7 +65,8 @@ def _read(p: Path):
 
 def known_symbols() -> set[str]:
     """The tradable universe, from the registry -- never a hardcoded list."""
-    return {p.stem.replace("_H1", "").upper() for p in UNIVERSE.glob("*_H1.parquet")}
+    return {(p.stem.rpartition("_")[0] or p.stem).upper()
+            for p in UNIVERSE.glob("*.parquet")}
 
 
 def _symbols_in(row: dict, universe: set[str]) -> set[str]:

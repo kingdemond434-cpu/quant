@@ -367,8 +367,8 @@ class HourlySurvivorAcquisition:
         if self.cycle_count % 24 == 2:
             universe_dir = self.base_path / "desks" / "mt5" / "data" / "universe"
             price_data = {}
-            for p in (self.base_path / "desks" / "mt5" / "data" / "universe").glob("*_H1.parquet"):
-                sym = p.stem.replace("_H1", "")
+            for p in (self.base_path / "desks" / "mt5" / "data" / "universe").glob("*.parquet"):
+                sym = p.stem
                 price_data[sym] = pd.read_parquet(p)
             self.regime_engine.train({k: v for k, v in list(price_data.items())[:5]})
         # Reservoir advance (monthly)

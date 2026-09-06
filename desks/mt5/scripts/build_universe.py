@@ -13,8 +13,8 @@ mt5.shutdown()
 
 universe = {}
 cats = {}
-for pq in sorted(PARQUET_DIR.glob("*_H1.parquet")):
-    name = pq.stem.replace("_H1", "")
+for pq in sorted(PARQUET_DIR.glob("*.parquet")):
+    name = pq.stem.rpartition("_")[0] or pq.stem
     df = pd.read_parquet(pq)
     si = syms.get(name)
     if si:

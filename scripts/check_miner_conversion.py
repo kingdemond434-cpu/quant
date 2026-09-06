@@ -37,9 +37,19 @@ from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from libs.ops.repair_invoke import request_repair
-
 ROOT = Path(__file__).resolve().parent.parent
+# THE REPO ROOT GOES ON sys.path BEFORE `libs` IS IMPORTED, and it is not optional.
+# `python scripts/check_miner_conversion.py` makes sys.path[0] the SCRIPTS directory, never the
+# root -- so `import libs` raised ModuleNotFoundError on every invocation that was not a `-m` run
+# or a test with the root already on the path. That is exactly how the scheduled fence runs:
+#   ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_miner_conversion.py
+# so `quant-miner-conversion.timer` had been dying at import on every fire since `request_repair`
+# was added, and a fence that cannot start reports nothing rather than reporting a breach.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.ops.repair_invoke import request_repair  # noqa: E402
+
 DESK = ROOT / "desks" / "mt5"
 INTEL = [DESK / "data" / "intelligence", ROOT / "data" / "intelligence"]
 CERTS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"

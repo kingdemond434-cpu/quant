@@ -8,7 +8,7 @@ PARQUET_DIR = Path(r"C:\Users\dell\mt5-research\data\mt5_universe\parquets")
 mt5.initialize()
 syms = mt5.symbols_get()
 tradable = [s for s in syms if s.visible and s.trade_mode > 0]
-existing = set(f.stem.replace("_H1", "") for f in PARQUET_DIR.glob("*_H1.parquet"))
+existing = set(f.stem.rpartition("_")[0] or f.stem for f in PARQUET_DIR.glob("*.parquet"))
 missing = [s for s in tradable if s.name not in existing]
 print(f"Missing: {len(missing)}")
 

@@ -453,8 +453,8 @@ if __name__ == "__main__":
     # Load price data
     universe_dir = base / "desks" / "mt5" / "data" / "universe"
     price_data = {}
-    for p in universe_dir.glob("*_H1.parquet"):
-        sym = p.stem.replace("_H1", "")
+    for p in sorted(universe_dir.glob("*.parquet")):
+        sym = p.stem
         price_data[sym] = pd.read_parquet(p)
     
     print(f"Loaded {len(price_data)} symbols")

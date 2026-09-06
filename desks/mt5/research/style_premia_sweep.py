@@ -60,7 +60,7 @@ def _risk_bars():
 
 def run(symbols: list[str] | None = None, budget_s: float = 1200.0) -> dict:
     meta = pc.universe_meta()
-    have = {p.stem.removesuffix("_H1") for p in pc.UNI.glob("*_H1.parquet")}
+    have = {p.stem.rpartition("_")[0] or p.stem for p in pc.UNI.glob("*.parquet")}
     todo = [s for s in (symbols or _book_symbols()) if s in have]
     risk = _risk_bars()
     rows: list[dict] = []
