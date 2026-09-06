@@ -127,7 +127,9 @@ REGISTRY: tuple[Capability, ...] = (
 
     # ---- Phase 4-5: forecast marketplace
     Capability("P4", "universal forecast contract; models publish beliefs, own no positions",
-               "", "", "belief weight earned per model", tags=("P4", "forecast")),
+               "desks/mt5/research/forecast_contract.py",
+               "desks/mt5/reports/FORECAST_CONTRACT.json",
+               "belief weight earned per model", tags=("P4", "forecast")),
     Capability("P5", "forecast calibration marketplace: every model scored forecast -> realized, "
                      "biased predictors recalibrated automatically",
                "desks/mt5/research/model_self_improvement.py",
@@ -138,7 +140,8 @@ REGISTRY: tuple[Capability, ...] = (
     # ---- Phase 6-10: the AI layer
     Capability("P6", "learned multi-horizon representation layer, challenger-only", "", "",
                "OOS dElog of representation-derived heads", tags=("P6", "ml")),
-    Capability("P7", "model zoo benchmarked on dElog after cost and complexity rent", "", "",
+    Capability("P7", "model zoo benchmarked on dElog after cost and complexity rent",
+               "desks/mt5/research/model_zoo.py", "desks/mt5/reports/MODEL_ZOO.json",
                "dElog per model per compute hour", tags=("P7", "ml")),
     Capability("P8", "self-supervised and contrastive learning on unlabelled history", "", "",
                "downstream OOS improvement", tags=("P8", "ml")),
@@ -242,7 +245,8 @@ REGISTRY: tuple[Capability, ...] = (
     # ---- Phase 40-46: scaling and model governance
     Capability("P40", "financial scaling-law lab: OOS = f(data, model size, compute)", "", "",
                "marginal value of data vs model vs compute", tags=("P40", "ml")),
-    Capability("P41", "model-size efficient frontier; smallest model at equal rent", "", "",
+    Capability("P41", "model-size efficient frontier; smallest model at equal rent",
+               "desks/mt5/research/model_zoo.py", "desks/mt5/reports/MODEL_ZOO.json",
                "rent per unit inference cost", tags=("P41", "ml")),
     Capability("P42", "distillation: student independently retains the required dElog", "", "",
                "student dElog vs teacher", tags=("P42", "ml")),
@@ -369,7 +373,8 @@ REGISTRY: tuple[Capability, ...] = (
                "desks/mt5/research/daily_cycle.py", "desks/mt5/reports/DAILY.json",
                "actions taken from the retrospective", tags=("P78",)),
     Capability("P79", "permanent challenge league on equal evidence, dates, costs, heat, worlds",
-               "", "", "champion changes justified by measured gain", tags=("P79", "ceiling")),
+               "desks/mt5/research/model_zoo.py", "desks/mt5/reports/CHALLENGE_LEAGUE.json",
+               "champion changes justified by measured gain", tags=("P79", "ceiling")),
     Capability("P80", "organisation KPIs: alpha/data/compute yield, live retention, capture",
                "desks/mt5/research/research_productivity.py",
                "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",

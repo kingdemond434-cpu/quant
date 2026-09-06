@@ -611,6 +611,27 @@ def publish_dashboard() -> dict:
     return _producer("build_zentech_state", "scripts/build_zentech_state.py")
 
 
+def forecast_contract() -> dict:
+    """P4: audit the belief register -- who published, and whose beliefs were unscoreable.
+
+    Runs every hour rather than daily because its whole value is catching a model that has begun
+    publishing malformed beliefs BEFORE a day of them accumulates. A refusal rate that climbs
+    quietly is the shape this desk keeps missing.
+    """
+    return _producer("forecast_contract", "research/forecast_contract.py")
+
+
+def model_league() -> dict:
+    """P7 / P41 / P79: rank every model on dElog after compute and complexity rent.
+
+    The league only ever compares models that faced the same window, horizon bucket, cost model
+    and a comparable sample; everything else is reported INCOMPARABLE. It ranks results that the
+    skill tracker already measured rather than re-measuring them, so it can never become a
+    second, disagreeing source of truth about how a model performed.
+    """
+    return _producer("model_zoo", "research/model_zoo.py")
+
+
 def maintain_miners() -> dict:
     """The miner/seat maintainer: run all six fences and REPAIR what is repairable.
 
@@ -649,6 +670,8 @@ def main() -> None:
     et = _costed("execution_twin", execution_twin)
     cg = _costed("causal_graph", causal_graph)
     ms = _costed("model_skill", model_skill)
+    fcx = _costed("forecast_contract", forecast_contract)
+    mz = _costed("model_league", model_league)
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
     mm = _costed("maintain_miners", maintain_miners)
@@ -666,6 +689,7 @@ def main() -> None:
                     "execution_twin": et, "causal_graph": cg, "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
+                    "forecast_contract": fcx, "model_league": mz,
                     "publish_dashboard": pd_,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
