@@ -334,6 +334,36 @@ MODULES: tuple[Module, ...] = (
            "measure_research_source", "desks/mt5/recorders/vol_archive.py",
            key="vol_archive", sources=("vol_archive", "vol_term", "variance_premium",
                                        "implied_vol")),
+    # THE FRONTIER RANKER, which decides what gets BUILT rather than what gets traded (P64).
+    #
+    # It was the last capability holding decision authority with no rent line -- measured
+    # 2026-09-06 by blueprint/rent, the single entry in `owing`. That matters more here than for
+    # most organs, because this one's whole job is to REFUSE: `roi.py` exists to stop the desk
+    # replicating sophisticated capabilities that measurably do nothing, and a refuser nobody
+    # prices is a refuser nobody can check. If its rankings are noise, the desk has been
+    # allocating engineering by a number it never audited.
+    #
+    # BILLED ON GROSS SURVIVOR GROWTH, SPEND REPORTED BESIDE, NEVER NETTED -- the same rule
+    # `_proposer_modules` uses, and for the same reason: the honest counterfactual is "what those
+    # engineering hours would have produced elsewhere", no exchange rate exists between cost
+    # units and log-wealth, and inventing one would let this module price its own success. So the
+    # verdict is on what frontier-sourced mechanisms actually carry in the funded book, which is
+    # the conservative reading and cannot flatter it.
+    #
+    # UNMEASURED IS THE EXPECTED STATE TODAY AND IS NOT A GAP. No replication this ranked has
+    # reached a certificate yet, so the ledger has nothing to bill; that is the module working
+    # under §135's rule that an upstream organ cannot be charged in E[log W] before its output
+    # reaches capital. It becomes a real number the first time a frontier-sourced mechanism
+    # certifies, and a NEGATIVE one is the signal §158 wants: retire the ranker, not the desk.
+    Module("frontier_roi", "research_allocator", RESEARCH_PNL,
+           "expected log-wealth per day carried in the funded book by certificates whose "
+           "mechanism came from a replication this ranker prioritised, against the same census "
+           "for mechanisms it ranked out; engineering spend reported alongside in its own units "
+           "and never subtracted, because no exchange rate from engineering hours to log-wealth "
+           "exists and inventing one would let the ranker price its own success",
+           "measure_research_source", "desks/mt5/frontier_intel/roi.py",
+           key="frontier_roi", sources=("frontier", "frontier_intel", "frontier_replication",
+                                        "repo_miner", "deep_forest", "world_crawler")),
     # ------------------------------------------------------------------------------------------
     # NINE DISCOVERY ORGANS THE RENT LEDGER COULD NOT NAME (2026-09-05).
     #
