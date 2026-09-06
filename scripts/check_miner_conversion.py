@@ -95,6 +95,44 @@ def _mechanism_key(row: dict) -> str:
     return f"{fam}|{sym}|{ses}"
 
 
+#: What `_mechanism_key` returns for a row carrying no family, symbol or session -- i.e. for a row
+#: it cannot identify at all, as opposed to one it identified as a repeat.
+UNIDENTIFIED_KEY = "unknown|*|*"
+
+
+def _duplication(keys: list[str]) -> dict:
+    """Duplicate rate, or UNMEASURED when the rows cannot be told apart in the first place.
+
+    ONE NUMBER WAS MEANING TWO OPPOSITE THINGS. `1 - distinct/rows` reads 100% when a miner found
+    the same idea 36,982 times, and ALSO 100% when the key cannot identify any of them -- and the
+    second is the common case, because `_mechanism_key` needs family|symbol|session and a raw
+    miner row is a paragraph from a forum or a swap table that carries none of the three.
+
+    Measured 2026-09-06: broker_swaps 36,982 rows -> "1 distinct mechanism, 100.0% duplicate",
+    amarkets 17,444 -> the same. Read as duplication that is a damning verdict on a source; read
+    correctly it says nothing about the source at all, and the rows may every one be different.
+    A rate that reports the same figure for "all identical" and "none identifiable" is not a
+    measurement, and this desk does not let an absent measurement wear a passing one's clothes.
+    """
+    total = len(keys)
+    if not total:
+        return {"duplicate_rate": None, "duplicate_basis": "no rows in the window"}
+    unidentified = sum(1 for k in keys if k == UNIDENTIFIED_KEY)
+    identified = total - unidentified
+    if identified == 0:
+        return {"duplicate_rate": None,
+                "duplicate_basis": f"UNMEASURED: none of the {total:,} rows carry a "
+                                   f"family/symbol/session, so they cannot be told apart -- "
+                                   f"this is not evidence that they are duplicates",
+                "unidentified_rows": unidentified}
+    keyed = [k for k in keys if k != UNIDENTIFIED_KEY]
+    out = {"duplicate_rate": round(1 - len(set(keyed)) / len(keyed), 3),
+           "duplicate_basis": "among rows carrying an identity"}
+    if unidentified:
+        out["unidentified_rows"] = unidentified
+    return out
+
+
 def _source_miner(source: object) -> str:
     """The miner named inside a tested row's provenance string.
 
@@ -207,7 +245,7 @@ def main() -> int:
             "reached_basis": "source provenance on tested rows",
             "survivors": len(uniq & survivor_keys),
             "conversion": round(len(uniq & survivor_keys) / len(rows), 4) if rows else None,
-            "duplicate_rate": round(1 - len(uniq) / len(rows), 3) if rows else None,
+            **_duplication(keys),
         }
         # ZERO-YIELD MEANS TESTED AND FAILED, NOT MERELY UNCERTIFIED. Calling a miner "noise at
         # cost" when its rows never reached a gauntlet blames the source for a plumbing gap, and
