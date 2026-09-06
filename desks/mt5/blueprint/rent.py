@@ -54,23 +54,56 @@ OUT = Path(__file__).resolve().parent / "RENT.json"
 DECIDING = ("DECISION_AFFECTING", "MEASURED", "PROVEN")
 
 
-def _rent_lines() -> dict[str, dict[str, Any]]:
-    """Whatever MODULE_RENT actually carries, keyed by module stem."""
+def _rent_lines() -> list[dict[str, Any]]:
+    """Every MODULE_RENT line, with the fields it actually has.
+
+    KEYED BY FILE STEM WAS WRONG AND SILENTLY WRONG. `MODULES` names its entries by LOGICAL
+    module -- rail names, proposer arms, `state_posterior`, `state_dimension:<d>` -- not by
+    filename; the file lives in `where`. Looking up `Path(name).stem` therefore matched almost
+    nothing, and every capability came back PROTOCOL_ONLY. 79 of 94 "unpriced" was mostly my
+    lookup missing, not the desk failing to price its organs, and a rent report that
+    under-reports pricing is one that would retire modules for not paying when they do
+    (§158 makes deletion an action, so a wrong input here deletes working code).
+
+    The real fields are `rule` (the with/without statement) and `measure` (the function that
+    computes it); there is no `metric`/`basis`, so reading those returned empty strings that
+    then looked like a missing protocol.
+    """
     try:
         from libs.ops import module_rent as mr
     except Exception:                             # noqa: BLE001 - absence is reported, not raised
-        return {}
-    out: dict[str, dict[str, Any]] = {}
+        return []
+    out: list[dict[str, Any]] = []
     for m in getattr(mr, "MODULES", ()):
-        name = str(getattr(m, "name", "") or "")
-        if not name:
-            continue
-        out[Path(name).stem] = {
-            "name": name,
-            "metric": str(getattr(m, "metric", "") or ""),
-            "basis": str(getattr(m, "basis", "") or getattr(m, "why", "") or ""),
-        }
+        out.append({
+            "name": str(getattr(m, "name", "") or ""),
+            "kind": str(getattr(m, "kind", "") or ""),
+            "rule": str(getattr(m, "rule", "") or ""),
+            "measure": str(getattr(m, "measure", "") or ""),
+            "where": str(getattr(m, "where", "") or ""),
+            "ledger": str(getattr(m, "ledger", "") or ""),
+        })
     return out
+
+
+def _line_for(producer: str, lines: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The rent line that prices this producer, matched on `where` then on name.
+
+    `where` is the field that names the code, so it is tried first and on the PATH rather than
+    the stem: `pf_allocator` appears in several rules as prose, and a stem match would price a
+    capability by a sentence that merely mentions it.
+    """
+    if not producer:
+        return None
+    stem = Path(producer).stem
+    for line in lines:
+        where = line["where"]
+        if where and (producer in where or f"{stem}." in where or f"/{stem}" in where):
+            return line
+    for line in lines:
+        if stem and stem == line["name"]:
+            return line
+    return None
 
 
 def rent() -> dict[str, Any]:
@@ -79,12 +112,15 @@ def rent() -> dict[str, Any]:
     lines = _rent_lines()
     rows: list[dict[str, Any]] = []
     for cap in reg["capabilities"]:
-        stem = Path(cap.get("producer") or "").stem
-        line = lines.get(stem)
+        line = _line_for(cap.get("producer") or "", lines)
         declared = cap.get("measurements") or ""
         if line:
-            kind = "ELOG_PRICED" if "log" in (line.get("metric") or "").lower() \
-                else "PROXY_PRICED"
+            # ELOG when the RULE states a with/without in log-wealth -- the mandate's own
+            # currency. Anything else MODULE_RENT prices is a real measurement in another unit
+            # (out-of-sample MSE gain, survivor growth), which is a proxy and is never summed
+            # with a growth figure.
+            rule = (line.get("rule") or "").lower()
+            kind = "ELOG_PRICED" if ("log w" in rule or "log-wealth" in rule) else "PROXY_PRICED"
         elif declared:
             # The registry declares WHAT would price it; that is a protocol, not a payment.
             kind = "PROTOCOL_ONLY"
@@ -93,8 +129,10 @@ def rent() -> dict[str, Any]:
         rows.append({
             "id": cap["id"], "producer": cap.get("producer"), "status": cap["status"],
             "rent_kind": kind,
-            "metric": (line or {}).get("metric") or declared,
-            "basis": (line or {}).get("basis") or "",
+            "metric": (line or {}).get("rule") or declared,
+            "basis": (line or {}).get("where") or "",
+            "measure_fn": (line or {}).get("measure") or "",
+            "ledger": (line or {}).get("ledger") or "",
             # §136: a capability that DECIDES and is not priced is the one the mandate says must
             # not keep its authority. Named so the governor can act rather than inferring it.
             "owes_rent": cap["status"] in DECIDING and kind in ("UNPRICED", "PROTOCOL_ONLY"),
