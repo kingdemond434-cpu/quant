@@ -632,6 +632,17 @@ def model_league() -> dict:
     return _producer("model_zoo", "research/model_zoo.py")
 
 
+def adversaries() -> dict:
+    """P48/P49/P58: poison canaries, silent-defect hunt, claim genealogy.
+
+    HOURLY BECAUSE THE CANARY RATE IS A CONSTANT TO DEFEND, NOT A METRIC TO TREND. The moment it
+    drops below 100% a gate has stopped gating, and every certificate issued since that moment is
+    suspect -- so the interesting quantity is not the trend, it is how few certificates get issued
+    between the break and its detection.
+    """
+    return _producer("adversary", "research/adversary.py")
+
+
 def maintain_miners() -> dict:
     """The miner/seat maintainer: run all six fences and REPAIR what is repairable.
 
@@ -672,6 +683,7 @@ def main() -> None:
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
+    ad = _costed("adversaries", adversaries)
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
     mm = _costed("maintain_miners", maintain_miners)
@@ -689,7 +701,7 @@ def main() -> None:
                     "execution_twin": et, "causal_graph": cg, "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
-                    "forecast_contract": fcx, "model_league": mz,
+                    "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
                     "publish_dashboard": pd_,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
