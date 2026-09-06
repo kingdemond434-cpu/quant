@@ -199,9 +199,12 @@ def write_funnel(reg: dict) -> None:
     incremental E[log W] per unit of hunting capacity, decomposed into its funnel. Counted
     from artifacts on disk, never from reports."""
     shortlist = _read(INTEL / "survivor_shortlist.json", {}).get("shortlist", [])
-    queue = _read(BASE / "data" / "research_queue.json", [])
-    ext_cards = [c for c in queue if isinstance(c, dict)
-                 and str(c.get("id", "")).startswith("ext-")]
+    # STREAMED, NOT PARSED WHOLE. This read cost 191MB of peak RSS to answer a question about
+    # a prefix -- measured 2026-09-06 at 47,150 rows -- and it is one of eight sites that did the
+    # same thing on an 8GB box. `iter_rows` yields one row at a time and falls back to the legacy
+    # JSON when the JSONL is absent, so this is correct on a half-migrated tree.
+    from research.queue_store import iter_rows
+    ext_cards = [c for c in iter_rows() if str(c.get("id", "")).startswith("ext-")]
     surv = _read(BASE / "data" / "hypotheses" / "external_survivors.json", [])
     surv_n = len(surv if isinstance(surv, list) else surv.get("survivors", []))
     certs = _read(BASE / "reports" / "UNIVERSAL_SURVIVORS.json", {})

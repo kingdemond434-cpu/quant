@@ -88,7 +88,7 @@ a{color:inherit}
   padding:5px 9px; border-radius:5px; border:1px solid var(--line); color:var(--ink-2);
   background:var(--card); white-space:nowrap;
 }
-.chip.gold{background:linear-gradient(180deg,#d9bd77,#bb9b४f); background:linear-gradient(180deg,#d9bd77,#bb9b4f); color:#1a1509; border-color:#c9a961; font-weight:600}
+.chip.gold{background:linear-gradient(180deg,#d9bd77,#bb9b4f); color:#1a1509; border-color:#c9a961; font-weight:600}
 button.chip{cursor:pointer}
 button.chip:hover{color:var(--ink); border-color:#2c2c33}
 button.chip:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
@@ -356,12 +356,15 @@ const ICONS = {
   funnel:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.8 2.6h12.4L9.4 8v5.4L6.6 12V8z"/></svg>',
   pick:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.2 13.8 8 2.4l5.8 11.4"/><path d="M4.6 9.6h6.8"/></svg>',
   web:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c1.7 1.9 2.6 4 2.6 6.2S9.7 12.3 8 14.2C6.3 12.3 5.4 10.2 5.4 8S6.3 3.7 8 1.8z"/></svg>',
+  alert:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.9 15 14H1z"/><path d="M8 6.2v3.4"/><circle cx="8" cy="11.7" r=".6" fill="currentColor"/></svg>',
   seat:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="2.2" width="11.6" height="8" rx="1.2"/><path d="M5 13.8h6"/></svg>'
 };
 const SECTIONS = [
   {id:"desk",     group:"markets",  icon:"desk",   label:"Desk",           cap:"live operator read"},
+  {id:"issues",   group:"markets",  icon:"alert",  label:"Issues",         cap:"everything wrong, and what closes it"},
   {id:"clocks",   group:"markets",  icon:"clock",  label:"Forward Clocks", cap:"what is actually maturing"},
   {id:"pipeline", group:"research", icon:"funnel", label:"Pipeline",       cap:"docket to certificate"},
+  {id:"candidates",group:"research",icon:"pick",  label:"Candidates",     cap:"what cleared which gate"},
   {id:"miners",   group:"research", icon:"pick",   label:"Miners",         cap:"what each one converts"},
   {id:"breadth",  group:"research", icon:"web",    label:"Breadth",        cap:"independent bets in the book"},
   {id:"seats",    group:"research", icon:"seat",   label:"Seats & Host",   cap:"can the work even start"}
@@ -470,6 +473,23 @@ function gauge(value, max, label, lede, text, tone){
   t.appendChild(el("p", null, text));
   g.appendChild(t); return g;
 }
+/* An empty tile must NAME the file it is empty for. "—" tells the reader nothing; the filename
+   tells them whether to wait, to look at the box, or to fix a producer. Every blank on this
+   board traced back to an artifact that never crossed the wire, and none of them said so. */
+function missing(what, file, why){
+  const e = el("div", "empty");
+  e.appendChild(el("div", "h", what + " — no data on this host"));
+  const p = el("p");
+  p.appendChild(document.createTextNode(why + " "));
+  const c = el("span", "m"); c.style.fontFamily = "var(--mono)";
+  c.textContent = file;
+  p.appendChild(c);
+  p.appendChild(document.createTextNode(" has not reached this machine. It is written on the "
+    + "trading box and travels by the shadow sync; a blank here is a DELIVERY fact, not a "
+    + "research one."));
+  e.appendChild(p);
+  return e;
+}
 function empty(head, body){
   const e = el("div", "empty");
   e.appendChild(el("div", "h", head));
@@ -530,8 +550,12 @@ function pageDesk(){
     const worst = Math.max(...keys.map(k => per[k].age_seconds || 0), 1);
     c1.body.appendChild(meters(keys.map(k => {
       const r = per[k], age = r.age_seconds;
-      return [k, r.at ? "last wrote " + r.at.replace("T", " ").slice(0, 16) : "no clock in this file",
-        has(age) ? -age : 0, has(age) ? dur(age) : "UNMEAS", worst,
+      const sub = r.at ? "last wrote " + r.at.replace("T", " ").slice(0, 16)
+                       : (r.why || (r.status === "ABSENT" ? "never reached this host"
+                                                          : "carries no timestamp"));
+      return [k, sub,
+        has(age) ? -age : 0,
+        has(age) ? dur(age) : (r.status === "ABSENT" ? "ABSENT" : "NO CLOCK"), worst,
         !has(age) ? "warn" : r.status === "FRESH" ? "good" : "bad"];
     })));
   }
@@ -560,8 +584,59 @@ function pageDesk(){
   ]));
   g.appendChild(c2.node);
 
+  const c3 = card("P&L and equity", "ledger");
+  const curve = D.equity_curve || [];
+  if (curve.length > 1){
+    c3.body.appendChild(spark(curve));
+  } else {
+    c3.body.appendChild(missing("Equity curve", "web/equity_history.jsonl",
+      "The closed-trade ledger behind the curve lives in"));
+  }
+  c3.body.appendChild(triple([
+    ["TODAY", has(a.today_pnl) ? money(a.today_pnl) : "—", (a.today_pnl || 0) >= 0 ? "g" : "r"],
+    ["OPEN", has(a.open_pnl) ? money(a.open_pnl) : "—", (a.open_pnl || 0) >= 0 ? "g" : "r"],
+    ["CLOSED TRADES", num(s.closed_trades), s.closed_trades ? "" : "m"]
+  ]));
+  c3.body.appendChild(defs([
+    ["SHARPE (DAILY)", has(s.sharpe_daily) ? s.sharpe_daily.toFixed(2) : "UNMEASURED",
+      s.closed_trades ? "" : "no closed trade has been recorded, so there is nothing to ratio"],
+    ["MAX DRAWDOWN", has(s.max_dd_r) ? s.max_dd_r.toFixed(1) + "R" : "UNMEASURED",
+      "current " + (has(s.current_dd_r) ? s.current_dd_r.toFixed(1) + "R" : "—")],
+    ["WIN RATE", has(s.win_rate) ? (100 * s.win_rate).toFixed(1) + "%" : "UNMEASURED",
+      "a win rate without a payoff ratio is not an edge; both or neither"]
+  ]));
+  g.appendChild(c3.node);
+
   out.push(g);
   return out;
+}
+
+/* Area sparkline. One scale places every point; the last point is emphasised because "where is
+   it now" is the question a curve on a desk board is actually asked. */
+function spark(series){
+  const w = 520, h = 120, pad = 6;
+  const lo = Math.min(...series), hi = Math.max(...series);
+  const span = (hi - lo) || 1;
+  const pt = (v, i) => [pad + i * (w - 2 * pad) / Math.max(1, series.length - 1),
+                        h - pad - ((v - lo) / span) * (h - 2 * pad)];
+  const pts = series.map(pt);
+  const up = series[series.length - 1] >= series[0];
+  const col = up ? "#34d399" : "#f87171";
+  const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const area = line + ` L${pts[pts.length - 1][0].toFixed(1)} ${h - pad} L${pts[0][0].toFixed(1)} ${h - pad} Z`;
+  const box = el("div");
+  box.style.overflowX = "auto";
+  box.innerHTML =
+    `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img" aria-label="equity curve">
+       <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0%" stop-color="${col}" stop-opacity=".22"/>
+         <stop offset="100%" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+       <path d="${area}" fill="url(#sg)"/>
+       <path d="${line}" fill="none" stroke="${col}" stroke-width="1.6"/>
+       <circle cx="${pts[pts.length - 1][0].toFixed(1)}" cy="${pts[pts.length - 1][1].toFixed(1)}"
+               r="3" fill="${col}"/>
+     </svg>`;
+  return box;
 }
 
 function pageClocks(){
@@ -768,7 +843,118 @@ function pageSeats(){
   return out;
 }
 
-const PAGES = {desk: pageDesk, clocks: pageClocks, pipeline: pagePipeline,
+function pageCandidates(){
+  const out = [], r = D.research || {}, rows = r.survivors || [];
+  const fails = r.gate_failures || {};
+  out.push(kpis([
+    ["Tested", num(r.candidates_tested), "through the ten gates"],
+    ["Cleared all ten", num(rows.length), "certified candidates", rows.length ? "g" : "m"],
+    ["Historical survivors", num(r.historical_survivors), "selection-era", "m"],
+    ["Canonical", num(r.canonical_survivors), "in the canon"],
+    ["Gate failures", num(Object.values(fails).reduce((a, b) => a + (b || 0), 0)),
+      "rejections recorded", "w"]
+  ]));
+  const g = el("div", "grid");
+
+  const c = card("Candidates and their gates", "QQUANT_GATES");
+  if (rows.length){
+    const w = el("div", "tablewrap"), t = el("table");
+    t.innerHTML = "<thead><tr><th>Candidate</th><th>Hunt</th><th class='num'>Days</th>" +
+      "<th class='num'>DSR</th><th class='num'>WF Sharpe</th><th class='num'>PBO</th>" +
+      "<th class='num'>SPA p</th></tr></thead>";
+    const tb = el("tbody");
+    rows.slice(0, 60).forEach(x => {
+      const tr = el("tr");
+      tr.appendChild(el("td", "name", x.name || "—"));
+      tr.appendChild(el("td", "m", x.hunt || "—"));
+      tr.appendChild(el("td", "num", num(x.days)));
+      tr.appendChild(el("td", "num " + ((x.dsr || 0) > 0 ? "g" : "r"),
+        has(x.dsr) ? x.dsr.toFixed(3) : "—"));
+      tr.appendChild(el("td", "num", has(x.wf_sharpe) ? x.wf_sharpe.toFixed(2) : "—"));
+      tr.appendChild(el("td", "num " + ((x.pbo || 1) < 0.5 ? "g" : "r"),
+        has(x.pbo) ? x.pbo.toFixed(3) : "—"));
+      tr.appendChild(el("td", "num", has(x.spa_p) ? x.spa_p.toFixed(4) : "—"));
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb); w.appendChild(t); c.body.appendChild(w);
+  } else {
+    c.body.appendChild(missing("Candidates", "desks/mt5/reports/QQUANT_GATES.json",
+      "The per-candidate gate verdicts live in"));
+  }
+  g.appendChild(c.node);
+
+  const c2 = card("Which gate kills the most", "gate_failures");
+  const entries = Object.entries(fails).sort((a, b) => (b[1] || 0) - (a[1] || 0));
+  if (entries.length){
+    const total = entries.reduce((a, e) => a + (e[1] || 0), 0);
+    c2.body.appendChild(bars(entries.map(([k, v]) =>
+      [k.replace(/_/g, " "), v, ""]), total));
+    c2.body.appendChild(defs([["WHY THIS TILE", "conversion is the binding constraint",
+      "0 certificates from a docket of tens of thousands. The gate rejecting the most is where "
+      + "throughput is actually lost — and no gate is ever loosened to raise this number."]]));
+  } else {
+    c2.body.appendChild(missing("Gate failures", "desks/mt5/reports/QQUANT_GATES.json",
+      "The per-gate rejection counts live in"));
+  }
+  g.appendChild(c2.node);
+  out.push(g);
+  return out;
+}
+
+function pageIssues(){
+  const out = [], ib = D.issues || {};
+  const issues = ib.issues || [], sev = ib.by_severity || {};
+  const order = ["CAPITAL", "BLIND", "STALLED", "DEGRADED"];
+  out.push(kpis([
+    ["Open issues", num(issues.length), "everything the desk can see", issues.length ? "w" : "g"],
+    ["Capital", num(sev.CAPITAL), "could size or trade wrongly now", sev.CAPITAL ? "r" : "g"],
+    ["Blind", num(sev.BLIND), "believes something false about itself", sev.BLIND ? "r" : "g"],
+    ["Stalled", num(sev.STALLED), "a producer stopped", sev.STALLED ? "w" : "g"],
+    ["Auto-repairable", num(ib.auto_repairable), "fixed without a human", "g"],
+    ["Watched producers", num(ib.watched_producers), "each with a declared cadence"]
+  ]));
+  const g = el("div", "grid");
+  const c = card("Open issues", "issue_board");
+  if (issues.length){
+    const sorted = issues.slice().sort(
+      (a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
+    c.body.appendChild(defs(sorted.map(i => [
+      i.severity + (i.auto_repairable ? " · AUTO-REPAIRABLE" : ""),
+      i.what,
+      (i.detail || "") + (i.repair ? "  →  " + i.repair : "")
+    ])));
+  } else if (ib.measured_at){
+    c.body.appendChild(empty("No open issues",
+      "Every watched producer is inside its declared cadence, no alarm file is raised, and the "
+      + "desk state reports nothing wrong. " + (ib.contract || "")));
+  } else {
+    c.body.appendChild(missing("Issue board", "desks/mt5/reports/ISSUE_BOARD.json",
+      "The aggregated issue list lives in"));
+  }
+  g.appendChild(c.node);
+
+  const c2 = card("What the fixer did", "auto-repair");
+  const acts = ib.actions || [];
+  const ran = acts.filter(a => a.action === "RAN");
+  if (acts.length){
+    c2.body.appendChild(triple([
+      ["REPAIRED", num(ran.length), ran.length ? "g" : "m"],
+      ["REFUSED", num(acts.filter(a => a.action === "REFUSED").length), "m"],
+      ["APPLIED", ib.applied ? "YES" : "DRY RUN", ib.applied ? "g" : "w"]
+    ]));
+    c2.body.appendChild(defs(acts.slice(0, 10).map(a => [
+      a.action, a.key, a.cmd || a.why || ""])));
+  } else {
+    c2.body.appendChild(empty("No repair pass recorded", "The fixer has not run."));
+  }
+  c2.body.appendChild(defs(Object.entries(ib.never_automated || {}).map(
+    ([k, v]) => ["NEVER AUTOMATED · " + k, v, ""])));
+  g.appendChild(c2.node);
+  out.push(g);
+  return out;
+}
+
+const PAGES = {desk: pageDesk, issues: pageIssues, candidates: pageCandidates, clocks: pageClocks, pipeline: pagePipeline,
   miners: pageMiners, breadth: pageBreadth, seats: pageSeats};
 
 /* ==========================================================================
