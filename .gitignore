@@ -319,3 +319,15 @@ desks/mt5/data/deep_forest_seen.json
 # blocking every attempt. A log is not source: nothing reads these from git, losing one costs
 # nothing, and tracking them made the box permanently unmergeable while a hunt was alive.
 desks/mt5/logs/
+
+# LOCKS AND CACHES ARE NEVER TRACKED (2026-09-06). Two job locks and thirty free-data cache
+# files were, and both machines rewrite them constantly -- so `git pull` on the VPS aborted with
+# "Your local changes would be overwritten" naming a LOCK and nine yahoo/fred cache blobs, and it
+# aborted every time because those files are rewritten faster than anyone can commit them.
+#
+# A lock is a statement about THIS machine right now; carrying one between machines is not merely
+# useless, it is wrong -- a lock file from another host names a PID that means nothing here. A
+# cache is by definition reconstructible from its source. Neither belongs in git, and tracking
+# them made both hosts unpullable while the desk was running, which is always.
+desks/mt5/data/.job_locks/
+desks/mt5/data/free_data_cache/
