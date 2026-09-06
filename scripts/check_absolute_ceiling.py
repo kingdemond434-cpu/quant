@@ -511,18 +511,37 @@ def _import_counts() -> dict[str, int]:
     return counts
 
 
-def _graph_stage(module_stem: str) -> str:
-    """What the capability graph says about the node owning this module, if any."""
+_GRAPH_STAGES: dict[str, str] | None = None
+
+
+def _graph_stages() -> dict[str, str]:
+    """Capability-graph stage by module, computed once per audit process.
+
+    ``stages()`` performs artifact and reachability checks. Calling it once for each of the 94
+    blueprint rows made the completion fence take many minutes and regularly overrun its own
+    schedule. The graph is immutable during one audit, so recomputation cannot add information.
+    """
+    global _GRAPH_STAGES
+    if _GRAPH_STAGES is not None:
+        return _GRAPH_STAGES
     try:
         from libs.ops.capability_graph import NODES, stages
+        node_stages = stages()
     except Exception:
-        return ""
-    st = stages()
-    for n in NODES:
-        mod = str(getattr(n, "module", "") or "")
-        if module_stem and (module_stem in mod or mod.endswith(f"{module_stem}.py")):
-            return str((st.get(n.name) or {}).get("stage", "") or "")
-    return ""
+        _GRAPH_STAGES = {}
+        return _GRAPH_STAGES
+    out: dict[str, str] = {}
+    for node in NODES:
+        stem = Path(str(getattr(node, "module", "") or "")).stem
+        if stem:
+            out[stem] = str((node_stages.get(node.name) or {}).get("stage", "") or "")
+    _GRAPH_STAGES = out
+    return out
+
+
+def _graph_stage(module_stem: str) -> str:
+    """What the capability graph says about the node owning this module, if any."""
+    return _graph_stages().get(module_stem, "") if module_stem else ""
 
 
 def _rent_verdict(module_stem: str) -> str:
