@@ -257,13 +257,29 @@ def state_vector() -> dict:
     NEVER FAILS THE CYCLE. A state vector that cannot be built is a recorded gap, and the
     allocator degrades to the unconditioned solve it ran before this existed.
     """
+    # ISOLATED, because this leg fits native numerical models over multiple parquet panels.
+    # On 2026-09-06 its process terminated during a fit without raising a Python exception; when
+    # it ran in-process that also terminated the hourly controller before mining, validation,
+    # publication and the other producers could run.  A failed world-state refresh is a visible
+    # degraded input, never permission to turn one optional model into a factory-wide kill switch.
+    target = BASE / "research" / "state_vector_build.py"
     try:
-        import state_vector_build
-
-        rc = state_vector_build.main()
-        return {"exit_code": int(rc), "at": datetime.now(UTC).isoformat(timespec="seconds")}
-    except Exception as exc:                                          # noqa: BLE001
-        return {"exit_code": 1, "error": f"{type(exc).__name__}: {exc}",
+        r = subprocess.run(
+            [sys.executable, "-u", "-W", "ignore", str(target), "--budget-s", "900"],
+            capture_output=True, text=True, cwd=str(BASE), timeout=960, check=False,
+        )
+        return {
+            "exit_code": int(r.returncode),
+            "status": "OK" if r.returncode == 0 else "FAILED",
+            "tail": (r.stdout or r.stderr or "")[-500:],
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+        }
+    except subprocess.TimeoutExpired as exc:
+        return {"exit_code": None, "status": "TIMEOUT", "timeout_s": exc.timeout,
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except OSError as exc:
+        return {"exit_code": None, "status": "FAILED_TO_START",
+                "error": f"{type(exc).__name__}: {exc}",
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
