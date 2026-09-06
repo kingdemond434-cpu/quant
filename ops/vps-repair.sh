@@ -127,11 +127,24 @@ if command -v cloudflared >/dev/null 2>&1; then
   conn="$(cloudflared tunnel info "$TUNNEL" 2>/dev/null | sed -n '/CONNECTOR ID/,$p')"
   info "connectors for $TUNNEL:"
   printf '%s\n' "$conn" | while read -r l; do [ -n "$l" ] && info "$l"; done
-  # Take every IPv4/IPv6 literal in the connector table and subtract this host's own addresses.
+  # READ THE COLUMN, DO NOT PATTERN-MATCH THE LINE. The first version of this regexed every
+  # IPv4/IPv6-looking literal out of the whole table, and an IPv6 pattern matches a CLOCK: in
+  # `2026-09-06T17:12:19Z`, "17:" and "12:" are two hextet-colon groups and "19" is the tail, so
+  # it reported the connector's CREATED timestamp as a foreign origin -- measured 2026-09-06,
+  # this step failed with "foreign connector(s): 17:12:19 17:12:31" on a host whose only
+  # connectors were its own. A false alarm on a fault this expensive is worse than no check: it
+  # sends the reader hunting a machine that does not exist.
+  #
+  # `cloudflared tunnel info` prints fixed columns -- id, created, architecture, version, origin
+  # ip, edges -- so ORIGIN IP is field 5 of any row whose first field is a connector UUID. That
+  # test also skips the header, whose own field 5 is "VERSION".
   foreign="$(printf '%s\n' "$conn" \
-    | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}|([0-9a-f]{1,4}:){2,}[0-9a-f:]*' \
+    | awk '$1 ~ /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/ {print $5}' \
     | sort -u | grep -vxF -f <(printf '%s\n' "$mine") 2>/dev/null || true)"
-  if [ -n "$foreign" ]; then
+  n_rows="$(printf '%s\n' "$conn" | awk '$1 ~ /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/' | wc -l)"
+  if [ "${n_rows:-0}" -eq 0 ]; then
+    warn "could not parse any connector row from 'cloudflared tunnel info $TUNNEL' -- foreign connectors were NOT checked"
+  elif [ -n "$foreign" ]; then
     fail "foreign connector(s) on $TUNNEL -- they serve a share of every public request from an origin this script does not control: $(printf '%s' "$foreign" | tr '\n' ' ')"
     info "fix A (no access needed): repoint the ${HOSTNAME_PUBLIC} CNAME at a tunnel whose credentials that host does NOT hold"
     info "fix B: stop and disable cloudflared on each address above, then re-run"
@@ -154,40 +167,58 @@ step "Desk state pull (the box -> this host link)"
 # two minutes, roughly eight thousand consecutive failures, while every other check on this host
 # passed and this script printed VPS REPAIRED. A repair script that never tests the one link the
 # deliverable depends on is not testing the deliverable.
-PULL="$ROOT/ops/pull_desk_state.sh"
-if [ ! -f "$PULL" ]; then
-  fail "ops/pull_desk_state.sh is absent -- nothing fetches the box's state, so the page can only ever go stale"
+# GIT IS THE TRANSPORT, so freshness of the DELIVERED ARTIFACTS is the check -- not whether some
+# particular mover ran. The box publishes with `sync_shadow_to_git.ps1` (scheduled task
+# MT5-ShadowSync, every 15 minutes) onto the shared branch, this host pulls that branch in step 1,
+# and `build_zentech_state.py` reads what arrived. Judge the outcome, and the answer stays correct
+# whichever mover is in use.
+STATE_FILES="desks/mt5/data/account_state.json desks/mt5/reports/shadow/shadow_health.json desks/mt5/data/gateway_state.json desks/mt5/reports/shadow/scalp_shadow_state.json"
+fresh=0; stale=0; absent=0
+for f in $STATE_FILES; do
+  if [ ! -f "$ROOT/$f" ]; then
+    absent=$((absent + 1)); info "ABSENT  $f"
+  else
+    age_h="$(python3 -c "import os,time,sys;print(int((time.time()-os.path.getmtime(sys.argv[1]))//3600))" "$ROOT/$f" 2>/dev/null || echo 999)"
+    if [ "$age_h" -le 6 ]; then fresh=$((fresh + 1)); ok "${age_h}h  $f"
+    else stale=$((stale + 1)); info "${age_h}h  $f  (STALE)"; fi
+  fi
+done
+if [ "$fresh" -gt 0 ] && [ "$stale" -eq 0 ] && [ "$absent" -eq 0 ]; then
+  ok "the box's state is arriving -- every published artifact is under 6h old"
 else
+  fail "the box's state is NOT arriving: $fresh fresh, $stale stale, $absent absent"
+  info "the publisher is on the BOX, not here: scheduled task MT5-ShadowSync runs sync_shadow_to_git.ps1 every 15 minutes"
+  info "fix it there with: .\\ops\\box-repair.ps1 -ResolveCode theirs   (its 'Shadow sync to git' step reports and restarts it)"
+fi
+
+# THE RETIRED SCP PATH, reported as retired rather than as a failure. `pull_desk_state.sh` scp's
+# from ssh alias `contabo-mt5`, and `sync_shadow_to_git.ps1`'s own header records that its
+# destination was decommissioned on 2026-08-23. Failing on it every run would put a permanently
+# red line in this report, and a detector that is always red is one everybody scrolls past -- so
+# it is a NOTE while git is delivering, and only a failure if git is not.
+PULL="$ROOT/ops/pull_desk_state.sh"
+if [ -f "$PULL" ]; then
   remote="$(sed -n 's/^REMOTE=//p' "$PULL" | head -1)"
-  info "remote alias: ${remote:-<unset>}"
-  if ! grep -q "^Host[[:space:]].*\b${remote}\b" "$HOME/.ssh/config" 2>/dev/null; then
-    fail "ssh alias '${remote}' is not defined in ~/.ssh/config -- every pull fails at name resolution"
-    info "define it (HostName/User/IdentityFile) pointing at the trading box, then: systemctl --user restart quant-desk-pull.timer"
-  elif ! timeout 25 ssh -o BatchMode=yes -o ConnectTimeout=15 "$remote" "cd /c/opt/quant" 2>/dev/null; then
-    fail "ssh to '${remote}' failed -- the box is unreachable from here, so the dashboard cannot be fed"
-    info "check the box's IP has not moved, that its ssh server is running, and that this host's key is still authorised"
+  if grep -qs "^Host[[:space:]].*\b${remote}\b" "$HOME/.ssh/config"; then
+    if timeout 25 ssh -o BatchMode=yes -o ConnectTimeout=15 "$remote" true 2>/dev/null; then
+      ok "legacy scp path: ssh alias '${remote}' still answers"
+      [ "$CHECK_ONLY" = 0 ] && { timeout 180 bash "$PULL" >/dev/null 2>&1 && ok "legacy pull also succeeded" || warn "legacy pull ran and failed"; }
+    else
+      warn "legacy scp path is dead (ssh alias '${remote}' unreachable) -- superseded by the git sync, so this is expected"
+    fi
   else
-    ok "ssh to '${remote}' answers"
+    warn "legacy scp path is unwired (no ssh alias '${remote}' in ~/.ssh/config) -- superseded by the git sync, so this is expected"
   fi
-  # RUN IT FOR REAL. Reachability is not the same as a working pull: the script also refuses a
-  # shrinking universe registry and skips artifacts the box has not written.
-  if [ "$CHECK_ONLY" = 0 ]; then
-    if out="$(timeout 180 bash "$PULL" 2>&1)"; then ok "desk state pulled from the box"
-    else fail "pull_desk_state.sh exited non-zero -- the page will keep serving the last good copy"; fi
-    printf '%s\n' "$out" | tail -6 | while read -r l; do [ -n "$l" ] && info "$l"; done
-  fi
-  # And the timer that is supposed to do this unattended, every two minutes, forever.
+  # A timer that fails every two minutes forever is noise in the journal and teaches the reader
+  # to ignore this unit. Stop it once git is confirmed to be delivering, never before.
   if systemctl --user is-active quant-desk-pull.timer >/dev/null 2>&1; then
-    ok "quant-desk-pull.timer is active"
-  else
-    fail "quant-desk-pull.timer is NOT active -- even a working pull would run only when someone runs it by hand"
-    [ "$CHECK_ONLY" = 0 ] && {
-      cp "$ROOT/ops/quant-desk-pull."{service,timer} "$HOME/.config/systemd/user/" 2>/dev/null
-      systemctl --user daemon-reload 2>/dev/null
-      systemctl --user enable --now quant-desk-pull.timer 2>/dev/null \
-        && ok "quant-desk-pull.timer installed and started" \
-        || fail "could not start quant-desk-pull.timer"
-    }
+    if [ "$fresh" -gt 0 ] && [ "$stale" -eq 0 ] && [ "$absent" -eq 0 ] && [ "$CHECK_ONLY" = 0 ]; then
+      systemctl --user disable --now quant-desk-pull.timer >/dev/null 2>&1 \
+        && ok "stopped quant-desk-pull.timer -- git is delivering and this timer only logged failures" \
+        || warn "quant-desk-pull.timer is active and failing; could not stop it"
+    else
+      info "quant-desk-pull.timer left running -- it is failing, but nothing else is delivering yet either"
+    fi
   fi
 fi
 

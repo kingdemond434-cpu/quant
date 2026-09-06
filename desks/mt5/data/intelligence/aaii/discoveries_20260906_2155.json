@@ -1,0 +1,7 @@
+[
+  {
+    "source": "aaii_sentiment",
+    "kind": "fetch_error",
+    "error": "HTTPError: 403 Client Error: Forbidden for url: https://www.aaii.com/sentimentsurvey"
+  }
+]
