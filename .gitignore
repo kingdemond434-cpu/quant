@@ -125,7 +125,21 @@ data/*
 web/*
 !web/index.html
 !web/zentech.html
-reports/
+# shadow_health.json is the ONE reports/ artifact allowlisted through, at any depth (so this
+# covers desks/mt5/reports/shadow/ too, where the live file actually is): Hetzner (the prior
+# cross-brain sync destination) was fully decommissioned 2026-08-23, so this file now reaches
+# every brain (Claude, Codex, OpenCode, DeepSeek) by riding the git branch they already
+# read/write, committed by desks/mt5/scripts/sync_shadow_to_git.ps1 on the same 15-min cadence
+# the old scp pipe used. It is a small, machine-overwritten JSON health summary, not a data lake.
+# GIT CANNOT RE-INCLUDE A FILE WHOSE PARENT DIRECTORY WAS ITSELF EXCLUDED -- a bare `reports/`
+# (no trailing `*`) excludes the whole subtree with no descent possible, so no `!` pattern below
+# it can ever see inside. This broke once already in-session (silently unignored the ENTIRE
+# desks/mt5/reports tree via a differently-broken anchoring mistake) before landing on the same
+# `dirname/*` idiom `data/delisted_rosters/` already uses above, which keeps descent open.
+**/reports/*
+!**/reports/shadow/
+**/reports/shadow/*
+!**/reports/shadow/shadow_health.json
 lake/
 docs/EXTERNAL_PANEL_DOSSIER.md
 # commit-audit payload: 425KB of `git log --since=24h` patches, REGENERATED on every run by
@@ -261,3 +275,23 @@ desks/mt5/data/repo_cache/
 desks/mt5/data/features/
 desks/mt5/data/memory/
 desks/mt5/data/deep_forest_seen.json
+
+# THE BOX'S OWN REPORT, ALLOWLISTED LAST SO IT WINS (2026-09-06). `sync_shadow_to_git.ps1` lists
+# every path here in $relPaths and its header warns that an ignored path makes `git add` a SILENT
+# no-op -- success on screen, nothing published. That is exactly what had happened: sleeves.json
+# was in $relPaths and matched `**/sleeves.json` above, and the three shadow LANE state files
+# (which hold every sleeve's status, n, expectancy and forward clock) matched
+# `**/reports/shadow/*`. So the only thing that ever crossed the wire was the 424-byte health
+# summary, and no reader on this side could see a single sleeve -- which is why the question "are
+# the two gold scalp sleeves ready for live capital" could not be answered from the branch.
+#
+# Last match wins in gitignore, so these sit at the very end deliberately. They are small
+# machine-overwritten JSON (266b-48KB), not a data lake, and they are the desk's only evidence
+# that the box is alive. tests/scripts/test_box_sync_publishes_what_it_lists.py fails if a path
+# is ever added to $relPaths without a line here.
+!desks/mt5/data/sleeves.json
+!desks/mt5/data/account_state.json
+!desks/mt5/reports/shadow/scalp_shadow_state.json
+!desks/mt5/reports/shadow/qquant_shadow_state.json
+!desks/mt5/reports/shadow/external_shadow_state.json
+!desks/mt5/reports/shadow/shadow_state.json

@@ -7,8 +7,8 @@ PARQUET_DIR = Path(r"C:\Users\dell\mt5-research\data\mt5_universe\parquets")
 UNIVERSE_OUT = Path(r"C:\Users\dell\mt5-research\data\mt5_universe\universe.json")
 
 universe = {}
-for pq in sorted(PARQUET_DIR.glob("*_H1.parquet")):
-    name = pq.stem.replace("_H1", "")
+for pq in sorted(PARQUET_DIR.glob("*.parquet")):
+    name = pq.stem.rpartition("_")[0] or pq.stem
     try:
         df = pd.read_parquet(pq)
         universe[name] = {

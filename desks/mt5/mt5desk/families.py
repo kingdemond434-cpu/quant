@@ -1742,3 +1742,285 @@ def family_adx_channel_hybrid(
         signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop, target=target,
                               ttl_bars=ttl_bars, tag="adx_channel_hybrid"))
     return signals
+
+
+# --------------------------------------------------------------------------
+# Dip-buy family — three DIFFERENT definitions of "dip", tested honestly
+# --------------------------------------------------------------------------
+#
+# "Buy the dip" is not one mechanism, it is a label three genuinely different
+# claims hide behind: a fixed retracement from a recent high, an oversold
+# momentum reading, and a volatility-shock decline. Each is its own hypothesis
+# here rather than one family with cosmetic parameters, because a survivor in
+# one and a kill in the others would be a real, useful finding that a single
+# blended "dip" family would erase. All three are LONG-ONLY by construction --
+# that directional bias is the whole bet being tested, not a bug to balance out.
+
+def family_dip_pullback_pct(
+    df: pd.DataFrame,
+    *,
+    pullback_pct: float = 0.05,
+    lookback_bars: int = 48,
+    trend_ma: int = 200,
+    confirm_bars: int = 3,
+    atr_n: int = 14,
+    rr: float = 2.0,
+    ttl_bars: int = 48,
+) -> list[Signal]:
+    """Buy a fixed-% retracement from a recent swing high, in an uptrend.
+
+    Dip = close has fallen >= pullback_pct off the `lookback_bars` rolling
+    high. Entry requires the pullback to first STOP (a `confirm_bars`-bar
+    higher low) before buying -- a dip that is still falling is not yet a
+    dip, it is a trend, and buying into an unconfirmed decline is the
+    "catching a falling knife" failure this filter exists to price out.
+    Trend filter: close > `trend_ma`-bar SMA, so this is dip-buying WITHIN
+    an uptrend, not calling a bottom in a downtrend.
+    """
+    h1 = _h1(df)
+    if len(h1) < max(lookback_bars, trend_ma) + confirm_bars + atr_n + 2:
+        return []
+    atr = _atr(h1, atr_n)
+    sma = h1["close"].rolling(trend_ma, min_periods=trend_ma).mean()
+    roll_hi = h1["high"].rolling(lookback_bars, min_periods=lookback_bars).max()
+    c = h1["close"].to_numpy()
+    lo = h1["low"].to_numpy()
+    a = atr.to_numpy()
+    s = sma.to_numpy()
+    rh = roll_hi.to_numpy()
+    signals: list[Signal] = []
+    start = max(lookback_bars, trend_ma) + confirm_bars
+    for i in range(start, len(h1) - 2):
+        if np.isnan(s[i]) or np.isnan(rh[i]) or np.isnan(a[i]) or not (a[i] > 0):
+            continue
+        if not (c[i] > s[i]):          # uptrend filter
+            continue
+        if rh[i] <= 0:
+            continue
+        drawdown = (rh[i] - c[i]) / rh[i]
+        if drawdown < pullback_pct:
+            continue
+        # confirmation: the last confirm_bars made a higher low than the
+        # bar before them -- the decline has stalled, not just paused.
+        window_lo = lo[i - confirm_bars + 1:i + 1]
+        prior_lo = lo[i - confirm_bars]
+        if not (window_lo.min() >= prior_lo):
+            continue
+        stop = window_lo.min() - 0.5 * a[i]
+        stop_dist = c[i] - stop
+        if not (stop_dist > 0):
+            continue
+        signals.append(Signal(
+            time=h1.index[i], side=1, stop=stop, target=c[i] + stop_dist * rr,
+            ttl_bars=ttl_bars, tag=f"dip_pullback.{pullback_pct:.0%}"))
+    return signals
+
+
+def family_dip_rsi_reclaim(
+    df: pd.DataFrame,
+    *,
+    rsi_n: int = 14,
+    oversold: float = 30.0,
+    trend_ma: int = 200,
+    atr_n: int = 14,
+    stop_atr: float = 1.5,
+    rr: float = 2.0,
+    ttl_bars: int = 48,
+) -> list[Signal]:
+    """Buy the RECLAIM of an RSI oversold threshold, in an uptrend.
+
+    Dip = RSI(rsi_n) crossed below `oversold` on a prior bar and has now
+    crossed back above it -- momentum getting oversold and then turning, not
+    the oversold reading itself (RSI can sit under 30 for a long time in a
+    real decline, and entering ON the cross-under is exactly the falling-knife
+    mistake family_dip_pullback_pct's confirmation window also exists to
+    avoid). Trend filter: close > `trend_ma`-bar SMA.
+    """
+    h1 = _h1(df)
+    if len(h1) < max(trend_ma, rsi_n * 3) + 3:
+        return []
+    delta = h1["close"].diff()
+    gain = delta.clip(lower=0).ewm(alpha=1 / rsi_n, min_periods=rsi_n).mean()
+    loss = (-delta.clip(upper=0)).ewm(alpha=1 / rsi_n, min_periods=rsi_n).mean()
+    rs = gain / loss.replace(0, np.nan)
+    rsi = 100 - 100 / (1 + rs)
+    sma = h1["close"].rolling(trend_ma, min_periods=trend_ma).mean()
+    atr = _atr(h1, atr_n)
+    r = rsi.to_numpy()
+    s = sma.to_numpy()
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    lo = h1["low"].to_numpy()
+    signals: list[Signal] = []
+    start = max(trend_ma, rsi_n * 3) + 2
+    for i in range(start, len(h1) - 2):
+        if np.isnan(r[i]) or np.isnan(r[i - 1]) or np.isnan(s[i]) or np.isnan(a[i]):
+            continue
+        if not (a[i] > 0) or not (c[i] > s[i]):
+            continue
+        if not (r[i - 1] < oversold and r[i] >= oversold):
+            continue
+        stop = min(lo[i], lo[i - 1]) - stop_atr * a[i] * 0.3
+        stop_dist = c[i] - stop
+        if not (stop_dist > 0):
+            continue
+        signals.append(Signal(
+            time=h1.index[i], side=1, stop=stop, target=c[i] + stop_dist * rr,
+            ttl_bars=ttl_bars, tag=f"dip_rsi.{oversold:.0f}"))
+    return signals
+
+
+def family_dip_atr_shock(
+    df: pd.DataFrame,
+    *,
+    atr_k: float = 2.0,
+    lookback_bars: int = 24,
+    trend_ma: int = 200,
+    atr_n: int = 14,
+    rr: float = 2.0,
+    ttl_bars: int = 48,
+) -> list[Signal]:
+    """Buy a volatility-SHOCK decline, in an uptrend -- the "sharp flush"
+    version of a dip, distinct from the grinding retracement
+    family_dip_pullback_pct prices and the momentum turn
+    family_dip_rsi_reclaim prices.
+
+    Dip = the bar's own range (high-low) exceeds `atr_k` * ATR while closing
+    in the bottom third of that range (a real flush, not just a wide bar that
+    closed strong), inside an uptrend. Entry is the NEXT bar's open -- no
+    confirmation window, because a shock is claimed to mean-revert fast and
+    waiting for one costs the reversion this family exists to capture.
+    """
+    h1 = _h1(df)
+    if len(h1) < max(trend_ma, lookback_bars) + atr_n + 2:
+        return []
+    atr = _atr(h1, atr_n)
+    sma = h1["close"].rolling(trend_ma, min_periods=trend_ma).mean()
+    a = atr.to_numpy()
+    s = sma.to_numpy()
+    o = h1["open"].to_numpy()
+    c = h1["close"].to_numpy()
+    hh = h1["high"].to_numpy()
+    ll = h1["low"].to_numpy()
+    signals: list[Signal] = []
+    start = max(trend_ma, lookback_bars) + 2
+    for i in range(start, len(h1) - 2):
+        if np.isnan(a[i]) or np.isnan(s[i]) or not (a[i] > 0):
+            continue
+        if not (c[i] > s[i]):
+            continue
+        bar_range = hh[i] - ll[i]
+        if bar_range <= 0 or bar_range < atr_k * a[i]:
+            continue
+        close_pos = (c[i] - ll[i]) / bar_range
+        if close_pos > 0.35:            # must have closed weak, i.e. shocked
+            continue
+        entry = o[i + 1]
+        if np.isnan(entry):
+            continue
+        stop = ll[i] - 0.25 * a[i]
+        stop_dist = entry - stop
+        if not (stop_dist > 0):
+            continue
+        signals.append(Signal(
+            time=h1.index[i + 1], side=1, stop=stop, target=entry + stop_dist * rr,
+            ttl_bars=ttl_bars, tag=f"dip_atrshock.{atr_k:.1f}"))
+    return signals
+
+
+def family_macro_swing(
+    df: pd.DataFrame,
+    macro: pd.Series,
+    *,
+    lookback_days: int = 20,
+    hold_bars: int = 240,
+    stop_atr: float = 3.0,
+    rr: float = 2.0,
+    atr_n: int = 20,
+    sign: int = -1,
+    min_gap_bars: int = 120,
+    pub_lag_days: int = 1,
+) -> list[Signal]:
+    """Macro AS the signal, held for swing length -- not macro as a filter.
+
+    Every other macro use in this file conditions an existing price-structure
+    entry. This one has no price trigger at all: the macro series turning IS
+    the entire thesis, and price only supplies the stop distance. That makes
+    it the actual test of "is macro an edge in itself", which a conditioning
+    study cannot answer no matter how it comes out.
+
+    `sign=-1` means a FALLING macro series is bullish -- the correct default
+    for gold against the real yield (a zero-coupon asset rallies as its carry
+    cost falls) and for a USD-quoted pair against the dollar. `sign=+1`
+    inverts it for a series whose RISE is the bullish state.
+
+    WHY THE HOLD IS LONG AND THE STOP IS WIDE. Macro repricings run for weeks,
+    not hours, and the cost argument for swing length is arithmetic rather
+    than hopeful: one spread crossing amortised over a 10-day hold is a tenth
+    the drag of the same crossing over a 1-day hold. `hold_bars=240` is ~10
+    trading days of H1 bars; `stop_atr=3.0` is deliberately wide, because a
+    tight stop on a multi-week thesis just pays the spread to be shaken out.
+
+    POINT-IN-TIME: `pub_lag_days` shifts the macro series forward before any
+    join, so a value dated D is only visible from D+`pub_lag_days`. FRED
+    publishes most daily market series the following morning; joining on the
+    reference date would let the backtest read a number nobody had. That
+    look-ahead is small, systematic, and exactly the profile that survives a
+    naive out-of-sample split and then fails live.
+
+    `min_gap_bars` stops one slow macro trend emitting a signal every bar for
+    a month: consecutive entries must be at least that far apart, so the
+    sample counts distinct macro events rather than the same event several
+    hundred times. Without it the trade count is an artefact of bar frequency
+    and every t-stat built on it is inflated.
+    """
+    h1 = _h1(df)
+    if len(h1) < atr_n + 4 or macro is None or len(macro) == 0:
+        return []
+    atr = _atr(h1, atr_n)
+
+    m = macro.dropna().sort_index()
+    if len(m) < lookback_days + 2:
+        return []
+    change = (m - m.shift(lookback_days)).dropna()
+    if change.empty:
+        return []
+    # Publication lag, applied BEFORE the join. See the docstring.
+    change.index = pd.to_datetime(change.index) + pd.Timedelta(days=pub_lag_days)
+
+    idx = h1.index
+    if change.index.tz is None and idx.tz is not None:
+        change.index = change.index.tz_localize(idx.tz)
+    elif change.index.tz is not None and idx.tz is None:
+        change.index = change.index.tz_localize(None)
+    aligned = change.reindex(idx, method="ffill")
+
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    av = aligned.to_numpy()
+    signals: list[Signal] = []
+    last_i = -(10**9)
+    for i in range(atr_n + 1, len(h1) - 2):
+        if np.isnan(a[i]) or not (a[i] > 0):
+            continue
+        ch, prev = av[i], av[i - 1]
+        if np.isnan(ch) or np.isnan(prev):
+            continue
+        # Fire on the CROSSING, not on the state -- a state fires every bar it
+        # holds, which is the same event counted hundreds of times.
+        if not (prev >= 0 > ch) and not (prev <= 0 < ch):
+            continue
+        side = int(np.sign(ch) * sign)
+        if side == 0 or i - last_i < min_gap_bars:
+            continue
+        stop_dist = stop_atr * a[i]
+        if not (stop_dist > 0):
+            continue
+        entry = c[i]
+        signals.append(Signal(
+            time=h1.index[i], side=side,
+            stop=entry - side * stop_dist,
+            target=entry + side * stop_dist * rr,
+            ttl_bars=hold_bars, tag=f"macro_swing.{lookback_days}d"))
+        last_i = i
+    return signals

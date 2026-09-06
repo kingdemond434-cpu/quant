@@ -140,3 +140,31 @@ def test_build_uses_canonical_gauntlet_when_legacy_research_loop_is_stale(tmp_pa
     assert result["freshness"]["research_loop"] is None
     assert result["freshness"]["research_pipeline"] is not None
     assert "canonical research pipeline stale or unmeasured" not in result["defects"]
+
+
+def test_build_rejects_a_stale_markout_even_when_file_mtime_is_fresh(tmp_path: Path) -> None:
+    now = datetime(2026, 8, 22, 12, tzinfo=UTC)
+    desk = tmp_path / "desks" / "mt5"
+    _write(desk / "data" / "universe" / "universe.json", {"XAUUSD": {}})
+    bars = desk / "data" / "universe" / "XAUUSD_H1.parquet"
+    bars.write_bytes(b"bars")
+    _write(desk / "data" / "research_queue.json", [{"id": "a", "status": "DONE"}])
+    _write(
+        desk / "reports" / "shadow" / "shadow_state.json",
+        {"last_run": "2026-08-22", "s1": {"n": 5}},
+    )
+    _write(desk / "reports" / "hypothesis_demo.jsonl", {})
+    _write(
+        desk / "reports" / "markout.json",
+        {"at": "2026-08-20T00:00:00+00:00", "usable": True, "n_matched": 7},
+    )
+    _write(
+        tmp_path / "data" / "intelligence" / "mt5_capability_reuse.json",
+        {"generated_at": now.isoformat(), "counts": {}},
+    )
+    for path in (bars, desk / "reports" / "hypothesis_demo.jsonl"):
+        os.utime(path, (now.timestamp(), now.timestamp()))
+
+    result = build(tmp_path, now=now)
+
+    assert "execution markout stale; current costs remain unmeasured" in result["defects"]

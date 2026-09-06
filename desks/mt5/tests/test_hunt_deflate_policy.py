@@ -29,7 +29,7 @@ from research.shadow_forward import (  # noqa: E402
 FORBIDDEN = ("effective", "deflated", "harsher", "clears_effective_bar")
 
 
-def test_original_screen_only_queues_the_exact_universal_gate() -> None:
+def test_discovery_screen_cannot_admit_shadow() -> None:
     rng = np.random.default_rng(11)
     frame = pd.DataFrame({
         "strong": rng.normal(0.01, 0.02, 300),

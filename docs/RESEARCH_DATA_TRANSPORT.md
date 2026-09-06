@@ -1,3 +1,10 @@
+> **PARTIALLY DECOMMISSIONED 2026-08-23.** The Hetzner VPS this doc's concrete commands target
+> (95.216.191.70) is fully torn down; the specific `cd /home/quant/quant-platform` steps below no
+> longer apply anywhere. The general data/research transport PROBLEM this file describes is still
+> real for the MT5 desk (`desks/mt5/AGENTS.md`), but its current answer is
+> `desks/mt5/scripts/sync_shadow_to_git.ps1` (small state, straight to git) plus box-local
+> `data`/`reports` for everything else -- not this VPS-specific mechanism.
+
 # Getting data and research into the same place
 
 **The problem, stated exactly.** `.gitignore` carries `data/*` with the comment *"the journal is

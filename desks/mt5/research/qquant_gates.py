@@ -1,5 +1,5 @@
 """QQUANT UNIVERSAL GATES — the original qquant platform validation stack, applied
-verbatim to the MT5 hunt survivors. PARALLEL build (same statistics, same
+verbatim to every tested MT5 cell without a battery prefilter. PARALLEL build (same statistics, same
 thresholds, same libs — only the orchestration is parallelized).
 
 Uses the EXACT implementations from C:\\Users\\dell\\quant-platform\\libs\\validation
@@ -9,7 +9,8 @@ Run under the quant-platform venv python.
 Gate order (gauntlet.py + run_campaign.py):
   1 economic_prior     - mechanism documented (every MT5 family has a registered rationale)
   2 in_sample_screen   - Sharpe > 0
-  3 deflated_sharpe    - DSR >= 0.95, n_trials = max(2, ceil(cells_tested * 7.0))
+  3 deflated_sharpe    - DSR >= 0.95, n_trials = ceil(N_eff(cells) * 7.0), with a
+                         fail-closed raw-cell fallback when dependence is unmeasurable
   4 pbo                - CSCV PBO <= 0.5
   5 reality_check_spa  - Hansen SPA p < 0.05
   6 cpcv               - CPCV mean OOS Sharpe > 0 (purge + embargo)
@@ -28,11 +29,11 @@ Output: reports/QQUANT_GATES.json + reports/DONE_qquant_gates.
 
 from __future__ import annotations
 
-import itertools
 import json
+import itertools
 import math
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -42,37 +43,31 @@ BASE = Path(__file__).resolve().parent.parent
 REPORTS = BASE / "reports"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
-sys.path.insert(0, str(Path(r"C:\Users\dell\quant-platform")))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # quant repo root: libs/validation lives there
 
+from libs.validation.cpcv import CPCV  # noqa: E402
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
+from mt5desk.canonical import calibrated_census_report  # noqa: E402
+from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
+from libs.validation.reality_check import hansen_spa  # noqa: E402
+from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
+
+from mt5desk import families  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from gate_policy import (  # noqa: E402
+    ATTESTATION as GATE_POLICY,
     COST_SCENARIO,
     DSR_THRESHOLD,
+    DONE_MARKER,
+    GATES,
     PBO_THRESHOLD,
     SPA_ALPHA,
     TRIALS_MULTIPLIER,
     WF_MIN_STABILITY,
     WF_SPLITS,
+    charged_trial_count,
 )
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
-from libs.validation.cpcv import CPCV  # noqa: E402
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
-from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
-from libs.validation.reality_check import hansen_spa  # noqa: E402
-from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
-
-# THRESHOLDS ARE IMPORTED ABOVE, NOT DEFINED HERE (2026-09-01). These seven were local copies
-# while universal_gate.py imported the same seven from gate_policy -- "the single immutable
-# authority for MT5 shadow admission", which loads them from desks/mt5/policy/gate_spec.yaml.
-# Two programs both called universal validation, one following policy and one carrying its own
-# numbers. They agreed on the day this changed -- verified value by value, all seven identical --
-# so no verdict moves and no bar moves. What is removed is the drift: an edit to gate_spec.yaml
-# moved universal_gate and left this file behind, silently, and the two would then certify
-# different candidates from the same evidence while both reporting a ten-gate pass.
-# TRIALS_MULTIPLIER matters most: policy pins the multiple-testing charge precisely so a
-# candidate "must not face a higher bar for having been scheduled into a wider sweep", and a
-# private copy here could raise that bar without anyone editing policy.
 WORKERS = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 8
 
 _worker_ctx: dict = {}
@@ -81,30 +76,28 @@ _worker_ctx: dict = {}
 def _init_worker() -> None:
     """Per-process imports + caches (spawn-safe: no closures over main state)."""
     global _worker_ctx
-    from run_hunt12 import WINDOWS as W12
-    from run_hunt16 import FAMILIES as F16
-    from run_hunt16 import WINDOWS as W16
+    from run_hunt12 import WINDOWS as W12, day_states
+    from run_hunt16 import WINDOWS as W16, FAMILIES as F16
     _worker_ctx = {"W12": W12, "W16": W16, "F16": F16,
                    "h1_cache": {}, "sig_cache": {}, "states_cache": {},
                    "meta": json.loads((BASE / "data" / "universe" / "universe.json")
                                       .read_text("utf-8"))}
 
     def costs_for(sym: str, mult: float = 1.0) -> Costs:
-        """Costs via the sanctioned constructor. This hand-roll carried BOTH unit bugs.
-
-        `0.48` for gold is dollars per OUNCE in a field that wants currency per LOT, so the
-        engine divided it by 100 and charged 3% of a real spread. And `Costs` divides commission
-        by contract_size, which treats one unit of account currency as one unit of PRICE -- true
-        only for a symbol quoted in the account's own currency, and 1/184th of the truth on a JPY
-        cross. `from_symbol` fixes both; hand-rolling beside it is what kept the fixes out.
-
-        `mult` STILL SCALES THE COMMISSION, which `from_symbol`'s docstring argues against (a
-        contractual fee does not widen). That argument is right and changing it here would LOWER
-        a stressed cost, which is the one direction that can manufacture a survivor. The units
-        are corrected now -- every component of this cost is >= what it was -- and the
-        commission-stress question is a separate decision with its own evidence.
-        """
+        # WAS: a hand-rolled hardcoded 0.48 special-case for XAUUSD -- the EXACT bug diagnosed
+        # and fixed in Costs' own class docstring (engine.py) and in portfolio_projection.py
+        # (commit 1fbbf3c3, 2026-08-20): 0.48 is dollars per OUNCE passed into a field that wants
+        # dollars per LOT, so gold ran at ~3% of its real spread. This call site never got that
+        # fix -- caught live 2026-08-23 while checking whether stress_costs/deflated_sharpe were
+        # unfairly harsh. They were not: costs here were UNDERSTATED, not overstated, so the
+        # fix makes real costs higher, not lower. Costs.from_symbol() derives every symbol,
+        # gold included, from the same universe.json metadata formula -- no special case.
         m = _worker_ctx["meta"].get(sym, {})
+        # `mult` STILL SCALES THE COMMISSION, which `from_symbol`'s docstring argues against (a
+        # contractual fee does not widen). Changing it here would LOWER a stressed cost, which is
+        # the one direction that can manufacture a survivor; the hand-roll this replaced charged
+        # 3.50 x mult, so every component of this cost stays >= what it was (desk-sync-clean,
+        # 2026-08-29). The commission-stress question is a separate decision with its own evidence.
         return Costs.from_symbol(m, mult=mult, commission_per_lot=3.50 * mult)
 
     _worker_ctx["costs_for"] = costs_for
@@ -151,8 +144,11 @@ def _series_of(hunt: int, sym: str, fam: str, side: str, win: str, state: str,
     sub = [s for s, d in zip(sigs, sdays) if states.get(d) == state]
     if not sub:
         return None
+    # mult=2.0 is the HONEST baseline, not a stress (Costs.from_symbol's own docstring): a round
+    # trip crosses the spread twice, on the way in and the way out. The stress scenario applies
+    # COST_SCENARIO ON TOP of that honest baseline, not instead of it -- see costs_for() below.
     res = run_backtest(h1, sub, _worker_ctx["costs_for"](
-        sym, COST_SCENARIO if stress else 1.0))
+        sym, 2.0 * COST_SCENARIO if stress else 2.0))
     series = pd.Series({pd.Timestamp(t.entry_time).date(): t.r_multiple
                         for t in res.trades}, dtype=float)
     series = series.groupby(level=0).sum()
@@ -185,11 +181,15 @@ def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
            row["win"], row["state"])
     if key not in cell_map or cell_map[key] is None:
         return {"error": f"series missing for {key}"}
-    # SORTED BY DATE, NEVER DICT ORDER: CPCV and the walk-forward engine split by POSITION and
-    # assume chronology; dict order only happens to be chronological until a pickle or a merge
-    # reorders it, and Sharpe is order-invariant so the break would hide inside the two gates
-    # whose whole purpose is respecting time. (Regressed once via hourly sync; test pins it.)
-    arr = pd.Series(cell_map[key]).sort_index().to_numpy(dtype=float)
+    # SORTED BY DATE EXPLICITLY. `arr` feeds CPCV and the walk-forward engine, both of which split
+    # by index POSITION and therefore assume chronological order. Taking `list(dict.values())`
+    # relied on dict insertion order surviving a Series.to_dict() and a multiprocessing pickle --
+    # an unstated dependency that, if it ever broke, would shuffle time inside the two gates whose
+    # entire purpose is to respect it, and would do so silently. Sharpe is order-invariant, so the
+    # failure would show up only in the gates that matter.
+    _ser = pd.Series(cell_map[key], dtype=float).dropna()
+    _ser.index = pd.to_datetime(pd.Series(list(_ser.index)), errors="coerce").values
+    arr = _ser[pd.notna(_ser.index)].sort_index().to_numpy(dtype=float)
     if len(arr) < 60:
         return {"error": f"series too short ({len(arr)})"}
     stages: dict[str, dict] = {}
@@ -263,16 +263,12 @@ def worker_eval_row(r: dict, pbo12_v: float, pbo16_v: float, spa12_v: float,
 def main() -> int:
     import multiprocessing as mp
 
-    from run_hunt12 import WINDOWS as W12  # noqa
-    from run_hunt16 import WINDOWS as W16  # noqa
-
-    sv = json.loads((REPORTS / "REAL_SURVIVORS.json").read_text("utf-8"))
     h12 = json.loads((REPORTS / "hunt12.json").read_text("utf-8"))
     h16 = json.loads((REPORTS / "hunt16.json").read_text("utf-8"))
     all12 = h12.get("all", [])
     all16 = h16.get("all", [])
     n_cells = {12: len(all12), 16: len(all16)}
-    t0 = datetime.now(UTC)
+    t0 = datetime.now(timezone.utc)
 
     cells = []
     for c in all12:
@@ -286,7 +282,7 @@ def main() -> int:
         for k, r in enumerate(pool.imap_unordered(worker_cell, cells, chunksize=4)):
             results.append(r)
             if (k + 1) % 50 == 0:
-                el = (datetime.now(UTC) - t0).total_seconds()
+                el = (datetime.now(timezone.utc) - t0).total_seconds()
                 print(f"cells {k + 1}/{len(cells)} "
                       f"({el / (k + 1) * len(cells) / 60:.1f} min ETA)", flush=True)
 
@@ -300,10 +296,40 @@ def main() -> int:
         else:
             fail += 1
     print(f"cell series computed: {ok} ok, {fail} empty/failed "
-          f"in {(datetime.now(UTC) - t0).total_seconds():.0f}s", flush=True)
+          f"in {(datetime.now(timezone.utc) - t0).total_seconds():.0f}s", flush=True)
 
     # ----- original program-level stats on the full trial matrices ----------
     def build_matrix(hunt: int) -> tuple[np.ndarray | None, list]:
+        """Date-aligned trial matrix: row t is THE SAME CALENDAR DAY in every column.
+
+        IT WAS NEITHER ALIGNED NOR COMPLETE, AND THE ALIGNMENT BUG IS THE WORSE OF THE TWO.
+        Each cell's series is a {date: return} dict. The old code did
+
+            arr = np.asarray(list(s.values()))          # dates discarded
+            ...
+            np.column_stack([a[-shortest:] for a in cols])   # clipped to the shortest cell
+
+        which stacked the last N values of each column POSITIONALLY. Cells trade on different
+        days, so row 5 of column A and row 5 of column B were different dates. Every number
+        computed from the joint structure of that matrix -- PBO/CSCV, Hansen SPA, the correlation
+        implied across trials -- was measured on a cross-section that never existed. Those are
+        precisely the gates that decide whether a survivor is a curve fit.
+
+        The truncation was the second defect: clipping every column to the shortest cell,
+        so one sparse cell with 60 observations reduced a matrix whose other cells had thousands
+        to a 167-day window. Both defects have the same root -- the date index was thrown away --
+        and both are fixed by joining on it.
+
+        NON-TRADING DAYS ARE 0.0 HERE, AND THAT IS NOT THE BANNED ZERO-FILL. The distinction is
+        what the number is being used FOR. Writing 0.0 into a series to estimate CORRELATION
+        between sleeves fabricates decorrelation, inflates k_eff and raises leverage -- that is
+        the defect in `record_sleeve_returns` and it stays forbidden. Here the columns are
+        calendar P&L streams of individual strategies, and a day a strategy held no position
+        genuinely returned nothing: the zero is a true statement about that day, not a
+        substitute for a missing observation. PBO compares in-sample against out-of-sample
+        selection over the SAME periods, which requires a common calendar; an inner join across
+        thousands of cells that trade on different days would collapse to almost no rows.
+        """
         cols, col_meta = {}, []
         for c in (all12 if hunt == 12 else all16):
             key = (c["sym"], c.get("fam") or c.get("family"),
@@ -311,37 +337,94 @@ def main() -> int:
             s = cell_map.get(key)
             if s is None:
                 continue
-            ser = pd.Series(s).sort_index()
+            ser = pd.Series(s, dtype=float).dropna()
+            if len(ser) < 60:
+                continue                  # too thin to characterise, at any alignment
+            ser.index = pd.to_datetime(pd.Series(list(ser.index)), errors="coerce").values
+            ser = ser[pd.notna(ser.index)]
             if len(ser) < 60:
                 continue
-            cols[len(col_meta)] = ser
+            # Duplicate dates within one cell are summed: two trades on one day are one day's P&L.
+            ser = ser.groupby(level=0).sum().sort_index()
+            cols[f"c{len(col_meta)}"] = ser
             col_meta.append(c)
+        # AN UNSWEPT FAMILY RETURNS AN EMPTY MATRIX, NOT None. `sharpes12` below indexes
+        # `m12.shape[1]` unconditionally, so returning None raises AttributeError three lines
+        # later and reads like a code fault rather than "this family had no cells". An empty
+        # (0, 0) array flows through: the comprehension yields nothing and the `.size` guards
+        # further down do the rest. np.column_stack([]) and min([]) both raise, so the guard has
+        # to be here either way.
+        #
+        # (The progress-print that lived here indexed `ci` and `cells`, which this loop does not
+        # define -- a fragment left behind by an earlier loop shape. Dropped with the refactor.)
         if not cols:
-            return None, []
-        # JOIN ON THE DATE INDEX. Truncate-to-shortest compared cell A's Tuesday against cell
-        # B's Thursday whenever histories differed, and PBO/SPA are CROSS-SECTIONAL -- every
-        # row must be the same day. A day a cell did not trade is an honest 0.0 R, not a hole
-        # to be closed by shifting its history. (Regressed via hourly sync; tests pin this.)
-        mat = pd.DataFrame(cols).sort_index().fillna(0.0)
-        return mat.to_numpy(dtype=float), col_meta
+            return np.empty((0, 0)), []
+        # The join is the fix. pandas aligns on the index, so every row is one calendar day
+        # across all columns, and the matrix spans the UNION of trading days rather than being
+        # clipped to the thinnest cell.
+        df = pd.DataFrame(cols).sort_index().fillna(0.0)
+        print(f"matrix hunt{hunt}: {df.shape[0]} calendar days x {df.shape[1]} cells "
+              f"({df.index.min().date()} -> {df.index.max().date()}), date-aligned",
+              flush=True)
+        return df.to_numpy(dtype=float), col_meta
 
     m12, cm12 = build_matrix(12)
     m16, cm16 = build_matrix(16)
     print(f"matrix hunt12: {m12.shape if m12 is not None else 'none'}  "
           f"hunt16: {m16.shape if m16 is not None else 'none'}", flush=True)
 
-    sharpes12 = np.array([sharpe_ratio(m12[:, k]) for k in range(m12.shape[1])]) \
-        if m12 is not None else np.array([])
-    sharpes16 = np.array([sharpe_ratio(m16[:, k]) for k in range(m16.shape[1])]) \
-        if m16 is not None else np.array([])
-    n_trials12 = max(2, math.ceil(n_cells[12] * TRIALS_MULTIPLIER))
-    n_trials16 = max(2, math.ceil(n_cells[16] * TRIALS_MULTIPLIER))
+    sharpes12 = np.array([sharpe_ratio(m12[:, k]) for k in range(m12.shape[1])])
+    sharpes16 = np.array([sharpe_ratio(m16[:, k]) for k in range(m16.shape[1])])
+    raw_trials12 = max(2, math.ceil(n_cells[12] * TRIALS_MULTIPLIER))
+    raw_trials16 = max(2, math.ceil(n_cells[16] * TRIALS_MULTIPLIER))
+
+    # HOW MANY SEARCHES WERE ACTUALLY PERFORMED, as distinct from how many cells were counted.
+    # The DSR threshold scales with E[max of N], derived for N INDEPENDENT draws, and a sweep over
+    # (symbol x family x side x window x state x params) manufactures near-copies structurally:
+    # rr=2.0/ttl=12 and rr=2.0/ttl=13 are one search sampled twice. Reported at BOTH counts and
+    # never silently substituted -- lowering N makes every threshold easier, so the correction has
+    # to be visible. The gate uses only the fixed participation-ratio result and retains the 7x
+    # campaign-history multiplier; an unmeasurable census fails closed to raw cells x 7.
+    census = {}
+    charged_trials = {12: raw_trials12, 16: raw_trials16}
+    for hunt, mat, sh, n_raw in ((12, m12, sharpes12, raw_trials12),
+                                 (16, m16, sharpes16, raw_trials16)):
+        if mat.size and mat.shape[1] >= 2:
+            sd = float(np.std(sh)) if len(sh) > 1 else 0.0
+            rep = calibrated_census_report(
+                [mat[:, k] for k in range(mat.shape[1])], sd_sharpe=sd)
+            rep["n_raw_declared"] = n_raw
+            # The 7x campaign multiplier remains intact: it prices the broader steered search,
+            # while the fixed, independent-null-calibrated participation census removes only
+            # dependence beyond the estimator's finite-sample floor. If the census is absent,
+            # malformed, or not the expected fixed method, the raw burden remains.
+            charged_trials[hunt], rep["trial_count_basis"] = charged_trial_count(
+                mat.shape[1], rep.get("n_effective"), rep.get("method"))
+            rep["n_trials_charged"] = charged_trials[hunt]
+            census[f"hunt{hunt}"] = rep
+            print(f"trial census hunt{hunt}: {rep['n_raw']} cells behave as "
+                  f"{rep['n_effective']} independent searches ({rep['inflation']}x inflation); "
+                  f"SR0 {rep['sr0_raw']} -> {rep['sr0_effective']}", flush=True)
+        else:
+            census[f"hunt{hunt}"] = {"status": "UNMEASURABLE", "n_raw_declared": n_raw,
+                                     "n_trials_charged": charged_trials[hunt],
+                                     "trial_count_basis":
+                                         "raw_cells_x_campaign_multiplier_fail_closed",
+                                     "why": "fewer than two usable columns in the trial matrix"}
+
+    n_trials12 = charged_trials[12]
+    n_trials16 = charged_trials[16]
 
     print("program-level: PBO + SPA on full trial matrices...", flush=True)
     pbo12 = probability_backtest_overfitting(m12)
-    pbo16 = probability_backtest_overfitting(m16)
+    # hunt16 may be unswept (empty matrix). PBO/SPA on nothing is not "clean" -- it is
+    # UNMEASURED, so it fails closed: pbo=1.0 and p=1.0 deny admission rather than granting it.
+    class _NullStat:
+        pbo = 1.0
+        p_value = 1.0
+    pbo16 = probability_backtest_overfitting(m16) if m16.size else _NullStat()
     spa12 = hansen_spa(m12)
-    spa16 = hansen_spa(m16)
+    spa16 = hansen_spa(m16) if m16.size else _NullStat()
     print(f"hunt12 PBO={pbo12.pbo:.3f} SPA p={spa12.p_value:.3f} | "
           f"hunt16 PBO={pbo16.pbo:.3f} SPA p={spa16.p_value:.3f}", flush=True)
 
@@ -353,11 +436,13 @@ def main() -> int:
     print(f"running the original universal gauntlet on all {len(rows)} tested cells "
           f"({WORKERS} workers; no battery prefilter)...", flush=True)
 
-    # pool.imap() passes exactly one argument per call from its iterable -- it cannot fan out
-    # the 8 constant arguments worker_eval_row also needs. starmap() unpacks a tuple per call;
-    # zip() builds those tuples. Confirmed live 2026-08-23: the imap form crashed with
-    # `TypeError: Pool.imap() takes from 3 to 4 positional arguments but 11 were given` after
-    # ~5 minutes of real upstream computation. (Restored after the desk sync re-trampled it.)
+    # pool.imap() passes exactly one argument per call from its iterable -- it cannot fan out the
+    # 8 constant arguments worker_eval_row also needs (same for every row). starmap() unpacks a
+    # tuple of arguments per call instead, which is what this actually needs; zip() builds those
+    # tuples by pairing each row with the (repeated) constants. Confirmed live 2026-08-23: this
+    # crashed with `TypeError: Pool.imap() takes from 3 to 4 positional arguments but 11 were
+    # given` on line 412, after ~5 minutes of real upstream computation (cell series, trial
+    # matrices, program-level PBO/SPA) -- the script had never been run to completion before.
     with mp.Pool(WORKERS, initializer=_init_eval_worker, initargs=(cell_map,)) as pool:
         verdicts = pool.starmap(worker_eval_row, zip(
             rows,
@@ -378,29 +463,35 @@ def main() -> int:
                 gate_fails[name] = gate_fails.get(name, 0) + 1
     out = {
         "n_trials": {"hunt12": n_trials12, "hunt16": n_trials16},
+        # The multiplicity burden the gates actually applied, next to the burden
+        # the search actually earned. Both, always -- see mt5desk.canonical.
+        "trial_census": census,
         "program_level": {
             "hunt12": {"pbo": round(float(pbo12.pbo), 4),
                        "spa_p": round(float(spa12.p_value), 4)},
             "hunt16": {"pbo": round(float(pbo16.pbo), 4),
                        "spa_p": round(float(spa16.p_value), 4)},
         },
-        "gates": [n for n in ("economic_prior", "in_sample_screen", "deflated_sharpe",
-                              "pbo", "reality_check_spa", "cpcv", "walk_forward",
-                              "stress_costs", "lockbox", "expected_value")],
+        "gates": list(GATES),
+        "gate_policy": GATE_POLICY,
+        "admission_unit": GATE_POLICY["regime_admission_unit"],
+        "activation_law": GATE_POLICY["regime_control"],
         "survivors_passing_all": n_pass,
         "survivors_total": len(verdicts),
         "gate_fails": gate_fails,
         "verdicts": verdicts,
-        "swept_at": datetime.now(UTC).isoformat(),
-        "wall_s": round((datetime.now(UTC) - t0).total_seconds(), 1),
+        "swept_at": datetime.now(timezone.utc).isoformat(),
+        "wall_s": round((datetime.now(timezone.utc) - t0).total_seconds(), 1),
         "workers": WORKERS,
     }
     (REPORTS / "QQUANT_GATES.json").write_text(json.dumps(out, indent=2, default=str),
                                                encoding="utf-8")
     (REPORTS / "DONE_qquant_gates").write_text(
-        datetime.now(UTC).isoformat(), encoding="utf-8")
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+    (REPORTS / DONE_MARKER).write_text(
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
     print(f"\nUNIVERSAL GAUNTLET: {n_pass}/{len(verdicts)} survivors pass all 10 gates "
-          f"(wall {(datetime.now(UTC) - t0).total_seconds() / 60:.1f} min)",
+          f"(wall {(datetime.now(timezone.utc) - t0).total_seconds() / 60:.1f} min)",
           flush=True)
     for name, cnt in sorted(gate_fails.items()):
         print(f"  gate fail [{name}]: {cnt}", flush=True)

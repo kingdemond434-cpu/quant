@@ -116,9 +116,56 @@ else
     echo "  desk-state: no python found -- state UNKNOWN, not fine"
 fi
 
+# LIVE SHADOW STATE, read from the artifact the VPS commits every 15 minutes.
+#
+# WHY THIS IS HERE AND NOT IN THE GAP ROWS BELOW. On 2026-08-27 this hook told a
+# session "SHADOW HAS PRODUCED ZERO FORWARD EVIDENCE -- all 19 sleeves at n=0",
+# while shadow_health.json on the box said 16 certified sleeves, 4 with forward
+# trades, missing_sleeves EMPTY. The rows were eight days of stale prose and the
+# artifact was the truth. A hook that prints a number typed into a document is
+# the exact failure CLAUDE.md warns about one paragraph up.
+#
+# AND ITS AGE IS PART OF THE READING. The same check found the artifact 32 hours
+# stale against a 15-minute sync -- the evidence pipeline had stopped and every
+# report still said OPERATING, because a stale artifact and a healthy one are
+# byte-identical apart from a timestamp nobody read.
+if [ -f desks/mt5/reports/shadow/shadow_health.json ] && [ -n "$PY" ]; then
+    "$PY" - <<'PYSHADOW'
+import json, datetime, sys
+try:
+    d = json.load(open("desks/mt5/reports/shadow/shadow_health.json"))
+except Exception as e:
+    print(f"  shadow     UNREADABLE ({e}) -- not the same as healthy"); sys.exit()
+try:
+    age_h = (datetime.datetime.now(datetime.timezone.utc)
+             - datetime.datetime.fromisoformat(d["updated_at"])).total_seconds() / 3600
+except Exception:
+    age_h = None
+n_fwd = d.get("sleeves_with_forward_trades")
+miss = d.get("missing_sleeves") or []
+line = (f"  shadow     {d.get('certified_sleeves_total', '?')} certified, "
+        f"{n_fwd} with forward trades, {len(miss)} missing from shadow "
+        f"({d.get('status', '?')})")
+print(line)
+if age_h is not None and age_h > 1.0:
+    print(f"             <-- ARTIFACT {age_h:.1f}h STALE against a 15-min sync. "
+          f"The numbers above describe {d.get('updated_at')}, NOT now.")
+if d.get("gateway_armed"):
+    print(f"             gateway ARMED, {len(d.get('promoted_live_sleeves') or [])} "
+          f"sleeve(s) promoted live")
+PYSHADOW
+fi
+
 if [ -f docs/GAP_REGISTER.md ]; then
     echo "  top open gap rows (docs/GAP_REGISTER.md):"
-    grep -oE '^\| [0-9]+ \| \*\*[^*]{1,95}' docs/GAP_REGISTER.md 2>/dev/null \
+    # OPEN means open. This was `tail -3` over EVERY row, so it printed the last
+    # three written regardless of status -- and on 2026-08-27 all three were
+    # marked FIXED or BUILT while the header said "top open". A session reading
+    # it went looking for defects that had been closed a week earlier. The final
+    # column carries the status; rows resolved there are not open.
+    grep -E '^\| [0-9]+ \| \*\*' docs/GAP_REGISTER.md 2>/dev/null \
+      | grep -vE '\|[^|]*(FIXED|RESOLVED|CLOSED|DONE)[^|]*\|[[:space:]]*$' \
+      | grep -oE '^\| [0-9]+ \| \*\*[^*]{1,95}' \
       | sed 's/^| /    #/; s/ | \*\*/  /' | tail -3
 fi
 # SHARED-CHECKOUT WARNING (R0423). Printed HERE because session start is the one moment the

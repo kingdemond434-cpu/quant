@@ -101,11 +101,51 @@ brain_mutex() {
 # the same time instead of one process taking 4.9GB and the kernel choosing among the rest.
 # Raise or lower it from a MEASUREMENT of what a seat actually uses, never from a guess.
 _BRAIN_MEM_FLOOR_MB="${_BRAIN_MEM_FLOOR_MB:-1500}"
+
+# THE FLOOR IS LEARNED FROM DEATHS, NOT TYPED (2026-09-06). 1500MB was itself the second guess:
+# 500MB was chosen as "enough that the launch does not immediately die" and the measured outcome
+# was that seats died anyway -- six gap-wirer launches OOM-killed on 2026-08-28, three more in
+# the 24h to 2026-09-05, gap-wirer and video-hunter both at ZERO produced in seven days. Raising
+# a guess to a bigger guess is the same move that failed, so this reads what actually happened.
+#
+# `data/seat_memory_floor.json` is written by scripts/check_seat_launch_yield.py, which already
+# classifies every launch and already knows which ones were DIED_AFTER_START -- the OOM shape.
+# When a seat dies at an admitted level, the floor for THAT seat rises above the level it died
+# at. It only ever rises, exactly like job_lock.measured_need_mb, so a box cannot talk its way
+# into admitting a seat it has already been observed to kill.
+_brain_learned_floor() {
+    local organ="${BRAIN_ORGAN:-}" f="/home/quant/quant-platform/data/seat_memory_floor.json"
+    [ -n "$organ" ] && [ -r "$f" ] || { printf '%s' "$_BRAIN_MEM_FLOOR_MB"; return 0; }
+    python3 - "$f" "$organ" "$_BRAIN_MEM_FLOOR_MB" <<'PYEOF' 2>/dev/null || printf '%s' "$_BRAIN_MEM_FLOOR_MB"
+import json, sys
+path, organ, declared = sys.argv[1], sys.argv[2], int(sys.argv[3])
+try:
+    rows = json.load(open(path))
+    learned = int((rows.get("floors") or {}).get(organ) or 0)
+except Exception:
+    learned = 0
+# THE DECLARATION IS THE FLOOR OF THE FLOOR. A learned value may only raise it: a seat that
+# happened to survive on a quiet box must not lower the bar for a busy one.
+print(max(declared, learned))
+PYEOF
+}
+
 brain_mem_gate() {
-    local avail_mb
-    avail_mb="$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)"
-    [ -n "$avail_mb" ] || return 0          # cannot read -> do not block, never block the desk
-    if [ "$avail_mb" -lt "$_BRAIN_MEM_FLOOR_MB" ]; then
+    local avail_mb floor_mb a b c
+    # MEDIAN OF THREE, NOT ONE SAMPLE. Free memory on this box is a sawtooth -- a searcher builds
+    # primitives for a symbol, peaks, emits, releases. job_lock measured a single reading of 55MB
+    # seconds away from readings of 1,605MB, and a job whose start depends on a coin flip is not
+    # scheduled, it is gambled. This gate took exactly one sample, so it both DEFERRED seats that
+    # would have fit and ADMITTED seats onto a transient peak that closed under them -- and the
+    # second of those is the OOM death the seat yield keeps reporting.
+    a="$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)"
+    [ -n "$a" ] || return 0                 # cannot read -> do not block, never block the desk
+    sleep 2; b="$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)"
+    sleep 2; c="$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)"
+    avail_mb="$(printf '%s\n%s\n%s\n' "$a" "${b:-$a}" "${c:-$a}" | sort -n | sed -n 2p)"
+    floor_mb="$(_brain_learned_floor)"
+    _BRAIN_MEM_FLOOR_MB="$floor_mb"
+    if [ "$avail_mb" -lt "$floor_mb" ]; then
         [ -n "${BRAIN_MUTEX_LOGFILE:-}" ] && \
             echo "=== ${BRAIN_ORGAN:-brain} MEMORY-STARVED only ${avail_mb}MB available DEFERRED -- box at ${_BRAIN_MEM_FLOOR_MB}MB floor; organ_catchup re-fires ===" \
             >> "$BRAIN_MUTEX_LOGFILE" 2>/dev/null || true

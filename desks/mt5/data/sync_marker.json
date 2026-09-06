@@ -1,16 +1,21 @@
 {
- "last_cycle": "2026-08-17T04:33:01.121643+00:00",
+ "last_cycle": "2026-08-27T01:57:38.636500+00:00",
  "health": {
   "hunt12": {
    "alive": false,
    "restarted": true
   },
   "hunt16": {
-   "alive": true
+   "alive": false,
+   "restarted": true
   },
   "gateway_cmd": {
    "alive": true
   }
+ },
+ "daily": {
+  "exit_code": 0,
+  "at": "2026-08-27T01:57:37+00:00"
  },
  "mine": {
   "sources_tried": 2,

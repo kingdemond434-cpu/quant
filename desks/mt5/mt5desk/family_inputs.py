@@ -217,7 +217,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             # HOURLY series reindexed causally onto this cell's own index. Mirrors
             # `external_gauntlet.build_cell` exactly, which is the point of this module.
             all_symbols = sorted(p.stem.removesuffix("_H1")
-                                 for p in inputs.UNIVERSE.glob("*_H1.parquet"))
+                                 for p in inputs.UNIVERSE.glob("*.parquet"))
             extra["extra"] = resolve_inputs(sym, h1.index, all_symbols)
             return extra, "ok"
     except Exception as exc:                     # a rebuild that raises is a gap, never a guess

@@ -127,10 +127,7 @@ def _first_forward_trade(records: list[dict]) -> str | None:
     if not stamps:
         return None
     first = min(stamps)
-    if first.tzinfo is None:
-        first = first.tz_localize("UTC")
-    else:
-        first = first.tz_convert("UTC")
+    first = first.tz_localize("UTC") if first.tzinfo is None else first.tz_convert("UTC")
     return first.isoformat()
 
 
@@ -214,8 +211,25 @@ def run(now: datetime | None = None) -> dict:
             records = [r for r in _all
                        if pd.Timestamp(str(r.get("entry_time") or r.get("time") or
                                            r.get("open_time") or SHADOW_START)) >= _bound]
+            _empty_why = ("" if records else
+                          f"the clock froze at {_fs} and no trade has occurred since")
         else:
+            # NO PRIOR ROW MEANS NO FROZEN CLOCK, so nothing here is forward evidence yet: the
+            # boundary this sleeve will be judged against is being stamped on THIS pass, and
+            # counting trades from before it is the selection-era leak this whole block exists to
+            # stop (measured 2026-08-26: 57 selection-era observations presented as forward).
+            #
+            # BUT ZERO MUST SAY WHY IT IS ZERO. This branch is indistinguishable, in every number
+            # it publishes, from "the clock is running and the market has been quiet" -- and the
+            # two demand opposite responses. One waits; the other means the state file is not
+            # persisting and the sleeve will read n=0 for ever, maturing never, however many
+            # trades it takes. Three gold scalp sleeves sat at n=0 with 39/65/69 observations all
+            # tagged historical, and nothing in the row said which of the two it was.
             records = []
+            _empty_why = ("no prior clock for this sleeve: its forward boundary is being stamped "
+                          "on this pass, so every observation so far is selection-era. If this "
+                          "row says the same thing on the NEXT pass, the state file is not "
+                          "persisting and the clock can never start")
         n_historical = len(_all) - len(records)
         ledger = SHADOW / f"ledger_{name}.json"
         ledger.write_text(json.dumps(
@@ -263,6 +277,15 @@ def run(now: datetime | None = None) -> dict:
             "first_trade_at": _first_forward_trade(records) or _prior.get("first_trade_at"),
             "status": status, "timeframe": tf, "choice": choice.__dict__,
             "n": n, "n_historical": n_historical, "days": days,
+            # BOTH SPELLINGS. `shadow_forward` and `qquant_shadow` publish `days_active`, this
+            # lane published `days`, and the dashboard read only the first -- so three sleeves on
+            # their forward clock since 2026-08-22 displayed as "day 0/14" for a fortnight. The
+            # reader was fixed too; writing both is what stops the NEXT reader repeating it.
+            "days_active": days,
+            # WHY n IS ZERO, when it is. "The clock is running and the market was quiet" and
+            # "this sleeve has no clock at all" publish identical numbers and demand opposite
+            # responses; only one of them is a defect, and it is invisible without this line.
+            "forward_empty_reason": _empty_why,
             "expectancy_r": exp, "max_drawdown_r": max_dd, "forward_verdict": diagnostics,
             "certificate": (f"ten_gate:{SCALP_KEY_PREFIX}{name}" if name in certified else
                             "forward_clock (no ten-gate certificate for this cell yet; "

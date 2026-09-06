@@ -570,7 +570,7 @@ def sweep_pairs(meta: dict) -> list[tuple[str, str]]:
     opposite facts (trial_allocator's own rule 4), and pre-weighting charts nobody has measured
     would freeze this module's first guess into the data that justifies it.
     """
-    symbols = sorted({p.stem.rsplit("_", 1)[0] for p in UNIVERSE.glob("*_H1.parquet")}
+    symbols = sorted({p.stem.rsplit("_", 1)[0] for p in UNIVERSE.glob("*.parquet")}
                      | {s for s in (meta or {}) if (UNIVERSE / f"{s}_H1.parquet").exists()})
     pairs = [(sym, tf) for sym in symbols for tf in timeframes_of(sym, meta)]
     try:

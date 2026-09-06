@@ -1,0 +1,118 @@
+{
+  "at": "2026-08-17T22:54:48+00:00",
+  "symbols": {
+    "AUDCAD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "AUDJPY": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "AUDNZD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "AUDUSD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "BTCUSD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "CADJPY": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "CHFJPY": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "ETHUSD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "EURCHF": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "EURGBP": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "EURJPY": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "EURUSD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "GBPJPY": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "GBPUSD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "NZDCAD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "NZDJPY": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "NZDUSD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "USDCAD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "USDCHF": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "USDJPY": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "XAGUSD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    },
+    "XAUUSD": {
+      "subscribed": true,
+      "levels": 0,
+      "verdict": "NO_DEPTH"
+    }
+  },
+  "symbols_with_real_depth": [],
+  "section_222_buildable": false,
+  "note": "Constitution 222 (liquidity survival: cancel/refill hazard, absorption vs fragile display) requires more than one level per side. Where verdict is NO_DEPTH or TOP_OF_BOOK_ONLY, 222 is NOT buildable on this venue and must not be built on a book synthesised from bid/ask -- that would model the synthesis. The tick tape below is unaffected and supports section 23 in full."
+}

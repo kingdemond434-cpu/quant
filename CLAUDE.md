@@ -146,3 +146,19 @@ never privileged); capital is evidence-hard (nothing gets authority for sounding
   exact spec holds a ten-gate certificate is written LIVE on the same cycle its clock matures,
   the gateway trades it on its next pass, and capital is the allocator's decision by ΔE[log W].
   No champion wait, no kill-by-comparison, no human act. Retirement stays automatic too.
+
+# Desk memory: 100% retention, and how to reach it
+
+- **Every lesson is retained and reachable. Nothing is forgotten between sessions.**
+  `docs/desk_lessons.jsonl` is the source of truth (228 lessons). `libs/research/desk_memory.py`
+  injects them; `BUDGET_CHARS` now fits the WHOLE corpus (~116k chars, ~29k tokens), so
+  `reach()` is 228/228 with 0 unreached and 0 lost. It was 12,000 chars until 2026-09-06, which
+  silently withheld 69 lessons from every organ and dropped 23 entirely.
+- **Look up anything, any session:** `python scripts/lessons.py <query>` searches the whole
+  corpus; `--id L0099`, `--tag governance`, `--all`, `--orphans` (must stay 0). Injection gives
+  an organ what is most relevant unasked; this is how it reaches the rest ON PURPOSE.
+- **Browse the corpus as a graph:** `python scripts/build_lesson_vault.py` regenerates
+  `docs/lesson_vault/` as an Obsidian vault (cross-linked, tagged, INDEX.md). It is a DERIVED
+  VIEW — edit `docs/desk_lessons.jsonl`, never the vault, or the two drift.
+- **Adding a lesson:** `scripts/learn.py add`. A lesson leaves the corpus one way only — retired
+  with a named falsifier that actually arrived. Silence is not retirement.

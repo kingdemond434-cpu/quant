@@ -18,11 +18,16 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import time
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
+#: The REPOSITORY root, two levels above the desk. Legs live under both: the research organs under
+#: `desks/mt5/...`, the publication and maintenance scripts under `<repo>/scripts/...`. `_producer`
+#: resolves against both and reports a script it finds under neither.
+REPO = BASE.parent.parent
 # BASE ON THE PATH, AT MODULE LEVEL. `record_tape()` runs BEFORE `daily()`, and `daily_cycle` is
 # the module that happened to insert BASE -- so every hourly run reached `from mt5desk import
 # tape` with BASE still absent and died on ModuleNotFoundError. MEASURED 2026-08-27: 66
@@ -80,13 +85,20 @@ def procs() -> str | None:
     return (out.stdout or "") + (out.stderr or "")
 
 
-def start(script: str) -> None:
-    subprocess.Popen(
+def start(script: str) -> bool:
+    """Launch script hidden/detached. Returns whether the LAUNCH COMMAND ITSELF reported
+    success -- not proof the process is still alive a moment later. health() re-polls procs()
+    afterward for that; a launch command returning 0 and a process actually staying up are
+    different facts, and conflating them is exactly the bug this replaced (restarted=True was
+    written unconditionally, with no check at all, on top of a launch path that did not exist
+    on this box in the first place)."""
+    result = subprocess.run(
         ["powershell", "-NoProfile", "-Command",
          f"Start-Process -FilePath '{PY}' -ArgumentList "
          f"'-u','-W','ignore','research\\{script}' -WorkingDirectory "
          f"'{BASE}' -WindowStyle Hidden"],
-        creationflags=0x08000000)
+        capture_output=True, text=True, timeout=30)
+    return result.returncode == 0
 
 
 def _cmd_lines() -> str | None:
@@ -116,8 +128,15 @@ def health() -> dict:
         alive = script in blob
         res[name] = {"alive": alive}
         if not alive:
-            start(script)
-            res[name]["restarted"] = True
+            launch_ok = start(script)
+            if launch_ok:
+                # Give the OS a moment to actually create the process before checking for it --
+                # process creation itself is near-instant even for a script whose real work is
+                # slow.
+                time.sleep(5)
+            res[name]["restarted"] = bool(launch_ok and script in procs())
+            if not res[name]["restarted"]:
+                res[name]["restart_failed"] = True
     # `str.find` RETURNS -1 WHEN NOT FOUND, AND bool(-1) IS TRUE -- so this read "alive" exactly
     # when MT5Gateway.cmd was absent, and False only in the one case where it sat at position 0.
     # An inverted health check is worse than none: it reports green for the failure it exists to
@@ -382,10 +401,27 @@ def _producer(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     NOT IN-PROCESS, unlike `deepen`. These are search jobs: they allocate heavily, they can hang
     on a terminal call, and a crash inside them must not take the cycle's remaining legs with it.
     A subprocess with a timeout gives all three properties for the cost of an interpreter start.
+
+    THE SCRIPT IS RESOLVED AGAINST BOTH ROOTS, and a miss is REPORTED rather than run.
+    Every leg here used to live under `desks/mt5`, so `BASE / script` was always right. The
+    publication legs do not: `build_zentech_state` and `run_miner_maintenance` are repo-level
+    scripts, and `BASE / "scripts/build_zentech_state.py"` is a path that does not exist. Python
+    given a nonexistent file exits 2 with a one-line error, which this would have captured as a
+    perfectly ordinary failing leg -- a dashboard that silently stopped being rebuilt, reported
+    hourly as a two-digit exit code nobody reads. ABSENCE IS NEVER A PASS (L1.28a): a script
+    found at neither root says MISSING and names both places it looked.
     """
+    for root in (BASE, REPO):
+        target = root / script
+        if target.exists():
+            break
+    else:
+        return {"exit_code": None, "status": "MISSING",
+                "why": f"{script} exists under neither {BASE} nor {REPO}",
+                "at": datetime.now(UTC).isoformat()}
     try:
-        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(BASE / script), *args],
-                           capture_output=True, text=True, cwd=str(BASE),
+        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(target), *args],
+                           capture_output=True, text=True, cwd=str(root),
                            timeout=SEARCH_BUDGET_SEC, check=False)
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
                 "at": datetime.now(UTC).isoformat()}
@@ -518,7 +554,129 @@ def frontier() -> dict:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
 
 
+def refresh_bars() -> dict:
+    """BARS, EVERY HOUR, AT EVERY TIMEFRAME. This was a DAILY step and that was the whole bug.
+
+    `refresh_tail` lived only in `daily_cycle`, so the best any series could be was 24h old -- and
+    it globbed `*_H1.parquet`, so the sub-hourly series were refreshed by nothing at all.
+    MEASURED 2026-09-06: XAUUSD_M5/_M15/_M1 held no bar after 2026-08-21 23:55 while the three
+    gold scalp sleeves had been on their forward clock since 2026-08-22. They had zero bars for
+    every day of that clock, which is the entire reason they sat at forward n=0.
+
+    A sleeve cannot trade a bar that was never fetched, so this is upstream of every other leg
+    here: mining, searching and judging on a stale chart all produce confident answers about a
+    market that has moved on. It runs FIRST for that reason.
+
+    Exit 2 is `refresh_tail`'s honest "no MT5 terminal on this box" and is not a failure -- the
+    VPS has no terminal and must not report one.
+    """
+    out = _producer("refresh_tail", "scripts/refresh_tail.py")
+    if out.get("exit_code") == 2:
+        out["note"] = "no MT5 terminal on this host; bars are refreshed by the box that has one"
+    return out
+
+
+def deep_forest() -> dict:
+    """The deep-forest miner: a DAILY organ promoted to hourly.
+
+    It is one of the desk's few genuinely broad discovery surfaces, and running it once a day
+    meant twenty-three hours in which a newly published mechanism could not be seen. Its own
+    cursor makes repeat passes cheap when nothing new has landed, so hourly costs little and a
+    quiet pass still advances the queue (mandate section 70, never idle).
+    """
+    return _producer("deep_forest_miner", "research/deep_forest_miner.py")
+
+
+def publish_survivors() -> dict:
+    """`survivor_publication`: seal certified survivors into runnable shadow specs.
+
+    UNSCHEDULED ANYWHERE UNTIL NOW -- not a cron row, not a timer, not a box task. It was only
+    ever called inline by whatever happened to import it, so certificates could be certified and
+    then simply not published, which is indistinguishable downstream from never having certified.
+    This is the step that turns a gate verdict into something the shadow lane can actually run.
+    """
+    return _producer("survivor_publication", "research/survivor_publication.py")
+
+
+def publish_dashboard() -> dict:
+    """Rebuild web/desk_state.json -- the file every dashboard reads.
+
+    ALSO A DAILY STEP UNTIL NOW, which put a 24-hour floor under the board's freshness before any
+    other staleness was even considered. A desk that publishes its state once a day cannot answer
+    "is this current" with anything better than "within a day", and every tile inherits that.
+
+    Runs LAST, after every leg that writes something it reads, so the published view reflects the
+    pass that just happened rather than the one before it.
+    """
+    return _producer("build_zentech_state", "scripts/build_zentech_state.py")
+
+
+def forecast_contract() -> dict:
+    """P4: audit the belief register -- who published, and whose beliefs were unscoreable.
+
+    Runs every hour rather than daily because its whole value is catching a model that has begun
+    publishing malformed beliefs BEFORE a day of them accumulates. A refusal rate that climbs
+    quietly is the shape this desk keeps missing.
+    """
+    return _producer("forecast_contract", "research/forecast_contract.py")
+
+
+def model_league() -> dict:
+    """P7 / P41 / P79: rank every model on dElog after compute and complexity rent.
+
+    The league only ever compares models that faced the same window, horizon bucket, cost model
+    and a comparable sample; everything else is reported INCOMPARABLE. It ranks results that the
+    skill tracker already measured rather than re-measuring them, so it can never become a
+    second, disagreeing source of truth about how a model performed.
+    """
+    return _producer("model_zoo", "research/model_zoo.py")
+
+
+def adversaries() -> dict:
+    """P48/P49/P58: poison canaries, silent-defect hunt, claim genealogy.
+
+    HOURLY BECAUSE THE CANARY RATE IS A CONSTANT TO DEFEND, NOT A METRIC TO TREND. The moment it
+    drops below 100% a gate has stopped gating, and every certificate issued since that moment is
+    suspect -- so the interesting quantity is not the trend, it is how few certificates get issued
+    between the break and its detection.
+    """
+    return _producer("adversary", "research/adversary.py")
+
+
+def experiment_cache() -> dict:
+    """P39/P40: cache hit rate, hours saved, and whether the next increment buys anything."""
+    return _producer("experiment_cache", "research/experiment_cache.py")
+
+
+def opportunity_gap() -> dict:
+    """P66/P81/P50: where the chain from 'an edge exists' to 'the book earns it' actually stops.
+
+    Runs AFTER the publication legs, because it reads the state they write. A decomposition
+    computed from last hour's artifacts would name last hour's binding constraint, and the whole
+    value of the number is that it points at what to do NEXT.
+    """
+    return _producer("opportunity_gap", "research/opportunity_gap.py")
+
+
+def maintain_miners() -> dict:
+    """The miner/seat maintainer: run all six fences and REPAIR what is repairable.
+
+    Recovered 2026-09-06 from `claude/tier1-batch`, where it had been written and then stranded --
+    never merged, so nothing on any branch that runs could reach it. The principal asked for a
+    standing local fixer for the miners; it existed as a file and as no schedule at all, which is
+    this desk's most repeated defect class and the exact thing the file itself was written to fix.
+
+    Hourly rather than three-hourly because its cheapest repair -- clearing a lock whose owner is
+    gone -- starves the next run for up to 45 minutes while it waits, so a three-hour clock can
+    leave a miner idle for most of a shift over a fault that takes milliseconds to clear.
+    """
+    return _producer("miner_maintenance", "scripts/run_miner_maintenance.py")
+
+
 def main() -> None:
+    # BARS FIRST. Every leg below reasons about a chart, so a stale chart makes all of them
+    # confidently wrong rather than merely late.
+    rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
     t = _costed("record_tape", record_tape)
@@ -538,15 +696,30 @@ def main() -> None:
     et = _costed("execution_twin", execution_twin)
     cg = _costed("causal_graph", causal_graph)
     ms = _costed("model_skill", model_skill)
+    fcx = _costed("forecast_contract", forecast_contract)
+    mz = _costed("model_league", model_league)
+    ad = _costed("adversaries", adversaries)
     fr = _costed("frontier", frontier)
+    df = _costed("deep_forest", deep_forest)
+    mm = _costed("maintain_miners", maintain_miners)
     _costed("frontier_report", lambda: frontier_report(h))
+    # PUBLICATION IS THE LAST TWO LEGS, and their order is not arbitrary: sealing survivors makes
+    # new rows the dashboard should show, so publishing the view before sealing would render a
+    # board that is one full hour behind the pass that just produced it.
+    ps = _costed("publish_survivors", publish_survivors)
+    pd_ = _costed("publish_dashboard", publish_dashboard)
+    xc = _costed("experiment_cache", experiment_cache)
+    og = _costed("opportunity_gap", opportunity_gap)
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "model_skill": ms,
-                    "frontier": fr,
+                    "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "maintain_miners": mm, "publish_survivors": ps,
+                    "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)

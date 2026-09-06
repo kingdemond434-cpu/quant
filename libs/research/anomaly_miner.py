@@ -380,10 +380,11 @@ def scan(symbols: list[str] | None = None, *, limit: int | None = None) -> dict[
     `limit` is now None by default and exists only for tests. The pairwise pass, whose cost is
     quadratic, rotates through the universe on a cursor instead.
     """
-    files = sorted(_BARS.glob("*_H1.parquet"))
+    files = sorted(_BARS.glob("*.parquet"))
     if symbols:
         want = {s.upper() for s in symbols}
-        files = [f for f in files if f.stem.replace("_H1", "").upper() in want]
+        files = [f for f in files
+                 if (f.stem.rpartition("_")[0] or f.stem).upper() in want]
     if limit is not None:
         files = files[:limit]
 
