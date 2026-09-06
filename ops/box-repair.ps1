@@ -23,8 +23,9 @@
 
 .EXAMPLE
   .\ops\box-repair.ps1
-  .\ops\box-repair.ps1 -SkipBars      # skip the slow bar download
-  .\ops\box-repair.ps1 -WhatIf        # report only, change nothing
+  .\ops\box-repair.ps1 -SkipBars              # skip the slow bar download
+  .\ops\box-repair.ps1 -WhatIf                # report only, change nothing
+  .\ops\box-repair.ps1 -ResolveCode theirs    # take the repository's code for conflicting files
 #>
 [CmdletBinding()]
 param(
@@ -33,7 +34,20 @@ param(
     [string]$Terminal  = "C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe",
     [string]$BackupDir = "C:\opt\quant-backup",
     [switch]$SkipBars,
-    [switch]$WhatIf
+    [switch]$WhatIf,
+    # WHICH SIDE OF A CODE CONFLICT WINS -- NAMED BY THE OPERATOR, NEVER GUESSED.
+    #
+    #   none    (default) refuse, list the files, and leave the merge for a human.
+    #   theirs  take the REPOSITORY's version. The box runs code; the repo is where code is
+    #           reviewed, so this is the usual intent after a spell of local drift.
+    #   ours    keep the BOX's version, for when the box holds a fix the repo has not seen.
+    #
+    # Neither choice can destroy work: every conflicted file is copied to $BackupDir first, with
+    # both sides preserved, and the summary says where. That is what makes an automatic choice
+    # defensible here -- the decision is reversible, so it is no longer the one-way door the
+    # refusal exists to protect.
+    [ValidateSet("none", "ours", "theirs")]
+    [string]$ResolveCode = "none"
 )
 
 $ErrorActionPreference = "Continue"
@@ -133,13 +147,52 @@ if (Test-Path ".git/MERGE_HEAD") {
             foreach ($f in $data) { git checkout --ours -- $f 2>&1 | Out-Null; git add -- $f 2>&1 | Out-Null }
             if ($data) { Ok "$($data.Count) data conflict(s) resolved in the box's favour (it authors them)" }
             if ($code) {
-                Fail "$($code.Count) CODE file(s) conflict and will not be auto-resolved: $($code -join ', ')"
-                Info "Choose deliberately, then: git add <file>; git commit --no-edit"
+                if ($ResolveCode -eq "none") {
+                    Fail "$($code.Count) CODE file(s) conflict and will not be auto-resolved: $($code -join ', ')"
+                    Info "Re-run with -ResolveCode theirs (take the repo's) or -ResolveCode ours (keep the box's)"
+                    Info "Either way both sides are backed up first. Or resolve by hand: git add <file>; git commit --no-edit"
+                }
+                else {
+                    # BACK BOTH SIDES UP BEFORE CHOOSING. The conflicted working file still holds
+                    # the merge markers, so it carries BOTH versions in one artifact -- copying it
+                    # verbatim preserves everything either side had, and it is a plain file the
+                    # operator can read without knowing git.
+                    $stamp  = Get-Date -Format "yyyyMMdd-HHmmss"
+                    $vault  = Join-Path $BackupDir "merge-$stamp"
+                    foreach ($f in $code) {
+                        $dest = Join-Path $vault $f
+                        New-Item -ItemType Directory -Force -Path (Split-Path $dest) 2>&1 | Out-Null
+                        Copy-Item -LiteralPath $f -Destination $dest -Force -ErrorAction SilentlyContinue
+                    }
+                    $side = if ($ResolveCode -eq "theirs") { "--theirs" } else { "--ours" }
+                    foreach ($f in $code) {
+                        git checkout $side -- $f 2>&1 | Out-Null
+                        git add -- $f 2>&1 | Out-Null
+                    }
+                    $whose = if ($ResolveCode -eq "theirs") { "the repository's" } else { "the box's" }
+                    Ok "$($code.Count) code conflict(s) resolved to $whose version"
+                    Warn "code conflicts were resolved to $whose version -- BOTH sides are in $vault; check it before deleting: $($code -join ', ')"
+                }
             }
         }
         if (-not (git diff --name-only --diff-filter=U)) {
             git commit --no-edit 2>&1 | Out-Null
             Ok "merge concluded"
+        }
+        else {
+            # A MERGE LEFT IN PROGRESS STOPS THE BOX FROM REPORTING AT ALL. Every later git call
+            # dies on `fatal: Exiting because of an unresolved conflict`, so the runtime state is
+            # never committed and never pushed -- which is exactly how the dashboard came to read
+            # "box SILENT for 260.8h" while the desk itself was running fine and recording ticks
+            # every hour. The publication path must not be hostage to an unfinished merge.
+            #
+            # Aborting DECIDES NOTHING: it restores the pre-merge tree, so the box keeps running
+            # precisely the code it was already running and the merge is still there to be done
+            # deliberately later. Declining a merge and resolving one are different acts.
+            Warn "merge could not be concluded -- aborting it so the box can still publish its state"
+            git merge --abort 2>&1 | Out-Null
+            if (Test-Path ".git/MERGE_HEAD") { Fail "git merge --abort did not clear the merge -- run: git status" }
+            else { Ok "merge declined and the tree restored; redo it when the code conflict is settled" }
         }
     }
 }
@@ -200,7 +253,20 @@ else {
         git commit -m "box state sync" 2>&1 | Out-Null
         $push = git push origin $Branch 2>&1
         if ($LASTEXITCODE -eq 0) { Ok "state pushed to $Branch" }
-        else { Fail "push failed"; ($push | Select-Object -Last 8) | ForEach-Object { Info $_ } }
+        else {
+            Fail "push failed"
+            ($push | Select-Object -Last 8) | ForEach-Object { Info $_ }
+            # NAME THE ONE CAUSE THE OPERATOR CANNOT SEE FROM THE ERROR. A declined merge leaves
+            # the box BEHIND origin, and git then refuses the push as non-fast-forward -- which
+            # reads like a broken remote rather than the consequence of the step above. Say how
+            # far behind, because "behind by 14" and "behind by 0" are different problems.
+            git fetch origin $Branch 2>&1 | Out-Null
+            $behind = (git rev-list --count "HEAD..FETCH_HEAD" 2>$null)
+            if ($behind -and [int]$behind -gt 0) {
+                Info "this branch is $behind commit(s) behind origin, so the push cannot fast-forward"
+                Info "that is the declined merge above: re-run with -ResolveCode theirs (or ours) to conclude it, then the push succeeds"
+            }
+        }
     }
 }
 

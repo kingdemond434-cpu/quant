@@ -35,7 +35,16 @@ REPO = BASE.parent.parent
 # broker-native ticks never recorded. That tape is the desk's own moat data and it CANNOT be
 # backfilled -- a tick nobody recorded is gone, unlike a bar you can re-download. Depending on
 # another module's import side effect for your own path is the bug; this makes it explicit.
-for _p in (str(BASE), str(BASE / "research")):
+# REPO ON THE PATH TOO, for the same reason and with a worse symptom. `_costed` imports
+# `libs.ops.compute_ledger`, which lives at the REPOSITORY root, not under the desk -- and that
+# import was never going to succeed, because only BASE and BASE/research were ever added here.
+# MEASURED on the box 2026-09-06: `ModuleNotFoundError: No module named 'libs.ops'` on the first
+# costed leg of every run. `_costed` catches it and runs the leg anyway, by design, so nothing
+# broke and nothing complained -- the cycle simply recorded no compute, hour after hour, while
+# `libs.ops.allocators` went on reporting COMPUTE as the stack's weakest link for want of the
+# denominator these very runs were supposed to be producing. A detector starved by the bug it is
+# meant to detect reads exactly like a detector with nothing to report.
+for _p in (str(BASE), str(BASE / "research"), str(REPO)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 # THE INTERPRETER THAT IS ACTUALLY RUNNING, never a path typed once and left behind. These were
@@ -229,20 +238,35 @@ def daily() -> dict:
 
 def record_tape() -> dict:
     """Persist broker-native ticks every hourly cycle before any research consumes them."""
-    try:
-        from mt5desk import (
-            tape,
-            triangle_tape,
-        )
+    # TWO RECORDERS, TWO FATES. These were in one `try` and it hid the thing that matters: on
+    # 2026-09-06 `tape.main` recorded 359,107 broker-native ticks and THEN `triangle_tape` raised
+    # KeyError, so the whole leg returned `{"error": ...}` and the hour read as "tick tape FAILED"
+    # -- for a leg whose irreplaceable half had just succeeded. Ticks cannot be backfilled and
+    # triangles can be recomputed from them, so the two must never share a verdict.
+    results: dict[str, object] = {"at": datetime.now(UTC).isoformat(timespec="seconds")}
+    codes: list[int] = []
+    for label, call in (("tape", lambda: _tape_main()), ("triangle", lambda: _triangle_main())):
+        try:
+            rc = call()
+        except Exception as exc:                                        # noqa: BLE001
+            print(f"tick tape {label} FAILED: {type(exc).__name__}: {exc}", flush=True)
+            results[f"{label}_error"] = f"{type(exc).__name__}: {exc}"
+            codes.append(1)
+        else:
+            results[f"{label}_exit_code"] = rc
+            codes.append(int(rc))
+    results["exit_code"] = max(codes) if codes else 1
+    return results
 
-        tape_rc = tape.main([])
-        triangle_rc = triangle_tape.main()
-        return {"exit_code": max(tape_rc, triangle_rc),
-                "triangle_exit_code": triangle_rc,
-                "at": datetime.now(UTC).isoformat(timespec="seconds")}
-    except Exception as exc:
-        print(f"tick tape FAILED: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
+
+def _tape_main() -> int:
+    from mt5desk import tape
+    return int(tape.main([]))
+
+
+def _triangle_main() -> int:
+    from mt5desk import triangle_tape
+    return int(triangle_tape.main())
 
 
 def state_vector() -> dict:
