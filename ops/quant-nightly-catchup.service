@@ -1,0 +1,25 @@
+[Unit]
+Description=Nightly catch-up: everything the hourly cycle did not finish
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform/desks/mt5
+# --apply, because a catch-up that only measures is a report nobody reads. The steps it runs are
+# the same modules the hourly cycle runs, with the same gates at the same thresholds; the only
+# thing this adds is that it works the RESIDUE rather than the fresh hour.
+ExecStart=/home/quant/quant-platform/.venv/bin/python research/nightly_catchup.py --apply
+# The docket sweep is the long pole and measured 265s for 8,057 cells on three workers. Four
+# hours covers a docket several times today's, and a run that overruns is killed rather than
+# left to collide with the next firing.
+TimeoutStartSec=14400
+# Research work must never queue the gateway behind it. Nice + idle IO means the sweep uses
+# whatever the trading path is not using, which is why this can run every three hours without
+# competing with execution.
+Nice=15
+IOSchedulingClass=idle
+MemoryHigh=3G
+MemoryMax=4G
+
+[Install]
+WantedBy=default.target

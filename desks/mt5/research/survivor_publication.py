@@ -10,7 +10,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from gate_policy import all_ten_pass, is_exact_policy
+# REACHABLE BOTH WAYS, for the same reason `shadow_admission.run_key` is. The box runs this
+# module with `desks/mt5/research` on sys.path, so the bare form resolves; `external_gauntlet`
+# imports it as `research.survivor_publication` from the repo root, where the bare form raises
+# ModuleNotFoundError and takes the whole gauntlet down at import. A single-form import works in
+# whichever context its author happened to test and fails in the other -- measured here, when
+# adding the certificate fence to the gauntlet stopped it starting at all.
+try:
+    from gate_policy import all_ten_pass, is_exact_policy
+except ModuleNotFoundError:                      # pragma: no cover - import-context dependent
+    from research.gate_policy import all_ten_pass, is_exact_policy  # type: ignore[no-redef]
 
 
 def _read(path: Path) -> dict[str, Any]:
