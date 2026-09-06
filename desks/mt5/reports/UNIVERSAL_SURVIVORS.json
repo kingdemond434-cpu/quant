@@ -2226,7 +2226,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2259,7 +2259,7 @@
           "ev": 0.2028
         }
       },
-      "gated_at": "2026-09-03T08:45:17.105973+00:00",
+      "gated_at": "2026-09-03T11:06:39.719994+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2300,7 +2300,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2333,7 +2333,7 @@
           "ev": 0.2306
         }
       },
-      "gated_at": "2026-09-03T08:45:17.105996+00:00",
+      "gated_at": "2026-09-03T11:06:39.720010+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2374,7 +2374,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2407,7 +2407,7 @@
           "ev": 0.2822
         }
       },
-      "gated_at": "2026-09-03T08:45:17.106029+00:00",
+      "gated_at": "2026-09-03T11:06:39.720022+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2448,7 +2448,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2481,7 +2481,7 @@
           "ev": 0.2019
         }
       },
-      "gated_at": "2026-09-03T08:45:17.106046+00:00",
+      "gated_at": "2026-09-03T11:06:39.720035+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2522,7 +2522,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2555,7 +2555,7 @@
           "ev": 0.22
         }
       },
-      "gated_at": "2026-09-03T08:45:17.106060+00:00",
+      "gated_at": "2026-09-03T11:06:39.720049+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2596,7 +2596,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2629,7 +2629,7 @@
           "ev": 0.4858
         }
       },
-      "gated_at": "2026-09-03T08:45:17.106075+00:00",
+      "gated_at": "2026-09-03T11:06:39.720068+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2670,7 +2670,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2703,7 +2703,7 @@
           "ev": 0.5497
         }
       },
-      "gated_at": "2026-09-03T08:45:17.106085+00:00",
+      "gated_at": "2026-09-03T11:06:39.720105+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2744,7 +2744,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2777,7 +2777,7 @@
           "ev": 0.364
         }
       },
-      "gated_at": "2026-09-03T08:45:17.106121+00:00",
+      "gated_at": "2026-09-03T11:06:39.720142+00:00",
       "shadow_spec": {
         "symbol": "EURGBP",
         "selector": "asia",
@@ -2818,7 +2818,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2851,7 +2851,7 @@
           "ev": 0.3005
         }
       },
-      "gated_at": "2026-09-03T08:45:17.105864+00:00",
+      "gated_at": "2026-09-03T11:06:39.719973+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2892,7 +2892,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -2925,7 +2925,7 @@
           "ev": 0.29
         }
       },
-      "gated_at": "2026-09-03T08:45:17.106102+00:00",
+      "gated_at": "2026-09-03T11:06:39.720124+00:00",
       "shadow_spec": {
         "symbol": "EURGBP",
         "selector": "asia",
@@ -3040,7 +3040,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -3073,7 +3073,7 @@
           "ev": 0.3239
         }
       },
-      "gated_at": "2026-09-03T08:45:17.102907+00:00",
+      "gated_at": "2026-09-03T11:06:39.719143+00:00",
       "shadow_spec": {
         "symbol": "AUDCAD",
         "selector": "asia",
@@ -3114,7 +3114,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -3147,7 +3147,7 @@
           "ev": 0.2918
         }
       },
-      "gated_at": "2026-09-03T08:45:17.103079+00:00",
+      "gated_at": "2026-09-03T11:06:39.719330+00:00",
       "shadow_spec": {
         "symbol": "AUDNZD",
         "selector": "asia",
@@ -3188,7 +3188,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -3221,7 +3221,7 @@
           "ev": 0.1804
         }
       },
-      "gated_at": "2026-09-03T08:45:17.103129+00:00",
+      "gated_at": "2026-09-03T11:06:39.719383+00:00",
       "shadow_spec": {
         "symbol": "AUDUSD",
         "selector": "asia",
@@ -3262,7 +3262,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -3295,7 +3295,7 @@
           "ev": 0.4294
         }
       },
-      "gated_at": "2026-09-03T08:45:17.103143+00:00",
+      "gated_at": "2026-09-03T11:06:39.719403+00:00",
       "shadow_spec": {
         "symbol": "AUDUSD",
         "selector": "asia",
@@ -3336,7 +3336,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -3369,7 +3369,7 @@
           "ev": 0.2652
         }
       },
-      "gated_at": "2026-09-03T08:45:17.103157+00:00",
+      "gated_at": "2026-09-03T11:06:39.719422+00:00",
       "shadow_spec": {
         "symbol": "AUDUSD",
         "selector": "asia",
@@ -3410,7 +3410,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -3443,7 +3443,7 @@
           "ev": 0.1777
         }
       },
-      "gated_at": "2026-09-03T08:45:17.103174+00:00",
+      "gated_at": "2026-09-03T11:06:39.719441+00:00",
       "shadow_spec": {
         "symbol": "AUDUSD",
         "selector": "asia",
@@ -3484,7 +3484,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -3517,7 +3517,7 @@
           "ev": 0.3871
         }
       },
-      "gated_at": "2026-09-03T08:45:17.106438+00:00",
+      "gated_at": "2026-09-03T11:06:39.720286+00:00",
       "shadow_spec": {
         "symbol": "EURUSD",
         "selector": "asia",
@@ -3558,7 +3558,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -3591,7 +3591,7 @@
           "ev": 0.3324
         }
       },
-      "gated_at": "2026-09-03T08:45:17.106463+00:00",
+      "gated_at": "2026-09-03T11:06:39.720776+00:00",
       "shadow_spec": {
         "symbol": "EURUSD",
         "selector": "asia",
@@ -4224,7 +4224,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -4257,7 +4257,7 @@
           "ev": 0.182
         }
       },
-      "gated_at": "2026-09-03T08:45:17.102882+00:00",
+      "gated_at": "2026-09-03T11:06:39.719117+00:00",
       "shadow_spec": {
         "symbol": "AUDCAD",
         "selector": "asia",
@@ -4298,7 +4298,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -4331,7 +4331,7 @@
           "ev": 0.2872
         }
       },
-      "gated_at": "2026-09-03T08:45:17.102814+00:00",
+      "gated_at": "2026-09-03T11:06:39.719050+00:00",
       "shadow_spec": {
         "symbol": "USDCHF",
         "selector": "asia",
@@ -4372,7 +4372,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -4405,7 +4405,7 @@
           "ev": 0.351
         }
       },
-      "gated_at": "2026-09-03T08:45:17.101269+00:00",
+      "gated_at": "2026-09-03T11:06:39.718163+00:00",
       "shadow_spec": {
         "symbol": "USDCAD",
         "selector": "asia",
@@ -4446,7 +4446,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -4479,7 +4479,7 @@
           "ev": 0.3324
         }
       },
-      "gated_at": "2026-09-03T08:45:17.102777+00:00",
+      "gated_at": "2026-09-03T11:06:39.719003+00:00",
       "shadow_spec": {
         "symbol": "USDCAD",
         "selector": "asia",
@@ -4520,7 +4520,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.675025
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -4553,7 +4553,7 @@
           "ev": 0.3241
         }
       },
-      "gated_at": "2026-09-03T08:45:17.107834+00:00",
+      "gated_at": "2026-09-03T11:06:39.722089+00:00",
       "shadow_spec": {
         "symbol": "NZDCAD",
         "selector": "asia",
@@ -4604,5 +4604,5 @@
     "expected_value_min_exclusive": 0.0
   },
   "note": "UNIVERSAL 10-GATE PASS ONLY.",
-  "swept_at": "2026-09-03T08:45:17.252535+00:00"
+  "swept_at": "2026-09-03T11:06:40.156539+00:00"
 }
