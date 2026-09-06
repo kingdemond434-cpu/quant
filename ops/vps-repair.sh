@@ -140,6 +140,57 @@ if command -v cloudflared >/dev/null 2>&1; then
   fi
 fi
 
+# ---------------------------------------------------------------- 3b. the link that FEEDS the page
+step "Desk state pull (the box -> this host link)"
+# THIS IS THE JOB THAT MAKES THE DASHBOARD SAY ANYTHING AT ALL, and nothing here checked it.
+#
+# The page is not fed by git. `quant-desk-pull.timer` runs `ops/pull_desk_state.sh` every two
+# minutes and scp's the box's `web/desk_state.json` -- plus the ledgers, the gate report, the
+# docket and the universe registry -- straight off the trading box over SSH. When that scp fails
+# the script says so and exits 1, the last good copy stays in place, and the page reports the
+# box SILENT with an ever-growing age.
+#
+# MEASURED 2026-09-06: "box has not reported for 260.8h" -- eleven days of that pull failing every
+# two minutes, roughly eight thousand consecutive failures, while every other check on this host
+# passed and this script printed VPS REPAIRED. A repair script that never tests the one link the
+# deliverable depends on is not testing the deliverable.
+PULL="$ROOT/ops/pull_desk_state.sh"
+if [ ! -f "$PULL" ]; then
+  fail "ops/pull_desk_state.sh is absent -- nothing fetches the box's state, so the page can only ever go stale"
+else
+  remote="$(sed -n 's/^REMOTE=//p' "$PULL" | head -1)"
+  info "remote alias: ${remote:-<unset>}"
+  if ! grep -q "^Host[[:space:]].*\b${remote}\b" "$HOME/.ssh/config" 2>/dev/null; then
+    fail "ssh alias '${remote}' is not defined in ~/.ssh/config -- every pull fails at name resolution"
+    info "define it (HostName/User/IdentityFile) pointing at the trading box, then: systemctl --user restart quant-desk-pull.timer"
+  elif ! timeout 25 ssh -o BatchMode=yes -o ConnectTimeout=15 "$remote" "cd /c/opt/quant" 2>/dev/null; then
+    fail "ssh to '${remote}' failed -- the box is unreachable from here, so the dashboard cannot be fed"
+    info "check the box's IP has not moved, that its ssh server is running, and that this host's key is still authorised"
+  else
+    ok "ssh to '${remote}' answers"
+  fi
+  # RUN IT FOR REAL. Reachability is not the same as a working pull: the script also refuses a
+  # shrinking universe registry and skips artifacts the box has not written.
+  if [ "$CHECK_ONLY" = 0 ]; then
+    if out="$(timeout 180 bash "$PULL" 2>&1)"; then ok "desk state pulled from the box"
+    else fail "pull_desk_state.sh exited non-zero -- the page will keep serving the last good copy"; fi
+    printf '%s\n' "$out" | tail -6 | while read -r l; do [ -n "$l" ] && info "$l"; done
+  fi
+  # And the timer that is supposed to do this unattended, every two minutes, forever.
+  if systemctl --user is-active quant-desk-pull.timer >/dev/null 2>&1; then
+    ok "quant-desk-pull.timer is active"
+  else
+    fail "quant-desk-pull.timer is NOT active -- even a working pull would run only when someone runs it by hand"
+    [ "$CHECK_ONLY" = 0 ] && {
+      cp "$ROOT/ops/quant-desk-pull."{service,timer} "$HOME/.config/systemd/user/" 2>/dev/null
+      systemctl --user daemon-reload 2>/dev/null
+      systemctl --user enable --now quant-desk-pull.timer 2>/dev/null \
+        && ok "quant-desk-pull.timer installed and started" \
+        || fail "could not start quant-desk-pull.timer"
+    }
+  fi
+fi
+
 # ---------------------------------------------------------------- 4. state and freshness
 step "Dashboard state"
 if [ "$CHECK_ONLY" = 0 ]; then
