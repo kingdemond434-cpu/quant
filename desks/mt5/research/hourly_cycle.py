@@ -643,6 +643,25 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def edge_confidence() -> dict:
+    """Size on the edge's LOWER BOUND, and stress k_eff toward crisis correlation.
+
+    Both adjustments only ever reduce size. They sit above the 20% nominal heat floor, which is
+    a floor and is never reduced by anything here -- this decides how far ABOVE the floor the
+    evidence justifies going, and the answer is often "not far".
+    """
+    return _producer("edge_confidence", "research/edge_confidence.py")
+
+
+def research_org() -> dict:
+    """P53/P54/P60/P62: role separation, agent reputation, borrowed methods, the implementer.
+
+    Runs hourly because role separation is only a control if it is checked at the moment a review
+    opens; a conflict discovered in a weekly audit is a conflict that already shipped.
+    """
+    return _producer("research_org", "research/research_org.py")
+
+
 def experiment_design() -> dict:
     """P18/P19/P65/P29/P30: which experiment is worth running, and at what capital.
 
@@ -736,6 +755,8 @@ def main() -> None:
     # board that is one full hour behind the pass that just produced it.
     ps = _costed("publish_survivors", publish_survivors)
     pd_ = _costed("publish_dashboard", publish_dashboard)
+    ec = _costed("edge_confidence", edge_confidence)
+    ro = _costed("research_org", research_org)
     xd = _costed("experiment_design", experiment_design)
     mi = _costed("market_intel", market_intel)
     mll = _costed("ml_layer", ml_layer)
@@ -750,7 +771,7 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
