@@ -828,6 +828,38 @@ def main() -> None:
     s = _costed("state_vector", state_vector)
     d = _costed("daily", daily)
     hc = _costed("heal_clocks", heal_clocks)
+    # ENROLMENT, ON THE MACHINE THAT MINTS THE CERTIFICATES. `heal_clocks` above repairs clocks
+    # that EXIST and have gone IDENTITY_BROKEN; it does nothing whatever for a certificate that
+    # has no clock at all, and those are two different failures that read the same on a dashboard.
+    #
+    # NOTHING ENROLLED ON THIS BOX, ON ANY SCHEDULE. `shadow_forward` is the enroller and this
+    # cycle never called it -- it appears in this file only inside comments. The one scheduled
+    # caller is nightly_catchup's `enrol_clocks` step, which is a SYSTEMD unit: it runs on the
+    # VPS, and the box is Windows with no systemd. So the machine that certifies could never
+    # enrol what it had just certified, and every new certificate waited for a human.
+    #
+    # MEASURED off the live board 2026-09-06: 66 certified, 6 unrunnable, 27 on a clock -- 33
+    # runnable certificates passing every one of the ten gates and accruing no out-of-sample
+    # evidence, so none of them could ever mature into capital. That is the whole promotion
+    # pipeline stalled behind a missing hourly call, and it presents as a research shortfall.
+    #
+    # Verified in a checkout of the same canon: all 48 authorized runs enrol cleanly, so the
+    # enrolment logic was never the defect -- only its cadence.
+    ecl = _costed("enrol_clocks", lambda: _producer(
+        "shadow_forward", "research/shadow_forward.py"))
+    # THE OTHER HALF OF THE SAME LEDGER. A certificate whose `shadow_spec.params` is None passed
+    # all ten gates and can never be run: the parameterisation that passed was never recorded, so
+    # there is nothing to replay. The issue board offers `survivor_publication` as the repair and
+    # marks the row AUTO-REPAIRABLE -- but that organ can only publish parameters a gauntlet run
+    # WROTE, so it ran hourly for weeks against six certificates it was structurally unable to
+    # help. A fixer that cannot fix what it is offered for turns a standing defect into a line
+    # everyone scrolls past.
+    #
+    # Re-testing is the only honest recovery, and it is cheap. Requeueing does not revoke the
+    # certificate or invent parameters: the existing one stands until a new run replaces it, and
+    # a re-run that fails the gates is the correct answer to a claim the desk could never execute.
+    rq = _costed("requeue_unrunnable", lambda: _producer(
+        "requeue_unrunnable", "research/requeue_unrunnable.py", "--apply"))
     # THE CONVERSION CHAIN, IN THE ORDER IT CONVERTS. mine fetches, compile turns what was fetched
     # into candidates and deepening tasks, deepen reverse-engineers the tasks that are not yet
     # rules. The cycle previously ran deepen BEFORE mine and never ran compile at all, so the
@@ -924,6 +956,7 @@ def main() -> None:
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
                     "release_identity": ri, "publish_state": pub,
+                    "enrol_clocks": ecl, "requeue_unrunnable": rq,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
