@@ -448,7 +448,20 @@ def _costed(name: str, fn):
                 and isinstance(exc.code, int) else None,
                 "status": "FAILED", "error": f"{type(exc).__name__}: {exc}",
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
-    close_run(run, outcome="ok")
+    # A subprocess returning a failure dictionary did not raise. Preserve its verdict so the
+    # allocator cannot mistake repeated timeouts or missing producers for useful successful runs.
+    outcome = "ok"
+    if isinstance(out, dict):
+        status = str(out.get("status") or "").upper()
+        if out.get("error"):
+            outcome = f"FAILED: {out['error']}"[:200]
+        elif status and status not in {"OK", "SUCCESS", "COMPLETED"}:
+            outcome = status
+        elif out.get("timeout_s") and out.get("exit_code") is None:
+            outcome = "TIMEOUT"
+        elif "exit_code" in out and out["exit_code"] != 0:
+            outcome = f"exit_code={out['exit_code']}"
+    close_run(run, outcome=outcome)
     return out
 
 
