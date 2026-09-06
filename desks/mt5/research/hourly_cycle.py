@@ -643,6 +643,11 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def rebalance_trigger() -> dict:
+    """P3/P35/P73: when a rebalance is worth its cost, whether the RL may run, exit domains."""
+    return _producer("rebalance_trigger", "research/rebalance_trigger.py")
+
+
 def edge_confidence() -> dict:
     """Size on the edge's LOWER BOUND, and stress k_eff toward crisis correlation.
 
@@ -755,6 +760,7 @@ def main() -> None:
     # board that is one full hour behind the pass that just produced it.
     ps = _costed("publish_survivors", publish_survivors)
     pd_ = _costed("publish_dashboard", publish_dashboard)
+    rt = _costed("rebalance_trigger", rebalance_trigger)
     ec = _costed("edge_confidence", edge_confidence)
     ro = _costed("research_org", research_org)
     xd = _costed("experiment_design", experiment_design)
@@ -771,7 +777,7 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)

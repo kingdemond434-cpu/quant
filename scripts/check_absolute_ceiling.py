@@ -122,8 +122,8 @@ REGISTRY: tuple[Capability, ...] = (
                "desks/mt5/research/macro_desk.py", "desks/mt5/reports/MACRO_DESK.json",
                "measured portfolio gain attributable to the interrupt", tags=("P2", "macro")),
     Capability("P3", "one-minute heartbeat and event triggers re-evaluate Elog optimality; "
-                     "rebalance only when dElog > execution cost + uncertainty", "",
-               "", "turnover cost vs realised gain", tags=("P3",)),
+                     "rebalance only when dElog > execution cost + uncertainty", "desks/mt5/research/rebalance_trigger.py",
+               "desks/mt5/reports/REBALANCE_TRIGGER.json", "turnover cost vs realised gain", tags=("P3",)),
 
     # ---- Phase 4-5: forecast marketplace
     Capability("P4", "universal forecast contract; models publish beliefs, own no positions",
@@ -236,7 +236,8 @@ REGISTRY: tuple[Capability, ...] = (
                "desks/mt5/reports/EXECUTION_INTELLIGENCE.json",
                "alpha captured / alpha available", tags=("P34", "execution")),
     Capability("P35", "execution RL as a challenger, only after the twin is calibrated",
-               "", "", "dElog vs champion execution policy",
+               "desks/mt5/research/rebalance_trigger.py",
+               "desks/mt5/reports/REBALANCE_TRIGGER.json", "dElog vs champion execution policy",
                depends_on=("P34",), tags=("P35", "execution")),
     Capability("P36", "alpha capture OS decomposing leakage",
                "desks/mt5/research/missed_growth.py", "desks/mt5/reports/MISSED_GROWTH.json",
