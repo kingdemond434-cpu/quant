@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import sys
 import tempfile
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -217,6 +218,48 @@ def _gate_stat(key: str) -> int | None:
     return int(v) if isinstance(v, (int, float)) else None
 
 
+def _certificate_census(certs: dict[str, Any]) -> dict[str, Any]:
+    """Split the survivors file into ten-gate passes, gate failures and unrunnable certificates.
+
+    IMPORTED, NEVER RE-IMPLEMENTED. `all_ten_pass` is the same predicate
+    `shadow_admission.authorized_runs` uses to decide what may enrol, and the whole point of this
+    function is to make the dashboard agree with that door. A local re-spelling of "all ten
+    passed" is a second judge, and this desk has already paid for two builders of one identity
+    (`run_key` reported 34 of 35 certificates clockless while every one was running). If the
+    import fails the census refuses -- `basis` says so and the caller keeps the old number --
+    because a census that silently degrades to "everything counts" is the defect it exists to fix.
+
+    THREE POPULATIONS, and they are not nested the way the old count assumed:
+
+        gate_failed   in the file, `all_ten_pass` False -- NOT a certificate, never was
+        unrunnable    passed all ten, `shadow_spec.params` absent -- a certificate nothing can run
+        certified     passed all ten -- the number the funnel means by "certified"
+
+    `unrunnable` is a SUBSET of `certified`, not a sibling: those rows earned their certificate
+    and cannot be executed, which is a publication defect worth its own line. `params == {}` is
+    NOT unrunnable -- it is the complete parameterisation "family defaults", byte-exactly what the
+    gauntlet ran, and excluding it has already held overnight_gap_decay certificates off their
+    clocks twice (2026-08-27, and again here where 13 were reported unrunnable against 6 real).
+    """
+    try:
+        sys.path.insert(0, str(DESK / "research"))
+        from gate_policy import all_ten_pass          # type: ignore[import-not-found]
+    except Exception as exc:                          # noqa: BLE001 - reported, never guessed
+        return {"basis": f"UNAVAILABLE ({type(exc).__name__}: {exc})", "certified": None,
+                "gate_failed": None, "gate_failed_names": [], "unrunnable_names": []}
+    passed, failed = [], []
+    for key, row in certs.items():
+        if isinstance(row, dict) and all_ten_pass(row.get("gates")):
+            passed.append(key)
+        else:
+            failed.append(key)
+    unrunnable = [k for k in passed
+                  if (certs[k].get("shadow_spec") or {}).get("params") is None]
+    return {"basis": "ten_gate_verdict", "certified": len(passed),
+            "gate_failed": len(failed), "gate_failed_names": sorted(failed),
+            "unrunnable_names": sorted(unrunnable)}
+
+
 def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
     """Stage counts for the ONE pipeline: discovered -> backtested -> certified -> forward -> live."""
     hyp = None
@@ -286,15 +329,39 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
     # in that state (the five original external.* rows plus AUDNZD, which runs in the qquant lane
     # under its own spec). Showing only the two totals makes that look like sleeves are going
     # missing; naming the gap turns a mystery into a work item.
-    certs = (_read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json") or {}).get("survivors") or {}
-    unrunnable = [k for k, v in certs.items()
-                  if not ((v.get("shadow_spec") or {}).get("params"))]
+    survivors_doc = _read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json") or {}
+    certs = survivors_doc.get("survivors") or {}
+    # AN ABSENT FILE IS NOT A DESK WITH ZERO CERTIFICATES. `_read` returns {} for both, and a
+    # census over {} would publish `certified: 0` -- a clean, plausible number standing in for
+    # "this host never saw the artifact". That is the WS-005 shape this repo refuses everywhere
+    # else, and it would be worse here than the bug being fixed: 0 reads as a desk with no edge
+    # rather than a dashboard with no data. The presence of the `survivors` KEY, not the size of
+    # the mapping it holds, is what says the file was read.
+    census = (_certificate_census(certs) if isinstance(survivors_doc.get("survivors"), dict)
+              else {"basis": "UNAVAILABLE (reports/UNIVERSAL_SURVIVORS.json did not reach this "
+                             "host, so no ten-gate census could be taken)",
+                    "certified": None, "gate_failed": None,
+                    "gate_failed_names": [], "unrunnable_names": []})
+    unrunnable = census["unrunnable_names"]
     return {
         "certificates_unrunnable": len(unrunnable),
-        "unrunnable_reason": ("no `params` in shadow_spec -- nothing to execute. Re-certify "
-                              "through the current gauntlet, which records the parameterisation "
-                              "it tested."),
+        "unrunnable_reason": ("`shadow_spec.params` is absent (None), so there is no "
+                              "parameterisation to execute. Re-certify through the current "
+                              "gauntlet, which records the parameterisation it tested. An EMPTY "
+                              "mapping is not this case -- it is the complete parameterisation "
+                              "'family defaults' and enrols normally."),
         "unrunnable_examples": sorted(unrunnable)[:6],
+        # THE SURVIVORS FILE IS NOT A CERTIFICATE LIST, and reading it as one is how the
+        # dashboard came to publish gate FAILURES as certificates. Measured 2026-09-06 on the
+        # sealed canon: 66 rows, of which 12 carry status LOCKBOX_FAILED and `all_ten_pass ->
+        # False`. `shadow_admission.authorized_runs` refuses those 12 correctly and silently, so
+        # the operator saw "certified 55, clocks 19" and a 36-sleeve hole with no cause -- when a
+        # third of the hole was simply rows that never passed. Counting the ten-gate verdict
+        # instead of the dict length is the fix; the failures stay visible under their own name
+        # rather than being deleted, because a row that failed a gate is evidence about the sweep.
+        "certified_gate_failed": census["gate_failed"],
+        "certified_gate_failed_examples": census["gate_failed_names"][:6],
+        "census_basis": census["basis"],
         "forward_observations": forward_obs,
         "historical_observations": hist_obs,
         "discovered_backtested": hyp,
@@ -306,7 +373,22 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
         "docket_candidates": _funnel_docket(),
         "gauntlet_last_judged": _gate_stat("n_judged"),
         "gauntlet_last_unmeasured": _gate_stat("n_unmeasured"),
-        "certified": universal.get("n"),
+        # THE TEN-GATE VERDICT, NOT THE FILE'S ROW COUNT. `n` is `len(survivors)`, which includes
+        # rows that failed a gate and were kept for the record (see `certified_gate_failed`).
+        # Publishing that as "certified" told the principal the desk held 55 certificates while
+        # the door downstream refused a dozen of them for never having passed -- the funnel's
+        # single most misleading number.
+        #
+        # AND IT DOES NOT FALL BACK TO `n`. The obvious fallback -- census unavailable, so use the
+        # row count -- republishes the exact defect this line exists to fix, and does it precisely
+        # when nobody can tell (the census is unavailable, so no other field contradicts it). An
+        # overstated certificate count is not a degraded answer, it is a wrong one: it says the
+        # desk holds edge it does not hold. None renders as an em-dash and `census_basis` names
+        # the cause, which is the honest report of "this host cannot answer that question".
+        # The census needs `gate_policy`, which loads the gate spec YAML -- the single source of
+        # truth for what the ten gates ARE. A hardcoded gate list here would be a second judge,
+        # and this desk has already paid twice for two builders of one identity.
+        "certified": (census["certified"] if census["basis"] == "ten_gate_verdict" else None),
         "forward_clocks": len(forward),
         "promotion_ready": promo_ready,
         # NAMED, not just counted. A bare count told the principal "0 promotable" for days while

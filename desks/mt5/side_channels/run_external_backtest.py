@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import inspect
 import json
+import multiprocessing as mp
+import os
 import sys
 import time
 import warnings
@@ -50,6 +52,13 @@ def _family_funcs() -> dict:
 
 
 FAMILY_FUNCS = _family_funcs()
+
+#: Worker processes for the cell sweep. One less than the core count so the box stays responsive
+#: while this runs -- it shares the machine with the MT5 gateway, which must never queue behind a
+#: research sweep. `EXTERNAL_BACKTEST_WORKERS=1` forces the serial path, which is also what a
+#: single-core host gets automatically; the two produce identical results, only slower.
+WORKERS = max(1, int(os.environ.get("EXTERNAL_BACKTEST_WORKERS")
+                     or max(1, (os.cpu_count() or 2) - 1)))
 
 
 def normalize_grid(grid: list[dict]) -> tuple[list[dict], int]:
@@ -130,19 +139,55 @@ def run_all() -> list[dict]:
     print(f"Running {len(grid)} executable test cells ({len(raw_grid)} submitted; "
           f"{removed} unsupported parameter occurrence(s) removed)...")
 
+    # SORTED BY SYMBOL BEFORE THE SPLIT, and that is a throughput decision rather than tidiness.
+    # `h1()` memoises a symbol's parquet in a per-process dict, so a worker handed a contiguous
+    # run of one symbol's cells loads those bars ONCE. Interleaved symbols would make every
+    # chunk boundary a fresh parquet read in every worker -- the reason a naive parallelisation
+    # of this stage can end up slower than the serial loop it replaced.
+    grid.sort(key=lambda c: (str(c.get("symbol")), str(c.get("family"))))
     results = []
     t0 = time.time()
-    for i, cell in enumerate(grid):
-        r = run_cell(cell)
-        if r:
-            results.append(r)
-            if r["exp_r"] > 0.05:
-                print(f"  PASS {r['symbol']:8s}.{r['family']:25s} n={r['n']:4d} "
-                      f"exp={r['exp_r']:+.4f}R maxDD={r['max_dd_r']:+.1f}R "
-                      f"PF={r['profit_factor']:.2f}")
-        if (i + 1) % 10 == 0:
-            print(f"  [{i+1}/{len(grid)}] {time.time()-t0:.0f}s elapsed")
+    if WORKERS > 1 and len(grid) > WORKERS:
+        # ONE CORE WAS THE BINDING CONSTRAINT AT THIS STAGE. This was a serial `for` loop while
+        # `qquant_gates` next door has run its ten gates on a worker pool for weeks -- so the
+        # gauntlet judged 6,781 cells in a pass while the backtest that FEEDS it managed 147
+        # against a docket of 19,632 (measured off the live dashboard, 2026-09-06). Supply was
+        # never the shortage; this loop was.
+        #
+        # NOTHING STATISTICAL CHANGES. Every cell is independent -- `run_cell` reads the grid
+        # row and the symbol's bars and returns its own stats -- so the pool computes the same
+        # numbers in a different order, and the results are re-sorted below so the artifact is
+        # byte-comparable across worker counts. No gate, threshold or survivor rule is touched
+        # here: `exp_r > 0.05` and `max_dd_r > -30` are exactly as they were.
+        with mp.Pool(WORKERS) as pool:
+            for k, r in enumerate(pool.imap_unordered(run_cell, grid, chunksize=8)):
+                if r:
+                    results.append(r)
+                    if r["exp_r"] > 0.05:
+                        print(f"  PASS {r['symbol']:8s}.{r['family']:25s} n={r['n']:4d} "
+                              f"exp={r['exp_r']:+.4f}R maxDD={r['max_dd_r']:+.1f}R "
+                              f"PF={r['profit_factor']:.2f}", flush=True)
+                if (k + 1) % 100 == 0:
+                    el = time.time() - t0
+                    print(f"  [{k+1}/{len(grid)}] {el:.0f}s elapsed, "
+                          f"{(k+1)/max(el, 1e-9)*3600:,.0f} cells/hour", flush=True)
+    else:
+        for i, cell in enumerate(grid):
+            r = run_cell(cell)
+            if r:
+                results.append(r)
+                if r["exp_r"] > 0.05:
+                    print(f"  PASS {r['symbol']:8s}.{r['family']:25s} n={r['n']:4d} "
+                          f"exp={r['exp_r']:+.4f}R maxDD={r['max_dd_r']:+.1f}R "
+                          f"PF={r['profit_factor']:.2f}")
+            if (i + 1) % 10 == 0:
+                print(f"  [{i+1}/{len(grid)}] {time.time()-t0:.0f}s elapsed")
 
+    # DETERMINISTIC ORDER FROM AN UNORDERED POOL. `imap_unordered` returns by completion, so
+    # without this the artifact's row order depends on scheduling -- which turns every rerun
+    # into a spurious diff and makes two hosts' results impossible to compare by eye.
+    results.sort(key=lambda r: (r["symbol"], r["family"],
+                                json.dumps(r["params"], sort_keys=True, default=str)))
     elapsed = time.time() - t0
     out = BASE / "data" / "hypotheses" / "external_backtest_results.json"
     out.write_text(json.dumps(results, indent=2, default=str), encoding="utf-8")

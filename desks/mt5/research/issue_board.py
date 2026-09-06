@@ -206,6 +206,39 @@ def desk_state_issues(root: Path | None = None) -> list[Issue]:
             f"{pipe['certificates_unrunnable']} certificate(s) cannot be executed",
             pipe.get("unrunnable_reason", ""),
             "python research/survivor_publication.py", auto=True))
+    # A CERTIFICATE ACCRUING NOTHING IS THE FUNNEL'S MOST EXPENSIVE SILENT STATE. It passed ten
+    # gates, it can be run, and it is gathering no forward evidence -- so it can never mature,
+    # never reach capital, and nothing anywhere reports a failure. Gate-failed and unrunnable
+    # rows are subtracted first: neither is a work item, and lumping them in is what made the
+    # published gap (55 certified vs 19 clocks) look like 36 lost sleeves when two thirds of it
+    # was rows that never qualified. NOT auto-repairable: the cause is upstream (publication
+    # dropped the params, or the family has no resolvable constructor) and rerunning the forward
+    # engine would re-refuse them identically.
+    certified, clocks = pipe.get("certified"), pipe.get("forward_clocks")
+    if isinstance(certified, int) and isinstance(clocks, int):
+        runnable = certified - (pipe.get("certificates_unrunnable") or 0)
+        if runnable - clocks > 0:
+            out.append(Issue(
+                "certs:clockless", "DEGRADED",
+                f"{runnable - clocks} runnable certificate(s) are on no forward clock",
+                f"{certified} certified, {pipe.get('certificates_unrunnable') or 0} unrunnable, "
+                f"{clocks} on a clock -- the remainder passed every gate and is accruing no "
+                f"out-of-sample evidence, so it can never mature into capital. Check the "
+                f"shadow_forward log for ENROL-GAP lines naming each refusal.",
+                repair=None, auto=False))
+    # ROWS THAT FAILED A GATE, SITTING IN THE FILE THE DESK CALLS ITS CERTIFICATES. Not a
+    # correctness bug now that the census counts the ten-gate verdict, but it IS a standing
+    # invitation to the same defect: any future reader that does `len(survivors)` re-publishes
+    # gate failures as certificates. Reported so the population is known rather than discovered.
+    if pipe.get("certified_gate_failed"):
+        out.append(Issue(
+            "certs:gate_failed_rows", "DEGRADED",
+            f"{pipe['certified_gate_failed']} row(s) in the survivors file failed a gate",
+            "They are correctly refused at admission and correctly excluded from `certified`. "
+            "They remain in UNIVERSAL_SURVIVORS.json, so any reader taking len(survivors) as a "
+            "certificate count will over-report the desk's edge -- which is exactly how the "
+            "dashboard came to publish them as certified.",
+            repair=None, auto=False))
     gap = None
     with contextlib.suppress(OSError, ValueError):
         gap = json.loads((r / "desks/mt5/reports/OPPORTUNITY_GAP.json").read_text("utf-8"))

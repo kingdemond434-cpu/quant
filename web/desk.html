@@ -496,6 +496,17 @@ function empty(head, body){
   e.appendChild(el("p", null, body));
   return e;
 }
+// Certificates that passed all ten gates, CAN be run, and have no forward clock. This is the
+// only number in the funnel that is a genuine work item: a gate-failed row was never a
+// certificate and an unrunnable one cannot be enrolled, so both are subtracted before the
+// subtraction that matters. Returns null rather than a number when either input is absent --
+// "certified 55, clocks 19" with no cause is the display that sent the principal hunting for
+// 36 missing sleeves when two thirds of the gap was rows that never qualified.
+function clockless(p){
+  if (p.certified == null || p.forward_clocks == null) return null;
+  const runnable = p.certified - (p.certificates_unrunnable || 0);
+  return Math.max(0, runnable - p.forward_clocks);
+}
 function kpis(rows){
   const k = el("div", "kpis");
   rows.forEach(([label, value, sub, tone]) => {
@@ -691,8 +702,10 @@ function pagePipeline(){
     ["Backtested", num(p.discovered_backtested), "reached a backtest"],
     ["Judged last pass", num(p.gauntlet_last_judged), "the gauntlet's last run"],
     ["Unmeasured", num(p.gauntlet_last_unmeasured), "could not be judged", p.gauntlet_last_unmeasured ? "w" : "m"],
-    ["Certified", num(p.certified ?? (D.breadth?.book_breadth?.certificates)), "cleared all ten gates"],
-    ["Unrunnable", num(p.certificates_unrunnable), "certified but not executable", p.certificates_unrunnable ? "r" : "m"]
+    ["Certified", num(p.certified ?? (D.breadth?.book_breadth?.certificates)), "passed all ten gates"],
+    ["Gate-failed", num(p.certified_gate_failed), "in the survivors file, never passed", p.certified_gate_failed ? "w" : "m"],
+    ["Unrunnable", num(p.certificates_unrunnable), "certified but not executable", p.certificates_unrunnable ? "r" : "m"],
+    ["Clockless", num(clockless(p)), "certified, runnable, no forward clock", clockless(p) ? "r" : "g"]
   ]));
   const g = el("div", "grid");
   const c = card("Conversion, stage by stage", "gauntlet");
@@ -723,6 +736,39 @@ function pagePipeline(){
       "throughput, not supply, is the binding constraint at this depth"]
   ]));
   g.appendChild(c2.node);
+
+  // EVERY ROW IN THE SURVIVORS FILE ACCOUNTED FOR, on screen, adding up. The funnel used to
+  // publish two numbers — certified and clocks — whose difference had no stated cause, so a
+  // gap that is mostly rows that never passed a gate read as sleeves going missing. Each line
+  // below subtracts a NAMED population, and the last line is the only one anybody must act on.
+  const c3 = card("Certificate ledger", "UNIVERSAL_SURVIVORS.json");
+  const rowsInFile = (p.certified == null || p.certified_gate_failed == null)
+    ? null : p.certified + p.certified_gate_failed;
+  if (rowsInFile == null){
+    c3.body.appendChild(missing("Certificate ledger", "UNIVERSAL_SURVIVORS.json",
+      "The ten-gate census could not be taken."));
+  } else {
+    c3.body.appendChild(defs([
+      ["ROWS IN FILE", num(rowsInFile), "everything the survivors file holds, passed or not"],
+      ["LESS GATE-FAILED", "−" + num(p.certified_gate_failed),
+        "kept for the record and refused at the door — these never were certificates, and counting them as such was the funnel's most misleading number"],
+      ["CERTIFIED", num(p.certified), "passed all ten gates"],
+      ["LESS UNRUNNABLE", "−" + num(p.certificates_unrunnable),
+        "earned a certificate, carries no parameterisation, cannot be enrolled without guessing the strategy that passed"],
+      ["RUNNABLE", num(p.certified - (p.certificates_unrunnable || 0)),
+        "eligible for a forward clock"],
+      ["LESS ON A CLOCK", "−" + num(p.forward_clocks), "accruing out-of-sample evidence now"],
+      ["CLOCKLESS", num(clockless(p)),
+        clockless(p) ? "certified, runnable, accruing NOTHING — the only line here that is a work item"
+                     : "every runnable certificate is on a clock"]
+    ]));
+  }
+  if (p.census_basis && p.census_basis !== "ten_gate_verdict"){
+    c3.body.appendChild(empty("Census unavailable — counts fall back to the file's own row count",
+      p.census_basis + ". Until this resolves, `certified` is the number of ROWS in the "
+      + "survivors file, which includes rows that failed a gate."));
+  }
+  g.appendChild(c3.node);
   out.push(g);
   return out;
 }

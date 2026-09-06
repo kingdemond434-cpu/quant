@@ -260,13 +260,65 @@ def worker_eval_row(r: dict, pbo12_v: float, pbo16_v: float, spa12_v: float,
     return ev
 
 
+def _hunt_cells(fname: str) -> tuple[list, str]:
+    """This hunt's cells, and a NAMED reason when there are none.
+
+    THE UNGUARDED READ THAT KILLED THE CERTIFIER. This was
+    `json.loads((REPORTS / "hunt12.json").read_text("utf-8"))` inline in `main`, two lines with
+    no existence check, and on any host where either report is missing it raises
+    FileNotFoundError before the first gate is scored. Measured 2026-09-06: that is exactly what
+    MT5-QQUANTGATESCERTIFY was doing on the box -- dying at import-time-ish speed every run, so
+    no certificate had been re-minted for as long as the report had been absent, while the
+    scheduled task reported only `FAILING` with no cause. Certification is the desk's one door
+    from research to capital; it may not be closed by an unguarded `read_text`.
+
+    A crash and an empty hunt are DIFFERENT ANSWERS and this returns them differently: cells plus
+    an empty string when the report is readable, `[]` plus prose when it is not. The caller
+    refuses outright when BOTH are absent and proceeds -- loudly, recording `hunts_absent` -- when
+    only one is. That asymmetry is the point: one absent hunt costs the cells of that hunt, two
+    absent hunts means the question was never asked, and those must not produce the same artifact.
+
+    A malformed report is treated as absent rather than fatal, for the same reason: a half-written
+    JSON from an interrupted sweep is a missing answer, not a reason to stop judging the hunt that
+    did complete. No gate is touched here -- every cell that IS present is judged by the identical
+    ten gates at the identical thresholds.
+    """
+    path = REPORTS / fname
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except FileNotFoundError:
+        return [], f"{fname} is absent from {REPORTS}"
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], f"{fname} is unreadable ({type(exc).__name__}: {exc})"
+    cells = doc.get("all") if isinstance(doc, dict) else None
+    if not isinstance(cells, list):
+        return [], (f"{fname} carries no `all` list "
+                    f"(found {type(cells).__name__}), so it names no cells to judge")
+    return cells, ""
+
+
 def main() -> int:
     import multiprocessing as mp
 
-    h12 = json.loads((REPORTS / "hunt12.json").read_text("utf-8"))
-    h16 = json.loads((REPORTS / "hunt16.json").read_text("utf-8"))
-    all12 = h12.get("all", [])
-    all16 = h16.get("all", [])
+    all12, absent12 = _hunt_cells("hunt12.json")
+    all16, absent16 = _hunt_cells("hunt16.json")
+    hunts_absent = [a for a in (absent12, absent16) if a]
+    if absent12 and absent16:
+        # NOTHING TO JUDGE IS NOT A CLEAN SWEEP. Certifying from two absent reports would write
+        # a QQUANT_GATES.json saying "0 judged, 0 certified" -- indistinguishable, to every
+        # downstream reader and to the dashboard, from a sweep that ran and found nothing. Exit
+        # 2 is this desk's UNANSWERED code (see shadow_gap.py): the question was not answered
+        # on this host, and no artifact is written to be mistaken for an answer.
+        print(f"UNANSWERED: no hunt report is readable in {REPORTS} "
+              f"({absent12}; {absent16}) -- nothing to certify, and refusing to publish an "
+              f"empty verdict that would read as 'swept, no survivors'", file=sys.stderr)
+        return 2
+    for a in hunts_absent:
+        # PARTIAL, AND SAID SO. The surviving hunt is judged on its own cells exactly as before
+        # -- build_matrix returns an empty matrix for the absent one and every consumer below
+        # already guards on `.size` -- but `hunts_absent` rides into the report so a partial
+        # run can never be read as a full one.
+        print(f"PARTIAL SWEEP: {a}; certifying from the readable hunt only", file=sys.stderr)
     n_cells = {12: len(all12), 16: len(all16)}
     t0 = datetime.now(timezone.utc)
 
@@ -480,6 +532,11 @@ def main() -> int:
         "survivors_total": len(verdicts),
         "gate_fails": gate_fails,
         "verdicts": verdicts,
+        # A PARTIAL SWEEP THAT CANNOT BE READ AS A FULL ONE. Empty on a complete run; when one
+        # hunt report was absent or unreadable this names it, so `survivors_total` is never
+        # mistaken for the whole population by a reader (or a dashboard) that has no other way
+        # to tell "judged and found nothing" from "never read the file".
+        "hunts_absent": hunts_absent,
         "swept_at": datetime.now(timezone.utc).isoformat(),
         "wall_s": round((datetime.now(timezone.utc) - t0).total_seconds(), 1),
         "workers": WORKERS,
