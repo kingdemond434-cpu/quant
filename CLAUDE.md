@@ -86,6 +86,28 @@ may target crypto-exchange-native opportunities. Fusion-executable crypto CFDs a
 MT5 universe; crypto reference data may be used only WHEN it informs an MT5 instrument, never as
 a hunted universe of its own.
 
+### TWO LANES: WHICH PROCESS MAY MINT A HYPOTHESIS (2026-09-06, principal's standing order)
+
+**Single-name equities are traded on news, financial reports and earnings reaction -- never
+hunted for statistical hypotheses.** Forex, metals, energy, soft commodities, indices, bonds and
+Fusion's crypto CFDs remain the hypothesis-discovery universe. This does NOT narrow the universe
+above: share CFDs stay tradable, their bars and ticks are still collected, and their edge is
+sought in the event lane.
+
+Routing is by ASSET CLASS from MetaTrader's own registry, never a symbol list, in
+`desks/mt5/research/universe_policy.py`; `run_external_backtest.route_by_lane` enforces it and
+reports what it set aside in `BACKTEST_COVERAGE.json`. A symbol absent from the registry is
+UNCLASSIFIED and hunted by nothing until it is classified -- absence is not a permission.
+
+The reason is not only that a single name's hourly path is dominated by its own scheduled
+disclosures. **Trial count is a shared cost**: the deflated-Sharpe charge and the program-level
+SPA/PBO tests divide one family-wise error budget across every hypothesis the desk tested, so
+each equity cell raised the bar every FX and metals cell had to clear. Measured 2026-09-06:
+10,575 of 23,627 docket cells (44.8%) were single-name equities and 3,839 more were equity
+tickers from a non-Fusion vocabulary -- about 61% of the multiple-testing charge, spent on the
+asset class least suited to the method, and paid for by the classes best suited to it. On that
+same campaign `deflated_sharpe` rejected 42 of 42 judged cells at 597 trials.
+
 ## ONE CODE, TWO BOXES (2026-09-05)
 
 The VPS (95.216.191.70, `quant`, `/home/quant/quant-platform`, branch `desk-sync-clean`) runs the

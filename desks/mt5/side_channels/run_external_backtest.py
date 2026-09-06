@@ -367,6 +367,62 @@ def expand_timeframes(grid: list[dict]) -> list[dict]:
     return out
 
 
+def route_by_lane(grid: list[dict]) -> tuple[list[dict], dict]:
+    """Keep only the cells whose instrument's edge is sought STATISTICALLY.
+
+    PRINCIPAL'S ORDER, 2026-09-06: single-name equities are traded on news, financial reports and
+    earnings reaction, not hunted for statistical hypotheses. `research/universe_policy.py` holds
+    the reasoning and the routing; this is where the gauntlet obeys it.
+
+    THE TRIAL BUDGET IS THE POINT, not the CPU. Skipping these cells saves some hours, but the
+    reason to do it is that `deflated_sharpe` and the program-level SPA/PBO tests spread one
+    family-wise error budget across EVERY hypothesis the desk tested -- so each equity cell was
+    raising the bar that every FX and metals cell had to clear. Measured on this docket: 10,575
+    of 23,627 cells (44.8%) were single-name equities and 3,839 more were equity tickers from a
+    non-Fusion vocabulary; about 61% of the multiple-testing charge was being spent on the asset
+    class least suited to the method, and paid for by the classes best suited to it.
+
+    ROUTED, NOT DROPPED, AND SAID OUT LOUD. These cells are reported by lane and symbol count in
+    BACKTEST_COVERAGE.json. A cell that silently disappears between the docket and the runner is
+    indistinguishable from one that was tested and failed -- which is the confusion this stage has
+    already paid for twice today.
+    """
+    try:
+        sys.path.insert(0, str(BASE / "research"))
+        import universe_policy as policy
+    except Exception as exc:                                            # noqa: BLE001
+        # NO POLICY MEANS NO ROUTING, NOT SILENT ROUTING. Running the whole docket is the prior
+        # behaviour and is safe; quietly discarding 61% of it because an import failed is not.
+        return grid, {"status": f"UNAVAILABLE ({type(exc).__name__}: {exc})", "routed_out": 0}
+
+    kept, by_lane, syms = [], Counter(), {}
+    for cell in grid:
+        sym = canonical_symbol(str(cell.get("symbol") or ""))
+        lane = policy.lane(sym)
+        by_lane[lane] += 1
+        syms.setdefault(lane, set()).add(sym)
+        if lane == policy.HYPOTHESIS:
+            kept.append(cell)
+    for lane, n in sorted(by_lane.items()):
+        if lane == policy.HYPOTHESIS:
+            continue
+        why = ("traded on news, financial reports and earnings reaction -- not hunted statistically"
+               if lane == policy.EVENT else
+               "not in the broker's registry, so no asset class and no lane -- hunted by nothing "
+               "until it is classified")
+        print(f"  {n:,} cell(s) ROUTED OUT of hypothesis discovery [{lane}] across "
+              f"{len(syms[lane])} symbol(s): {why}")
+    return kept, {
+        "status": "MEASURED",
+        "kept_hypothesis": by_lane.get(policy.HYPOTHESIS, 0),
+        "routed_event": by_lane.get(policy.EVENT, 0),
+        "routed_unclassified": by_lane.get(policy.UNCLASSIFIED, 0),
+        "symbols_event": sorted(syms.get(policy.EVENT, ())),
+        "symbols_unclassified": sorted(syms.get(policy.UNCLASSIFIED, ())),
+        "policy": "desks/mt5/research/universe_policy.py",
+    }
+
+
 def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
     """Split the grid into what this host can honestly test and what it cannot, BY CAUSE.
 
@@ -447,7 +503,9 @@ def run_all() -> list[dict]:
     if len(grid) != before_tf:
         print(f"  timeframe sweep: {before_tf:,} cell(s) -> {len(grid):,} "
               f"(each undeclared cell swept across every chart its symbol has)")
+    grid, routing = route_by_lane(grid)
     grid, coverage = hold_uncoverable(grid)
+    coverage["routing"] = routing
     print(f"Running {len(grid):,} executable test cells ({len(raw_grid):,} submitted; "
           f"{removed} unsupported parameter occurrence(s) removed)...")
 
