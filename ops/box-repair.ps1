@@ -52,8 +52,21 @@ param(
     # defensible here -- the decision is reversible, so it is no longer the one-way door the
     # refusal exists to protect.
     [ValidateSet("none", "ours", "theirs")]
-    [string]$ResolveCode = "none"
+    [string]$ResolveCode = "none",
+    # PUBLISH STATE WHOSE RECORD COUNTS FELL. The pre-commit guard refuses a commit that shrinks a
+    # protected artifact, because a truncated file overwriting a good copy on the VPS is how this
+    # desk has lost evidence before. That refusal is usually correct. It is NOT correct when the
+    # box has genuinely been rebuilt and its smaller state is the true one -- and then nothing can
+    # be published at all until somebody says so deliberately. This flag is that deliberate act,
+    # named, so it appears in the shell history rather than living as an env var somebody exported
+    # once and forgot.
+    [switch]$AllowEvidenceFall
 )
+
+if ($AllowEvidenceFall) {
+    $env:QUANT_ALLOW_EVIDENCE_FALL = "1"
+    Write-Host "   NOTE  -AllowEvidenceFall: the guard's shrinking-artifact refusal is overridden for this run" -ForegroundColor Yellow
+}
 
 $ErrorActionPreference = "Continue"
 $script:Failures = @()
@@ -237,7 +250,19 @@ if (-not $WhatIf) {
     # and so nothing the box produced is lost to a checkout.
     git add -A -- desks/mt5/data desks/mt5/reports 2>&1 | Out-Null
     git diff --cached --quiet
-    if ($LASTEXITCODE -ne 0) { git commit -m "box runtime state before sync" 2>&1 | Out-Null; Ok "local state committed" }
+    if ($LASTEXITCODE -ne 0) {
+        # SAME BUG, SAME PLACE, TWICE. This printed "local state committed" whether or not the
+        # commit was accepted -- a success line emitted unconditionally is not a report, it is
+        # decoration. If the guard refuses here the pull below then runs against a dirty tree and
+        # the real cause is three steps back in a log nobody re-reads.
+        $out = git commit -m "box runtime state before sync" 2>&1
+        if ($LASTEXITCODE -eq 0) { Ok "local state committed" }
+        else {
+            Fail "the pre-sync state commit was REFUSED -- the box's own state is NOT saved"
+            ($out | Select-Object -Last 10) | ForEach-Object { Info $_ }
+            Info "the override the guard names above is available as -AllowEvidenceFall"
+        }
+    }
 
     $pull = git pull origin $Branch 2>&1
     if ($LASTEXITCODE -eq 0) { Ok "pulled $Branch" }
@@ -360,12 +385,43 @@ else {
     git diff --cached --quiet
     if ($LASTEXITCODE -eq 0) { Warn "nothing new to publish -- the cycle wrote no state, so the dashboard will stay SILENT" }
     else {
-        git commit -m "box state sync" 2>&1 | Out-Null
+        # THE COMMIT'S EXIT CODE IS THE WHOLE ANSWER AND THIS THREW IT AWAY. `git commit | Out-Null`
+        # discarded both the output and $LASTEXITCODE, so when the pre-commit guard REFUSED the
+        # commit -- which is its job, and it prints exactly why and which override applies -- the
+        # script carried on to a push that then reported "Everything up-to-date" and a summary
+        # that blamed the network. Measured on the box 2026-09-06: that pair of lines, and eleven
+        # days of a dashboard reading SILENT for a box whose state was never committed at all.
+        #
+        # A guard that refuses loudly, behind a script that listens to nothing, is a guard that
+        # refuses silently.
+        $commitOut = git commit -m "box state sync" 2>&1
+        $commitRc = $LASTEXITCODE
+        if ($commitRc -ne 0) {
+            Fail "the state commit was REFUSED -- nothing was published, and the push below has nothing to send"
+            ($commitOut | Select-Object -Last 12) | ForEach-Object { Info $_ }
+            Info "The pre-commit guard names its own override above. For a deliberate publish of"
+            Info "state whose record counts fell, re-run as: .\ops\box-repair.ps1 -AllowEvidenceFall"
+            Info "Do NOT set that blindly: a falling record count is usually a truncated artifact,"
+            Info "and publishing it overwrites a good copy on the VPS with a worse one."
+        }
         $push = git push origin $Branch 2>&1
-        if ($LASTEXITCODE -eq 0) { Ok "state pushed to $Branch" }
+        if ($LASTEXITCODE -eq 0 -and $commitRc -eq 0) { Ok "state pushed to $Branch" }
+        elseif ($LASTEXITCODE -eq 0) { Warn "push succeeded but had nothing new to send -- see the refused commit above" }
         else {
             Fail "push failed"
             ($push | Select-Object -Last 8) | ForEach-Object { Info $_ }
+            # A PACK TOO BIG FOR THE CONNECTION LOOKS LIKE A BROKEN REMOTE. "the remote end hung
+            # up unexpectedly" on a box with days of backlog is usually the HTTP transport giving
+            # up mid-pack, not GitHub being down. Raising the buffer is the documented remedy and
+            # costs nothing when the pack is small.
+            if ($push -match "hung up unexpectedly|RPC failed|early EOF") {
+                Info "that error is a pack too large for the HTTP transport, not a dead remote"
+                git config http.postBuffer 524288000 2>&1 | Out-Null
+                Info "raised http.postBuffer to 500MB; retrying once"
+                $push2 = git push origin $Branch 2>&1
+                if ($LASTEXITCODE -eq 0) { Ok "state pushed to $Branch on retry" }
+                else { ($push2 | Select-Object -Last 6) | ForEach-Object { Info $_ } }
+            }
             # NAME THE ONE CAUSE THE OPERATOR CANNOT SEE FROM THE ERROR. A declined merge leaves
             # the box BEHIND origin, and git then refuses the push as non-fast-forward -- which
             # reads like a broken remote rather than the consequence of the step above. Say how

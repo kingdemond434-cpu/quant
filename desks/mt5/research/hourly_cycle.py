@@ -16,6 +16,7 @@ Run every hour (Startup loop MT5Hourly.cmd). Fail-visible, resumable, cheap.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -257,6 +258,52 @@ def record_tape() -> dict:
             codes.append(int(rc))
     results["exit_code"] = max(codes) if codes else 1
     return results
+
+
+def publish_state() -> dict:
+    """Publish this box's state to git -- a SECOND, independent path to the dashboard.
+
+    THE DASHBOARD HAD EXACTLY ONE PUBLISHER AND NOBODY WATCHED IT. `sync_shadow_to_git.ps1` is
+    scheduled as the Windows task MT5-ShadowSync every 15 minutes, and it is a careful script:
+    it checks every exit code, retries a rejected push three times with fetch+merge, and logs
+    what it did. None of that helps when the TASK is gone. Measured 2026-09-06: shadow_health.json
+    last written 2026-08-26 14:45, gateway_state.json 08-17, account_state.json never delivered --
+    eleven days in which this desk ran perfectly, recorded 359,107 ticks in a single hour and
+    completed its daily cycle, while the dashboard said "box has not reported for 266.4h".
+
+    A single publisher makes delivery a single point of failure whose symptom is
+    indistinguishable from a dead desk, and the desk is the thing people then go and look at.
+
+    So the hourly cycle publishes too. The two paths share no scheduler: this one rides
+    MT5Hourly.cmd, the other rides the Windows task scheduler, and either alone keeps the
+    dashboard current. Committing the same unchanged files twice is free -- `sync_shadow_to_git`
+    stops at "no change since last sync" -- so the redundancy costs a subprocess an hour.
+
+    NOT AN ERROR OFF THE BOX. The VPS runs this cycle too and has no PowerShell and nothing to
+    publish; that is reported as a skip, never as a failure, so it cannot become noise that
+    trains a reader to ignore this leg.
+    """
+    script = BASE / "scripts" / "sync_shadow_to_git.ps1"
+    if not script.exists():
+        return {"skipped": "sync_shadow_to_git.ps1 is absent on this host"}
+    powershell = shutil.which("powershell") or shutil.which("pwsh")
+    if not powershell:
+        return {"skipped": "no PowerShell on this host -- publishing is the trading box's job"}
+    try:
+        r = subprocess.run([powershell, "-NoProfile", "-NonInteractive",
+                            "-ExecutionPolicy", "Bypass", "-File", str(script)],
+                           capture_output=True, text=True, cwd=str(REPO),
+                           timeout=600, check=False)
+    except Exception as exc:                                            # noqa: BLE001
+        print(f"publish_state FAILED to start: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
+    tail = (r.stdout or r.stderr or "").strip().splitlines()[-3:]
+    if r.returncode != 0:
+        # LOUD, because this is the leg that decides whether anybody can SEE the desk. A silent
+        # publisher failure is the one that costs eleven days.
+        print(f"publish_state FAILED rc={r.returncode}: {' | '.join(tail)}", flush=True)
+    return {"exit_code": r.returncode, "tail": tail,
+            "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
 def _tape_main() -> int:
@@ -859,6 +906,9 @@ def main() -> None:
     # the sealed release, and nothing scheduled to notice.
     ri = _costed("release_identity", lambda: _producer(
         "release_identity", "mt5desk/release_identity.py"))
+    # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
+    # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
+    pub = _costed("publish_state", publish_state)
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
@@ -873,7 +923,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "release_identity": ri,
+                    "release_identity": ri, "publish_state": pub,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
