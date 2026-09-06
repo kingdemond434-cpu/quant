@@ -217,7 +217,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             # HOURLY series reindexed causally onto this cell's own index. Mirrors
             # `external_gauntlet.build_cell` exactly, which is the point of this module.
             all_symbols = sorted(p.stem.removesuffix("_H1")
-                                 for p in inputs.UNIVERSE.glob("*_H1.parquet"))
+                                 for p in inputs.UNIVERSE.glob("*.parquet"))
             extra["extra"] = resolve_inputs(sym, h1.index, all_symbols)
             return extra, "ok"
     except Exception as exc:                     # a rebuild that raises is a gap, never a guess
@@ -238,5 +238,21 @@ def strip_identity_keys(family: str, params: dict[str, Any]) -> dict[str, Any]:
     family takes it as an argument. It stays in the cell's IDENTITY -- callers pass the unstripped
     params to `resolve` and to the sleeve registry -- because that is the only place it belongs.
     """
-    drop = {"peer_symbol", "factor_symbols", "input_symbol", "input_source", "timeframe"}
-    return {k: v for k, v in (params or {}).items() if k not in drop}
+    return {k: v for k, v in (params or {}).items() if k not in IDENTITY_KEYS}
+
+
+#: Params that NAME an input or a chart rather than parameterise a family. Hoisted out of
+#: `strip_identity_keys` so the OTHER side of the contract can see them too.
+#:
+#: `run_external_backtest.normalize_grid` filters a cell's params to the family function's
+#: signature -- correct for parameters, catastrophic for these. None of them appear in any
+#: signature (that is what makes them identity keys), so every one was deleted before `resolve`
+#: could load what it named. Measured 2026-09-06: it removed peer_symbol from all 427
+#: relative_value candidates, factor_symbols from all 780 cross_asset_residual, input_symbol from
+#: all 248 carry and input_source from all 10 cot_positioning -- then `resolve` reported "no
+#: peer_symbol on the candidate" and the whole family tested zero times. The stage logged it as
+#: "2,207 unsupported parameter occurrence(s) removed", which read like tidying.
+#:
+#: One definition, because a filter and its exception list drifting apart is exactly this bug.
+IDENTITY_KEYS = frozenset({"peer_symbol", "factor_symbols", "input_symbol",
+                           "input_source", "timeframe"})

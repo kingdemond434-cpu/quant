@@ -60,6 +60,7 @@ def test_the_real_step_order_is_shadow_then_promoter_then_markout():
     for required in ("shadow", "promoter", "markout"):
         assert required in names, f"the {required} step vanished from the daily cycle"
     assert names.index("shadow") < names.index("promoter") < names.index("markout")
+    assert "export_aurum" in names and names[-1] == "export_aurum"
 
 
 def test_it_runs_once_per_utc_day(cyc, monkeypatch):
@@ -117,3 +118,5 @@ def test_the_hourly_loop_actually_calls_it():
     assert "daily_cycle" in src, (
         "hourly_cycle does not invoke daily_cycle -- the three processes that move an edge toward "
         "capital are unscheduled again")
+    assert "record_tape()" in src
+    assert '"tape": t' in src

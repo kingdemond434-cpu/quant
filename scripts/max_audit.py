@@ -4181,7 +4181,6 @@ _TERMINAL_ARTIFACTS = {
     "docs/RESEARCH.md": "operative research mandate -- every organ's first standing order, amended by decision only",
     "docs/MANDATE_COVERAGE.md": "terminal disposition map of the consolidation -- a re-consolidation writes a NEW map",
     "docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md": "standing principal mandate -- donation-only flywheel authority limits",
-    "docs/research/MOAT_NODE_SPEC.md": "standing spec -- implementations change by code, the spec by decision",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",
@@ -4225,6 +4224,14 @@ _TERMINAL_ARTIFACTS = {
         "already carries its disposition (BUILT / UPGRADED / BUILD / QUEUE / REJECT with reason), "
         "so the document IS the conversion record rather than inventory awaiting one. Rows that "
         "became work carry register rows; rows that were rejected carry their reason.",
+    "docs/research/MOAT_NODE_SPEC.md":
+        "PRINCIPAL BLUEPRINT (2026-08-25), claimed under RESEARCH §2 and LAWS L1.11 in its own "
+        "header -- same class as ELITE_QUANT_INTELLIGENCE_MANDATE.md above: standing doctrine, "
+        "terminal by nature rather than by exhaustion. It describes a target Bronze/Silver/Gold "
+        "data-moat topology and an interim reality, not a measurement -- nothing in it goes stale "
+        "on a clock. It changes only by principal revision of the plan, same as the other DOCTRINE "
+        "rows in docs/research/ARTIFACT_GOVERNANCE.md, where this classification is also recorded "
+        "in the human-readable table.",
 }
 
 

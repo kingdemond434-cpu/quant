@@ -1,3 +1,8 @@
+> **DECOMMISSIONED 2026-08-23.** The Hetzner VPS this document brings up (95.216.191.70) is fully
+> torn down. The desk migrated to MT5/Fusion (`CLAUDE.md` MT5 UNIVERSAL MANDATE); the live box is
+> Contabo (`desks/mt5/AGENTS.md`). Kept as historical record -- do not follow it to bring anything
+> back up.
+
 # Bringing the whole desk up on the VPS
 
 `docs/RECORDER_DEPLOY.md` covers the recorders — the data side, and still the thing that unblocks

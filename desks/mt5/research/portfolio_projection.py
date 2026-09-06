@@ -160,17 +160,46 @@ def build_sleeves() -> list[dict]:
                             state="base",
                             r=[t.r_multiple for t in tr],
                             dates=[t.entry_time.date() for t in tr]))
-    from research.run_hunt12 import day_states
+    from research.run_hunt12 import day_states  # noqa: PLC0415
+    unpriceable: list[str] = []
     for cell in load_h12_survivors():
         sym, win, state = cell["sym"], cell["win"], cell["state"]
-        h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
-        costs = Costs.from_symbol(meta[sym], mult=2.0)  # GAP 114: never the direct constructor
+        # A SURVIVOR CAN NAME AN INSTRUMENT THE VENUE NO LONGER LISTS, AND THAT IS NOT A CRASH.
+        #
+        # AUDCAD was dropped from the venue snapshot at the 2026-08-20 refresh while hunt12's five
+        # AUDCAD survivors stayed in `hunt12_partial.json`. `meta[sym]` then raised KeyError
+        # halfway through the loop, so the projection died with a traceback instead of publishing
+        # a book -- and a run that dies is indistinguishable from a run nobody started.
+        #
+        # Skipping quietly is the other failure and the worse one: it would publish a SMALLER book
+        # and call it the book (row 115's defect class, and WS-005). So the sleeve is named,
+        # counted, and reported as UNPRICEABLE -- a real answer under L1.28a, distinct both from
+        # "this sleeve failed" and from "this sleeve does not exist".
+        parquet = UNI / f"{sym}_H1.parquet"
+        if sym not in meta or not parquet.exists():
+            why = "absent from universe.json" if sym not in meta else "no H1 parquet on disk"
+            unpriceable.append(f"{sym}_{win}_{state} ({why})")
+            continue
+        h1 = families._h1(pd.read_parquet(parquet))
+        m = meta[sym]
+        # Same fix. The non-gold branch was under-charged too: it built the spread at mult=1.0,
+        # crossing it once where a round trip crosses it twice.
+        costs = Costs.from_symbol(m, mult=2.0)
         states = day_states(h1)
         tr = cell_trades(sym, win, state, h1, costs, states)
         sleeves.append(dict(name=f"{sym}_{win}_{state}", sym=sym, win=win,
                             state=state,
                             r=[t.r_multiple for t in tr],
                             dates=[t.entry_time.date() for t in tr]))
+    if unpriceable:
+        # Printed on every run, not written to a report nobody opens. The book below is missing
+        # these sleeves and the reader has to know that before ranking anything in it.
+        print(f"UNPRICEABLE: {len(unpriceable)} gated survivor(s) excluded from this book -- "
+              f"the venue no longer prices them:", flush=True)
+        for name in unpriceable:
+            print(f"  - {name}", flush=True)
+        print("  These are NOT failures and NOT absences. Re-admit through the universal gate if "
+              "the venue relists them; do not carry the old result forward.", flush=True)
     return sleeves
 
 

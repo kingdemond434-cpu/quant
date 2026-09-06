@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import sys
 import tempfile
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -104,10 +105,35 @@ def _shadow_rows() -> list[dict[str, Any]]:
         output.append({
             "name": key, "status": row.get("status"), "trades": n,
             "expectancy_r": exp, "cum_r": cum_r, "max_dd_r": _number(row.get("max_dd_r")),
-            "days": int(_number(row.get("days_active")) or 0), "source": row.get("bar_source"),
+            "days": int(_number(row.get("days_active"), row.get("days")) or 0),
+            "source": row.get("bar_source"),
             "decay_ratio": decay, "promotion_authority": row.get("promotion_authority") is True,
         })
     return sorted(output, key=lambda row: row["expectancy_r"], reverse=True)
+
+
+def _norm_status(status) -> str:
+    """A lane's status, with the separator normalised, because the separator is not the meaning.
+
+    THE BUG THIS ENDS, measured 2026-09-05 and it hid an entire lane. Three lanes write a
+    promotion verdict and they do not agree on one character:
+
+        shadow_forward.py    "PROMOTION CANDIDATE"    (space)
+        scalp_shadow.py      "PROMOTION_CANDIDATE"    (underscore)
+        qquant_shadow.py     "PROMOTION_CANDIDATE"    (underscore)
+
+    The promotion counter below tested `status == "PROMOTION CANDIDATE"` -- the space form only --
+    so every candidate the SCALP and QQUANT lanes ever produced was invisible to it. The dashboard
+    reported `promotion_ready: 0` while the promoter, which matches the underscore form correctly,
+    was looking at the same rows and seeing candidates. The principal was told repeatedly that
+    nothing was promotable by a tile that could not see two of the three lanes.
+
+    Same class as `_is_terminal` directly below, whose docstring records the same lesson about
+    exact-string matching one rename later: a verdict that does not propagate is a rename, not a
+    verdict. Normalising on READ is the fix that survives the next lane, because the next lane
+    will also pick its own separator and no reader should have to know which.
+    """
+    return " ".join(str(status or "").upper().replace("_", " ").split())
 
 
 def _is_terminal(status) -> bool:
@@ -192,6 +218,48 @@ def _gate_stat(key: str) -> int | None:
     return int(v) if isinstance(v, (int, float)) else None
 
 
+def _certificate_census(certs: dict[str, Any]) -> dict[str, Any]:
+    """Split the survivors file into ten-gate passes, gate failures and unrunnable certificates.
+
+    IMPORTED, NEVER RE-IMPLEMENTED. `all_ten_pass` is the same predicate
+    `shadow_admission.authorized_runs` uses to decide what may enrol, and the whole point of this
+    function is to make the dashboard agree with that door. A local re-spelling of "all ten
+    passed" is a second judge, and this desk has already paid for two builders of one identity
+    (`run_key` reported 34 of 35 certificates clockless while every one was running). If the
+    import fails the census refuses -- `basis` says so and the caller keeps the old number --
+    because a census that silently degrades to "everything counts" is the defect it exists to fix.
+
+    THREE POPULATIONS, and they are not nested the way the old count assumed:
+
+        gate_failed   in the file, `all_ten_pass` False -- NOT a certificate, never was
+        unrunnable    passed all ten, `shadow_spec.params` absent -- a certificate nothing can run
+        certified     passed all ten -- the number the funnel means by "certified"
+
+    `unrunnable` is a SUBSET of `certified`, not a sibling: those rows earned their certificate
+    and cannot be executed, which is a publication defect worth its own line. `params == {}` is
+    NOT unrunnable -- it is the complete parameterisation "family defaults", byte-exactly what the
+    gauntlet ran, and excluding it has already held overnight_gap_decay certificates off their
+    clocks twice (2026-08-27, and again here where 13 were reported unrunnable against 6 real).
+    """
+    try:
+        sys.path.insert(0, str(DESK / "research"))
+        from gate_policy import all_ten_pass          # type: ignore[import-not-found]
+    except Exception as exc:                          # noqa: BLE001 - reported, never guessed
+        return {"basis": f"UNAVAILABLE ({type(exc).__name__}: {exc})", "certified": None,
+                "gate_failed": None, "gate_failed_names": [], "unrunnable_names": []}
+    passed, failed = [], []
+    for key, row in certs.items():
+        if isinstance(row, dict) and all_ten_pass(row.get("gates")):
+            passed.append(key)
+        else:
+            failed.append(key)
+    unrunnable = [k for k in passed
+                  if (certs[k].get("shadow_spec") or {}).get("params") is None]
+    return {"basis": "ten_gate_verdict", "certified": len(passed),
+            "gate_failed": len(failed), "gate_failed_names": sorted(failed),
+            "unrunnable_names": sorted(unrunnable)}
+
+
 def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
     """Stage counts for the ONE pipeline: discovered -> backtested -> certified -> forward -> live."""
     hyp = None
@@ -206,6 +274,7 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
             hyp = len(rows)
             break
     forward, promo_ready, live_rows = [], 0, {}
+    promo_names: list[str] = []
     for path in (DESK / "reports" / "shadow" / "shadow_state.json",
                  DESK / "reports" / "shadow" / "qquant_shadow_state.json",
                  DESK / "reports" / "shadow" / "scalp_shadow_state.json",
@@ -214,7 +283,7 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
         for key, row in list(data.items()) + list((data.get("sleeves") or {}).items() if isinstance(data.get("sleeves"), dict) else []):
             if not isinstance(row, dict) or "status" not in row:
                 continue
-            status = str(row.get("status") or "").upper()
+            status = _norm_status(row.get("status"))
             if _is_terminal(status):
                 continue
             # DAYS ARE DERIVED, NEVER TRUSTED. A lane whose engine went stale keeps writing
@@ -222,7 +291,13 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
             # 1 -- a promote lane reading the stored field would clear a window never served).
             # forward_start is the frozen clock; the wall clock is the other operand. Stored is
             # the fallback only when no forward_start exists.
-            days = int(_number(row.get("days_active")) or 0)
+            # BOTH SPELLINGS, because the lanes do not agree and the reader must not care.
+            # shadow_forward and qquant_shadow write `days_active`; scalp_shadow writes `days`.
+            # Reading only the first showed every scalp sleeve as "day 0/14" -- three gold scalp
+            # sleeves that had been on their forward clock since 2026-08-22 displayed as if they
+            # had started today, for a fortnight. Exactly the defect `_norm_status` fixes one
+            # field over: this tile knew one lane's vocabulary and silently zeroed the others.
+            days = int(_number(row.get("days_active"), row.get("days")) or 0)
             fs = _timestamp(row.get("forward_start"))
             if fs is not None:
                 days = max(0, (datetime.now(UTC) - fs).days)
@@ -238,8 +313,11 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
                             "t": _number(row.get("forward_t"), row.get("t")),
                             "sleeve_id": row.get("sleeve_id"),
                             "status": status})
+            # NORMALISED, so this counts every lane rather than only the one that writes a
+            # space. See _norm_status: the scalp and qquant lanes were invisible here.
             if status == "PROMOTION CANDIDATE":
                 promo_ready += 1
+                promo_names.append(key)
     sleeves_doc = _read(DESK / "data" / "sleeves.json")
     live_rows = sleeves_doc.get("sleeves") if isinstance(sleeves_doc.get("sleeves"), dict) else (
         sleeves_doc if isinstance(sleeves_doc, dict) else {})
@@ -251,15 +329,39 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
     # in that state (the five original external.* rows plus AUDNZD, which runs in the qquant lane
     # under its own spec). Showing only the two totals makes that look like sleeves are going
     # missing; naming the gap turns a mystery into a work item.
-    certs = (_read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json") or {}).get("survivors") or {}
-    unrunnable = [k for k, v in certs.items()
-                  if not ((v.get("shadow_spec") or {}).get("params"))]
+    survivors_doc = _read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json") or {}
+    certs = survivors_doc.get("survivors") or {}
+    # AN ABSENT FILE IS NOT A DESK WITH ZERO CERTIFICATES. `_read` returns {} for both, and a
+    # census over {} would publish `certified: 0` -- a clean, plausible number standing in for
+    # "this host never saw the artifact". That is the WS-005 shape this repo refuses everywhere
+    # else, and it would be worse here than the bug being fixed: 0 reads as a desk with no edge
+    # rather than a dashboard with no data. The presence of the `survivors` KEY, not the size of
+    # the mapping it holds, is what says the file was read.
+    census = (_certificate_census(certs) if isinstance(survivors_doc.get("survivors"), dict)
+              else {"basis": "UNAVAILABLE (reports/UNIVERSAL_SURVIVORS.json did not reach this "
+                             "host, so no ten-gate census could be taken)",
+                    "certified": None, "gate_failed": None,
+                    "gate_failed_names": [], "unrunnable_names": []})
+    unrunnable = census["unrunnable_names"]
     return {
         "certificates_unrunnable": len(unrunnable),
-        "unrunnable_reason": ("no `params` in shadow_spec -- nothing to execute. Re-certify "
-                              "through the current gauntlet, which records the parameterisation "
-                              "it tested."),
+        "unrunnable_reason": ("`shadow_spec.params` is absent (None), so there is no "
+                              "parameterisation to execute. Re-certify through the current "
+                              "gauntlet, which records the parameterisation it tested. An EMPTY "
+                              "mapping is not this case -- it is the complete parameterisation "
+                              "'family defaults' and enrols normally."),
         "unrunnable_examples": sorted(unrunnable)[:6],
+        # THE SURVIVORS FILE IS NOT A CERTIFICATE LIST, and reading it as one is how the
+        # dashboard came to publish gate FAILURES as certificates. Measured 2026-09-06 on the
+        # sealed canon: 66 rows, of which 12 carry status LOCKBOX_FAILED and `all_ten_pass ->
+        # False`. `shadow_admission.authorized_runs` refuses those 12 correctly and silently, so
+        # the operator saw "certified 55, clocks 19" and a 36-sleeve hole with no cause -- when a
+        # third of the hole was simply rows that never passed. Counting the ten-gate verdict
+        # instead of the dict length is the fix; the failures stay visible under their own name
+        # rather than being deleted, because a row that failed a gate is evidence about the sweep.
+        "certified_gate_failed": census["gate_failed"],
+        "certified_gate_failed_examples": census["gate_failed_names"][:6],
+        "census_basis": census["basis"],
         "forward_observations": forward_obs,
         "historical_observations": hist_obs,
         "discovered_backtested": hyp,
@@ -271,9 +373,28 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
         "docket_candidates": _funnel_docket(),
         "gauntlet_last_judged": _gate_stat("n_judged"),
         "gauntlet_last_unmeasured": _gate_stat("n_unmeasured"),
-        "certified": universal.get("n"),
+        # THE TEN-GATE VERDICT, NOT THE FILE'S ROW COUNT. `n` is `len(survivors)`, which includes
+        # rows that failed a gate and were kept for the record (see `certified_gate_failed`).
+        # Publishing that as "certified" told the principal the desk held 55 certificates while
+        # the door downstream refused a dozen of them for never having passed -- the funnel's
+        # single most misleading number.
+        #
+        # AND IT DOES NOT FALL BACK TO `n`. The obvious fallback -- census unavailable, so use the
+        # row count -- republishes the exact defect this line exists to fix, and does it precisely
+        # when nobody can tell (the census is unavailable, so no other field contradicts it). An
+        # overstated certificate count is not a degraded answer, it is a wrong one: it says the
+        # desk holds edge it does not hold. None renders as an em-dash and `census_basis` names
+        # the cause, which is the honest report of "this host cannot answer that question".
+        # The census needs `gate_policy`, which loads the gate spec YAML -- the single source of
+        # truth for what the ten gates ARE. A hardcoded gate list here would be a second judge,
+        # and this desk has already paid twice for two builders of one identity.
+        "certified": (census["certified"] if census["basis"] == "ten_gate_verdict" else None),
         "forward_clocks": len(forward),
         "promotion_ready": promo_ready,
+        # NAMED, not just counted. A bare count told the principal "0 promotable" for days while
+        # two lanes were unreadable to the counter; a NAME is checkable against the lane's own
+        # state file the moment it looks wrong.
+        "promotion_ready_names": sorted(promo_names),
         "live": len(live_rows),
         # NOT [:40] ANY MORE, AND THE CAP WAS NOT A DISPLAY CHOICE. check_research_health
         # reads THIS list to find BLOCKED and stalled clocks, so the cap silently limited the
@@ -325,6 +446,93 @@ def _mt5_snapshot() -> dict[str, Any]:
         return {}
 
 
+#: How old the box's freshest report may be before the dashboard calls it LATE. Deliberately the
+#: SAME 2700s that `monitor_mt5_shadow_sync` already uses -- a dashboard that tolerated more than
+#: the watchdog would be a second, looser opinion on one fact, and the looser one always wins the
+#: argument because it is the one on screen.
+BOX_LATE_SECONDS = 2700
+#: Past this the box is not late, it is gone. Six hours spans a weekend gap in no market this desk
+#: trades: XAUUSD and the FX majors never sit still that long while a gateway is alive.
+BOX_SILENT_SECONDS = 6 * 3600
+#: Every file the box's own sync carries, with the field each uses for its clock. If the box is
+#: running, at least one of these moves every pass; if none has moved, nothing on the box is
+#: writing and every other tile on this dashboard is reading a photograph.
+BOX_REPORTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("reports/shadow/shadow_health.json", ("updated_at",)),
+    ("data/gateway_state.json", ("last_reconcile", "updated_at", "as_of")),
+    ("data/regime_state.json", ("swept_at", "updated_at")),
+    ("data/account_state.json", ("updated_at", "timestamp", "fetched_at")),
+    ("reports/shadow/scalp_shadow_state.json", ("updated_at", "last_update")),
+)
+
+
+def _box_liveness(now: datetime) -> dict[str, Any]:
+    """IS THE MACHINE THAT HOLDS THE CAPITAL STILL REPORTING? Nothing on this board asked.
+
+    MEASURED 2026-09-06: the box's last real state push was 2026-08-26 14:50 -- TEN DAYS.
+    `monitor_mt5_shadow_sync` had been returning `status: FAILED, shadow health sync stale:
+    896946s` every thirty minutes for the whole of it, correctly, into a systemd timer whose
+    non-zero exit nobody reads. The dashboard never imported that verdict, so every tile on it
+    went on rendering ten-day-old numbers in the present tense, and the desk was asked whether to
+    put live capital behind them.
+
+    That is the worst failure a dashboard has, because it is invisible in exactly the way that
+    matters: a board showing stale truth and a board showing current truth are pixel-identical.
+    Only the age distinguishes them, and the age was the one thing not on screen.
+
+    The freshest clock across the box's own artifacts is what counts -- not the oldest. One organ
+    dying is a defect in that organ; ALL of them stopping is the machine. `per_report` keeps the
+    individual ages so the two cases stay distinguishable, because they need opposite responses.
+    """
+    ages: dict[str, Any] = {}
+    newest: datetime | None = None
+    for rel, fields in BOX_REPORTS:
+        path = DESK / rel
+        stamp = _timestamp(_find(_read(path), *fields))
+        name = rel.rsplit("/", 1)[-1]
+        if stamp is None:
+            # ABSENCE IS NEVER A PASS (L1.28a) -- AND ABSENT IS NOT THE SAME AS UNSTAMPED.
+            # The first draft printed "no clock in this file" for a file that does not exist on
+            # this host, which reads as "the producer forgot a timestamp" when the truth is "the
+            # producer runs on another machine and its output has never crossed the wire". Those
+            # need opposite responses: one is a code fix, the other is a delivery fix, and
+            # conflating them sends the reader to the wrong machine.
+            ages[name] = {
+                "age_seconds": None,
+                "status": "ABSENT" if not path.exists() else "NO_CLOCK",
+                "why": (f"{rel} does not exist here; it is written on the trading box and "
+                        "reaches this host only through the shadow sync"
+                        if not path.exists() else
+                        f"{rel} exists but carries none of {list(fields)}"),
+            }
+            continue
+        age = max(0.0, (now - stamp).total_seconds())
+        ages[name] = {"age_seconds": round(age), "at": stamp.isoformat(timespec="seconds"),
+                      "status": "FRESH" if age <= BOX_LATE_SECONDS else "STALE"}
+        newest = stamp if newest is None or stamp > newest else newest
+
+    if newest is None:
+        return {"status": "UNMEASURED", "silent_seconds": None, "last_reported_at": None,
+                "per_report": ages,
+                "why": ("not one of the box's artifacts carries a readable clock, so this "
+                        "dashboard cannot tell a live desk from a photograph of one")}
+    silent = max(0.0, (now - newest).total_seconds())
+    status = ("REPORTING" if silent <= BOX_LATE_SECONDS
+              else "LATE" if silent < BOX_SILENT_SECONDS else "SILENT")
+    hours = silent / 3600
+    why = {
+        "REPORTING": f"box reported {round(silent)}s ago",
+        "LATE": (f"box has not reported for {hours:.1f}h -- every figure below is at least "
+                 f"that old, whatever it looks like"),
+        "SILENT": (f"box has not reported for {hours:.1f}h. Nothing on this dashboard is "
+                   f"current. Do not size capital off it until the box reports again"),
+    }[status]
+    return {"status": status, "silent_seconds": round(silent),
+            "last_reported_at": newest.isoformat(timespec="seconds"),
+            "late_after_seconds": BOX_LATE_SECONDS, "silent_after_seconds": BOX_SILENT_SECONDS,
+            "per_report": ages, "why": why}
+
+
 def build() -> dict[str, Any]:
     gateway = _read(DESK / "data" / "gateway_state.json")
     # NEVER FALL BACK TO gateway_state FOR THE ACCOUNT (2026-09-04). On a box with no MT5
@@ -374,6 +582,13 @@ def build() -> dict[str, Any]:
     live_state = "LIVE" if equity is not None and account_age is not None and account_age <= 120 else (
         "STALE" if equity is not None else "UNMEASURED"
     )
+    box = _box_liveness(now)
+    # STALE AT TWO MINUTES AND STALE AT TEN DAYS RENDERED THE SAME WORD. The account feed lags its
+    # writer by design, so STALE is routine and reads as noise; a box that stopped reporting on
+    # 08-26 is not routine and must not borrow that word's calm. When the box is gone, the account
+    # tile says so in the box's own terms rather than in the feed's.
+    if box["status"] == "SILENT" and live_state != "UNMEASURED":
+        live_state = "SILENT"
     payload = {
         "generated_at": now.isoformat(),
         "identity": {"name": "QUANT DESK", "caption": "AUTONOMOUS MULTI-ASSET MT5 RESEARCH DESK"},
@@ -402,9 +617,18 @@ def build() -> dict[str, Any]:
             "matched_fills": markout.get("n_matched"), "why": markout.get("why"),
             "open_trades": _find(gateway, "open_positions", "positions") or [],
         },
+        # EVERY ISSUE THE DESK CAN SEE, ON THE BOARD. Detection was never the gap -- 121
+        # check_* scripts already worked. What was missing was one surface showing the
+        # aggregate, so a real breach could be detected correctly and read by nobody.
+        "issues": _read(DESK / "reports" / "ISSUE_BOARD.json"),
         "health": {
             "newest_h1_file": newest_bar_file, "midnight": midnight,
             "daily_cycle": daily, "status": live_state,
+            # The first thing a reader needs and the last thing this board learned to say. Placed
+            # inside `health` rather than a corner of its own because it QUALIFIES every other
+            # number here: a REPORTING box makes them observations, a SILENT one makes them
+            # history rendered in the present tense.
+            "box": box,
         },
         "equity_curve": _series(rows, start),
         "disclaimer": "Research and operator telemetry only. Missing values are UNMEASURED; shadow has zero order authority.",

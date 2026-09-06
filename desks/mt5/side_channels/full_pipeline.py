@@ -29,6 +29,7 @@ sys.path.insert(0, str(BASE / "desks" / "mt5" / "side_channels"))
 
 from mt5desk import families
 from mt5desk.engine import Costs, run_backtest
+from research.survivor_publication import unrunnable_reason
 from mt5desk.families import (
     FAMILY_REGISTRY,
     get_family_func,
@@ -566,7 +567,7 @@ def step_certify(gauntlet_result):
         sel = v.get("params", {}).get("range_start", "asia")
         if isinstance(sel, int):
             sel = {0: "asia", 7: "asia", 10: "london_am", 13: "ny_open", 14: "afternoon"}.get(sel, "asia")
-        survivors[key] = {
+        row = {
             "hunt": "external_discoveries", "cell": v["cell"], "sym": v["sym"],
             "days": v["days"], "gates": v["stages"],
             "gated_at": datetime.now(UTC).isoformat(),
@@ -574,9 +575,21 @@ def step_certify(gauntlet_result):
                 "symbol": v["sym"], "selector": sel,
                 "family": v["family"], "is_universe": True,
                 "hunt": "external_discoveries", "condition": None,
-                "params": v.get("params", {}),
+                # NO `{}` DEFAULT, and that default was the whole defect in miniature. A verdict
+                # arriving WITHOUT params became an empty dict here, which downstream is a
+                # positive claim -- "this family takes no parameters, run the defaults" -- and is
+                # indistinguishable from a genuine parameterless family. Absent must stay absent
+                # so the fence below can refuse it; `{}` is a real answer and still passes.
+                "params": v.get("params"),
             },
         }
+        # THE SAME JUDGE AS EVERY OTHER PEN, so a fourth publisher inherits the refusal instead
+        # of reinventing it -- or, as three of the four did, not having it at all.
+        why = unrunnable_reason(row)
+        if why:
+            print(f"  REFUSED-UNRUNNABLE {key}: {why}", file=sys.stderr)
+            continue
+        survivors[key] = row
         new_certs += 1
         print(f"  CERTIFIED: {v['cell']}")
 

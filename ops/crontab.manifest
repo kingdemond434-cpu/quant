@@ -1,4 +1,12 @@
 # ============================================================================================
+# *** DECOMMISSIONED 2026-08-23: the box this manifest targets (Hetzner, 95.216.191.70,
+# *** QUANT_ROOT=/home/quant/quant-platform) is fully torn down -- crontab cleared, quant-*
+# *** systemd units stopped and disabled. deploy/reconstitute_cron.sh must not be run against it.
+# *** Kept as historical record of the retired crypto desk's scheduling, per standing instruction
+# *** not to delete machinery; individual DOMINATED/RETIRED script headers name each entry's MT5
+# *** successor or explain why none exists.
+# ============================================================================================
+#
 # ops/crontab.manifest -- the desk's scheduler, as source (gap #58)
 #
 # *** RECONSTRUCTED FROM IN-REPO EVIDENCE 2026-07-29 -- NOT yet verified against the live box.

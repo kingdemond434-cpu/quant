@@ -7,7 +7,7 @@ UNIVERSE_OUT = Path(r"C:\Users\dell\mt5-research\data\mt5_universe\universe.json
 MT5_DATA = Path(r"C:\Users\dell\mt5-research\data\mt5_all_symbols.json")
 
 mt5_all = json.loads(MT5_DATA.read_text())
-existing = set(f.stem.replace("_H1", "") for f in PARQUET_DIR.glob("*_H1.parquet"))
+existing = set(f.stem.rpartition("_")[0] or f.stem for f in PARQUET_DIR.glob("*.parquet"))
 
 universe = {}
 for name in sorted(existing):

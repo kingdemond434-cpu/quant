@@ -1,0 +1,9 @@
+# Universal contract: desk source files are UTF-8, LF. PowerShell tools that
+# write UTF-16/CRLF into this tree must be banned (breaks every brain's hash
+# verification). Normalize on add/checkout so any CRLF working copy is visible
+# in git status as a diff, not silently stored.
+*.py    text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.jsonl text eol=lf
+*.ps1   text eol=crlf

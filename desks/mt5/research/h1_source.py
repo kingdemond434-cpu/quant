@@ -232,6 +232,47 @@ def _terminal_candidates() -> list[str]:
     return list(dict.fromkeys(paths))
 
 
+def explain_init_failure(err: object, candidates: list[str] | None = None) -> str:
+    """The MT5 error, plus what it actually means when the executable is present.
+
+    MEASURED 2026-09-06, AND THE BARE ERROR SENT EVERYONE TO THE WRONG PLACE. The box logged
+
+        -10003 "IPC initialize failed, Process create failed
+                'C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe'"
+
+    every hour for days. The message names a path, so the path is what gets checked -- and the
+    file was there, at exactly that path. The real cause is that `terminal64.exe` is a GUI
+    process and the hourly cycle runs as a scheduled task with LogonType Password/S4U, i.e. in
+    Session 0, where Windows refuses to create an interactive process. `m.initialize()` typed
+    into a logged-in shell on the same box returned `True (1, 'Success')` in the same hour.
+
+    So this checks whether the named executable EXISTS before repeating the error, and says the
+    two things apart:
+
+        file missing   -> a path or install problem, fix the path
+        file present   -> a SESSION problem, fix the task's logon type
+
+    Consequences, so nobody has to re-derive them: with no terminal there are no bars, no ticks
+    and no account state, so the gauntlet refuses cells at symbol_eligibility for want of bars,
+    the triangles report UNMEASURED, and the dashboard shows no readable clock. One dead
+    terminal presents as four unrelated research failures.
+    """
+    text = f"{err}"
+    paths = candidates if candidates is not None else _terminal_candidates()
+    present = [p for p in paths if p and Path(p).exists()]
+    if not present:
+        return (f"{text} -- no candidate terminal exists on this host "
+                f"({len(paths)} tried). Set MT5_SHADOW_TERMINALS to the real terminal64.exe.")
+    return (f"{text} -- but {present[0]} EXISTS, so this is not a path problem. On Windows this "
+            f"is almost always a SESSION problem: terminal64.exe is a GUI process and a "
+            f"scheduled task with LogonType Password/S4U runs in Session 0, where Windows "
+            f"refuses to create one. Set the task to 'Run only when user is logged on' "
+            f"(LogonType Interactive) and keep a desktop session, or leave the terminal running "
+            f"so initialize() attaches instead of creating. Until it initializes there are no "
+            f"bars, no ticks and no account state, which presents downstream as cells refused "
+            f"for missing bars, UNMEASURED triangles and a dashboard with no readable clock.")
+
+
 def _normalise(df: pd.DataFrame) -> pd.DataFrame:
     """Every source lands in the same shape the engine expects.
 

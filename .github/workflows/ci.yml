@@ -128,6 +128,19 @@ jobs:
       - name: Point-in-time provenance census (ratcheted)
         run: python scripts/check_pit.py
 
+      # ARCHITECTURAL ONLY ON THE RUNNER, and that is the whole reason the fence has two modes.
+      # A CI checkout has no lake: every artifact-dependent rung answers "absent" for honest
+      # reasons, so --operational here would fail every build forever and everyone would learn
+      # to ignore it (L1.37). What IS answerable from the tree alone -- does the module exist,
+      # does production import it, does a scheduler name it, does anything read its artifact --
+      # is answerable identically on every host, and those are enforced.
+      #
+      # The auditor's own problems stay fatal in both modes: the flat 20% heat floor is the
+      # principal's one fixed policy and MEASURED-without-rent is the mandate's measurement law,
+      # and neither depends on which machine is asking.
+      - name: Blueprint coverage fence (mandate §4, architectural)
+        run: python scripts/check_blueprint_coverage.py
+
   # THE SEAL IS ITS OWN COMMIT. Once both gates are green on a push to a branch the box pulls,
   # HEAD is sealed into desks/mt5/data/RELEASE.json as TESTED and that manifest is committed
   # ALONE ("seal release <sha>"): the commit's diff against its parent is exactly the manifest,

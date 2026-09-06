@@ -23,111 +23,56 @@
     }
   },
   "position": null,
-  "last_bracket_date": "2026-08-21",
-  "last_reconcile": "2026-08-17T00:05:02+00:00",
+  "last_bracket_date": "2026-08-25",
+  "last_reconcile": "2026-08-25T04:00:03+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
     "gold_asia": {
-      "date": "2026-08-21",
-      "hi": 4543.67,
-      "lo": 4508.81,
+      "date": "2026-08-25",
+      "hi": 4696.78,
+      "lo": 4615.85,
       "spec": {
         "buy_stop": {
-          "price": 4543.67,
-          "sl": 4508.61,
-          "tp": 4613.39
+          "price": 4696.78,
+          "sl": 4615.65,
+          "tp": 4858.639999999999
         },
         "sell_stop": {
-          "price": 4508.81,
-          "sl": 4543.870000000001,
-          "tp": 4439.09
+          "price": 4615.85,
+          "sl": 4696.9800000000005,
+          "tp": 4453.990000000001
         }
       },
-      "placed_at": "2026-08-21T19:51:15+00:00",
+      "placed_at": "2026-08-25T04:00:03+00:00",
       "result": {
         "shadow": false,
         "orders": [
           {
             "side": "buy_stop",
-            "retcode": 10015,
-            "comment": "Invalid price"
+            "retcode": 10027,
+            "comment": "AutoTrading disabled by client"
           },
           {
             "side": "sell_stop",
-            "retcode": 10009,
-            "comment": "Request executed"
-          }
-        ]
-      }
-    },
-    "gold_london_am": {
-      "date": "2026-08-21",
-      "hi": 4602.03,
-      "lo": 4558.51,
-      "spec": {
-        "buy_stop": {
-          "price": 4602.03,
-          "sl": 4558.3099999999995,
-          "tp": 4689.07
-        },
-        "sell_stop": {
-          "price": 4558.51,
-          "sl": 4602.2300000000005,
-          "tp": 4471.47
-        }
-      },
-      "placed_at": "2026-08-21T19:51:16+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10015,
-            "comment": "Invalid price"
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10009,
-            "comment": "Request executed"
-          }
-        ]
-      }
-    },
-    "gold_afternoon": {
-      "date": "2026-08-21",
-      "hi": 4604.53,
-      "lo": 4563.57,
-      "spec": {
-        "buy_stop": {
-          "price": 4604.53,
-          "sl": 4563.37,
-          "tp": 4686.45
-        },
-        "sell_stop": {
-          "price": 4563.57,
-          "sl": 4604.73,
-          "tp": 4481.65
-        }
-      },
-      "placed_at": "2026-08-21T19:51:16+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10015,
-            "comment": "Invalid price"
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10009,
-            "comment": "Request executed"
+            "retcode": 10027,
+            "comment": "AutoTrading disabled by client"
           }
         ]
       }
     }
   },
   "lot": 0.06,
-  "equity": 21127.01
+  "equity": 500.0,
+  "placement_health": {
+    "consecutive_total_rejections": 2,
+    "last_ok": null,
+    "last_error": {
+      "time": "2026-08-25T04:00:03+00:00",
+      "sleeve": "gold_asia",
+      "diagnoses": [
+        "10027 AutoTrading disabled by client: the terminal's AutoTrading button is off. One click, in the terminal."
+      ]
+    }
+  }
 }

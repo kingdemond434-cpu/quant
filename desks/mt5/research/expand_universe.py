@@ -129,7 +129,7 @@ def main() -> int:
 
     now = datetime.now(tz=UTC)
     if not mt5.initialize():
-        print(f"MT5 initialize failed: {mt5.last_error()}")
+        print(f"MT5 initialize failed: {_explain(mt5.last_error())}")
         return 1
 
     symbols = mt5.symbols_get() or ()
@@ -295,3 +295,19 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def _explain(err: object) -> str:
+    """Route the raw MT5 error through the shared explanation -- see h1_source.
+
+    Imported lazily and falling back to the bare error: a diagnostic helper must never be the
+    reason a producer cannot start.
+    """
+    try:
+        from research.h1_source import explain_init_failure
+    except ImportError:
+        try:
+            from h1_source import explain_init_failure  # type: ignore[no-redef]
+        except ImportError:
+            return f"{err}"
+    return explain_init_failure(err)

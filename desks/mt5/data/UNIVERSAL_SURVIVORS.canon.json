@@ -2991,8 +2991,8 @@
           "exp_x3": 0.1661
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.4425
+          "passed": false,
+          "why": "campaign too short to reserve a lockbox"
         },
         "expected_value": {
           "passed": true,
@@ -3016,6 +3016,11 @@
           "horizon": 1,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "why": "campaign too short to reserve a lockbox"
       }
     },
     "external.AUDCAD.discovered.p=8030fb339510dceb": {
@@ -3065,8 +3070,9 @@
           "exp_x3": 0.3239
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.6376
+          "passed": false,
+          "lockbox_sharpe": -0.1058,
+          "n_days": 328
         },
         "expected_value": {
           "passed": true,
@@ -3090,6 +3096,12 @@
           "horizon": 3,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1058,
+        "n_days": 328
       }
     },
     "external.AUDNZD.discovered.p=c76b860ff91ee920": {
@@ -3139,8 +3151,8 @@
           "exp_x3": 0.2828
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.5734
+          "passed": false,
+          "why": "campaign too short to reserve a lockbox"
         },
         "expected_value": {
           "passed": true,
@@ -3164,6 +3176,11 @@
           "horizon": 6,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "why": "campaign too short to reserve a lockbox"
       }
     },
     "external.AUDUSD.discovered.p=de80ad4f2ef91116": {
@@ -3213,8 +3230,9 @@
           "exp_x3": 0.1804
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.471
+          "passed": false,
+          "lockbox_sharpe": -0.1643,
+          "n_days": 119
         },
         "expected_value": {
           "passed": true,
@@ -3238,6 +3256,12 @@
           "horizon": 1,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1643,
+        "n_days": 119
       }
     },
     "external.AUDUSD.discovered.p=cf0368e026d6b477": {
@@ -3287,8 +3311,9 @@
           "exp_x3": 0.4294
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.6406
+          "passed": false,
+          "lockbox_sharpe": -0.0223,
+          "n_days": 118
         },
         "expected_value": {
           "passed": true,
@@ -3312,6 +3337,12 @@
           "horizon": 6,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.0223,
+        "n_days": 118
       }
     },
     "external.AUDUSD.discovered.p=8e61ea22743f15b7": {
@@ -3361,8 +3392,9 @@
           "exp_x3": 0.2652
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.5154
+          "passed": false,
+          "lockbox_sharpe": -0.1452,
+          "n_days": 420
         },
         "expected_value": {
           "passed": true,
@@ -3386,6 +3418,12 @@
           "horizon": 3,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1452,
+        "n_days": 420
       }
     },
     "external.AUDUSD.discovered.p=a5bbf78b5c8595c0": {
@@ -3435,8 +3473,9 @@
           "exp_x3": 0.1777
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.48
+          "passed": false,
+          "lockbox_sharpe": -0.1769,
+          "n_days": 329
         },
         "expected_value": {
           "passed": true,
@@ -3460,6 +3499,12 @@
           "horizon": 1,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1769,
+        "n_days": 329
       }
     },
     "external.EURUSD.discovered.p=6d034b421914e1a2": {
@@ -3682,7 +3727,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=fb2786aabb7c21de": {
       "hunt": "external_discoveries",
@@ -3756,7 +3802,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=ef2e258721b52ea3": {
       "hunt": "external_discoveries",
@@ -3830,7 +3877,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=c76420808dcb4657": {
       "hunt": "external_discoveries",
@@ -3904,7 +3952,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=3d2353cfa7f07a5e": {
       "hunt": "external_discoveries",
@@ -3978,7 +4027,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=62c7a7478424a92f": {
       "hunt": "external_discoveries",
@@ -4052,7 +4102,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFL.discovered.p=8b760805b40b5e55": {
       "hunt": "external_discoveries",
@@ -4126,7 +4177,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFL.discovered.p=f75a215dda6b2030": {
       "hunt": "external_discoveries",
@@ -4200,7 +4252,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AUDCAD.discovered.p=a7324e7affe1f80a": {
       "hunt": "external_discoveries",
@@ -4249,8 +4302,8 @@
           "exp_x3": 0.1737
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.5509
+          "passed": false,
+          "why": "campaign too short to reserve a lockbox"
         },
         "expected_value": {
           "passed": true,
@@ -4274,6 +4327,11 @@
           "horizon": 1,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "why": "campaign too short to reserve a lockbox"
       }
     },
     "external.USDCHF.discovered.p=19dd11ec392fa005": {
@@ -4323,8 +4381,8 @@
           "exp_x3": 0.2872
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.5847
+          "passed": false,
+          "why": "campaign too short to reserve a lockbox"
         },
         "expected_value": {
           "passed": true,
@@ -4348,6 +4406,11 @@
           "horizon": 3,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "why": "campaign too short to reserve a lockbox"
       }
     },
     "external.USDCAD.discovered.p=56aadf0a3018c790": {
@@ -4397,8 +4460,9 @@
           "exp_x3": 0.351
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.5548
+          "passed": false,
+          "lockbox_sharpe": -0.1667,
+          "n_days": 81
         },
         "expected_value": {
           "passed": true,
@@ -4422,6 +4486,12 @@
           "horizon": 6,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1667,
+        "n_days": 81
       }
     },
     "external.USDCAD.discovered.p=193aadf2caba3698": {
@@ -4471,8 +4541,9 @@
           "exp_x3": 0.2574
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.4655
+          "passed": false,
+          "lockbox_sharpe": -0.1138,
+          "n_days": 65
         },
         "expected_value": {
           "passed": true,
@@ -4496,6 +4567,12 @@
           "horizon": 6,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1138,
+        "n_days": 65
       }
     },
     "external.NZDCAD.discovered.p=0ffb1e19a04f260e": {
@@ -4545,8 +4622,9 @@
           "exp_x3": 0.3241
         },
         "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.6383
+          "passed": false,
+          "lockbox_sharpe": -0.0195,
+          "n_days": 212
         },
         "expected_value": {
           "passed": true,
@@ -4570,6 +4648,12 @@
           "horizon": 3,
           "side": -1
         }
+      },
+      "status": "LOCKBOX_FAILED",
+      "lockbox_recertified": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.0195,
+        "n_days": 212
       }
     }
   },
@@ -4604,5 +4688,346 @@
     "expected_value_min_exclusive": 0.0
   },
   "note": "UNIVERSAL 10-GATE PASS ONLY.",
-  "swept_at": "2026-09-03T08:45:17.252535+00:00"
+  "swept_at": "2026-09-03T08:45:17.252535+00:00",
+  "lockbox_recertification": {
+    "at": "2026-09-04T16:40:25+00:00",
+    "why": "gate 9 read gate 7's wf OOS; all 66 certificates carried identical values, so none had ever been tested on held-out data",
+    "gate": "real lockbox: final 20% of the union calendar, carved before the program matrix",
+    "host_note": "UNVERIFIABLE_HERE is a statement about THIS host, never about the certificate. UNTRADEABLE is a statement about the certificate and is final.",
+    "counts": {
+      "PASS": 32,
+      "FAIL": 12,
+      "UNTRADEABLE": 8,
+      "UNVERIFIABLE_HERE": 14
+    },
+    "verdicts": {
+      "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "AUDNZD_H1.parquet on this host is a 479-row/20-day STUMP against a peer median of 2,246 days. The certified cell needs 60 signals at the window hour and the stump yields 2. This is a truncated artifact, not a failing edge -- see scripts/check_bar_history_floor.py, which now catches it.",
+        "symbol": "AUDNZD"
+      },
+      "external.XAUUSD.session_range_breakout": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.2359,
+        "n_days": 410
+      },
+      "external.USDJPY.session_range_breakout": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1753,
+        "n_days": 396
+      },
+      "external.CADJPY.session_range_breakout": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1336,
+        "n_days": 409
+      },
+      "external.GBPJPY.session_range_breakout": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.0792,
+        "n_days": 424
+      },
+      "external.EURJPY.session_range_breakout": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.0623,
+        "n_days": 417
+      },
+      "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.3052,
+        "n_days": 421
+      },
+      "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.2793,
+        "n_days": 421
+      },
+      "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.2765,
+        "n_days": 421
+      },
+      "external.USDJPY.session_range_breakout.rr=1.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1932,
+        "n_days": 423
+      },
+      "external.USDJPY.session_range_breakout.rr=2.0_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.2037,
+        "n_days": 423
+      },
+      "external.USDJPY.session_range_breakout.rr=2.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.2035,
+        "n_days": 423
+      },
+      "external.CADJPY.session_range_breakout.rr=2.0_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.195,
+        "n_days": 430
+      },
+      "external.CADJPY.session_range_breakout.rr=2.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1851,
+        "n_days": 430
+      },
+      "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.2492,
+        "n_days": 410
+      },
+      "external.CADJPY.session_range_breakout.rr=1.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1826,
+        "n_days": 430
+      },
+      "external.GBPJPY.session_range_breakout.rr=1.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1404,
+        "n_days": 435
+      },
+      "external.GBPJPY.session_range_breakout.rr=2.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1388,
+        "n_days": 435
+      },
+      "external.EURJPY.session_range_breakout.rr=1.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1243,
+        "n_days": 431
+      },
+      "external.EURJPY.session_range_breakout.rr=2.0_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1101,
+        "n_days": 431
+      },
+      "external.EURJPY.session_range_breakout.rr=2.5_wb=12": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1188,
+        "n_days": 431
+      },
+      "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "EURZAR is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "EURZAR"
+      },
+      "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "USDZAR is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "USDZAR"
+      },
+      "external.CHFNOK.carry.p=98d776f3e210d3e2": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "CHFNOK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "CHFNOK"
+      },
+      "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "AUDCHF is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "AUDCHF"
+      },
+      "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "CADCHF is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "CADCHF"
+      },
+      "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "CHFDKK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "CHFDKK"
+      },
+      "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "EURNOK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "EURNOK"
+      },
+      "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPCHF is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPCHF"
+      },
+      "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPMXN is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPMXN"
+      },
+      "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPNOK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPNOK"
+      },
+      "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPSEK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPSEK"
+      },
+      "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPZAR is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPZAR"
+      },
+      "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": {
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "USDMXN is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "USDMXN"
+      },
+      "external.EURCHF.discovered.p=6c7943b997558157": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1031,
+        "n_days": 419
+      },
+      "external.EURCHF.discovered.p=a5bbf78b5c8595c0": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.024,
+        "n_days": 354
+      },
+      "external.EURCHF.discovered.p=9bc1f7c40f200e78": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.7029,
+        "n_days": 450
+      },
+      "external.EURCHF.discovered.p=c14e361e680e6d0b": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.6632,
+        "n_days": 449
+      },
+      "external.EURCHF.discovered.p=c7d53510458ba32c": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.1485,
+        "n_days": 142
+      },
+      "external.EURCHF.discovered.p=e266baf78567bef3": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.2218,
+        "n_days": 417
+      },
+      "external.EURCHF.discovered.p=16bd35526c7f3515": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.2254,
+        "n_days": 351
+      },
+      "external.EURGBP.discovered.p=8e61ea22743f15b7": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.0124,
+        "n_days": 420
+      },
+      "external.EURCHF.discovered.p=4cba1afa572a99cd": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.93,
+        "n_days": 449
+      },
+      "external.EURGBP.discovered.p=f31f02aa2b9d79b1": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.0354,
+        "n_days": 355
+      },
+      "external.AUDCAD.discovered.p=7c996ac8456c8919": {
+        "verdict": "FAIL",
+        "why": "campaign too short to reserve a lockbox"
+      },
+      "external.AUDCAD.discovered.p=8030fb339510dceb": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1058,
+        "n_days": 328
+      },
+      "external.AUDNZD.discovered.p=c76b860ff91ee920": {
+        "verdict": "FAIL",
+        "why": "campaign too short to reserve a lockbox"
+      },
+      "external.AUDUSD.discovered.p=de80ad4f2ef91116": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1643,
+        "n_days": 119
+      },
+      "external.AUDUSD.discovered.p=cf0368e026d6b477": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.0223,
+        "n_days": 118
+      },
+      "external.AUDUSD.discovered.p=8e61ea22743f15b7": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1452,
+        "n_days": 420
+      },
+      "external.AUDUSD.discovered.p=a5bbf78b5c8595c0": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1769,
+        "n_days": 329
+      },
+      "external.EURUSD.discovered.p=6d034b421914e1a2": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.0599,
+        "n_days": 100
+      },
+      "external.EURUSD.discovered.p=f8bd412f38e33d20": {
+        "verdict": "PASS",
+        "lockbox_sharpe": 0.0449,
+        "n_days": 83
+      },
+      "external.AFG.discovered.p=fff3ce17a104b37b": {
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
+      },
+      "external.AFG.discovered.p=fb2786aabb7c21de": {
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
+      },
+      "external.AFG.discovered.p=ef2e258721b52ea3": {
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
+      },
+      "external.AFG.discovered.p=c76420808dcb4657": {
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
+      },
+      "external.AFG.discovered.p=3d2353cfa7f07a5e": {
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
+      },
+      "external.AFG.discovered.p=62c7a7478424a92f": {
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
+      },
+      "external.AFL.discovered.p=8b760805b40b5e55": {
+        "verdict": "UNTRADEABLE",
+        "why": "AFL is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFL"
+      },
+      "external.AFL.discovered.p=f75a215dda6b2030": {
+        "verdict": "UNTRADEABLE",
+        "why": "AFL is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFL"
+      },
+      "external.AUDCAD.discovered.p=a7324e7affe1f80a": {
+        "verdict": "FAIL",
+        "why": "campaign too short to reserve a lockbox"
+      },
+      "external.USDCHF.discovered.p=19dd11ec392fa005": {
+        "verdict": "FAIL",
+        "why": "campaign too short to reserve a lockbox"
+      },
+      "external.USDCAD.discovered.p=56aadf0a3018c790": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1667,
+        "n_days": 81
+      },
+      "external.USDCAD.discovered.p=193aadf2caba3698": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.1138,
+        "n_days": 65
+      },
+      "external.NZDCAD.discovered.p=0ffb1e19a04f260e": {
+        "verdict": "FAIL",
+        "lockbox_sharpe": -0.0195,
+        "n_days": 212
+      }
+    },
+    "bar_history_note": "AUDNZD_H1.parquet is a 20-day stump against a 2,246-day peer median; scripts/check_bar_history_floor.py was added to catch this class."
+  }
 }

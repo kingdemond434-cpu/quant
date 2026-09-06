@@ -66,6 +66,135 @@ function Git-In-Repo {
     return $LASTEXITCODE
 }
 
+
+
+# PARK THE DIRTY FILES THAT BLOCK THE MERGE, MERGE, PUT THEM BACK. One function, two callers.
+#
+# It was inlined in the push-rejection retry loop, which is the only place that ever fetched --
+# so hoisting a pre-push fetch meant either duplicating this or extracting it. Duplicated merge
+# logic on the tree that places trades is how the two copies drift and one of them starts
+# guessing at a resolution, so it is extracted.
+#
+# git refuses to merge when incoming commits touch a file with local modifications, and this box
+# rewrites hundreds of tracked artifacts continuously. Measured 2026-09-03: 376 files were dirty
+# and 60 were incoming, but the OVERLAP -- the only thing actually blocking the merge -- was TWO:
+# desks/mt5/data/sync_marker.json and desks/mt5/data/universe/universe.json. Neither is on this
+# sync's allowlist, so it never commits them, so they are dirty forever and every merge failed
+# forever. `git merge-tree` reported the merge itself as CLEAN; nothing was in conflict but the
+# working tree. The cost was 616 commits sitting unpushed on this box, unseen by every other
+# brain, while this file's own header calls itself the cross-brain visibility path.
+#
+# The local copies are COPIED ASIDE, not stashed (R0423 forbids `git stash` in a shared tree) and
+# not discarded -- universe.json is a protected registry whose records may not vanish. After the
+# merge they are restored byte-for-byte, so the working tree ends exactly as it began and the
+# only thing that changed is that the merge could run.
+#
+# Returns $true on a clean merge, $false on conflict (caller decides whether that is fatal).
+function Merge-FetchHead {
+    param([string]$RepoRoot, [string]$Branch)
+    $blockers = @()
+    $incoming = @(& git -C $RepoRoot diff --name-only HEAD FETCH_HEAD) | Where-Object { $_ }
+    foreach ($rel in $incoming) {
+        $st = @(& git -C $RepoRoot status --porcelain -- $rel) | Where-Object { $_ }
+        if ($st) { $blockers += $rel }
+    }
+    $parked = @{}
+    foreach ($rel in $blockers) {
+        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
+        if (Test-Path $full) {
+            $tmp = [System.IO.Path]::GetTempFileName()
+            Copy-Item -LiteralPath $full -Destination $tmp -Force
+            $parked[$rel] = $tmp
+            Git-In-Repo @("checkout", "--", $rel) | Out-Null
+        }
+    }
+    # UNTRACKED FILES BLOCK A MERGE TOO, AND PARKING TRACKED ONES DOES NOTHING FOR THEM.
+    #
+    # git raises TWO separate refusals and this only ever handled the first:
+    #     error: Your local changes to the following files would be overwritten by merge
+    #     error: The following untracked working tree files would be overwritten by merge
+    # The second fires when the incoming branch has begun tracking a path this box already holds
+    # as an untracked local file -- which is every artifact a new organ started writing here
+    # before its producer was committed upstream. MEASURED 2026-09-06 on the desk box: 50 such
+    # paths, including the entire data/hypotheses docket.
+    #
+    # The log said `push rejected (attempt 1), fetch+merge and retry` and then STOPPED -- no
+    # merge line, no abort line, nothing -- roughly 800 consecutive times since 2026-08-26. The
+    # box committed locally every fifteen minutes and published none of it, and the one line that
+    # would have named the cause was never written. A failure path that logs nothing is why this
+    # ran for eleven days in plain sight.
+    #
+    # The box's copy is moved aside rather than deleted: for the data artifacts it is the LIVE
+    # state and strictly newer than anything on the branch. It is restored below exactly like the
+    # tracked ones, so the merge can run and the box keeps what it had.
+    $probe = @(& git -C $RepoRoot merge --no-commit --no-ff FETCH_HEAD 2>&1)
+    Git-In-Repo @("merge", "--abort") | Out-Null
+    $untracked = @()
+    $inList = $false
+    foreach ($line in $probe) {
+        $s = "$line"
+        if ($s -match "untracked working tree files would be overwritten") { $inList = $true; continue }
+        if ($inList) {
+            if ($s -match "^\s+(\S.*)$") { $untracked += $Matches[1].Trim() } else { $inList = $false }
+        }
+    }
+    foreach ($rel in $untracked) {
+        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
+        if (Test-Path $full -PathType Leaf) {
+            $tmp = [System.IO.Path]::GetTempFileName()
+            Copy-Item -LiteralPath $full -Destination $tmp -Force
+            $parked[$rel] = $tmp
+            Remove-Item -LiteralPath $full -Force -ErrorAction SilentlyContinue
+        }
+    }
+    if ($untracked.Count) {
+        Write-SyncLog ("parked {0} untracked file(s) the incoming branch now tracks" -f $untracked.Count)
+    }
+
+    if ($parked.Count) {
+        Write-SyncLog ("parked {0} file(s) that block the merge: {1}" -f `
+                       $parked.Count, (($parked.Keys | Select-Object -First 8) -join ", "))
+    }
+
+    $mergeRc = Git-In-Repo @("merge", "--no-edit", "FETCH_HEAD")
+
+    foreach ($rel in $parked.Keys) {
+        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
+        Copy-Item -LiteralPath $parked[$rel] -Destination $full -Force
+        Remove-Item -LiteralPath $parked[$rel] -Force -ErrorAction SilentlyContinue
+    }
+    if ($mergeRc -ne 0) {
+        Write-SyncLog "merge conflict against FETCH_HEAD (origin/$Branch) -- aborting merge, leaving the work local for a human"
+        Git-In-Repo @("merge", "--abort") | Out-Null
+        return $false
+    }
+    return $true
+}
+
+
+
+# THE PULL, AND IT RUNS BEFORE EVERY EARLY EXIT. See Sync-Pull's caller near the top of the run.
+function Sync-Pull {
+    param([string]$RepoRoot, [string]$Branch)
+    Write-SyncLog "pulling origin/$Branch (delivery must not depend on having something to say)"
+    $rc = Git-In-Repo @("fetch", "origin", $Branch)
+    if ($rc -ne 0) {
+        # A FAILED FETCH IS NOT A REASON TO ABORT THE SYNC. The local state is still worth
+        # committing and pushing, and the push-rejection path fetches again. Degrading to the old
+        # behaviour beats trading a delivery bug for an availability one.
+        Write-SyncLog "WARN: fetch failed rc=$rc -- continuing; the push path still fetches on rejection"
+        return
+    }
+    $behind = @(& git -C $RepoRoot rev-list --count "HEAD..FETCH_HEAD") | Select-Object -First 1
+    if (-not $behind -or [int]$behind -eq 0) { Write-SyncLog "up to date with origin/$Branch"; return }
+    Write-SyncLog "behind origin/$Branch by $behind commit(s) -- merging"
+    if (-not (Merge-FetchHead -RepoRoot $RepoRoot -Branch $Branch)) {
+        Write-SyncLog "ABORT: merge conflicted -- a human resolves this, not a sync"
+        exit 1
+    }
+    Write-SyncLog "merged $behind commit(s) from origin/$Branch"
+}
+
 # Desk-relative paths of every state file this sync carries. Each MUST already be individually
 # allowlisted in .gitignore (git add is silently a no-op on an ignored path otherwise, which
 # would look like success while publishing nothing -- exactly the failure mode this script exists
@@ -78,13 +207,50 @@ $relPaths = @(
     # The release-identity verdict the gateway writes every pass: running SHA against the sealed
     # release, and whether new risk is allowed. It is the one line that answers "is the box
     # running the code that was tested" from any machine that can read this branch.
-    "desks/mt5/data/release_identity.json"
+    "desks/mt5/data/release_identity.json",
+    # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
+    # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
+    # status, not its forward n, not its expectancy, not its day count. That is why "are the two
+    # gold scalp sleeves ready for live capital" was unanswerable from the branch, and why the
+    # answer kept being assembled from historical rows instead.
+    #
+    # A summary that says OPERATING is not evidence about any individual sleeve. Carrying the
+    # rows themselves is what turns this sync from a heartbeat into a report.
+    "desks/mt5/reports/shadow/scalp_shadow_state.json",
+    "desks/mt5/reports/shadow/qquant_shadow_state.json",
+    "desks/mt5/reports/shadow/external_shadow_state.json",
+    "desks/mt5/reports/shadow/shadow_state.json",
+    # The live account read. This box owns the only MT5 terminal, so it is the only machine
+    # entitled to publish an equity figure -- build_zentech_state refuses to invent one without a
+    # terminal, and until now had nothing to fall back on but a pulled copy of its own last
+    # output.
+    "desks/mt5/data/account_state.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {
     $full = Join-Path $RepoRoot ($rel -replace "/", "\")
     if (Test-Path $full) { $existing += $rel }
 }
+# PULL FIRST, ALWAYS, BEFORE ANY EARLY EXIT (2026-09-06).
+#
+# THIS SCRIPT USED TO PULL ONLY BY ACCIDENT, and it needed TWO accidents at once: the box had to
+# have state worth committing AND had to lose a push race, because the only fetch lived inside the
+# push-rejection retry loop and both guards below exit 0 before ever reaching it. A quiet box --
+# no new shadow rows this cycle -- returned at "no change since last sync" and never contacted
+# origin at all. So the machine holding live capital received code only when it happened to be
+# busy and unlucky.
+#
+# MEASURED 2026-09-06: this branch sat 41 commits behind desk-sync-clean while the box ran
+# GATEWAY_FAMILY_POPULATIONS = ("hunt16",) -- 65 of 66 certificates unexecutable -- and a
+# shadow_admission with no CANON_SOURCES, so nothing could enrol. Both had been fixed days
+# earlier. Every CERTIFIED-NOT-ENROLLED row on the dashboard was this, not a desk defect.
+#
+# Pulling is now the FIRST thing the sync does and depends on nothing: not on local changes, not
+# on a push, not on a rejection. Push remains conditional on having something to push, which is
+# correct -- an empty commit every fifteen minutes is noise. Delivery is not.
+$branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
+Sync-Pull -RepoRoot $RepoRoot -Branch $branch
+
 if ($existing.Count -eq 0) {
     Write-SyncLog "SKIP: none of the tracked state files exist yet on this box"
     exit 0
@@ -105,6 +271,26 @@ $commitRc = Git-In-Repo @("commit", "-m", "mt5 shadow state sync $stamp")
 if ($commitRc -ne 0) { Write-SyncLog "ABORT: git commit failed rc=$commitRc"; exit 1 }
 
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
+
+# PULL BEFORE PUSHING, ALWAYS -- NOT ONLY WHEN THE PUSH IS REJECTED (2026-09-06).
+#
+# THIS IS WHY THE BOX RAN CODE NOBODY HAD SHIPPED IT. The loop below fetches only after a push
+# is REJECTED, so the box pulled purely as conflict resolution. When its push SUCCEEDS -- which
+# it does whenever nobody else pushed in that same minute, i.e. almost always -- the box never
+# fetched at all. Delivery to the machine that holds live capital was a side effect of losing a
+# race.
+#
+# MEASURED 2026-09-06: this branch was 41 commits behind desk-sync-clean and the box was still
+# running GATEWAY_FAMILY_POPULATIONS = ("hunt16",) -- 65 of 66 certificates unexecutable -- and a
+# shadow_admission with no CANON_SOURCES, so nothing could enrol at all. Both had been fixed days
+# earlier. The dashboard's CERTIFIED-NOT-ENROLLED rows and its dead certificates were not desk
+# defects; they were a delivery defect wearing their clothes. Five merges landed tonight and none
+# of them could reach the box on their own.
+#
+# The fetch+merge below is the SAME machinery the rejection path already used -- park the dirty
+# files that block the merge, merge FETCH_HEAD, put them back byte-for-byte -- hoisted so it runs
+# first. A conflict still aborts and leaves the work local for a human; nothing here guesses at a
+# resolution on a tree that places trades.
 $pushed = $false
 for ($attempt = 1; $attempt -le 3 -and -not $pushed; $attempt++) {
     $pushRc = Git-In-Repo @("push", "origin", $branch)
@@ -120,56 +306,19 @@ for ($attempt = 1; $attempt -le 3 -and -not $pushed; $attempt++) {
     # origin/claude/...` failed with "unknown revision" right after a successful fetch of the
     # same branch. FETCH_HEAD is always populated by the fetch that just ran, regardless of
     # tracking-ref configuration, so it is the only reliable target here.
-    # PARK THE FILES THAT BLOCK THE MERGE, MERGE, PUT THEM BACK.
-    #
-    # git refuses to merge when incoming commits touch a file with local modifications, and this
-    # box rewrites hundreds of tracked artifacts continuously. Measured 2026-09-03: 376 files were
-    # dirty and 60 were incoming, but the OVERLAP -- the only thing actually blocking the merge --
-    # was TWO: desks/mt5/data/sync_marker.json and desks/mt5/data/universe/universe.json. Neither
-    # is on this sync's allowlist, so it never commits them, so they are dirty forever and every
-    # merge failed forever. `git merge-tree` reported the merge itself as CLEAN (rc 0); nothing
-    # was in conflict but the working tree.
-    #
-    # The cost of that was not small: 616 commits sat unpushed on this box, unseen by every other
-    # brain, while this file's own header calls itself the cross-brain visibility path.
-    #
-    # The local copies are COPIED ASIDE, not stashed (R0423 forbids `git stash` in a shared tree)
-    # and not discarded -- universe.json is a protected registry whose records may not vanish.
-    # After the merge they are restored byte-for-byte, so the working tree ends exactly as it
-    # began and the only thing that changed is that the merge could run.
-    $blockers = @()
-    $incoming = @(& git -C $RepoRoot diff --name-only HEAD FETCH_HEAD) | Where-Object { $_ }
-    foreach ($rel in $incoming) {
-        $st = @(& git -C $RepoRoot status --porcelain -- $rel) | Where-Object { $_ }
-        if ($st) { $blockers += $rel }
-    }
-    $parked = @{}
-    foreach ($rel in $blockers) {
-        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
-        if (Test-Path $full) {
-            $tmp = [System.IO.Path]::GetTempFileName()
-            Copy-Item -LiteralPath $full -Destination $tmp -Force
-            $parked[$rel] = $tmp
-            Git-In-Repo @("checkout", "--", $rel) | Out-Null
-        }
-    }
-    if ($parked.Count) {
-        Write-SyncLog ("parked {0} dirty file(s) that block the merge: {1}" -f `
-                       $parked.Count, ($parked.Keys -join ", "))
-    }
-
-    $mergeRc = Git-In-Repo @("merge", "--no-edit", "FETCH_HEAD")
-
-    foreach ($rel in $parked.Keys) {
-        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
-        Copy-Item -LiteralPath $parked[$rel] -Destination $full -Force
-        Remove-Item -LiteralPath $parked[$rel] -Force -ErrorAction SilentlyContinue
-    }
-    if ($mergeRc -ne 0) {
-        Write-SyncLog "ABORT: merge conflict against FETCH_HEAD (origin/$branch) -- aborting merge, leaving commit local for a human"
-        Git-In-Repo @("merge", "--abort") | Out-Null
+    # EVERY EXIT FROM THIS LOOP NOW SAYS SO. It used to leave through `exit 1` with no line
+    # written, so the log's last word on a failed pass was "fetch+merge and retry" -- an
+    # announcement of an intention, recorded as though it were an outcome. On the desk box that
+    # exact line was the final entry of roughly 800 consecutive passes between 2026-08-26 and
+    # 2026-09-06 while the box committed locally and published nothing. A silence that reads like
+    # progress is worse than an error: it is the reason nobody looked for eleven days.
+    if (-not (Merge-FetchHead -RepoRoot $RepoRoot -Branch $branch)) {
+        Write-SyncLog ("ABORT: could not merge origin/$branch into the local branch. The commit " +
+                       "is safe locally and nothing is lost, but this box is no longer publishing " +
+                       "and will not resume without a human. Run ``git status`` here.")
         exit 1
     }
+    Write-SyncLog "merged origin/$branch, retrying push"
     Start-Sleep -Seconds 2
 }
 

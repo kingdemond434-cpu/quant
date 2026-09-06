@@ -55,6 +55,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -68,12 +69,37 @@ LEDGER = _ROOT / "docs/desk_lessons.jsonl"
 #:
 #: SET BY MEASUREMENT, not by taste. The seed corpus of 31 paid-for lessons renders at ~11.6k, so
 #: 6k (the first guess) silently withheld 16 of them on day one -- an under-provisioned corpus
-#: masquerading as a well-ranked one. 12k carries every lesson the desk has actually paid for
-#: while staying 7.9x smaller than the doctrine it rides beside. The ceiling is meant to bind
-#: LATER, when lessons genuinely compete; a ceiling that binds on day one is just data loss.
-#: Raising it again is the wrong reflex and is how the doctrine got to 95k -- retire a lesson
-#: whose falsifier arrived instead.
-BUDGET_CHARS = 12_000
+#: masquerading as a well-ranked one. 12k carried every lesson the desk had then actually paid
+#: for, and the ceiling was meant to bind LATER, when lessons genuinely competed.
+#:
+#: RAISED TO THE WHOLE CORPUS 2026-09-06, and the note above said this would be the wrong reflex.
+#: It was right about the danger and wrong about which job this constant does, so both halves are
+#: kept rather than one deleted.
+#:
+#: The danger it names is real: a corpus grows until it is unreadable, and the doctrine reached
+#: 95k exactly that way. But that is CORPUS discipline, and the cure for it is retiring a lesson
+#: whose falsifier has arrived. This constant was doing a second, different job -- capping what
+#: gets INJECTED -- and using a read-time cap to enforce write-time discipline does not produce
+#: discipline. It produces silent data loss, which is the very phrase the original note used
+#: against the 6k guess. Measured before changing it:
+#:
+#:      budget   12,000 -> reached 159/228   unreached 69   lost 23
+#:      budget   40,000 -> reached 220/228   unreached  8   lost  0
+#:      budget  115,789 -> reached 228/228   unreached  0   lost  0
+#:
+#: Sixty-nine lessons the desk had paid for were being withheld from every organ, and twenty-three
+#: reached nothing at all. From inside a session a lesson that is never offered is indistinguish-
+#: able from one that does not exist, so those were forgotten in every sense that matters.
+#:
+#: The whole corpus renders at ~116k chars, about 29k tokens -- roughly 15% of a 200k context, as
+#: a STABLE PREFIX that prompt caching makes near-free after the first call. That is affordable
+#: now in a way it was not when this file was written, and it buys 100% retention.
+#:
+#: Corpus discipline still binds, just where it belongs: `broken_enforcement` and the retirement
+#: path, not a silent truncation at read time. `DESK_MEMORY_BUDGET_CHARS` overrides for a caller
+#: whose context is genuinely tight.
+_FULL_CORPUS_CHARS = 130_000
+BUDGET_CHARS = int(os.environ.get("DESK_MEMORY_BUDGET_CHARS") or _FULL_CORPUS_CHARS)
 
 #: What it cost the desk NOT to know this. The scale is about consequence, never about how
 #: interesting the lesson is; "interesting" is how a corpus fills with things nobody acts on.

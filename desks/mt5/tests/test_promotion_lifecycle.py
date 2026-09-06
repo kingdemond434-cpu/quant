@@ -44,6 +44,11 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
     monkeypatch.setattr(promoter.provenance, "current_account", lambda _acc: _ACC)
+    monkeypatch.setattr(promoter, "authorized_specs", lambda _base: {
+        (sym, "asia", state, "session_range_breakout", False)
+        for sym in ("CADJPY", "USDJPY", "EURJPY", "XAUUSD")
+        for state in (None, "FAILED_BREAK", "NORMAL_DAY")
+    })
 
     # LIVE PROMOTION REQUIRES THE CANONICAL CERTIFICATE (2026-08-26: authority revoked from
     # uncertified lanes). These tests exercise the promotion MECHANICS, so the fixture grants

@@ -1,8 +1,13 @@
-"""Full pipeline: discover → backtest → 10 gates → shadow admission.
+r"""Full pipeline: discover → backtest → 10 gates → shadow admission.
 
 One script, one day. Runs all 25 miners, converts to hypotheses,
 backtests, runs 10-gate gauntlet, writes certificates, pulls to
 C:\opt\quant. 14-day clock starts immediately for any passers.
+
+RAW STRING because the box path contains `\o` and `\q`. Python 3.11 emits a DeprecationWarning
+for an invalid escape and carries on; 3.12 makes it a SyntaxWarning; 3.14 makes it a SyntaxError.
+It already breaks any tool that parses this file with warnings-as-errors -- which is how it was
+found, when a test that AST-parses every certificate publisher could not read this one.
 """
 from __future__ import annotations
 
@@ -37,6 +42,7 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
 
 from mt5desk import families
 from mt5desk.engine import Costs, run_backtest
+from research.survivor_publication import unrunnable_reason
 
 TRIALS_MULTIPLIER = 7.0
 DSR_THRESHOLD = 0.95
@@ -401,16 +407,35 @@ def step_certify(gauntlet_result):
         key = f"external.{v['cell']}"
         if key in survivors:
             continue
-        survivors[key] = {
+        # THE MINT FOR EVERY params-LESS CERTIFICATE ON THIS DESK. This block wrote a
+        # `shadow_spec` with no `params` KEY at all, and hardcoded selector "asia" and family
+        # "session_range_breakout" onto whatever actually passed. Three separate falsehoods in
+        # one literal: a certificate that cannot be enrolled (no parameterisation), attributed
+        # to a session it may never trade, under a family it may not belong to. The five
+        # `external.<SYM>.session_range_breakout` rows carrying `params: None` came from here.
+        #
+        # The verdict has carried its own params and family all along -- `full_pipeline` writes
+        # them onto every verdict row a few lines from where the gates are scored -- so they are
+        # read rather than invented, and a verdict that lacks them is REFUSED instead of being
+        # papered over with a default.
+        row = {
             "hunt": "external_discoveries", "cell": v["cell"], "sym": v["sym"],
             "days": v["days"], "gates": v["stages"],
             "gated_at": datetime.now(timezone.utc).isoformat(),
             "shadow_spec": {
-                "symbol": v["sym"], "selector": "asia",
-                "family": "session_range_breakout", "is_universe": True,
+                "symbol": v["sym"],
+                "selector": v.get("selector") or v.get("win") or "continuous",
+                "family": v.get("family") or "session_range_breakout",
+                "is_universe": True,
                 "hunt": "external_discoveries", "condition": None,
+                "params": v.get("params"),
             },
         }
+        why = unrunnable_reason(row)
+        if why:
+            print(f"  REFUSED-UNRUNNABLE {key}: {why}", file=sys.stderr)
+            continue
+        survivors[key] = row
         new_certs += 1
         print(f"  CERTIFIED: {v['cell']}")
 
