@@ -40,6 +40,7 @@ def test_state_vector_cannot_terminate_the_hourly_controller() -> None:
     body = SRC.split("def state_vector()", 1)[1].split("\ndef ", 1)[0]
     assert "subprocess.run(" in body
     assert '"state_vector_build.py"' in body
+    assert "STATE_VECTOR_HOURLY_BUDGET_SEC" in body
     assert "state_vector_build.main()" not in body
     assert '"status": "OK" if r.returncode == 0 else "FAILED"' in body
 

@@ -16,6 +16,7 @@ Run every hour (Startup loop MT5Hourly.cmd). Fail-visible, resumable, cheap.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -263,10 +264,12 @@ def state_vector() -> dict:
     # publication and the other producers could run.  A failed world-state refresh is a visible
     # degraded input, never permission to turn one optional model into a factory-wide kill switch.
     target = BASE / "research" / "state_vector_build.py"
+    timeout_s = max(15, float(os.environ.get("STATE_VECTOR_HOURLY_BUDGET_SEC", "45")))
     try:
         r = subprocess.run(
-            [sys.executable, "-u", "-W", "ignore", str(target), "--budget-s", "900"],
-            capture_output=True, text=True, cwd=str(BASE), timeout=960, check=False,
+            [sys.executable, "-u", "-W", "ignore", str(target), "--budget-s",
+             str(max(10, timeout_s - 5))],
+            capture_output=True, text=True, cwd=str(BASE), timeout=timeout_s, check=False,
         )
         return {
             "exit_code": int(r.returncode),
