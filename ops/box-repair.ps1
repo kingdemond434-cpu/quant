@@ -38,6 +38,11 @@ param(
     [string]$Root      = (Split-Path -Parent $PSScriptRoot),
     [string]$Branch    = "claude/llm-auto-upgrade-verify-gcjac3",
     [string]$Terminal  = "C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe",
+    # THE BROKER THIS BOX SERVES. Matched against the terminal's install path AND against the
+    # company the Python bridge reports once attached. It is a parameter rather than a constant
+    # because more than one machine here runs a terminal, and the desk's mandate names Fusion --
+    # so which broker is correct is a fact about the box, and must be stated rather than assumed.
+    [string]$Broker    = "Fusion",
     [string]$BackupDir = "C:\opt\quant-backup",
     [switch]$SkipBars,
     [switch]$WhatIf,
@@ -109,31 +114,50 @@ Step "MT5 terminal"
 # The RUNNING PROCESS is the authority: whatever exe is serving MT5 right now is by definition the
 # right one, whatever any constant says. Only if nothing is running do we fall back to searching
 # the usual install roots, and only then to the passed-in default.
-$running = Get-Process terminal64 -ErrorAction SilentlyContinue
+# THE BROKER IS PART OF THE IDENTITY, NOT A DETAIL. `MetaTrader5.initialize()` attaches to
+# whichever terminal happens to be RUNNING, so a box with a second broker's terminal open records
+# THAT broker's symbols, spreads and swaps and files them as this desk's. Measured 2026-09-06 on
+# the Dell: the only terminal running was "VIG Group MT5", and the first version of this discovery
+# code took it happily because it asked "is a terminal running" rather than "is the right one".
+# Every cost model, every certificate and every live order downstream assumes Fusion. Recording
+# one broker's tape under another broker's name is not a degraded run; it is fabricated evidence,
+# and it is silent.
+$running = @(Get-Process terminal64 -ErrorAction SilentlyContinue)
+$runningPaths = @($running | ForEach-Object { $_.Path } | Where-Object { $_ })
+$matchesBroker = { param($p) $p -and ($p -like "*$Broker*") }
+
 $found = $null
-if ($running) {
-    $found = ($running | Select-Object -First 1 -ExpandProperty Path -ErrorAction SilentlyContinue)
-    if ($found) { Info "terminal already running from $found" }
-}
+foreach ($p in $runningPaths) { if (& $matchesBroker $p) { $found = $p; Info "$Broker terminal already running from $p"; break } }
 if (-not $found) {
     $candidates = @($Terminal) + @(
+        "$env:ProgramFiles\*$Broker*\terminal64.exe",
+        "${env:ProgramFiles(x86)}\*$Broker*\terminal64.exe",
         "$env:ProgramFiles\*MetaTrader 5*\terminal64.exe",
         "${env:ProgramFiles(x86)}\*MetaTrader 5*\terminal64.exe",
-        "$env:ProgramFiles\*MetaTrader*\terminal64.exe",
         "$env:APPDATA\MetaQuotes\Terminal\*\terminal64.exe"
     )
     foreach ($c in $candidates) {
-        $hit = Get-Item -Path $c -ErrorAction SilentlyContinue | Select-Object -First 1
+        $hit = Get-Item -Path $c -ErrorAction SilentlyContinue | Where-Object { & $matchesBroker $_.FullName } | Select-Object -First 1
         if ($hit) { $found = $hit.FullName; break }
     }
-    if ($found -and $found -ne $Terminal) { Warn "terminal64.exe is at $found, not the default $Terminal -- pass -Terminal to silence this" }
+}
+# A FOREIGN TERMINAL RUNNING IS A HARD STOP, not a note. While it is up, initialize() may attach
+# to it, and this script has no way to make the Python bridge choose -- so the honest move is to
+# refuse and say which one is in the way.
+$foreign = @($runningPaths | Where-Object { -not (& $matchesBroker $_) })
+if ($foreign.Count -gt 0 -and -not $found) {
+    Fail "the only MT5 terminal running is NOT $Broker -- everything recorded here would be $Broker data in name only"
+    $foreign | ForEach-Object { Info "running: $_" }
+    Info "close it and start the $Broker terminal, or pass -Broker to name the broker this box really serves"
+} elseif ($foreign.Count -gt 0) {
+    Warn "a non-$Broker terminal is also running ($($foreign -join ', ')) -- initialize() attaches to whichever answers first; close it to be certain"
 }
 if (-not $found) {
-    Warn "terminal64.exe not located on disk (searched Program Files and %APPDATA%\MetaQuotes) -- probing the Python bridge anyway, which is the test that actually matters"
+    Warn "no $Broker terminal located on disk -- probing the Python bridge anyway, but see the account check below"
 } else {
     $Terminal = $found
-    if (-not $running -and -not $WhatIf) {
-        Info "starting the terminal"
+    if ($runningPaths.Count -eq 0 -and -not $WhatIf) {
+        Info "starting the $Broker terminal"
         Start-Process $Terminal | Out-Null
         Start-Sleep -Seconds 20
     }
@@ -144,8 +168,33 @@ if (-not $found) {
 # -10003 "Process create failed" comes back when the exe EXISTS but a Session 0 scheduled task
 # cannot create a GUI process, and the path in that message sends everyone to check a path that
 # was already correct.
-$probe = & python -c "import MetaTrader5 as m; print('OK' if m.initialize() else 'ERR '+str(m.last_error()))" 2>&1
-if ("$probe" -match "OK") { Ok "terminal reachable from Python" }
+# ASK WHAT IT ACTUALLY ATTACHED TO. A path check tests what is installed; only the bridge can say
+# which terminal answered, and that is the one whose ticks, spreads and account this desk will
+# record. terminal_info().company and account_info().server are MetaTrader's own answer.
+$probe = & python -c @"
+import MetaTrader5 as m
+if not m.initialize():
+    print('ERR ' + str(m.last_error()))
+else:
+    t = m.terminal_info(); a = m.account_info()
+    print('OK|%s|%s|%s' % (getattr(t, 'company', '?'), getattr(t, 'path', '?'),
+                           getattr(a, 'server', '?') if a else 'no-account'))
+"@ 2>&1
+if ("$probe" -match "^OK\|") {
+    $parts = ("$probe" -split '\|')
+    $company, $tpath, $server = $parts[1], $parts[2], $parts[3]
+    Info "attached to: company='$company' server='$server'"
+    if ($company -like "*$Broker*" -or $server -like "*$Broker*" -or $tpath -like "*$Broker*") {
+        Ok "terminal reachable from Python and it IS $Broker"
+    } else {
+        # THE FAILURE THIS EXISTS FOR. Everything below would run, succeed, and write another
+        # broker's market into this desk's tape and cost model under Fusion's name.
+        Fail "Python attached to '$company' (server '$server'), NOT $Broker -- recording would fabricate $Broker evidence from another broker's feed"
+        Info "close that terminal and open the $Broker one, then re-run. If this box legitimately"
+        Info "serves a different broker, say so explicitly: -Broker '$company'"
+    }
+}
+elseif ("$probe" -match "OK") { Ok "terminal reachable from Python" }
 else {
     Fail "MT5 will not initialize: $probe"
     Info "If the exe exists this is a SESSION problem, not a path one: terminal64.exe is a GUI process and a scheduled task with LogonType Password/S4U runs in Session 0, where Windows refuses to create one. Fix: schtasks /Change /TN MT5-TerminalBoot /RU Administrator /IT (elevated), or leave the terminal running so initialize() attaches."
