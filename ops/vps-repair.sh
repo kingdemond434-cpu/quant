@@ -33,6 +33,7 @@ CHECK_ONLY=0
 [ "${1:-}" = "--check" ] && CHECK_ONLY=1
 
 FAILURES=(); NOTES=()
+foreign=""   # set by step 3; step 5 reads it to decide whether its own probes mean anything
 step() { printf '\n== %s\n' "$1"; }
 ok()   { printf '   OK    %s\n' "$1"; }
 warn() { printf '   WARN  %s\n' "$1"; NOTES+=("$1"); }
@@ -108,14 +109,35 @@ if [ "${n_cfd:-0}" -gt 1 ] && [ "$CHECK_ONLY" = 0 ]; then
 fi
 # FOREIGN CONNECTORS ARE THE ONE FAULT THIS CANNOT FIX FROM HERE. A named tunnel accepts
 # connections from ANY host holding its credentials, and Cloudflare load-balances across all of
-# them -- so one forgotten machine (an old VPS, a laptop) makes a fraction of every request hit an
-# origin nobody is maintaining. Measured 2026-09-06: connector 8dda72b7 from 2.28.12.83 was
-# serving 401s while this host was already correct.
+# them -- so one forgotten machine makes a fraction of every request hit an origin nobody is
+# maintaining.
+#
+# WHAT THIS ACTUALLY WAS, 2026-09-06, recorded because the guess was wrong twice. Connector
+# 8dda72b7 reported ORIGIN IP 2.28.12.83, holding the fra03/fra17/fra18/prg03 edges. That address
+# reverse-resolves to static.83.12.28.2.clients.your-server.de and RDAP puts 2.28.0.0-2.28.15.255
+# in Hetzner's CLOUD-FSN1 block (Falkenstein, DE) -- it is the desk's OWN decommissioned 8GB VPS,
+# never shut down, still holding this tunnel's credentials and still serving a stale checkout that
+# answers 401. It was NOT a laptop and NOT a stranger. The current host is 95.216.191.70, Hetzner
+# CLOUD-HEL1, which is why its own probes always looked clean (see step 5).
+#
+# This check FAILS rather than warns: a foreign connector is a live fault that silently breaks a
+# share of every public request, and a warning is the shape of finding that gets scrolled past.
 if command -v cloudflared >/dev/null 2>&1; then
-  mine="$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^$' || true)"
+  mine="$( { hostname -I 2>/dev/null; curl -s --max-time 8 https://api.ipify.org 2>/dev/null; echo; } | tr ' ' '\n' | grep -v '^$' | sort -u)"
+  conn="$(cloudflared tunnel info "$TUNNEL" 2>/dev/null | sed -n '/CONNECTOR ID/,$p')"
   info "connectors for $TUNNEL:"
-  cloudflared tunnel info "$TUNNEL" 2>/dev/null | sed -n '/CONNECTOR ID/,$p' | while read -r l; do info "$l"; done
-  warn "any ORIGIN IP above that is not this host is a foreign connector -- stop cloudflared there; it will keep poisoning a share of requests"
+  printf '%s\n' "$conn" | while read -r l; do [ -n "$l" ] && info "$l"; done
+  # Take every IPv4/IPv6 literal in the connector table and subtract this host's own addresses.
+  foreign="$(printf '%s\n' "$conn" \
+    | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}|([0-9a-f]{1,4}:){2,}[0-9a-f:]*' \
+    | sort -u | grep -vxF -f <(printf '%s\n' "$mine") 2>/dev/null || true)"
+  if [ -n "$foreign" ]; then
+    fail "foreign connector(s) on $TUNNEL -- they serve a share of every public request from an origin this script does not control: $(printf '%s' "$foreign" | tr '\n' ' ')"
+    info "fix A (no access needed): repoint the ${HOSTNAME_PUBLIC} CNAME at a tunnel whose credentials that host does NOT hold"
+    info "fix B: stop and disable cloudflared on each address above, then re-run"
+  else
+    ok "every connector on $TUNNEL originates from this host"
+  fi
 fi
 
 # ---------------------------------------------------------------- 4. state and freshness
@@ -142,17 +164,36 @@ PY
 # ---------------------------------------------------------------- 5. the public answer
 step "Public"
 codes=""
-for _ in 1 2 3 4 5 6; do
+for _ in $(seq 1 12); do
   codes="$codes $(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://${HOSTNAME_PUBLIC}/desk.html" || echo 000)"
 done
-info "six probes:$codes"
-# SIX, NOT ONE. A single 200 proves nothing when traffic is split across connectors: the fault
-# that cost most of 2026-09-06 showed as 200 200 200 401 200, and any single probe had a two in
-# three chance of reporting success.
-if printf '%s' "$codes" | grep -qv '200'; then :; fi
+info "twelve probes:$codes"
 bad="$(printf '%s' "$codes" | tr ' ' '\n' | grep -cv '^200$' || true)"
-if [ "${bad:-0}" -eq 0 ]; then ok "https://${HOSTNAME_PUBLIC}/desk.html is public and consistent"
-else fail "$bad of 6 probes did not return 200 -- traffic is still split; see the connector list above"; fi
+
+# TWELVE, NOT ONE -- AND A CLEAN SWEEP HERE IS NOT A PASS.
+#
+# Two separate reasons a single probe lies. First, traffic is load-balanced across connectors, so
+# when one origin is broken each request only has some chance of hitting it: the 2026-09-06 fault
+# showed as 200 200 200 401 200 and later as one 401 in twelve, and a single probe would have
+# reported success either way.
+#
+# Second and worse: THIS HOST CANNOT MEASURE ITS OWN TUNNEL. Cloudflare answers a request at the
+# edge nearest the CLIENT, and the client here is the tunnel host itself -- so its curl exits via
+# its own local edge and lands on its own connector essentially every time. Measured 2026-09-06:
+# from this VPS, 6 of 6 probes returned 200 while an off-network client saw 4 of 6 return 401,
+# because the broken origin held only the Frankfurt and Prague edges. Both measurements were
+# correct; the local one was answering a different question.
+#
+# So a clean sweep is reported as INCONCLUSIVE whenever step 3 found a foreign connector. A check
+# that cannot fail in the presence of the fault it is meant to catch carries no information, and
+# an inconclusive result must never be allowed to read as a repair.
+if [ "${bad:-0}" -gt 0 ]; then
+  fail "$bad of 12 probes did not return 200 -- traffic is split across origins; see the connector list above"
+elif [ -n "${foreign:-}" ]; then
+  fail "12 of 12 probes returned 200 BUT THIS PROVES NOTHING: a foreign connector is still registered, and requests from this host resolve to its own nearest edge and its own connector. Verify from a phone on mobile data, off this network."
+else
+  ok "https://${HOSTNAME_PUBLIC}/desk.html is public and consistent, and this host holds every connector"
+fi
 
 # ---------------------------------------------------------------- verdict
 step "Summary"
