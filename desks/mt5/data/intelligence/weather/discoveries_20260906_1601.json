@@ -1,0 +1,35 @@
+[
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Marie",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Marie - may impact energy prices"
+  },
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Lowell",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Lowell - may impact energy prices"
+  },
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Karina",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Karina - may impact energy prices"
+  }
+]
