@@ -311,3 +311,11 @@ desks/mt5/data/deep_forest_seen.json
 !desks/mt5/reports/QQUANT_GATES.json
 !desks/mt5/reports/UNIVERSAL_SURVIVORS.json
 !desks/mt5/reports/markout.json
+
+# CONSOLE LOGS ARE NEVER TRACKED (2026-09-06). Seventeen of them were, and they are append-only
+# files that RUNNING hunt processes hold open. Every merge on the trading box therefore tried to
+# overwrite a live file handle, Windows refused with `unable to unlink old ...: Invalid argument`,
+# and the merge aborted -- the same two files, hunt16_console.txt and signal_gate_console.txt,
+# blocking every attempt. A log is not source: nothing reads these from git, losing one costs
+# nothing, and tracking them made the box permanently unmergeable while a hunt was alive.
+desks/mt5/logs/
