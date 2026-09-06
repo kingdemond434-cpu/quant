@@ -164,7 +164,24 @@ $relPaths = @(
     # The release-identity verdict the gateway writes every pass: running SHA against the sealed
     # release, and whether new risk is allowed. It is the one line that answers "is the box
     # running the code that was tested" from any machine that can read this branch.
-    "desks/mt5/data/release_identity.json"
+    "desks/mt5/data/release_identity.json",
+    # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
+    # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
+    # status, not its forward n, not its expectancy, not its day count. That is why "are the two
+    # gold scalp sleeves ready for live capital" was unanswerable from the branch, and why the
+    # answer kept being assembled from historical rows instead.
+    #
+    # A summary that says OPERATING is not evidence about any individual sleeve. Carrying the
+    # rows themselves is what turns this sync from a heartbeat into a report.
+    "desks/mt5/reports/shadow/scalp_shadow_state.json",
+    "desks/mt5/reports/shadow/qquant_shadow_state.json",
+    "desks/mt5/reports/shadow/external_shadow_state.json",
+    "desks/mt5/reports/shadow/shadow_state.json",
+    # The live account read. This box owns the only MT5 terminal, so it is the only machine
+    # entitled to publish an equity figure -- build_zentech_state refuses to invent one without a
+    # terminal, and until now had nothing to fall back on but a pulled copy of its own last
+    # output.
+    "desks/mt5/data/account_state.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {

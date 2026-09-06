@@ -275,3 +275,23 @@ desks/mt5/data/repo_cache/
 desks/mt5/data/features/
 desks/mt5/data/memory/
 desks/mt5/data/deep_forest_seen.json
+
+# THE BOX'S OWN REPORT, ALLOWLISTED LAST SO IT WINS (2026-09-06). `sync_shadow_to_git.ps1` lists
+# every path here in $relPaths and its header warns that an ignored path makes `git add` a SILENT
+# no-op -- success on screen, nothing published. That is exactly what had happened: sleeves.json
+# was in $relPaths and matched `**/sleeves.json` above, and the three shadow LANE state files
+# (which hold every sleeve's status, n, expectancy and forward clock) matched
+# `**/reports/shadow/*`. So the only thing that ever crossed the wire was the 424-byte health
+# summary, and no reader on this side could see a single sleeve -- which is why the question "are
+# the two gold scalp sleeves ready for live capital" could not be answered from the branch.
+#
+# Last match wins in gitignore, so these sit at the very end deliberately. They are small
+# machine-overwritten JSON (266b-48KB), not a data lake, and they are the desk's only evidence
+# that the box is alive. tests/scripts/test_box_sync_publishes_what_it_lists.py fails if a path
+# is ever added to $relPaths without a line here.
+!desks/mt5/data/sleeves.json
+!desks/mt5/data/account_state.json
+!desks/mt5/reports/shadow/scalp_shadow_state.json
+!desks/mt5/reports/shadow/qquant_shadow_state.json
+!desks/mt5/reports/shadow/external_shadow_state.json
+!desks/mt5/reports/shadow/shadow_state.json

@@ -364,6 +364,81 @@ def _mt5_snapshot() -> dict[str, Any]:
         return {}
 
 
+#: How old the box's freshest report may be before the dashboard calls it LATE. Deliberately the
+#: SAME 2700s that `monitor_mt5_shadow_sync` already uses -- a dashboard that tolerated more than
+#: the watchdog would be a second, looser opinion on one fact, and the looser one always wins the
+#: argument because it is the one on screen.
+BOX_LATE_SECONDS = 2700
+#: Past this the box is not late, it is gone. Six hours spans a weekend gap in no market this desk
+#: trades: XAUUSD and the FX majors never sit still that long while a gateway is alive.
+BOX_SILENT_SECONDS = 6 * 3600
+#: Every file the box's own sync carries, with the field each uses for its clock. If the box is
+#: running, at least one of these moves every pass; if none has moved, nothing on the box is
+#: writing and every other tile on this dashboard is reading a photograph.
+BOX_REPORTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("reports/shadow/shadow_health.json", ("updated_at",)),
+    ("data/gateway_state.json", ("last_reconcile", "updated_at", "as_of")),
+    ("data/regime_state.json", ("swept_at", "updated_at")),
+    ("data/account_state.json", ("updated_at", "timestamp", "fetched_at")),
+    ("reports/shadow/scalp_shadow_state.json", ("updated_at", "last_update")),
+)
+
+
+def _box_liveness(now: datetime) -> dict[str, Any]:
+    """IS THE MACHINE THAT HOLDS THE CAPITAL STILL REPORTING? Nothing on this board asked.
+
+    MEASURED 2026-09-06: the box's last real state push was 2026-08-26 14:50 -- TEN DAYS.
+    `monitor_mt5_shadow_sync` had been returning `status: FAILED, shadow health sync stale:
+    896946s` every thirty minutes for the whole of it, correctly, into a systemd timer whose
+    non-zero exit nobody reads. The dashboard never imported that verdict, so every tile on it
+    went on rendering ten-day-old numbers in the present tense, and the desk was asked whether to
+    put live capital behind them.
+
+    That is the worst failure a dashboard has, because it is invisible in exactly the way that
+    matters: a board showing stale truth and a board showing current truth are pixel-identical.
+    Only the age distinguishes them, and the age was the one thing not on screen.
+
+    The freshest clock across the box's own artifacts is what counts -- not the oldest. One organ
+    dying is a defect in that organ; ALL of them stopping is the machine. `per_report` keeps the
+    individual ages so the two cases stay distinguishable, because they need opposite responses.
+    """
+    ages: dict[str, Any] = {}
+    newest: datetime | None = None
+    for rel, fields in BOX_REPORTS:
+        stamp = _timestamp(_find(_read(DESK / rel), *fields))
+        name = rel.rsplit("/", 1)[-1]
+        if stamp is None:
+            # ABSENCE IS NEVER A PASS (L1.28a). A file that is missing or carries no clock is
+            # UNMEASURED and says so; scoring it as fresh is how a dead organ reads healthy.
+            ages[name] = {"age_seconds": None, "status": "UNMEASURED"}
+            continue
+        age = max(0.0, (now - stamp).total_seconds())
+        ages[name] = {"age_seconds": round(age), "at": stamp.isoformat(timespec="seconds"),
+                      "status": "FRESH" if age <= BOX_LATE_SECONDS else "STALE"}
+        newest = stamp if newest is None or stamp > newest else newest
+
+    if newest is None:
+        return {"status": "UNMEASURED", "silent_seconds": None, "last_reported_at": None,
+                "per_report": ages,
+                "why": ("not one of the box's artifacts carries a readable clock, so this "
+                        "dashboard cannot tell a live desk from a photograph of one")}
+    silent = max(0.0, (now - newest).total_seconds())
+    status = ("REPORTING" if silent <= BOX_LATE_SECONDS
+              else "LATE" if silent < BOX_SILENT_SECONDS else "SILENT")
+    hours = silent / 3600
+    why = {
+        "REPORTING": f"box reported {round(silent)}s ago",
+        "LATE": (f"box has not reported for {hours:.1f}h -- every figure below is at least "
+                 f"that old, whatever it looks like"),
+        "SILENT": (f"box has not reported for {hours:.1f}h. Nothing on this dashboard is "
+                   f"current. Do not size capital off it until the box reports again"),
+    }[status]
+    return {"status": status, "silent_seconds": round(silent),
+            "last_reported_at": newest.isoformat(timespec="seconds"),
+            "late_after_seconds": BOX_LATE_SECONDS, "silent_after_seconds": BOX_SILENT_SECONDS,
+            "per_report": ages, "why": why}
+
+
 def build() -> dict[str, Any]:
     gateway = _read(DESK / "data" / "gateway_state.json")
     # NEVER FALL BACK TO gateway_state FOR THE ACCOUNT (2026-09-04). On a box with no MT5
@@ -413,6 +488,13 @@ def build() -> dict[str, Any]:
     live_state = "LIVE" if equity is not None and account_age is not None and account_age <= 120 else (
         "STALE" if equity is not None else "UNMEASURED"
     )
+    box = _box_liveness(now)
+    # STALE AT TWO MINUTES AND STALE AT TEN DAYS RENDERED THE SAME WORD. The account feed lags its
+    # writer by design, so STALE is routine and reads as noise; a box that stopped reporting on
+    # 08-26 is not routine and must not borrow that word's calm. When the box is gone, the account
+    # tile says so in the box's own terms rather than in the feed's.
+    if box["status"] == "SILENT" and live_state != "UNMEASURED":
+        live_state = "SILENT"
     payload = {
         "generated_at": now.isoformat(),
         "identity": {"name": "QUANT DESK", "caption": "AUTONOMOUS MULTI-ASSET MT5 RESEARCH DESK"},
@@ -444,6 +526,11 @@ def build() -> dict[str, Any]:
         "health": {
             "newest_h1_file": newest_bar_file, "midnight": midnight,
             "daily_cycle": daily, "status": live_state,
+            # The first thing a reader needs and the last thing this board learned to say. Placed
+            # inside `health` rather than a corner of its own because it QUALIFIES every other
+            # number here: a REPORTING box makes them observations, a SILENT one makes them
+            # history rendered in the present tense.
+            "box": box,
         },
         "equity_curve": _series(rows, start),
         "disclaimer": "Research and operator telemetry only. Missing values are UNMEASURED; shadow has zero order authority.",
