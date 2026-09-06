@@ -643,6 +643,17 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def issue_board() -> dict:
+    """Every issue the desk can see, aggregated -- and the safe ones repaired.
+
+    Runs with --apply. A detector that reports and never acts is this desk's most repeated defect
+    class: `monitor_mt5_shadow_sync` returned FAILED every thirty minutes for ten days into a
+    timer whose exit code nobody reads. Only idempotent, cheap, reversible repairs are automated;
+    anything touching capital, a gate or a merge is refused with its reason.
+    """
+    return _producer("issue_board", "research/issue_board.py", ("--apply",))
+
+
 def queue_compact() -> dict:
     """Keep the research queue streamable: archive terminal rows older than a fortnight.
 
@@ -771,6 +782,7 @@ def main() -> None:
     # board that is one full hour behind the pass that just produced it.
     ps = _costed("publish_survivors", publish_survivors)
     pd_ = _costed("publish_dashboard", publish_dashboard)
+    ib = _costed("issue_board", issue_board)
     qc = _costed("queue_compact", queue_compact)
     rt = _costed("rebalance_trigger", rebalance_trigger)
     ec = _costed("edge_confidence", edge_confidence)
@@ -789,7 +801,7 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt, "queue_compact": qc,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt, "queue_compact": qc, "issue_board": ib,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)

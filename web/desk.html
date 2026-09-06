@@ -356,10 +356,12 @@ const ICONS = {
   funnel:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.8 2.6h12.4L9.4 8v5.4L6.6 12V8z"/></svg>',
   pick:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.2 13.8 8 2.4l5.8 11.4"/><path d="M4.6 9.6h6.8"/></svg>',
   web:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c1.7 1.9 2.6 4 2.6 6.2S9.7 12.3 8 14.2C6.3 12.3 5.4 10.2 5.4 8S6.3 3.7 8 1.8z"/></svg>',
+  alert:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.9 15 14H1z"/><path d="M8 6.2v3.4"/><circle cx="8" cy="11.7" r=".6" fill="currentColor"/></svg>',
   seat:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="2.2" width="11.6" height="8" rx="1.2"/><path d="M5 13.8h6"/></svg>'
 };
 const SECTIONS = [
   {id:"desk",     group:"markets",  icon:"desk",   label:"Desk",           cap:"live operator read"},
+  {id:"issues",   group:"markets",  icon:"alert",  label:"Issues",         cap:"everything wrong, and what closes it"},
   {id:"clocks",   group:"markets",  icon:"clock",  label:"Forward Clocks", cap:"what is actually maturing"},
   {id:"pipeline", group:"research", icon:"funnel", label:"Pipeline",       cap:"docket to certificate"},
   {id:"candidates",group:"research",icon:"pick",  label:"Candidates",     cap:"what cleared which gate"},
@@ -895,7 +897,60 @@ function pageCandidates(){
   return out;
 }
 
-const PAGES = {desk: pageDesk, candidates: pageCandidates, clocks: pageClocks, pipeline: pagePipeline,
+function pageIssues(){
+  const out = [], ib = D.issues || {};
+  const issues = ib.issues || [], sev = ib.by_severity || {};
+  const order = ["CAPITAL", "BLIND", "STALLED", "DEGRADED"];
+  out.push(kpis([
+    ["Open issues", num(issues.length), "everything the desk can see", issues.length ? "w" : "g"],
+    ["Capital", num(sev.CAPITAL), "could size or trade wrongly now", sev.CAPITAL ? "r" : "g"],
+    ["Blind", num(sev.BLIND), "believes something false about itself", sev.BLIND ? "r" : "g"],
+    ["Stalled", num(sev.STALLED), "a producer stopped", sev.STALLED ? "w" : "g"],
+    ["Auto-repairable", num(ib.auto_repairable), "fixed without a human", "g"],
+    ["Watched producers", num(ib.watched_producers), "each with a declared cadence"]
+  ]));
+  const g = el("div", "grid");
+  const c = card("Open issues", "issue_board");
+  if (issues.length){
+    const sorted = issues.slice().sort(
+      (a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
+    c.body.appendChild(defs(sorted.map(i => [
+      i.severity + (i.auto_repairable ? " · AUTO-REPAIRABLE" : ""),
+      i.what,
+      (i.detail || "") + (i.repair ? "  →  " + i.repair : "")
+    ])));
+  } else if (ib.measured_at){
+    c.body.appendChild(empty("No open issues",
+      "Every watched producer is inside its declared cadence, no alarm file is raised, and the "
+      + "desk state reports nothing wrong. " + (ib.contract || "")));
+  } else {
+    c.body.appendChild(missing("Issue board", "desks/mt5/reports/ISSUE_BOARD.json",
+      "The aggregated issue list lives in"));
+  }
+  g.appendChild(c.node);
+
+  const c2 = card("What the fixer did", "auto-repair");
+  const acts = ib.actions || [];
+  const ran = acts.filter(a => a.action === "RAN");
+  if (acts.length){
+    c2.body.appendChild(triple([
+      ["REPAIRED", num(ran.length), ran.length ? "g" : "m"],
+      ["REFUSED", num(acts.filter(a => a.action === "REFUSED").length), "m"],
+      ["APPLIED", ib.applied ? "YES" : "DRY RUN", ib.applied ? "g" : "w"]
+    ]));
+    c2.body.appendChild(defs(acts.slice(0, 10).map(a => [
+      a.action, a.key, a.cmd || a.why || ""])));
+  } else {
+    c2.body.appendChild(empty("No repair pass recorded", "The fixer has not run."));
+  }
+  c2.body.appendChild(defs(Object.entries(ib.never_automated || {}).map(
+    ([k, v]) => ["NEVER AUTOMATED · " + k, v, ""])));
+  g.appendChild(c2.node);
+  out.push(g);
+  return out;
+}
+
+const PAGES = {desk: pageDesk, issues: pageIssues, candidates: pageCandidates, clocks: pageClocks, pipeline: pagePipeline,
   miners: pageMiners, breadth: pageBreadth, seats: pageSeats};
 
 /* ==========================================================================

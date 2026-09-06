@@ -523,6 +523,10 @@ def build() -> dict[str, Any]:
             "matched_fills": markout.get("n_matched"), "why": markout.get("why"),
             "open_trades": _find(gateway, "open_positions", "positions") or [],
         },
+        # EVERY ISSUE THE DESK CAN SEE, ON THE BOARD. Detection was never the gap -- 121
+        # check_* scripts already worked. What was missing was one surface showing the
+        # aggregate, so a real breach could be detected correctly and read by nobody.
+        "issues": _read(DESK / "reports" / "ISSUE_BOARD.json"),
         "health": {
             "newest_h1_file": newest_bar_file, "midnight": midnight,
             "daily_cycle": daily, "status": live_state,
