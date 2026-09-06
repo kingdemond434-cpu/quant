@@ -643,6 +643,16 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def ml_layer() -> dict:
+    """P6/P8/P9/P42: representation, self-supervision, mixture of experts, distillation.
+
+    CHALLENGER-ONLY. Everything here publishes beliefs through the forecast contract and owns no
+    position; the capital allocator decides money. A model the desk has not learned to trust can
+    therefore be run every hour at no risk, which is the only way it ever earns trust.
+    """
+    return _producer("ml_layer", "research/ml_layer.py")
+
+
 def experiment_cache() -> dict:
     """P39/P40: cache hit rate, hours saved, and whether the next increment buys anything."""
     return _producer("experiment_cache", "research/experiment_cache.py")
@@ -708,6 +718,7 @@ def main() -> None:
     # board that is one full hour behind the pass that just produced it.
     ps = _costed("publish_survivors", publish_survivors)
     pd_ = _costed("publish_dashboard", publish_dashboard)
+    mll = _costed("ml_layer", ml_layer)
     xc = _costed("experiment_cache", experiment_cache)
     og = _costed("opportunity_gap", opportunity_gap)
     (BASE / "data" / "sync_marker.json").write_text(
@@ -719,7 +730,7 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)

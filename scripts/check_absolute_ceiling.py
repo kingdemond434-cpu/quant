@@ -138,14 +138,14 @@ REGISTRY: tuple[Capability, ...] = (
                tags=("P5", "forecast", "self_improvement")),
 
     # ---- Phase 6-10: the AI layer
-    Capability("P6", "learned multi-horizon representation layer, challenger-only", "", "",
+    Capability("P6", "learned multi-horizon representation layer, challenger-only", "desks/mt5/research/ml_layer.py", "desks/mt5/reports/ML_LAYER.json",
                "OOS dElog of representation-derived heads", tags=("P6", "ml")),
     Capability("P7", "model zoo benchmarked on dElog after cost and complexity rent",
                "desks/mt5/research/model_zoo.py", "desks/mt5/reports/MODEL_ZOO.json",
                "dElog per model per compute hour", tags=("P7", "ml")),
-    Capability("P8", "self-supervised and contrastive learning on unlabelled history", "", "",
+    Capability("P8", "self-supervised and contrastive learning on unlabelled history", "desks/mt5/research/ml_layer.py", "desks/mt5/reports/ML_LAYER.json",
                "downstream OOS improvement", tags=("P8", "ml")),
-    Capability("P9", "financial mixture of experts with an OOS-admitted gate", "", "",
+    Capability("P9", "financial mixture of experts with an OOS-admitted gate", "desks/mt5/research/ml_layer.py", "desks/mt5/reports/ML_LAYER.json",
                "gate-weighted OOS skill", tags=("P9", "ml")),
     Capability("P10", "live dynamic market graph with state-dependent edges",
                "desks/mt5/research/world_causal_graph.py",
@@ -252,7 +252,7 @@ REGISTRY: tuple[Capability, ...] = (
     Capability("P41", "model-size efficient frontier; smallest model at equal rent",
                "desks/mt5/research/model_zoo.py", "desks/mt5/reports/MODEL_ZOO.json",
                "rent per unit inference cost", tags=("P41", "ml")),
-    Capability("P42", "distillation: student independently retains the required dElog", "", "",
+    Capability("P42", "distillation: student independently retains the required dElog", "desks/mt5/research/ml_layer.py", "desks/mt5/reports/ML_LAYER.json",
                "student dElog vs teacher", tags=("P42", "ml")),
     Capability("P43", "guarded online learning: champion authoritative, challenger updates, "
                       "promotion on measured evidence, no silent live mutation",
