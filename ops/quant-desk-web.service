@@ -14,15 +14,23 @@ WorkingDirectory=/home/quant/quant-platform
 # TOKEN REMOVED ON THE PRINCIPAL'S EXPLICIT INSTRUCTION (2026-09-06, "remove the token thing
 # pls man from website"), after being told what it exposes. WHAT THIS MEANS, recorded here
 # because a future reader will find no gate and may assume one was forgotten rather than
-# removed: the tunnel connects to 127.0.0.1, so without --require-token every request arrives
-# as loopback and takes the loopback exemption. dash.quanttt.xyz is then readable by anyone who
-# has the hostname -- live equity, today's P&L, open positions, the whole funnel. There is no
-# second gate behind this one.
+# removed: dash.quanttt.xyz is readable by anyone who has the hostname -- live equity, today's
+# P&L, open positions, the whole funnel. There is no second gate behind this one.
 #
-# To restore it, append --require-token and `systemctl --user restart quant-desk-web`. The
-# token file and all three carriers (Bearer header, ?k= query, dk cookie) are untouched in
-# serve_dashboard.py, so restoring is one word.
-ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/serve_dashboard.py --port 8788 --host 127.0.0.1
+# `--no-auth` AND NOT MERELY THE ABSENCE OF `--require-token`. Dropping the flag was the first
+# attempt and it did NOT work: without it the exemption is LOOPBACK-ONLY, and while a cloudflared
+# origin usually connects over 127.0.0.1, this deployment's does not -- measured 2026-09-06, the
+# unit carried no --require-token, loopback returned 200 and the public URL still returned 401
+# from this same server (its own CORS and x-frame-options headers were on the 401).
+#
+# It is also the wrong SHAPE. "Serve the world" expressed as a missing flag is indistinguishable
+# from someone forgetting the flag, which is the absence-as-permission this desk refuses
+# everywhere else. `--no-auth` names the decision: it sets the token to empty, so `_authorised`
+# returns True for every client rather than only for loopback.
+#
+# To restore the gate, replace --no-auth with --require-token and restart. The token file and all
+# three carriers (Bearer header, ?k= query, dk cookie) are untouched in serve_dashboard.py.
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/serve_dashboard.py --port 8788 --host 127.0.0.1 --no-auth
 Restart=always
 RestartSec=5
 
