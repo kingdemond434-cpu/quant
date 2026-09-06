@@ -247,6 +247,64 @@ if (-not $WhatIf) {
     }
 }
 
+# ------------------------------------------- 3c. THE PUBLISHER THAT FEEDS THE PUBLIC DASHBOARD
+Step "Shadow sync to git (this is what feeds the dashboard)"
+# NOTHING ELSE PUBLISHES THIS BOX'S STATE. `sync_shadow_to_git.ps1` commits the allowlisted state
+# summaries -- account_state, the three shadow lane states, sleeves, shadow_health -- to the
+# shared branch every 15 minutes as scheduled task MT5-ShadowSync. It REPLACED the old scp path
+# when Hetzner was decommissioned on 2026-08-23; the VPS's `pull_desk_state.sh` still scp's from
+# an ssh alias named for a machine that no longer exists, and has failed every two minutes since.
+#
+# So this task is the whole delivery chain, and when it stops the dashboard starves in a way that
+# looks like a research failure rather than a delivery one. MEASURED 2026-09-06: shadow_health.json
+# last written 2026-08-26 14:45, gateway_state.json 08-17, regime_state.json 08-20, and the page
+# read "box has not reported for 266.4h" while the desk itself was running fine, recording ticks
+# every hour and completing its daily cycle. Eleven days of green research, invisible.
+$sync = Join-Path $Root "desks\mt5\scripts\sync_shadow_to_git.ps1"
+if (-not (Test-Path $sync)) {
+    Fail "sync_shadow_to_git.ps1 is absent -- nothing publishes this box's state, so the dashboard can only ever read SILENT"
+} else {
+    $task = Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContinue
+    if (-not $task) {
+        Fail "scheduled task MT5-ShadowSync does not exist -- this box has no 15-minute publisher"
+        Info "register it (elevated): powershell -ExecutionPolicy Bypass -File desks\mt5\scripts\Install-QuantWindows.ps1"
+    }
+    else {
+        $ti = Get-ScheduledTaskInfo -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContinue
+        Info ("MT5-ShadowSync state={0} lastRun={1} lastResult={2}" -f $task.State, $ti.LastRunTime, $ti.LastTaskResult)
+        if ($task.State -eq "Disabled") {
+            if ($WhatIf) { Warn "MT5-ShadowSync is DISABLED (WhatIf: not enabled)" }
+            else {
+                Enable-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContinue | Out-Null
+                if ((Get-ScheduledTask -TaskName "MT5-ShadowSync").State -eq "Disabled") { Fail "MT5-ShadowSync is disabled and could not be enabled -- needs an elevated run" }
+                else { Ok "MT5-ShadowSync re-enabled" }
+            }
+        }
+        # A TASK THAT EXISTS AND IS ENABLED CAN STILL HAVE STOPPED. It repeats every 15 minutes,
+        # so a last run older than an hour is a dead publisher wearing a healthy task's clothes --
+        # exactly the shape that hid this for eleven days.
+        if ($ti -and $ti.LastRunTime -and $ti.LastRunTime -lt (Get-Date).AddHours(-1)) {
+            $stale = [int]((Get-Date) - $ti.LastRunTime).TotalHours
+            Fail "MT5-ShadowSync last ran ${stale}h ago on a 15-MINUTE schedule -- the publisher is dead, which is why the dashboard reads SILENT"
+        }
+        if ($ti -and $ti.LastTaskResult -ne 0 -and $null -ne $ti.LastTaskResult) {
+            Warn "MT5-ShadowSync last exit code was $($ti.LastTaskResult) -- see desks\mt5\logs\sync_shadow_to_git.log"
+        }
+    }
+    # RUN IT ONCE NOW, whatever the scheduler says. The point of this script is that the dashboard
+    # is current when it finishes, not fifteen minutes later -- and a manual run is also the
+    # fastest way to see the real error if the scheduled one has been failing silently.
+    if (-not $WhatIf) {
+        Info "publishing state now"
+        $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $sync 2>&1
+        if ($LASTEXITCODE -eq 0) { Ok "state published to git -- the dashboard picks it up on the VPS's next pull" }
+        else {
+            Fail "sync_shadow_to_git.ps1 exited $LASTEXITCODE -- the box's state did NOT reach the dashboard"
+            ($out | Select-Object -Last 10) | ForEach-Object { Info $_ }
+        }
+    }
+}
+
 # ---------------------------------------------------------------- 4. bars + cost model
 Step "Bars and universe registry"
 if ($SkipBars) { Info "skipped (-SkipBars)" }
