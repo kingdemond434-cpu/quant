@@ -239,11 +239,15 @@ REGISTRY: tuple[Capability, ...] = (
     Capability("P38", "compute allocator scheduling by marginal compute value",
                "libs/ops/compute_ledger.py", "data/compute_ledger.jsonl",
                "dElog per CPU/GPU hour", tags=("P38", "allocator")),
-    Capability("P39", "distributed experiment cache keyed on data/feature/model/code/seed", "",
-               "", "cache hit rate, hours saved", tags=("P39", "compute")),
+    Capability("P39", "distributed experiment cache keyed on data/feature/model/code/seed",
+               "desks/mt5/research/experiment_cache.py",
+               "desks/mt5/reports/EXPERIMENT_CACHE.json",
+               "cache hit rate, hours saved", tags=("P39", "compute")),
 
     # ---- Phase 40-46: scaling and model governance
-    Capability("P40", "financial scaling-law lab: OOS = f(data, model size, compute)", "", "",
+    Capability("P40", "financial scaling-law lab: OOS = f(data, model size, compute)",
+               "desks/mt5/research/experiment_cache.py",
+               "desks/mt5/reports/EXPERIMENT_CACHE.json",
                "marginal value of data vs model vs compute", tags=("P40", "ml")),
     Capability("P41", "model-size efficient frontier; smallest model at equal rent",
                "desks/mt5/research/model_zoo.py", "desks/mt5/reports/MODEL_ZOO.json",
