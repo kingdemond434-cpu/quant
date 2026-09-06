@@ -18,8 +18,19 @@ TimeoutStartSec=14400
 # competing with execution.
 Nice=15
 IOSchedulingClass=idle
-MemoryHigh=3G
-MemoryMax=4G
+# MemoryMax=4G ON A 4GB BOX IS NOT A CEILING, IT IS THE WHOLE MACHINE. This unit and
+# quant-recertify-canon each carried 3G/4G and neither joined quant-heavy.slice, so either could
+# consume every page on the host on its own -- and the global OOM killer then picks the largest
+# process it can see, which on this box is routinely the dashboard server or cloudflared rather
+# than the organ that actually overran. That is the precise failure quant-heavy.slice was created
+# for on 2026-09-01, and these two were simply never put in it.
+#
+# NO PER-UNIT CEILING, DELIBERATELY: the slice governs. `ops/size_memory_budget.sh` derives the
+# slice's budget from the host's own MemTotal, so this unit gets ~60% of a 4GB box and ~60% of an
+# 8GB one with nothing to edit. A number typed here would become the binding constraint the day
+# the host is resized and would quietly waste the new RAM -- a constant is correct for exactly one
+# machine, and this desk has now been moved and resized inside a fortnight.
+Slice=quant-heavy.slice
 
 [Install]
 WantedBy=default.target

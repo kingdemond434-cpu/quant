@@ -17,6 +17,15 @@ websockets==16.0
 python-dateutil==2.9.0.post0
 pytz==2026.2
 tzdata==2026.2
+# STATISTICS BACKENDS. `libs/research/stationarity.py` wraps ADF, Engle-Granger cointegration and
+# GARCH over these, and `libs/autodiscovery/validation.py` records UNMEASURED when they are
+# absent -- which is the correct behaviour and exactly why their absence was invisible. Measured
+# 2026-09-06: neither was installed, so every cointegration and stationarity question this desk
+# asked came back UNMEASURED, and `tests/research/test_stationarity.py` skipped rather than
+# failed. A capability that is never measured is indistinguishable from one that has nothing to
+# report, and the whole relative-value family rests on these tests.
+statsmodels==0.15.1
+arch==7.3.0
 # dev / CI (the desk runs its own CI gate on every cycle)
 ruff==0.15.17
 pytest==9.1.0

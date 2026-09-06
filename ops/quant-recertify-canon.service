@@ -18,8 +18,19 @@ TimeoutStartSec=90min
 
 # A CEILING ABOVE THE WORKING SET, NOT THROUGH IT (learned 2026-09-04: MemoryHigh below a job's
 # working set makes it swap-thrash at 20% CPU rather than protecting anything).
-MemoryHigh=3G
-MemoryMax=4G
+#
+# BUT 4G ON A 4GB BOX IS NOT A CEILING ABOVE THE WORKING SET -- IT IS THE WHOLE MACHINE, and a
+# unit that may take every page cannot protect anything either. When it does, the global OOM
+# killer picks the largest process it can see, which on this host is routinely the dashboard
+# server or cloudflared rather than the organ that overran. quant-heavy.slice was built on
+# 2026-09-01 to bound exactly this and this unit was never put in it; the 06:20 firing can also
+# still overlap the 06:00 nightly catch-up, which carried the same 4G.
+#
+# NO PER-UNIT CEILING, DELIBERATELY: the slice governs, and `ops/size_memory_budget.sh` derives
+# its budget from the host's own MemTotal. That keeps the ceiling ABOVE the working set on any
+# host -- the lesson above -- without a constant that is correct for one machine and silently
+# wrong after the next resize or move.
+Slice=quant-heavy.slice
 
 # Absolute path, as quant-regime-monitor.service and quant-sge-premium.service already do: the
 # scheduler-manifest fence maps ExecStart onto the repo by stripping the VPS root, so a
