@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -61,14 +62,21 @@ def _git_sha() -> str:
 def _py_files() -> tuple[tuple[str, str], ...]:
     """(relative path, source) for every python file outside .git and the venv."""
     rows: list[tuple[str, str]] = []
-    for p in ROOT.rglob("*.py"):
-        rel = p.relative_to(ROOT).as_posix()
-        if rel.startswith((".git/", ".venv/", "node_modules/")):
-            continue
-        try:
-            rows.append((rel, p.read_text("utf-8", errors="ignore")))
-        except OSError:
-            continue
+    # Path.rglob walks INTO .git before the post-filter can reject its results.  On the shared
+    # repo, .git/worktrees and object packs make that take longer than the hourly control cycle.
+    # Prune directory traversal at the source; this changes no file admitted to the census.
+    skip = {".git", ".venv", "node_modules", "__pycache__", ".pytest_cache"}
+    for parent, dirs, files in os.walk(ROOT):
+        dirs[:] = [d for d in dirs if d not in skip]
+        for name in files:
+            if not name.endswith(".py"):
+                continue
+            p = Path(parent) / name
+            rel = p.relative_to(ROOT).as_posix()
+            try:
+                rows.append((rel, p.read_text("utf-8", errors="ignore")))
+            except OSError:
+                continue
     return tuple(rows)
 
 

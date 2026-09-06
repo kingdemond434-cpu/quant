@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -485,21 +486,27 @@ def _import_counts() -> dict[str, int]:
     if _IMPORTS is not None:
         return _IMPORTS
     counts: dict[str, int] = {}
-    for p in ROOT.rglob("*.py"):
-        rel = p.relative_to(ROOT).as_posix()
-        if "/tests/" in f"/{rel}" or rel.startswith("tests/") or "__pycache__" in rel:
-            continue
-        try:
-            src = p.read_text("utf-8", errors="ignore")
-        except OSError:
-            continue
-        for mod in re.findall(r"(?:from|import)\s+([a-zA-Z_][\w.]*)", src):
-            leaf = mod.split(".")[-1]
-            counts[leaf] = counts.get(leaf, 0) + 1
-            counts[mod] = counts.get(mod, 0) + 1
-        # Subprocess and CLI references: "research/world_causal_graph.py", 'scripts/x.py'.
-        for ref in re.findall(r"['\"][\w/]*?([a-zA-Z_][\w]*)\.py['\"]", src):
-            counts[ref] = counts.get(ref, 0) + 1
+    skip = {".git", ".venv", "node_modules", "__pycache__", ".pytest_cache"}
+    for parent, dirs, files in os.walk(ROOT):
+        dirs[:] = [d for d in dirs if d not in skip]
+        for name in files:
+            if not name.endswith(".py"):
+                continue
+            p = Path(parent) / name
+            rel = p.relative_to(ROOT).as_posix()
+            if "/tests/" in f"/{rel}" or rel.startswith("tests/"):
+                continue
+            try:
+                src = p.read_text("utf-8", errors="ignore")
+            except OSError:
+                continue
+            for mod in re.findall(r"(?:from|import)\s+([a-zA-Z_][\w.]*)", src):
+                leaf = mod.split(".")[-1]
+                counts[leaf] = counts.get(leaf, 0) + 1
+                counts[mod] = counts.get(mod, 0) + 1
+            # Subprocess and CLI references: "research/world_causal_graph.py", 'scripts/x.py'.
+            for ref in re.findall(r"['\"][\w/]*?([a-zA-Z_][\w]*)\.py['\"]", src):
+                counts[ref] = counts.get(ref, 0) + 1
     _IMPORTS = counts
     return counts
 
