@@ -847,6 +847,18 @@ def main() -> None:
         "graveyard_model", "libs/research/graveyard_model.py"))
     wc = _costed("world_crawler", lambda: _producer(
         "world_crawler", "side_channels/world_crawler.py"))
+    # P0.1, THE LAST UNSCHEDULED CAPABILITY OF THE NINETY-FOUR. `release_identity.py` has a
+    # main() and nothing on either machine ever called it: the registry names its ARTIFACT as the
+    # producer, so `scheduler_for` searched for a schedule matching a .json path and found none,
+    # and the empty list read as "no surface" rather than "never looked for the right thing".
+    #
+    # It answers whether the code that is TRADING is the code that was sealed, which every other
+    # capability's evidence quietly assumes. Left to a manual run it goes stale silently and the
+    # answer decays into a claim about whatever the box happened to be running yesterday --
+    # measured 2026-09-06: last written 2026-09-05T23:17, ok=false, 1,074 paths of drift against
+    # the sealed release, and nothing scheduled to notice.
+    ri = _costed("release_identity", lambda: _producer(
+        "release_identity", "mt5desk/release_identity.py"))
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
@@ -861,6 +873,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
+                    "release_identity": ri,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)

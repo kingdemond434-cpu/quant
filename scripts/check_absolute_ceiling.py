@@ -99,9 +99,17 @@ class Capability:
 
 REGISTRY: tuple[Capability, ...] = (
     # ---- Phase 0: one source of truth
+    # OWNER IS THE MODULE, NOT THE ARTIFACT. This row named the .json as its own producer -- the
+    # only capability of the 94 to do so -- and every downstream question about it was asked of a
+    # data file. `scheduler_for` searches the schedulers for the OWNER's stem, so it looked for a
+    # cron line running `release_identity.json`, found none, and returned an empty surface list
+    # that read as "nothing schedules this" when the truth was "nothing was ever asked the right
+    # question". Measured 2026-09-06: the artifact was 21h old with ok=false and 1,074 paths of
+    # drift against the sealed release, and it was in fact unscheduled -- but the report could
+    # not distinguish that from a lookup failure, so it proved nothing either way.
     Capability("P0.1", "release identity matches across research, validation, forward, allocator, "
                        "gateway and live; no match = no new capital authority",
-               "desks/mt5/data/release_identity.json", "desks/mt5/data/release_identity.json",
+               "desks/mt5/mt5desk/release_identity.py", "desks/mt5/data/release_identity.json",
                "capital authority is refused under ambiguous lineage", tags=("P0", "identity")),
     Capability("P0.2", "20% nominal heat floor, flat -- no readiness/evidence mechanism may "
                        "reduce it; above it stays evidence-determined through 45%",

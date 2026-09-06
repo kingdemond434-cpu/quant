@@ -14,6 +14,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from collections import Counter  # noqa: E402
+from functools import lru_cache  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 import pandas as pd  # noqa: E402
@@ -27,6 +28,51 @@ from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
 _h1_cache: dict = {}
 _uni = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
+
+
+def canonical_symbol(sym: str) -> str:
+    """The BROKER's spelling of a symbol, given any casing of it.
+
+    THE CELLS THIS WAS LOSING. Fusion names its share CFDs in mixed case -- `Apple`, `Berkshire`,
+    `AlibabaGroup`, `Coca-Cola` -- 98 of the 251 symbols in the registry. The docket carries them
+    uppercased, and the two eligibility checks in `hold_uncoverable` compare `sym.upper()` on both
+    sides, so every one of those cells is admitted as testable. Then `bars()` built
+    `f"{sym}_{tf}.parquet"` from the DOCKET's spelling and asked the filesystem for
+    `ACCENTURE_H1.parquet` while the file on disk is `Accenture_H1.parquet`.
+
+    So the cell passed the gate that exists to catch exactly this and died one function later, on
+    a case-sensitive filesystem lookup, inside a worker whose failure is counted as "produced no
+    result" rather than "was never runnable". MEASURED 2026-09-06: 8,057 cells run, 2,619 results.
+    Every US share CFD on the docket was in the losing half, and the coverage report -- being
+    case-insensitive itself -- listed none of them as held.
+
+    CASE ONLY, DELIBERATELY. This maps `ACCENTURE` to `Accenture` and refuses to do anything more
+    clever: `AAPL` must NEVER resolve to `Apple`. Case is not semantic in a broker's symbol table,
+    so folding it recovers the same instrument with certainty; a ticker-to-name guess is a
+    different instrument wearing a plausible label, and certifying a cell against the wrong one is
+    the failure this whole stage exists to prevent. A symbol with no case-insensitive match is
+    returned unchanged, so it goes on to fail visibly rather than silently becoming something else.
+    """
+    return _canonical_index().get(str(sym).strip().upper(), str(sym))
+
+
+@lru_cache(maxsize=1)
+def _canonical_index() -> dict[str, str]:
+    """Uppercased symbol -> the broker's own spelling.
+
+    The REGISTRY wins over a filename when both carry a symbol: universe.json is MetaTrader's own
+    answer, and a parquet name is only ever a copy of it. Parquet stems are indexed too, because a
+    symbol can have bars here before its registry row has synced -- and holding a cell whose chart
+    is sitting on disk is the same idle-for-want-of-plumbing this desk keeps paying for.
+    """
+    index: dict[str, str] = {}
+    for symbol in _uni:
+        index.setdefault(str(symbol).upper(), str(symbol))
+    for path in (BASE / "data" / "universe").glob("*_*.parquet"):
+        stem = path.stem.rpartition("_")[0]
+        if stem:
+            index.setdefault(stem.upper(), stem)
+    return index
 
 def _family_funcs() -> dict:
     """EVERY registered family, discovered -- never a hand-typed whitelist.
@@ -131,6 +177,7 @@ def bars(sym: str, timeframe: str = "H1") -> pd.DataFrame:
     one that refuses: the refusal is visible, the wrong chart certifies.
     """
     tf = str(timeframe or "H1").upper()
+    sym = canonical_symbol(sym)
     key = (sym, tf)
     if key not in _h1_cache:
         path = BASE / "data" / "universe" / f"{sym}_{tf}.parquet"
@@ -153,7 +200,11 @@ def run_cell(cell: dict) -> dict | None:
     if not func:
         return None
     try:
-        meta = _uni.get(sym, {})
+        # SAME CASE FOLD AS `bars()`, and the same reason. An uppercased `ACCENTURE` missed the
+        # registry's `Accenture` here too and returned None -- the second of two silent kills on
+        # the same cell, both counted downstream as "produced no result" rather than "could not
+        # be looked up". A cell that is genuinely unknown to the broker still returns None below.
+        meta = _uni.get(canonical_symbol(sym), {})
         if not meta:
             return None
         # THE CELL'S OWN CHART. `timeframe_of` reads it from the cell's params and defaults to
