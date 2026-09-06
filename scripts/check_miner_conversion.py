@@ -95,6 +95,44 @@ def _mechanism_key(row: dict) -> str:
     return f"{fam}|{sym}|{ses}"
 
 
+def _source_miner(source: object) -> str:
+    """The miner named inside a tested row's provenance string.
+
+    Sources look like `ext_forexfactory_USDCHF_session_range_breakout`: a lane prefix, the MINER,
+    then the symbol and family the compiler derived. The symbol is the first ALL-CAPS token, so
+    everything before it is the miner name -- parsed positionally rather than by a fixed field
+    count, because miner names contain underscores (`github_topics`, `ff_calendar_vintage`) and a
+    split-on-underscore-take-index-1 would truncate them to `github` and `ff`.
+    """
+    text = str(source or "")
+    if text.startswith("ext_"):
+        text = text[4:]
+    parts, name = text.split("_"), []
+    for part in parts:
+        if part and any(c.isalpha() for c in part) and part == part.upper():
+            break                      # an ALL-CAPS token is the symbol; the miner ended before it
+        name.append(part)
+    return "_".join(name).strip("_")
+
+
+def _reached(miner: str, tested_by_miner: Counter) -> int:
+    """Tested rows attributable to `miner`, matching exactly then by prefix in EITHER direction.
+
+    The provenance token and the directory name are not always identical -- `github` against a
+    `github_topics` directory, for instance -- so an equality-only join would report a miner as
+    having converted nothing while its rows sit in the results. Prefix matching in both
+    directions covers the abbreviation and the expansion; anything looser would attribute one
+    miner's conversions to another, which is worse than under-counting.
+    """
+    if miner in tested_by_miner:
+        return tested_by_miner[miner]
+    total = 0
+    for token, n in tested_by_miner.items():
+        if token and (miner.startswith(token) or token.startswith(miner)):
+            total += n
+    return total
+
+
 def miner_rows(cutoff: datetime) -> dict[str, list[dict]]:
     """Recent discovery rows per miner directory."""
     out: dict[str, list[dict]] = {}
@@ -133,7 +171,10 @@ def main() -> int:
     fam_counts = Counter(str((c.get("shadow_spec") or {}).get("family") or "unknown")
                          for c in certs.values())
 
-    tested = {_mechanism_key(r) for r in (_read(HYP) or []) if isinstance(r, dict)}
+    tested_rows = [r for r in (_read(HYP) or []) if isinstance(r, dict)]
+    tested = {_mechanism_key(r) for r in tested_rows}
+    tested_by_miner = Counter(_source_miner(r.get("source")) for r in tested_rows)
+    tested_by_miner.pop("", None)
     survivor_keys = held
 
     per_miner: dict[str, dict] = {}
@@ -142,16 +183,36 @@ def main() -> int:
         keys = [_mechanism_key(r) for r in rows]
         uniq = set(keys)
         novel = uniq - held
+        # MEASURED BY PROVENANCE, NOT BY A RECOMPUTED KEY -- and this is the whole reason the
+        # board read 0 for 49 of 53 miners.
+        #
+        # `_mechanism_key` is family|SYMBOL|session. A tested row has all three. A RAW MINER ROW
+        # has none of them: it is a paragraph from a forum, a swap table or a paper, and the
+        # symbol and family are what the COMPILER derives from it. So every raw row keys to
+        # `unknown|*|*` -- which is why broker_swaps showed 36,982 rows as 1 distinct mechanism at
+        # a 100.0% duplicate rate -- and `novel & tested` was empty by construction, whatever the
+        # pipeline did. Measured 2026-09-06: the compiler was in fact converting 178,753 rows into
+        # 364 executable candidates while this reported that nothing reached a backtest.
+        #
+        # The tested rows carry `source` (ext_<miner>_<SYMBOL>_<family>) all the way from the
+        # miner that found them, so provenance survives the very transformation that destroys the
+        # key. Counting it answers the question actually being asked -- did this miner's work
+        # reach the gauntlet -- instead of a question no miner could ever answer yes to.
+        reached = _reached(miner, tested_by_miner)
         per_miner[miner] = {
             "discoveries": len(rows),
             "distinct_mechanisms": len(uniq),
             "novel_mechanisms": len(novel),
-            "reached_backtest": len(novel & tested),
+            "reached_backtest": reached,
+            "reached_basis": "source provenance on tested rows",
             "survivors": len(uniq & survivor_keys),
             "conversion": round(len(uniq & survivor_keys) / len(rows), 4) if rows else None,
             "duplicate_rate": round(1 - len(uniq) / len(rows), 3) if rows else None,
         }
-        if len(rows) >= 20 and not (uniq & survivor_keys):
+        # ZERO-YIELD MEANS TESTED AND FAILED, NOT MERELY UNCERTIFIED. Calling a miner "noise at
+        # cost" when its rows never reached a gauntlet blames the source for a plumbing gap, and
+        # the remedy that follows -- retire the miner -- deletes work that was never judged.
+        if len(rows) >= 20 and reached > 0 and not (uniq & survivor_keys):
             zero_yield.append(miner)
 
     total_certs = sum(fam_counts.values())
