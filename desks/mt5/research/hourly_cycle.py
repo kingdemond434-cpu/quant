@@ -643,6 +643,15 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def experiment_design() -> dict:
+    """P18/P19/P65/P29/P30: which experiment is worth running, and at what capital.
+
+    The EVSI queue is recomputed hourly because its inputs move: an experiment that could not
+    change the decision last hour becomes decisive the moment the decision it feeds changes.
+    """
+    return _producer("experiment_design", "research/experiment_design.py")
+
+
 def market_intel() -> dict:
     """P14/P16/P17/P23/P24/P26: what changed, what it looked like last time, what followed.
 
@@ -727,6 +736,7 @@ def main() -> None:
     # board that is one full hour behind the pass that just produced it.
     ps = _costed("publish_survivors", publish_survivors)
     pd_ = _costed("publish_dashboard", publish_dashboard)
+    xd = _costed("experiment_design", experiment_design)
     mi = _costed("market_intel", market_intel)
     mll = _costed("ml_layer", ml_layer)
     xc = _costed("experiment_cache", experiment_cache)
@@ -740,7 +750,7 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
