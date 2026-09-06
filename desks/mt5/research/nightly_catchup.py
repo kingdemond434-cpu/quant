@@ -250,15 +250,56 @@ def organ_liveness() -> dict[str, Any]:
                 out[name] = {"status": "EMPTY", "path": rel}
                 continue
             newest = max(files, key=lambda p: p.stat().st_mtime)
-        age_h = (now.timestamp() - newest.stat().st_mtime) / 3600
+        # THE ARTIFACT'S OWN STAMP BEATS ITS mtime, and on a git checkout the mtime is simply
+        # wrong: it records when GIT WROTE THE FILE, not when the organ ran. Measured
+        # 2026-09-06 -- FRONTIER_INTELLIGENCE.json showed 7.6h by mtime while its own
+        # `generated_utc` said 2026-09-05T23:15:25, and DEEP_FOREST.json showed 32.1h against an
+        # internal stamp a full day older still. Reporting the mtime told the principal four
+        # organs were stale using a clock that measures `git checkout`, which is a fact about
+        # this container and not about whether anything is running. The internal stamp travels
+        # with the artifact and means the same thing on every host.
+        stamp = None
+        doc = _read(newest)
+        if isinstance(doc, dict):
+            for field in ("generated_utc", "generated_at", "compiled_at", "swept_at",
+                          "measured_at", "at"):
+                raw = doc.get(field)
+                if isinstance(raw, str) and len(raw) > 15:
+                    try:
+                        stamp = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                        stamp = stamp if stamp.tzinfo else stamp.replace(tzinfo=UTC)
+                        break
+                    except ValueError:
+                        continue
+        basis = "artifact stamp" if stamp else "file mtime (no internal stamp; on a git "\
+                                              "checkout this measures the checkout, not the run)"
+        age_h = ((now - stamp).total_seconds() / 3600 if stamp
+                 else (now.timestamp() - newest.stat().st_mtime) / 3600)
         out[name] = {"status": "FRESH" if age_h < 6 else "STALE",
-                     "age_h": round(age_h, 1), "newest": newest.name}
-    # The LLM key is reported as PRESENT/ABSENT only. Never the value, never a prefix -- a
-    # secret that reaches a report reaches every reader of that report.
+                     "age_h": round(age_h, 1), "newest": newest.name, "basis": basis}
+    # BOTH CARRIERS, because the key has two and checking one reports a false ABSENT. The
+    # desk's own loader (`gpt_hunter._credentials`) reads data/secrets/llm_panel.json FIRST and
+    # falls back to the environment; an earlier version of this function checked only the
+    # environment and told the principal the LLM organs could not run while the key sat in the
+    # secrets file. A liveness probe that asks a different question from the consumer is not a
+    # probe, it is a second opinion -- so this asks exactly what the consumer asks.
+    #
+    # PRESENT/ABSENT ONLY. Never the value, never a prefix, never the length: a secret that
+    # reaches a report reaches every reader of that report, and this one is published.
     import os
-    out["llm_key"] = {"status": "PRESENT" if (os.environ.get("OPENROUTER_API_KEY")
-                                              or os.environ.get("OPENAI_API_KEY"))
-                      else "ABSENT -- LLM-backed organs cannot run"}
+    carriers = []
+    secret_file = ROOT / "data" / "secrets" / "llm_panel.json"
+    doc = _read(secret_file)
+    if isinstance(doc, dict) and (doc.get("api_key") or doc.get("key")):
+        carriers.append("data/secrets/llm_panel.json")
+    if os.environ.get("OPENROUTER_API_KEY") or os.environ.get("OPENAI_API_KEY"):
+        carriers.append("environment")
+    out["llm_key"] = {"status": "PRESENT" if carriers else "ABSENT",
+                      "carriers": carriers,
+                      "note": ("" if carriers else
+                               "neither data/secrets/llm_panel.json nor OPENROUTER_API_KEY on "
+                               "this host -- LLM-backed organs cannot run HERE, which is a "
+                               "host fact and says nothing about the box or the VPS")}
     return out
 
 

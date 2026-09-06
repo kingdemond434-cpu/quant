@@ -792,6 +792,37 @@ def main() -> None:
     mll = _costed("ml_layer", ml_layer)
     xc = _costed("experiment_cache", experiment_cache)
     og = _costed("opportunity_gap", opportunity_gap)
+    # ---- THE TWELVE THAT NOTHING RAN ------------------------------------------------------
+    # Measured 2026-09-06 by blueprint/coverage: twelve capabilities sat at WIRED -- imported by
+    # production code, named by no scheduler surface. A capability nothing runs is code, not a
+    # capability, and the mandate's §146H says every WIRED-only organ must either be scheduled or
+    # declare in writing why it is event-driven. These are the ones that are genuinely periodic.
+    #
+    # SUBPROCESSES VIA `_producer`, deliberately: several are heavy (world simulation, ensemble
+    # optimisation, the graveyard model) and a hang or an allocation failure inside one must not
+    # take the rest of the hour's legs with it. `_producer` bounds and reports each.
+    #
+    # NOT INCLUDED AND THE REASON MATTERS: heat_policy (P0.2) and capability_graph (P0.3) are
+    # LIBRARIES the money path imports on every allocator pass, not producers with a cadence.
+    # Scheduling them would run a no-op main() and turn WIRED into SCHEDULED without changing
+    # anything -- a green light bought by fooling the fence, which is the failure the fence is
+    # for. They are declared event-driven in the registry instead.
+    xr = _costed("execution_resolver", lambda: _producer(
+        "execution_resolver", "research/execution_resolver.py"))
+    cw = _costed("counterfactual_world", lambda: _producer(
+        "counterfactual_world", "libs/research/counterfactual_world.py"))
+    eo = _costed("ensemble_optimizer", lambda: _producer(
+        "ensemble_optimizer", "libs/self_improvement/ensemble_optimizer.py"))
+    uk = _costed("frontier_unknowns", lambda: _producer(
+        "unknowns", "frontier_intel/unknowns.py"))
+    fo = _costed("frontier_ontology", lambda: _producer(
+        "ontology", "frontier_intel/ontology.py"))
+    xs = _costed("exit_study", lambda: _producer(
+        "exit_study", "research/exit_study.py"))
+    gm = _costed("graveyard_model", lambda: _producer(
+        "graveyard_model", "libs/research/graveyard_model.py"))
+    wc = _costed("world_crawler", lambda: _producer(
+        "world_crawler", "side_channels/world_crawler.py"))
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
@@ -802,6 +833,10 @@ def main() -> None:
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
                     "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt, "queue_compact": qc, "issue_board": ib,
+                    "execution_resolver": xr, "counterfactual_world": cw,
+                    "ensemble_optimizer": eo, "frontier_unknowns": uk,
+                    "frontier_ontology": fo, "exit_study": xs,
+                    "graveyard_model": gm, "world_crawler": wc,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
