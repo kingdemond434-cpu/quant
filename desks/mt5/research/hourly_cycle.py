@@ -643,6 +643,21 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def experiment_cache() -> dict:
+    """P39/P40: cache hit rate, hours saved, and whether the next increment buys anything."""
+    return _producer("experiment_cache", "research/experiment_cache.py")
+
+
+def opportunity_gap() -> dict:
+    """P66/P81/P50: where the chain from 'an edge exists' to 'the book earns it' actually stops.
+
+    Runs AFTER the publication legs, because it reads the state they write. A decomposition
+    computed from last hour's artifacts would name last hour's binding constraint, and the whole
+    value of the number is that it points at what to do NEXT.
+    """
+    return _producer("opportunity_gap", "research/opportunity_gap.py")
+
+
 def maintain_miners() -> dict:
     """The miner/seat maintainer: run all six fences and REPAIR what is repairable.
 
@@ -693,6 +708,8 @@ def main() -> None:
     # board that is one full hour behind the pass that just produced it.
     ps = _costed("publish_survivors", publish_survivors)
     pd_ = _costed("publish_dashboard", publish_dashboard)
+    xc = _costed("experiment_cache", experiment_cache)
+    og = _costed("opportunity_gap", opportunity_gap)
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
@@ -702,7 +719,7 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
