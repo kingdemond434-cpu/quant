@@ -15,7 +15,7 @@ syms = mt5.symbols_get()
 tradable = [s for s in syms if s.visible and s.trade_mode > 0]
 print(f"Tradable: {len(tradable)}")
 
-existing = set(f.stem.replace("_H1", "") for f in PARQUET_DIR.glob("*_H1.parquet"))
+existing = set(f.stem.rpartition("_")[0] or f.stem for f in PARQUET_DIR.glob("*.parquet"))
 to_dl = [s for s in tradable if s.name not in existing]
 print(f"Already have: {len(existing)}, need: {len(to_dl)}")
 
@@ -43,8 +43,8 @@ print("Done downloading")
 # Build universe.json from all parquets + symbol info
 syms_map = {s.name: s for s in tradable}
 universe = {}
-for pq in sorted(PARQUET_DIR.glob("*_H1.parquet")):
-    sym_name = pq.stem.replace("_H1", "")
+for pq in sorted(PARQUET_DIR.glob("*.parquet")):
+    sym_name = pq.stem.rpartition("_")[0] or pq.stem
     si = syms_map.get(sym_name)
     df = pd.read_parquet(pq)
     if si:

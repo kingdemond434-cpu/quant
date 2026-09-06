@@ -215,7 +215,7 @@ class UntouchedReservoir:
             return None
         
         latest = None
-        for p in universe_dir.glob("*_H1.parquet"):
+        for p in universe_dir.glob("*.parquet"):
             try:
                 df = pd.read_parquet(p)
                 if len(df) > 0:

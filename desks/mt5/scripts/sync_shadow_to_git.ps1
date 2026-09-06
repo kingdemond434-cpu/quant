@@ -108,9 +108,52 @@ function Merge-FetchHead {
             Git-In-Repo @("checkout", "--", $rel) | Out-Null
         }
     }
+    # UNTRACKED FILES BLOCK A MERGE TOO, AND PARKING TRACKED ONES DOES NOTHING FOR THEM.
+    #
+    # git raises TWO separate refusals and this only ever handled the first:
+    #     error: Your local changes to the following files would be overwritten by merge
+    #     error: The following untracked working tree files would be overwritten by merge
+    # The second fires when the incoming branch has begun tracking a path this box already holds
+    # as an untracked local file -- which is every artifact a new organ started writing here
+    # before its producer was committed upstream. MEASURED 2026-09-06 on the desk box: 50 such
+    # paths, including the entire data/hypotheses docket.
+    #
+    # The log said `push rejected (attempt 1), fetch+merge and retry` and then STOPPED -- no
+    # merge line, no abort line, nothing -- roughly 800 consecutive times since 2026-08-26. The
+    # box committed locally every fifteen minutes and published none of it, and the one line that
+    # would have named the cause was never written. A failure path that logs nothing is why this
+    # ran for eleven days in plain sight.
+    #
+    # The box's copy is moved aside rather than deleted: for the data artifacts it is the LIVE
+    # state and strictly newer than anything on the branch. It is restored below exactly like the
+    # tracked ones, so the merge can run and the box keeps what it had.
+    $probe = @(& git -C $RepoRoot merge --no-commit --no-ff FETCH_HEAD 2>&1)
+    Git-In-Repo @("merge", "--abort") | Out-Null
+    $untracked = @()
+    $inList = $false
+    foreach ($line in $probe) {
+        $s = "$line"
+        if ($s -match "untracked working tree files would be overwritten") { $inList = $true; continue }
+        if ($inList) {
+            if ($s -match "^\s+(\S.*)$") { $untracked += $Matches[1].Trim() } else { $inList = $false }
+        }
+    }
+    foreach ($rel in $untracked) {
+        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
+        if (Test-Path $full -PathType Leaf) {
+            $tmp = [System.IO.Path]::GetTempFileName()
+            Copy-Item -LiteralPath $full -Destination $tmp -Force
+            $parked[$rel] = $tmp
+            Remove-Item -LiteralPath $full -Force -ErrorAction SilentlyContinue
+        }
+    }
+    if ($untracked.Count) {
+        Write-SyncLog ("parked {0} untracked file(s) the incoming branch now tracks" -f $untracked.Count)
+    }
+
     if ($parked.Count) {
-        Write-SyncLog ("parked {0} dirty file(s) that block the merge: {1}" -f `
-                       $parked.Count, ($parked.Keys -join ", "))
+        Write-SyncLog ("parked {0} file(s) that block the merge: {1}" -f `
+                       $parked.Count, (($parked.Keys | Select-Object -First 8) -join ", "))
     }
 
     $mergeRc = Git-In-Repo @("merge", "--no-edit", "FETCH_HEAD")
@@ -263,7 +306,19 @@ for ($attempt = 1; $attempt -le 3 -and -not $pushed; $attempt++) {
     # origin/claude/...` failed with "unknown revision" right after a successful fetch of the
     # same branch. FETCH_HEAD is always populated by the fetch that just ran, regardless of
     # tracking-ref configuration, so it is the only reliable target here.
-    if (-not (Merge-FetchHead -RepoRoot $RepoRoot -Branch $branch)) { exit 1 }
+    # EVERY EXIT FROM THIS LOOP NOW SAYS SO. It used to leave through `exit 1` with no line
+    # written, so the log's last word on a failed pass was "fetch+merge and retry" -- an
+    # announcement of an intention, recorded as though it were an outcome. On the desk box that
+    # exact line was the final entry of roughly 800 consecutive passes between 2026-08-26 and
+    # 2026-09-06 while the box committed locally and published nothing. A silence that reads like
+    # progress is worse than an error: it is the reason nobody looked for eleven days.
+    if (-not (Merge-FetchHead -RepoRoot $RepoRoot -Branch $branch)) {
+        Write-SyncLog ("ABORT: could not merge origin/$branch into the local branch. The commit " +
+                       "is safe locally and nothing is lost, but this box is no longer publishing " +
+                       "and will not resume without a human. Run ``git status`` here.")
+        exit 1
+    }
+    Write-SyncLog "merged origin/$branch, retrying push"
     Start-Sleep -Seconds 2
 }
 

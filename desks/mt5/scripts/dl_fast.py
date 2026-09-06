@@ -13,7 +13,7 @@ print("MT5 OK")
 
 syms = mt5.symbols_get()
 tradable = [s for s in syms if s.visible and s.trade_mode > 0]
-existing = set(f.stem.replace("_H1", "") for f in PARQUET_DIR.glob("*_H1.parquet"))
+existing = set(f.stem.rpartition("_")[0] or f.stem for f in PARQUET_DIR.glob("*.parquet"))
 to_dl = [s for s in tradable if s.name not in existing]
 print(f"Need {len(to_dl)} of {len(tradable)} (have {len(existing)})")
 

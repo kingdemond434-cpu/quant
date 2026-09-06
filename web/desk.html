@@ -1,382 +1,841 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#030309"><title>QUANT DESK · LIVE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quant Desk Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
+/* ============================================================================
+   QUANT DESK TERMINAL
+   One canonical view. Reads web/desk_state.json from its own origin, so it is
+   live wherever it is served; falls back to an embedded snapshot when opened
+   from a host that has no JSON beside it.
+   ========================================================================= */
 :root{
-  --bg:#030309; --panel:rgba(13,13,22,.55); --line:rgba(140,120,255,.13);
-  --green:#00ff9c; --red:#ff3b5c; --violet:#a78bfa; --magenta:#e879f9; --cyan:#67e8f9;
-  --txt:#ecebf5; --mut:#7b7f96; --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --ground:#08080a; --panel:#0e0e11; --card:#121215; --card-2:#16161a;
+  --line:#1f1f24; --line-soft:#191920;
+  --gold:#c9a961; --gold-hi:#e8d5a3; --gold-dim:#7a6636;
+  --ink:#f2f2f4; --ink-2:#8c8c95; --ink-3:#63636c;
+  --good:#34d399; --bad:#f87171; --warn:#d9a441; --info:#7aa2d6;
+  --good-bg:rgba(52,211,153,.07); --bad-bg:rgba(248,113,113,.07);
+  --warn-bg:rgba(217,164,65,.07);
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --r:10px;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 Inter,ui-sans-serif,system-ui;overflow-x:hidden}
-body:after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.45;
-  background-image:radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px);background-size:28px 28px}
-/* ---------- hero: the brain ---------- */
-.hero{position:relative;height:min(64vh,640px);min-height:380px;overflow:hidden;
-  background:radial-gradient(1000px 500px at 50% 110%, rgba(120,80,255,.10), transparent 60%),
-             radial-gradient(700px 380px at 18% -10%, rgba(232,121,249,.07), transparent 60%), #020207}
-#brain{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
-#brain.grab{cursor:grabbing}
-.hero .veil{position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(180deg, rgba(3,3,9,.55), transparent 26%, transparent 68%, var(--bg) 99%)}
-.hero .top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:18px;padding:22px 28px;z-index:3}
-.mark{font-weight:800;letter-spacing:.34em;font-size:15px;text-shadow:0 2px 22px #000}
-.mark b{color:var(--violet);text-shadow:0 0 20px rgba(167,139,250,.8)}
-.clock{font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.1em}
-.badge{display:flex;align-items:center;gap:8px;margin-left:auto;padding:7px 14px;border:1px solid var(--line);
-  border-radius:999px;background:rgba(8,8,15,.72);backdrop-filter:blur(8px);font-family:var(--mono);font-size:11px;letter-spacing:.12em}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 14px var(--green);animation:pulse 2s infinite}
-.badge.err .dot{background:var(--red);box-shadow:0 0 14px var(--red)}
-@keyframes pulse{50%{opacity:.35}}
-.hero .cap{position:absolute;left:0;right:0;bottom:26px;text-align:center;z-index:3;pointer-events:none}
-.cap .t1{font-size:10px;letter-spacing:.5em;color:var(--mut);text-transform:uppercase}
-.cap .t2{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.18em;margin-top:8px;color:var(--violet);
-  text-shadow:0 0 18px rgba(167,139,250,.6)}
-/* ---------- grid ---------- */
-.wrap{max-width:1560px;margin:0 auto;padding:20px 22px 60px;position:relative;z-index:2}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
-.card{border:1px solid var(--line);border-radius:20px;background:var(--panel);backdrop-filter:blur(16px);
-  box-shadow:0 20px 55px rgba(0,0,0,.55), inset 0 1px 0 rgba(200,180,255,.06);overflow:hidden;position:relative}
-.card:before{content:"";position:absolute;inset:-1px;border-radius:20px;padding:1px;pointer-events:none;
-  background:linear-gradient(140deg, rgba(167,139,250,.35), transparent 30%, transparent 72%, rgba(232,121,249,.22));
-  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
-.c3{grid-column:span 3}.c4{grid-column:span 4}.c6{grid-column:span 6}.c8{grid-column:span 8}.c12{grid-column:span 12}
-.hd{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:15px 18px 0;
-  font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--mut)}
-.hd span:last-child{letter-spacing:.08em;font-family:var(--mono);text-transform:none}
-.bd{padding:14px 18px 18px}
-.kpi .v{font-family:var(--mono);font-weight:700;font-size:30px;letter-spacing:-.01em;margin-top:6px}
-.kpi .s{margin-top:6px;color:var(--mut);font-size:11px;font-family:var(--mono)}
-.up{color:var(--green);text-shadow:0 0 22px rgba(0,255,156,.4)}
-.dn{color:var(--red);text-shadow:0 0 22px rgba(255,59,92,.4)}
-.nt{color:var(--cyan);text-shadow:0 0 20px rgba(103,232,249,.35)}
-.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
-.stats>div{background:rgba(9,9,16,.6);padding:14px 16px}
-.stats .l{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
-.stats .v{font-family:var(--mono);font-weight:700;font-size:19px;margin-top:5px}
-.funnel{display:flex;gap:12px;flex-wrap:wrap;padding:16px 18px 20px}
-.stage{flex:1;min-width:130px;position:relative;border:1px solid var(--line);border-radius:15px;
-  padding:14px 12px;background:rgba(8,8,15,.6);text-align:center}
-.stage:not(:last-child):after{content:"›";position:absolute;right:-11px;top:34%;font-size:18px;color:var(--magenta);
-  text-shadow:0 0 12px rgba(232,121,249,.8)}
-.stage .l{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
-.stage .v{font-family:var(--mono);font-weight:700;font-size:26px;margin-top:6px;color:var(--violet);text-shadow:0 0 18px rgba(167,139,250,.4)}
-.stage.final{border-color:rgba(0,255,156,.35);box-shadow:0 0 28px rgba(0,255,156,.10) inset}
-.stage.final .v{color:var(--green);text-shadow:0 0 20px rgba(0,255,156,.5)}
-.days{display:flex;gap:9px;flex-wrap:wrap;padding:16px 18px 20px}
-.day{flex:1;min-width:70px;border-radius:13px;padding:11px 8px;text-align:center;border:1px solid var(--line);background:rgba(8,8,15,.6)}
-.day .d{font-size:9px;letter-spacing:.1em;color:var(--mut);font-family:var(--mono)}
-.day .v{font-family:var(--mono);font-weight:700;font-size:13px;margin-top:5px}
-.day.up{border-color:rgba(0,255,156,.35);box-shadow:inset 0 0 22px rgba(0,255,156,.07)}
-.day.dn{border-color:rgba(255,59,92,.4);box-shadow:inset 0 0 22px rgba(255,59,92,.08)}
-table{border-collapse:collapse;width:100%}
-th,td{padding:10px 14px;border-bottom:1px solid rgba(140,120,255,.08);text-align:left;font-size:12.5px}
-th{font-size:9px;letter-spacing:.16em;color:var(--mut);text-transform:uppercase;position:sticky;top:0;background:rgba(10,10,18,.94)}
-td{font-family:var(--mono)}
-td:first-child{font-family:Inter;font-weight:600;font-size:12px}
-.r{text-align:right}
-.scroll{overflow:auto;max-height:360px}
-.pill{display:inline-block;padding:3px 9px;border-radius:999px;border:1px solid var(--line);font:10px var(--mono);color:var(--violet)}
-.pill.ok{border-color:rgba(0,255,156,.45);color:var(--green)}
-.pill.warn{border-color:rgba(255,209,102,.5);color:#ffd166}
-.pill.bad{border-color:rgba(255,59,92,.55);color:var(--red)}
-.bar{height:6px;border-radius:99px;background:rgba(140,120,255,.13);overflow:hidden;margin-top:5px}
-.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--violet),var(--green));box-shadow:0 0 14px rgba(0,255,156,.6)}
-.empty{padding:26px;text-align:center;color:var(--mut);font-size:12px}
-#curve{display:block;width:100%;height:250px}
-.foot{margin-top:26px;text-align:center;color:#4a4d63;font-size:10px;letter-spacing:.22em;text-transform:uppercase}
-@media(max-width:1100px){.c3{grid-column:span 6}.c4,.c8{grid-column:span 12}}
-@media(max-width:720px){.c3,.c6{grid-column:span 12}.stats{grid-template-columns:repeat(2,1fr)}.wrap{padding:14px 12px 40px}.hero{height:46vh}}
-</style></head><body>
-
-<header class="hero">
-  <canvas id="brain"></canvas>
-  <div class="veil"></div>
-  <div class="top">
-    <div class="mark">QUANT<b>DESK</b></div>
-    <div class="clock" id="clock">—</div>
-    <div class="badge" id="badge"><span class="dot"></span><span id="health">CONNECTING</span></div>
-  </div>
-  <div class="cap"><div class="t1">autonomous research organism</div><div class="t2" id="brainCap">— synapses firing —</div></div>
-</header>
-
-<div class="wrap">
-<div class="grid">
-  <section class="card c12" id="pulseCard" style="border-left:3px solid var(--green)">
-    <div class="hd"><span>Hourly research pulse</span><span id="pulseAge">—</span></div>
-    <div class="bd" style="padding:10px 16px">
-      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:baseline">
-        <span id="pulseVerdict" style="font:700 13px var(--mono);color:var(--green)">—</span>
-        <span class="s" id="pulseLine">waiting for the fence's first verdict…</span>
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:var(--sans); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+/* --- shell ---------------------------------------------------------------- */
+.shell{display:grid; grid-template-columns:172px 1fr; min-height:100vh}
+.side{
+  border-right:1px solid var(--line); background:var(--panel);
+  display:flex; flex-direction:column; gap:22px; padding:16px 0 24px;
+  position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.brand{display:flex; gap:9px; align-items:center; padding:0 14px}
+.brand-mark{
+  width:30px; height:30px; border-radius:7px; flex:0 0 auto;
+  border:1px solid var(--gold-dim); background:linear-gradient(160deg,#1a160c,#0d0b06);
+  display:grid; place-items:center; color:var(--gold); font-family:var(--mono);
+  font-size:13px; font-weight:600;
+}
+.brand-name{font-size:13px; font-weight:600; letter-spacing:-.01em; line-height:1.15}
+.brand-sub{
+  font-family:var(--mono); font-size:7.5px; color:var(--ink-3);
+  letter-spacing:.14em; text-transform:uppercase; margin-top:2px;
+}
+.navgroup{display:flex; flex-direction:column; gap:1px}
+.navlabel{
+  font-family:var(--mono); font-size:8px; letter-spacing:.16em; color:var(--ink-3);
+  text-transform:uppercase; padding:0 14px 6px;
+}
+.navitem{
+  display:flex; align-items:center; gap:9px; padding:7px 14px;
+  color:var(--ink-2); font-size:12.5px; cursor:pointer; border:0; background:none;
+  font-family:var(--sans); text-align:left; width:100%;
+  border-left:2px solid transparent;
+}
+.navitem:hover{color:var(--ink); background:#131317}
+.navitem[aria-current="true"]{
+  color:var(--ink); background:#17171c; border-left-color:var(--gold);
+}
+.navitem svg{width:13px; height:13px; flex:0 0 auto; opacity:.75}
+.navitem[aria-current="true"] svg{opacity:1; color:var(--gold)}
+.navitem:focus-visible{outline:2px solid var(--gold); outline-offset:-2px}
+/* --- topbar --------------------------------------------------------------- */
+.main{min-width:0; display:flex; flex-direction:column}
+.topbar{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:11px 20px; border-bottom:1px solid var(--line); background:var(--panel);
+}
+.topbar h1{font-size:14px; font-weight:600; margin:0; letter-spacing:-.01em}
+.topbar .cap{font-size:11px; color:var(--ink-3)}
+.topbar .spacer{flex:1 1 auto}
+.clock{font-family:var(--mono); font-size:13px; letter-spacing:.02em; font-variant-numeric:tabular-nums}
+.clock small{font-size:9px; color:var(--ink-3); margin-left:4px}
+.stamp{font-family:var(--mono); font-size:9px; color:var(--ink-3); line-height:1.35; max-width:96px}
+.chip{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+  padding:5px 9px; border-radius:5px; border:1px solid var(--line); color:var(--ink-2);
+  background:var(--card); white-space:nowrap;
+}
+.chip.gold{background:linear-gradient(180deg,#d9bd77,#bb9b४f); background:linear-gradient(180deg,#d9bd77,#bb9b4f); color:#1a1509; border-color:#c9a961; font-weight:600}
+button.chip{cursor:pointer}
+button.chip:hover{color:var(--ink); border-color:#2c2c33}
+button.chip:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+/* --- status ribbon -------------------------------------------------------- */
+.ribbon{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:8px 20px; border-bottom:1px solid var(--line);
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.06em;
+}
+.ribbon.is-good{background:var(--good-bg); color:var(--good)}
+.ribbon.is-warn{background:var(--warn-bg); color:var(--warn)}
+.ribbon.is-bad{background:var(--bad-bg); color:var(--bad)}
+.dot{width:6px; height:6px; border-radius:50%; background:currentColor; flex:0 0 auto}
+.ribbon .note{color:var(--ink-2); letter-spacing:.02em; text-transform:none}
+/* --- page ----------------------------------------------------------------- */
+.page{padding:20px; display:flex; flex-direction:column; gap:18px; max-width:1500px}
+.pagehead h2{font-size:19px; margin:0 0 2px; font-weight:600; letter-spacing:-.02em}
+.pagehead p{margin:0; color:var(--ink-3); font-size:12px}
+.eyebrow{
+  font-family:var(--mono); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--gold); margin:0 0 6px;
+}
+/* --- kpi strip ------------------------------------------------------------ */
+.kpis{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  border:1px solid var(--line); border-radius:var(--r); overflow:hidden; background:var(--card);
+}
+.kpi{padding:12px 14px; border-right:1px solid var(--line-soft); min-width:0}
+.kpi:last-child{border-right:0}
+.kpi .k{
+  font-family:var(--mono); font-size:8.5px; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--ink-3); display:block; margin-bottom:5px;
+}
+.kpi .v{
+  font-family:var(--mono); font-size:20px; font-weight:500; letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums; line-height:1.1; display:block;
+}
+.kpi .s{font-size:10.5px; color:var(--ink-3); display:block; margin-top:3px}
+/* --- cards ---------------------------------------------------------------- */
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(370px,1fr)); gap:14px}
+.card{
+  border:1px solid var(--line); border-radius:var(--r); background:var(--card);
+  display:flex; flex-direction:column; min-width:0; overflow:hidden;
+}
+.card > header{
+  display:flex; align-items:center; gap:8px; padding:11px 14px;
+  border-bottom:1px solid var(--line-soft);
+}
+.card > header h3{
+  margin:0; font-family:var(--mono); font-size:9.5px; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--ink-2); font-weight:500;
+}
+.card > header .src{
+  margin-left:auto; font-family:var(--mono); font-size:8.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); border:1px solid var(--line);
+  border-radius:4px; padding:3px 7px; white-space:nowrap;
+}
+.card .body{padding:14px; display:flex; flex-direction:column; gap:13px}
+/* --- verdict panel (the EDGE FACTOR block) -------------------------------- */
+.verdict{
+  display:flex; gap:14px; align-items:flex-start; padding:13px;
+  border:1px solid var(--line); border-radius:9px; background:var(--card-2);
+}
+.verdict.is-good{border-color:rgba(52,211,153,.3); background:var(--good-bg)}
+.verdict.is-warn{border-color:rgba(217,164,65,.3); background:var(--warn-bg)}
+.verdict.is-bad{border-color:rgba(248,113,113,.3); background:var(--bad-bg)}
+.verdict .score{
+  font-family:var(--mono); font-size:34px; font-weight:600; line-height:1;
+  font-variant-numeric:tabular-nums; flex:0 0 auto;
+}
+.verdict.is-good .score{color:var(--good)}
+.verdict.is-warn .score{color:var(--warn)}
+.verdict.is-bad .score{color:var(--bad)}
+.verdict .unit{font-size:13px; font-weight:400; opacity:.65}
+.verdict .txt{min-width:0}
+.verdict .grade{font-size:12px; color:var(--ink-2); margin-bottom:5px}
+.verdict .k{
+  font-family:var(--mono); font-size:8.5px; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--ink-3); display:block; margin-bottom:4px;
+}
+.verdict p{margin:0; font-size:12.5px; color:var(--ink); line-height:1.5}
+/* --- three-up strip ------------------------------------------------------- */
+.triple{
+  display:grid; grid-template-columns:repeat(3,1fr);
+  border:1px solid var(--line); border-radius:8px; overflow:hidden;
+}
+.triple > div{padding:9px 11px; border-right:1px solid var(--line-soft)}
+.triple > div:last-child{border-right:0}
+.triple .k{
+  font-family:var(--mono); font-size:8px; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--ink-3); display:block; margin-bottom:4px;
+}
+.triple .v{font-family:var(--mono); font-size:12px; letter-spacing:.05em; font-weight:500}
+/* --- definition rows ------------------------------------------------------ */
+.defs{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:8px}
+.defs > div{padding:10px 12px; border-bottom:1px solid var(--line-soft)}
+.defs > div:last-child{border-bottom:0}
+.defs .k{
+  font-family:var(--mono); font-size:8px; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--ink-3); display:block; margin-bottom:3px;
+}
+.defs .v{font-size:13.5px; font-weight:600; letter-spacing:-.01em}
+.defs .why{font-size:11.5px; color:var(--ink-3); margin-top:2px; line-height:1.45}
+/* --- bar meters (signed, centred zero) ------------------------------------ */
+.meters{display:flex; flex-direction:column; gap:11px}
+.meter{display:grid; grid-template-columns:1fr 108px 52px; gap:10px; align-items:center}
+.meter .name{font-size:12.5px; min-width:0}
+.meter .name small{display:block; color:var(--ink-3); font-size:10.5px; margin-top:1px; line-height:1.4}
+.meter .track{height:3px; border-radius:2px; background:#232329; position:relative}
+.meter .track i{position:absolute; top:0; height:3px; border-radius:2px}
+.meter .track b{position:absolute; top:-2px; width:1px; height:7px; background:#33333b; left:50%}
+.meter .val{
+  font-family:var(--mono); font-size:11.5px; text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+/* --- progress bars (funnel) ----------------------------------------------- */
+.bars{display:flex; flex-direction:column; gap:12px}
+.bar .top{display:flex; align-items:baseline; gap:8px; margin-bottom:5px}
+.bar .top .n{font-size:12.5px}
+.bar .top .q{
+  margin-left:auto; font-family:var(--mono); font-size:12px; font-variant-numeric:tabular-nums;
+}
+.bar .top .pc{font-family:var(--mono); font-size:10px; color:var(--ink-3); width:44px; text-align:right}
+.bar .rail{height:4px; border-radius:2px; background:#202027; overflow:hidden}
+.bar .rail i{display:block; height:4px; border-radius:2px; background:var(--gold)}
+.bar .why{font-size:11px; color:var(--ink-3); margin-top:4px; line-height:1.45}
+/* --- gauge ---------------------------------------------------------------- */
+.gauge{display:flex; gap:14px; align-items:center}
+.gauge svg{flex:0 0 auto}
+.gauge .cap{font-family:var(--mono); font-size:8px; letter-spacing:.15em; fill:var(--ink-3)}
+.gauge .num{font-family:var(--mono); font-size:19px; font-weight:600; fill:var(--ink)}
+.gauge .lede{font-size:14px; font-weight:600; margin-bottom:3px}
+.gauge p{margin:0; font-size:12px; color:var(--ink-2); line-height:1.5}
+/* --- table ---------------------------------------------------------------- */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:12.5px}
+th{
+  font-family:var(--mono); font-size:8px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink-3); text-align:left; font-weight:500; padding:0 10px 7px 0; white-space:nowrap;
+}
+td{padding:7px 10px 7px 0; border-top:1px solid var(--line-soft); white-space:nowrap}
+td.num{font-family:var(--mono); font-variant-numeric:tabular-nums; text-align:right; padding-right:14px}
+th.num{text-align:right; padding-right:14px}
+td.name{white-space:normal; min-width:150px}
+/* --- empty state ---------------------------------------------------------- */
+.empty{
+  border:1px dashed var(--line); border-radius:8px; padding:16px; text-align:left;
+  background:#0f0f12;
+}
+.empty .h{font-size:13px; font-weight:600; margin-bottom:4px}
+.empty p{margin:0; font-size:12px; color:var(--ink-3); line-height:1.5}
+/* --- misc ----------------------------------------------------------------- */
+.pill{
+  font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+  padding:2px 7px; border-radius:4px; border:1px solid currentColor; white-space:nowrap;
+}
+.g{color:var(--good)} .r{color:var(--bad)} .w{color:var(--warn)} .m{color:var(--ink-3)}
+.foot{
+  padding:14px 20px 30px; color:var(--ink-3); font-size:11px; line-height:1.6;
+  border-top:1px solid var(--line); margin-top:6px;
+}
+.foot code{font-family:var(--mono); color:var(--ink-2)}
+[hidden]{display:none !important}
+/* --- responsive ----------------------------------------------------------- */
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .side{
+    position:static; height:auto; flex-direction:row; align-items:center; overflow-x:auto;
+    gap:0; padding:0; border-right:0; border-bottom:1px solid var(--line);
+  }
+  .brand{padding:10px 12px; border-right:1px solid var(--line); flex:0 0 auto}
+  .brand-sub{display:none}
+  .navgroup{flex-direction:row; flex:0 0 auto}
+  .navlabel{display:none}
+  .navitem{
+    border-left:0; border-bottom:2px solid transparent; padding:12px 12px; white-space:nowrap;
+    width:auto;
+  }
+  .navitem[aria-current="true"]{border-bottom-color:var(--gold); background:#17171c}
+  .page{padding:14px}
+  .topbar{padding:10px 14px}
+  .ribbon{padding:8px 14px}
+  .grid{grid-template-columns:1fr}
+  .meter{grid-template-columns:1fr 76px 46px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="side" aria-label="Sections">
+    <div class="brand">
+      <div class="brand-mark">Q</div>
+      <div>
+        <div class="brand-name">Quant Desk</div>
+        <div class="brand-sub">MT5 Research Terminal</div>
       </div>
-      <ul id="pulseBreaches" style="margin:6px 0 0;padding-left:18px;color:var(--red);font:11px var(--mono)"></ul>
-    </div></section>
-  <section class="card c3 kpi"><div class="hd"><span>Today's P&L</span><span id="venue">—</span></div>
-    <div class="bd"><div class="v" id="today">—</div><div class="s" id="srcAge">source —</div></div></section>
-  <section class="card c3 kpi"><div class="hd"><span>Equity</span><span>live</span></div>
-    <div class="bd"><div class="v nt" id="equity">—</div><div class="s" id="balance">balance —</div></div></section>
-  <section class="card c3 kpi"><div class="hd"><span>Growth</span><span>inception</span></div>
-    <div class="bd"><div class="v" id="growth">—</div><div class="s" id="start">start —</div></div></section>
-  <section class="card c3 kpi"><div class="hd"><span>Floating P&L</span><span id="openN">0 open</span></div>
-    <div class="bd"><div class="v" id="openPnl">—</div><div class="s" id="freeMargin">free margin —</div></div></section>
-
-  <section class="card c8"><div class="hd"><span>Equity trajectory</span><span id="stamp">—</span></div>
-    <div class="bd" style="padding-top:8px"><svg id="curve" viewBox="0 0 960 250" preserveAspectRatio="none"></svg></div></section>
-  <section class="card c4"><div class="hd"><span>Book statistics</span><span>closed live trades</span></div>
-    <div class="stats">
-      <div><div class="l">Sharpe (ann.)</div><div class="v" id="sharpe">—</div></div>
-      <div><div class="l">Win rate</div><div class="v" id="winrate">—</div></div>
-      <div><div class="l">Closed</div><div class="v" id="closed">—</div></div>
-      <div><div class="l">Max DD</div><div class="v dn" id="maxdd">—</div></div>
-      <div><div class="l">Current DD</div><div class="v" id="curdd">—</div></div>
-      <div><div class="l">Fills matched</div><div class="v" id="fills">—</div></div>
     </div>
-    <div class="bd"><div class="s" style="color:var(--mut);font-size:10px;font-family:var(--mono)" id="markout">markout —</div></div></section>
+    <div class="navgroup" id="nav-markets">
+      <div class="navlabel">Desk</div>
+    </div>
+    <div class="navgroup" id="nav-research">
+      <div class="navlabel">Research</div>
+    </div>
+  </nav>
 
-  <section class="card c12"><div class="hd"><span>Live readiness</span><span id="readyWhy">—</span></div>
-    <div class="bd"><div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
-      <div class="v" id="readyStatus" style="font-family:var(--mono);font-weight:700;font-size:26px">—</div>
-      <div id="readyBar" style="flex:1;min-width:220px"></div></div>
-      <ul id="readyBlock" style="margin:14px 0 0;padding-left:18px;color:var(--mut);font-size:12px"></ul></div></section>
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Desk</h1>
+      <span class="cap" id="page-cap">live operator read</span>
+      <span class="spacer"></span>
+      <span class="clock" id="clock">--:--:--<small>UTC</small></span>
+      <span class="stamp" id="built">built —</span>
+      <span class="chip" id="scope">MT5 · FUSION</span>
+      <button class="chip gold" type="button" id="refresh">Refresh</button>
+    </div>
 
-  <section class="card c12"><div class="hd"><span>Pipeline — one door for everything</span><span id="obsNote">discover → certify → forward → live</span></div>
-    <div class="funnel" id="funnel"></div></section>
+    <div class="ribbon is-warn" id="ribbon">
+      <span class="dot"></span>
+      <span id="ribbon-text">READING STATE…</span>
+      <span class="note" id="ribbon-note"></span>
+    </div>
 
-  <section class="card c8"><div class="hd"><span>Daily gains</span><span>last 14 sessions</span></div>
-    <div class="days" id="days"></div></section>
-  <section class="card c4"><div class="hd"><span>Live decay monitor</span><span>L1.59 fade/retire</span></div>
-    <div class="scroll"><table><thead><tr><th>Sleeve</th><th>Verdict</th><th class="r">t</th><th class="r">Exp R</th></tr></thead><tbody id="decay"></tbody></table></div></section>
+    <div class="page" id="page"></div>
 
-  <section class="card c12"><div class="hd"><span>Forward clocks</span><span id="fwdCount">—</span></div>
-    <div class="scroll"><table><thead><tr><th>Sleeve</th><th>Status</th><th class="r">Fwd obs</th><th class="r">Hist</th><th class="r">t</th><th class="r">Exp R</th><th style="width:26%">14-day window</th></tr></thead><tbody id="forward"></tbody></table></div></section>
-
-  <section class="card c6"><div class="hd"><span>Certified survivors</span><span>original ten gates</span></div>
-    <div class="scroll"><table><thead><tr><th>Sleeve</th><th class="r">DSR</th><th class="r">WF Sharpe</th><th class="r">PBO</th><th class="r">SPA p</th></tr></thead><tbody id="survivors"></tbody></table></div></section>
-  <section class="card c6"><div class="hd"><span>Live positions</span><span>broker-reported only</span></div>
-    <div class="scroll"><table><thead><tr><th>Symbol</th><th>Side</th><th class="r">Volume</th><th class="r">Price</th><th class="r">P&L</th></tr></thead><tbody id="positions"></tbody></table></div></section>
-</div>
-<div class="foot">edge is earned · reality outranks simulation · compound what survives</div>
+    <div class="foot">
+      Research and operator telemetry only. Missing values read <code>UNMEASURED</code> rather than
+      zero — an absent measurement is never a passing one. Shadow lanes hold no order authority.
+      <br>Source <code>web/desk_state.json</code>, rebuilt by <code>scripts/build_zentech_state.py</code>
+      as the closing leg of every hourly cycle.
+    </div>
+  </div>
 </div>
 
 <script>
-/* ============================ THE OBSIDIAN BRAIN ============================
-   A 3D particle brain rendered on vanilla canvas: two cortical lobes with a
-   sulci-wrinkled shell, cerebellum and stem, ~2300 obsidian shards lit with a
-   violet rim, k-nearest synapse lines, and live signal pulses racing the
-   edges. Drag to spin (inertia), idle auto-rotation, click fires a burst from
-   the nearest node. No libraries.                                           */
-(()=>{
-const cv=document.getElementById('brain'),cx=cv.getContext('2d');
-let W=0,H=0,DPR=1;
-function size(){DPR=Math.min(devicePixelRatio||1,1.6);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0)}
-size();addEventListener('resize',size);
+/* ==========================================================================
+   DATA. Same-origin JSON when it is there, embedded snapshot when it is not.
+   ========================================================================== */
+const SNAPSHOT = window.__DESK_SNAPSHOT__ || null;
+let D = SNAPSHOT || {};
+let LIVE = false;
 
-/* --- geometry: rejection-sample a brain-ish implicit shape, biased to shell --- */
-const rand=(a,b)=>a+Math.random()*(b-a);
-function wrinkle(x,y,z){ // cortical folds
-  return .062*Math.sin(9*x+2.1*Math.sin(5*z))*Math.sin(8*y+1.7*Math.sin(6*x))
-       + .045*Math.sin(13*z+3*Math.sin(7*y));
+/* --- helpers -------------------------------------------------------------- */
+const $ = (s, r) => (r || document).querySelector(s);
+const el = (t, c, txt) => { const n = document.createElement(t); if (c) n.className = c;
+  if (txt !== undefined && txt !== null) n.textContent = txt; return n; };
+const has = v => v !== null && v !== undefined && v !== "" && v !== "UNMEASURED";
+const num = (v, d = 0) => has(v) && isFinite(v)
+  ? Number(v).toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d}) : "—";
+const money = v => has(v) && isFinite(v) ? "$" + num(v, 2) : "—";
+function dur(sec){
+  if (!has(sec) || !isFinite(sec)) return "—";
+  const s = Math.abs(sec);
+  if (s < 90) return Math.round(s) + "s";
+  if (s < 5400) return (s / 60).toFixed(0) + "m";
+  if (s < 172800) return (s / 3600).toFixed(1) + "h";
+  return (s / 86400).toFixed(1) + "d";
 }
-function inside(x,y,z){ // union: two lobes + cerebellum + stem  (unit-ish space)
-  const lob=(sx)=>{const dx=(x-sx*.34)/ .78, dy=y/ .62, dz=z/ 1.0;
-    const taper=1-.18*Math.max(0,z*1.1);            // narrower toward the front
-    const r=dx*dx/(taper*taper)+dy*dy+dz*dz;
-    return r + wrinkle(x*1.2+sx,y*1.2,z*1.2) < 1;};
-  const cere=()=>{const dx=x/.42, dy=(y+.52)/.30, dz=(z+.62)/.42;return dx*dx+dy*dy+dz*dz<1};
-  const stem=()=>{const dx=x/.16, dz=(z+.48)/.20;return dx*dx+dz*dz<1&&y<-.42&&y>-.95};
-  return lob(1)||lob(-1)||cere()||stem();
+const esc = s => String(s == null ? "" : s);
+
+/* --- sections ------------------------------------------------------------- */
+const ICONS = {
+  desk:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.8" y="1.8" width="5" height="5" rx="1"/><rect x="9.2" y="1.8" width="5" height="5" rx="1"/><rect x="1.8" y="9.2" width="5" height="5" rx="1"/><rect x="9.2" y="9.2" width="5" height="5" rx="1"/></svg>',
+  clock:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.6V8l2.4 1.6"/></svg>',
+  funnel:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.8 2.6h12.4L9.4 8v5.4L6.6 12V8z"/></svg>',
+  pick:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.2 13.8 8 2.4l5.8 11.4"/><path d="M4.6 9.6h6.8"/></svg>',
+  web:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c1.7 1.9 2.6 4 2.6 6.2S9.7 12.3 8 14.2C6.3 12.3 5.4 10.2 5.4 8S6.3 3.7 8 1.8z"/></svg>',
+  seat:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="2.2" width="11.6" height="8" rx="1.2"/><path d="M5 13.8h6"/></svg>'
+};
+const SECTIONS = [
+  {id:"desk",     group:"markets",  icon:"desk",   label:"Desk",           cap:"live operator read"},
+  {id:"clocks",   group:"markets",  icon:"clock",  label:"Forward Clocks", cap:"what is actually maturing"},
+  {id:"pipeline", group:"research", icon:"funnel", label:"Pipeline",       cap:"docket to certificate"},
+  {id:"miners",   group:"research", icon:"pick",   label:"Miners",         cap:"what each one converts"},
+  {id:"breadth",  group:"research", icon:"web",    label:"Breadth",        cap:"independent bets in the book"},
+  {id:"seats",    group:"research", icon:"seat",   label:"Seats & Host",   cap:"can the work even start"}
+];
+let current = "desk";
+
+/* ==========================================================================
+   COMPONENTS
+   ========================================================================== */
+function card(title, src){
+  const c = el("div", "card"), h = el("header");
+  h.appendChild(el("h3", null, title));
+  if (src) h.appendChild(el("span", "src", src));
+  c.appendChild(h);
+  const b = el("div", "body"); c.appendChild(b);
+  return {node: c, body: b};
 }
-const N=2300, P=[];
-while(P.length<N){
-  let x=rand(-1.25,1.25),y=rand(-1,.85),z=rand(-1.15,1.15);
-  if(!inside(x,y,z))continue;
-  // bias outward to the shell so the surface reads as cortex
-  const m=Math.hypot(x,y,z)||1e-9,push=Math.pow(Math.random(),.28);
-  let f=1;for(let s=1;s<1.35;s+=.02){if(!inside(x/m*(m*s)||0,y/m*(m*s),z/m*(m*s))){f=s;break}}
-  const k=1+(f-1)*push*.92;
-  P.push({x:x*k,y:y*k,z:z*k,tw:Math.random()*6.28,ts:rand(.4,1.4)});
+function verdict(tone, score, unit, grade, label, text){
+  const v = el("div", "verdict is-" + tone);
+  const s = el("div", "score"); s.appendChild(document.createTextNode(score));
+  if (unit) s.appendChild(el("span", "unit", unit));
+  v.appendChild(s);
+  const t = el("div", "txt");
+  if (grade) t.appendChild(el("div", "grade", grade));
+  t.appendChild(el("span", "k", label));
+  t.appendChild(el("p", null, text));
+  v.appendChild(t); return v;
 }
-/* --- k-nearest synapses via spatial hash --- */
-const CELL=.22,hash=new Map(),key=(a,b,c)=>a+'|'+b+'|'+c;
-P.forEach((p,i)=>{const k=key(Math.floor(p.x/CELL),Math.floor(p.y/CELL),Math.floor(p.z/CELL));(hash.get(k)||hash.set(k,[]).get(k)).push(i)});
-const E=[],adj=Array.from({length:N},()=>[]);
-P.forEach((p,i)=>{
-  const gx=Math.floor(p.x/CELL),gy=Math.floor(p.y/CELL),gz=Math.floor(p.z/CELL),near=[];
-  for(let a=-1;a<2;a++)for(let b=-1;b<2;b++)for(let c=-1;c<2;c++){
-    const cell=hash.get(key(gx+a,gy+b,gz+c));if(cell)for(const j of cell){if(j<=i)continue;
-      const q=P[j],d=(p.x-q.x)**2+(p.y-q.y)**2+(p.z-q.z)**2;if(d<.055)near.push([d,j])}}
-  near.sort((u,v)=>u[0]-v[0]);
-  for(let t=0;t<Math.min(2,near.length);t++){const j=near[t][1];E.push([i,j]);adj[i].push(j);adj[j].push(i)}
-});
-/* --- pulses: signals that walk the synapse graph --- */
-const pulses=[];
-function spawnPulse(at){
-  const start=at??(Math.random()*N)|0;
-  pulses.push({i:start,j:adj[start][0]??start,t:0,life:rand(9,16),hue:Math.random()<.75?0:1});
-  if(pulses.length>26)pulses.shift();
+function triple(rows){
+  const t = el("div", "triple");
+  rows.forEach(([k, v, tone]) => {
+    const d = el("div");
+    d.appendChild(el("span", "k", k));
+    d.appendChild(el("div", "v " + (tone || ""), v));
+    t.appendChild(d);
+  });
+  return t;
 }
-for(let i=0;i<14;i++)spawnPulse();
-setInterval(()=>spawnPulse(),700);
-/* --- interaction --- */
-let ry=.6,rx=-.12,vy=.0032,vx=0,drag=null;
-cv.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};cv.classList.add('grab');cv.setPointerCapture(e.pointerId)});
-cv.addEventListener('pointermove',e=>{if(!drag)return;vy=(e.clientX-drag.x)*.00028;vx=(e.clientY-drag.y)*.00022;ry+=(e.clientX-drag.x)*.0052;rx+=(e.clientY-drag.y)*.0038;drag={x:e.clientX,y:e.clientY}});
-addEventListener('pointerup',()=>{drag=null;cv.classList.remove('grab')});
-cv.addEventListener('click',e=>{for(let b=0;b<5;b++)spawnPulse()});
-/* --- pre-rendered glow sprites --- */
-function sprite(color){const s=document.createElement('canvas');s.width=s.height=32;const g=s.getContext('2d');
-  const r=g.createRadialGradient(16,16,0,16,16,16);r.addColorStop(0,color);r.addColorStop(.35,color.replace('1)','.5)'));r.addColorStop(1,color.replace('1)','0)'));
-  g.fillStyle=r;g.fillRect(0,0,32,32);return s}
-const spV=sprite('rgba(167,139,250,1)'),spM=sprite('rgba(232,121,249,1)'),spG=sprite('rgba(0,255,156,1)'),spC=sprite('rgba(103,232,249,1)');
-/* --- render --- */
-const proj=new Array(N);
-function frame(t){
-  const time=t*.001;
-  if(!drag){ry+=vy;rx+=vx;vx*=.97;vy=Math.sign(vy||1)*Math.max(Math.abs(vy)*.985,.0022)}
-  rx=Math.max(-.9,Math.min(.9,rx));
-  const cy=Math.cos(ry),sy=Math.sin(ry),cxr=Math.cos(rx),sxr=Math.sin(rx);
-  const scale=Math.min(W,H*1.35)*.42,ox=W/2,oy=H*.52;
-  cx.clearRect(0,0,W,H);
-  cx.globalCompositeOperation='lighter';
-  for(let i=0;i<N;i++){const p=P[i];
-    let x=p.x*cy+p.z*sy, z=-p.x*sy+p.z*cy, y=p.y*cxr-z*sxr; z=p.y*sxr+z*cxr;
-    const d=1/(1+z*.42), sx2=ox+x*scale*d, sy2=oy+y*scale*d;
-    proj[i]={x:sx2,y:sy2,z,d};
+function defs(rows){
+  const d = el("div", "defs");
+  rows.forEach(([k, v, why]) => {
+    const r = el("div");
+    r.appendChild(el("span", "k", k));
+    r.appendChild(el("div", "v", v));
+    if (why) r.appendChild(el("div", "why", why));
+    d.appendChild(r);
+  });
+  return d;
+}
+/* Signed meter: centred zero, magnitude scaled to `max`. */
+function meters(rows){
+  const m = el("div", "meters");
+  rows.forEach(([name, sub, value, display, max, tone]) => {
+    const r = el("div", "meter");
+    const n = el("div", "name", name);
+    if (sub) n.appendChild(el("small", null, sub));
+    r.appendChild(n);
+    const track = el("div", "track");
+    track.appendChild(el("b"));
+    const frac = Math.max(-1, Math.min(1, (value || 0) / (max || 1)));
+    const i = el("i");
+    const w = Math.abs(frac) * 50;
+    if (frac >= 0){ i.style.left = "50%"; i.style.width = w + "%"; }
+    else { i.style.right = "50%"; i.style.width = w + "%"; }
+    i.style.background = tone === "bad" ? "var(--bad)" : tone === "warn" ? "var(--warn)" : "var(--good)";
+    track.appendChild(i);
+    r.appendChild(track);
+    r.appendChild(el("div", "val " + (tone === "bad" ? "r" : tone === "warn" ? "w" : "g"), display));
+    m.appendChild(r);
+  });
+  return m;
+}
+function bars(rows, total){
+  const b = el("div", "bars");
+  rows.forEach(([name, qty, why]) => {
+    const r = el("div", "bar"), top = el("div", "top");
+    top.appendChild(el("span", "n", name));
+    top.appendChild(el("span", "q", has(qty) ? num(qty) : "—"));
+    const pc = total ? (100 * (qty || 0) / total) : 0;
+    top.appendChild(el("span", "pc", total && has(qty) ? pc.toFixed(pc < 1 && pc > 0 ? 2 : 1) + "%" : ""));
+    r.appendChild(top);
+    const rail = el("div", "rail"), i = el("i");
+    i.style.width = Math.max(qty ? 0.4 : 0, Math.min(100, pc)) + "%";
+    rail.appendChild(i); r.appendChild(rail);
+    if (why) r.appendChild(el("div", "why", why));
+    b.appendChild(r);
+  });
+  return b;
+}
+function gauge(value, max, label, lede, text, tone){
+  const g = el("div", "gauge");
+  const R = 30, C = 2 * Math.PI * R;
+  const frac = has(value) && max ? Math.max(0, Math.min(1, value / max)) : 0;
+  const colour = tone === "bad" ? "#f87171" : tone === "warn" ? "#d9a441" : "#34d399";
+  const svg = `<svg width="76" height="76" viewBox="0 0 76 76" role="img" aria-label="${esc(label)} ${has(value) ? value : "unmeasured"}">
+    <circle cx="38" cy="38" r="${R}" fill="none" stroke="#232329" stroke-width="5"/>
+    <circle cx="38" cy="38" r="${R}" fill="none" stroke="${colour}" stroke-width="5"
+      stroke-linecap="round" stroke-dasharray="${(frac * C).toFixed(1)} ${C.toFixed(1)}"
+      transform="rotate(-90 38 38)"/>
+    <text class="num" x="38" y="37" text-anchor="middle" dominant-baseline="middle">${has(value) ? value : "—"}</text>
+    <text class="cap" x="38" y="50" text-anchor="middle">${esc(label)}</text>
+  </svg>`;
+  g.innerHTML = svg;
+  const t = el("div");
+  t.appendChild(el("div", "lede", lede));
+  t.appendChild(el("p", null, text));
+  g.appendChild(t); return g;
+}
+function empty(head, body){
+  const e = el("div", "empty");
+  e.appendChild(el("div", "h", head));
+  e.appendChild(el("p", null, body));
+  return e;
+}
+function kpis(rows){
+  const k = el("div", "kpis");
+  rows.forEach(([label, value, sub, tone]) => {
+    const d = el("div", "kpi");
+    d.appendChild(el("span", "k", label));
+    d.appendChild(el("span", "v " + (tone || ""), value));
+    d.appendChild(el("span", "s", sub || ""));
+    k.appendChild(d);
+  });
+  return k;
+}
+
+/* ==========================================================================
+   PAGES
+   ========================================================================== */
+function boxTone(st){
+  return st === "REPORTING" ? "good" : st === "LATE" ? "warn" : st === "SILENT" ? "bad" : "warn";
+}
+
+function pageDesk(){
+  const out = [];
+  const h = D.health || {}, box = h.box || {}, a = D.account || {}, p = D.pipeline || {}, s = D.stats || {};
+  out.push(kpis([
+    ["Equity", has(a.equity) ? money(a.equity) : "UNMEASURED", a.venue && has(a.venue) ? a.venue : "no terminal reachable", has(a.equity) ? "" : "m"],
+    ["Today P&L", has(a.today_pnl) ? money(a.today_pnl) : "—", "closed + floating", (a.today_pnl || 0) >= 0 ? "g" : "r"],
+    ["Certificates", num(p.certified ?? (D.breadth?.book_breadth?.certificates)), "cleared all ten gates"],
+    ["Promotion-ready", num(p.promotion_ready), "matured and above gate", p.promotion_ready ? "g" : "m"],
+    ["Forward clocks", num(p.forward_clocks), "sleeves accruing evidence", p.forward_clocks ? "g" : "m"],
+    ["Docket", num(p.docket_candidates), "candidates awaiting judgement"]
+  ]));
+
+  const g = el("div", "grid");
+
+  /* box liveness — the qualifier on every other number here */
+  const c1 = card("Box liveness", "shadow_health");
+  const silentH = has(box.silent_seconds) ? (box.silent_seconds / 3600) : null;
+  c1.body.appendChild(verdict(boxTone(box.status),
+    silentH === null ? "—" : silentH.toFixed(1), silentH === null ? "" : "h",
+    box.status === "REPORTING" ? "Reporting / current" :
+    box.status === "LATE" ? "Late / degraded" :
+    box.status === "SILENT" ? "Silent / not current" : "Unmeasured",
+    "SINCE LAST REPORT",
+    box.why || "the box has not published a readable clock, so this view cannot tell a live desk from a photograph of one"));
+  c1.body.appendChild(triple([
+    ["STATE", box.status || "UNMEASURED", boxTone(box.status) === "good" ? "g" : boxTone(box.status) === "warn" ? "w" : "r"],
+    ["LATE AFTER", dur(box.late_after_seconds), "m"],
+    ["SILENT AFTER", dur(box.silent_after_seconds), "m"]
+  ]));
+  const per = box.per_report || {};
+  const keys = Object.keys(per);
+  if (keys.length){
+    const worst = Math.max(...keys.map(k => per[k].age_seconds || 0), 1);
+    c1.body.appendChild(meters(keys.map(k => {
+      const r = per[k], age = r.age_seconds;
+      return [k, r.at ? "last wrote " + r.at.replace("T", " ").slice(0, 16) : "no clock in this file",
+        has(age) ? -age : 0, has(age) ? dur(age) : "UNMEAS", worst,
+        !has(age) ? "warn" : r.status === "FRESH" ? "good" : "bad"];
+    })));
   }
-  cx.lineWidth=1;
-  for(const [i,j] of E){const a=proj[i],b=proj[j];const dep=(a.z+b.z)/2;
-    const al=Math.max(0,.16-dep*.10);if(al<=0)continue;
-    cx.strokeStyle=`rgba(150,120,255,${al})`;cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke()}
-  for(let i=0;i<N;i++){const q=proj[i],p=P[i];
-    const tw=.7+.3*Math.sin(time*p.ts+p.tw);
-    const s=(3.4+q.z*-1.6)*q.d*tw;if(s<=0)continue;
-    const sp=(i%13===0)?spM:spV;
-    cx.globalAlpha=Math.max(.06,Math.min(.9,(.55-q.z*.32)*tw));
-    cx.drawImage(sp,q.x-s/2,q.y-s/2,s,s)}
-  /* pulses */
-  for(const pl of pulses){
-    pl.t+=.06;if(pl.t>=1){pl.i=pl.j;const nx=adj[pl.i];pl.j=nx.length?nx[(Math.random()*nx.length)|0]:pl.i;pl.t=0;pl.life--}
-    if(pl.life<=0)continue;
-    const a=proj[pl.i],b=proj[pl.j];if(!a||!b)continue;
-    const x=a.x+(b.x-a.x)*pl.t,y=a.y+(b.y-a.y)*pl.t;
-    const sp=pl.hue?spC:spG,s=9*a.d;
-    cx.globalAlpha=.9;cx.drawImage(sp,x-s/2,y-s/2,s,s);
-    cx.globalAlpha=.35;cx.drawImage(sp,x-s,y-s,s*2,s*2);
+  g.appendChild(c1.node);
+
+  /* account */
+  const c2 = card("Account", has(a.venue) ? a.venue : "no terminal");
+  if (has(a.equity)){
+    c2.body.appendChild(defs([
+      ["EQUITY", money(a.equity), "balance " + money(a.balance) + " · floating " + money(a.open_pnl)],
+      ["GROWTH", has(a.growth_pct) ? a.growth_pct.toFixed(2) + "%" : "—", "against starting capital " + money(a.starting_capital)],
+      ["MARGIN", money(a.margin), "free " + money(a.free_margin)],
+      ["FEED AGE", dur(a.source_age_seconds), "the account read lags its writer by design"]
+    ]));
+  } else {
+    c2.body.appendChild(empty("No account figure, and none invented",
+      "This host has no MT5 terminal, so it is not entitled to publish an equity number. " +
+      "A machine that cannot see the account must not print one — the last time a terminal-less " +
+      "writer filled the gap it published a figure 28× the real balance and the equity curve " +
+      "recorded it 32 times."));
   }
-  cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-})();
-</script>
+  c2.body.appendChild(triple([
+    ["CLOSED TRADES", num(s.closed_trades), s.closed_trades ? "" : "m"],
+    ["WIN RATE", has(s.win_rate) ? (100 * s.win_rate).toFixed(1) + "%" : "—", "m"],
+    ["MAX DD", has(s.max_dd_r) ? s.max_dd_r.toFixed(1) + "R" : "—", "m"]
+  ]));
+  g.appendChild(c2.node);
 
-<script>
-const $=id=>document.getElementById(id);
-const n=(v,d=2)=>v==null?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:d});
-const money=(v,c)=>v==null?'—':new Intl.NumberFormat(undefined,{style:'currency',currency:c&&c!=='UNMEASURED'?c:'USD'}).format(v);
-const tone=(el,v)=>{el.classList.remove('up','dn');if(v!=null&&Math.abs(v)>1e-12)el.classList.add(v>0?'up':'dn')};
-function rows(el,data,render,span){el.innerHTML=data.length?data.map(render).join(''):`<tr><td class="empty" colspan="${span}">No measured rows</td></tr>`}
-setInterval(()=>{$('clock').textContent=new Date().toUTCString().replace('GMT','UTC')},1000);
-
-function chart(values){
-  const svg=$('curve');
-  if(!values||values.length<2){svg.innerHTML='<text x="480" y="130" text-anchor="middle" fill="#7b7f96" font-size="12" letter-spacing="4">EQUITY CURVE — AWAITING SAMPLES</text>';return}
-  const lo=Math.min(...values),hi=Math.max(...values),r=(hi-lo)||1;
-  const X=i=>i/(values.length-1)*960, Y=v=>232-(v-lo)/r*205;
-  let d=`M ${X(0)} ${Y(values[0])}`;
-  for(let i=1;i<values.length;i++){const x0=X(i-1),x1=X(i),xm=(x0+x1)/2;d+=` C ${xm} ${Y(values[i-1])}, ${xm} ${Y(values[i])}, ${x1} ${Y(values[i])}`}
-  const last=values[values.length-1], up=last>=values[0];
-  const col=up?'#00ff9c':'#ff3b5c';
-  svg.innerHTML=`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop stop-color="${col}" stop-opacity=".26"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient>
-    <filter id="glow"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-    <path d="${d} L 960 250 L 0 250 Z" fill="url(#g)"/>
-    <path d="${d}" fill="none" stroke="${col}" stroke-width="2.4" filter="url(#glow)"/>
-    <circle cx="${X(values.length-1)}" cy="${Y(last)}" r="4.5" fill="${col}" filter="url(#glow)">
-      <animate attributeName="r" values="3.5;6;3.5" dur="2s" repeatCount="indefinite"/></circle>`;
+  out.push(g);
+  return out;
 }
 
+function pageClocks(){
+  const out = [], p = D.pipeline || {}, rows = p.forward_detail || [];
+  out.push(kpis([
+    ["Forward clocks", num(p.forward_clocks), "running now"],
+    ["Forward obs", num(p.forward_observations), "trades that COUNT toward maturity", p.forward_observations ? "g" : "r"],
+    ["Historical obs", num(p.historical_observations), "selection-era; can never mature a sleeve", "m"],
+    ["Promotion-ready", num(p.promotion_ready), "matured and above gate", p.promotion_ready ? "g" : "m"],
+    ["Live", num(p.live), "carrying capital", p.live ? "g" : "m"]
+  ]));
+  const g = el("div", "grid");
+  const c = card("Sleeves on a forward clock", "shadow lanes");
+  if (rows.length){
+    const w = el("div", "tablewrap"), t = el("table");
+    t.innerHTML = "<thead><tr><th>Sleeve</th><th>Status</th><th class='num'>Day</th>" +
+      "<th class='num'>n</th><th class='num'>Exp R</th></tr></thead>";
+    const tb = el("tbody");
+    rows.forEach(r => {
+      const tr = el("tr");
+      tr.appendChild(el("td", "name", r.name));
+      const st = el("td"); const pill = el("span", "pill " + (/PROMOTION/.test(r.status || "") ? "g" : "m"), r.status || "—");
+      st.appendChild(pill); tr.appendChild(st);
+      tr.appendChild(el("td", "num", (r.days ?? "—") + " / 14"));
+      tr.appendChild(el("td", "num", num(r.n)));
+      tr.appendChild(el("td", "num", has(r.expectancy_r) ? r.expectancy_r.toFixed(3) : "—"));
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb); w.appendChild(t); c.body.appendChild(w);
+  } else {
+    c.body.appendChild(empty("No sleeve is on a forward clock",
+      "Nothing is accruing the evidence promotion requires. Until the desk publishes the lane " +
+      "state files, this view cannot distinguish a quiet market from a lane that stopped writing — " +
+      "so it claims neither."));
+  }
+  c.body.appendChild(defs([
+    ["MATURITY", "n ≥ 50, or 14 days with n ≥ 20", "the scalp lane's rule; the main lane needs 14 days or n ≥ 50"],
+    ["PROMOTION", "expectancy > 0.05R and max drawdown > −25R", "both, on FORWARD observations only"],
+    ["WHY HISTORICAL DOES NOT COUNT", num(p.historical_observations) + " observations excluded",
+      "they come from the window the sleeve was SELECTED in, so counting them would let a sleeve mature on the evidence that chose it"]
+  ]));
+  g.appendChild(c.node);
+  out.push(g);
+  return out;
+}
+
+function pagePipeline(){
+  const out = [], p = D.pipeline || {};
+  const docket = p.docket_candidates || 0;
+  out.push(kpis([
+    ["Docket", num(p.docket_candidates), "awaiting judgement"],
+    ["Backtested", num(p.discovered_backtested), "reached a backtest"],
+    ["Judged last pass", num(p.gauntlet_last_judged), "the gauntlet's last run"],
+    ["Unmeasured", num(p.gauntlet_last_unmeasured), "could not be judged", p.gauntlet_last_unmeasured ? "w" : "m"],
+    ["Certified", num(p.certified ?? (D.breadth?.book_breadth?.certificates)), "cleared all ten gates"],
+    ["Unrunnable", num(p.certificates_unrunnable), "certified but not executable", p.certificates_unrunnable ? "r" : "m"]
+  ]));
+  const g = el("div", "grid");
+  const c = card("Conversion, stage by stage", "gauntlet");
+  c.body.appendChild(bars([
+    ["Docket candidates", p.docket_candidates, "everything mined and compiled that has not yet been judged"],
+    ["Reached a backtest", p.discovered_backtested, "the step where most corpora die"],
+    ["Judged last pass", p.gauntlet_last_judged, "one gauntlet run's throughput"],
+    ["Certified", p.certified ?? (D.breadth?.book_breadth?.certificates), "cleared all ten statistical gates"],
+    ["On a forward clock", p.forward_clocks, "accruing out-of-sample evidence"],
+    ["Live", p.live, "carrying capital"]
+  ], docket || 1));
+  g.appendChild(c.node);
+
+  const c2 = card("Executability", "shadow_spec");
+  if (p.certificates_unrunnable){
+    c2.body.appendChild(verdict("bad", p.certificates_unrunnable, "", "Certified but not executable",
+      "UNRUNNABLE CERTIFICATES", p.unrunnable_reason || ""));
+  } else {
+    c2.body.appendChild(verdict("good", "0", "", "Every certificate carries its parameterisation",
+      "UNRUNNABLE CERTIFICATES",
+      "A certificate without `params` in its shadow_spec names a mechanism nothing can run. " +
+      "Sealing one is indistinguishable downstream from never having certified it."));
+  }
+  c2.body.appendChild(defs([
+    ["TEN GATES", "fixed and permanent",
+      "deflated Sharpe, walk-forward, PBO, reality-check SPA, stress costs and the rest — no gate is ever loosened to admit a candidate"],
+    ["DOCKET DEPTH", num(p.docket_candidates) + " candidates",
+      "throughput, not supply, is the binding constraint at this depth"]
+  ]));
+  g.appendChild(c2.node);
+  out.push(g);
+  return out;
+}
+
+function pageMiners(){
+  const out = [], b = D.breadth || {}, miners = b.miners || {}, zero = b.zero_yield_miners || [];
+  const names = Object.keys(miners);
+  const totalDisc = names.reduce((a, k) => a + (miners[k].discoveries || 0), 0);
+  out.push(kpis([
+    ["Miners with rows", num(names.length), "in the last " + (b.window_days || 14) + " days"],
+    ["Zero-yield", num(zero.length), "rows but no survivor", zero.length ? "r" : "g"],
+    ["Discoveries", num(totalDisc), "raw rows produced"],
+    ["Survivors", num(names.reduce((a, k) => a + (miners[k].survivors || 0), 0)), "cleared the gates", "m"],
+    ["Yield rate", names.length ? (100 * (names.length - zero.length) / names.length).toFixed(0) + "%" : "—", "miners that converted anything"]
+  ]));
+  const g = el("div", "grid");
+
+  const c = card("Verdict", "miner_conversion");
+  const rate = names.length ? (names.length - zero.length) / names.length : null;
+  c.body.appendChild(verdict(zero.length > names.length / 2 ? "bad" : rate > 0.5 ? "good" : "warn",
+    num(zero.length), " / " + num(names.length),
+    "Producing rows, converting nothing",
+    "ZERO-YIELD MINERS",
+    "A miner with discoveries and no survivor across the whole window is producing noise at cost. " +
+    "Volume is not breadth: two writeups naming the same session-range breakout differently are one " +
+    "discovery, so rows are deduplicated by economic exposure — family, symbol, session — never by title."));
+  const top = names.map(k => [k, miners[k]])
+    .sort((a, bb) => (bb[1].discoveries || 0) - (a[1].discoveries || 0)).slice(0, 12);
+  const w = el("div", "tablewrap"), t = el("table");
+  t.innerHTML = "<thead><tr><th>Miner</th><th class='num'>Rows</th><th class='num'>Distinct</th>" +
+    "<th class='num'>Novel</th><th class='num'>Tested</th><th class='num'>Surv</th><th class='num'>Dup</th></tr></thead>";
+  const tb = el("tbody");
+  top.forEach(([k, m]) => {
+    const tr = el("tr");
+    tr.appendChild(el("td", "name", k));
+    tr.appendChild(el("td", "num", num(m.discoveries)));
+    tr.appendChild(el("td", "num", num(m.distinct_mechanisms)));
+    tr.appendChild(el("td", "num", num(m.novel_mechanisms)));
+    tr.appendChild(el("td", "num", num(m.reached_backtest)));
+    const sv = el("td", "num " + (m.survivors ? "g" : "r"), num(m.survivors));
+    tr.appendChild(sv);
+    tr.appendChild(el("td", "num m", has(m.duplicate_rate) ? (100 * m.duplicate_rate).toFixed(1) + "%" : "—"));
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb); w.appendChild(t); c.body.appendChild(w);
+  g.appendChild(c.node);
+  out.push(g);
+  return out;
+}
+
+function pageBreadth(){
+  const out = [], b = (D.breadth || {}).book_breadth || {};
+  const conc = b.family_concentration, missing = b.missing_families || [];
+  const fams = b.families || {};
+  out.push(kpis([
+    ["Certificates", num(b.certificates), "in the book"],
+    ["Families held", num(Object.keys(fams).length), "distinct mechanisms"],
+    ["Largest family", b.largest_family || "—", has(conc) ? (100 * conc).toFixed(0) + "% of the book" : "no book to concentrate"],
+    ["Target families absent", num(missing.length), "each would add an independent bet", missing.length ? "w" : "g"]
+  ]));
+  const g = el("div", "grid");
+
+  const c = card("Concentration", "book breadth");
+  c.body.appendChild(gauge(has(conc) ? Math.round(100 * conc) : null, 100, "PCT",
+    has(conc) ? (conc > 0.8 ? "One bet, wearing many names" : "Diversified") : "No book to measure",
+    has(conc)
+      ? "The share of certificates in the single largest family. Near 100% means every certificate is the same bet, and no amount of mining inside that family can raise the number of independent bets."
+      : "Concentration is undefined with no certificates. It becomes the binding number the moment the book is non-empty — which is why it is on this page before it has a value.",
+    has(conc) ? (conc > 0.8 ? "bad" : "good") : "warn"));
+  g.appendChild(c.node);
+
+  const c2 = card("Missing independent bets", "ordered by independence");
+  c2.body.appendChild(defs(missing.slice(0, 8).map(m => [
+    m.family.replace(/_/g, " ").toUpperCase() + " · " + (m.state === "REACHABLE" ? "REACHABLE" : "NO GENERATOR"),
+    m.why, "needs: " + m.needs
+  ])));
+  g.appendChild(c2.node);
+  out.push(g);
+  return out;
+}
+
+function pageSeats(){
+  const out = [], sw = D.stall_watch || {}, r = D.readiness || {}, h = D.health || {};
+  const procs = sw.procs || {};
+  const fails = Object.keys(procs).filter(k => /^fail\./.test(k));
+  out.push(kpis([
+    ["Free disk", has(sw.free_gb) ? sw.free_gb.toFixed(1) + " GB" : "—", "on the desk box", (sw.free_gb || 0) < 5 ? "r" : "g"],
+    ["Low-memory strikes", num(sw.low_mem_strikes), "consecutive", sw.low_mem_strikes ? "r" : "g"],
+    ["Failing tasks", num(fails.length), "reported by stall watch", fails.length ? "r" : "g"],
+    ["Readiness", r.status || "UNMEASURED", "live-capital assessment", r.status === "READY" ? "g" : "m"],
+    ["Newest H1 bar", h.newest_h1_file ? h.newest_h1_file.slice(0, 10) : "—", "freshest chart on disk"]
+  ]));
+  const g = el("div", "grid");
+  const c = card("Host and seats", "stall_watch");
+  if (Object.keys(procs).length){
+    c.body.appendChild(defs(Object.keys(procs).slice(0, 8).map(k => [
+      k.replace(/^fail\./, "").toUpperCase(),
+      /^fail\./.test(k) ? "FAILING" : "running",
+      JSON.stringify(procs[k]).slice(0, 150)
+    ])));
+  } else {
+    c.body.appendChild(empty("Nothing reported", "The stall watch has published no process table."));
+  }
+  g.appendChild(c.node);
+
+  const c2 = card("Live-capital readiness", "readiness");
+  c2.body.appendChild(verdict(r.status === "READY" ? "good" : "warn", r.status === "READY" ? "✓" : "—", "",
+    r.status || "UNMEASURED", "BLOCKING",
+    (r.blocking || ["no assessment recorded"]).join(" · ")));
+  c2.body.appendChild(defs([
+    ["HEAT FLOOR", "20% nominal, flat",
+      "never reduced by an evidence-readiness multiplier; the floor is a floor"],
+    ["ADMISSION", "pf_allocation under 26h, status MEASURED",
+      "a stale or unmeasured allocation admits nothing to live, whatever the roster says"]
+  ]));
+  g.appendChild(c2.node);
+  out.push(g);
+  return out;
+}
+
+const PAGES = {desk: pageDesk, clocks: pageClocks, pipeline: pagePipeline,
+  miners: pageMiners, breadth: pageBreadth, seats: pageSeats};
+
+/* ==========================================================================
+   RENDER
+   ========================================================================== */
+function buildNav(){
+  const groups = {markets: $("#nav-markets"), research: $("#nav-research")};
+  SECTIONS.forEach(s => {
+    const b = el("button", "navitem");
+    b.type = "button";
+    b.innerHTML = ICONS[s.icon];
+    b.appendChild(document.createTextNode(s.label));
+    b.setAttribute("aria-current", String(s.id === current));
+    b.addEventListener("click", () => { current = s.id; render(); });
+    groups[s.group].appendChild(b);
+  });
+}
+function syncNav(){
+  document.querySelectorAll(".navitem").forEach((b, i) =>
+    b.setAttribute("aria-current", String(SECTIONS[i].id === current)));
+}
+function render(){
+  const sec = SECTIONS.find(s => s.id === current) || SECTIONS[0];
+  $("#page-title").textContent = sec.label;
+  $("#page-cap").textContent = sec.cap;
+  syncNav();
+
+  const box = (D.health || {}).box || {};
+  const tone = boxTone(box.status);
+  const rib = $("#ribbon");
+  rib.className = "ribbon is-" + tone;
+  $("#ribbon-text").textContent =
+    box.status === "REPORTING" ? "REPORTING — state is current"
+    : box.status === "LATE" ? "LATE — the box has not reported recently"
+    : box.status === "SILENT" ? "SILENT — nothing on this page is current"
+    : "UNMEASURED — the box publishes no readable clock";
+  $("#ribbon-note").textContent = box.why || "";
+  $("#built").textContent = D.generated_at
+    ? "built\n" + D.generated_at.replace("T", " ").slice(0, 16) : "built —";
+  $("#scope").textContent = LIVE ? "MT5 · LIVE JSON" : "MT5 · SNAPSHOT";
+
+  const page = $("#page");
+  page.textContent = "";
+  const head = el("div", "pagehead");
+  head.appendChild(el("div", "eyebrow", "THE " + sec.label.toUpperCase()));
+  head.appendChild(el("h2", null, sec.label));
+  head.appendChild(el("p", null, sec.cap));
+  page.appendChild(head);
+  (PAGES[current] || pageDesk)().forEach(n => page.appendChild(n));
+}
+function tick(){
+  const d = new Date();
+  $("#clock").innerHTML = d.toISOString().slice(11, 19) +
+    '<small>UTC</small>';
+}
 async function load(){
- try{
-  const d=await fetch(`desk_state.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()});
-  const a=d.account||{},e=d.execution||{},r=d.research||{},st=d.stats||{},p=d.pipeline||{},dec=d.decay||{};
-  const live=d.health?.status==='LIVE';
-  $('health').textContent=d.health?.status||'—';$('badge').classList.toggle('err',!live);
-  $('stamp').textContent=new Date(d.generated_at).toLocaleTimeString();
-  $('brainCap').textContent=`${p.forward_clocks??'—'} forward clocks · ${p.certified??'—'} certified · ${p.live??0} live`;
-  $('venue').textContent=a.venue||'—';
-  $('today').textContent=money(a.today_pnl,a.currency);tone($('today'),a.today_pnl);
-  $('srcAge').textContent=a.source_age_seconds==null?'source unmeasured':`source ${Math.round(a.source_age_seconds)}s ago`;
-  $('equity').textContent=money(a.equity,a.currency);
-  $('balance').textContent=`balance ${money(a.balance,a.currency)}`;
-  $('growth').textContent=a.growth_pct==null?'—':`${a.growth_pct>=0?'+':''}${n(a.growth_pct)}%`;tone($('growth'),a.growth_pct);
-  $('start').textContent=`start ${money(a.starting_capital,a.currency)}`;
-  const pos=Array.isArray(e.open_trades)?e.open_trades:[];
-  $('openN').textContent=`${pos.length} open`;
-  $('openPnl').textContent=money(a.open_pnl,a.currency);tone($('openPnl'),a.open_pnl);
-  $('freeMargin').textContent=`free margin ${money(a.free_margin,a.currency)}`;
-  $('sharpe').textContent=st.sharpe_daily==null?'—':n(st.sharpe_daily);tone($('sharpe'),st.sharpe_daily);
-  $('winrate').textContent=st.win_rate==null?'—':n(st.win_rate,1)+'%';
-  $('closed').textContent=n(st.closed_trades,0);
-  $('maxdd').textContent=st.max_dd_r==null?'—':`${n(st.max_dd_r)}R`;
-  $('curdd').textContent=st.current_dd_r==null?'—':`${n(st.current_dd_r)}R`;tone($('curdd'),st.current_dd_r==null?null:(st.current_dd_r>=-0.01?1:-1));
-  $('fills').textContent=n(e.matched_fills,0);
-  $('markout').textContent=e.markout_usable?'markout USABLE':(e.why||'markout unmeasured');
-  const rd=d.readiness||{}, bw=(d.breadth||{}).book_breadth||{};
-  const rung=rd.rung??0, labels=['NOT READY','PROBATIONARY','SCALING','FULL'];
-  $('readyStatus').textContent=rd.status||'UNMEASURED';
-  $('readyStatus').className='v '+(rung>=2?'up':rung===1?'nt':'dn');
-  const ck=rd.checks||{}, pass=Object.values(ck).filter(c=>c&&c.pass).length, tot=Object.keys(ck).length;
-  $('readyWhy').textContent=tot?`${pass}/${tot} checks pass · N_eff ${(ck.independence||{}).n_effective ?? '—'} · ${bw.family_concentration!=null?Math.round(bw.family_concentration*100)+'% one family':'breadth —'}`:'—';
-  $('readyBar').innerHTML=labels.map((l,i)=>`<span class="pill ${i<=rung?(i===0?'bad':'ok'):''}" style="margin-right:6px">${l}</span>`).join('');
-  $('readyBlock').innerHTML=(rd.blocking||[]).map(b=>`<li>${b}</li>`).join('')||'<li style="color:var(--green)">nothing blocking</li>';
-  const unrun=p.certificates_unrunnable||0;
-  const judged=p.gauntlet_last_judged!=null?`${p.gauntlet_last_judged} judged/h`:(p.discovered_backtested??'—');
-  const stages=[[`Docket · candidates`,p.docket_candidates??p.discovered_backtested],[`Gauntlet · last sweep${p.gauntlet_last_unmeasured?` (${p.gauntlet_last_unmeasured} unmeasured)`:''}`,judged],[`Certified · 10 gates${unrun?` (${unrun} unrunnable)`:''}`,p.certified],['Forward clocks',p.forward_clocks],['Promotion ready',p.promotion_ready],['Live',p.live]];
-  $('obsNote').textContent=`${p.forward_observations??0} forward obs · ${p.historical_observations??0} historical (excluded)`;
-  $('funnel').innerHTML=stages.map(([l,v],i)=>`<div class="stage${i===4?' final':''}"><div class="l">${l}</div><div class="v">${v==null?'—':v}</div></div>`).join('');
-  const dp=st.daily_pnl||[];
-  $('days').innerHTML=dp.length?dp.map(([day,v])=>`<div class="day ${v>=0?'up':'dn'}"><div class="d">${day.slice(5)}</div><div class="v ${v>=0?'up':'dn'}">${v>=0?'+':''}${n(v)}</div></div>`).join(''):'<div class="empty" style="width:100%">No closed sessions yet — boxes light up with the first live trading day</div>';
-  const fw=p.forward_detail||[];
-  $('fwdCount').textContent=`${fw.length} on the clock`;
-  rows($('forward'),fw,x=>{const pc=Math.min(100,Math.round(100*x.days/(x.of||14)));
-    const pill=x.status==='PROMOTION CANDIDATE'?'ok':(x.days>=14?'warn':'');
-    return `<tr><td>${x.name}</td><td><span class="pill ${pill}">${x.status}</span></td><td class="r">${x.n}</td><td class="r" style="color:var(--mut)">${x.n_historical||0}</td><td class="r">${x.t==null?'—':n(x.t)}</td><td class="r ${x.exp_r>0?'up':x.exp_r<0?'dn':''}">${x.exp_r==null?'—':n(x.exp_r,3)}</td><td><div style="font:9px var(--mono);color:var(--mut)">day ${x.days}/${x.of||14}</div><div class="bar"><i style="width:${pc}%"></i></div></td></tr>`},7);
-  const dv=Object.entries(dec.verdicts||{});
-  if(dv.length)rows($('decay'),dv,([k,v])=>`<tr><td>${k}</td><td><span class="pill ${v.verdict==='HEALTHY'?'ok':v.verdict==='FADE'?'warn':'bad'}">${v.verdict}</span></td><td class="r">${v.t==null?'—':n(v.t)}</td><td class="r ${v.exp_r>0?'up':v.exp_r<0?'dn':''}">${v.exp_r==null?'—':n(v.exp_r,3)}</td></tr>`,4);
-  else $('decay').innerHTML=`<tr><td class="empty" colspan="4">${dec.live_sleeves===0?'0 live sleeves — monitor armed, waiting':'no measured rows'}</td></tr>`;
-  rows($('survivors'),r.survivors||[],x=>`<tr><td>${x.name}</td><td class="r up">${n(x.dsr,4)}</td><td class="r">${n(x.wf_sharpe,3)}</td><td class="r">${n(x.pbo,4)}</td><td class="r">${n(x.spa_p,4)}</td></tr>`,5);
-  rows($('positions'),pos,x=>`<tr><td>${x.symbol||x.sym||'—'}</td><td>${x.side||x.type||'—'}</td><td class="r">${n(x.volume||x.lot)}</td><td class="r">${n(x.price||x.price_open,5)}</td><td class="r ${(x.profit||x.pnl)>0?'up':(x.profit||x.pnl)<0?'dn':''}">${money(x.profit||x.pnl,a.currency)}</td></tr>`,5);
-  chart(d.equity_curve);
- }catch(err){$('health').textContent='STATE UNAVAILABLE';$('badge').classList.add('err')}
+  try{
+    const r = await fetch("desk_state.json", {cache: "no-store"});
+    if (r.ok){ D = await r.json(); LIVE = true; }
+  }catch(e){ /* served without its JSON; the snapshot stands */ }
+  render();
 }
-async function pulse(){
- try{
-  const q=await fetch(`research_pulse.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()});
-  const m=q.measurements||{},ok=q.verdict==='ALL FLOWING';
-  const age=Math.round((Date.now()-Date.parse(q.at))/60000);
-  $('pulseAge').textContent=`checked ${age}m ago · every 5m`;
-  $('pulseVerdict').textContent=q.verdict;
-  $('pulseVerdict').style.color=ok?'var(--green)':'var(--red)';
-  document.getElementById('pulseCard').style.borderLeftColor=ok?'var(--green)':'var(--red)';
-  const f=(h)=>h==null?'—':(h<1?`${Math.round(h*60)}m`:`${n(h,1)}h`)+' ago';
-  $('pulseLine').textContent=
-    `miners ${f(m.mined_targets_age_h)} (${m.mined_targets_n??'—'} targets, ${m.miner_sources??'—'} sources) · `+
-    `docket ${m.docket_rows??'—'} candidates ${f(m.docket_age_h)} · `+
-    `gauntlet swept ${f(m.certs_swept_age_h)}: ${m.last_sweep_judged??'—'} judged, canon ${m.certs_n??'—'} · `+
-    `moat tape wrote ${f(m.moat_newest_write_age_h)} (${m.moat_symbols??'—'} symbols) · `+
-    `stale ${(q.at&&age>20)?'YES — FENCE ITSELF SILENT':'no'}`;
-  const heal=(m.stall_watch_actions||[]);
-  $('pulseBreaches').innerHTML=(q.breaches||[]).map(b=>`<li>${b}</li>`).join('')
-    +heal.map(a=>`<li style="color:var(--amber,#d9a441)">healed: ${a}</li>`).join('');
- }catch(err){
-  $('pulseVerdict').textContent='PULSE UNAVAILABLE';
-  $('pulseVerdict').style.color='var(--red)';
-  document.getElementById('pulseCard').style.borderLeftColor='var(--red)';
-  $('pulseLine').textContent='research_pulse.json unreadable — the health fence is not publishing; that IS the breach';
- }
-}
-load();pulse();setInterval(load,10000);setInterval(pulse,60000);
-</script></body></html>
+buildNav();
+render();
+tick(); setInterval(tick, 1000);
+$("#refresh").addEventListener("click", load);
+load();
+</script>
+</body>
+</html>
