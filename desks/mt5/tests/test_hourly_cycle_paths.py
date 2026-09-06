@@ -23,16 +23,48 @@ def test_base_is_on_sys_path_before_any_function_runs() -> None:
 def test_the_tape_import_is_not_reached_before_the_path_is_set() -> None:
     """Order is the whole defect: the fix is worthless if the insert lands after first use.
 
-    Matches the INDENTED statement, not the bare phrase -- the phrase also appears in the comment
-    explaining the bug, and a test that matches prose instead of code proves nothing about code.
+    Matches an INDENTED import statement, not the bare phrase -- the phrase also appears in the
+    comment explaining the bug, and a test that matches prose instead of code proves nothing about
+    code. The indent is not pinned to one depth: these imports have already moved between a
+    function body and a nested helper once, and re-pinning the column each time tests the layout
+    rather than the ordering this file exists to protect.
     """
-    assert SRC.index("sys.path.insert(0, _p)") < SRC.index("\n        from mt5desk import")
+    first_use = min(SRC.index(f"\n{' ' * n}from mt5desk import")
+                    for n in (4, 8) if f"\n{' ' * n}from mt5desk import" in SRC)
+    assert SRC.index("sys.path.insert(0, _p)") < first_use
+
+
+def test_the_repo_root_is_on_the_path_too() -> None:
+    """`_costed` imports `libs.ops.compute_ledger` from the REPOSITORY root, which was never added.
+
+    MEASURED on the box 2026-09-06: `ModuleNotFoundError: No module named 'libs.ops'` on the first
+    costed leg of every run. `_costed` catches it and runs the leg regardless -- by design, a
+    ledger must not take down the work it measures -- so the cycle recorded no compute at all,
+    hour after hour, while `libs.ops.allocators` reported COMPUTE as the weakest link in the stack
+    for want of exactly the denominator these runs were meant to produce. Nothing failed and
+    nothing was measured, which is the hardest shape of defect to see.
+    """
+    setup = SRC.split("def ", 1)[0]
+    assert "REPO = " in setup, "the repository root is not derived at module level"
+    assert "str(REPO)" in setup.split("for _p in")[1].split("\n")[0], \
+        "REPO is derived but never placed on sys.path"
 
 
 def test_the_tape_failure_is_still_reported_not_swallowed() -> None:
     """It failed loudly for five days and nothing escalated it -- keep the line, and keep it
     findable, because the next import break will look exactly the same."""
-    assert 'print(f"tick tape FAILED:' in SRC
+    assert 'print(f"tick tape ' in SRC and "FAILED:" in SRC
+
+
+def test_the_two_recorders_do_not_share_a_verdict() -> None:
+    """MEASURED 2026-09-06: `tape.main` recorded 359,107 broker-native ticks and `triangle_tape`
+    then raised, so the shared `try` returned one error and the hour read as "tick tape FAILED" --
+    for a leg whose irreplaceable half had just succeeded. Ticks cannot be backfilled; triangles
+    recompute from them in seconds. They must fail independently."""
+    body = SRC.split("def record_tape", 1)[1].split("\ndef ", 1)[0]
+    assert "tape_exit_code" not in body or "results[f\"{label}_exit_code\"]" in body
+    assert "_tape_main" in body and "_triangle_main" in body, \
+        "the two recorders are not invoked through separately-guarded calls"
 
 
 def test_state_vector_cannot_terminate_the_hourly_controller() -> None:

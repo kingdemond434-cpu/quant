@@ -23,8 +23,9 @@
 
 .EXAMPLE
   .\ops\box-repair.ps1
-  .\ops\box-repair.ps1 -SkipBars      # skip the slow bar download
-  .\ops\box-repair.ps1 -WhatIf        # report only, change nothing
+  .\ops\box-repair.ps1 -SkipBars              # skip the slow bar download
+  .\ops\box-repair.ps1 -WhatIf                # report only, change nothing
+  .\ops\box-repair.ps1 -ResolveCode theirs    # take the repository's code for conflicting files
 #>
 [CmdletBinding()]
 param(
@@ -33,7 +34,25 @@ param(
     [string]$Terminal  = "C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe",
     [string]$BackupDir = "C:\opt\quant-backup",
     [switch]$SkipBars,
-    [switch]$WhatIf
+    [switch]$WhatIf,
+    # EVERY CHART THE BROKER OFFERS, because a cell held for want of a download is not evidence
+    # about the cell. H1 is always fetched first and alone so the gauntlet is unblocked within a
+    # minute; the rest follow. Narrow this only when time genuinely matters -- the default is the
+    # whole set on purpose.
+    [string[]]$BarTimeframes = @("H1", "M1", "M5", "M15", "M30", "H4", "D1"),
+    # WHICH SIDE OF A CODE CONFLICT WINS -- NAMED BY THE OPERATOR, NEVER GUESSED.
+    #
+    #   none    (default) refuse, list the files, and leave the merge for a human.
+    #   theirs  take the REPOSITORY's version. The box runs code; the repo is where code is
+    #           reviewed, so this is the usual intent after a spell of local drift.
+    #   ours    keep the BOX's version, for when the box holds a fix the repo has not seen.
+    #
+    # Neither choice can destroy work: every conflicted file is copied to $BackupDir first, with
+    # both sides preserved, and the summary says where. That is what makes an automatic choice
+    # defensible here -- the decision is reversible, so it is no longer the one-way door the
+    # refusal exists to protect.
+    [ValidateSet("none", "ours", "theirs")]
+    [string]$ResolveCode = "none"
 )
 
 $ErrorActionPreference = "Continue"
@@ -63,34 +82,64 @@ else {
 
 # ---------------------------------------------------------------- 1. MT5 terminal
 Step "MT5 terminal"
-if (-not (Test-Path $Terminal)) {
-    Fail "terminal64.exe not found at $Terminal -- set -Terminal to its real path"
+# FIND THE TERMINAL, DO NOT ASSUME IT. This step used to be gated entirely on `Test-Path
+# $Terminal`, so a stale default path FAILED the step and skipped the Python probe -- reporting a
+# broken terminal on a box whose bridge was working perfectly. That is the same absence-as-verdict
+# this script exists to stamp out, and it cost a round trip on 2026-09-06.
+#
+# The RUNNING PROCESS is the authority: whatever exe is serving MT5 right now is by definition the
+# right one, whatever any constant says. Only if nothing is running do we fall back to searching
+# the usual install roots, and only then to the passed-in default.
+$running = Get-Process terminal64 -ErrorAction SilentlyContinue
+$found = $null
+if ($running) {
+    $found = ($running | Select-Object -First 1 -ExpandProperty Path -ErrorAction SilentlyContinue)
+    if ($found) { Info "terminal already running from $found" }
+}
+if (-not $found) {
+    $candidates = @($Terminal) + @(
+        "$env:ProgramFiles\*MetaTrader 5*\terminal64.exe",
+        "${env:ProgramFiles(x86)}\*MetaTrader 5*\terminal64.exe",
+        "$env:ProgramFiles\*MetaTrader*\terminal64.exe",
+        "$env:APPDATA\MetaQuotes\Terminal\*\terminal64.exe"
+    )
+    foreach ($c in $candidates) {
+        $hit = Get-Item -Path $c -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($hit) { $found = $hit.FullName; break }
+    }
+    if ($found -and $found -ne $Terminal) { Warn "terminal64.exe is at $found, not the default $Terminal -- pass -Terminal to silence this" }
+}
+if (-not $found) {
+    Warn "terminal64.exe not located on disk (searched Program Files and %APPDATA%\MetaQuotes) -- probing the Python bridge anyway, which is the test that actually matters"
 } else {
-    $running = Get-Process terminal64 -ErrorAction SilentlyContinue
+    $Terminal = $found
     if (-not $running -and -not $WhatIf) {
         Info "starting the terminal"
         Start-Process $Terminal | Out-Null
         Start-Sleep -Seconds 20
     }
-    # THE ONLY TEST THAT MEANS ANYTHING is whether the Python bridge can attach. A running
-    # process is not the same as a reachable terminal: -10003 "Process create failed" is returned
-    # when the exe EXISTS but a Session 0 scheduled task cannot create a GUI process, and the
-    # path in that message sends everyone to check a path that is already correct.
-    $probe = & python -c "import MetaTrader5 as m; print('OK' if m.initialize() else 'ERR '+str(m.last_error()))" 2>&1
-    if ("$probe" -match "OK") { Ok "terminal reachable from Python" }
-    else {
-        Fail "MT5 will not initialize: $probe"
-        Info "If the exe exists this is a SESSION problem, not a path one: terminal64.exe is a GUI process and a scheduled task with LogonType Password/S4U runs in Session 0, where Windows refuses to create one. Fix: schtasks /Change /TN MT5-TerminalBoot /RU Administrator /IT (elevated), or leave the terminal running so initialize() attaches."
-    }
-    # Survive reboots without needing the scheduler at all.
-    $lnk = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\mt5boot.lnk"
-    if (-not (Test-Path $lnk) -and -not $WhatIf) {
-        try {
-            $s = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk)
-            $s.TargetPath = $Terminal; $s.Save()
-            Ok "Startup shortcut created (terminal now survives reboot)"
-        } catch { Warn "could not create Startup shortcut: $($_.Exception.Message)" }
-    }
+}
+# THE ONLY TEST THAT MEANS ANYTHING is whether the Python bridge can attach, so it runs
+# UNCONDITIONALLY now -- a terminal that answers Python is a working terminal whether or not this
+# script managed to locate its exe. A running process is also not the same as a reachable one:
+# -10003 "Process create failed" comes back when the exe EXISTS but a Session 0 scheduled task
+# cannot create a GUI process, and the path in that message sends everyone to check a path that
+# was already correct.
+$probe = & python -c "import MetaTrader5 as m; print('OK' if m.initialize() else 'ERR '+str(m.last_error()))" 2>&1
+if ("$probe" -match "OK") { Ok "terminal reachable from Python" }
+else {
+    Fail "MT5 will not initialize: $probe"
+    Info "If the exe exists this is a SESSION problem, not a path one: terminal64.exe is a GUI process and a scheduled task with LogonType Password/S4U runs in Session 0, where Windows refuses to create one. Fix: schtasks /Change /TN MT5-TerminalBoot /RU Administrator /IT (elevated), or leave the terminal running so initialize() attaches."
+}
+# Survive reboots without needing the scheduler at all. Needs a real target, so it is skipped
+# rather than pointed at a path that was never found.
+$lnk = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\mt5boot.lnk"
+if ($found -and -not (Test-Path $lnk) -and -not $WhatIf) {
+    try {
+        $s = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk)
+        $s.TargetPath = $Terminal; $s.Save()
+        Ok "Startup shortcut created (terminal now survives reboot)"
+    } catch { Warn "could not create Startup shortcut: $($_.Exception.Message)" }
 }
 
 # ---------------------------------------------------------------- 2. conflict markers
@@ -133,13 +182,52 @@ if (Test-Path ".git/MERGE_HEAD") {
             foreach ($f in $data) { git checkout --ours -- $f 2>&1 | Out-Null; git add -- $f 2>&1 | Out-Null }
             if ($data) { Ok "$($data.Count) data conflict(s) resolved in the box's favour (it authors them)" }
             if ($code) {
-                Fail "$($code.Count) CODE file(s) conflict and will not be auto-resolved: $($code -join ', ')"
-                Info "Choose deliberately, then: git add <file>; git commit --no-edit"
+                if ($ResolveCode -eq "none") {
+                    Fail "$($code.Count) CODE file(s) conflict and will not be auto-resolved: $($code -join ', ')"
+                    Info "Re-run with -ResolveCode theirs (take the repo's) or -ResolveCode ours (keep the box's)"
+                    Info "Either way both sides are backed up first. Or resolve by hand: git add <file>; git commit --no-edit"
+                }
+                else {
+                    # BACK BOTH SIDES UP BEFORE CHOOSING. The conflicted working file still holds
+                    # the merge markers, so it carries BOTH versions in one artifact -- copying it
+                    # verbatim preserves everything either side had, and it is a plain file the
+                    # operator can read without knowing git.
+                    $stamp  = Get-Date -Format "yyyyMMdd-HHmmss"
+                    $vault  = Join-Path $BackupDir "merge-$stamp"
+                    foreach ($f in $code) {
+                        $dest = Join-Path $vault $f
+                        New-Item -ItemType Directory -Force -Path (Split-Path $dest) 2>&1 | Out-Null
+                        Copy-Item -LiteralPath $f -Destination $dest -Force -ErrorAction SilentlyContinue
+                    }
+                    $side = if ($ResolveCode -eq "theirs") { "--theirs" } else { "--ours" }
+                    foreach ($f in $code) {
+                        git checkout $side -- $f 2>&1 | Out-Null
+                        git add -- $f 2>&1 | Out-Null
+                    }
+                    $whose = if ($ResolveCode -eq "theirs") { "the repository's" } else { "the box's" }
+                    Ok "$($code.Count) code conflict(s) resolved to $whose version"
+                    Warn "code conflicts were resolved to $whose version -- BOTH sides are in $vault; check it before deleting: $($code -join ', ')"
+                }
             }
         }
         if (-not (git diff --name-only --diff-filter=U)) {
             git commit --no-edit 2>&1 | Out-Null
             Ok "merge concluded"
+        }
+        else {
+            # A MERGE LEFT IN PROGRESS STOPS THE BOX FROM REPORTING AT ALL. Every later git call
+            # dies on `fatal: Exiting because of an unresolved conflict`, so the runtime state is
+            # never committed and never pushed -- which is exactly how the dashboard came to read
+            # "box SILENT for 260.8h" while the desk itself was running fine and recording ticks
+            # every hour. The publication path must not be hostage to an unfinished merge.
+            #
+            # Aborting DECIDES NOTHING: it restores the pre-merge tree, so the box keeps running
+            # precisely the code it was already running and the merge is still there to be done
+            # deliberately later. Declining a merge and resolving one are different acts.
+            Warn "merge could not be concluded -- aborting it so the box can still publish its state"
+            git merge --abort 2>&1 | Out-Null
+            if (Test-Path ".git/MERGE_HEAD") { Fail "git merge --abort did not clear the merge -- run: git status" }
+            else { Ok "merge declined and the tree restored; redo it when the code conflict is settled" }
         }
     }
 }
@@ -167,11 +255,28 @@ else {
     $dl = Join-Path $Root "desks\mt5\scripts\download_remaining.py"
     if (-not (Test-Path $dl)) { Fail "download_remaining.py absent -- the pull did not land" }
     else {
-        # H1 FIRST AND ALONE BY DEFAULT. Every docket row is H1-undeclared, so H1 is what unblocks
-        # the gauntlet; the other six charts are worth having and are not worth blocking on.
+        # H1 FIRST, THEN EVERY OTHER CHART. H1 is what unblocks the gauntlet's undeclared cells,
+        # so it runs alone first and the registry is usable within a minute even if the rest is
+        # interrupted. But H1 ALONE was leaving the docket half-idle: measured 2026-09-06, 10,961
+        # of 23,627 cells were held as "no bars" purely because their timeframe had never been
+        # downloaded -- cells with a real hypothesis and a tradable symbol, unable to be judged
+        # because nobody had fetched an M15 chart. A cell held for want of a download is not
+        # evidence about the cell.
         & python $dl --timeframes H1
         if ($LASTEXITCODE -eq 0) { Ok "H1 bars and universe.json refreshed" }
         else { Fail "bar download exited $LASTEXITCODE" }
+
+        $rest = @($BarTimeframes | Where-Object { $_ -ne "H1" })
+        if ($rest.Count -gt 0) {
+            # ONE COMMA-JOINED VALUE: `--timeframes` is a single string that the downloader splits
+            # itself (its default is ",".join(TIMEFRAMES)). Passing the charts as separate words
+            # would hand argparse one timeframe and six stray positionals.
+            $spec = $rest -join ","
+            Info "fetching the remaining charts: $spec -- this is the slow leg"
+            & python $dl --timeframes $spec
+            if ($LASTEXITCODE -eq 0) { Ok "$($rest.Count) further timeframe(s) refreshed -- no cell is now held for want of a chart this broker offers" }
+            else { Fail "secondary bar download exited $LASTEXITCODE -- H1 landed, the other charts did not" }
+        }
     }
 }
 
@@ -200,7 +305,20 @@ else {
         git commit -m "box state sync" 2>&1 | Out-Null
         $push = git push origin $Branch 2>&1
         if ($LASTEXITCODE -eq 0) { Ok "state pushed to $Branch" }
-        else { Fail "push failed"; ($push | Select-Object -Last 8) | ForEach-Object { Info $_ } }
+        else {
+            Fail "push failed"
+            ($push | Select-Object -Last 8) | ForEach-Object { Info $_ }
+            # NAME THE ONE CAUSE THE OPERATOR CANNOT SEE FROM THE ERROR. A declined merge leaves
+            # the box BEHIND origin, and git then refuses the push as non-fast-forward -- which
+            # reads like a broken remote rather than the consequence of the step above. Say how
+            # far behind, because "behind by 14" and "behind by 0" are different problems.
+            git fetch origin $Branch 2>&1 | Out-Null
+            $behind = (git rev-list --count "HEAD..FETCH_HEAD" 2>$null)
+            if ($behind -and [int]$behind -gt 0) {
+                Info "this branch is $behind commit(s) behind origin, so the push cannot fast-forward"
+                Info "that is the declined merge above: re-run with -ResolveCode theirs (or ours) to conclude it, then the push succeeds"
+            }
+        }
     }
 }
 

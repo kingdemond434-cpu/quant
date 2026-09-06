@@ -17,6 +17,34 @@ TRIANGLES = (
     ("AUDNZD", "AUDUSD", "NZDUSD"),
 )
 MAX_SKEW_MS = 250
+#: The three columns a quote leg must carry. Checked by name before any arithmetic so a leg with
+#: the wrong schema is reported as UNMEASURED against ITS OWN symbol, rather than raising out of
+#: the hourly cycle where the message names no file.
+QUOTE_COLUMNS = frozenset({"ts", "bid", "ask"})
+
+
+def normalise(frame: pd.DataFrame) -> pd.DataFrame:
+    """Return a frame carrying `ts` as a COLUMN, whatever shape its parquet was written in.
+
+    WHY THIS EXISTS. `tape.py` writes ticks with ``index=False`` and an explicit `ts` column, so
+    the common case needs nothing. But the tape on the box has been written by more than one
+    generation of this code, and a frame that went through an index-carrying writer reads back
+    with `ts` as the INDEX and no such column. ``frame[["ts", "bid", "ask"]]`` then raises
+    ``KeyError: "['ts'] not in index"`` -- measured on the box 2026-09-04 onward, every hour.
+
+    That failure was worse than it looked. `record_tape` runs `tape.main` FIRST and it succeeded
+    (359,107 ticks on the 09-06 run), so the desk went on collecting ticks hourly while the
+    triangle evidence quietly stopped being produced and the leg returned an error dict nobody
+    read. Recovering `ts` from the index costs nothing and is unambiguous: there is exactly one
+    time axis in a tick frame.
+    """
+    if "ts" in frame.columns:
+        return frame
+    index = frame.index
+    if index.name == "ts" or isinstance(index, pd.DatetimeIndex):
+        out = frame.reset_index()
+        return out if "ts" in out.columns else out.rename(columns={out.columns[0]: "ts"})
+    return frame                      # genuinely absent -- build() names the file and its columns
 
 
 def executable_loops(direct: pd.DataFrame, base_usd: pd.DataFrame,
@@ -42,17 +70,34 @@ def executable_loops(direct: pd.DataFrame, base_usd: pd.DataFrame,
 
 def _latest(symbol: str) -> pd.DataFrame | None:
     paths = sorted((TICKS / symbol).glob("*.parquet"))
-    return None if not paths else pd.read_parquet(paths[-1])
+    return None if not paths else normalise(pd.read_parquet(paths[-1]))
 
 
 def build() -> dict:
     rows = []
     for direct, base_usd, quote_usd in TRIANGLES:
-        frames = [_latest(symbol) for symbol in (direct, base_usd, quote_usd)]
-        if any(frame is None for frame in frames):
+        legs = {symbol: _latest(symbol) for symbol in (direct, base_usd, quote_usd)}
+        absent = [symbol for symbol, frame in legs.items() if frame is None]
+        if absent:
+            # NAME THE LEG. "one or more" sends the reader to three directories to find out which.
             rows.append({"triangle": direct, "status": "UNMEASURED",
-                         "why": "one or more synchronized Fusion tick legs are absent"})
+                         "why": f"no Fusion tick parquet for {', '.join(absent)}"})
             continue
+        unusable = {symbol: sorted(frame.columns)                       # type: ignore[union-attr]
+                    for symbol, frame in legs.items()
+                    if not QUOTE_COLUMNS <= set(frame.columns)}         # type: ignore[union-attr]
+        if unusable:
+            # A LEG WITH THE WRONG SCHEMA IS UNMEASURED, NOT AN EXCEPTION. Raising here took the
+            # whole `record_tape` leg of the hourly cycle down with it and the message named no
+            # symbol and no file. This says which leg, and what it actually carried.
+            rows.append({
+                "triangle": direct, "status": "UNMEASURED",
+                "why": "tick parquet lacks the quote columns this needs ("
+                       + "; ".join(f"{s}: has {c}" for s, c in unusable.items())
+                       + f"); required {sorted(QUOTE_COLUMNS)}",
+            })
+            continue
+        frames = [legs[symbol] for symbol in (direct, base_usd, quote_usd)]
         loops = executable_loops(*frames)  # type: ignore[arg-type]
         if loops.empty:
             rows.append({"triangle": direct, "status": "UNMEASURED",
