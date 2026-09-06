@@ -13,6 +13,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+from collections import Counter  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 import pandas as pd  # noqa: E402
@@ -53,6 +54,19 @@ def _family_funcs() -> dict:
 
 FAMILY_FUNCS = _family_funcs()
 
+# THE SHARED INPUT REBUILDER, imported once. Absent on a host without the orthogonal-sweep
+# sources, in which case multi-input families are reported unrunnable BY NAME rather than
+# raising per cell -- the same distinction `hold_uncoverable` draws for bars and costs.
+try:
+    from mt5desk.family_inputs import (
+        IDENTITY_KEYS as _IDENTITY_KEYS,
+        resolve as _resolve_inputs, strip_identity_keys, timeframe_of,
+    )
+except ImportError as _exc:                      # pragma: no cover - host-dependent
+    _resolve_inputs = strip_identity_keys = timeframe_of = None
+    _IDENTITY_KEYS = frozenset()
+    print(f"family_inputs unavailable ({_exc}); multi-input families cannot be tested on this host")
+
 #: Worker processes for the cell sweep. One less than the core count so the box stays responsive
 #: while this runs -- it shares the machine with the MT5 gateway, which must never queue behind a
 #: research sweep. `EXTERNAL_BACKTEST_WORKERS=1` forces the serial path, which is also what a
@@ -75,8 +89,21 @@ def normalize_grid(grid: list[dict]) -> tuple[list[dict], int]:
             p.kind == inspect.Parameter.VAR_KEYWORD for p in signature.parameters.values()
         )
         raw = dict(cell.get("params") or {})
+        # IDENTITY KEYS SURVIVE THE SIGNATURE FILTER. `peer_symbol`, `factor_symbols`,
+        # `input_symbol`, `input_source` and `timeframe` name an input or a chart to LOAD; by
+        # construction none of them appears in any family signature, so filtering to the
+        # signature deleted every one -- and `family_inputs.resolve`, which exists to load what
+        # they name, then found nothing to load. Measured 2026-09-06: peer_symbol gone from all
+        # 427 relative_value candidates, factor_symbols from all 780 cross_asset_residual,
+        # input_symbol from all 248 carry, input_source from all 10 cot_positioning. Those five
+        # families tested ZERO times while the breadth report listed them as REACHABLE, and the
+        # deletion was logged as "2,207 unsupported parameter occurrence(s) removed".
+        #
+        # `strip_identity_keys` removes them again at CALL time, once `resolve` has used them, so
+        # the family function still never sees a kwarg it cannot take.
         legal = raw if accepts_kwargs else {k: v for k, v in raw.items()
-                                             if k in signature.parameters}
+                                            if k in signature.parameters
+                                            or k in _IDENTITY_KEYS}
         removed += len(raw) - len(legal)
         repaired = {**cell, "params": legal}
         identity = json.dumps({k: repaired.get(k) for k in ("symbol", "family", "params")},
@@ -88,11 +115,34 @@ def normalize_grid(grid: list[dict]) -> tuple[list[dict], int]:
     return normalized, removed
 
 
+def bars(sym: str, timeframe: str = "H1") -> pd.DataFrame:
+    """The cell's OWN chart, not H1 for everything.
+
+    THE HARDCODE THIS REPLACES. This read `f"{sym}_H1.parquet"` unconditionally, so a cell
+    certified on M5 was backtested here on hourly bars -- a different strategy wearing the same
+    identity, and exactly the research/live semantic drift the mandate's §43 forbids. The desk
+    already fixed this on the execution side (the universal family executor runs a certificate on
+    its certified timeframe, M1 through D1); this stage was still hourly-only.
+
+    NO FAMILY OR TIMEFRAME IS ENUMERATED HERE. The timeframe is whatever the cell declares and
+    the file is whatever exists; a new chart added to the universe directory is usable the day it
+    lands, with no edit to this function. Falling back to H1 is recorded in the exception text
+    rather than done silently, because a cell quietly replayed on the wrong chart is worse than
+    one that refuses: the refusal is visible, the wrong chart certifies.
+    """
+    tf = str(timeframe or "H1").upper()
+    key = (sym, tf)
+    if key not in _h1_cache:
+        path = BASE / "data" / "universe" / f"{sym}_{tf}.parquet"
+        if not path.exists():
+            raise FileNotFoundError(f"no {tf} bars for {sym} ({path.name} absent)")
+        _h1_cache[key] = families._h1(pd.read_parquet(path))
+    return _h1_cache[key]
+
+
 def h1(sym: str) -> pd.DataFrame:
-    if sym not in _h1_cache:
-        _h1_cache[sym] = families._h1(pd.read_parquet(
-            BASE / "data" / "universe" / f"{sym}_H1.parquet"))
-    return _h1_cache[sym]
+    """Backwards-compatible alias: this module's other callers ask for hourly bars by name."""
+    return bars(sym, "H1")
 
 
 def run_cell(cell: dict) -> dict | None:
@@ -106,9 +156,39 @@ def run_cell(cell: dict) -> dict | None:
         meta = _uni.get(sym, {})
         if not meta:
             return None
-        df = h1(sym)
+        # THE CELL'S OWN CHART. `timeframe_of` reads it from the cell's params and defaults to
+        # H1 when the cell does not declare one -- the docket's 23,465 rows are all undeclared
+        # today, so this is a no-op for them and load-bearing for every M5/M15/H4/D1 cell the
+        # miners and the scalp lane produce.
+        df = bars(sym, timeframe_of(params) if timeframe_of is not None else "H1")
         costs = Costs.from_symbol(meta)
-        sigs = list(func(df, **params))
+        # FAMILIES NEEDING MORE THAN THEIR OWN BARS WERE NEVER TESTED HERE, AND THAT IS WHY THE
+        # BOOK HAS ONE MECHANISM. This called `func(df, **params)` with the symbol's own H1 and
+        # nothing else, so every family whose signal needs a peer, a factor, a macro series or COT
+        # positioning raised on the missing kwarg and was swallowed by the `except` below as an
+        # ordinary error. Measured 2026-09-06, after connecting the docket: carry (248 docket
+        # rows), relative_value (427), cross_asset_residual (780), event_reaction (113) and
+        # cot_positioning (10) were tested ZERO times between them -- 1,578 candidates in the five
+        # families the breadth report lists as REACHABLE and missing from the book. They were
+        # reachable; nothing reached them.
+        #
+        # `mt5desk.family_inputs.resolve` is the SAME reconstruction `external_gauntlet.build_cell`
+        # and `shadow_forward` use -- imported, not re-implemented, because a second rebuilder is
+        # how a cell comes to be gauntleted on one set of inputs and forward-tested on another.
+        # A cell whose inputs cannot be rebuilt on this host returns None WITH ITS REASON rather
+        # than raising, so "no peer bars for this pair" stops looking like a code fault.
+        call_params = dict(params)
+        if _resolve_inputs is not None:
+            extra, why = _resolve_inputs(sym, family_name, params, df)
+            if extra is None:
+                # RETURNED, NOT APPENDED TO A MODULE LIST. Workers are separate processes, so a
+                # module-level accumulator would collect these in the child and vanish -- the
+                # reason would exist nowhere, which is the silent-skip failure again. The
+                # collector below counts these by family and never files them as results.
+                return {"__skip__": f"{family_name}: {why}"}
+            call_params = strip_identity_keys(family_name, params)
+            call_params.update(extra)
+        sigs = list(func(df, **call_params))
         if len(sigs) < 20:
             return None
         result = run_backtest(df, sigs, costs=costs)
@@ -172,6 +252,70 @@ def _docket_rows() -> list[dict]:
     return rows
 
 
+def available_timeframes() -> dict[str, list[str]]:
+    """Every chart on disk, per symbol, discovered -- never a hardcoded list.
+
+    `{"EURUSD": ["M5", "M15", "H1"], ...}`. A timeframe added to the universe directory is swept
+    the next hour with no edit here, which is the whole point: the previous code named `H1` in a
+    format string and no other chart could ever be reached, whatever the box downloaded.
+    """
+    out: dict[str, list[str]] = {}
+    for p in (BASE / "data" / "universe").glob("*_*.parquet"):
+        sym, _, tf = p.stem.rpartition("_")
+        if sym and tf:
+            out.setdefault(sym.upper(), []).append(tf.upper())
+    for sym in out:
+        out[sym] = sorted(set(out[sym]), key=lambda t: _TF_ORDER.get(t, 999))
+    return out
+
+
+#: Chart ordering for reporting only -- shortest first, so an intraday result reads before the
+#: daily one. NOT a whitelist: a timeframe absent from this map still sweeps, it just sorts last.
+_TF_ORDER = {"M1": 1, "M5": 2, "M15": 3, "M30": 4, "H1": 5, "H4": 6, "D1": 7, "W1": 8}
+
+
+def expand_timeframes(grid: list[dict]) -> list[dict]:
+    """One cell with no declared chart becomes one cell PER chart its symbol has.
+
+    THE H1 DEFAULT WAS ITSELF THE DEFECT, and replacing a hardcoded `_H1.parquet` with a
+    `timeframe or "H1"` fallback would have kept it: every one of the docket's 23,465 rows
+    declares no timeframe, so the fallback IS the hardcode, one level down. A mechanism that
+    works on M5 and not on H1 was unmineable either way.
+
+    So an undeclared cell is not assigned a chart -- it is swept across all of them, and each
+    sweep carries its own `timeframe` in params. That makes the chart part of the cell's
+    IDENTITY: `EURUSD carry M5` and `EURUSD carry H1` are two candidates with two parameter sets,
+    two gauntlet verdicts and two forward clocks, which is what the two-stage law requires. It is
+    also how intraday edges enter a docket built entirely from hourly miners.
+
+    A cell that DOES declare a timeframe is left exactly as it is. The declaration is the
+    certified identity and this may not multiply it.
+    """
+    if timeframe_of is None:
+        return grid
+    charts = available_timeframes()
+    out: list[dict] = []
+    for cell in grid:
+        params = dict(cell.get("params") or {})
+        if params.get("timeframe"):
+            out.append(cell)
+            continue
+        tfs = charts.get(str(cell.get("symbol") or "").upper(), [])
+        if not tfs:
+            # A SYMBOL WITH NO CHART AT ALL STILL GETS A ROW, and this branch is a defect I put
+            # in and took out again. Emitting nothing here made the cell VANISH: the grid fell
+            # from 22,571 to 13,480 and `held_no_bars` then read 0, so the bar-coverage gap --
+            # 9,091 cells across 198 symbols -- disappeared from the report that exists to name
+            # it. A silent drop that also silences the detector is strictly worse than the
+            # original problem. The cell is kept with its chart undeclared; `hold_uncoverable`
+            # holds it and names the symbol, which is where that fact belongs.
+            out.append(cell)
+            continue
+        for tf in tfs:
+            out.append({**cell, "params": {**params, "timeframe": tf}})
+    return out
+
+
 def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
     """Split the grid into what this host can honestly test and what it cannot, BY CAUSE.
 
@@ -197,10 +341,12 @@ def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
     expensive lie this pipeline could tell. A symbol without a cost model is held, named, and
     reported -- never costed by analogy to a "similar" instrument.
     """
-    have_bars = {p.stem.removesuffix("_H1").upper()
-                 for p in (BASE / "data" / "universe").glob("*_H1.parquet")}
+    # PER (SYMBOL, CHART), not per symbol on H1. Globbing `*_H1.parquet` here would hold every
+    # M5 cell the timeframe sweep just created, on the grounds that a DIFFERENT chart exists --
+    # the same hardcode wearing a coverage check's clothes.
+    charts = available_timeframes()
     have_costs = {str(s).upper() for s in _uni}
-    if not have_bars:
+    if not charts:
         # An empty universe directory is not a desk whose every symbol is uncoverable -- it is a
         # host that has not synced its bars. Holding all 22,571 cells and reporting "no bars for
         # 297 symbols" would be technically true and useless; say the real thing instead.
@@ -208,12 +354,17 @@ def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
                       "why": "data/universe holds no *_H1.parquet at all on this host"}
     def _sym(c: dict) -> str:
         return str(c.get("symbol") or "").upper()
-    testable = [c for c in grid if _sym(c) in have_bars and _sym(c) in have_costs]
-    no_bars = sorted({_sym(c) for c in grid if _sym(c) not in have_bars})
+
+    def _has_bars(c: dict) -> bool:
+        tf = str((c.get("params") or {}).get("timeframe") or "H1").upper()
+        return tf in charts.get(_sym(c), ())
+
+    testable = [c for c in grid if _has_bars(c) and _sym(c) in have_costs]
+    no_bars = sorted({_sym(c) for c in grid if not _has_bars(c)})
     no_costs = sorted({_sym(c) for c in grid
-                       if _sym(c) in have_bars and _sym(c) not in have_costs})
-    n_no_bars = sum(1 for c in grid if _sym(c) not in have_bars)
-    n_no_costs = sum(1 for c in grid if _sym(c) in have_bars and _sym(c) not in have_costs)
+                       if _has_bars(c) and _sym(c) not in have_costs})
+    n_no_bars = sum(1 for c in grid if not _has_bars(c))
+    n_no_costs = sum(1 for c in grid if _has_bars(c) and _sym(c) not in have_costs)
     if no_bars:
         print(f"  {n_no_bars:,} cell(s) HELD -- no H1 parquet for {len(no_bars)} symbol(s): "
               f"{', '.join(no_bars[:10])}{' ...' if len(no_bars) > 10 else ''}")
@@ -240,6 +391,11 @@ def run_all() -> list[dict]:
         print("No candidates: neither the docket nor test_grid.json yielded a row.")
         return []
     grid, removed = normalize_grid(raw_grid)
+    before_tf = len(grid)
+    grid = expand_timeframes(grid)
+    if len(grid) != before_tf:
+        print(f"  timeframe sweep: {before_tf:,} cell(s) -> {len(grid):,} "
+              f"(each undeclared cell swept across every chart its symbol has)")
     grid, coverage = hold_uncoverable(grid)
     print(f"Running {len(grid):,} executable test cells ({len(raw_grid):,} submitted; "
           f"{removed} unsupported parameter occurrence(s) removed)...")
@@ -251,6 +407,7 @@ def run_all() -> list[dict]:
     # of this stage can end up slower than the serial loop it replaced.
     grid.sort(key=lambda c: (str(c.get("symbol")), str(c.get("family"))))
     results = []
+    skips: Counter = Counter()
     t0 = time.time()
     if WORKERS > 1 and len(grid) > WORKERS:
         # ONE CORE WAS THE BINDING CONSTRAINT AT THIS STAGE. This was a serial `for` loop while
@@ -266,7 +423,9 @@ def run_all() -> list[dict]:
         # here: `exp_r > 0.05` and `max_dd_r > -30` are exactly as they were.
         with mp.Pool(WORKERS) as pool:
             for k, r in enumerate(pool.imap_unordered(run_cell, grid, chunksize=8)):
-                if r:
+                if r and "__skip__" in r:
+                    skips[r["__skip__"].split(":", 1)[0]] += 1
+                elif r:
                     results.append(r)
                     if r["exp_r"] > 0.05:
                         print(f"  PASS {r['symbol']:8s}.{r['family']:25s} n={r['n']:4d} "
@@ -279,6 +438,9 @@ def run_all() -> list[dict]:
     else:
         for i, cell in enumerate(grid):
             r = run_cell(cell)
+            if r and "__skip__" in r:
+                skips[r["__skip__"].split(":", 1)[0]] += 1
+                r = None
             if r:
                 results.append(r)
                 if r["exp_r"] > 0.05:
