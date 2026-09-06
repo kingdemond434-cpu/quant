@@ -45,6 +45,14 @@ def test_state_vector_cannot_terminate_the_hourly_controller() -> None:
     assert '"status": "OK" if r.returncode == 0 else "FAILED"' in body
 
 
+def test_daily_promotion_chain_cannot_terminate_hourly_discovery() -> None:
+    body = SRC.split("def daily()", 1)[1].split("\ndef ", 1)[0]
+    assert "subprocess.run(" in body
+    assert '"daily_cycle.py"' in body
+    assert "DAILY_CYCLE_HOURLY_BUDGET_SEC" in body
+    assert "daily_cycle.main(" not in body
+
+
 def test_one_leg_failure_cannot_terminate_later_independent_legs() -> None:
     body = SRC.split("def _costed(", 1)[1].split("\ndef ", 1)[0]
     assert "except KeyboardInterrupt:" in body

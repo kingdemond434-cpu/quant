@@ -217,15 +217,27 @@ def daily() -> dict:
     exactly one run per day whenever it happens to be awake, instead of missing the day entirely
     because the laptop was shut at the scheduled minute.
     """
+    # This chain includes terminal/native numerical work.  Keep it outside the controller for
+    # the same reason as state_vector(): on 2026-09-06 it terminated the process after the state
+    # refresh had returned, leaving every mining/publication leg below permanently unreachable.
+    target = BASE / "research" / "daily_cycle.py"
+    timeout_s = max(60, float(os.environ.get("DAILY_CYCLE_HOURLY_BUDGET_SEC", "900")))
     try:
-        import daily_cycle
-        return {"exit_code": daily_cycle.main([]),
+        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(target)],
+                           capture_output=True, text=True, cwd=str(BASE),
+                           timeout=timeout_s, check=False)
+        return {"exit_code": int(r.returncode),
+                "status": "OK" if r.returncode == 0 else "FAILED",
+                "tail": (r.stdout or r.stderr or "")[-500:],
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
-    except Exception as exc:
-        # Reported, never swallowed: this hourly cycle must survive, but a desk that cannot run its
-        # promotion chain has to say so rather than print "cycle done".
+    except subprocess.TimeoutExpired as exc:
+        return {"exit_code": None, "status": "TIMEOUT", "timeout_s": exc.timeout,
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except OSError as exc:
         print(f"daily cycle FAILED to start: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
+        return {"exit_code": None, "status": "FAILED_TO_START",
+                "error": f"{type(exc).__name__}: {exc}",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
 def record_tape() -> dict:
