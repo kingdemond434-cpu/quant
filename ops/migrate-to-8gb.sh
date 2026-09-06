@@ -83,8 +83,28 @@ elif [ -d "$ROOT/.git" ]; then
   cd "$ROOT" || exit 2
   git config core.editor true
   git config pull.rebase false
-  # THE STALE CHECKOUT HERE IS ELEVEN DAYS OLD. It is updated by MERGE, never by reset: this box
-  # may still hold state nobody has copied off it, and a reset would take that with it silently.
+  # AN UNFINISHED MERGE FROM BEFORE BLOCKS EVERY LATER GIT CALL, and this box was abandoned
+  # mid-merge: `error: Merging is not possible because you have unmerged files` on the first run
+  # here. Resolve it the way vps-repair.sh does -- CODE stays on the reviewed branch, DATA takes
+  # the incoming copy -- and if code conflicts remain, ABORT rather than guess. Aborting decides
+  # nothing: it restores the pre-merge tree, so the box keeps exactly what it had.
+  if [ -f .git/MERGE_HEAD ] || [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+    unmerged="$(git diff --name-only --diff-filter=U)"
+    if [ -n "$unmerged" ]; then
+      code="$(printf '%s\n' "$unmerged" | grep -E '\.(py|sh|ps1|ya?ml)$' || true)"
+      data="$(printf '%s\n' "$unmerged" | grep -vE '\.(py|sh|ps1|ya?ml)$' || true)"
+      [ -n "$data" ] && { printf '%s\n' "$data" | xargs -r git checkout --theirs -- 2>/dev/null; printf '%s\n' "$data" | xargs -r git add -- 2>/dev/null; info "$(printf '%s\n' "$data" | wc -l) data conflict(s) taken from the branch"; }
+      [ -n "$code" ] && { printf '%s\n' "$code" | xargs -r git checkout --ours -- 2>/dev/null; printf '%s\n' "$code" | xargs -r git add -- 2>/dev/null; info "$(printf '%s\n' "$code" | wc -l) code conflict(s) kept on this branch's version"; }
+    fi
+    if git commit --no-edit >/dev/null 2>&1; then ok "the abandoned merge was concluded"
+    else
+      git merge --abort >/dev/null 2>&1
+      [ -f .git/MERGE_HEAD ] && fail "could not clear the abandoned merge -- run: git status" \
+                             || warn "abandoned merge declined and the tree restored"
+    fi
+  fi
+  # UPDATED BY MERGE, NEVER BY RESET: this box may still hold state nobody has copied off it, and
+  # a reset would take that with it silently.
   if out="$(git fetch origin "$BRANCH" 2>&1 && git merge --no-edit "origin/$BRANCH" 2>&1)"; then
     ok "updated to origin/$BRANCH"
   else
@@ -150,9 +170,28 @@ step "Dashboard and tunnel"
 if [ "$CHECK" = 1 ]; then
   info "would start quant-desk-web and the $TUNNEL connector"
 else
-  systemctl --user enable --now quant-desk-web 2>/dev/null && ok "quant-desk-web started" || fail "quant-desk-web did not start"
+  # RESTART, NOT `enable --now`. `enable --now` starts a STOPPED unit and does nothing at all to a
+  # running one -- so this box, which had a serve_dashboard from before the migration already
+  # listening on :8788, kept serving the OLD process with the OLD token-gated arguments and
+  # answered 401 locally under a unit file that plainly says --no-auth. Measured here 2026-09-06.
+  # The unit file on disk is not the process that is running, and only a restart makes them agree.
+  systemctl --user enable quant-desk-web 2>/dev/null
+  systemctl --user restart quant-desk-web 2>/dev/null && ok "quant-desk-web restarted from ops/" || fail "quant-desk-web did not start"
+  sleep 3
   code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 http://127.0.0.1:8788/desk.html || echo 000)"
-  [ "$code" = "200" ] && ok "origin serves desk.html locally" || fail "origin returns $code locally -- do NOT cut the tunnel over yet"
+  if [ "$code" = "200" ]; then
+    ok "origin serves desk.html locally"
+  else
+    fail "origin returns $code locally -- do NOT cut the tunnel over yet"
+    if [ "$code" = "401" ]; then
+      # Name the two causes, because they need different fixes and look identical from here.
+      info "401 means the server wants a token. Either the running process predates this unit"
+      info "(check: pgrep -af serve_dashboard -- it must carry --no-auth), or a second server"
+      info "is holding :8788: pkill -f serve_dashboard, then systemctl --user start quant-desk-web"
+      running="$(pgrep -af serve_dashboard 2>/dev/null || true)"
+      [ -n "$running" ] && printf '%s\n' "$running" | while read -r l; do info "$l"; done
+    fi
+  fi
   if [ "$code" = "200" ]; then
     ( cd "$HOME" && nohup cloudflared tunnel --no-autoupdate run "$TUNNEL" >/tmp/cfd.log 2>&1 & )
     info "connector starting; waiting 25s for the edge to register"; sleep 25
