@@ -643,6 +643,15 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def market_intel() -> dict:
+    """P14/P16/P17/P23/P24/P26: what changed, what it looked like last time, what followed.
+
+    Every retrieval here is PAST-ONLY by construction. A neighbour drawn from after the query
+    window is tomorrow, and an answer built on tomorrow is perfect and unreachable.
+    """
+    return _producer("market_intelligence", "research/market_intelligence.py")
+
+
 def ml_layer() -> dict:
     """P6/P8/P9/P42: representation, self-supervision, mixture of experts, distillation.
 
@@ -718,6 +727,7 @@ def main() -> None:
     # board that is one full hour behind the pass that just produced it.
     ps = _costed("publish_survivors", publish_survivors)
     pd_ = _costed("publish_dashboard", publish_dashboard)
+    mi = _costed("market_intel", market_intel)
     mll = _costed("ml_layer", ml_layer)
     xc = _costed("experiment_cache", experiment_cache)
     og = _costed("opportunity_gap", opportunity_gap)
@@ -730,7 +740,7 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
