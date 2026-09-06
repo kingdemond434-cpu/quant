@@ -45,6 +45,15 @@ def test_state_vector_cannot_terminate_the_hourly_controller() -> None:
     assert '"status": "OK" if r.returncode == 0 else "FAILED"' in body
 
 
+def test_one_leg_failure_cannot_terminate_later_independent_legs() -> None:
+    body = SRC.split("def _costed(", 1)[1].split("\ndef ", 1)[0]
+    assert "except KeyboardInterrupt:" in body
+    assert "except BaseException as exc:" in body
+    assert '"status": "FAILED"' in body
+    assert "except BaseException as exc:\n        close_run" in body
+    assert "close_run(run, outcome=f" in body
+
+
 # ------------------------------------------------------- the loop that has to never stop, 24/7
 
 LAUNCHER = (DESK / "scripts" / "MT5Hourly.cmd").read_text("utf-8")

@@ -399,9 +399,19 @@ def _costed(name: str, fn):
     run = open_run(name, kind="hourly_cycle")
     try:
         out = fn()
+    except KeyboardInterrupt:
+        close_run(run, outcome="KeyboardInterrupt")
+        raise
     except BaseException as exc:
         close_run(run, outcome=f"{type(exc).__name__}: {exc}"[:200])
-        raise
+        # A producer's explicit non-zero/SystemExit is its verdict, not authority to terminate
+        # every independent producer after it.  The ledger and console retain the exact failure;
+        # the hourly factory continues so one broken organ cannot manufacture system-wide idle.
+        print(f"{name} FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"exit_code": int(exc.code) if isinstance(exc, SystemExit)
+                and isinstance(exc.code, int) else None,
+                "status": "FAILED", "error": f"{type(exc).__name__}: {exc}",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
     close_run(run, outcome="ok")
     return out
 
