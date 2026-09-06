@@ -303,6 +303,28 @@ def organ_liveness() -> dict[str, Any]:
     return out
 
 
+def blueprint_coverage() -> dict[str, Any]:
+    """The mandate's three declarations, as the closure report last computed them.
+
+    READ FROM THE ARTIFACT, NOT RECOMPUTED HERE. `closure_report` walks every capability three
+    times over and takes ~10 minutes on this tree; recomputing it inside a measurement that runs
+    before AND after every step would spend an hour of the night's budget answering the same
+    question twenty times. The step below regenerates it; this reports what is on disk and how
+    old that is, which is the honest shape of "the last time anyone computed coverage".
+    """
+    doc = _read(BASE / "reports" / "TIER6_CLOSURE.json")
+    if not isinstance(doc, dict):
+        return {"status": "ABSENT -- coverage has never been computed on this host"}
+    return {"architectural_pct": doc.get("architectural_coverage_pct"),
+            "operational_pct": doc.get("operational_coverage_pct"),
+            "measurement_pct": doc.get("measurement_coverage_pct"),
+            "measurement_denominator": doc.get("measurement_denominator"),
+            "declarations": doc.get("declarations"),
+            "owing_rent": doc.get("owing_rent"),
+            "chains_complete": doc.get("chains_complete"),
+            "computed_at": doc.get("generated_at")}
+
+
 def stale_and_broken() -> dict[str, Any]:
     """Whatever the issue board can see, and which of it is safe to repair automatically."""
     try:
@@ -366,6 +388,13 @@ STEPS: tuple[tuple[str, Any, str, tuple[str, ...]], ...] = (
      "scripts/check_miner_conversion.py", ()),
     ("rebuild_dashboard", lambda: {"note": "always rebuilt so the night's work is visible"},
      "scripts/build_zentech_state.py", ()),
+    # THE CLOSURE REPORT IS REGENERATED LAST, after the night's work has moved the tree. A
+    # coverage report that is only ever run by hand describes whatever the tree looked like the
+    # last time someone remembered -- and the whole point of §159 is that the three declarations
+    # are computed from the CURRENT state, not from an earlier reading of it. Running it after
+    # everything else means the numbers describe the desk the night leaves behind.
+    ("closure_report", blueprint_coverage,
+     "blueprint/closure_report.py", ("--write",)),
 )
 
 
