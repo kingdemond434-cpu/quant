@@ -1,0 +1,105 @@
+{
+  "updated_at": "2026-08-22T22:30:07+00:00",
+  "shadow_start": "2026-08-22T18:00:00+00:00",
+  "source": {
+    "fetched_at": "2026-08-22T22:30:05+00:00",
+    "source_server": "VantageMarkets-Live 14",
+    "source_company": "VIG Group Ltd.",
+    "account_trade_allowed": false,
+    "symbol": "XAUUSD",
+    "rows": {
+      "M1": 20000,
+      "M5": 20000,
+      "M15": 20000
+    },
+    "promotion_authority": false
+  },
+  "configured_sleeves": 4,
+  "sleeves": {
+    "xau_m5_anti_breakout_overlap": {
+      "status": "WAITING_FOR_FORWARD_BARS",
+      "timeframe": "M5",
+      "choice": {
+        "family": "anti_donchian_breakout",
+        "session": "overlap",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 9
+      },
+      "n": 0,
+      "days": 0,
+      "expectancy_r": null,
+      "max_drawdown_r": 0.0,
+      "last_source_bar": "2026-08-21T23:55:00+00:00",
+      "matured": false,
+      "source_trading_lag_hours": 0.0,
+      "source_stale": false,
+      "promotion_authority": false,
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
+    },
+    "xau_m5_anti_momentum_ny": {
+      "status": "WAITING_FOR_FORWARD_BARS",
+      "timeframe": "M5",
+      "choice": {
+        "family": "anti_three_bar_momentum",
+        "session": "new_york",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 9
+      },
+      "n": 0,
+      "days": 0,
+      "expectancy_r": null,
+      "max_drawdown_r": 0.0,
+      "last_source_bar": "2026-08-21T23:55:00+00:00",
+      "matured": false,
+      "source_trading_lag_hours": 0.0,
+      "source_stale": false,
+      "promotion_authority": false,
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
+    },
+    "xau_m15_anti_breakout": {
+      "status": "WAITING_FOR_FORWARD_BARS",
+      "timeframe": "M15",
+      "choice": {
+        "family": "anti_donchian_breakout",
+        "session": "all",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 6
+      },
+      "n": 0,
+      "days": 0,
+      "expectancy_r": null,
+      "max_drawdown_r": 0.0,
+      "last_source_bar": "2026-08-21T23:45:00+00:00",
+      "matured": false,
+      "source_trading_lag_hours": 0.0,
+      "source_stale": false,
+      "promotion_authority": false,
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
+    },
+    "xau_m15_anti_momentum": {
+      "status": "WAITING_FOR_FORWARD_BARS",
+      "timeframe": "M15",
+      "choice": {
+        "family": "anti_three_bar_momentum",
+        "session": "all",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 6
+      },
+      "n": 0,
+      "days": 0,
+      "expectancy_r": null,
+      "max_drawdown_r": 0.0,
+      "last_source_bar": "2026-08-21T23:45:00+00:00",
+      "matured": false,
+      "source_trading_lag_hours": 0.0,
+      "source_stale": false,
+      "promotion_authority": false,
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
+    }
+  },
+  "represented_sleeves": 4
+}
