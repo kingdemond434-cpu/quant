@@ -430,7 +430,7 @@ def _costed(name: str, fn):
     """
     try:
         from libs.ops.compute_ledger import close_run, open_run
-    except Exception:                                                   # noqa: BLE001
+    except Exception:
         return fn()
     run = open_run(name, kind="hourly_cycle")
     try:
@@ -508,7 +508,7 @@ def _producer(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
                         f"whatever it had already written",
                 "at": datetime.now(UTC).isoformat()}
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
 
 
@@ -628,7 +628,7 @@ def frontier() -> dict:
                 "queued": (doc.get("ranked") or {}).get("n_queued"),
                 "missing_capabilities": doc.get("capability_matrix_missing"),
                 "at": datetime.now(UTC).isoformat()}
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
 
 
@@ -910,7 +910,10 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt, "queue_compact": qc, "issue_board": ib,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
+                    "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
+                    "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,
+                    "queue_compact": qc, "issue_board": ib,
                     "execution_resolver": xr, "counterfactual_world": cw,
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,

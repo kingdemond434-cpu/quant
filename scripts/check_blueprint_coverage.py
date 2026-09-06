@@ -96,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
 
-    from coverage import registry                  # the enriched view over the one judge
+    from coverage import registry  # the enriched view over the one judge
     reg = registry()
     arch, oper = _findings(reg)
     lineage = _lineage()
