@@ -20,6 +20,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
+#: The legacy whole-file queue. `queue_store` prefers the streamed JSONL beside it and
+#: falls back here, so this constant stays as the fallback target rather than a reader.
 QUEUE = BASE / "data" / "research_queue.json"
 REPORTS = BASE / "reports"
 PY = Path(sys.executable)

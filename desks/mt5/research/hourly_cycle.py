@@ -643,6 +643,80 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def issue_board() -> dict:
+    """Every issue the desk can see, aggregated -- and the safe ones repaired.
+
+    Runs with --apply. A detector that reports and never acts is this desk's most repeated defect
+    class: `monitor_mt5_shadow_sync` returned FAILED every thirty minutes for ten days into a
+    timer whose exit code nobody reads. Only idempotent, cheap, reversible repairs are automated;
+    anything touching capital, a gate or a merge is refused with its reason.
+    """
+    return _producer("issue_board", "research/issue_board.py", ("--apply",))
+
+
+def queue_compact() -> dict:
+    """Keep the research queue streamable: archive terminal rows older than a fortnight.
+
+    Compaction is the maintenance half of the streaming fix. Streaming makes a large queue cheap
+    to READ; compaction stops it growing without bound in the first place. Nothing is deleted --
+    a queue that forgets what it tried will try it again, which on this desk means spending the
+    multiplicity budget twice on one hypothesis.
+    """
+    return _producer("queue_store", "research/queue_store.py", ("--compact",))
+
+
+def rebalance_trigger() -> dict:
+    """P3/P35/P73: when a rebalance is worth its cost, whether the RL may run, exit domains."""
+    return _producer("rebalance_trigger", "research/rebalance_trigger.py")
+
+
+def edge_confidence() -> dict:
+    """Size on the edge's LOWER BOUND, and stress k_eff toward crisis correlation.
+
+    Both adjustments only ever reduce size. They sit above the 20% nominal heat floor, which is
+    a floor and is never reduced by anything here -- this decides how far ABOVE the floor the
+    evidence justifies going, and the answer is often "not far".
+    """
+    return _producer("edge_confidence", "research/edge_confidence.py")
+
+
+def research_org() -> dict:
+    """P53/P54/P60/P62: role separation, agent reputation, borrowed methods, the implementer.
+
+    Runs hourly because role separation is only a control if it is checked at the moment a review
+    opens; a conflict discovered in a weekly audit is a conflict that already shipped.
+    """
+    return _producer("research_org", "research/research_org.py")
+
+
+def experiment_design() -> dict:
+    """P18/P19/P65/P29/P30: which experiment is worth running, and at what capital.
+
+    The EVSI queue is recomputed hourly because its inputs move: an experiment that could not
+    change the decision last hour becomes decisive the moment the decision it feeds changes.
+    """
+    return _producer("experiment_design", "research/experiment_design.py")
+
+
+def market_intel() -> dict:
+    """P14/P16/P17/P23/P24/P26: what changed, what it looked like last time, what followed.
+
+    Every retrieval here is PAST-ONLY by construction. A neighbour drawn from after the query
+    window is tomorrow, and an answer built on tomorrow is perfect and unreachable.
+    """
+    return _producer("market_intelligence", "research/market_intelligence.py")
+
+
+def ml_layer() -> dict:
+    """P6/P8/P9/P42: representation, self-supervision, mixture of experts, distillation.
+
+    CHALLENGER-ONLY. Everything here publishes beliefs through the forecast contract and owns no
+    position; the capital allocator decides money. A model the desk has not learned to trust can
+    therefore be run every hour at no risk, which is the only way it ever earns trust.
+    """
+    return _producer("ml_layer", "research/ml_layer.py")
+
+
 def experiment_cache() -> dict:
     """P39/P40: cache hit rate, hours saved, and whether the next increment buys anything."""
     return _producer("experiment_cache", "research/experiment_cache.py")
@@ -708,6 +782,14 @@ def main() -> None:
     # board that is one full hour behind the pass that just produced it.
     ps = _costed("publish_survivors", publish_survivors)
     pd_ = _costed("publish_dashboard", publish_dashboard)
+    ib = _costed("issue_board", issue_board)
+    qc = _costed("queue_compact", queue_compact)
+    rt = _costed("rebalance_trigger", rebalance_trigger)
+    ec = _costed("edge_confidence", edge_confidence)
+    ro = _costed("research_org", research_org)
+    xd = _costed("experiment_design", experiment_design)
+    mi = _costed("market_intel", market_intel)
+    mll = _costed("ml_layer", ml_layer)
     xc = _costed("experiment_cache", experiment_cache)
     og = _costed("opportunity_gap", opportunity_gap)
     (BASE / "data" / "sync_marker.json").write_text(
@@ -719,7 +801,7 @@ def main() -> None:
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt, "queue_compact": qc, "issue_board": ib,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
