@@ -53,7 +53,7 @@ for _p in (str(_DESK), str(_ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from frontier_intel import ontology, queue, registry, roi, unknowns  # noqa: E402
+from frontier_intel import claims, ontology, queue, registry, roi, unknowns  # noqa: E402
 
 #: GROWTH GOVERNANCE, carried verbatim on this surface because it is one (principal 2026-09-04,
 #: fenced by scripts/check_growth_governance.py G7). A frontier miner is exactly the organ most
@@ -137,13 +137,41 @@ def extract(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
     however hedged. Confidence is a property of the writer; grade is a property of the channel.
     """
     graded: list[dict[str, Any]] = []
+    batch: list[claims.Claim] = []
     for f in findings:
-        caps = ontology.map_to_capabilities(f.get("text", ""))
         src = str(f.get("source") or "").lower()
         grade = ("A" if any(k in src for k in ("official", "research", "arxiv", "ssrn", "paper"))
                  else "C" if any(k in src for k in ("news", "journal", "media"))
                  else "D")
-        graded.append({**f, "capabilities": list(caps), "evidence_grade": grade})
+        batch.append(claims.Claim(text=str(f.get("text") or ""), source=str(f.get("source") or ""),
+                                  firm=str(f.get("firm") or ""), url=str(f.get("url") or ""),
+                                  grade=grade))
+    # THE CLAIM COMPILER, because the literal mapper alone could not read a sentence.
+    # `ontology.map_to_capabilities` matches only text that already NAMES a capability group --
+    # deliberately, since a fuzzy mapper assigns something to everything and a miner that always
+    # finds a capability always finds a gap. But almost nothing in the wild names a group: a
+    # forum post saying "they run thousands of small models and average them" mapped to the empty
+    # tuple, so the claim was admitted and then went nowhere, which is the same outcome as
+    # refusing it while looking like the opposite.
+    #
+    # `claims.compile_claim` does the naming that the literal mapper refuses to guess: it strips
+    # the attribution language, recovers the general propositions the technical vocabulary
+    # implies, and attaches the falsifier for each. The union with the literal mapper is kept so
+    # a source that DOES name a group is not made worse off by the compiler not knowing its
+    # vocabulary yet.
+    compiled = claims.compile_all(batch)
+    for f, rec in zip(findings, compiled["compiled"], strict=True):
+        literal = ontology.map_to_capabilities(f.get("text", ""))
+        caps = sorted(set(literal) | set(rec["capabilities"]))
+        graded.append({**f, "capabilities": caps, "evidence_grade": rec["grade"],
+                       "mechanisms": rec["mechanisms"],
+                       "mechanism_text": rec["mechanism_text"],
+                       "implies_alpha": rec["implies_alpha"],
+                       "capital_authority": rec["capital_authority"],
+                       "capital_authority_why": rec["capital_authority_why"],
+                       "source_truth": rec["source_truth"],
+                       "source_idea_yield": rec["source_idea_yield"],
+                       "unrecognised": rec["unrecognised"] and not literal})
     return graded
 
 
