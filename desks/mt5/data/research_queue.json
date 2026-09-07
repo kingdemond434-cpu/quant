@@ -74456,5 +74456,89 @@
   "canonical_cell": "BTCUSD.vol_transition.p=44136fa355b3678a",
   "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
   "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-76bda2",
+  "geneology_id": "external:miner:scheduled_chatgpt",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD lvc_asia_london params={'bias_mode': 'off', 'ttl_bars': 288} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "lvc_asia_london",
+  "side": "BOTH",
+  "params": {
+   "bias_mode": "off",
+   "ttl_bars": 288
+  },
+  "created_at": "2026-09-07T14:50:00.721676+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  },
+  "canonical_cell": "XAUUSD.lvc_asia_london.p=4c6732df84fa9502",
+  "reconciled_at": "2026-09-07T14:56:48.728363+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260907-b7c8e9",
+  "geneology_id": "external:miner:scheduled_chatgpt",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD lvc_asia_london params={'bias_mode': 'source_shift', 'ttl_bars': 288} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "lvc_asia_london",
+  "side": "BOTH",
+  "params": {
+   "bias_mode": "source_shift",
+   "ttl_bars": 288
+  },
+  "created_at": "2026-09-07T14:50:00.721676+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  },
+  "canonical_cell": "XAUUSD.lvc_asia_london.p=24d48bedbc75509b",
+  "reconciled_at": "2026-09-07T14:56:48.728363+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260907-2df3c5",
+  "geneology_id": "external:miner:scheduled_chatgpt",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD lvc_asia_london params={'bias_mode': 'session_relative', 'ttl_bars': 288} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "lvc_asia_london",
+  "side": "BOTH",
+  "params": {
+   "bias_mode": "session_relative",
+   "ttl_bars": 288
+  },
+  "created_at": "2026-09-07T14:50:00.721676+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  },
+  "canonical_cell": "XAUUSD.lvc_asia_london.p=f4c0dd85ac1ac167",
+  "reconciled_at": "2026-09-07T14:56:48.728363+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  }
 ]
