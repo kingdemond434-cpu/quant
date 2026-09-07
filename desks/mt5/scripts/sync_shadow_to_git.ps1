@@ -262,6 +262,25 @@ if ($addRc -ne 0) { Write-SyncLog "ABORT: git add failed rc=$addRc"; exit 1 }
 # Nothing changed since the last cycle -- do not create empty commits every 15 minutes forever.
 & git -C $RepoRoot diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
+    # NOTHING NEW TO COMMIT IS NOT NOTHING TO DELIVER, and conflating the two is why this script
+    # could publish nothing for eleven days while reporting the truth every fifteen minutes.
+    #
+    # The old path exited here. So a commit that was MADE and then failed to PUSH -- which is what
+    # a full disk does, git dies mid-pack as "the remote end hung up unexpectedly" -- sat local
+    # forever: every later run found the state files unchanged against that local commit, said
+    # "no change since last sync", and never tried the push again. The desk had already recorded
+    # its state; delivery was one retry away and nothing ever retried.
+    #
+    # Delivery must not depend on having something NEW to say. Same principle the pull above
+    # already follows, applied to the push.
+    $ahead = (& git -C $RepoRoot rev-list --count "origin/$branch..HEAD" 2>$null)
+    if ($ahead -and [int]$ahead -gt 0) {
+        Write-SyncLog "no new state, but $ahead local commit(s) have never reached origin -- pushing"
+        $rc = Git-In-Repo @("push", "origin", "HEAD")
+        if ($rc -eq 0) { Write-SyncLog "delivered $ahead previously-unpushed commit(s)"; exit 0 }
+        Write-SyncLog "ABORT: push of $ahead unpushed commit(s) failed rc=$rc -- state is committed here and NOT on the branch"
+        exit 1
+    }
     Write-SyncLog "no change since last sync"
     exit 0
 }

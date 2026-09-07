@@ -520,18 +520,70 @@ def rebase_code(key: str, ident: dict) -> str | None:
     return why
 
 
+#: The gateway's own retirement file. Read, never duplicated: `decision_core.roster` skips a gold
+#: window whose `gold_<label>` appears here, so a sleeve named in it CANNOT place an order however
+#: this registry describes it.
+GOLD_RETIRED_FILE = REGISTRY.parent / "GOLD_RETIRED.json"
+
+
+def gateway_retired_keys() -> set[str]:
+    """Registry keys the GATEWAY will refuse, whatever status this file records.
+
+    TWO FILES DISAGREEING ABOUT THE SAME SLEEVES. Measured 2026-09-07: the registry carried
+    XAUUSD.asia, .asia#rr=1.5, .asia#rr=1.5_wait_bars=8 and .asia#rr=2.5 as LIVE, while
+    GOLD_RETIRED.json held `gold_asia` (retired 2026-09-02 for a rolling-20 expectancy of
+    -0.834R). `decision_core.roster` matches on `gold_<window>` and `continue`s past the whole
+    window, so those four placed no orders at all -- and anyone reading this registry, a person or
+    a dashboard, concluded gold was armed and could not explain the missing fills.
+
+    Both files were internally consistent and each was useless without the other. This one now
+    READS the gateway's file rather than holding a second opinion about it: retirement is the
+    gateway's decision, and a registry that reports "LIVE" for a sleeve the money path refuses is
+    not describing the desk.
+    """
+    try:
+        retired = json.loads(GOLD_RETIRED_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        # FAILS OPEN, the same way the gateway's own loader does: an unreadable file must not
+        # silently mark live sleeves retired here while the gateway goes on trading them. That
+        # would be the same disagreement in the opposite direction.
+        return set()
+    if not isinstance(retired, dict) or not retired:
+        return set()
+    out: set[str] = set()
+    for key, row in _read(REGISTRY).get("sleeves", {}).items():
+        ident = row.get("identity") or {}
+        if str(ident.get("symbol") or "").upper() != "XAUUSD":
+            continue                      # the gold book is the only one roster() gates this way
+        window = str(ident.get("selector") or "").strip().lower()
+        if window and f"gold_{window}" in retired:
+            out.add(key)
+    return out
+
+
 def live_keys() -> set[str]:
-    """Keys the registry considers live -- the ONE answer to 'how many sleeves are running'."""
-    return {k for k, v in _read(REGISTRY).get("sleeves", {}).items()
-            if str(v.get("status") or "").upper() == "LIVE"}
+    """Keys that are live AND that the gateway will actually trade.
+
+    "Live" has to mean "can place an order". A sleeve this returns while the money path refuses it
+    is a number that makes every downstream count wrong -- breadth, allocation, the dashboard's
+    roster -- and sends the reader looking for a broken gateway.
+    """
+    marked = {k for k, v in _read(REGISTRY).get("sleeves", {}).items()
+              if str(v.get("status") or "").upper() == "LIVE"}
+    return marked - gateway_retired_keys()
 
 
 def snapshot() -> dict:
     """Registry summary for dashboards and health, so they stop counting rows for themselves."""
     rows = _read(REGISTRY).get("sleeves", {})
+    blocked = gateway_retired_keys()
     by_status: dict[str, int] = {}
-    for v in rows.values():
-        s = str(v.get("status") or "UNKNOWN").upper()
+    for k, v in rows.items():
+        # A SLEEVE THE GATEWAY REFUSES IS COUNTED AS RETIRED HERE, not LIVE. A summary that says
+        # 45 live when 4 of them cannot place an order is the number every dashboard, breadth
+        # check and allocation reads, and it is wrong in the direction that hides a stopped book.
+        s = ("GATEWAY_RETIRED" if k in blocked
+             else str(v.get("status") or "UNKNOWN").upper())
         by_status[s] = by_status.get(s, 0) + 1
     return {"total": len(rows), "by_status": by_status,
             "live": sorted(live_keys()),
