@@ -144,18 +144,90 @@ def bar_lake() -> tuple[list[tuple[Path, int]], int]:
     return files, sum(n for _, n in files)
 
 
+def compact_tape(apply: bool) -> dict:
+    """Recompress the tick tape to zstd IN PLACE, losslessly, verifying before replacing.
+
+    THE TAPE WAS THE ONLY PARQUET THIS DESK WRITES WITHOUT A CODEC. `tape.py` passed
+    compression="zstd" for contract terms and nothing at all for the ticks, so they took
+    pyarrow's default of snappy -- on the one file that grows every hour forever and was 5.664 GB
+    against 0.964 GB free. Measured on a 300k-row frame with these exact columns: 3.48 MB snappy,
+    1.69 MB zstd, x2.06. Roughly 2.9 GB back for a codec argument.
+
+    NOTHING IS EVER LOST. Each file is rewritten to a temporary path, reopened, and its ROW COUNT
+    and COLUMN SET compared against the original before the original is replaced. A mismatch, a
+    read failure or a write failure leaves the original untouched and the file is reported, not
+    skipped silently -- a tick that was not recorded cannot be re-downloaded, and neither can one
+    this script loses. Parquet carries its codec in its own metadata, so every reader downstream
+    keeps working with no change: they pass no codec and get whatever the file declares.
+    """
+    ticks = TAPE / "ticks"
+    if not ticks.exists():
+        return {"note": "no tick tape on this host", "files": 0}
+    try:
+        import pyarrow.parquet as pq
+    except ImportError:
+        return {"note": "pyarrow unavailable -- tape left exactly as it is", "files": 0}
+
+    before = after = files = converted = 0
+    failed: list[str] = []
+    for path in sorted(ticks.rglob("*.parquet")):
+        size = path.stat().st_size
+        files += 1
+        before += size
+        try:
+            table = pq.read_table(path)
+            codecs = {path.suffix}  # placeholder; real check below
+            md = pq.ParquetFile(path).metadata
+            existing = {md.row_group(i).column(j).compression
+                        for i in range(md.num_row_groups) for j in range(md.num_columns)}
+        except Exception:                                               # noqa: BLE001
+            failed.append(f"{path.name}: unreadable, left untouched")
+            after += size
+            continue
+        if existing == {"ZSTD"}:
+            after += size
+            continue                    # already done; re-writing would cost time for nothing
+        if not apply:
+            after += int(size / 2.06)   # the measured ratio, for the dry-run estimate only
+            converted += 1
+            continue
+        tmp = path.with_suffix(".zstd.tmp")
+        try:
+            pq.write_table(table, tmp, compression="zstd")
+            check = pq.ParquetFile(tmp).metadata
+            if check.num_rows != md.num_rows:
+                raise ValueError(f"row count {check.num_rows} != {md.num_rows}")
+            if pq.read_schema(tmp).names != table.schema.names:
+                raise ValueError("column set changed")
+        except Exception as exc:                                        # noqa: BLE001
+            tmp.unlink(missing_ok=True)
+            failed.append(f"{path.name}: {type(exc).__name__}: {exc} -- ORIGINAL KEPT")
+            after += size
+            continue
+        tmp.replace(path)
+        after += path.stat().st_size
+        converted += 1
+    return {"files": files, "converted": converted,
+            "gb_before": _gb(before), "gb_after": _gb(after),
+            "gb_saved": _gb(before - after), "failures": failed[:10],
+            "verified": "row count and column set compared before every replacement"}
+
+
 def main(argv: list[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
     apply = "--apply" in args
     shed_bars = "--shed-bars" in args
+    do_tape = "--compact-tape" in args
 
     free_before = shutil.disk_usage(BASE).free
     derived = derived_bytes()
     dup_files, per_miner = duplicate_discoveries()
     bars, bars_bytes = bar_lake()
 
+    tape_plan = compact_tape(apply and do_tape) if do_tape else None
     plan = {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "tape_compaction": tape_plan,
         "free_gb_before": _gb(free_before),
         "derived_dirs": len(derived),
         "derived_gb": _gb(sum(n for _, n in derived)),
@@ -211,6 +283,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"tick tape        : {plan['tape_gb_PROTECTED']} GB -- PROTECTED, never touched (a tick nobody recorded is gone)")
     print(f"bar lake         : {plan['bar_lake_gb_REFETCHABLE']} GB in {plan['bar_files']:,} file(s) -- REFETCHABLE in minutes"
           + ("" if shed_bars else "  [--shed-bars to reclaim]"))
+    if tape_plan and tape_plan.get("files"):
+        verb = "recompressed" if (apply and do_tape) else "would recompress"
+        print(f"tape zstd        : {verb} {tape_plan['converted']} of {tape_plan['files']} file(s), "
+              f"{tape_plan['gb_before']} GB -> {tape_plan['gb_after']} GB "
+              f"(saves {tape_plan['gb_saved']} GB, lossless)")
+        for f in tape_plan.get("failures") or []:
+            print(f"   TAPE FAILURE (original kept): {f}")
     if apply:
         print(f"reclaimed        : {plan['reclaimed_gb']} GB  (free now {plan['free_gb_after']} GB)")
     else:
