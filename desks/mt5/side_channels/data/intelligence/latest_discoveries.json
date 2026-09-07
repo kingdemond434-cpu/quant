@@ -1,389 +1,10 @@
 {
   "youtube": {
-    "count": 27,
-    "discoveries": [
-      {
-        "source": "youtube",
-        "title": "Gold Price Outlook Today: Sept 7, 2026 Technical Pivot Alert!",
-        "channel": "Bulls Eye Trade",
-        "url": "https://youtube.com/watch?v=4-5UbBtOKTI",
-        "published": "2026-09-07T06:35:21Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "LIVESTREAM TRADING Th\u1ef1c chi\u1ebfn l\u01b0\u1edbt s\u00f3ng v\u00e0ng ng\u00e0y 07/09/2026. #xauusd   #forextrading",
-        "channel": "\u0110\u1ee9c Anh Trader (Th\u1ea7n R\u00f9a)",
-        "url": "https://youtube.com/watch?v=VQWcka4cA0Q",
-        "published": "2026-09-07T06:05:23Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "Turn Your Trading Skills Into a Strategy \ud83d\udcb0 #Forex #ForexTrading #ForexTrader #GoldTrading #XAUUSD",
-        "channel": "TradeWithX_1\ud83d\udcc8\ud83d\udcb8",
-        "url": "https://youtube.com/watch?v=JPXk3K8j6qs",
-        "published": "2026-09-07T05:17:27Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "XAUUSD Gold SELL Setup | 07 September 2026 | Entry, SL &amp; 3 Take Profit Levels | #shorts",
-        "channel": "Pip Trading",
-        "url": "https://youtube.com/watch?v=tm6BC7bU_ec",
-        "published": "2026-09-07T05:14:57Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "Daily gold live trade analysis \ud83d\udc4c\ud83d\udc4d#live#trending#trading#short #forex trading#fyp\u30b7\u309aviral",
-        "channel": "Learn trading with kainat Khan ",
-        "url": "https://youtube.com/watch?v=a-UJbKI6asw",
-        "published": "2026-09-07T07:51:10Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "POWER OF MSNR \u26a1 SNIPER ENTRY | Alchemist Concept | XAUUSD #Shorts #trading",
-        "channel": "Trader Mindsets | Zero 2 Prime",
-        "url": "https://youtube.com/watch?v=6mh2fCn2Xmg",
-        "published": "2026-09-07T07:36:24Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "Gold Buy Setup | Waiting for 1H Shift\ud83d\udc40",
-        "channel": "Blacklist Trades",
-        "url": "https://youtube.com/watch?v=h6zFyFa9E0s",
-        "published": "2026-09-07T06:40:26Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [
-          [
-            "1",
-            "H"
-          ],
-          [
-            "4",
-            "H"
-          ]
-        ],
-        "patterns": [],
-        "confidence": 0.4
-      },
-      {
-        "source": "youtube",
-        "title": "The Ultimate Candlestick Patterns Cheat Sheet #trading #alerts #forex #gold  #xauusd #priceaction",
-        "channel": "PIP PIONEER FX",
-        "url": "https://youtube.com/watch?v=kXLCluxO2NA",
-        "published": "2026-09-07T06:39:12Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "\ud83d\udd34 LIVE XAUUSD TRADING | GOLD Live Trading | CRYPTO Live | Bitcoin Live Trading #xauusd #forextrading",
-        "channel": "The Trading Girl",
-        "url": "https://youtube.com/watch?v=axUZF5XoyX8",
-        "published": "2026-09-07T06:39:27Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "Gold Price Outlook Today: Sept 7, 2026 Technical Pivot Alert!",
-        "channel": "Bulls Eye Trade",
-        "url": "https://youtube.com/watch?v=4-5UbBtOKTI",
-        "published": "2026-09-07T06:35:21Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "XAUUSD GOLD SMC &amp; ICT Trading Setup \ud83d\udd25 #shorts #shortsfeed",
-        "channel": "Onpoint Fx Nitesh",
-        "url": "https://youtube.com/watch?v=H6eiP1cjTcw",
-        "published": "2026-09-07T06:31:47Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [
-          "ICT"
-        ],
-        "confidence": 0.35
-      },
-      {
-        "source": "youtube",
-        "title": "Gold scalping small account  #xauusd #livetrading part 1",
-        "channel": "C.C.O.T 404",
-        "url": "https://youtube.com/watch?v=qN30rRPvSgE",
-        "published": "2026-09-07T06:18:02Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [
-          "SMA"
-        ],
-        "confidence": 0.35
-      },
-      {
-        "source": "youtube",
-        "title": "\u30109/7\u3011\u9031\u982d\u306eUSDJPY(\u30c9\u30eb\u5186)\u306a\u300c\u5f85\u3061\u300d\uff5cEURUSD(\u30e6\u30fc\u30ed\u30c9\u30eb)\u62bc\u3057\u76ee\u8cb7\u3044\u6ce8\u76ee\uff01\uff5c\u76f8\u5834\u5206\u6790\uff5c #Shorts",
-        "channel": "Taira'sFX",
-        "url": "https://youtube.com/watch?v=erzu1hlyAh8",
-        "published": "2026-09-06T22:00:06Z",
-        "symbols": [
-          "EURUSD",
-          "USDJPY"
-        ],
-        "timeframes": [],
-        "patterns": [
-          "SMA"
-        ],
-        "confidence": 0.55
-      },
-      {
-        "source": "youtube",
-        "title": "\u30aa\u30fc\u30b8\u30fc\u5186(AUDJPY)\u65e5\u8db3\u30ec\u30f3\u30b8\u30d6\u30ec\u30a4\u30af\u5f8c\u306e\u7acb\u3061\u56de\u308a\u89e3\u8aac",
-        "channel": "\u30a8\u30f3\u30bf\u30e1FX",
-        "url": "https://youtube.com/watch?v=Roc-BCMv3hM",
-        "published": "2026-09-06T11:15:06Z",
-        "symbols": [
-          "AUDJPY"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "7-11 Week Bias Gold,DXY,JPY BTCUSD",
-        "channel": "StegaFx",
-        "url": "https://youtube.com/watch?v=8zXeGC2zjpI",
-        "published": "2026-09-05T20:54:54Z",
-        "symbols": [
-          "BTCUSD"
-        ],
-        "timeframes": [
-          [
-            "11",
-            "Week"
-          ]
-        ],
-        "patterns": [],
-        "confidence": 0.30000000000000004
-      },
-      {
-        "source": "youtube",
-        "title": "\ud835\udc06\ud835\udc01\ud835\udc0f\ud835\udc09\ud835\udc0f\ud835\udc18 \ud835\udc07\ud835\udfd2 |\ud835\udfce\ud835\udfd5 - \ud835\udfcf\ud835\udfcf \ud835\udc12\ud835\udc1e\ud835\udc29\ud835\udc2d\ud835\udc1e\ud835\udc26\ud835\udc1b\ud835\udc1e\ud835\udc2b \ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #smc #trading #forex #gbpjpy #jpy #gbp #technicalanalysis",
-        "channel": "Samurai FX",
-        "url": "https://youtube.com/watch?v=VUA3MF_zae8",
-        "published": "2026-09-05T17:14:11Z",
-        "symbols": [
-          "GBPJPY"
-        ],
-        "timeframes": [
-          "H4"
-        ],
-        "patterns": [],
-        "confidence": 0.30000000000000004
-      },
-      {
-        "source": "youtube",
-        "title": "XAUUSD LONDON SESSION LIVE \ud83d\udd34 | WILL GOLD BREAK THE ASIAN RANGE? | Forex Trading &amp; Live Analysis",
-        "channel": "Next Trader ",
-        "url": "https://youtube.com/watch?v=iO1h-Zpi9zc",
-        "published": "2026-09-07T05:28:25Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "XAUUSD LONDON SESSION LIVE \ud83d\udd34 | WILL GOLD BREAK THE ASIAN RANGE? | Forex Trading &amp; Live Analysis",
-        "channel": "Next Trader ",
-        "url": "https://youtube.com/watch?v=-bIfCtMjSoc",
-        "published": "2026-09-07T05:00:57Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "LIVE | Forex Analysis | Sep 3 | CHINMAY GADHARI",
-        "channel": "Chinmay Gadhari ",
-        "url": "https://youtube.com/watch?v=mp2YPmTItUo",
-        "published": "2026-09-03T19:13:41Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "LIVE XAUUSD TRADING | GOLD , BTC | Live Forex Trading \ud83d\ude80  @BullishMasterFX @bullishbullmaster",
-        "channel": "Bullish Master FX",
-        "url": "https://youtube.com/watch?v=5hhA1rtpJqE",
-        "published": "2026-09-03T12:55:49Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "LIVE XAUUSD TRADING | GOLD , BTC | Live Forex Trading \ud83d\ude80  @BullishMasterFX @bullishbullmaster",
-        "channel": "Bullish Master FX",
-        "url": "https://youtube.com/watch?v=Am0NrMrg0dA",
-        "published": "2026-09-01T12:28:53Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "POWER OF MSNR \u26a1 SNIPER ENTRY | Alchemist Concept | XAUUSD #Shorts #trading",
-        "channel": "Trader Mindsets | Zero 2 Prime",
-        "url": "https://youtube.com/watch?v=6mh2fCn2Xmg",
-        "published": "2026-09-07T07:36:24Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "Gold &amp; Silver Scalping Strategy | Last Week\u2019s Complete Performance Review#xauusdscalping #xauusdlive",
-        "channel": "G.M Forex Academy ",
-        "url": "https://youtube.com/watch?v=qLaGGwsE_U4",
-        "published": "2026-09-07T05:26:28Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "POWER OF MSNR \u26a1 SNIPER ENTRY | Alchemist Concept | XAUUSD #Shorts #trading",
-        "channel": "Trader Mindsets | Zero 2 Prime",
-        "url": "https://youtube.com/watch?v=6mh2fCn2Xmg",
-        "published": "2026-09-07T07:36:24Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "\ud83d\udcc8MACD + Moving Average Strategy Explained #MACD #Forex #MovingAverage #EURUSD #WealthixMarket",
-        "channel": "Wealthix Markets",
-        "url": "https://youtube.com/watch?v=K55lIFait-I",
-        "published": "2026-09-06T16:36:04Z",
-        "symbols": [
-          "EURUSD"
-        ],
-        "timeframes": [],
-        "patterns": [
-          "moving average",
-          "EMA",
-          "MACD"
-        ],
-        "confidence": 0.6499999999999999
-      },
-      {
-        "source": "youtube",
-        "title": "\ud83d\udd34 BTC Live trading 367 / 07.09.2026 #bitcoin  #nfp  #forex #gold #gbpjpytrading  #crypto",
-        "channel": "UpDown FX",
-        "url": "https://youtube.com/watch?v=LzrCWxizYJU",
-        "published": "2026-09-07T04:01:52Z",
-        "symbols": [
-          "GBPJPY"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "Forex NFP Trade #forextrading #nfplivetrade #xauusdanalysis",
-        "channel": "FinTech Lab",
-        "url": "https://youtube.com/watch?v=oHONHJYmkDs",
-        "published": "2026-09-06T14:50:31Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      }
-    ]
+    "count": 0,
+    "discoveries": []
   },
   "github": {
-    "count": 21,
+    "count": 25,
     "discoveries": [
       {
         "source": "github",
@@ -417,40 +38,40 @@
         "repo": "Anastasiamaster/forex-c15-trader-strategy-mt4",
         "url": "https://github.com/Anastasiamaster/forex-c15-trader-strategy-mt4",
         "description": "Official repository for Forex C 15 Trader Strategy on MetaTrader 4 (MT4). Clean, non-repainting M15 intraday trading signals, trend filter, and risk management templates for Forex & Gold (XAUUSD).",
-        "stars": 99,
+        "stars": 60,
         "language": null,
         "symbols": [
           "XAUUSD"
         ],
         "patterns": [],
-        "confidence": 0.29900000000000004
+        "confidence": 0.26
       },
       {
         "source": "github",
         "repo": "Evangeline668/forex-market-balance-trading-system",
         "url": "https://github.com/Evangeline668/forex-market-balance-trading-system",
         "description": "An institutional Forex Market Balance strategy for MetaTrader 4 (MT4). Automate value area detection, identify order flow imbalances, and trade alongside smart money with high R:R setups.",
-        "stars": 102,
+        "stars": 63,
         "language": null,
         "symbols": [],
         "patterns": [
           "SMA",
           "smart money"
         ],
-        "confidence": 0.402
+        "confidence": 0.363
       },
       {
         "source": "github",
         "repo": "Evangeline668/forex-tp-pro-trend-strategy-mt4",
         "url": "https://github.com/Evangeline668/forex-tp-pro-trend-strategy-mt4",
         "description": "Forex TP PRO Trend Strategy for MetaTrader 4 \u2014 A 100% no-repaint signal system for trading currency pairs and XAUUSD with built-in risk rules.",
-        "stars": 101,
+        "stars": 62,
         "language": null,
         "symbols": [
           "XAUUSD"
         ],
         "patterns": [],
-        "confidence": 0.30100000000000005
+        "confidence": 0.262
       },
       {
         "source": "github",
@@ -470,7 +91,7 @@
         "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
         "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
         "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
-        "stars": 100,
+        "stars": 61,
         "language": null,
         "symbols": [
           "XAUUSD"
@@ -478,28 +99,28 @@
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.44999999999999996
+        "confidence": 0.411
       },
       {
         "source": "github",
         "repo": "Clementinemaster/forex-mpx-zones-strategy-mt4",
         "url": "https://github.com/Clementinemaster/forex-mpx-zones-strategy-mt4",
         "description": "Forex MPX Zones Strategy for MT4 \u2013 Master institutional order flow trading. Automate smart money zone mapping, get real-time price alerts, and upgrade your FX execution.",
-        "stars": 99,
+        "stars": 61,
         "language": null,
         "symbols": [],
         "patterns": [
           "SMA",
           "smart money"
         ],
-        "confidence": 0.399
+        "confidence": 0.361
       },
       {
         "source": "github",
         "repo": "Clementinemaster/forex-stgfx-advanced-strategy-mt4",
         "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
         "description": "High Risk-to-Reward Forex & Gold (XAUUSD) trading strategy for MetaTrader 4 (MT4). Built on 100% non-repainting signals, multi-timeframe volatility filtering, and systematic risk management. Includes complete setup guide, templates (.tpl), and presets (.set).",
-        "stars": 100,
+        "stars": 61,
         "language": null,
         "symbols": [
           "XAUUSD"
@@ -507,7 +128,7 @@
         "patterns": [
           "EMA"
         ],
-        "confidence": 0.44999999999999996
+        "confidence": 0.411
       },
       {
         "source": "github",
@@ -535,6 +156,19 @@
           "EMA"
         ],
         "confidence": 1.0
+      },
+      {
+        "source": "github",
+        "repo": "Gharrr544/hyperliquid-mean-reversion-bot",
+        "url": "https://github.com/Gharrr544/hyperliquid-mean-reversion-bot",
+        "description": "hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot",
+        "stars": 5,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "RSI"
+        ],
+        "confidence": 0.155
       },
       {
         "source": "github",
@@ -581,13 +215,13 @@
         "repo": "mbordash/DRADIS",
         "url": "https://github.com/mbordash/DRADIS",
         "description": "Low-latency Rust prediction-market trading bot for Kalshi & Polymarket. 9 autonomous strategies (Momentum, Maker, Arbitrage, ML, etc.), real-time Next.js Control Tower, and an AI LLM Advisor that delivers optimization recommendations via Ollama (local or remote), MCP + Telegram and OpenClaw.",
-        "stars": 23,
+        "stars": 24,
         "language": "Rust",
         "symbols": [],
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.173
+        "confidence": 0.174
       },
       {
         "source": "github",
@@ -664,7 +298,7 @@
         "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
         "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
         "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
-        "stars": 100,
+        "stars": 61,
         "language": null,
         "symbols": [
           "XAUUSD"
@@ -672,7 +306,47 @@
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.44999999999999996
+        "confidence": 0.411
+      },
+      {
+        "source": "github",
+        "repo": "ashikscreativemath-commits/Paldo-ALM",
+        "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+        "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+        "stars": 21,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "scalping",
+          "swing"
+        ],
+        "confidence": 0.321
+      },
+      {
+        "source": "github",
+        "repo": "goodie1972/algoforge",
+        "url": "https://github.com/goodie1972/algoforge",
+        "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
+        "stars": 5,
+        "language": "HTML",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.20500000000000002
+      },
+      {
+        "source": "github",
+        "repo": "xzaviourr/zerodha-algorithmic-trader",
+        "url": "https://github.com/xzaviourr/zerodha-algorithmic-trader",
+        "description": "Archived Flask trading-server prototype integrating Zerodha Kite Connect with five-EMA and Bank NIFTY short-straddle strategies; not investment advice.",
+        "stars": 8,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.158
       }
     ]
   },
@@ -763,6 +437,19 @@
       {
         "source": "reddit",
         "subreddit": "Forex",
+        "title": "Free scalping algo",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "scalp"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
         "title": "Trade",
         "url": "",
         "symbols": [
@@ -812,8 +499,8 @@
         "url": "",
         "symbols": [
           "XAUUSD",
-          "GBPUSD",
-          "EURUSD"
+          "EURUSD",
+          "GBPUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -940,17 +627,6 @@
           "support",
           "trend"
         ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "XAUUSD Trade",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
         "confidence": 0.3
       }
     ]
@@ -1132,7 +808,7 @@
     ]
   },
   "sec_edgar": {
-    "count": 10,
+    "count": 9,
     "discoveries": [
       {
         "source": "sec_edgar",
@@ -1217,18 +893,6 @@
         ],
         "confidence": 0.4,
         "description": "Millennium has recent 13F filing - check for position changes"
-      },
-      {
-        "source": "sec_edgar",
-        "type": "13f_filing",
-        "fund": "Baupost",
-        "cik": "0001061768",
-        "symbols": [
-          "US500",
-          "NAS100"
-        ],
-        "confidence": 0.4,
-        "description": "Baupost has recent 13F filing - check for position changes"
       },
       {
         "source": "sec_edgar",
@@ -2643,7 +2307,7 @@
     ]
   },
   "weather": {
-    "count": 3,
+    "count": 2,
     "discoveries": [
       {
         "source": "weather",
@@ -2666,17 +2330,6 @@
         ],
         "confidence": 0.5,
         "description": "Active hurricane Lowell - may impact energy prices"
-      },
-      {
-        "source": "weather",
-        "type": "hurricane",
-        "name": "Karina",
-        "symbols": [
-          "USOIL",
-          "NATGAS"
-        ],
-        "confidence": 0.5,
-        "description": "Active hurricane Karina - may impact energy prices"
       }
     ]
   },
