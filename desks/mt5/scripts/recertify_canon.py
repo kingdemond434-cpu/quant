@@ -35,7 +35,7 @@ DESK = BASE / "desks" / "mt5"
 OUT = DESK / "reports" / "recertification_audit.json"
 
 
-def main() -> int:
+def main(*, output_path: Path | None = None) -> int:
     import external_gauntlet as eg
 
     uni = json.loads((DESK / "reports" / "UNIVERSAL_SURVIVORS.json").read_text("utf-8"))
@@ -85,11 +85,15 @@ def main() -> int:
         print("recertify: no certificate could be rebuilt -- nothing measured, nothing claimed")
         return 1
 
+    # The gauntlet releases each cell's costs to bound memory. Snapshot scalar reporting
+    # values BEFORE invoking it, otherwise a completed run crashes before publishing results.
+    cost_totals = [round(float(c["costs"].spread_per_lot)
+                         + float(c["costs"].commission_per_lot), 4) for c in cells]
     res = eg.run_gauntlet(cells, "recertification_audit", meta)
     verdicts = {v.get("cell"): v for v in (res.get("verdicts") or [])}
 
     rows = []
-    for name, cell in zip(keys, cells, strict=False):
+    for name, cell, cost_total in zip(keys, cells, cost_totals, strict=True):
         cid = eg.cell_id({"sym": cell["sym"], "family": cell["family"],
                           "params": cell.get("params") or {}})
         v = verdicts.get(cid)
@@ -102,8 +106,7 @@ def main() -> int:
             "certificate": name, "cell": cid,
             "status": "STILL_PASSES" if v.get("passed") else "COST_REGRADE_FAIL",
             "gates_failing_now": fails,
-            "cost_per_lot_now": round(float(cell["costs"].spread_per_lot)
-                                      + float(cell["costs"].commission_per_lot), 4),
+            "cost_per_lot_now": cost_total,
         })
 
     still = sum(1 for r in rows if r["status"] == "STILL_PASSES")
@@ -119,9 +122,17 @@ def main() -> int:
                  "not a harsher bar. Nothing is revoked here: canon never shrinks from a script, "
                  "and retirement is the principal's call on this evidence."),
     }
-    OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    if output_path is not None:
+        doc["promotion_authority"] = False
+        doc["scope"] = "SELECTED_CERTIFICATE_DIAGNOSTIC"
+        doc["limitation"] = (
+            "Winner-only PBO/SPA and trial census do not replace original whole-search tests. "
+            "This isolated report cannot issue or restore certificates or authorize promotion.")
+    target = output_path or OUT
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     print(f"\nRECERTIFICATION: {still} still pass, {failed} FAIL under corrected costs "
-          f"({len(skipped)} unrebuildable) -> {OUT}")
+          f"({len(skipped)} unrebuildable) -> {target}")
     for r in rows:
         if r["status"] == "COST_REGRADE_FAIL":
             print(f"   FAIL {r['certificate']}: now fails {', '.join(r['gates_failing_now'])}")
