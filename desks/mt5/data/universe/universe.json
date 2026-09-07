@@ -4,13 +4,19 @@
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Equities",
   "bars": 9781,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 2.0,
   "spread_pts_at_collection": 35.0,
   "swap_long": -7.31,
   "swap_short": 2.81,
@@ -19,21 +25,26 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "ADAUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 33.0
    }
   },
   "asset_class": "Crypto",
   "bars": 47234,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 4,
-  "median_spread_pts": 33.0,
+  "median_spread_pts": 34.0,
   "spread_pts_at_collection": 32.0,
   "swap_long": -15.0,
   "swap_short": -15.0,
@@ -42,19 +53,24 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "ADP": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 4.0
    }
   },
   "asset_class": "Equities",
   "bars": 9671,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 32.0,
@@ -65,19 +81,24 @@
   "tick_value": 0.008620912609808875,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "AMD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Equities",
   "bars": 9675,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 57.0,
@@ -88,21 +109,26 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "AT&T": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Equities",
   "bars": 8257,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 3.0,
   "spread_pts_at_collection": 6.0,
   "swap_long": -7.31,
   "swap_short": 2.81,
@@ -111,8 +137,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "AUDCAD": {
   "_provenance": {
@@ -128,6 +153,7 @@
   "asset_class": "Forex",
   "bars": 37325,
   "contract_size": 100000.0,
+  "currency_profit": "CAD",
   "digits": 5,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 1.0,
@@ -138,8 +164,7 @@
   "tick_value": 0.6235308055394478,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CAD"
+  "volume_step": 0.01
  },
  "AUDCHF": {
   "_provenance": {
@@ -155,6 +180,7 @@
   "asset_class": "Forex",
   "bars": 37324,
   "contract_size": 100000.0,
+  "currency_profit": "CHF",
   "digits": 5,
   "median_spread_pts": 110.5,
   "spread_pts_at_collection": 0.0,
@@ -165,21 +191,26 @@
   "tick_value": 1.0623041376746163,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CHF"
+  "volume_step": 0.01
  },
  "AUDHUF": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 10900.0
    }
   },
   "asset_class": "Forex Exotics",
   "bars": 37287,
   "contract_size": 100000.0,
+  "currency_profit": "HUF",
   "digits": 5,
-  "median_spread_pts": 10900.0,
+  "median_spread_pts": 11400.0,
   "spread_pts_at_collection": 47606.0,
   "swap_long": -1199.37,
   "swap_short": 238.43,
@@ -188,23 +219,28 @@
   "tick_value": 0.0027161511746729115,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HUF"
+  "volume_step": 0.01
  },
  "AUDJPY": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 42998,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 16.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 1.0,
   "swap_long": 6.02,
@@ -214,19 +250,24 @@
   "tick_value": 0.5392899708244127,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "AUDNZD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Forex",
   "bars": 37315,
   "contract_size": 100000.0,
+  "currency_profit": "NZD",
   "digits": 5,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
@@ -240,21 +281,26 @@
   "tick_value": 0.5058859834170575,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "NZD"
+  "volume_step": 0.01
  },
  "AUDSGD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex Exotics",
   "bars": 37280,
   "contract_size": 100000.0,
+  "currency_profit": "SGD",
   "digits": 5,
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 4.0,
   "spread_pts_at_collection": 5.0,
   "swap_long": 3.22,
   "swap_short": -10.64,
@@ -263,23 +309,28 @@
   "tick_value": 0.6790940884859598,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SGD"
+  "volume_step": 0.01
  },
  "AUDUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37332,
   "contract_size": 100000.0,
+  "currency_profit": "USD",
   "digits": 5,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 14.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 0.0,
   "swap_long": -0.35,
@@ -289,19 +340,24 @@
   "tick_value": 0.8620838290315351,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "AUS200": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 80.0
    }
   },
   "asset_class": "Indices",
   "bars": 34253,
   "contract_size": 1.0,
+  "currency_profit": "AUD",
   "digits": 2,
   "median_spread_pts": 80.0,
   "spread_pts_at_collection": 100.0,
@@ -312,19 +368,24 @@
   "tick_value": 0.006182953596933255,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "AUD"
+  "volume_step": 0.01
  },
  "AVAXUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 50.0
    }
   },
   "asset_class": "Crypto",
   "bars": 39327,
   "contract_size": 1000.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 50.0,
   "spread_pts_at_collection": 35.0,
@@ -335,19 +396,24 @@
   "tick_value": 0.8620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "Accenture": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 5.0
    }
   },
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 13.0,
@@ -358,21 +424,26 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Adobe": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 5.0
    }
   },
   "asset_class": "Equities",
   "bars": 9616,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
-  "median_spread_pts": 5.0,
+  "median_spread_pts": 6.0,
   "spread_pts_at_collection": 22.0,
   "swap_long": -7.31,
   "swap_short": 2.81,
@@ -381,19 +452,24 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Airbnb": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 4.0
    }
   },
   "asset_class": "Equities",
   "bars": 8194,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 25.0,
@@ -404,21 +480,26 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "AlibabaGroup": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 3.0,
   "spread_pts_at_collection": 14.0,
   "swap_long": -7.31,
   "swap_short": 2.81,
@@ -427,21 +508,26 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Alphabet-A": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Equities",
   "bars": 9384,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 5.0,
   "spread_pts_at_collection": 32.0,
   "swap_long": -7.31,
   "swap_short": 2.81,
@@ -450,21 +536,26 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Alphabet-C": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Equities",
   "bars": 9567,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 5.0,
   "spread_pts_at_collection": 29.0,
   "swap_long": -7.31,
   "swap_short": 2.81,
@@ -473,19 +564,24 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Amazon": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 5.0
    }
   },
   "asset_class": "Equities",
   "bars": 8987,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 18.0,
@@ -496,19 +592,24 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "AmericanExpress": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 3.0
    }
   },
   "asset_class": "Equities",
   "bars": 9630,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 3.0,
   "spread_pts_at_collection": 23.0,
@@ -519,19 +620,24 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Amgen": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 4.0
    }
   },
   "asset_class": "Equities",
   "bars": 9658,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 53.0,
@@ -542,19 +648,24 @@
   "tick_value": 0.008620912609808875,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Apple": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Equities",
   "bars": 9676,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 11.0,
@@ -565,19 +676,24 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "AppliedMaterials": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 2.0
    }
   },
   "asset_class": "Equities",
   "bars": 9647,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 47.0,
@@ -588,19 +704,24 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Atlassian": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 7.0
    }
   },
   "asset_class": "Equities",
   "bars": 9328,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 7.0,
   "spread_pts_at_collection": 90.0,
@@ -611,19 +732,24 @@
   "tick_value": 0.008620912609808875,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "BCHUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 130.0
    }
   },
   "asset_class": "Crypto",
   "bars": 49598,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 130.0,
   "spread_pts_at_collection": 145.0,
@@ -634,21 +760,26 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "BNBUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 80.0
    }
   },
   "asset_class": "Crypto",
   "bars": 47249,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
-  "median_spread_pts": 80.0,
+  "median_spread_pts": 84.0,
   "spread_pts_at_collection": 104.0,
   "swap_long": -15.0,
   "swap_short": -15.0,
@@ -657,23 +788,28 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "BTCUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1900.0
    }
   },
   "asset_class": "Crypto",
   "bars": 49582,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 1900.0,
+  "median_spread_pts": 1694.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 1794.0,
   "swap_long": -15.0,
@@ -683,19 +819,24 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "Baidu": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 5.0
    }
   },
   "asset_class": "Equities",
   "bars": 8211,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 22.0,
@@ -706,21 +847,26 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "BankofAmericaCorp": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 3.0,
   "spread_pts_at_collection": 6.0,
   "swap_long": -7.31,
   "swap_short": 2.81,
@@ -729,8 +875,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Berkshire": {
   "_provenance": {
@@ -742,6 +887,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 30.0,
@@ -752,8 +898,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "BeyondMeat": {
   "_provenance": {
@@ -782,6 +927,7 @@
   "asset_class": "Equities",
   "bars": 8256,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 22:00:00+00:00",
@@ -795,8 +941,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "BlockInc": {
   "_provenance": {
@@ -825,6 +970,7 @@
   "asset_class": "Equities",
   "bars": 9628,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 30.0,
@@ -835,8 +981,7 @@
   "tick_value": 0.00862120990059745,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Booking": {
   "_provenance": {
@@ -848,6 +993,7 @@
   "asset_class": "Equities",
   "bars": 9324,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 15.0,
@@ -858,8 +1004,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Broadcom": {
   "_provenance": {
@@ -871,6 +1016,7 @@
   "asset_class": "Equities",
   "bars": 9612,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 0.0,
   "spread_pts_at_collection": 65.0,
@@ -881,8 +1027,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "CA60": {
   "_provenance": {
@@ -894,6 +1039,7 @@
   "asset_class": "Indices",
   "bars": 20958,
   "contract_size": 1.0,
+  "currency_profit": "CAD",
   "digits": 2,
   "median_spread_pts": 30.0,
   "spread_pts_at_collection": 150.0,
@@ -904,8 +1050,7 @@
   "tick_value": 0.006235346934703448,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CAD"
+  "volume_step": 0.01
  },
  "CADCHF": {
   "_provenance": {
@@ -921,6 +1066,7 @@
   "asset_class": "Forex",
   "bars": 37325,
   "contract_size": 100000.0,
+  "currency_profit": "CHF",
   "digits": 5,
   "median_spread_pts": 98.0,
   "spread_pts_at_collection": 0.0,
@@ -931,8 +1077,7 @@
   "tick_value": 1.0622928528936857,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CHF"
+  "volume_step": 0.01
  },
  "CADJPY": {
   "_provenance": {
@@ -948,6 +1093,7 @@
   "asset_class": "Forex",
   "bars": 37329,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
@@ -961,8 +1107,7 @@
   "tick_value": 0.5470489444690616,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "CHFDKK": {
   "_provenance": {
@@ -974,6 +1119,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37320,
   "contract_size": 100000.0,
+  "currency_profit": "DKK",
   "digits": 5,
   "median_spread_pts": 40.0,
   "spread_pts_at_collection": 80.0,
@@ -984,8 +1130,7 @@
   "tick_value": 0.13377013742206217,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "DKK"
+  "volume_step": 0.01
  },
  "CHFHUF": {
   "_provenance": {
@@ -997,6 +1142,7 @@
   "asset_class": "Forex Exotics",
   "bars": 43324,
   "contract_size": 100000.0,
+  "currency_profit": "HUF",
   "digits": 5,
   "median_spread_pts": 16618.0,
   "spread_pts_at_collection": 74150.0,
@@ -1007,23 +1153,28 @@
   "tick_value": 0.0027348108604808895,
   "updated_at": "2026-09-01T04:40:10+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HUF"
+  "volume_step": 0.01
  },
  "CHFJPY": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Forex",
   "bars": 37093,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 18.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 5.0,
   "swap_long": -9.73,
@@ -1033,8 +1184,7 @@
   "tick_value": 0.5470639080057331,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "CHFNOK": {
   "_provenance": {
@@ -1046,6 +1196,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37310,
   "contract_size": 100000.0,
+  "currency_profit": "NOK",
   "digits": 5,
   "median_spread_pts": 267.0,
   "spread_pts_at_collection": 544.0,
@@ -1056,8 +1207,7 @@
   "tick_value": 0.09268089689157542,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "NOK"
+  "volume_step": 0.01
  },
  "CHFPLN": {
   "_provenance": {
@@ -1069,6 +1219,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37319,
   "contract_size": 100000.0,
+  "currency_profit": "PLN",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 23:00:00+00:00",
@@ -1082,8 +1233,7 @@
   "tick_value": 0.2310397249703114,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "PLN"
+  "volume_step": 0.01
  },
  "CHFSEK": {
   "_provenance": {
@@ -1095,6 +1245,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37311,
   "contract_size": 100000.0,
+  "currency_profit": "SEK",
   "digits": 5,
   "median_spread_pts": 282.0,
   "spread_pts_at_collection": 1552.0,
@@ -1105,8 +1256,7 @@
   "tick_value": 0.08971860656237775,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SEK"
+  "volume_step": 0.01
  },
  "CHFSGD": {
   "_provenance": {
@@ -1118,6 +1268,7 @@
   "asset_class": "Forex Exotics",
   "bars": 36841,
   "contract_size": 100000.0,
+  "currency_profit": "SGD",
   "digits": 5,
   "median_spread_pts": 3.0,
   "spread_pts_at_collection": 3.0,
@@ -1128,8 +1279,7 @@
   "tick_value": 0.6791217597403039,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SGD"
+  "volume_step": 0.01
  },
  "CHINAH": {
   "_provenance": {
@@ -1141,6 +1291,7 @@
   "asset_class": "Indices",
   "bars": 24202,
   "contract_size": 1.0,
+  "currency_profit": "HKD",
   "digits": 2,
   "median_spread_pts": 180.0,
   "spread_pts_at_collection": 180.0,
@@ -1151,8 +1302,7 @@
   "tick_value": 0.0010992574515914502,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HKD"
+  "volume_step": 0.01
  },
  "COFARA": {
   "_provenance": {
@@ -1164,6 +1314,7 @@
   "asset_class": "Soft Commodity",
   "bars": 12703,
   "contract_size": 10.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 23.0,
   "spread_pts_at_collection": 30.0,
@@ -1174,8 +1325,7 @@
   "tick_value": 0.08621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "COFROB": {
   "_provenance": {
@@ -1187,6 +1337,7 @@
   "asset_class": "Soft Commodity",
   "bars": 12791,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 230.0,
   "spread_pts_at_collection": 350.0,
@@ -1197,8 +1348,7 @@
   "tick_value": 0.008638711795297085,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "CORN": {
   "_provenance": {
@@ -1210,6 +1360,7 @@
   "asset_class": "Soft Commodity",
   "bars": 24114,
   "contract_size": 2.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 68.0,
   "spread_pts_at_collection": 55.0,
@@ -1220,8 +1371,7 @@
   "tick_value": 0.017242717107361777,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "COTTON": {
   "_provenance": {
@@ -1233,6 +1383,7 @@
   "asset_class": "Soft Commodity",
   "bars": 22594,
   "contract_size": 10.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 112.0,
   "spread_pts_at_collection": 90.0,
@@ -1243,8 +1394,7 @@
   "tick_value": 0.00862135855368089,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "CVSHealth": {
   "_provenance": {
@@ -1256,6 +1406,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 10.0,
@@ -1266,8 +1417,7 @@
   "tick_value": 0.008621581542918233,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Caterpillar": {
   "_provenance": {
@@ -1279,6 +1429,7 @@
   "asset_class": "Equities",
   "bars": 9652,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 92.0,
@@ -1289,8 +1440,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "CharlesSchwab": {
   "_provenance": {
@@ -1302,6 +1452,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 17.0,
@@ -1312,8 +1463,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Charter": {
   "_provenance": {
@@ -1325,6 +1475,7 @@
   "asset_class": "Equities",
   "bars": 9684,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 9.0,
   "spread_pts_at_collection": 61.0,
@@ -1335,8 +1486,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Chevron": {
   "_provenance": {
@@ -1348,6 +1498,7 @@
   "asset_class": "Equities",
   "bars": 9791,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 16.0,
@@ -1358,8 +1509,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Cisco": {
   "_provenance": {
@@ -1371,6 +1521,7 @@
   "asset_class": "Equities",
   "bars": 9861,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 11.0,
@@ -1381,8 +1532,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Citigroup": {
   "_provenance": {
@@ -1394,6 +1544,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 7.0,
@@ -1404,8 +1555,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Coca-Cola": {
   "_provenance": {
@@ -1417,6 +1567,7 @@
   "asset_class": "Equities",
   "bars": 9641,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 5.0,
@@ -1427,8 +1578,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Coinbase": {
   "_provenance": {
@@ -1440,6 +1590,7 @@
   "asset_class": "Equities",
   "bars": 8110,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 35.0,
@@ -1450,8 +1601,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Comcast": {
   "_provenance": {
@@ -1463,6 +1613,7 @@
   "asset_class": "Equities",
   "bars": 9853,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 5.0,
@@ -1473,8 +1624,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "CostcoWholesale": {
   "_provenance": {
@@ -1486,6 +1636,7 @@
   "asset_class": "Equities",
   "bars": 9748,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 6.0,
   "spread_pts_at_collection": 98.0,
@@ -1496,8 +1647,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "DOGEUSD": {
   "_provenance": {
@@ -1509,6 +1659,7 @@
   "asset_class": "Crypto",
   "bars": 47204,
   "contract_size": 1000.0,
+  "currency_profit": "USD",
   "digits": 5,
   "median_spread_pts": 38.0,
   "spread_pts_at_collection": 42.0,
@@ -1519,8 +1670,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "DOTUSD": {
   "_provenance": {
@@ -1532,6 +1682,7 @@
   "asset_class": "Crypto",
   "bars": 47194,
   "contract_size": 50.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 33.0,
   "spread_pts_at_collection": 30.0,
@@ -1542,8 +1693,7 @@
   "tick_value": 0.04310493465291907,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "DocuSign": {
   "_provenance": {
@@ -1555,6 +1705,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 3.0,
   "spread_pts_at_collection": 32.0,
@@ -1565,8 +1716,7 @@
   "tick_value": 0.008621284226498379,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Doordash": {
   "_provenance": {
@@ -1578,6 +1728,7 @@
   "asset_class": "Equities",
   "bars": 8180,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 27.0,
@@ -1588,8 +1739,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Dow": {
   "_provenance": {
@@ -1601,6 +1751,7 @@
   "asset_class": "Equities",
   "bars": 9686,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 7.0,
@@ -1611,8 +1762,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "E35": {
   "_provenance": {
@@ -1624,6 +1774,7 @@
   "asset_class": "Indices",
   "bars": 18314,
   "contract_size": 1.0,
+  "currency_profit": "EUR",
   "digits": 2,
   "median_spread_pts": 600.0,
   "spread_pts_at_collection": 1100.0,
@@ -1634,8 +1785,7 @@
   "tick_value": 0.01,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "EUR"
+  "volume_step": 0.01
  },
  "EOSUSD": {
   "_provenance": {
@@ -1647,6 +1797,7 @@
   "asset_class": "Crypto",
   "bars": 40144,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 4,
   "median_spread_pts": 62.0,
   "spread_pts_at_collection": 103.0,
@@ -1657,23 +1808,28 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "ETHUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 251.0
    }
   },
   "asset_class": "Crypto",
   "bars": 49584,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 251.0,
+  "median_spread_pts": 258.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 331.0,
   "swap_long": -15.0,
@@ -1683,23 +1839,28 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "EURAUD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37320,
   "contract_size": 100000.0,
+  "currency_profit": "AUD",
   "digits": 5,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 4.0,
   "swap_long": -11.51,
@@ -1709,8 +1870,7 @@
   "tick_value": 0.618291536825444,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "AUD"
+  "volume_step": 0.01
  },
  "EURCAD": {
   "_provenance": {
@@ -1722,6 +1882,7 @@
   "asset_class": "Forex",
   "bars": 43265,
   "contract_size": 100000.0,
+  "currency_profit": "CAD",
   "digits": 5,
   "median_spread_pts": 0.0,
   "spread_pts_at_collection": 0.0,
@@ -1732,8 +1893,7 @@
   "tick_value": 0.6205514219935835,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CAD"
+  "volume_step": 0.01
  },
  "EURCHF": {
   "_provenance": {
@@ -1749,6 +1909,7 @@
   "asset_class": "Forex",
   "bars": 37327,
   "contract_size": 100000.0,
+  "currency_profit": "CHF",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
@@ -1762,8 +1923,7 @@
   "tick_value": 1.0622928528936857,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CHF"
+  "volume_step": 0.01
  },
  "EURCZK": {
   "_provenance": {
@@ -1775,6 +1935,7 @@
   "asset_class": "Forex Exotics",
   "bars": 43312,
   "contract_size": 100000.0,
+  "currency_profit": "CZK",
   "digits": 5,
   "median_spread_pts": 674.0,
   "spread_pts_at_collection": 2340.0,
@@ -1785,8 +1946,7 @@
   "tick_value": 0.04125021140733347,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CZK"
+  "volume_step": 0.01
  },
  "EURDKK": {
   "_provenance": {
@@ -1798,6 +1958,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37213,
   "contract_size": 100000.0,
+  "currency_profit": "DKK",
   "digits": 5,
   "median_spread_pts": 33.0,
   "spread_pts_at_collection": 51.0,
@@ -1808,23 +1969,28 @@
   "tick_value": 0.13377013742206217,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "DKK"
+  "volume_step": 0.01
  },
  "EURGBP": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37334,
   "contract_size": 100000.0,
+  "currency_profit": "GBP",
   "digits": 5,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 0.0,
   "swap_long": -6.12,
@@ -1834,8 +2000,7 @@
   "tick_value": 1.1636295934278202,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "GBP"
+  "volume_step": 0.01
  },
  "EURHKD": {
   "_provenance": {
@@ -1847,6 +2012,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37320,
   "contract_size": 100000.0,
+  "currency_profit": "HKD",
   "digits": 5,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 56.0,
@@ -1857,8 +2023,7 @@
   "tick_value": 0.10993094138262344,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HKD"
+  "volume_step": 0.01
  },
  "EURHUF": {
   "_provenance": {
@@ -1870,6 +2035,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37250,
   "contract_size": 100000.0,
+  "currency_profit": "HUF",
   "digits": 5,
   "median_spread_pts": 14100.0,
   "spread_pts_at_collection": 73704.0,
@@ -1880,8 +2046,7 @@
   "tick_value": 0.0027161511746729115,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HUF"
+  "volume_step": 0.01
  },
  "EURILS": {
   "_provenance": {
@@ -1893,6 +2058,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37153,
   "contract_size": 100000.0,
+  "currency_profit": "ILS",
   "digits": 5,
   "first": "2018-01-01 00:00:00+00:00",
   "last": "2026-08-31 23:00:00+00:00",
@@ -1906,8 +2072,7 @@
   "tick_value": 0.2845298286845902,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "ILS"
+  "volume_step": 0.01
  },
  "EURJPY": {
   "_provenance": {
@@ -1923,6 +2088,7 @@
   "asset_class": "Forex",
   "bars": 37326,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
@@ -1936,8 +2102,7 @@
   "tick_value": 0.5470609152329113,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "EURMXN": {
   "_provenance": {
@@ -1949,6 +2114,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37314,
   "contract_size": 100000.0,
+  "currency_profit": "MXN",
   "digits": 5,
   "median_spread_pts": 185.0,
   "spread_pts_at_collection": 414.0,
@@ -1959,8 +2125,7 @@
   "tick_value": 0.05079914677753074,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "MXN"
+  "volume_step": 0.01
  },
  "EURNOK": {
   "_provenance": {
@@ -1972,6 +2137,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37313,
   "contract_size": 100000.0,
+  "currency_profit": "NOK",
   "digits": 5,
   "median_spread_pts": 153.0,
   "spread_pts_at_collection": 372.0,
@@ -1982,8 +2148,7 @@
   "tick_value": 0.09267917897368931,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "NOK"
+  "volume_step": 0.01
  },
  "EURNZD": {
   "_provenance": {
@@ -1995,6 +2160,7 @@
   "asset_class": "Forex",
   "bars": 37222,
   "contract_size": 100000.0,
+  "currency_profit": "NZD",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 23:00:00+00:00",
@@ -2008,8 +2174,7 @@
   "tick_value": 0.5059499716668016,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "NZD"
+  "volume_step": 0.01
  },
  "EURPLN": {
   "_provenance": {
@@ -2021,6 +2186,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37318,
   "contract_size": 100000.0,
+  "currency_profit": "PLN",
   "digits": 5,
   "median_spread_pts": 124.0,
   "spread_pts_at_collection": 160.0,
@@ -2031,8 +2197,7 @@
   "tick_value": 0.2310359884759249,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "PLN"
+  "volume_step": 0.01
  },
  "EURRUB": {
   "_provenance": {
@@ -2044,6 +2209,7 @@
   "asset_class": "Forex Exotics",
   "bars": 9205,
   "contract_size": 100000.0,
+  "currency_profit": "RUB",
   "digits": 5,
   "median_spread_pts": 34.0,
   "spread_pts_at_collection": 1397460.0,
@@ -2054,8 +2220,7 @@
   "tick_value": 0.007347436001995564,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "RUB"
+  "volume_step": 0.01
  },
  "EURSEK": {
   "_provenance": {
@@ -2067,6 +2232,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37326,
   "contract_size": 100000.0,
+  "currency_profit": "SEK",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 23:00:00+00:00",
@@ -2080,8 +2246,7 @@
   "tick_value": 0.08971345522401451,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SEK"
+  "volume_step": 0.01
  },
  "EURSGD": {
   "_provenance": {
@@ -2093,6 +2258,7 @@
   "asset_class": "Forex Exotics",
   "bars": 42783,
   "contract_size": 100000.0,
+  "currency_profit": "SGD",
   "digits": 5,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 4.0,
@@ -2103,8 +2269,7 @@
   "tick_value": 0.6782327966251136,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SGD"
+  "volume_step": 0.01
  },
  "EURTRY": {
   "_provenance": {
@@ -2116,6 +2281,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37274,
   "contract_size": 100000.0,
+  "currency_profit": "TRY",
   "digits": 5,
   "median_spread_pts": 1386.0,
   "spread_pts_at_collection": 5480.0,
@@ -2126,23 +2292,28 @@
   "tick_value": 0.017780821854479267,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "TRY"
+  "volume_step": 0.01
  },
  "EURUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37342,
   "contract_size": 100000.0,
+  "currency_profit": "USD",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 12.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 0.0,
   "swap_long": -6.35,
@@ -2152,8 +2323,7 @@
   "tick_value": 0.8620689655172415,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "EURZAR": {
   "_provenance": {
@@ -2165,6 +2335,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37318,
   "contract_size": 100000.0,
+  "currency_profit": "ZAR",
   "digits": 5,
   "median_spread_pts": 312.0,
   "spread_pts_at_collection": 720.0,
@@ -2175,8 +2346,7 @@
   "tick_value": 0.05377220052513932,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "ZAR"
+  "volume_step": 0.01
  },
  "EUSTX50": {
   "_provenance": {
@@ -2188,6 +2358,7 @@
   "asset_class": "Indices",
   "bars": 31686,
   "contract_size": 1.0,
+  "currency_profit": "EUR",
   "digits": 2,
   "median_spread_pts": 120.0,
   "spread_pts_at_collection": 140.0,
@@ -2198,8 +2369,7 @@
   "tick_value": 0.01,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "EUR"
+  "volume_step": 0.01
  },
  "ElectronicArts": {
   "_provenance": {
@@ -2211,6 +2381,7 @@
   "asset_class": "Equities",
   "bars": 9663,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 10.0,
@@ -2221,8 +2392,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "ExxonMobil": {
   "_provenance": {
@@ -2234,6 +2404,7 @@
   "asset_class": "Equities",
   "bars": 8936,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 16.0,
@@ -2244,8 +2415,7 @@
   "tick_value": 0.008638786423283256,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "FRA40": {
   "_provenance": {
@@ -2257,6 +2427,7 @@
   "asset_class": "Indices",
   "bars": 25341,
   "contract_size": 1.0,
+  "currency_profit": "EUR",
   "digits": 2,
   "median_spread_pts": 78.0,
   "spread_pts_at_collection": 120.0,
@@ -2267,8 +2438,7 @@
   "tick_value": 0.01,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "EUR"
+  "volume_step": 0.01
  },
  "Ford": {
   "_provenance": {
@@ -2280,6 +2450,7 @@
   "asset_class": "Equities",
   "bars": 8257,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 5.0,
@@ -2290,8 +2461,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "GBPAUD": {
   "_provenance": {
@@ -2307,6 +2477,7 @@
   "asset_class": "Forex",
   "bars": 53684,
   "contract_size": 100000.0,
+  "currency_profit": "AUD",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
@@ -2320,8 +2491,7 @@
   "tick_value": 0.6177568015023847,
   "updated_at": "2026-09-01T04:40:10+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "AUD"
+  "volume_step": 0.01
  },
  "GBPCAD": {
   "_provenance": {
@@ -2333,6 +2503,7 @@
   "asset_class": "Forex",
   "bars": 37297,
   "contract_size": 100000.0,
+  "currency_profit": "CAD",
   "digits": 5,
   "median_spread_pts": 0.0,
   "spread_pts_at_collection": 3.0,
@@ -2343,8 +2514,7 @@
   "tick_value": 0.6235346934703447,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CAD"
+  "volume_step": 0.01
  },
  "GBPCHF": {
   "_provenance": {
@@ -2360,6 +2530,7 @@
   "asset_class": "Forex",
   "bars": 37281,
   "contract_size": 100000.0,
+  "currency_profit": "CHF",
   "digits": 5,
   "median_spread_pts": 165.0,
   "spread_pts_at_collection": 2.0,
@@ -2370,8 +2541,7 @@
   "tick_value": 1.0623041376746163,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CHF"
+  "volume_step": 0.01
  },
  "GBPDKK": {
   "_provenance": {
@@ -2383,6 +2553,7 @@
   "asset_class": "Forex Exotics",
   "bars": 43264,
   "contract_size": 100000.0,
+  "currency_profit": "DKK",
   "digits": 5,
   "median_spread_pts": 44.0,
   "spread_pts_at_collection": 96.0,
@@ -2393,8 +2564,7 @@
   "tick_value": 0.13377711662153918,
   "updated_at": "2026-09-01T04:40:10+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "DKK"
+  "volume_step": 0.01
  },
  "GBPHUF": {
   "_provenance": {
@@ -2406,6 +2576,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37286,
   "contract_size": 100000.0,
+  "currency_profit": "HUF",
   "digits": 5,
   "first": "2018-01-01 00:00:00+00:00",
   "last": "2026-08-31 23:00:00+00:00",
@@ -2419,23 +2590,28 @@
   "tick_value": 0.0027161511746729115,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HUF"
+  "volume_step": 0.01
  },
  "GBPJPY": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 1.0
    }
   },
   "asset_class": "Forex",
   "bars": 37283,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 7.0,
   "swap_long": 8.18,
@@ -2445,8 +2621,7 @@
   "tick_value": 0.5470878513671725,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "GBPMXN": {
   "_provenance": {
@@ -2458,6 +2633,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37310,
   "contract_size": 100000.0,
+  "currency_profit": "MXN",
   "digits": 5,
   "median_spread_pts": 300.0,
   "spread_pts_at_collection": 1060.0,
@@ -2468,8 +2644,7 @@
   "tick_value": 0.050799249999873,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "MXN"
+  "volume_step": 0.01
  },
  "GBPNOK": {
   "_provenance": {
@@ -2481,6 +2656,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37306,
   "contract_size": 100000.0,
+  "currency_profit": "NOK",
   "digits": 5,
   "median_spread_pts": 276.0,
   "spread_pts_at_collection": 858.0,
@@ -2491,8 +2667,7 @@
   "tick_value": 0.09267746111948812,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "NOK"
+  "volume_step": 0.01
  },
  "GBPNZD": {
   "_provenance": {
@@ -2504,6 +2679,7 @@
   "asset_class": "Forex",
   "bars": 43054,
   "contract_size": 100000.0,
+  "currency_profit": "NZD",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 23:00:00+00:00",
@@ -2517,8 +2693,7 @@
   "tick_value": 0.5099699117752052,
   "updated_at": "2026-09-01T00:07:02+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "NZD"
+  "volume_step": 0.01
  },
  "GBPPLN": {
   "_provenance": {
@@ -2530,6 +2705,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37320,
   "contract_size": 100000.0,
+  "currency_profit": "PLN",
   "digits": 5,
   "median_spread_pts": 165.0,
   "spread_pts_at_collection": 671.0,
@@ -2540,8 +2716,7 @@
   "tick_value": 0.23102958333814644,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "PLN"
+  "volume_step": 0.01
  },
  "GBPSEK": {
   "_provenance": {
@@ -2553,6 +2728,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37316,
   "contract_size": 100000.0,
+  "currency_profit": "SEK",
   "digits": 5,
   "median_spread_pts": 223.0,
   "spread_pts_at_collection": 528.0,
@@ -2563,8 +2739,7 @@
   "tick_value": 0.08971345522401451,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SEK"
+  "volume_step": 0.01
  },
  "GBPSGD": {
   "_provenance": {
@@ -2576,6 +2751,7 @@
   "asset_class": "Forex Exotics",
   "bars": 42849,
   "contract_size": 100000.0,
+  "currency_profit": "SGD",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 23:00:00+00:00",
@@ -2589,8 +2765,7 @@
   "tick_value": 0.6771305914058586,
   "updated_at": "2026-09-01T00:07:02+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SGD"
+  "volume_step": 0.01
  },
  "GBPTRY": {
   "_provenance": {
@@ -2602,6 +2777,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37211,
   "contract_size": 100000.0,
+  "currency_profit": "TRY",
   "digits": 5,
   "median_spread_pts": 1718.0,
   "spread_pts_at_collection": 7326.0,
@@ -2612,23 +2788,28 @@
   "tick_value": 0.0177805436401218,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "TRY"
+  "volume_step": 0.01
  },
  "GBPUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37328,
   "contract_size": 100000.0,
+  "currency_profit": "USD",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 0.0,
   "swap_long": -2.0,
@@ -2638,8 +2819,7 @@
   "tick_value": 0.8620615339522936,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "GBPZAR": {
   "_provenance": {
@@ -2651,6 +2831,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37314,
   "contract_size": 100000.0,
+  "currency_profit": "ZAR",
   "digits": 5,
   "median_spread_pts": 381.0,
   "spread_pts_at_collection": 1467.0,
@@ -2661,8 +2842,7 @@
   "tick_value": 0.053774282449418565,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "ZAR"
+  "volume_step": 0.01
  },
  "GER40": {
   "_provenance": {
@@ -2674,6 +2854,7 @@
   "asset_class": "Indices",
   "bars": 29295,
   "contract_size": 1.0,
+  "currency_profit": "EUR",
   "digits": 2,
   "median_spread_pts": 80.0,
   "spread_pts_at_collection": 320.0,
@@ -2684,8 +2865,7 @@
   "tick_value": 0.01,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "EUR"
+  "volume_step": 0.01
  },
  "GeneralElectric": {
   "_provenance": {
@@ -2697,6 +2877,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 22:00:00+00:00",
@@ -2710,8 +2891,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "GeneralMotors": {
   "_provenance": {
@@ -2723,6 +2903,7 @@
   "asset_class": "Equities",
   "bars": 8257,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 13.0,
@@ -2733,8 +2914,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "GileadSciences": {
   "_provenance": {
@@ -2746,6 +2926,7 @@
   "asset_class": "Equities",
   "bars": 9847,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 18.0,
@@ -2756,8 +2937,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "GoldmanSachs": {
   "_provenance": {
@@ -2769,6 +2949,7 @@
   "asset_class": "Equities",
   "bars": 9722,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 6.0,
   "spread_pts_at_collection": 41.0,
@@ -2779,8 +2960,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "HK50": {
   "_provenance": {
@@ -2792,6 +2972,7 @@
   "asset_class": "Indices",
   "bars": 26100,
   "contract_size": 1.0,
+  "currency_profit": "HKD",
   "digits": 2,
   "median_spread_pts": 420.0,
   "spread_pts_at_collection": 420.0,
@@ -2802,8 +2983,7 @@
   "tick_value": 0.0010992574515914502,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HKD"
+  "volume_step": 0.01
  },
  "HKDJPY": {
   "_provenance": {
@@ -2815,6 +2995,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37319,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "median_spread_pts": 0.0,
   "spread_pts_at_collection": 2.0,
@@ -2825,8 +3006,7 @@
   "tick_value": 0.5469651637887183,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "HomeDepot": {
   "_provenance": {
@@ -2838,6 +3018,7 @@
   "asset_class": "Equities",
   "bars": 9747,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 21.0,
@@ -2848,8 +3029,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Honeywell": {
   "_provenance": {
@@ -2861,6 +3041,7 @@
   "asset_class": "Equities",
   "bars": 9673,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 24.0,
@@ -2871,8 +3052,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "IBM": {
   "_provenance": {
@@ -2884,6 +3064,7 @@
   "asset_class": "Equities",
   "bars": 9797,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 28.0,
@@ -2894,8 +3075,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Intel": {
   "_provenance": {
@@ -2907,6 +3087,7 @@
   "asset_class": "Equities",
   "bars": 9827,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 7.0,
@@ -2917,8 +3098,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Intuit": {
   "_provenance": {
@@ -2930,6 +3110,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 10.0,
   "spread_pts_at_collection": 55.0,
@@ -2940,8 +3121,7 @@
   "tick_value": 0.008621581542918233,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "IntuitiveSurgical": {
   "_provenance": {
@@ -2953,6 +3133,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 7.0,
   "spread_pts_at_collection": 49.0,
@@ -2963,8 +3144,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "JPMorganChase": {
   "_provenance": {
@@ -2976,6 +3156,7 @@
   "asset_class": "Equities",
   "bars": 9783,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 28.0,
@@ -2986,8 +3167,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "JPN225": {
   "_provenance": {
@@ -2999,6 +3179,7 @@
   "asset_class": "Indices",
   "bars": 41148,
   "contract_size": 10.0,
+  "currency_profit": "JPY",
   "digits": 2,
   "first": "2018-01-07 00:00:00+00:00",
   "last": "2026-08-31 23:00:00+00:00",
@@ -3012,8 +3193,7 @@
   "tick_value": 0.0005385841699340774,
   "updated_at": "2026-09-01T00:07:02+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "Johnson&Johnson": {
   "_provenance": {
@@ -3025,6 +3205,7 @@
   "asset_class": "Equities",
   "bars": 9795,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2021-02-09 16:00:00+00:00",
   "last": "2026-08-31 22:00:00+00:00",
@@ -3038,8 +3219,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "LNKUSD": {
   "_provenance": {
@@ -3051,6 +3231,7 @@
   "asset_class": "Crypto",
   "bars": 44636,
   "contract_size": 10.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 34.0,
   "spread_pts_at_collection": 37.0,
@@ -3061,8 +3242,7 @@
   "tick_value": 0.008638637168600282,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "LTCUSD": {
   "_provenance": {
@@ -3074,6 +3254,7 @@
   "asset_class": "Crypto",
   "bars": 49583,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 36.0,
   "spread_pts_at_collection": 34.0,
@@ -3084,8 +3265,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "LucidGroup": {
   "_provenance": {
@@ -3097,6 +3277,7 @@
   "asset_class": "Equities",
   "bars": 8245,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 6.0,
@@ -3107,8 +3288,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Lyft": {
   "_provenance": {
@@ -3120,6 +3300,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 6.0,
@@ -3130,8 +3311,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "MATICUSD": {
   "_provenance": {
@@ -3143,6 +3323,7 @@
   "asset_class": "Crypto",
   "bars": 39260,
   "contract_size": 10000.0,
+  "currency_profit": "USD",
   "digits": 4,
   "median_spread_pts": 40.0,
   "spread_pts_at_collection": 31.0,
@@ -3153,8 +3334,7 @@
   "tick_value": 0.8620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "MXNJPY": {
   "_provenance": {
@@ -3166,6 +3346,7 @@
   "asset_class": "Forex Exotics",
   "bars": 36414,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "median_spread_pts": 24.0,
   "spread_pts_at_collection": 29.0,
@@ -3176,8 +3357,7 @@
   "tick_value": 0.5395140057835901,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "Mastercard": {
   "_provenance": {
@@ -3189,6 +3369,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 91.0,
@@ -3199,8 +3380,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "McDonalds": {
   "_provenance": {
@@ -3212,6 +3392,7 @@
   "asset_class": "Equities",
   "bars": 9783,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 14.0,
@@ -3222,8 +3403,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Medtronic": {
   "_provenance": {
@@ -3235,6 +3415,7 @@
   "asset_class": "Equities",
   "bars": 8926,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 9.0,
@@ -3245,8 +3426,7 @@
   "tick_value": 0.008638338674706082,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Merck": {
   "_provenance": {
@@ -3258,6 +3438,7 @@
   "asset_class": "Equities",
   "bars": 9635,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 29.0,
@@ -3268,8 +3449,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Meta": {
   "_provenance": {
@@ -3281,6 +3461,7 @@
   "asset_class": "Equities",
   "bars": 9696,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 80.0,
@@ -3291,8 +3472,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "MicronTechnology": {
   "_provenance": {
@@ -3304,6 +3484,7 @@
   "asset_class": "Equities",
   "bars": 8936,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 196.0,
@@ -3314,8 +3495,7 @@
   "tick_value": 0.008614006374364717,
   "updated_at": "2026-09-01T04:40:10+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Microsoft": {
   "_provenance": {
@@ -3327,6 +3507,7 @@
   "asset_class": "Equities",
   "bars": 9747,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 35.0,
@@ -3337,8 +3518,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "MorganStanley": {
   "_provenance": {
@@ -3350,6 +3530,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 23.0,
@@ -3360,8 +3541,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "NAS100": {
   "_provenance": {
@@ -3373,6 +3553,7 @@
   "asset_class": "Indices",
   "bars": 35432,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 80.0,
   "spread_pts_at_collection": 80.0,
@@ -3383,8 +3564,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "NETH25": {
   "_provenance": {
@@ -3396,6 +3576,7 @@
   "asset_class": "Indices",
   "bars": 21153,
   "contract_size": 1.0,
+  "currency_profit": "EUR",
   "digits": 2,
   "median_spread_pts": 7.0,
   "spread_pts_at_collection": 22.0,
@@ -3406,8 +3587,7 @@
   "tick_value": 0.01,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "EUR"
+  "volume_step": 0.01
  },
  "NIO": {
   "_provenance": {
@@ -3419,6 +3599,7 @@
   "asset_class": "Equities",
   "bars": 8253,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 5.0,
@@ -3429,8 +3610,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "NOKJPY": {
   "_provenance": {
@@ -3442,6 +3622,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37313,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "median_spread_pts": 26.0,
   "spread_pts_at_collection": 30.0,
@@ -3452,8 +3633,7 @@
   "tick_value": 0.54703996673997,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "NOKSEK": {
   "_provenance": {
@@ -3465,6 +3645,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37298,
   "contract_size": 100000.0,
+  "currency_profit": "SEK",
   "digits": 5,
   "median_spread_pts": 37.0,
   "spread_pts_at_collection": 60.0,
@@ -3475,8 +3656,7 @@
   "tick_value": 0.08971506495370703,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SEK"
+  "volume_step": 0.01
  },
  "NVIDIA": {
   "_provenance": {
@@ -3488,6 +3668,7 @@
   "asset_class": "Equities",
   "bars": 8260,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 22:00:00+00:00",
@@ -3501,23 +3682,28 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "NZDCAD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37320,
   "contract_size": 100000.0,
+  "currency_profit": "CAD",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 17.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 1.0,
   "swap_long": 0.13,
@@ -3527,8 +3713,7 @@
   "tick_value": 0.6235346934703447,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CAD"
+  "volume_step": 0.01
  },
  "NZDCHF": {
   "_provenance": {
@@ -3540,6 +3725,7 @@
   "asset_class": "Forex",
   "bars": 37314,
   "contract_size": 100000.0,
+  "currency_profit": "CHF",
   "digits": 5,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 2.0,
@@ -3550,8 +3736,7 @@
   "tick_value": 1.0623154226953067,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CHF"
+  "volume_step": 0.01
  },
  "NZDHUF": {
   "_provenance": {
@@ -3563,6 +3748,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37285,
   "contract_size": 100000.0,
+  "currency_profit": "HUF",
   "digits": 5,
   "median_spread_pts": 11624.0,
   "spread_pts_at_collection": 40980.0,
@@ -3573,8 +3759,7 @@
   "tick_value": 0.0027161511746729115,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HUF"
+  "volume_step": 0.01
  },
  "NZDJPY": {
   "_provenance": {
@@ -3590,6 +3775,7 @@
   "asset_class": "Forex",
   "bars": 53683,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
@@ -3603,8 +3789,7 @@
   "tick_value": 0.5389295780720333,
   "updated_at": "2026-09-01T04:40:10+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "NZDSGD": {
   "_provenance": {
@@ -3616,6 +3801,7 @@
   "asset_class": "Forex Exotics",
   "bars": 43195,
   "contract_size": 100000.0,
+  "currency_profit": "SGD",
   "digits": 5,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 1.0,
@@ -3626,23 +3812,28 @@
   "tick_value": 0.6783018036044958,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SGD"
+  "volume_step": 0.01
  },
  "NZDUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37329,
   "contract_size": 100000.0,
+  "currency_profit": "USD",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 14.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 0.0,
   "swap_long": -2.41,
@@ -3652,8 +3843,7 @@
   "tick_value": 0.862054102515474,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "Netflix": {
   "_provenance": {
@@ -3665,6 +3855,7 @@
   "asset_class": "Equities",
   "bars": 9686,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 9.0,
@@ -3675,8 +3866,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Nike": {
   "_provenance": {
@@ -3688,6 +3878,7 @@
   "asset_class": "Equities",
   "bars": 9778,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 7.0,
@@ -3698,8 +3889,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "OJ": {
   "_provenance": {
@@ -3711,6 +3901,7 @@
   "asset_class": "Soft Commodity",
   "bars": 8731,
   "contract_size": 10.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 15.0,
   "spread_pts_at_collection": 15.0,
@@ -3721,8 +3912,7 @@
   "tick_value": 0.08621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "Oracle": {
   "_provenance": {
@@ -3734,6 +3924,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 22.0,
@@ -3744,8 +3935,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "PayPal": {
   "_provenance": {
@@ -3757,6 +3947,7 @@
   "asset_class": "Equities",
   "bars": 9715,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 7.0,
@@ -3767,8 +3958,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Pepsi": {
   "_provenance": {
@@ -3780,6 +3970,7 @@
   "asset_class": "Equities",
   "bars": 9796,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 16.0,
@@ -3790,8 +3981,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Pfizer": {
   "_provenance": {
@@ -3803,6 +3993,7 @@
   "asset_class": "Equities",
   "bars": 8256,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 6.0,
@@ -3813,8 +4004,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "PhilipMorrisInternational": {
   "_provenance": {
@@ -3826,6 +4016,7 @@
   "asset_class": "Equities",
   "bars": 8933,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 36.0,
@@ -3836,8 +4027,7 @@
   "tick_value": 0.008638040201439098,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Pinterest": {
   "_provenance": {
@@ -3849,6 +4039,7 @@
   "asset_class": "Equities",
   "bars": 8257,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2019-04-18 00:00:00+00:00",
   "last": "2026-08-31 22:00:00+00:00",
@@ -3862,8 +4053,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Procter&Gamble": {
   "_provenance": {
@@ -3875,6 +4065,7 @@
   "asset_class": "Equities",
   "bars": 9802,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 7.0,
@@ -3885,8 +4076,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Qualcomm": {
   "_provenance": {
@@ -3898,6 +4088,7 @@
   "asset_class": "Equities",
   "bars": 8260,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 19.0,
@@ -3908,8 +4099,7 @@
   "tick_value": 0.008621284226498379,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "RobinhoodMarkets": {
   "_provenance": {
@@ -3921,6 +4111,7 @@
   "asset_class": "Equities",
   "bars": 8037,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 4,
   "median_spread_pts": 300.0,
   "spread_pts_at_collection": 1400.0,
@@ -3931,8 +4122,7 @@
   "tick_value": 8.62135855368089e-05,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Roku": {
   "_provenance": {
@@ -3944,6 +4134,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 22:00:00+00:00",
@@ -3957,8 +4148,7 @@
   "tick_value": 0.008621284226498379,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "S&PGlobal": {
   "_provenance": {
@@ -3970,6 +4160,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 8.0,
   "spread_pts_at_collection": 32.0,
@@ -3980,8 +4171,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "SEKJPY": {
   "_provenance": {
@@ -3993,6 +4183,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37316,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "median_spread_pts": 26.0,
   "spread_pts_at_collection": 31.0,
@@ -4003,8 +4194,7 @@
   "tick_value": 0.54703996673997,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "SGDJPY": {
   "_provenance": {
@@ -4016,6 +4206,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37242,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 3.0,
@@ -4026,8 +4217,7 @@
   "tick_value": 0.5470369742290881,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "SOLUSD": {
   "_provenance": {
@@ -4039,6 +4229,7 @@
   "asset_class": "Crypto",
   "bars": 39214,
   "contract_size": 1000.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 150.0,
   "spread_pts_at_collection": 190.0,
@@ -4049,8 +4240,7 @@
   "tick_value": 0.8620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "SOYBEAN": {
   "_provenance": {
@@ -4062,6 +4252,7 @@
   "asset_class": "Soft Commodity",
   "bars": 23916,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 112.0,
   "spread_pts_at_collection": 75.0,
@@ -4072,8 +4263,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "SUGAR": {
   "_provenance": {
@@ -4085,6 +4275,7 @@
   "asset_class": "Soft Commodity",
   "bars": 14925,
   "contract_size": 2.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 53.0,
   "spread_pts_at_collection": 53.0,
@@ -4095,8 +4286,7 @@
   "tick_value": 0.017242717107361777,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "SUGARRAW": {
   "_provenance": {
@@ -4108,6 +4298,7 @@
   "asset_class": "Soft Commodity",
   "bars": 12731,
   "contract_size": 50.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 30.0,
   "spread_pts_at_collection": 30.0,
@@ -4118,8 +4309,7 @@
   "tick_value": 0.04310679276840445,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "Salesforce": {
   "_provenance": {
@@ -4131,6 +4321,7 @@
   "asset_class": "Equities",
   "bars": 9652,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 3.0,
   "spread_pts_at_collection": 12.0,
@@ -4141,8 +4332,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "ServiceNow": {
   "_provenance": {
@@ -4154,6 +4344,7 @@
   "asset_class": "Equities",
   "bars": 8256,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 3.0,
   "spread_pts_at_collection": 17.0,
@@ -4164,8 +4355,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Shopify": {
   "_provenance": {
@@ -4177,6 +4367,7 @@
   "asset_class": "Equities",
   "bars": 8713,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 54.0,
@@ -4187,8 +4378,7 @@
   "tick_value": 0.008638487919074645,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Snapchat": {
   "_provenance": {
@@ -4200,6 +4390,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 5.0,
@@ -4210,8 +4401,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Snowflake": {
   "_provenance": {
@@ -4223,6 +4413,7 @@
   "asset_class": "Equities",
   "bars": 8249,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 150.0,
@@ -4233,8 +4424,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Spotify": {
   "_provenance": {
@@ -4246,6 +4436,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 7.0,
   "spread_pts_at_collection": 74.0,
@@ -4256,8 +4447,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Starbucks": {
   "_provenance": {
@@ -4269,6 +4459,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 11.0,
@@ -4279,8 +4470,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "TMEGroup": {
   "_provenance": {
@@ -4292,6 +4482,7 @@
   "asset_class": "Equities",
   "bars": 8254,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 5.0,
@@ -4302,8 +4493,7 @@
   "tick_value": 0.008621507211890781,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "TSMC": {
   "_provenance": {
@@ -4315,6 +4505,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 9.0,
@@ -4325,8 +4516,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Target": {
   "_provenance": {
@@ -4338,6 +4528,7 @@
   "asset_class": "Equities",
   "bars": 8256,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 17.0,
@@ -4348,8 +4539,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Tesla": {
   "_provenance": {
@@ -4361,6 +4551,7 @@
   "asset_class": "Equities",
   "bars": 9633,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 45.0,
@@ -4371,8 +4562,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "TexasInstruments": {
   "_provenance": {
@@ -4384,6 +4574,7 @@
   "asset_class": "Equities",
   "bars": 8261,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 3.0,
   "spread_pts_at_collection": 35.0,
@@ -4394,8 +4585,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "ThermoFisherScientific": {
   "_provenance": {
@@ -4407,6 +4597,7 @@
   "asset_class": "Equities",
   "bars": 8257,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 11.0,
   "spread_pts_at_collection": 101.0,
@@ -4417,8 +4608,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Toyota": {
   "_provenance": {
@@ -4430,6 +4620,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-31 22:00:00+00:00",
@@ -4443,8 +4634,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Travelers": {
   "_provenance": {
@@ -4456,6 +4646,7 @@
   "asset_class": "Equities",
   "bars": 9587,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 26.0,
@@ -4466,8 +4657,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Twilio": {
   "_provenance": {
@@ -4479,6 +4669,7 @@
   "asset_class": "Equities",
   "bars": 8256,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 72.0,
@@ -4489,8 +4680,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "UK100": {
   "_provenance": {
@@ -4502,6 +4692,7 @@
   "asset_class": "Indices",
   "bars": 30857,
   "contract_size": 1.0,
+  "currency_profit": "GBP",
   "digits": 2,
   "median_spread_pts": 60.0,
   "spread_pts_at_collection": 155.0,
@@ -4512,8 +4703,7 @@
   "tick_value": 0.011636025133814287,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "GBP"
+  "volume_step": 0.01
  },
  "UKCOCOA": {
   "_provenance": {
@@ -4525,6 +4715,7 @@
   "asset_class": "Soft Commodity",
   "bars": 10470,
   "contract_size": 1.0,
+  "currency_profit": "GBP",
   "digits": 2,
   "median_spread_pts": 260.0,
   "spread_pts_at_collection": 810.0,
@@ -4535,8 +4726,7 @@
   "tick_value": 0.0116362959342782,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "GBP"
+  "volume_step": 1.0
  },
  "UKGILT": {
   "_provenance": {
@@ -4548,6 +4738,7 @@
   "asset_class": "Bonds",
   "bars": 6335,
   "contract_size": 100.0,
+  "currency_profit": "GBP",
   "digits": 3,
   "median_spread_pts": 36.0,
   "spread_pts_at_collection": 36.0,
@@ -4558,8 +4749,7 @@
   "tick_value": 0.11636295934278201,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "GBP"
+  "volume_step": 0.01
  },
  "US2000": {
   "_provenance": {
@@ -4571,6 +4761,7 @@
   "asset_class": "Indices",
   "bars": 16881,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 20.0,
   "spread_pts_at_collection": 40.0,
@@ -4581,8 +4772,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "US30": {
   "_provenance": {
@@ -4594,6 +4784,7 @@
   "asset_class": "Indices",
   "bars": 35427,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 150.0,
   "spread_pts_at_collection": 280.0,
@@ -4604,8 +4795,7 @@
   "tick_value": 0.008620912609808875,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "US500": {
   "_provenance": {
@@ -4617,6 +4807,7 @@
   "asset_class": "Indices",
   "bars": 35427,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 30.0,
   "spread_pts_at_collection": 36.0,
@@ -4627,8 +4818,7 @@
   "tick_value": 0.008620912609808875,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "USCOCOA": {
   "_provenance": {
@@ -4640,6 +4830,7 @@
   "asset_class": "Soft Commodity",
   "bars": 12736,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 300.0,
   "spread_pts_at_collection": 783.0,
@@ -4650,8 +4841,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "USDBRL": {
   "_provenance": {
@@ -4663,6 +4853,7 @@
   "asset_class": "Forex Exotics",
   "bars": 10153,
   "contract_size": 100000.0,
+  "currency_profit": "BRL",
   "digits": 5,
   "median_spread_pts": 235.0,
   "spread_pts_at_collection": 273.0,
@@ -4673,23 +4864,28 @@
   "tick_value": 0.16771946972860272,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "BRL"
+  "volume_step": 0.01
  },
  "USDCAD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37330,
   "contract_size": 100000.0,
+  "currency_profit": "CAD",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 0.0,
   "swap_long": 3.44,
@@ -4699,23 +4895,28 @@
   "tick_value": 0.6235385814497272,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CAD"
+  "volume_step": 0.01
  },
  "USDCHF": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37326,
   "contract_size": 100000.0,
+  "currency_profit": "CHF",
   "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 0.0,
   "swap_long": 4.67,
@@ -4725,8 +4926,7 @@
   "tick_value": 1.0623154226953067,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CHF"
+  "volume_step": 0.01
  },
  "USDCNH": {
   "_provenance": {
@@ -4738,6 +4938,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37330,
   "contract_size": 100000.0,
+  "currency_profit": "CNH",
   "digits": 5,
   "median_spread_pts": 26.0,
   "spread_pts_at_collection": 54.0,
@@ -4748,8 +4949,7 @@
   "tick_value": 0.12833097075939168,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CNH"
+  "volume_step": 0.01
  },
  "USDCZK": {
   "_provenance": {
@@ -4761,6 +4961,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37308,
   "contract_size": 100000.0,
+  "currency_profit": "CZK",
   "digits": 5,
   "median_spread_pts": 484.0,
   "spread_pts_at_collection": 1988.0,
@@ -4771,8 +4972,7 @@
   "tick_value": 0.04131463157677292,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "CZK"
+  "volume_step": 0.01
  },
  "USDDKK": {
   "_provenance": {
@@ -4784,6 +4984,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37318,
   "contract_size": 100000.0,
+  "currency_profit": "DKK",
   "digits": 5,
   "median_spread_pts": 34.0,
   "spread_pts_at_collection": 61.0,
@@ -4794,8 +4995,7 @@
   "tick_value": 0.13376942164790553,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "DKK"
+  "volume_step": 0.01
  },
  "USDHKD": {
   "_provenance": {
@@ -4807,6 +5007,7 @@
   "asset_class": "Forex",
   "bars": 37318,
   "contract_size": 100000.0,
+  "currency_profit": "HKD",
   "digits": 5,
   "median_spread_pts": 0.0,
   "spread_pts_at_collection": 7.0,
@@ -4817,8 +5018,7 @@
   "tick_value": 0.10992405347145658,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HKD"
+  "volume_step": 0.01
  },
  "USDHUF": {
   "_provenance": {
@@ -4830,6 +5030,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37291,
   "contract_size": 100000.0,
+  "currency_profit": "HUF",
   "digits": 5,
   "median_spread_pts": 12500.0,
   "spread_pts_at_collection": 65980.0,
@@ -4840,8 +5041,7 @@
   "tick_value": 0.0027161511746729115,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "HUF"
+  "volume_step": 0.01
  },
  "USDIDR": {
   "_provenance": {
@@ -4853,6 +5053,7 @@
   "asset_class": "Forex Exotics",
   "bars": 23232,
   "contract_size": 100000.0,
+  "currency_profit": "IDR",
   "digits": 1,
   "median_spread_pts": 98.0,
   "spread_pts_at_collection": 186.0,
@@ -4863,8 +5064,7 @@
   "tick_value": 0.4859780129715997,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "IDR"
+  "volume_step": 0.01
  },
  "USDILS": {
   "_provenance": {
@@ -4876,6 +5076,7 @@
   "asset_class": "Forex Exotics",
   "bars": 43075,
   "contract_size": 100000.0,
+  "currency_profit": "ILS",
   "digits": 5,
   "median_spread_pts": 128.0,
   "spread_pts_at_collection": 2189.0,
@@ -4886,8 +5087,7 @@
   "tick_value": 0.28723829001301193,
   "updated_at": "2026-09-01T04:40:10+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "ILS"
+  "volume_step": 0.01
  },
  "USDINR": {
   "_provenance": {
@@ -4899,6 +5099,7 @@
   "asset_class": "Forex Exotics",
   "bars": 22951,
   "contract_size": 100000.0,
+  "currency_profit": "INR",
   "digits": 3,
   "median_spread_pts": 37.0,
   "spread_pts_at_collection": 93.0,
@@ -4909,23 +5110,28 @@
   "tick_value": 0.9105735441729732,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "INR"
+  "volume_step": 0.01
  },
  "USDJPY": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 0.0
    }
   },
   "asset_class": "Forex",
   "bars": 37331,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 2.0,
   "swap_long": 6.23,
@@ -4935,8 +5141,7 @@
   "tick_value": 0.5470669008113002,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "USDKRW": {
   "_provenance": {
@@ -4948,6 +5153,7 @@
   "asset_class": "Forex Exotics",
   "bars": 24100,
   "contract_size": 100000.0,
+  "currency_profit": "KRW",
   "digits": 2,
   "median_spread_pts": 59.0,
   "spread_pts_at_collection": 74.0,
@@ -4958,8 +5164,7 @@
   "tick_value": 0.6345702655907316,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "KRW"
+  "volume_step": 0.01
  },
  "USDMXN": {
   "_provenance": {
@@ -4971,6 +5176,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37329,
   "contract_size": 100000.0,
+  "currency_profit": "MXN",
   "digits": 5,
   "median_spread_pts": 173.0,
   "spread_pts_at_collection": 314.0,
@@ -4981,8 +5187,7 @@
   "tick_value": 0.05079943063998139,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "MXN"
+  "volume_step": 0.01
  },
  "USDNOK": {
   "_provenance": {
@@ -4994,6 +5199,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37333,
   "contract_size": 100000.0,
+  "currency_profit": "NOK",
   "digits": 5,
   "median_spread_pts": 128.0,
   "spread_pts_at_collection": 328.0,
@@ -5004,8 +5210,7 @@
   "tick_value": 0.09267780468523375,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "NOK"
+  "volume_step": 0.01
  },
  "USDPLN": {
   "_provenance": {
@@ -5017,6 +5222,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37321,
   "contract_size": 100000.0,
+  "currency_profit": "PLN",
   "digits": 5,
   "median_spread_pts": 74.0,
   "spread_pts_at_collection": 158.0,
@@ -5027,8 +5233,7 @@
   "tick_value": 0.23101944259628893,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "PLN"
+  "volume_step": 0.01
  },
  "USDRUB": {
   "_provenance": {
@@ -5040,6 +5245,7 @@
   "asset_class": "Forex Exotics",
   "bars": 19473,
   "contract_size": 100000.0,
+  "currency_profit": "RUB",
   "digits": 5,
   "median_spread_pts": 21060.0,
   "spread_pts_at_collection": 180546.0,
@@ -5050,8 +5256,7 @@
   "tick_value": 0.007347436001995564,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "RUB"
+  "volume_step": 0.01
  },
  "USDSEK": {
   "_provenance": {
@@ -5063,6 +5268,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37338,
   "contract_size": 100000.0,
+  "currency_profit": "SEK",
   "digits": 5,
   "median_spread_pts": 110.0,
   "spread_pts_at_collection": 324.0,
@@ -5073,8 +5279,7 @@
   "tick_value": 0.08971586984021605,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SEK"
+  "volume_step": 0.01
  },
  "USDSGD": {
   "_provenance": {
@@ -5086,6 +5291,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37305,
   "contract_size": 100000.0,
+  "currency_profit": "SGD",
   "digits": 5,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 7.0,
@@ -5096,8 +5302,7 @@
   "tick_value": 0.6790710308298249,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "SGD"
+  "volume_step": 0.01
  },
  "USDTHB": {
   "_provenance": {
@@ -5109,6 +5314,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37291,
   "contract_size": 100000.0,
+  "currency_profit": "THB",
   "digits": 5,
   "median_spread_pts": 324.0,
   "spread_pts_at_collection": 430.0,
@@ -5119,8 +5325,7 @@
   "tick_value": 0.026141628285352755,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "THB"
+  "volume_step": 0.01
  },
  "USDTRY": {
   "_provenance": {
@@ -5132,6 +5337,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37305,
   "contract_size": 100000.0,
+  "currency_profit": "TRY",
   "digits": 5,
   "median_spread_pts": 450.0,
   "spread_pts_at_collection": 1436.0,
@@ -5142,8 +5348,7 @@
   "tick_value": 0.017779728016388646,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "TRY"
+  "volume_step": 0.01
  },
  "USDX": {
   "_provenance": {
@@ -5155,6 +5360,7 @@
   "asset_class": "Indices",
   "bars": 29841,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 17.0,
   "spread_pts_at_collection": 19.0,
@@ -5165,8 +5371,7 @@
   "tick_value": 0.08620912609808876,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "USDZAR": {
   "_provenance": {
@@ -5178,6 +5383,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37344,
   "contract_size": 100000.0,
+  "currency_profit": "ZAR",
   "digits": 5,
   "median_spread_pts": 329.0,
   "spread_pts_at_collection": 508.0,
@@ -5188,8 +5394,7 @@
   "tick_value": 0.05377402220006732,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "ZAR"
+  "volume_step": 0.01
  },
  "UST05Y": {
   "_provenance": {
@@ -5201,6 +5406,7 @@
   "asset_class": "Bonds",
   "bars": 10905,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 22.0,
   "spread_pts_at_collection": 22.0,
@@ -5211,8 +5417,7 @@
   "tick_value": 0.0862135855368089,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "UST10Y": {
   "_provenance": {
@@ -5224,6 +5429,7 @@
   "asset_class": "Bonds",
   "bars": 10903,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 39.0,
   "spread_pts_at_collection": 39.0,
@@ -5234,8 +5440,7 @@
   "tick_value": 0.0862135855368089,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "Uber": {
   "_provenance": {
@@ -5247,6 +5452,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 10.0,
@@ -5257,8 +5463,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "UnionPacific": {
   "_provenance": {
@@ -5270,6 +5475,7 @@
   "asset_class": "Equities",
   "bars": 8258,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 116.0,
@@ -5280,8 +5486,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "UnitedHealth": {
   "_provenance": {
@@ -5293,6 +5498,7 @@
   "asset_class": "Equities",
   "bars": 9730,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 5.0,
   "spread_pts_at_collection": 32.0,
@@ -5303,8 +5509,7 @@
   "tick_value": 0.0086210612526402,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "UnitedParcelService": {
   "_provenance": {
@@ -5316,6 +5521,7 @@
   "asset_class": "Equities",
   "bars": 8259,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 4.0,
   "spread_pts_at_collection": 8.0,
@@ -5326,8 +5532,7 @@
   "tick_value": 0.008621432882145013,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Verizon": {
   "_provenance": {
@@ -5339,6 +5544,7 @@
   "asset_class": "Equities",
   "bars": 9877,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 7.0,
@@ -5349,8 +5555,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "Visa": {
   "_provenance": {
@@ -5362,6 +5567,7 @@
   "asset_class": "Equities",
   "bars": 9765,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 75.0,
@@ -5372,8 +5578,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "WHEAT": {
   "_provenance": {
@@ -5385,6 +5590,7 @@
   "asset_class": "Soft Commodity",
   "bars": 26241,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 60.0,
   "spread_pts_at_collection": 68.0,
@@ -5395,8 +5601,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 1.0,
-  "volume_step": 1.0,
-  "currency_profit": "USD"
+  "volume_step": 1.0
  },
  "Walgreens": {
   "_provenance": {
@@ -5425,6 +5630,7 @@
   "asset_class": "Equities",
   "bars": 9807,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 0.0,
   "spread_pts_at_collection": 8.0,
@@ -5435,8 +5641,7 @@
   "tick_value": 0.008620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "WaltDisney": {
   "_provenance": {
@@ -5448,6 +5653,7 @@
   "asset_class": "Equities",
   "bars": 9760,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 13.0,
@@ -5458,8 +5664,7 @@
   "tick_value": 0.008621358553680888,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "WellsFargo": {
   "_provenance": {
@@ -5471,6 +5676,7 @@
   "asset_class": "Equities",
   "bars": 8933,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 9.0,
@@ -5481,8 +5687,7 @@
   "tick_value": 0.008638487919074645,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  },
  "XAGEUR": {
   "_provenance": {
@@ -5494,6 +5699,7 @@
   "asset_class": "Commodities",
   "bars": 35451,
   "contract_size": 5000.0,
+  "currency_profit": "EUR",
   "digits": 3,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 49.0,
@@ -5504,23 +5710,28 @@
   "tick_value": 5.0,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "EUR"
+  "volume_step": 0.01
  },
  "XAGUSD": {
   "_provenance": {
    "bars": {
     "at": "2026-09-03T04:47:24+00:00",
     "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-09-07T23:35:45+00:00",
+    "source": "h1_spread_median",
+    "was": 4.0
    }
   },
   "asset_class": "Commodities",
   "bars": 35453,
   "contract_size": 5000.0,
+  "currency_profit": "USD",
   "digits": 3,
   "first": "2018-03-19 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 4.0,
+  "median_spread_pts": 21.0,
   "min_volume": 0.01,
   "spread_pts_at_collection": 19.0,
   "swap_long": -10.99,
@@ -5530,8 +5741,7 @@
   "tick_value": 4.3103819860516035,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XALUSD": {
   "_provenance": {
@@ -5543,6 +5753,7 @@
   "asset_class": "Commodities",
   "bars": 27116,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 3150.0,
   "spread_pts_at_collection": 4200.0,
@@ -5553,8 +5764,7 @@
   "tick_value": 0.08620763972103207,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XAUAUD": {
   "_provenance": {
@@ -5566,6 +5776,7 @@
   "asset_class": "Commodities",
   "bars": 35451,
   "contract_size": 100.0,
+  "currency_profit": "AUD",
   "digits": 2,
   "median_spread_pts": 6.0,
   "spread_pts_at_collection": 12.0,
@@ -5576,8 +5787,7 @@
   "tick_value": 0.6182991826084806,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "AUD"
+  "volume_step": 0.01
  },
  "XAUEUR": {
   "_provenance": {
@@ -5589,6 +5799,7 @@
   "asset_class": "Commodities",
   "bars": 35451,
   "contract_size": 100.0,
+  "currency_profit": "EUR",
   "digits": 2,
   "median_spread_pts": 2.0,
   "spread_pts_at_collection": 10.0,
@@ -5599,8 +5810,7 @@
   "tick_value": 1.0,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "EUR"
+  "volume_step": 0.01
  },
  "XAUUSD": {
   "_provenance": {
@@ -5616,6 +5826,7 @@
   "asset_class": "Commodities",
   "bars": 35451,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 2,
   "first": "2018-03-19 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
@@ -5629,8 +5840,7 @@
   "tick_value": 0.8620763972103207,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XBRUSD": {
   "_provenance": {
@@ -5642,6 +5852,7 @@
   "asset_class": "Energy",
   "bars": 29235,
   "contract_size": 1000.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 16.0,
   "spread_pts_at_collection": 40.0,
@@ -5652,8 +5863,7 @@
   "tick_value": 0.8620838290315351,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XCUUSD": {
   "_provenance": {
@@ -5665,6 +5875,7 @@
   "asset_class": "Commodities",
   "bars": 27115,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 4950.0,
   "spread_pts_at_collection": 6600.0,
@@ -5675,8 +5886,7 @@
   "tick_value": 0.08620763972103207,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XLMUSD": {
   "_provenance": {
@@ -5688,6 +5898,7 @@
   "asset_class": "Crypto",
   "bars": 44450,
   "contract_size": 10000.0,
+  "currency_profit": "USD",
   "digits": 5,
   "median_spread_pts": 43.0,
   "spread_pts_at_collection": 44.0,
@@ -5698,8 +5909,7 @@
   "tick_value": 0.08620986930583814,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XNGUSD": {
   "_provenance": {
@@ -5711,6 +5921,7 @@
   "asset_class": "Energy",
   "bars": 32398,
   "contract_size": 10000.0,
+  "currency_profit": "USD",
   "digits": 4,
   "median_spread_pts": 70.0,
   "spread_pts_at_collection": 70.0,
@@ -5721,8 +5932,7 @@
   "tick_value": 0.8638562543192813,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XNIUSD": {
   "_provenance": {
@@ -5734,6 +5944,7 @@
   "asset_class": "Commodities",
   "bars": 22795,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 9690.0,
   "spread_pts_at_collection": 17940.0,
@@ -5744,8 +5955,7 @@
   "tick_value": 0.08620838290315351,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XPBUSD": {
   "_provenance": {
@@ -5757,6 +5967,7 @@
   "asset_class": "Commodities",
   "bars": 27110,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 2900.0,
   "spread_pts_at_collection": 4700.0,
@@ -5767,8 +5978,7 @@
   "tick_value": 0.08620838290315351,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XPDUSD": {
   "_provenance": {
@@ -5780,6 +5990,7 @@
   "asset_class": "Commodities",
   "bars": 34856,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 586.0,
   "spread_pts_at_collection": 681.0,
@@ -5790,8 +6001,7 @@
   "tick_value": 0.862083829031535,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XPTUSD": {
   "_provenance": {
@@ -5803,6 +6013,7 @@
   "asset_class": "Commodities",
   "bars": 35403,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 218.0,
   "spread_pts_at_collection": 710.0,
@@ -5813,8 +6024,7 @@
   "tick_value": 0.862083829031535,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XTIUSD": {
   "_provenance": {
@@ -5826,6 +6036,7 @@
   "asset_class": "Energy",
   "bars": 31721,
   "contract_size": 1000.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 16.0,
   "spread_pts_at_collection": 30.0,
@@ -5836,8 +6047,7 @@
   "tick_value": 0.8620838290315351,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "XZNUSD": {
   "_provenance": {
@@ -5849,6 +6059,7 @@
   "asset_class": "Commodities",
   "bars": 27114,
   "contract_size": 100.0,
+  "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 2720.0,
   "spread_pts_at_collection": 2720.0,
@@ -5859,8 +6070,7 @@
   "tick_value": 0.08620838290315351,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "USD"
+  "volume_step": 0.01
  },
  "ZARJPY": {
   "_provenance": {
@@ -5872,6 +6082,7 @@
   "asset_class": "Forex Exotics",
   "bars": 37315,
   "contract_size": 100000.0,
+  "currency_profit": "JPY",
   "digits": 3,
   "median_spread_pts": 7.0,
   "spread_pts_at_collection": 9.0,
@@ -5882,8 +6093,7 @@
   "tick_value": 0.5469621720961778,
   "updated_at": "2026-09-03T04:40:20+00:00",
   "volume_min": 0.01,
-  "volume_step": 0.01,
-  "currency_profit": "JPY"
+  "volume_step": 0.01
  },
  "eBay": {
   "_provenance": {
@@ -5895,6 +6105,7 @@
   "asset_class": "Equities",
   "bars": 9810,
   "contract_size": 1.0,
+  "currency_profit": "USD",
   "digits": 2,
   "median_spread_pts": 1.0,
   "spread_pts_at_collection": 18.0,
@@ -5905,7 +6116,6 @@
   "tick_value": 0.008638338674706082,
   "updated_at": "2026-09-02T04:40:32+00:00",
   "volume_min": 0.1,
-  "volume_step": 0.1,
-  "currency_profit": "USD"
+  "volume_step": 0.1
  }
 }

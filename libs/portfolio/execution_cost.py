@@ -59,6 +59,12 @@ hour, an administered spread with no hour structure: all return a bias of 0.0, w
 the behaviour before this module existed. A sleeve the desk cannot price is not thereby cheap and
 is not thereby expensive -- it is unpriced, and it is NAMED as unpriced so the gap is countable.
 
+THE DENOMINATOR IS TODAY'S REGISTRY, NOT THE SURFACE'S COPY OF IT. `cost_surface` snapshots
+`pooled_median_spread_pts` out of the registry at BUILD time, so the file on disk carries whatever
+the registry said that day. Reading the snapshot made the 2026-09-07 spread repair invisible --
+27 symbols were corrected and every ratio still compared against the pre-repair value, so the
+instrument went on pricing nothing. The question is how wrong the charge is TODAY.
+
 THIS NEVER MAKES A SLEEVE CHEAPER THAN ITS RETURNS SAY. `ratio < 1` -- a sleeve filling at an hour
 CHEAPER than the pooled scalar it was charged -- is real and `cost_surface` calls it "the
 false-null direction, the only one this desk has no instrument for". It is reported, and it is
@@ -170,7 +176,19 @@ def cost_ratio(surface: Mapping[str, Any] | None, symbol: str,
                           "and the ratio against it is not a cost measurement. 241 of 251 "
                           "symbols are in this state; `universe_registry` documents the "
                           "three-producer flip that causes it."), {"no_provenance": True}
-    pooled = sym.get("pooled_median_spread_pts")
+    # THE DENOMINATOR IS READ LIVE FROM THE REGISTRY, NOT FROM THE SURFACE'S COPY OF IT.
+    # `cost_surface` copies `pooled_median_spread_pts` out of the registry AT BUILD TIME, so the
+    # surface on disk carries whatever the registry said on the day it was built (2026-08-29
+    # here). The question this function asks is "how wrong is the number the replay is charging
+    # TODAY", so today's registry is the only correct denominator -- and reading the snapshot
+    # instead made the repair of 2026-09-07 invisible: 27 symbols had their spread corrected and
+    # every ratio still compared against the pre-repair value.
+    reg_row = ((registry.get(str(symbol)) or {}) if isinstance(registry, Mapping) else {})
+    pooled = reg_row.get("median_spread_pts")
+    pooled_src = "registry (live)"
+    if not isinstance(pooled, (int, float)):
+        pooled = sym.get("pooled_median_spread_pts")
+        pooled_src = "cost surface snapshot"
     cell = (sym.get("hours") or {}).get(str(int(hour)))
     if not isinstance(pooled, (int, float)) or float(pooled) <= 0:
         return None, (f"{symbol}: the registry's median_spread_pts is "
@@ -211,6 +229,7 @@ def cost_ratio(surface: Mapping[str, Any] | None, symbol: str,
     if not math.isfinite(r) or r <= 0:
         return None, f"{symbol} hour {hour:02d} produced a non-finite ratio", {}
     detail = {"spread_at_hour_pts": float(at_hour), "pooled_spread_pts": float(pooled),
+              "pooled_source": pooled_src,
               "hour": int(hour), "administered": str(sym.get("administered", "")) == "True",
               "stress_p90_over_p50": sym.get("stress_p90_over_p50")}
     detail["spread_provenance"] = (

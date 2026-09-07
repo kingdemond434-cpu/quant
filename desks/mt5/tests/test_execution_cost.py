@@ -19,9 +19,20 @@ different meanings, and a point-in-time `symbol_info.spread` snapshot is not a m
 ratio against it is not a cost error, it is two different quantities divided -- and applying it
 would have shifted 28 posterior means down on a producer inconsistency.
 
-WHAT SHIPS IS THE WIRING PLUS THE REFUSAL. On this desk's current data the instrument prices
-ZERO sleeves and says so. That is the measurement. It starts working the day the registry records
-where its spreads come from, with no edit to any of this.
+WHAT SHIPPED FIRST WAS THE WIRING PLUS THE REFUSAL: on the data as it stood the instrument
+priced ZERO of 76 sleeves and said so, which was the measurement.
+
+THEN THE BLOCKER WAS REPAIRED. `scripts/repair_universe_spreads.py` recomputes
+`median_spread_pts` from each symbol's own H1 spread column -- the value was on disk the whole
+time; EURUSD's registry said 0.0 and its own bars said 12.0 -- and stamps the provenance. With
+the registry read LIVE as the denominator rather than the surface's build-time snapshot, 12
+sleeves now price, and the true error on the priceable live book is SMALL:
+
+    GBPJPY_asia        1.15x     USDJPY_* / EURGBP   1.00x      the CHF crosses   0.53-0.65x
+
+which is the corrective that matters: the 11-16x under-charges the first naive wiring produced
+were the broken registry, not the market. Refusing them was right, and repairing the input --
+rather than tuning the instrument -- is what turned the refusal into a measurement.
 """
 from __future__ import annotations
 
@@ -124,13 +135,43 @@ def test_an_over_charged_sleeve_is_reported_and_never_credited() -> None:
 def test_a_zero_registry_spread_is_a_defect_not_a_free_instrument() -> None:
     """23 of 195 symbols on this desk read 0.0. `universe_registry` already flags them: '0 while
     this desk's OWN fills measured a positive spread'."""
-    s = {"symbols": {"EURZAR": {**GOOD_SURFACE["symbols"]["EURZAR"],
-                                "pooled_median_spread_pts": 0.0}}}
-    row = costs_for(_sleeve(), s, registry=GOOD_REGISTRY)["sleeves"][
+    reg = {"EURZAR": {"median_spread_pts": 0.0,
+                      "_provenance": {"median_spread_pts": {"source": "realized_fills"}}}}
+    row = costs_for(_sleeve(), GOOD_SURFACE, registry=reg)["sleeves"][
         "EURZAR_overnight_gap_decay_asia"]
     assert row["source"] == REGISTRY_DEFECT
     assert row["cost_bias_r"] == 0.0
     assert "not a free instrument" in row["why"]
+
+
+def test_the_denominator_is_todays_registry_not_the_surfaces_snapshot() -> None:
+    """`cost_surface` copies `pooled_median_spread_pts` out of the registry AT BUILD TIME, so the
+    surface on disk carries whatever the registry said the day it was built.
+
+    THIS COST A WHOLE REPAIR ITS EFFECT. On 2026-09-07 the registry's spreads were recomputed from
+    the H1 bars for 27 symbols, and every ratio kept comparing against the pre-repair snapshot --
+    the correction was invisible and the instrument still priced zero sleeves. The question is
+    "how wrong is the charge TODAY", so today's registry is the only correct denominator.
+    """
+    stale = {"symbols": {"EURZAR": {**GOOD_SURFACE["symbols"]["EURZAR"],
+                                    "pooled_median_spread_pts": 100.0}}}   # the old, wrong value
+    reg = {"EURZAR": {"median_spread_pts": 300.0,                          # today's, repaired
+                      "_provenance": {"median_spread_pts": {"source": "h1_spread_median"}}}}
+    row = costs_for(_sleeve(), stale, registry=reg)["sleeves"][
+        "EURZAR_overnight_gap_decay_asia"]
+    assert row["pooled_spread_pts"] == pytest.approx(300.0)
+    assert row["pooled_source"] == "registry (live)"
+    assert row["ratio"] == pytest.approx(3.0)      # 900 / 300, not 900 / 100
+
+
+def test_the_snapshot_is_the_fallback_when_the_registry_cannot_answer() -> None:
+    """A registry row with no spread at all still lets the surface's copy stand, so a host with a
+    partial registry degrades rather than losing the measurement entirely."""
+    reg = {"EURZAR": {"_provenance": {"median_spread_pts": {"source": "realized_fills"}}}}
+    row = costs_for(_sleeve(), GOOD_SURFACE, registry=reg)["sleeves"][
+        "EURZAR_overnight_gap_decay_asia"]
+    assert row["pooled_source"] == "cost surface snapshot"
+    assert row["ratio"] == pytest.approx(3.0)
 
 
 def test_a_pooled_scalar_below_every_measured_hour_is_a_scale_flip() -> None:
