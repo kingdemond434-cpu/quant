@@ -509,12 +509,63 @@ def run_all() -> list[dict]:
     print(f"Running {len(grid):,} executable test cells ({len(raw_grid):,} submitted; "
           f"{removed} unsupported parameter occurrence(s) removed)...")
 
+    # ------------------------------------------------------------------ the cursor and the clock
+    # THIS STAGE HAD NEITHER, AND THAT IS WHY IT NEVER FINISHED. It rebuilt the whole grid on
+    # every invocation, ran it start to end, and kept nothing until the last cell returned. At
+    # 4,742 cells and ~2,000 cells/hour that is a two-and-a-half hour run with no partial credit:
+    # MEASURED 2026-09-07, an operator interrupted it at cell 1,600 and every one of those
+    # results was lost. It also meant this stage could not be put on an hourly clock at all --
+    # it would restart at cell 1 each hour, forever, and never reach the tail of the docket.
+    #
+    # A CURSOR AND A TIME BUDGET FIX BOTH PROBLEMS WITH ONE MECHANISM. Cells never tested go
+    # first; after that, least-recently-tested first. So a cold docket is covered front to back
+    # over a few hours, and once covered the rotation keeps re-testing the oldest -- which is
+    # what "every cell, hourly, 24/7" actually requires, because a result from last week is a
+    # claim about a market that has moved.
+    #
+    # RESULTS MERGE, THEY DO NOT REPLACE. A slice that overwrote the artifact would leave the
+    # gauntlet judging one hour's cells and forgetting the rest -- turning partial credit into a
+    # different kind of total loss. Previous rows are loaded, this slice's rows replace their own
+    # keys, and everything else survives untouched.
+    out = BASE / "data" / "hypotheses" / "external_backtest_results.json"
+    cursor_path = BASE / "data" / "hypotheses" / "backtest_cursor.json"
+    budget_s = float(os.environ.get("BACKTEST_BUDGET_MIN", "45")) * 60.0
+
+    def _cell_key(c: dict) -> str:
+        # NO SEPARATE `timeframe` FIELD, deliberately: `expand_timeframes` writes the chart INTO
+        # params and `run_cell` echoes params verbatim, so this is the one spelling that keys a
+        # grid cell and its own result row identically. A key the two sides spell differently
+        # would mark every cell untested forever and the cursor would never advance.
+        return json.dumps({"symbol": c.get("symbol"), "family": c.get("family"),
+                           "params": c.get("params")}, sort_keys=True, default=str)
+
+    try:
+        cursor = json.loads(cursor_path.read_text(encoding="utf-8"))
+        cursor = cursor if isinstance(cursor, dict) else {}
+    except (OSError, ValueError):
+        cursor = {}          # unreadable cursor puts every cell at the front: no cell is skipped
+    try:
+        prior = json.loads(out.read_text(encoding="utf-8"))
+        prior_by_key = {_cell_key(r): r for r in prior} if isinstance(prior, list) else {}
+    except (OSError, ValueError):
+        prior_by_key = {}
+
+    # Untested cells sort before tested ones ("" < any ISO timestamp), then oldest first.
+    grid.sort(key=lambda c: (cursor.get(_cell_key(c), ""), str(c.get("symbol"))))
+    never = sum(1 for c in grid if _cell_key(c) not in cursor)
+    print(f"  cursor: {never:,} cell(s) never tested, {len(grid) - never:,} being re-tested "
+          f"oldest-first; budget {budget_s / 60:.0f} min", flush=True)
+
     # SORTED BY SYMBOL BEFORE THE SPLIT, and that is a throughput decision rather than tidiness.
     # `h1()` memoises a symbol's parquet in a per-process dict, so a worker handed a contiguous
     # run of one symbol's cells loads those bars ONCE. Interleaved symbols would make every
     # chunk boundary a fresh parquet read in every worker -- the reason a naive parallelisation
     # of this stage can end up slower than the serial loop it replaced.
-    grid.sort(key=lambda c: (str(c.get("symbol")), str(c.get("family"))))
+    # The symbol grouping that `h1()`'s per-process cache wants, applied WITHIN the cursor's
+    # priority rather than over it: cells are bucketed by whether they have ever been tested,
+    # and sorted by symbol inside each bucket. Sorting by symbol alone here would have silently
+    # discarded the cursor order two lines after it was computed.
+    grid.sort(key=lambda c: (_cell_key(c) in cursor, str(c.get("symbol")), str(c.get("family"))))
     results = []
     skips: Counter = Counter()
     t0 = time.time()
@@ -540,6 +591,12 @@ def run_all() -> list[dict]:
                         print(f"  PASS {r['symbol']:8s}.{r['family']:25s} n={r['n']:4d} "
                               f"exp={r['exp_r']:+.4f}R maxDD={r['max_dd_r']:+.1f}R "
                               f"PF={r['profit_factor']:.2f}", flush=True)
+                if (k + 1) % 100 == 0 and time.time() - t0 > budget_s:
+                    print(f"  BUDGET: {(time.time()-t0)/60:.0f} min spent, stopping at cell "
+                          f"{k+1:,} of {len(grid):,}. The cursor resumes here next hour.",
+                          flush=True)
+                    pool.terminate()
+                    break
                 if (k + 1) % 100 == 0:
                     el = time.time() - t0
                     print(f"  [{k+1}/{len(grid)}] {el:.0f}s elapsed, "
@@ -558,6 +615,9 @@ def run_all() -> list[dict]:
                           f"PF={r['profit_factor']:.2f}")
             if (i + 1) % 10 == 0:
                 print(f"  [{i+1}/{len(grid)}] {time.time()-t0:.0f}s elapsed")
+            if time.time() - t0 > budget_s:
+                print(f"  BUDGET: stopping at cell {i+1:,} of {len(grid):,}; cursor resumes here")
+                break
 
     # DETERMINISTIC ORDER FROM AN UNORDERED POOL. `imap_unordered` returns by completion, so
     # without this the artifact's row order depends on scheduling -- which turns every rerun
@@ -565,10 +625,28 @@ def run_all() -> list[dict]:
     results.sort(key=lambda r: (r["symbol"], r["family"],
                                 json.dumps(r["params"], sort_keys=True, default=str)))
     elapsed = time.time() - t0
-    out = BASE / "data" / "hypotheses" / "external_backtest_results.json"
-    out.write_text(json.dumps(results, indent=2, default=str), encoding="utf-8")
 
-    survivors = [r for r in results if r["exp_r"] > 0.05 and r["max_dd_r"] > -30]
+    # THIS SLICE'S ROWS REPLACE THEIR OWN KEYS; EVERY OTHER ROW SURVIVES. Writing `results`
+    # alone would hand the gauntlet one hour's cells and forget the rest -- partial credit
+    # converted into a different total loss. The merged artifact is what the docket consumes.
+    merged = dict(prior_by_key)
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    for r in results:
+        k = _cell_key(r)
+        merged[k] = r
+        cursor[k] = now_iso
+    all_rows = sorted(merged.values(), key=lambda r: (
+        str(r.get("symbol")), str(r.get("family")),
+        json.dumps(r.get("params"), sort_keys=True, default=str)))
+    out.write_text(json.dumps(all_rows, indent=2, default=str), encoding="utf-8")
+    try:
+        cursor_path.write_text(json.dumps(cursor, indent=1, sort_keys=True), encoding="utf-8")
+    except OSError as exc:
+        # A cursor that cannot be saved costs a repeated rotation, never a wrong result -- so it
+        # is reported and the run still publishes what it measured.
+        print(f"  cursor NOT saved ({exc}); the next pass repeats this slice")
+
+    survivors = [r for r in all_rows if r["exp_r"] > 0.05 and r["max_dd_r"] > -30]
 
     # THE COVERAGE GAP IS PUBLISHED, not just printed. A number that exists only in a service
     # log is a number nobody acts on -- which is how a 162-row grid ran unnoticed beside a
@@ -576,7 +654,12 @@ def run_all() -> list[dict]:
     # cells cannot be tested because 63 symbols have no cost model" becomes a work item with a
     # symbol list instead of a silence.
     coverage.update({"cells_submitted": len(raw_grid), "cells_run": len(grid),
-                     "cells_produced_result": len(results), "survivors": len(survivors),
+                     "cells_produced_result": len(results),
+                     "cells_this_slice": len(results),
+                     "cells_known_total": len(all_rows),
+                     "cells_never_tested": max(0, len(grid) - len(cursor)),
+                     "budget_min": round(budget_s / 60, 1),
+                     "survivors": len(survivors),
                      "elapsed_s": round(elapsed, 1), "workers": WORKERS,
                      "measured_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
     cov_path = BASE / "reports" / "BACKTEST_COVERAGE.json"

@@ -908,8 +908,32 @@ def main() -> None:
     # carries a memory budget (`MEMORY_BUDGET_MB`, measured from the host) and a per-symbol build
     # cursor, so each pass takes a slice and the next one resumes where it stopped instead of
     # restarting the rotation. Nothing here needs a time limit bolted on; the cursor IS the limit.
+    # THE DOCKET WRITER, WHICH RAN ON NO CLOCK THIS BOX OWNS. `merge_hypotheses` is the ONLY
+    # writer of external_survivors.json -- every producer on this roster feeds it and nothing
+    # else consumes them. Its one scheduled caller is `nightly_catchup`, a SYSTEMD unit: it runs
+    # on the VPS, and the box is Windows with no systemd. So every candidate this machine mined,
+    # compiled, deepened or swept reached a merge only if the other machine happened to run one.
+    # Third instance of this exact shape today, after enrolment and miner_conversion.
+    mh = _costed("merge_docket", lambda: _producer(
+        "merge_hypotheses", "research/merge_hypotheses.py"))
+    # THE BACKTEST. Also on no clock, anywhere -- not this roster, not the daily cycle, not the
+    # Windows task set. It is the stage that turns a docket row into a survivor, so with it
+    # unscheduled the gauntlet below had nothing new to judge no matter how often it ran.
+    #
+    # It can be hourly now because it was given a cursor and a time budget (see run_all): cells
+    # never tested go first, then least-recently-tested, results MERGE rather than replace, and
+    # the pass stops at BACKTEST_BUDGET_MIN. Before that it rebuilt the full 4,742-cell grid on
+    # every invocation and kept nothing until the last cell returned -- a 2.5 hour run with no
+    # partial credit, which on an hourly clock would have restarted at cell 1 forever.
+    bt = _costed("backtest", lambda: _producer(
+        "run_external_backtest", "side_channels/run_external_backtest.py"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
+    # THE CANON SEAL, hourly rather than daily. A certificate the gauntlet minted at 02:00 sat
+    # unsealed until the next midnight run, so `shadow_admission._canon` -- which enrolment,
+    # promotion and the dashboard all read -- was up to 24 hours behind the gates.
+    rc = _costed("recertify_canon", lambda: _producer(
+        "recertify_canon", "scripts/recertify_canon.py"))
     et = _costed("execution_twin", execution_twin)
     cg = _costed("causal_graph", causal_graph)
     ms = _costed("model_skill", model_skill)
@@ -1030,7 +1054,8 @@ def main() -> None:
                     "release_identity": ri, "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
-                    "external_gauntlet": gt,
+                    "external_gauntlet": gt, "merge_docket": mh, "backtest": bt,
+                    "recertify_canon": rc,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
