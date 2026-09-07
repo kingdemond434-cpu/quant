@@ -238,6 +238,45 @@ $tasks = @(
        # correct watchdog for a process whose failure mode is "died quietly at 02:00".
        TimeLimit = (New-TimeSpan -Days 3650)
        Desc = "The permanent Fusion tick tape -- restarts itself within 10 minutes of any death." },
+    # ---- THE DAILY CYCLE, TWO LANES TWELVE HOURS APART --------------------------------------
+    # Both execute docs\DESK_CYCLE_PROMPT.md; the lane decides which half they own. The split is
+    # what stops two agents editing the same files twelve hours apart and calling it progress:
+    # NOON owns conversion and research throughput, MIDNIGHT owns wiring, cadence and repair.
+    #
+    # DAILY AT A FIXED HOUR, not a repetition interval like every other task here. These are long
+    # passes whose value is in being ONE considered sweep rather than a poll, and a repetition
+    # trigger would stack a second agent on top of a first that had not finished.
+    #
+    # The launcher exits NON-ZERO when its CLI is absent, deliberately -- so a box without the
+    # agent installed shows a failing task rather than a green one that does nothing. That is the
+    # MT5-ShadowSync defect (exit 0 while publishing nothing for 33 hours) refused by design.
+    # HOURLY REPETITION ON TOP OF THE DAILY START, which is what makes an interrupted pass resume
+    # "right after it is back" instead of at the next daily slot. The launcher keeps a checkpoint:
+    # a firing that finds today's lane DONE costs one file read and exits, one that finds it
+    # RUNNING with a dead process resumes it with the finished stages named, one that finds
+    # nothing starts fresh. So the recovery window after a time-limit kill or a reboot is an hour,
+    # not a day -- and a healthy box pays eleven cheap no-ops for that.
+    @{ Name = "MT5-CycleNoon"
+       Kind = "ps1"
+       Script = "scripts\\Run-DeskCycle.ps1"
+       Args = "-Lane noon"
+       Trigger = { New-ScheduledTaskTrigger -Daily -At "12:00" `
+                     -RepetitionInterval (New-TimeSpan -Hours 1) `
+                     -RepetitionDuration (New-TimeSpan -Hours 11) }
+       # ELEVEN HOURS, not twelve: the repetition must stop before the OTHER lane's daily start,
+       # or noon would still be waking up while midnight begins and the lane split -- the whole
+       # reason two agents can share this repository -- would be gone.
+       TimeLimit = (New-TimeSpan -Hours 10)
+       Desc = "Daily conversion pass: force the funnel, clock every certificate, chase miner yield." },
+    @{ Name = "MT5-CycleMidnight"
+       Kind = "ps1"
+       Script = "scripts\\Run-DeskCycle.ps1"
+       Args = "-Lane midnight"
+       Trigger = { New-ScheduledTaskTrigger -Daily -At "00:00" `
+                     -RepetitionInterval (New-TimeSpan -Hours 1) `
+                     -RepetitionDuration (New-TimeSpan -Hours 11) }
+       TimeLimit = (New-TimeSpan -Hours 10)
+       Desc = "Daily wiring pass: schedule the unwired, repair staleness and failing tasks." },
     @{ Name = "MT5-StallWatch"
        Kind = "ps1"
        Script = "scripts\\stall_watch.ps1"
@@ -323,10 +362,17 @@ foreach ($t in $tasks) {
     # stay up; killing it every four hours would punch a four-hourly hole in the one dataset on
     # this desk that cannot be re-obtained. A task that declares TimeLimit overrides the default.
     $limit = if ($t.ContainsKey("TimeLimit") -and $t.TimeLimit) { $t.TimeLimit } else { New-TimeSpan -Hours 4 }
+    # IgnoreNew: A REPETITION INTERVAL PLUS A SLOW PASS IS A STACK. The cycle lanes repeat hourly
+    # so an interrupted pass resumes quickly, and a pass that is simply still working must not
+    # have a second copy started on top of it -- two agents in one repository is the collision the
+    # lane split exists to prevent. The launcher checks its own checkpoint as well, because a
+    # scheduler setting is not a guarantee anyone can read from the script.
+    # StartWhenAvailable is what catches up a trigger missed while the box was off.
     $settings = New-ScheduledTaskSettingsSet `
         -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
         -StartWhenAvailable -RestartCount 3 `
         -RestartInterval (New-TimeSpan -Minutes 1) `
+        -MultipleInstances IgnoreNew `
         -ExecutionTimeLimit $limit
 
     try {
