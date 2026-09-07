@@ -1,10 +1,21 @@
 {
- "generated_utc": "2026-09-04T19:22:28.532836+00:00",
+ "generated_utc": "2026-09-07T19:11:50.036009+00:00",
  "basis": "shadow",
  "n_trades": 487,
  "n_sleeves": 50,
- "dimensions_tried": 2,
+ "dimensions_tried": 3,
  "verdicts": {
+  "session": {
+   "dimension": "session",
+   "verdict": "RETAIN_SHRUNK",
+   "mse_gain": -0.0354891188,
+   "t_paired": -1.5673,
+   "t_deflated": -1.5673,
+   "n_test": 258,
+   "n_buckets": 8,
+   "dimensions_tried": 3,
+   "why": "no measurable improvement; kept only by the shrinkage"
+  },
   "weekday": {
    "dimension": "weekday",
    "verdict": "RETAIN_SHRUNK",
@@ -13,7 +24,7 @@
    "t_deflated": -1.816,
    "n_test": 275,
    "n_buckets": 5,
-   "dimensions_tried": 2,
+   "dimensions_tried": 3,
    "why": "no measurable improvement; kept only by the shrinkage"
   },
   "event": {
@@ -24,15 +35,14 @@
    "t_deflated": 0.0,
    "n_test": 336,
    "n_buckets": 1,
-   "dimensions_tried": 2,
+   "dimensions_tried": 3,
    "why": "only 1 bucket ever had 15 training trades, so conditioning on this is arithmetically identical to not conditioning. NOT a null result -- the dimension's history does not cover the trades."
   }
  },
- "gaps": {
-  "session": "no labeller: this dimension cannot be reconstructed from a timestamp alone, or its input (e.g. the broker clock) is unavailable here"
- },
+ "gaps": {},
  "admitted": [
   "event",
+  "session",
   "weekday"
  ],
  "graveyard": [],

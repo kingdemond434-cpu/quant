@@ -1,0 +1,113 @@
+{
+ "status": "MEASURED",
+ "utc_offset_hours": 2,
+ "n_symbols": 10,
+ "votes": [
+  2
+ ],
+ "per_symbol": {
+  "AUDUSD": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.094,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  },
+  "EURGBP": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.236,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  },
+  "EURJPY": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.126,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  },
+  "EURUSD": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.08,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  },
+  "GBPJPY": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.132,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  },
+  "GBPUSD": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.143,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  },
+  "NZDUSD": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.159,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  },
+  "USDCAD": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.094,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  },
+  "USDCHF": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.13,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  },
+  "USDJPY": {
+   "trough_hour": 0,
+   "peak_hour": 17,
+   "trough_depth": 0.085,
+   "offset_by_trough": 2,
+   "offset_by_peak": 3,
+   "disagreement_h": 1,
+   "status": "MEASURED"
+  }
+ },
+ "agreement": 0,
+ "why": "10 symbol(s) place the daily volume trough +2h from the 22:00 UTC rollover, cross-checked against the 14:00 UTC overlap peak. Measured from bars, so a host with no terminal has the venue's clock.",
+ "measured_at": "2026-09-07T19:11:45+00:00",
+ "window_days": 90,
+ "skipped": {},
+ "source": "measured_from_bars",
+ "dst_ambiguity": {
+  "offset_by_trough": 2,
+  "offset_by_peak": [
+   3
+  ],
+  "why": "the rollover anchor is the WINTER cutoff (22:00 UTC); inside summer time it reads one hour low. Both anchors are published so a reader can see the ambiguity rather than inherit it."
+ }
+}

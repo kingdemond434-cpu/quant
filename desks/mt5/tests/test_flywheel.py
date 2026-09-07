@@ -473,8 +473,31 @@ def test_broker_clock_is_recorded_once_and_refreshed_on_change(tmp_path, monkeyp
 @pytest.mark.skipif(importlib.util.find_spec("MetaTrader5") is not None,
                     reason="a live terminal answers first on this host")
 def test_hosts_without_a_terminal_inherit_the_recorded_clock(tmp_path, monkeypatch) -> None:
+    """Three tiers, in order, and the order is the safety property.
+
+    A terminal is the best answer, a recorded terminal reading is the next best, and an inference
+    from this desk's own volume profile (`research/measure_broker_clock.py`) is what a host with
+    NO terminal deserves -- added 2026-09-07 because the recorded file names the gateway as its
+    only writer and had never been written, which left `session` unjudgeable and conditional
+    allocation running on `weekday` and `event` alone.
+    """
     monkeypatch.setattr(session_phase, "BROKER_CLOCK", tmp_path / "broker_clock.json")
+    monkeypatch.setattr(session_phase, "BROKER_CLOCK_MEASURED", tmp_path / "measured.json")
     assert session_phase.broker_utc_offset_h() == (None, "unknown")
+
+    # tier 3: the inference answers when nothing better exists
+    (tmp_path / "measured.json").write_text(
+        json.dumps({"status": "MEASURED", "utc_offset_hours": 2}), "utf-8")
+    assert session_phase.broker_utc_offset_h() == (2, "measured_from_bars")
+
+    # an inference that did not measure is not an answer
+    (tmp_path / "measured.json").write_text(
+        json.dumps({"status": "UNMEASURED", "utc_offset_hours": None}), "utf-8")
+    assert session_phase.broker_utc_offset_h() == (None, "unknown")
+    (tmp_path / "measured.json").write_text(
+        json.dumps({"status": "MEASURED", "utc_offset_hours": 2}), "utf-8")
+
+    # tier 2 outranks it: a recorded terminal reading is a measurement, not an inference
     session_phase._record_broker_clock(3)
     assert session_phase.broker_utc_offset_h() == (3, "recorded_broker_clock")
 

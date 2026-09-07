@@ -39,11 +39,20 @@ def broker_utc_offset_h() -> tuple[int | None, str]:
     does this broker think it is" is precisely the drift that produces a certificate earned in one
     clock and traded in another, so there is one, here, next to the phases it defines.
 
-    LIVE TERMINAL, THEN THE RECORDED MEASUREMENT, THEN NOTHING. `data/broker_clock.json` is a
-    measurement the desk made when it last had a terminal, which is a far better answer than UTC;
-    absent both, the answer is None and every caller must degrade rather than assume. A hardcoded
-    0 does not raise -- it silently mislabels every hour by three hours in summer, and it does so
-    in the direction of a confident wrong conditional mean.
+    LIVE TERMINAL, THEN THE RECORDED MEASUREMENT, THEN THE BARS, THEN NOTHING.
+    `data/broker_clock.json` is a measurement the desk made when it last had a terminal, which is
+    a far better answer than UTC. `data/broker_clock_measured.json` is an INFERENCE from this
+    desk's own H1 volume profile -- worse than a measurement, enormously better than None -- and
+    it was added (2026-09-07) because the tier above it names the gateway as its only writer and
+    had never fired, which left `session` unjudgeable by `state_admission` on a desk whose entire
+    mechanism vocabulary is sessions. Absent all three the answer is None and every caller must
+    degrade rather than assume: a hardcoded 0 does not raise, it silently mislabels every hour by
+    three hours in summer, in the direction of a confident wrong conditional mean.
+
+    THE INFERENCE CORROBORATES THIS MODULE'S OWN EARLIER READING. The docstring above records
+    "7-16 broker EET is 04:00-13:00 UTC in summer", i.e. +3 in summer and +2 in winter. Ten
+    majors' volume troughs place it at +2 against the winter rollover with the overlap peak at
+    +3 -- the same clock, measured a second way, years later, from different data.
     """
     try:
         import MetaTrader5 as _mt5
@@ -57,10 +66,34 @@ def broker_utc_offset_h() -> tuple[int | None, str]:
         rec = json.loads(BROKER_CLOCK.read_text("utf-8"))
         return round(float(rec["utc_offset_hours"])), "recorded_broker_clock"
     except Exception:
-        return None, "unknown"
+        pass
+    # THIRD AND LAST: THE OFFSET MEASURED FROM THE DESK'S OWN BARS. A separate file, deliberately
+    # -- `broker_clock.json` belongs to the live-terminal writer above, and an inference must
+    # never race or overwrite a measurement. `research/measure_broker_clock.py` finds the daily
+    # rollover trough in the H1 volume profile and cross-checks it against the London/New York
+    # overlap peak; on this desk's bars seven majors agree unanimously on +2 with the trough at
+    # 8-14% of the median hour.
+    #
+    # THIS TIER EXISTS BECAUSE THE ONE ABOVE IT HAS NEVER FIRED. `broker_clock.json` names the
+    # gateway as its only writer and has never been written, so `session` -- the state dimension
+    # this desk's entire mechanism vocabulary is built from -- has never been judged by
+    # `state_admission`, which left conditional allocation running on `weekday` ("no measurable
+    # improvement") and `event` ("only 1 bucket"). An inference from bars is a worse answer than
+    # a terminal and an enormously better one than None.
+    try:
+        rec = json.loads(BROKER_CLOCK_MEASURED.read_text("utf-8"))
+        if str(rec.get("status")) == "MEASURED":
+            return round(float(rec["utc_offset_hours"])), "measured_from_bars"
+    except Exception:
+        pass
+    return None, "unknown"
 
 
 BROKER_CLOCK = _DESK / "data" / "broker_clock.json"
+#: The offset INFERRED from this desk's own H1 volume profile (`research/measure_broker_clock.py`).
+#: A separate path on purpose: `BROKER_CLOCK` belongs to the live-terminal writer, and an
+#: inference must never race or overwrite a measurement. Read only as the third and last tier.
+BROKER_CLOCK_MEASURED = _DESK / "data" / "broker_clock_measured.json"
 #: A recorded offset older than this is re-measured: the broker moves its clock with DST twice a
 #: year, and a record that survived the switch would label every hour wrong by one in the
 #: direction of a confident wrong conditional mean.
