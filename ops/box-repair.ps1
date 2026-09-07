@@ -93,6 +93,48 @@ if (-not (Test-Path $Root)) { Write-Host "No checkout at $Root" -ForegroundColor
 Set-Location $Root
 
 # ---------------------------------------------------------------- 0. privileges
+Step "Free disk"
+# FIRST, BECAUSE EVERYTHING BELOW WRITES. Measured on the box 2026-09-07: 0.8 GB free. At that
+# level Windows and git both start failing in ways that do not say "disk full": a push dies as
+# "the remote end hung up unexpectedly" mid-pack, a parquet write truncates, and a tick tape
+# append silently loses the bytes it could not flush. Running a repair on a full disk manufactures
+# new faults faster than it fixes old ones, and each new fault points somewhere else.
+$drive = (Get-Item $Root).PSDrive
+$freeGB = [math]::Round($drive.Free / 1GB, 2)
+Info "$($drive.Name): $freeGB GB free"
+if ($freeGB -lt 5) {
+    # RECLAIM ONLY WHAT IS DERIVED. Caches and compiled bytecode regenerate on demand; the tick
+    # tape and the parquet lake never do, so neither is touched here at any threshold. A disk
+    # sweeper that can reach irreplaceable data is a worse problem than the full disk.
+    $before = $freeGB
+    $targets = @(
+        (Join-Path $Root "**\__pycache__"),
+        (Join-Path $Root ".pytest_cache"), (Join-Path $Root ".mypy_cache"),
+        (Join-Path $Root ".ruff_cache"), (Join-Path $Root ".hypothesis"),
+        (Join-Path $env:LOCALAPPDATA "pip\Cache"), (Join-Path $env:TEMP "*")
+    )
+    if (-not $WhatIf) {
+        foreach ($t in $targets) {
+            Get-ChildItem -Path $t -Recurse -Force -ErrorAction SilentlyContinue |
+                Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        # Loose git objects from days of failed pushes are pure overhead once packed.
+        git -C $Root gc --auto --quiet 2>&1 | Out-Null
+        $freeGB = [math]::Round((Get-Item $Root).PSDrive.Free / 1GB, 2)
+        Info "reclaimed $([math]::Round($freeGB - $before, 2)) GB from caches and loose git objects"
+    }
+    if ($freeGB -lt 2) {
+        Fail "only $freeGB GB free after reclaiming caches -- writes WILL fail and this run cannot be trusted"
+        Info "the big consumers are almost always the tick tape and the bar lake. Find them with:"
+        Info '  Get-ChildItem C:\ -Directory | ForEach-Object { "{0,10:N2} GB  {1}" -f ((Get-ChildItem $_ -Recurse -File -EA SilentlyContinue | Measure-Object Length -Sum).Sum/1GB), $_.FullName }'
+        Info "NEVER delete desks\mt5\data\tape -- a tick nobody recorded cannot be re-downloaded."
+        Info "The bar lake CAN be refetched from MT5 in minutes and is the safe thing to shed."
+    }
+    elseif ($freeGB -lt 5) { Warn "$freeGB GB free -- thin for a box recording ticks; shed bars, never the tape" }
+    else { Ok "$freeGB GB free after reclaim" }
+}
+else { Ok "$freeGB GB free" }
+
 Step "Privileges"
 $elevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
             ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -377,10 +419,35 @@ if (-not (Test-Path $sync)) {
     if (-not $WhatIf) {
         Info "publishing state now"
         $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $sync 2>&1
-        if ($LASTEXITCODE -eq 0) { Ok "state published to git -- the dashboard picks it up on the VPS's next pull" }
-        else {
+        $text = ($out | Out-String)
+        # EXIT 0 IS NOT "PUBLISHED". sync_shadow_to_git.ps1 exits 0 on three different outcomes:
+        # it pushed, it had nothing to push ("no change since last sync"), and it found no state
+        # files at all ("SKIP"). Reading the exit code alone, this step announced "state published
+        # to git" on a run that published nothing -- measured 2026-09-07, while the last shadow
+        # sync commit in the repository was still 08-26. That is precisely the fault this whole
+        # step exists to catch, committed by the check itself.
+        #
+        # The script says which of the three happened, in words, on its last line. Read that.
+        if ($LASTEXITCODE -ne 0) {
             Fail "sync_shadow_to_git.ps1 exited $LASTEXITCODE -- the box's state did NOT reach the dashboard"
             ($out | Select-Object -Last 10) | ForEach-Object { Info $_ }
+        }
+        elseif ($text -match "shadow state synced to git") {
+            Ok "state published to git -- the dashboard picks it up on the VPS's next pull"
+        }
+        elseif ($text -match "no change since last sync") {
+            Fail "the sync ran cleanly and published NOTHING: it saw no change in the state files"
+            Info "the files are fresh on disk, so 'no change' means git cannot see them. Check:"
+            Info "  git check-ignore -v desks/mt5/reports/shadow/shadow_health.json   (must print nothing)"
+            Info "  git status --porcelain -- desks/mt5/reports/shadow/                (must show the file)"
+            Info "An ignored or already-committed file is invisible to `git add`, and the sync is right to say so."
+        }
+        elseif ($text -match "SKIP: none of the tracked state files exist") {
+            Fail "the sync found NO state files on this box -- nothing has been written for it to publish"
+        }
+        else {
+            Warn "the sync exited 0 with an outcome this step does not recognise; its own words:"
+            ($out | Select-Object -Last 6) | ForEach-Object { Info $_ }
         }
     }
 }

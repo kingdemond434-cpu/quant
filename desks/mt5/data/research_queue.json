@@ -73917,5 +73917,544 @@
   "reconciled_at": "2026-09-07T00:44:59.264642+00:00",
   "canonical_verdict": "REJECTED",
   "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260907-cdfc47",
+  "geneology_id": "external:orthogonal_sweep:cross_asset_residual",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDCAD cross_asset_residual params={'factor_symbols': ['EURCHF', 'EURJPY', 'XAGUSD', 'BCHUSD', 'AUDHUF', 'NAS100', 'XNGUSD', 'WHEAT']} screened at n=598 exp=0.1146R t=None pf=None maxDD=-43.35R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "cross_asset_residual",
+  "side": "BOTH",
+  "params": {
+   "factor_symbols": [
+    "EURCHF",
+    "EURJPY",
+    "XAGUSD",
+    "BCHUSD",
+    "AUDHUF",
+    "NAS100",
+    "XNGUSD",
+    "WHEAT"
+   ]
+  },
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 598,
+   "exp_r": 0.1146,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -43.35,
+   "win_rate": null,
+   "symbol": "AUDCAD"
+  },
+  "canonical_cell": "AUDCAD.cross_asset_residual.p=15843764e4f48cd8",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-6ebd00",
+  "geneology_id": "external:orthogonal_sweep:pca_residual",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDCAD pca_residual params={'factor_symbols': ['EURCHF', 'EURJPY', 'XAGUSD', 'BCHUSD', 'AUDHUF', 'NAS100', 'XNGUSD', 'WHEAT']} screened at n=269 exp=0.003R t=None pf=None maxDD=-16.55R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "pca_residual",
+  "side": "BOTH",
+  "params": {
+   "factor_symbols": [
+    "EURCHF",
+    "EURJPY",
+    "XAGUSD",
+    "BCHUSD",
+    "AUDHUF",
+    "NAS100",
+    "XNGUSD",
+    "WHEAT"
+   ]
+  },
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 269,
+   "exp_r": 0.003,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -16.55,
+   "win_rate": null,
+   "symbol": "AUDCAD"
+  },
+  "canonical_cell": "AUDCAD.pca_residual.p=15843764e4f48cd8",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-4574d0",
+  "geneology_id": "external:orthogonal_sweep:liquidity_gamma_reversal",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDHUF liquidity_gamma_reversal params={} screened at n=61 exp=0.4198R t=None pf=None maxDD=-7.06R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "liquidity_gamma_reversal",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 61,
+   "exp_r": 0.4198,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -7.06,
+   "win_rate": null,
+   "symbol": "AUDHUF"
+  },
+  "canonical_cell": "AUDHUF.liquidity_gamma_reversal.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-2bc3ff",
+  "geneology_id": "external:orthogonal_sweep:overnight_gap_decay",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDHUF overnight_gap_decay params={} screened at n=727 exp=0.1614R t=None pf=None maxDD=-27.22R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "overnight_gap_decay",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 727,
+   "exp_r": 0.1614,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -27.22,
+   "win_rate": null,
+   "symbol": "AUDHUF"
+  },
+  "canonical_cell": "AUDHUF.overnight_gap_decay.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-b83b49",
+  "geneology_id": "external:orthogonal_sweep:correlation_regime",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDJPY correlation_regime params={'peer_symbol': 'EURJPY'} screened at n=503 exp=0.0584R t=None pf=None maxDD=-28.26R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "correlation_regime",
+  "side": "BOTH",
+  "params": {
+   "peer_symbol": "EURJPY"
+  },
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 503,
+   "exp_r": 0.0584,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -28.26,
+   "win_rate": null,
+   "symbol": "AUDJPY"
+  },
+  "canonical_cell": "AUDJPY.correlation_regime.p=cd737e33964ac249",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-7d2899",
+  "geneology_id": "external:orthogonal_sweep:cross_asset_residual",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDJPY cross_asset_residual params={'factor_symbols': ['EURCHF', 'EURJPY', 'XAGUSD', 'BCHUSD', 'AUDHUF', 'NAS100', 'XNGUSD', 'WHEAT']} screened at n=647 exp=0.0365R t=None pf=None maxDD=-53.21R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "cross_asset_residual",
+  "side": "BOTH",
+  "params": {
+   "factor_symbols": [
+    "EURCHF",
+    "EURJPY",
+    "XAGUSD",
+    "BCHUSD",
+    "AUDHUF",
+    "NAS100",
+    "XNGUSD",
+    "WHEAT"
+   ]
+  },
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 647,
+   "exp_r": 0.0365,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -53.21,
+   "win_rate": null,
+   "symbol": "AUDJPY"
+  },
+  "canonical_cell": "AUDJPY.cross_asset_residual.p=15843764e4f48cd8",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-bf8067",
+  "geneology_id": "external:orthogonal_sweep:cross_asset_residual",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDNZD cross_asset_residual params={'factor_symbols': ['EURCHF', 'EURJPY', 'XAGUSD', 'BCHUSD', 'AUDHUF', 'NAS100', 'XNGUSD', 'WHEAT']} screened at n=578 exp=0.2846R t=None pf=None maxDD=-42.55R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "cross_asset_residual",
+  "side": "BOTH",
+  "params": {
+   "factor_symbols": [
+    "EURCHF",
+    "EURJPY",
+    "XAGUSD",
+    "BCHUSD",
+    "AUDHUF",
+    "NAS100",
+    "XNGUSD",
+    "WHEAT"
+   ]
+  },
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 578,
+   "exp_r": 0.2846,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -42.55,
+   "win_rate": null,
+   "symbol": "AUDNZD"
+  },
+  "canonical_cell": "AUDNZD.cross_asset_residual.p=15843764e4f48cd8",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-b4f6aa",
+  "geneology_id": "external:orthogonal_sweep:fx_fixing_reversal",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDNZD fx_fixing_reversal params={} screened at n=627 exp=0.0124R t=None pf=None maxDD=-30.93R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "fx_fixing_reversal",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 627,
+   "exp_r": 0.0124,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -30.93,
+   "win_rate": null,
+   "symbol": "AUDNZD"
+  },
+  "canonical_cell": "AUDNZD.fx_fixing_reversal.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-b32ad2",
+  "geneology_id": "external:orthogonal_sweep:overnight_gap_decay",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDNZD overnight_gap_decay params={} screened at n=663 exp=0.1193R t=None pf=None maxDD=-2.44R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "overnight_gap_decay",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 663,
+   "exp_r": 0.1193,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -2.44,
+   "win_rate": null,
+   "symbol": "AUDNZD"
+  },
+  "canonical_cell": "AUDNZD.overnight_gap_decay.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-089b45",
+  "geneology_id": "external:orthogonal_sweep:turn_of_month",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDNZD turn_of_month params={} screened at n=655 exp=0.1254R t=None pf=None maxDD=-67.43R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "turn_of_month",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 655,
+   "exp_r": 0.1254,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -67.43,
+   "win_rate": null,
+   "symbol": "AUDNZD"
+  },
+  "canonical_cell": "AUDNZD.turn_of_month.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-3d72bb",
+  "geneology_id": "external:orthogonal_sweep:cross_asset_residual",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDSGD cross_asset_residual params={'factor_symbols': ['EURCHF', 'EURJPY', 'XAGUSD', 'BCHUSD', 'AUDHUF', 'NAS100', 'XNGUSD', 'WHEAT']} screened at n=598 exp=0.0955R t=None pf=None maxDD=-73.25R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "cross_asset_residual",
+  "side": "BOTH",
+  "params": {
+   "factor_symbols": [
+    "EURCHF",
+    "EURJPY",
+    "XAGUSD",
+    "BCHUSD",
+    "AUDHUF",
+    "NAS100",
+    "XNGUSD",
+    "WHEAT"
+   ]
+  },
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 598,
+   "exp_r": 0.0955,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -73.25,
+   "win_rate": null,
+   "symbol": "AUDSGD"
+  },
+  "canonical_cell": "AUDSGD.cross_asset_residual.p=15843764e4f48cd8",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-62c04e",
+  "geneology_id": "external:orthogonal_sweep:overnight_gap_decay",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDSGD overnight_gap_decay params={} screened at n=438 exp=0.4362R t=None pf=None maxDD=-2.5R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "overnight_gap_decay",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 438,
+   "exp_r": 0.4362,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -2.5,
+   "win_rate": null,
+   "symbol": "AUDSGD"
+  },
+  "canonical_cell": "AUDSGD.overnight_gap_decay.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-818a9d",
+  "geneology_id": "external:orthogonal_sweep:vol_transition",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDSGD vol_transition params={} screened at n=204 exp=0.0919R t=None pf=None maxDD=-21.48R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "vol_transition",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 204,
+   "exp_r": 0.0919,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -21.48,
+   "win_rate": null,
+   "symbol": "AUDSGD"
+  },
+  "canonical_cell": "AUDSGD.vol_transition.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-b364e0",
+  "geneology_id": "external:orthogonal_sweep:cross_asset_residual",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDUSD cross_asset_residual params={'factor_symbols': ['EURCHF', 'EURJPY', 'XAGUSD', 'BCHUSD', 'AUDHUF', 'NAS100', 'XNGUSD', 'WHEAT']} screened at n=663 exp=0.0418R t=None pf=None maxDD=-70.89R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "cross_asset_residual",
+  "side": "BOTH",
+  "params": {
+   "factor_symbols": [
+    "EURCHF",
+    "EURJPY",
+    "XAGUSD",
+    "BCHUSD",
+    "AUDHUF",
+    "NAS100",
+    "XNGUSD",
+    "WHEAT"
+   ]
+  },
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 663,
+   "exp_r": 0.0418,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -70.89,
+   "win_rate": null,
+   "symbol": "AUDUSD"
+  },
+  "canonical_cell": "AUDUSD.cross_asset_residual.p=15843764e4f48cd8",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-2a9e10",
+  "geneology_id": "external:orthogonal_sweep:pca_residual",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDUSD pca_residual params={'factor_symbols': ['EURCHF', 'EURJPY', 'XAGUSD', 'BCHUSD', 'AUDHUF', 'NAS100', 'XNGUSD', 'WHEAT']} screened at n=293 exp=0.0343R t=None pf=None maxDD=-15.7R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "pca_residual",
+  "side": "BOTH",
+  "params": {
+   "factor_symbols": [
+    "EURCHF",
+    "EURJPY",
+    "XAGUSD",
+    "BCHUSD",
+    "AUDHUF",
+    "NAS100",
+    "XNGUSD",
+    "WHEAT"
+   ]
+  },
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 293,
+   "exp_r": 0.0343,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -15.7,
+   "win_rate": null,
+   "symbol": "AUDUSD"
+  },
+  "canonical_cell": "AUDUSD.pca_residual.p=15843764e4f48cd8",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-b8b200",
+  "geneology_id": "external:orthogonal_sweep:turn_of_month",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDUSD turn_of_month params={} screened at n=806 exp=0.0043R t=None pf=None maxDD=-24.58R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "turn_of_month",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 806,
+   "exp_r": 0.0043,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -24.58,
+   "win_rate": null,
+   "symbol": "AUDUSD"
+  },
+  "canonical_cell": "AUDUSD.turn_of_month.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-776ac8",
+  "geneology_id": "external:orthogonal_sweep:drawdown_conditional",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: BTCUSD drawdown_conditional params={} screened at n=120 exp=0.0959R t=None pf=None maxDD=-14.4R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "drawdown_conditional",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 120,
+   "exp_r": 0.0959,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -14.4,
+   "win_rate": null,
+   "symbol": "BTCUSD"
+  },
+  "canonical_cell": "BTCUSD.drawdown_conditional.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-e6ee12",
+  "geneology_id": "external:orthogonal_sweep:macro_conditional",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: BTCUSD macro_conditional params={'input_source': 'fred:DTWEXBGS', 'transform': 'trailing_pct_rank', 'publication_lag_d': 1} screened at n=856 exp=0.0252R t=None pf=None maxDD=-40.66R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "macro_conditional",
+  "side": "BOTH",
+  "params": {
+   "input_source": "fred:DTWEXBGS",
+   "transform": "trailing_pct_rank",
+   "publication_lag_d": 1
+  },
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 856,
+   "exp_r": 0.0252,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -40.66,
+   "win_rate": null,
+   "symbol": "BTCUSD"
+  },
+  "canonical_cell": "BTCUSD.macro_conditional.p=4bd8048223214528",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
+ },
+ {
+  "id": "ext-20260907-5a721b",
+  "geneology_id": "external:orthogonal_sweep:vol_transition",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: BTCUSD vol_transition params={} screened at n=466 exp=0.0029R t=None pf=None maxDD=-24.02R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "vol_transition",
+  "side": "BOTH",
+  "params": {},
+  "created_at": "2026-09-07T05:50:00.692910+00:00",
+  "status": "BLOCKED_CANONICAL_DOCKET_MISSING",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 466,
+   "exp_r": 0.0029,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -24.02,
+   "win_rate": null,
+   "symbol": "BTCUSD"
+  },
+  "canonical_cell": "BTCUSD.vol_transition.p=44136fa355b3678a",
+  "reconciled_at": "2026-09-07T06:11:39.815213+00:00",
+  "blocked_on": "exact external Stage-A card absent from external_survivors docket"
  }
 ]
