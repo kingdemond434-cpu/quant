@@ -56,6 +56,25 @@ evidence, or blindly revive legitimately revoked/failed sleeves.
 value/triangles, cross-asset residuals, volatility/liquidity transitions, event, COT, macro and
 new categories. Verify peer bars, tick spreads, calendars and PIT vintages: REACHABLE is not
 DATA_READY. Feed genuinely new runnable hypotheses into the same queue, not parallel registries.
+Universe/timeframe coverage: dynamically enumerate Fusion-executable NON-STOCK instruments and
+supported timeframes. Exclude individual stocks and single-stock CFDs (e.g. Apple) from hypothesis
+generation/research; do not confuse broad equity indices with individual stocks. Preserve prior
+evidence and existing live permissions; this research exclusion is not an instruction to close
+positions, delete data, or place discretionary/random stock trades. Any separate macro/news-driven
+stock approach still requires its own validated rules, lawful point-in-time inputs and authority.
+Audit acquisition, mining, compilation, bar loading, peer/factor alignment, backtests, certificates,
+forward replay and monitoring for implicit H1-only restrictions. H1 remains a valid explicit chart;
+remove accidental H1 defaults/substitutions, not legitimate H1 strategies. Carry each candidate's
+explicit chart through identity, parameters, costs, tests and forward evidence. A missing chart
+must not silently become H1. Cover economically useful mechanisms across relevant supported
+timeframes, not a wasteful blind Cartesian grid. Maintain symbol x timeframe x mechanism coverage
+and discover missing categories; justify exclusions and track white spaces.
+Ensure required native bars/ticks and peer inputs are available, fresh enough for their session,
+gap-checked and long enough for the requested study. Repair acquisition/backfill and retention
+wiring with regression tests, protecting data needed by active research and forward clocks.
+Resample only causally from adequate finer data; never fabricate unavailable history or use
+coarser bars as fine bars. Record broker/history/storage/access limits as explicit blockers with
+retry plans. A file's existence alone is not data readiness or proof of full coverage.
 6. Fix execution decision/fill attribution and markouts from real records. Distinguish no-fill/
 closed-market periods from failures. Never fake trades, place orders, arm capital, change live
 allocation/promotion authority, clear risk holds, loosen gates or auto-resolve live-code conflicts.
