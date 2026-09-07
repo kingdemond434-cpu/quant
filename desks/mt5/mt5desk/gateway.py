@@ -200,17 +200,25 @@ def auto_lot(equity: float, dist_usd: float | None = None,
     return _core.auto_lot(equity, dist_usd, symbol, info, q=q)
 
 
-#: The desk's minimum lot per trade and its optional override file, bound here so the gateway's
-#: own surface names every number that decides a live order (see `test_decision_core`'s
-#: reachability fence). Read through `min_lot()`, never assigned to.
+#: The desk's minimum lot per trade, the GOLD book's higher floor, and their override files --
+#: bound here so the gateway's own surface names every number that decides a live order (see
+#: `test_decision_core`'s reachability fence). Read through the functions, never assigned to.
 MIN_LOT = _core.MIN_LOT
 MIN_LOT_FILE = _core.MIN_LOT_FILE
+GOLD_MIN_LOT = _core.GOLD_MIN_LOT
+GOLD_MIN_LOT_FILE = _core.GOLD_MIN_LOT_FILE
 
 
 def min_lot() -> float:
     """The desk's minimum lot per trade -- `decision_core.min_lot`, bound here by name (see
     `promoted_lot` for why a `def` rather than a re-export)."""
     return _core.min_lot()
+
+
+def gold_min_lot() -> float:
+    """The GOLD book's minimum lot, which is higher than the desk's -- `decision_core.
+    gold_min_lot`, bound here by name (see `promoted_lot` for why a `def`)."""
+    return _core.gold_min_lot()
 
 
 def gold_lot(equity: float, dist_usd: float | None = None,
@@ -2082,7 +2090,7 @@ def main() -> None:
             # before this sleeve's stop was known, so it cannot see that overshoot; naming both
             # fractions on one line is what keeps the difference measured rather than merely
             # true, and it is the line that shows a shrinking account its risk RISING.
-            _floor = min_lot()
+            _floor = gold_min_lot() if s.get("lot") == "auto" else min_lot()
             if lot <= _floor + 1e-9:
                 _billed = s.get("q_charge")
                 log(f"[{s['name']}] lot came from the FLOOR {_floor:.2f}, not from policy: "

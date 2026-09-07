@@ -404,15 +404,58 @@ def min_lot() -> float:
     return float(max(val, MIN_LOT))
 
 
+#: THE GOLD BOOK'S OWN FLOOR, ABOVE THE DESK'S. Principal 2026-09-07: "make gold 0.02 lots
+#: instead of 0.01 as exception per trade these live sleeves only". An EXCEPTION, and scoped
+#: exactly as asked -- the three GOLD_WINDOWS rows and nothing else. `promoted_lot` keeps
+#: `min_lot()` (0.01), so no family or scalp sleeve is resized by this.
+#:
+#: WHAT IT COSTS, STATED BEFORE IT WAS SET. At EUR 742.76 a 0.01 gold leg runs 2.22% of equity
+#: and 0.02 runs 4.43%, so the three-leg book goes 6.65% -> 13.30%. That is inside the 22%
+#: admission limit (20% budget + 2% slide), so `cap_by_heat` admits all three windows and defers
+#: nothing. It is NOT inside it at every equity: as the account falls the venue floor binds
+#: harder and the same three legs price higher, which is the behaviour `realised_q` exists to
+#: expose and the reason the cap still decides admission rather than this constant.
+#:
+#: The principal set 0.02 desk-wide this morning, saw that same arithmetic applied to every
+#: promoted sleeve, and reverted to 0.01 ("do 0.01 like before then"). This re-applies it to the
+#: one book that has forward evidence behind it and leaves the rest at the venue floor -- which
+#: is what "these live sleeves only" means.
+GOLD_MIN_LOT = 0.02
+#: A box may raise the gold floor without a code push. Absent or unreadable -> GOLD_MIN_LOT.
+GOLD_MIN_LOT_FILE = _DESK / "data" / "GOLD_MIN_LOT.json"
+
+
+def gold_min_lot() -> float:
+    """The gold book's minimum lot: the override file if usable, else `GOLD_MIN_LOT`.
+
+    NEVER BELOW THE CONSTANT, for the same reason `min_lot` is not: a stale or half-written file
+    reading 0.01 would silently halve the principal's instruction, and a floor a file can lower
+    is not a floor. The override can only raise it.
+    """
+    try:
+        raw = json.loads(GOLD_MIN_LOT_FILE.read_text(encoding="utf-8"))
+        val = float(raw.get("lot") if isinstance(raw, dict) else raw)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return float(GOLD_MIN_LOT)
+    if not (val == val) or val <= 0:
+        return float(GOLD_MIN_LOT)
+    return float(max(val, GOLD_MIN_LOT))
+
+
 def gold_lot(equity: float, dist_usd: float | None = None,
              info: object | None = None) -> float:
-    """The gold book's lot: fixed-fractional sizing, floored at `min_lot()`.
+    """The gold book's lot: fixed-fractional sizing, floored at `gold_min_lot()`.
 
     The gateway's `"auto"` branch is the gold book and nothing else (`roster` gives `"auto"` to
     the three GOLD_WINDOWS rows alone), so the floor is applied here rather than inside
     `auto_lot`, which is also the pure policy sizer every caller compares against.
+
+    STILL A max(), NEVER AN ASSIGNMENT. At an equity where fixed-fractional sizing already asks
+    for more than the floor, the floor is inert and the larger lot stands -- a plain `lot = 0.02`
+    would be a size CUT there, delivered as an increase, on the one book with forward evidence
+    behind it.
     """
-    return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), min_lot()))
+    return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot()))
 
 
 def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) -> float:

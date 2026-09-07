@@ -174,3 +174,72 @@ def test_nothing_else_on_the_desk_inherits_gold_s_floor() -> None:
         assert token not in body, (
             f"auto_lot references {token}: the gold book's floor belongs in gold_lot, not in "
             f"the sizer every instrument on the desk shares")
+
+
+# ------------------------------------------------- the GOLD-ONLY exception (principal 2026-09-07)
+def test_gold_has_its_own_higher_floor_and_nothing_else_does() -> None:
+    """Principal: "make gold 0.02 lots instead of 0.01 as exception per trade these live sleeves
+    only". The word that carries the risk is EXCEPTION -- it must not leak to the other lanes.
+
+    The same instruction was applied desk-wide earlier the same day and reverted within hours,
+    because a floor on every promoted sleeve doubles the overshoot on the whole book rather than
+    on the one part of it with forward evidence. This test is what keeps the second attempt
+    scoped where the first one was not.
+    """
+    assert dc.gold_min_lot() > dc.min_lot(), "the gold exception is not above the desk floor"
+    assert dc.gold_min_lot() == pytest.approx(0.02)
+    assert dc.min_lot() == pytest.approx(0.01), "the DESK floor moved; only gold was to change"
+
+    small = 300.0
+    assert dc.gold_lot(small) == pytest.approx(dc.gold_min_lot())
+    # Only meaningful where a FLOOR is what decides the lot. US500 sizes to 0.13 at this equity
+    # from policy alone (`_eur_per_price_unit` differs per instrument), and asserting that is
+    # below gold's floor tests the instrument's tick value, not the scoping.
+    checked = False
+    for symbol in ("EURUSD", "CADJPY", "US500"):
+        policy = dc.auto_lot(small, None, symbol, None,
+                             q=dc.ramped_fraction(0.03, 10, None))
+        lot = dc.promoted_lot(small, 10, None, symbol, None, risk_frac=0.03)
+        if policy <= dc.min_lot():
+            checked = True
+            assert lot == pytest.approx(dc.min_lot()), (
+                f"{symbol} sits on a floor and got {lot}, not the desk floor {dc.min_lot()} -- "
+                f"gold's exception has leaked into the promoted lanes")
+    assert checked, "no tested symbol was floored, so the scoping was never exercised"
+
+
+def test_the_gold_floor_still_never_cuts_a_larger_policy_lot() -> None:
+    """A plain `lot = 0.02` would be a size CUT wherever policy already asks for more."""
+    checked = False
+    for equity in (8_000.0, 25_000.0, 100_000.0):
+        policy = dc.auto_lot(equity, None, dc.GOLD_SYMBOL)
+        if policy > dc.gold_min_lot():
+            checked = True
+            assert dc.gold_lot(equity) == pytest.approx(policy), (
+                f"at equity {equity} policy asks {policy}; the floor must be inert there")
+    assert checked, "no tested equity exercised the no-cut property"
+
+
+def test_the_gold_override_file_can_only_raise(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "GOLD_MIN_LOT.json"
+    monkeypatch.setattr(dc, "GOLD_MIN_LOT_FILE", path)
+    path.write_text(json.dumps({"lot": 0.05}), "utf-8")
+    assert dc.gold_min_lot() == pytest.approx(0.05)
+    path.write_text(json.dumps({"lot": 0.01}), "utf-8")
+    assert dc.gold_min_lot() == pytest.approx(dc.GOLD_MIN_LOT), (
+        "a file below the constant must be ignored -- a floor a file can lower is not a floor")
+
+
+def test_the_heat_ledger_bills_gold_at_its_own_floor() -> None:
+    """The cap must reserve what the gold lane will actually send, not the desk floor.
+
+    Source-level: the branch lives in `gateway.main`'s pre-cap loop. Without it the cap prices
+    the POLICY lot, and the gold exception is exactly the case where the lot sent is larger --
+    so the book would run at up to twice the risk the budget reserved for it.
+    """
+    src = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    head = src.split('elif _s.get("lot") == "auto":', 1)[1][:1200]
+    assert "gold_lot(equity)" in head, "the gold heat charge is not priced from gold_lot"
+    assert 'lot = gold_lot(equity, dist, sym) if s["lot"] == "auto"' in src
+    assert '_floor = gold_min_lot() if s.get("lot") == "auto" else min_lot()' in src, (
+        "the floor-binding log line reports the wrong floor for the gold lane")
