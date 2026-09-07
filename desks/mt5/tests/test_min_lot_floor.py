@@ -1,14 +1,16 @@
-"""The gold book's 0.02 floor raises a small lot and NEVER lowers a larger one.
+"""The desk lot floor raises a leg the venue would not let us send, and NEVER lowers a larger one.
 
-PRINCIPAL, 2026-09-07: "let them use 0.02 lots each" and, one message later, "dont reduce their
-risk or size from before". Those are not two instructions -- the second one says what kind of
-number the first one is. A gold leg that fixed-fractional sizing already puts at 0.05 must still
-send 0.05; only the legs the venue floor was holding at 0.01 move.
+The floor is the venue's 0.01. It was briefly 0.02 on the principal's 2026-09-07 instruction and
+reverted the same day on the arithmetic -- a lot floor makes a small account run a LARGER
+fraction of equity than policy asked for, and doubling it doubled that overshoot on the legs
+least able to carry it ("do 0.01 like before then"). These tests outlive the value: every one
+reads `dc.min_lot()` rather than a literal, so they assert the PROPERTIES a floor must have at
+whatever number it is set to.
 
-The failure this guards against is the easy reading: `lot = 0.02` for every gold leg. On the
-equity where `auto_lot` returns more than that, a plain assignment is a SIZE CUT delivered as a
-size increase, on the one book that took the account from 500 to 743 -- and nothing downstream
-would report it, because 0.02 is exactly what was asked for.
+The failure they guard against is the easy reading of any such instruction: `lot = <floor>` for
+every leg. On the equity where `auto_lot` already returns more, a plain assignment is a SIZE CUT
+delivered as a size increase, on the one book that took the account from 500 to 743 -- and
+nothing downstream would report it, because the number is exactly what was asked for.
 """
 from __future__ import annotations
 
@@ -25,12 +27,19 @@ if str(DESK) not in sys.path:
 from mt5desk import decision_core as dc  # noqa: E402
 
 
-def test_the_floor_raises_the_venue_minimum_leg() -> None:
-    """At an equity where policy sizing lands on the 0.01 venue floor, gold sends 0.02."""
-    small = 100.0
-    assert dc.auto_lot(small, None, dc.GOLD_SYMBOL) == pytest.approx(0.01), (
-        "precondition: this equity is meant to be in the range where the venue floor binds")
-    assert dc.gold_lot(small) == pytest.approx(0.02)
+def test_a_minimum_lot_is_sent_at_any_capital() -> None:
+    """PRINCIPAL 2026-09-07: "base minimum lots r allowed no matter capital".
+
+    The sizer floors rather than refusing, and it does so at every equity down to absurd ones.
+    That choice is deliberate and its cost is real: `auto_lot`'s own docstring says a book that
+    cannot open a position also cannot compound out of the range where the floor binds. This
+    test is what stops a future "refuse below X equity" rule from being added quietly.
+    """
+    for equity in (10.0, 50.0, 100.0, 300.0, 743.0):
+        assert dc.gold_lot(equity) >= dc.min_lot(), f"gold sent nothing at equity {equity}"
+        assert dc.promoted_lot(equity, 10, None, "EURUSD", None,
+                               risk_frac=0.03) >= dc.min_lot(), (
+            f"a promoted sleeve sent nothing at equity {equity}")
 
 
 def test_the_floor_never_reduces_a_larger_policy_lot() -> None:
@@ -42,11 +51,11 @@ def test_the_floor_never_reduces_a_larger_policy_lot() -> None:
         assert floored >= policy, (
             f"at equity {equity} the floor returned {floored}, BELOW the policy lot {policy} -- "
             f"that is a size cut wearing the principal's instruction")
-        if policy > 0.02:
+        if policy > dc.min_lot():
             checked_any = True
             assert floored == pytest.approx(policy), (
                 f"at equity {equity} policy sizing asks for {policy}; the floor must be inert "
-                f"there, not pin the leg to 0.02")
+                f"there, not pin the leg to {dc.min_lot()}")
     assert checked_any, ("no tested equity produced a policy lot above the floor, so the "
                          "no-reduction property was never actually exercised")
 
@@ -65,17 +74,17 @@ def test_an_override_file_can_raise_the_floor_but_never_lower_it(tmp_path, monke
     path.write_text(json.dumps({"lot": 0.05}), "utf-8")
     assert dc.min_lot() == pytest.approx(0.05), "an override above the constant applies"
 
-    path.write_text(json.dumps({"lot": 0.01}), "utf-8")
-    assert dc.min_lot() == pytest.approx(0.02), (
+    path.write_text(json.dumps({"lot": 0.001}), "utf-8")
+    assert dc.min_lot() == pytest.approx(dc.MIN_LOT), (
         "an override BELOW the constant must be ignored -- a floor a file can lower is not a floor")
 
     for junk in ("{", "null", '{"lot": "big"}', '{"lot": -3}', '{"lot": 0}'):
         path.write_text(junk, "utf-8")
-        assert dc.min_lot() == pytest.approx(0.02), f"unusable override {junk!r} must fall "\
-                                                         f"back to the constant"
+        assert dc.min_lot() == pytest.approx(dc.MIN_LOT), (
+            f"unusable override {junk!r} must fall back to the constant")
 
     path.unlink()
-    assert dc.min_lot() == pytest.approx(0.02), "absent override falls back to the constant"
+    assert dc.min_lot() == pytest.approx(dc.MIN_LOT), "absent override falls back to the constant"
 
 
 def test_the_heat_ledger_bills_the_floored_lot_not_the_policy_lot() -> None:
@@ -99,10 +108,10 @@ def test_the_heat_ledger_bills_the_floored_lot_not_the_policy_lot() -> None:
 
 
 def test_promoted_sleeves_get_the_floor_too() -> None:
-    """Principal 2026-09-07: "0.02 lots each trade". Not gold alone -- every sleeve that trades."""
+    """Principal 2026-09-07: "each trade". The floor is desk-wide, not gold alone."""
     small = 100.0
     lot = dc.promoted_lot(small, 10, None, "EURUSD", None, risk_frac=0.03)
-    assert lot >= 0.02, f"a promoted sleeve sized to {lot}, below the desk floor"
+    assert lot >= dc.min_lot(), f"a promoted sleeve sized to {lot}, below the desk floor"
 
 
 def test_a_leg_the_allocator_zeroed_is_still_zero() -> None:
@@ -150,8 +159,8 @@ def test_nothing_else_on_the_desk_inherits_gold_s_floor() -> None:
     """`auto_lot` sizes every instrument. The gold floor must not have been put inside it.
 
     Asserted two ways, because either alone is weak. The general sizer's own floor is still the
-    0.01 VENUE minimum on an instrument small enough to sit on it -- so nothing was raised to
-    0.02 wholesale -- and `auto_lot`'s source does not mention the gold floor at all, which is
+    VENUE minimum on an instrument small enough to sit on it -- so nothing was raised to
+    the floor wholesale -- and `auto_lot`'s source does not mention the floor at all, which is
     the property that survives a future change of the equity these numbers happen to land on.
     (Other instruments are not expected at 0.01 here: `_eur_per_price_unit` differs per symbol,
     so US500 sizes to 0.07 at this equity for reasons that have nothing to do with gold.)

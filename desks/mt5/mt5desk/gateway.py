@@ -2073,17 +2073,19 @@ def main() -> None:
                 continue
             log(f"[{s['name']}] stop {dist:.5g} -> lot {lot:.2f} "
                 f"(realised q {q_real:.2%})")
-            # WHEN THE FLOOR IS WHAT SET THE SIZE, SAY SO AND SAY WHAT IT COST. The desk floor
-            # (0.02 since the principal's 2026-09-07 order) sits where the venue's 0.01 sat, and
-            # a floor always runs a LARGER fraction of a small account than policy asked for --
-            # that is what `realised_q` was written to expose. For a promoted sleeve the heat
-            # ledger reserved `ramped_fraction`, computed before this sleeve's stop was known, so
-            # it cannot see the floor's overshoot; naming both fractions on the same line is what
-            # keeps that difference measured rather than merely true.
+            # WHEN THE FLOOR IS WHAT SET THE SIZE, SAY SO AND SAY WHAT IT COST. A leg at the
+            # venue minimum is not sized by policy at all -- there is nothing smaller to send --
+            # and it runs a LARGER fraction of a small account than policy asked for, which is
+            # exactly what `realised_q` was written to expose ("a book configured for 0.75%
+            # could run at 5.9% with nothing in the code, the log or the state file ever saying
+            # so"). For a promoted sleeve the heat ledger reserved `ramped_fraction`, computed
+            # before this sleeve's stop was known, so it cannot see that overshoot; naming both
+            # fractions on one line is what keeps the difference measured rather than merely
+            # true, and it is the line that shows a shrinking account its risk RISING.
             _floor = min_lot()
             if lot <= _floor + 1e-9:
                 _billed = s.get("q_charge")
-                log(f"[{s['name']}] lot came from the DESK FLOOR {_floor:.2f}, not from policy: "
+                log(f"[{s['name']}] lot came from the FLOOR {_floor:.2f}, not from policy: "
                     f"this leg runs {q_real:.2%} of equity"
                     + (f" against the {float(_billed):.2%} the heat ledger reserved for it"
                        if isinstance(_billed, (int, float)) and not isinstance(_billed, bool)

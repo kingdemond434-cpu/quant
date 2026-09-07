@@ -351,26 +351,24 @@ def auto_lot(equity: float, dist_usd: float | None = None,
     return float(min(max(lot, 0.01), 5.0))
 
 
-#: THE DESK'S MINIMUM LOT PER TRADE. PRINCIPAL'S INSTRUCTION 2026-09-07, in three messages:
-#: "let them use 0.02 lots each", "dont reduce their risk or size from before", and -- once the
-#: promoted lanes were unblocked -- "0.02 lots each trade but same as before". Those are one
-#: rule and it is a FLOOR, not a setting: every sizer here returns the LARGER of the policy lot
-#: and this, so any sleeve fixed-fractional sizing already puts above 0.02 is untouched, and no
-#: equity, ramp or fade can take a leg below it.
+#: THE DESK'S MINIMUM LOT PER TRADE: the venue minimum, 0.01.
 #:
-#: IT REPLACES THE VENUE FLOOR, IT DOES NOT INVENT A NEW KIND OF THING. `auto_lot` and
-#: `promoted_lot` have always floored at the venue's 0.01, and `realised_q` exists precisely
-#: because that floor makes a small account run a LARGER fraction than policy asked for -- read
-#: its docstring: "a book configured for 0.75% could run at 5.9% with nothing in the code, the
-#: log or the state file ever saying so". This raises that same floor from 0.01 to 0.02, so the
-#: overshoot it causes is the overshoot the desk already measures and logs per leg as
-#: `realised q`. What is NOT permitted is for it to be silent, which is why every placement
-#: whose lot came from the floor says so in the log.
+#: SET TO 0.02 AND REVERTED THE SAME DAY, BY THE PRINCIPAL, ON THE ARITHMETIC. The instruction
+#: was "let them use 0.02 lots each ... 0.02 lots each trade but same as before", built as a
+#: floor rather than a setting so nothing would be sized DOWN. What that surfaced is the thing
+#: `realised_q` was written to expose: a lot floor makes a small account run a LARGER fraction
+#: of equity than policy asked for, and doubling the floor doubles that overshoot on exactly the
+#: legs least able to carry it. At EUR 1683.89 gold's policy lot is 0.01 and runs 0.98% of
+#: equity; the same leg at 0.02 runs 1.96%, and the three-leg book with it. Shown the numbers,
+#: the principal's answer was "do 0.01 like before then". So the floor is the venue's again and
+#: sizing is bit-for-bit what it was before 2026-09-07 -- verified: `gold_lot` collapses to
+#: `auto_lot`, `promoted_lot` to its old `min(max(lot, 0.01), 5.0)`, and the gold heat charge to
+#: the identical fraction `cap_by_heat` was already computing.
 #:
-#: A LEG THE ALLOCATOR PRICED AT ZERO STAYS ZERO. `promoted_lot` returns 0.0 for a sleeve the
-#: solve gave no heat, before this floor is reached -- `book_zeroed` depends on that, and a
-#: floor that lifted a zeroed leg to 0.02 would put capital on the one sleeve the optimiser
-#: explicitly refused.
+#: THE MACHINERY IS KEPT, at its old value. Three files used to spell 0.01 as a literal in five
+#: places; the floor now has one name, one override file and one test that proves it can only be
+#: raised. That is what makes the next change to it a one-line decision with a visible blast
+#: radius, instead of a hunt.
 #:
 #: IT IS A LOT FLOOR, NOT A RISK BASE, and the principal named that distinction himself
 #: (2026-09-07): "its base floor minimum of minimum but not risk floor base where all promoted
@@ -378,10 +376,13 @@ def auto_lot(equity: float, dist_usd: float | None = None,
 #: equity a promoted sleeve targets per trade, which it earns up from through `authority_ramp`.
 #: Nothing here touches that ladder: `promoted_lot` still computes `q_eff` from risk_frac x ramp
 #: x fade and still sizes `auto_lot` with it. This clamps only the LOT that comes out the far
-#: end, in venue units, after the policy has had its say. A sleeve does not "start at 0.02" any
-#: more than it used to "start at 0.01"; 0.02 is simply the smallest position this desk will
-#: send, and on any sleeve whose policy size is larger the floor never appears at all.
-MIN_LOT = 0.02
+#: end, in venue units, after the policy has had its say.
+#:
+#: A LEG THE ALLOCATOR PRICED AT ZERO STAYS ZERO. `promoted_lot` returns 0.0 for a sleeve the
+#: solve gave no heat, before this floor is reached -- `book_zeroed` depends on that, and a
+#: floor that lifted a zeroed leg off the floor would put capital on the one sleeve the
+#: optimiser explicitly refused.
+MIN_LOT = 0.01
 #: A box may override the floor without a code push. Absent or unreadable -> MIN_LOT.
 MIN_LOT_FILE = _DESK / "data" / "MIN_LOT.json"
 
