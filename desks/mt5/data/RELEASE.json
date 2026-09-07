@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-09-07T13:12:11.110395+00:00",
- "live_sha": "a534d3dcaea1d398494a5b18e077bf85400c8b80",
- "code_sha": "a534d3dcaea1d398494a5b18e077bf85400c8b80",
- "parent_sha": "0abe08fd509b52c8d95b8870fc59e9a27c86b814",
- "tree_sha": "f9071c12e9e9b1540853cc9ad4b30b5c79d15677",
+ "generated_utc": "2026-09-07T16:55:05.198304+00:00",
+ "live_sha": "ca12b75a8a7f5734c9cf25f2eb1292f4dd7c2aa7",
+ "code_sha": "ca12b75a8a7f5734c9cf25f2eb1292f4dd7c2aa7",
+ "parent_sha": "b2d02c73eaa5f8a2fc2a3b78878882c1a8c9f775",
+ "tree_sha": "b624a3a465391811e04f9312693436f18042e160",
  "config_hash": "2852fb93553ef99e",
  "survivor_registry_hash": "35060cf42337de40",
  "allocator_hash": "9850f31d17c70363",
@@ -80,14 +80,11 @@
   "desks/mt5/reports/shadow/shadow_health.json",
   "desks/mt5/reports/shadow/shadow_state.json"
  ],
- "release_id": "5b3ec361d90c",
+ "release_id": "496f4e230ec9",
  "sealed": true,
- "sealed_at": "2026-09-07T13:12:11.110395+00:00",
- "sealed_by": "desk",
+ "sealed_at": "2026-09-07T16:55:05.198304+00:00",
+ "sealed_by": "claude-desk-session",
  "ci_run_id": null,
  "tested_sha": null,
- "worktree_dirty": [
-  "desks/mt5/data/moat_coverage.json",
-  "desks/mt5/data/release_identity.json"
- ]
+ "worktree_dirty": []
 }
