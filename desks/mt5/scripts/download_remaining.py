@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -45,13 +47,35 @@ UNIVERSE_OUT = PARQUET_DIR / "universe.json"
 #: Every chart the desk can express a strategy on. The gauntlet, the forward engine and the
 #: universal executor all run a cell on its OWN timeframe, so a chart absent here is a whole
 #: class of mechanism the desk cannot test -- not a smaller sample of the same one.
-TIMEFRAMES: tuple[str, ...] = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
+#: EVERY PERIOD METATRADER 5 OFFERS -- all 21, not the seven this used to name. `_tf_const` already
+#: resolves a chart by `getattr(mt5, f"TIMEFRAME_{name}")` and returns None when the terminal has
+#: no such period, so a name here that a broker does not serve costs one skipped lookup and is
+#: reported, never guessed. The seven were a list somebody typed; the terminal was always able to
+#: give all of these.
+#:
+#: ORDERED BY VALUE PER BYTE, and the order is load-bearing on a box that runs out of disk. A run
+#: cut short by space keeps whatever it fetched first, so the charts a desk actually expresses
+#: strategies on come first: the seven originals, then the daily/weekly/monthly horizons (tiny and
+#: genuinely different mechanisms), then the intraday swing charts, and last the sub-M5 periods
+#: that are largely re-samplings of M1 and cost the most per unit of new information.
+TIMEFRAMES: tuple[str, ...] = (
+    "H1", "M15", "M5", "M30", "H4", "D1", "M1",          # the desk's working charts
+    "W1", "MN1",                                          # slow horizons: kilobytes, new mechanisms
+    "H2", "H3", "H6", "H8", "H12",                        # intraday swing
+    "M2", "M3", "M4", "M6", "M10", "M12", "M20",          # sub-M5: most bytes, least new information
+)
 
 #: Bars per chart. MT5 caps a single request, and shorter charts need more rows to span the same
 #: history: 50,000 M1 bars is ~35 trading days, while 50,000 H1 is ~8 years. Sized so every chart
 #: covers a window long enough for the walk-forward and CPCV gates to have folds to work with.
-BARS = {"M1": 200_000, "M5": 200_000, "M15": 150_000, "M30": 100_000,
-        "H1": 50_000, "H4": 30_000, "D1": 10_000}
+#: The seven original depths are unchanged -- they were tuned against those gates -- and the new
+#: charts are interpolated between their neighbours on the same span-not-count principle.
+BARS = {
+    "M1": 200_000, "M2": 200_000, "M3": 200_000, "M4": 200_000, "M5": 200_000,
+    "M6": 180_000, "M10": 160_000, "M12": 155_000, "M15": 150_000, "M20": 130_000,
+    "M30": 100_000, "H1": 50_000, "H2": 45_000, "H3": 40_000, "H4": 30_000,
+    "H6": 25_000, "H8": 22_000, "H12": 18_000, "D1": 10_000, "W1": 3_000, "MN1": 1_000,
+}
 
 
 def _tf_const(name: str):
@@ -94,13 +118,46 @@ def main(argv: list[str] | None = None) -> int:
         tradable = [s for s in tradable if s.name.upper() in wanted] or tradable
     print(f"Tradable symbols: {len(tradable)}   charts: {', '.join(charts)}")
 
+    # A DOWNLOAD MUST NEVER BE THE THING THAT FILLS THE DISK. Measured 2026-09-07: the box sat at
+    # 0.964 GB free, and at that level a parquet write truncates, a git push dies as "the remote
+    # end hung up unexpectedly", and a tick-tape append loses what it could not flush -- none of
+    # which say "disk full". The full 21-chart lake is 10-20 GB; the box cannot hold it, and the
+    # honest behaviour is to fetch what fits, in value order, and SAY where it stopped.
+    #
+    # The floor is generous on purpose: the tape appends continuously while this runs, and leaving
+    # it a gigabyte of headroom costs a few charts that the next pass picks up anyway.
+    floor_bytes = float(os.environ.get("BARS_MIN_FREE_GB", "2")) * (1024 ** 3)
+    stopped_for_space = False
+
+    # CHART-MAJOR, NOT SYMBOL-MAJOR, and on a disk-limited box this is the whole point of the
+    # value ordering above. Symbol-major means a run that stops for space at symbol 120 leaves
+    # symbols 121-250 with NO chart at all -- so the ordering by value would buy nothing, because
+    # what got dropped is chosen by alphabet rather than by usefulness. Sweeping one chart across
+    # every symbol before starting the next means an interrupted run leaves EVERY symbol holding
+    # the charts the desk actually trades, and only the marginal periods are missing.
     got, skipped, empty = 0, 0, 0
-    for i, si in enumerate(tradable, 1):
-        name = si.name
-        for tf in charts:
-            const = _tf_const(tf)
-            if const is None:
-                continue
+    done_syms = 0
+    for tf in charts:
+        const = _tf_const(tf)
+        if const is None:
+            print(f"  {tf}: this terminal has no such period -- skipped, not guessed")
+            continue
+        if shutil.disk_usage(PARQUET_DIR).free < floor_bytes:
+            stopped_for_space = True
+            free_gb = shutil.disk_usage(PARQUET_DIR).free / (1024 ** 3)
+            print(f"STOPPING before {tf} at {free_gb:.2f} GB free (floor "
+                  f"{floor_bytes/(1024**3):.1f} GB): {got} chart(s) written. Every symbol holds "
+                  f"the charts fetched before this one -- the desk's working set comes first by "
+                  f"design. Free space and re-run, or narrow --timeframes.", file=sys.stderr)
+            break
+        for i, si in enumerate(tradable, 1):
+            if shutil.disk_usage(PARQUET_DIR).free < floor_bytes:
+                stopped_for_space = True
+                print(f"STOPPING mid-{tf} at {i-1}/{len(tradable)} symbols: disk floor reached",
+                      file=sys.stderr)
+                break
+            name = si.name
+            done_syms = max(done_syms, i)
             out = PARQUET_DIR / f"{name}_{tf}.parquet"
             if out.exists() and not args.refresh:
                 skipped += 1
@@ -118,11 +175,21 @@ def main(argv: list[str] | None = None) -> int:
             # universe that was effectively 24 symbols.
             df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
             df.set_index("time", inplace=True)
-            df.to_parquet(out, engine="pyarrow")
+            # ZSTD, for the same reason the tick tape now uses it and with more force here: this
+            # call runs 21 charts x 250 symbols, so an uncompressed default multiplies across the
+            # whole lake. Measured 2026-09-07 on tick-shaped frames, zstd was x2.06 against the
+            # pyarrow default of snappy, and OHLC bars are the same kind of data -- monotonic
+            # timestamps, prices in a narrow band, small repeated volumes. The codec lives in the
+            # file's own metadata, so every reader is unchanged: they pass none and get this.
+            df.to_parquet(out, engine="pyarrow", compression="zstd")
             got += 1
-        if i % 25 == 0:
-            print(f"  [{i}/{len(tradable)}] {got} written, {skipped} present, {empty} empty",
-                  flush=True)
+            if i % 50 == 0:
+                print(f"  {tf} [{i}/{len(tradable)}] {got} written, {skipped} present, "
+                      f"{empty} empty", flush=True)
+        print(f"  {tf}: done ({got} written so far, "
+              f"{shutil.disk_usage(PARQUET_DIR).free/(1024**3):.2f} GB free)", flush=True)
+        if stopped_for_space:
+            break
 
     mt5.shutdown()
     print(f"Done: {got} chart(s) written, {skipped} already present, {empty} returned no data")
