@@ -139,6 +139,39 @@ class Issue:
                 "detail": self.detail, "repair": self.repair, "auto_repairable": self.auto}
 
 
+def _clockless_by_join() -> list[str] | None:
+    """Certificates with NO forward row in any lane, by name -- or None when unmeasurable.
+
+    The only honest definition of clockless. A certificate whose row exists and went terminal was
+    DECIDED; one whose row exists and is blocked is starved, and its cure is bars rather than
+    enrolment. Neither is a missing clock, and an aggregate subtraction cannot tell the three
+    apart -- which is how the board advertised 23 work items that did not exist.
+
+    Returns None rather than 0 when the join cannot run: a research container has no lane files,
+    and reporting "none missing" there would be a pass earned by having no data.
+    """
+    try:
+        sys.path.insert(0, str(BASE / "scripts"))
+        sys.path.insert(0, str(BASE / "research"))
+        import check_enrolment_gap as gapmod
+
+        rows = gapmod._rows_on_clocks()
+        if not rows:
+            return None
+        import shadow_forward as sf
+
+        enrolled = sf.certified_sleeves()
+        if not enrolled:
+            return None
+        missing = []
+        for sym, win, params, fam, side in enrolled:
+            if sf.sleeve_key(sym, win, params, fam, side) not in rows:
+                missing.append(f"{sym}.{fam}")
+        return sorted(set(missing))
+    except Exception:                                                   # noqa: BLE001
+        return None
+
+
 def _age(p: Path) -> float | None:
     try:
         return max(0.0, datetime.now(UTC).timestamp() - p.stat().st_mtime)
@@ -227,18 +260,40 @@ def desk_state_issues(root: Path | None = None) -> list[Issue]:
     # was rows that never qualified. NOT auto-repairable: the cause is upstream (publication
     # dropped the params, or the family has no resolvable constructor) and rerunning the forward
     # engine would re-refuse them identically.
-    certified, clocks = pipe.get("certified"), pipe.get("forward_clocks")
-    if isinstance(certified, int) and isinstance(clocks, int):
-        runnable = certified - (pipe.get("certificates_unrunnable") or 0)
-        if runnable - clocks > 0:
-            out.append(Issue(
-                "certs:clockless", "DEGRADED",
-                f"{runnable - clocks} runnable certificate(s) are on no forward clock",
-                f"{certified} certified, {pipe.get('certificates_unrunnable') or 0} unrunnable, "
-                f"{clocks} on a clock -- the remainder passed every gate and is accruing no "
-                f"out-of-sample evidence, so it can never mature into capital. Check the "
-                f"shadow_forward log for ENROL-GAP lines naming each refusal.",
-                repair=None, auto=False))
+    # CLOCKLESS COMES FROM THE JOIN, NEVER FROM SUBTRACTING TWO AGGREGATES.
+    #
+    # This read `certified - unrunnable - forward_clocks` and reported the remainder as a work
+    # item. It is a correct subtraction over the WRONG POPULATIONS: `certified` counts
+    # certificates, while `forward_clocks` counts rows that are NOT TERMINAL. A certificate whose
+    # clock was retired or killed is still certified and no longer a live clock, so it appeared in
+    # the difference -- as work nobody could do, because it was already decided.
+    #
+    # MEASURED ON THE BOX 2026-09-07, which is what settled it: 52 of 52 runnable certificates
+    # passed enrolment, 0 refused, 101 forward rows across the four lanes. The board was
+    # advertising 23 clockless certificates that did not exist, and telling the reader to search
+    # the shadow_forward log for refusals that were never issued.
+    #
+    # `check_enrolment_gap` does the per-certificate join. If it cannot run here, the honest
+    # answer is UNMEASURED -- publishing the old subtraction again would be re-publishing a number
+    # already known to be wrong, which is worse than publishing none.
+    gap = _clockless_by_join()
+    if gap is None:
+        out.append(Issue(
+            "certs:clockless", "DEGRADED",
+            "clockless certificates are UNMEASURED on this host",
+            "the per-certificate join could not run here, and the old aggregate subtraction "
+            "(certified - unrunnable - forward_clocks) is not a substitute: it compares "
+            "certificates against NON-TERMINAL rows, so every retired clock reads as a missing "
+            "one. An absent measurement is never a passing one.",
+            repair="python desks/mt5/scripts/check_enrolment_gap.py", auto=False))
+    elif gap:
+        out.append(Issue(
+            "certs:clockless", "DEGRADED",
+            f"{len(gap)} runnable certificate(s) have no forward row at all",
+            "these passed every gate, were not refused at enrolment, and no row exists in any "
+            "lane -- so nothing is accruing and nothing reported a refusal. Named: "
+            + ", ".join(gap[:6]) + ("..." if len(gap) > 6 else ""),
+            repair="python desks/mt5/research/shadow_forward.py", auto=False))
     # ROWS THAT FAILED A GATE, SITTING IN THE FILE THE DESK CALLS ITS CERTIFICATES. Not a
     # correctness bug now that the census counts the ten-gate verdict, but it IS a standing
     # invitation to the same defect: any future reader that does `len(survivors)` re-publishes
