@@ -78,6 +78,13 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/experiment_design.py"),
     ("edge_confidence", "desks/mt5/reports/EDGE_CONFIDENCE.json", 3600,
      "research/edge_confidence.py"),
+    # CAPACITY IS TRACKED FOR FRESHNESS AND IS DELIBERATELY NOT AN ALARM. At this account's size
+    # the venue's minimum lot forces more risk than policy on essentially every sleeve -- gold at
+    # a 0.5% target runs 4.4x that at EUR 742, and the floor only stops binding above EUR 3,293.
+    # That is a standing FACT about the account, not an incident, and an alarm that can never
+    # clear until the account grows tenfold is exactly the red light L1.37 says teaches everyone
+    # to ignore the board. So the number is published and read; it does not page.
+    ("capacity", "desks/mt5/reports/CAPACITY.json", 3600, "research/capacity.py"),
     ("miner_conversion", "data/miner_conversion.json", 86400,
      "scripts/check_miner_conversion.py"),
     ("ceiling_audit", "desks/mt5/reports/ABSOLUTE_CEILING_STATUS.json", 86400,
