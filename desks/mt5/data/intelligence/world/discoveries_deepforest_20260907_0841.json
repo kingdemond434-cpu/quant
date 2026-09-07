@@ -1,0 +1,58 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Boris Vujčić: Listening to households: expectations, behaviour and monetary policy",
+  "url": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp260901~bb28f33f54.en.html",
+  "published": "2026-09-07T08:41:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b62fb8db961779f61156",
+  "host": "www.ecb.europa.eu",
+  "ground": "Central bank RSS bundle",
+  "region": "institutional",
+  "cluster": "institutional",
+  "dataset_class": null,
+  "available_time": "2026-09-07T08:41:41+00:00",
+  "ingested_time": "2026-09-07T08:41:41+00:00",
+  "source_hash": "b62fb8db961779f61156",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Results of the Semi-Annual FX Turnover Surveys in April 2026",
+  "url": "https://www.bankofengland.co.uk/markets/london-foreign-exchange-joint-standing-committee/results-of-the-semi-annual-fx-turnover-survey-april-2026",
+  "published": "2026-09-07T08:41:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.5,
+  "lang": "en",
+  "endpoints": [
+   "https://www.bankofengland.co.uk/-/media/boe/files/markets/foreign-exchange-joint-standing-committee/semi-annual-fx-turnover-survey-results/2026/table-of-participating-financial-institutions-survey-results-tables-1-4-apr-2026.xlsx",
+   "https://www.bankofengland.co.uk/-/media/boe/files/markets/foreign-exchange-joint-standing-committee/semi-annual-fx-turnover-survey-results/2026/data-tables-apr-2026.xlsx",
+   "https://www.bankofengland.co.uk/-/media/boe/files/markets/foreign-exchange-joint-standing-committee/semi-annual-fx-turnover-survey-results/2026/market-share-table-apr-2026.xlsx"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "0c834fabc18040e0e1c0",
+  "host": "www.bankofengland.co.uk",
+  "ground": "Central bank RSS bundle",
+  "region": "institutional",
+  "cluster": "institutional",
+  "dataset_class": null,
+  "available_time": "2026-09-07T08:41:44+00:00",
+  "ingested_time": "2026-09-07T08:41:44+00:00",
+  "source_hash": "0c834fabc18040e0e1c0",
+  "claims": [],
+  "n_claims": 0
+ }
+]
