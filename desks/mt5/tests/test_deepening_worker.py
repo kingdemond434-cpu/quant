@@ -191,6 +191,29 @@ def test_a_seat_error_is_reported_never_raised() -> None:
     assert found == {} and "budget exhausted" in why
 
 
+def test_a_seat_outage_blocks_instead_of_rejecting_the_source() -> None:
+    """Credential absence is a retry dependency, never a verdict on the lead."""
+    def chat(prompt, **kw):
+        return "", "no seat: export OPENROUTER_API_KEY"
+
+    out, disposition = dw.work_task(_TASK, {"EURUSD"}, chat=chat)
+    assert out == []
+    assert disposition.startswith("BLOCKED_SEAT_UNAVAILABLE: seat error:")
+
+
+def test_seat_blocked_tasks_reopen_only_when_a_seat_is_available(tmp_path, monkeypatch) -> None:
+    ledger = tmp_path / "worked.jsonl"
+    ledger.write_text(
+        '{"id":"old","disposition":"REJECTED: seat error: no seat"}\n'
+        '{"id":"new","disposition":"BLOCKED_SEAT_UNAVAILABLE: seat error: no seat"}\n'
+        '{"id":"terminal","disposition":"REJECTED: fabricated quote"}\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(dw, "WORKED", ledger)
+    assert dw.worked_ids() == {"old", "new", "terminal"}
+    assert dw.worked_ids(retry_seat_blocks=True) == {"terminal"}
+
+
 # ------------------------------------------------- one queue, two schedules, one run at a time
 
 class TestSingleFlight:
