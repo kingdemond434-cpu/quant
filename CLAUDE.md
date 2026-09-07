@@ -169,6 +169,18 @@ never privileged); capital is evidence-hard (nothing gets authority for sounding
   the gateway trades it on its next pass, and capital is the allocator's decision by ΔE[log W].
   No champion wait, no kill-by-comparison, no human act. Retirement stays automatic too.
 
+## PROP FIRM (E8) — principal's standing intent, 2026-09-07
+
+Plan recorded in `docs/PROP_FIRM_E8.md`. One-line summary: **E8 One £100k, 8% drawdown /
+12% target, 0.50% risk per trade, 3-4 INDEPENDENT mechanisms** (session_range_breakout +
+overnight_gap_decay + carry) -> ~92% pass, ~36 days median. E8's target is always 1.5x the
+drawdown chosen, so the barrier ratio is fixed and only the arena size changes.
+
+**Readiness is counted in independent MECHANISMS, never certificates.** Adding more sleeves of
+the SAME mechanism buys speed with leverage and costs pass probability (4 correlated -> 77%,
+8 -> 60%). Not ready as of 2026-09-07: one mechanism has forward evidence, `matched_fills` is 0,
+and n=7 per sleeve. Read the doc before discussing it -- the numbers there are measured.
+
 # Desk memory: 100% retention, and how to reach it
 
 - **Every lesson is retained and reachable. Nothing is forgotten between sessions.**
