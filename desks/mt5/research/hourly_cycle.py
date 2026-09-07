@@ -841,6 +841,13 @@ def maintain_miners() -> dict:
     return _producer("miner_maintenance", "scripts/run_miner_maintenance.py")
 
 
+def refresh_regime() -> dict:
+    """Refresh from native ledgers only; never overwrite authority from a VPS mirror."""
+    if sys.platform != "win32":
+        return {"status": "SKIPPED", "why": "regime authority belongs to the native Windows desk"}
+    return _producer("regime_monitor", "research/regime_monitor.py")
+
+
 def main() -> None:
     # BARS FIRST. Every leg below reasons about a chart, so a stale chart makes all of them
     # confidently wrong rather than merely late.
@@ -849,6 +856,7 @@ def main() -> None:
     h = _costed("health", health)
     t = _costed("record_tape", record_tape)
     s = _costed("state_vector", state_vector)
+    rg = _costed("regime_monitor", refresh_regime)
     d = _costed("daily", daily)
     hc = _costed("heal_clocks", heal_clocks)
     # THE CONVERSION CHAIN, IN THE ORDER IT CONVERTS. mine fetches, compile turns what was fetched
@@ -920,6 +928,7 @@ def main() -> None:
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
+                    "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "model_skill": ms,
