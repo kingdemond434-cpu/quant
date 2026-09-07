@@ -190,6 +190,35 @@ def measure_ceiling(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     return {"verdict": "SAMPLE", "value_logw_per_day": round(g_cap - g_free, 8), "sample": True}
 
 
+def measure_survival_ceiling(r, alloc: dict, _fv: dict) -> dict[str, Any]:
+    """What survival cost in growth: the curve at the survival bar against what growth wanted.
+
+    THIS RAIL IS BILLED AND NEVER WALKED DOWN, and the asymmetry is deliberate. Every tunable
+    rail on this desk is walked toward looseness when its ledger shows it persistently costing
+    forward E[log W]; that is the growth governance working as designed. A survival bar must not
+    be in that population: the whole point of it is to be expensive in the worlds where being
+    cheap would end the account, so "it cost growth again this month" is the bar doing its job
+    rather than evidence against it. What the number IS for is the research agenda -- a survival
+    ceiling that costs a lot of growth is the strongest possible statement that the book needs
+    independent breadth, because breadth is the only thing that moves this bar outward.
+    """
+    heat = alloc.get("heat") or {}
+    if not heat:
+        return {"verdict": UNMEASURED, "why": "no allocator pass on this host"}
+    if heat.get("binding") != "survival_ceiling":
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True}
+    surv = heat.get("envelope", {}).get("survival_ceiling")
+    if not isinstance(surv, (int, float)):
+        return {"verdict": UNMEASURED, "why": "the pass bound on survival without recording it"}
+    curve = _curve(alloc)
+    wanted = max(float(heat.get("free_optimum", 0.0)), float(heat.get("state_optimum", 0.0)))
+    g_want = _growth_at(curve, min(wanted, float(heat.get("hard_ceiling", 0.30))))
+    g_cap = _growth_at(curve, float(surv))
+    if g_want is None or g_cap is None:
+        return {"verdict": UNMEASURED, "why": "curve does not cover the survival bar"}
+    return {"verdict": "SAMPLE", "value_logw_per_day": round(g_cap - g_want, 8), "sample": True}
+
+
 def measure_effective_ceiling(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     """What the four-heat ceiling cost: growth at the earned cap vs growth at what was wanted.
 

@@ -102,7 +102,8 @@ BRACKET_TTL_HOURS = 6.0
 #: edge is measuring volatility, not risk.
 #:
 #: TWO POINTS, AND THE HARD BAR STILL BINDS ABSOLUTELY. The slide is a tolerance, never a new
-#: budget: admission is capped at min(budget + slide, MAX_HEAT_CEILING), so 30% remains
+#: budget: admission is capped at min(budget + slide, max(MAX_HEAT_CEILING, budget)), so the
+#: constant bounds the SLIDE while a measured envelope may carry the budget above it
 #: unreachable and a book genuinely far over budget is still trimmed. On this book's 33.7R worst
 #: run, 20% costs 90.2% and 22% costs 92.4% -- the slide is not a different risk posture, it is
 #: the same one without a cliff at the boundary. (principal, 2026-09-02)
@@ -148,8 +149,18 @@ _HEAT_BASE_LEGS = 3
 #: call the desk has ever made, because k_eff is measured from a live ledger that was empty until
 #: 2026-09-01 -- so the account ran at a fifth of its own stated budget and nothing said so. It is
 #: now a CATASTROPHE BACKSTOP above a 20% utilisation target, and 30% is where the arithmetic
-#: turns: across 256 sampled worlds the robust score is positive at 20% and 25% and NEGATIVE at
-#: 30%. Past here the book loses wealth in the worlds it must survive.
+#: turned on the book of that date: across 256 sampled worlds the robust score was positive at
+#: 20% and 25% and NEGATIVE at 30%.
+#:
+#: DEMOTED TO THE UNMEASURED FALLBACK (principal, 2026-09-07): "remove 30 heat cap fully so if
+#: growth optimum says 35-40 that's allowed aswell until it computes something diff the next few
+#: moments later". The measurement above is a fact about ONE book on ONE date, and freezing it as
+#: a permanent bar makes the desk poorer the moment the opportunity set improves -- while doing
+#: nothing at all about a book that cannot survive 22%. `live_heat_ceiling` reads the bar the
+#: allocator MEASURED this pass (growth curve, survival surface, effective independence) and this
+#: constant is what holds when none of them can be read. It still binds the slide, it still binds
+#: `heat_budget`'s derivation, and it is still the answer to every doubt -- it is simply no longer
+#: the answer when the desk has a better one.
 MAX_HEAT_CEILING = HEAT_HARD_CEILING
 
 #: How stale the allocator's book may be before the gateway stops believing its heat number. One
@@ -622,6 +633,61 @@ def heat_budget(k_eff: float | None = None) -> float:
     return float(min(max(scaled, base), MAX_HEAT_CEILING))
 
 
+#: THE FURTHEST THE DESK IS WILLING TO SIMULATE, and therefore the furthest it may ever deploy.
+#: Identical to `research/pf_allocator.CURVE_SAMPLE_MAX` and restated here rather than imported,
+#: because the money path must not depend on the research package. A heat nobody sampled is a
+#: heat nobody certified: this is not a policy preference, it is the edge of the evidence, and it
+#: rises only when somebody widens the sweep and re-measures.
+ABSOLUTE_SIM_MAX = 0.45
+
+
+def live_heat_ceiling(heat: dict) -> tuple[float, str]:
+    """The ceiling THIS artifact earned, or the recorded constant. Returns (cap, why).
+
+    THE 30% CAP IS GONE AS A POLICY BAR (principal, 2026-09-07): "remove 30 heat cap fully so if
+    growth optimum says 35-40 that's allowed aswell until it computes something diff the next few
+    moments later". What replaces it is not "no bar" -- it is a bar the allocator MEASURES every
+    pass and writes into the artifact, so it moves in both directions with the opportunity set.
+
+    FOUR CONDITIONS, AND ALL FOUR MUST HOLD before a heat above the constant is accepted here:
+
+      1. The artifact carries a `heat.envelope` block at all. Older artifacts, and any pass whose
+         allocator crashed before writing it, fall back to the constant.
+      2. The survival surface reported MEASURED. `kelly_surface.envelope` returns UNMEASURED for a
+         thin surface, an unreadable one, or one that violates its own smallest book -- and an
+         unmeasured survival bar is not a licence, it is a missing measurement.
+      3. The operative ceiling is finite, positive, and at least the constant. A measured bar
+         BELOW 0.30 binds through the `min` below, which is the direction this change makes more
+         common: a thin book is now held tighter than the constant ever held it.
+      4. Nothing above `ABSOLUTE_SIM_MAX`. The desk may not deploy a heat its own worlds never
+         sampled, whatever the artifact claims.
+
+    FAILS CLOSED ON EVERY DOUBT, like everything else this function's caller does. A malformed
+    envelope, a non-finite number, a wrong type: the constant stands and the reason says which.
+    """
+    fallback = float(MAX_HEAT_CEILING)
+    env = heat.get("envelope")
+    if not isinstance(env, dict):
+        return fallback, f"no envelope block: recorded {fallback:.0%} bar"
+    surv = env.get("survival")
+    if not isinstance(surv, dict) or str(surv.get("status")) != "MEASURED":
+        why = (surv or {}).get("why") if isinstance(surv, dict) else None
+        return fallback, f"survival UNMEASURED ({why or 'no reading'}): recorded bar"
+    op = env.get("operative_ceiling")
+    if not isinstance(op, (int, float)) or not math.isfinite(float(op)) or float(op) <= 0.0:
+        return fallback, f"operative ceiling {op!r} unusable: recorded bar"
+    # The measured bar may go either way, and BOTH directions are the point. Below the constant
+    # it binds (a thin book earns less than 30%); above it, it is honoured up to the simulation
+    # bound (a broad book earns more). `max(..., op)` on the fallback is what removes the cap;
+    # `min(..., ABSOLUTE_SIM_MAX)` is what keeps it inside the evidence.
+    cap = min(float(op), ABSOLUTE_SIM_MAX)
+    if cap >= fallback:
+        return cap, (f"measured envelope {cap:.1%} "
+                     f"(growth {env.get('growth_ceiling')}, survival {env.get('survival_ceiling')})")
+    return cap, (f"measured envelope {cap:.1%} BELOW the recorded {fallback:.0%} bar and binding: "
+                 f"{surv.get('why') or 'survival constraint'}")
+
+
 def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, str]:
     """Total heat the E[log W] allocator resolved, or None with the reason it cannot be used.
 
@@ -654,8 +720,9 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         if not heat.get("certified"):
             return None, "allocator did not certify the utilisation target"
         total = float(heat.get("total") or 0.0)
-        if not (0.0 < total <= MAX_HEAT_CEILING + 1e-12):
-            return None, f"allocator heat {total:.4f} outside (0, {MAX_HEAT_CEILING:.2f}]"
+        cap, cap_why = live_heat_ceiling(heat)
+        if not (0.0 < total <= cap + 1e-12):
+            return None, f"allocator heat {total:.4f} outside (0, {cap:.2f}] ({cap_why})"
         # A HEAT NUMBER WITH NO GROWTH BEHIND IT IS NOT A BUDGET. Measured 2026-09-02: a pass
         # published 30% total heat carrying annual_growth_pct = -inf -- a book wiped out in at
         # least one sampled world -- and every check above passed it, because they all asked
@@ -903,9 +970,16 @@ def cap_by_heat(sleeves: list[dict], equity: float,
                 "admitting none rather than sizing from another instrument's constants")
         return [], note
     # THE SLIDE. A validated leg is not dropped for overshooting the budget by a rounding edge;
-    # see HEAT_SLIDE. The hard ceiling is applied here and not inside it, so no future change to
-    # the slide can lift the book past MAX_HEAT_CEILING.
-    limit = min(budget + HEAT_SLIDE, MAX_HEAT_CEILING)
+    # see HEAT_SLIDE. The ceiling is applied here and not inside it, so no future change to the
+    # slide can lift the book past the bar.
+    #
+    # THE BAR IS THE BUDGET'S OWN, NOT THE RECORDED CONSTANT (principal, 2026-09-07). Both paths
+    # that produce `budget` are already bounded: `allocator_heat` refuses anything above the
+    # envelope THIS pass measured (`live_heat_ceiling`), and `heat_budget` clamps its derivation
+    # at MAX_HEAT_CEILING. Clamping again at the constant here would have silently undone the
+    # first of those -- a measured 38% budget trimmed back to 30% by a line whose only job was to
+    # bound the slide. So the constant still bounds the SLIDE and never the budget it is added to.
+    limit = min(budget + HEAT_SLIDE, max(MAX_HEAT_CEILING, budget))
 
     admitted: list[dict] = []
     dropped: list[str] = []

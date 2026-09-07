@@ -839,6 +839,32 @@ def growth_curve(ev: list[SleeveEvidence], worlds: Worlds, bounds: dict[str, flo
     return curve
 
 
+def _capacity_ceiling() -> float | None:
+    """The most total heat the MARKET can absorb, in account fraction, or None when unmeasured.
+
+    `research/capacity.py` measures this desk's capacity as a FLOOR problem -- the minimum lot
+    binds below EUR 3,293 -- and refuses the CEILING outright, because market impact needs
+    realised fills and `execution.matched_fills` is 0. So this returns None today and the survival
+    envelope simply carries no capacity clause.
+
+    THE REFUSAL IS THE POINT, and it is why this is a function rather than a constant. An
+    unmeasured capacity is not infinite capacity; it is a clause that cannot be evaluated, and
+    the envelope says so by name instead of quietly treating the market as bottomless. The moment
+    the box records fills and capacity publishes a measured ceiling, this binds with no further
+    edit -- which is the only way a constraint ever starts working on a desk that is not watching.
+    """
+    try:
+        doc = json.loads((BASE / "reports" / "CAPACITY.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if str(doc.get("ceiling_status")) != "MEASURED":
+        return None
+    h = doc.get("ceiling_heat_fraction")
+    if not isinstance(h, (int, float)) or not math.isfinite(float(h)) or float(h) <= 0.0:
+        return None
+    return float(h)
+
+
 def no_trade(current: dict[str, float], proposed: dict[str, float],
              gain_per_day: float) -> dict[str, Any]:
     """Is the move worth its own cost? Returns the verdict and the arithmetic behind it.
@@ -1240,7 +1266,7 @@ def state_growth_curves(ev: list[SleeveEvidence], worlds: Worlds, book: dict[str
             sub = _subworlds(worlds, idx)
             curve: dict[float, float] = {}
             for h in CURVE_GRID:
-                if h > HEAT_HARD_CEILING:
+                if h > CURVE_SAMPLE_MAX:
                     continue
                 scaled = {k: v * h / total for k, v in book.items()}
                 g = score_book(ev, scaled, cfg=cfg, worlds=sub)["mean_log_growth"]
@@ -1841,9 +1867,15 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         except OSError as exc:
             _log(f"world cache not written ({exc}); next fast pass will resample")
 
-    # 1. WHAT GROWTH ACTUALLY WANTS -- no mandate, no floor. This number certifies the target.
+    # 1. WHAT GROWTH ACTUALLY WANTS -- no mandate, no floor, AND NO POLICY CAP. This number
+    # certifies the target, so a cap on it is a cap on the whole law: the free optimum was solved
+    # with `hard_cap=HEAT_HARD_CEILING` until 2026-09-07, which meant "what growth wants" could
+    # never be reported above 30% and the removal of the constant one layer up was inert. The
+    # bound here is the MEASUREMENT bound (`CURVE_SAMPLE_MAX`) -- how far the desk is willing to
+    # simulate -- and nothing is deployed at a heat the curve and the survival surface have not
+    # both justified further down.
     bounds = per_sleeve_bounds(dd, HEAT_TARGET)
-    free = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=None, cfg=cfg, worlds=worlds,
+    free = optimise(ev, hard_cap=CURVE_SAMPLE_MAX, target=None, cfg=cfg, worlds=worlds,
                     max_per_sleeve=bounds)
     _log(f"free optimum H*={free.total_heat:.2%} ann={free.annual_growth_pct:.1f}% "
          f"P(annual loss)={free.prob_annual_loss:.1%}")
@@ -1912,10 +1944,48 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # constant when the curve cannot be read -- absence is never permission. So a richer book
     # earns more than 30% and a thin one is held tighter than 30% ever held it.
     ceiling_now, ceiling_why = measured_ceiling(curve, floor=HEAT_TARGET)
-    _log(f"heat ceiling: {ceiling_why}")
+    _log(f"heat growth ceiling: {ceiling_why}")
+
+    # THE SURVIVAL CEILING, MEASURED BEFORE THE RESOLVE AND NOT AFTER IT (principal, 2026-09-07:
+    # "remove 30 heat cap fully"). The Kelly surface has computed `f_tail` -- the largest scale of
+    # the book at which P(ruin) is zero and P(drawdown > tolerance) stays inside the CVaR
+    # fraction -- on every pass since it was written, and it bound NOTHING: it was computed after
+    # publication and handed to `aggression.explain` as an audit input while the operative bar
+    # stayed the 0.30 constant. Computing it here, on the FREE candidate book, makes it the bar.
+    #
+    # THE FRACTION GRID IS CHOSEN SO THE SURFACE SPANS THE SIMULATION BOUND. The default 0..2x
+    # grid spans 0..2x the candidate's own heat, so a thin book would bound itself at twice its
+    # own size for no reason but the grid. Sampling to CURVE_SAMPLE_MAX makes the measurement
+    # bound explicit and identical to the growth curve's.
+    survival: dict[str, Any] = {}
+    surv_ceiling: float | None = None
+    surv_why = ""
+    try:
+        from mt5desk.gateway_config_fallback import MAX_DRAWDOWN_TOLERANCE as _DD_TOL
+
+        from libs.portfolio.kelly_surface import envelope as _envelope
+        from libs.portfolio.kelly_surface import surface as _surface
+        _free_total = float(free.total_heat)
+        if _free_total > 1e-9:
+            _top = max(2.0, CURVE_SAMPLE_MAX / _free_total)
+            _fr = tuple(round(x, 4) for x in np.linspace(0.0, _top, 21))
+            _pre_surface = _surface(worlds, free.heat, tolerance=_DD_TOL, alpha=cfg.cvar_alpha,
+                                    fractions=_fr)
+            survival = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
+                                 fallback=HEAT_HARD_CEILING,
+                                 capacity_max=_capacity_ceiling())
+            if survival.get("status") == "MEASURED":
+                surv_ceiling = float(survival["ceiling"])
+            surv_why = str(survival.get("why") or "")
+            survival["surface_max_fraction"] = _top
+    except Exception as exc:                                             # noqa: BLE001
+        survival = {"error": f"{type(exc).__name__}: {exc}", "status": "UNMEASURED",
+                    "why": "survival surface unavailable this pass; the recorded constant stands"}
+    _log(f"heat survival ceiling: {survival.get('why') or survival.get('error')}")
 
     verdict = resolve(free.total_heat, curve=curve, target=HEAT_TARGET,
-                      hard_ceiling=ceiling_now, mandate=True,
+                      hard_ceiling=ceiling_now,
+                      survival_ceiling=surv_ceiling, survival_why=surv_why, mandate=True,
                       readiness=ready, readiness_why=ready_why,
                       effective_heat=eff_pre, state=current_state, curves=curves,
                       allocator_ok=(bool(free.heat) and math.isfinite(free.mean_log_growth)
@@ -1934,7 +2004,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         ub = {k: min(v, verdict.total_heat) for k, v in
               per_sleeve_bounds(dd, verdict.total_heat).items()}
         try:
-            book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat, cfg=cfg,
+            book = optimise(ev, hard_cap=max(CURVE_SAMPLE_MAX, verdict.total_heat),
+                            target=verdict.total_heat, cfg=cfg,
                             worlds=worlds, max_per_sleeve=ub,
                             warm_start=current_book() or None)
         except ValueError as exc:
@@ -1956,7 +2027,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 break                                   # every mechanism already inside the cap
             tight = {k: min(ub.get(k, math.inf), capped.get(k, math.inf)) for k in ub}
             try:
-                book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat,
+                book = optimise(ev, hard_cap=max(CURVE_SAMPLE_MAX, verdict.total_heat),
+                                target=verdict.total_heat,
                                 cfg=cfg, worlds=worlds, max_per_sleeve=tight,
                                 warm_start=book.heat or None)
             except ValueError as exc:
@@ -2005,8 +2077,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _pg_paths_ = _pg_paths(ev, n_paths=400, horizon=max(1, int(NO_TRADE_HORIZON_DAYS)),
                                    worlds=worlds, seed=seed)
             _pbook = _pg_solve(ev, h_prev=_pg_prev, paths=_pg_paths_,
-                               floor=float(verdict.total_heat), ceiling=HEAT_HARD_CEILING,
-                               caps=per_sleeve_bounds(dd, HEAT_HARD_CEILING),
+                               floor=float(verdict.total_heat),
+                               ceiling=max(CURVE_SAMPLE_MAX, verdict.total_heat),
+                               caps=per_sleeve_bounds(dd, max(CURVE_SAMPLE_MAX,
+                                                              verdict.total_heat)),
                                turnover_cost=TURNOVER_COST_R)
             _cmp = _pg_compare(_pbook, funded, _pg_paths_, h_prev=_pg_prev,
                                turnover_cost=TURNOVER_COST_R, seed=seed)
@@ -2148,7 +2222,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         if funded:
             ks_doc = _surface(worlds, funded, tolerance=_DD_TOL, alpha=cfg.cvar_alpha)
             ks_doc["rows"] = ks_doc.get("rows", [])[::2]          # every second grid point
-        aggression = _explain(floor=HEAT_TARGET, ceiling=HEAT_HARD_CEILING,
+        # THE OPERATIVE CEILING, NOT THE FALLBACK CONSTANT. `aggression` decides between
+        # CEILING_BOUND and UNUSED_UPSIDE by comparing the book against the bar it was
+        # actually held by; handing it 0.30 while the law ran a measured 22% would report
+        # UNUSED_UPSIDE every pass and send `missed_growth` hunting a rail that did not bind.
+        _op_ceiling = min(float(ceiling_now),
+                          float(surv_ceiling) if surv_ceiling is not None else float("inf"))
+        aggression = _explain(floor=HEAT_TARGET, ceiling=_op_ceiling,
                               total_heat=book.total_heat, free_optimum=free.total_heat,
                               readiness=ready, proof_passed=bool(proof.get("passed")),
                               surface=ks_doc, book=funded, ev=ev)
@@ -2178,7 +2258,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # the book ended up carrying, and which of the two bars decided.
     effective_heat["candidate_pre_solve"] = eff_pre
     effective_heat["ceiling"] = {
-        "nominal_bar": HEAT_HARD_CEILING,
+        "growth_bar": round(float(ceiling_now), 6),
+        "survival_bar": (None if surv_ceiling is None else round(float(surv_ceiling), 6)),
+        "unmeasured_fallback": HEAT_HARD_CEILING,
         "effective_bar": round(verdict.effective_ceiling, 6),
         "derived_from": verdict.effective,
         "bound_by": verdict.binding,
@@ -2280,6 +2362,29 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "held": bool(nt.get("binding")),
             "free_optimum": round(verdict.free_optimum, 6),
             "target": verdict.target, "hard_ceiling": verdict.hard_ceiling,
+            # THE ENVELOPE THE GATEWAY READS. `decision_core.allocator_heat` refuses any total
+            # above the recorded constant UNLESS this block says a survival surface measured
+            # higher on THIS pass -- which is what makes "remove the 30% cap" real on the money
+            # path rather than only in the research artifact. Absent or UNMEASURED, the constant
+            # binds exactly as before: a missing measurement is never a licence.
+            "envelope": {
+                "growth_ceiling": round(float(ceiling_now), 6),
+                "growth_why": ceiling_why,
+                "survival_ceiling": (None if surv_ceiling is None
+                                     else round(float(surv_ceiling), 6)),
+                "survival": survival,
+                "operative_ceiling": round(
+                    min(float(ceiling_now),
+                        float(surv_ceiling) if surv_ceiling is not None else float("inf"),
+                        float(verdict.effective_ceiling) if verdict.effective_ceiling > 0
+                        else float("inf")), 6),
+                "sample_max": CURVE_SAMPLE_MAX,
+                "unmeasured_fallback": HEAT_HARD_CEILING,
+                "rule": ("the operative ceiling is min(growth, survival, effective-independence) "
+                         "-- three MEASURED bars, none of them a constant. The recorded 0.30 "
+                         "survives only as the fallback when a bar cannot be read, because a "
+                         "monitoring failure must never read as permission."),
+            },
             "binding": verdict.binding, "certified": verdict.certified,
             "filled": filled, "shortfall": round(shortfall, 6),
             "readiness": round(verdict.readiness, 4), "floor": round(verdict.floor, 6),

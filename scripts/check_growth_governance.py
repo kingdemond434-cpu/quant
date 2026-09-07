@@ -72,15 +72,55 @@ def check() -> list[dict[str, str]]:
         f.append({"check": "G1_FLAT_FLOOR", "why": "heat_policy.resolve no longer floors at the target"})
     if re.search(r"floor\s*=\s*target\s*\*", hp):
         f.append({"check": "G1_FLAT_FLOOR", "why": "the floor is multiplied by something (readiness?)"})
-    if "elif h > target:" not in hp or "HARD CEILING" not in hp:
+    if "elif h > target:" not in hp:
         f.append({"check": "G1_GROWTH_FREE_ABOVE", "why": "resolve lost the growth-above-target band"})
+    # BOTH CEILINGS MUST BE NAMED SEPARATELY (principal, 2026-09-07: the fixed 30% bar is removed
+    # and replaced by two measured ones). This clause used to look for the single string "HARD
+    # CEILING", which would have passed just as happily if one of the two clips were deleted --
+    # and the survival clip is the one that keeps the desk alive now that the constant does not.
+    for token, why in (("GROWTH CEILING", "the growth-curve clip is gone: nothing stops the book "
+                                          "sizing past where the curve turns over"),
+                       ("SURVIVAL CEILING", "the survival clip is gone: with the 30% constant "
+                                            "demoted to a fallback, this is the ONLY bar between "
+                                            "the optimum and a book that ruins in a sampled "
+                                            "world")):
+        if token not in hp:
+            f.append({"check": "G1_GROWTH_FREE_ABOVE", "why": why})
+    if "survival_ceiling" not in hp:
+        f.append({"check": "G1_SURVIVAL_BAR", "why": "resolve no longer accepts a survival bar"})
     if "mandate=True" not in pa:
         f.append({"check": "G1_MANDATE_ON", "why": "pf_allocator does not call resolve with mandate=True"})
+    # THE ALLOCATOR MUST MEASURE THE BAR IT SIZES UNDER. `kelly_surface.envelope` computed on the
+    # FREE candidate BEFORE `resolve` is what makes the removal of the constant real; computing
+    # it after publication (which is where it lived until 2026-09-07) makes it an audit again.
+    if "envelope as _envelope" not in pa or "survival_ceiling=surv_ceiling" not in pa:
+        f.append({"check": "G1_MEASURED_CEILING",
+                  "why": "pf_allocator no longer measures a survival envelope and passes it to "
+                         "resolve; the heat bar would silently revert to the recorded constant"})
+    if '"envelope": {' not in pa:
+        f.append({"check": "G1_MEASURED_CEILING",
+                  "why": "the allocation artifact no longer carries heat.envelope, which is the "
+                         "only channel by which the money path learns the measured bar"})
+    # THE MONEY PATH MUST READ IT, and must still fail closed without it.
+    if "def live_heat_ceiling" not in dc or "ABSOLUTE_SIM_MAX" not in dc:
+        f.append({"check": "G1_MEASURED_CEILING",
+                  "why": "decision_core lost live_heat_ceiling or its simulation bound: the "
+                         "gateway would either cap a measured budget at 30% or accept a heat "
+                         "nobody sampled"})
+    if 'str(surv.get("status")) != "MEASURED"' not in dc:
+        f.append({"check": "G1_FAIL_CLOSED",
+                  "why": "live_heat_ceiling no longer requires a MEASURED survival reading -- an "
+                         "unmeasured envelope must never license heat above the constant"})
     try:
         from mt5desk.gateway_config_fallback import HEAT_HARD_CEILING, HEAT_TARGET
+        # The floor is the principal's standing instruction and is NOT part of the 2026-09-07
+        # change ("ignore the 20% heat minimum criticism"). The ceiling constant must stay at 0.30
+        # too -- not as the operative bar any more, but as the fallback every unmeasured path
+        # falls to; moving it would move what a monitoring failure permits.
         if not (abs(HEAT_TARGET - 0.20) < 1e-9 and abs(HEAT_HARD_CEILING - 0.30) < 1e-9):
-            f.append({"check": "G1_CONSTANTS", "why": f"target {HEAT_TARGET} ceiling "
-                                                       f"{HEAT_HARD_CEILING} (principal: 0.20/0.30)"})
+            f.append({"check": "G1_CONSTANTS", "why": f"target {HEAT_TARGET} fallback ceiling "
+                                                       f"{HEAT_HARD_CEILING} (principal: 0.20 "
+                                                       "floor, 0.30 unmeasured fallback)"})
     except Exception as exc:
         f.append({"check": "G1_CONSTANTS", "why": f"cannot import sizing constants: {exc}"})
 

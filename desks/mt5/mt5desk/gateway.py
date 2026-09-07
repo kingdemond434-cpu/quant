@@ -147,6 +147,7 @@ from mt5desk.decision_core import (  # noqa: E402, I001
     DIST_USD as DIST_USD,
     FX_EUR as FX_EUR,
     GOLD_WINDOWS as GOLD_WINDOWS,
+    ABSOLUTE_SIM_MAX as ABSOLUTE_SIM_MAX,
     HEAT_SLIDE as HEAT_SLIDE,
     MAX_HEAT_CEILING as MAX_HEAT_CEILING,
     MIN_LOT_RISK_EUR as MIN_LOT_RISK_EUR,
@@ -156,6 +157,7 @@ from mt5desk.decision_core import (  # noqa: E402, I001
     bracket_spec as bracket_spec,
     day_range as day_range,
     heat_budget as heat_budget,
+    live_heat_ceiling as live_heat_ceiling,
     min_lot_risk_eur as min_lot_risk_eur,
 )
 from mt5desk.gateway_config_fallback import (  # noqa: E402

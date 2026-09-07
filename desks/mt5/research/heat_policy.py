@@ -18,14 +18,37 @@ moved DOWNWARD on exactly the evidence that should raise exposure, because k_eff
 live ledger that was empty until 2026-09-01, so it returned its 3.81% floor on every call the
 desk has ever made. The desk ran at a fifth of its stated budget and nothing said so.
 
-THREE LAYERS, and only the third may reduce exposure below target:
+THE CEILING IS NO LONGER A CONSTANT (principal, 2026-09-07):
 
-  1. HEAT_HARD_CEILING -- the outer envelope. Catastrophe containment. Never crossed.
-  2. Robust E[log W] -- picks H* inside it, and the full-utilisation mandate floors that at
+    "remove 30 heat cap fully so if growth optimum says 35-40 that's allowed aswell until it
+     computes something diff the next few moments later minutes wtv it was"
+
+    "Replace the law with H_t = argmax_H G_t(H) subject only to actual survival/feasibility
+     constraints, not aesthetic risk limits: P(broker liquidation) < eps1, P(DD > D_max) < eps2,
+     margin usage < M_max, capacity(h) > 0, 1 + h'r > 0 in all catastrophe scenarios."
+
+THE 20% FLOOR STAYS -- it is a standing instruction about capital at work and the principal
+excluded it from this change explicitly. What goes is the CEILING as a number somebody chose.
+
+FOUR LAYERS, and only the fourth may reduce exposure below target:
+
+  1. The GROWTH ceiling -- `measured_ceiling`, read off this pass's own growth curve: the highest
+     heat still within tolerance of the peak growth rate. Where growth stops paying.
+  2. The SURVIVAL ceiling -- `libs.portfolio.kelly_surface.envelope`, read off this pass's own
+     sampled worlds: the highest sampled heat at which P(ruin) is zero, P(drawdown > the
+     principal's 35% tolerance) stays inside the CVaR fraction, margin use is feasible and
+     capacity is positive. Where the ACCOUNT DIES. Both 1 and 2 are measured every pass and both
+     move in both directions; whichever is lower is the bar.
+  3. Robust E[log W] -- picks H* inside them, and the full-utilisation mandate floors that at
      HEAT_TARGET so a certified book keeps its budget working.
-  3. The integrity layer (`catastrophe_override`) -- broker malfunction, stale prices, unknown
+  4. The integrity layer (`catastrophe_override`) -- broker malfunction, stale prices, unknown
      exposure, reconciliation failure. This is NOT the allocator turning conservative; it is the
      refusal to keep 20% of the account exposed when the desk cannot say what the 20% consists of.
+
+HEAT_HARD_CEILING SURVIVES AS THE UNMEASURED FALLBACK AND NOTHING ELSE. When the curve cannot be
+read, or the survival surface is too thin, or the artifact is stale, the recorded 0.30 is what
+holds -- because a monitoring failure must never read as permission. It is a floor on caution,
+not a ceiling on ambition, and on a thin book the measured bars are TIGHTER than it ever was.
 
 CERTIFICATION IS PART OF THE LAW, not a footnote. Forcing full utilisation only maximises growth
 while the target sits at or below the peak of the growth curve. `certify()` measures that on the
@@ -191,8 +214,9 @@ class HeatVerdict:
     hard_ceiling: float
     #: Which layer decided the number: "growth" (the optimum sat inside the band),
     #: "mandate" (floored at target), "state_growth" (the current state's curve wanted more),
-    #: "ceiling" (clipped at the hard bar), "effective_ceiling" (clipped where the book's
-    #: independent risk ran out), "catastrophe".
+    #: "ceiling" (clipped where growth stopped paying), "survival_ceiling" (clipped where the
+    #: account stops surviving -- ruin, drawdown tolerance, margin or capacity),
+    #: "effective_ceiling" (clipped where the book's independent risk ran out), "catastrophe".
     binding: str
     certified: bool
     #: How much of the target the book has EARNED, and the floor that follows from it.
@@ -209,6 +233,9 @@ class HeatVerdict:
     state: str = ""
     state_worlds: int = 0
     state_optimum: float = 0.0
+    #: The SURVIVAL bar (`kelly_surface.envelope`) and whether it was measured at all. None means
+    #: no survival surface reached this pass, and the growth ceiling was the only bar.
+    survival_ceiling: float | None = None
 
 
 def effective_ceiling(effective_heat: Mapping[str, Any] | None, *,
@@ -467,6 +494,8 @@ def catastrophe_override(*, broker_ok: bool = True, prices_fresh: bool = True,
 
 def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
             target: float = HEAT_TARGET, hard_ceiling: float = HEAT_HARD_CEILING,
+            survival_ceiling: float | None = None,
+            survival_why: str = "",
             mandate: bool = True, readiness: float = 1.0,
             readiness_why: str = "",
             effective_heat: Mapping[str, Any] | None = None,
@@ -494,6 +523,14 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
 
     `state` and `curves` condition the target on the market: H*_t is the argmax of that state's
     own growth curve inside the band, and it may only RAISE the number (`state_target`).
+
+    `survival_ceiling` is `libs.portfolio.kelly_surface.envelope` -- the highest sampled heat at
+    which P(ruin) is zero, P(drawdown > tolerance) stays inside the CVaR fraction, margin use is
+    feasible and capacity is positive. THE TWO CEILINGS ANSWER DIFFERENT QUESTIONS and both bind:
+    `hard_ceiling` says where growth STOPS PAYING (measured off the curve), the survival ceiling
+    says where the ACCOUNT DIES. A book can want more growth than it can survive, and it can
+    survive more heat than it can profitably use. None means unmeasured, and unmeasured never
+    widens anything -- it simply leaves `hard_ceiling` as the only bar, exactly as before.
     """
     reasons: list[str] = []
     override, bad = catastrophe_override(**integrity) if integrity else (None, ())
@@ -524,16 +561,32 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
                        f"readiness {r:.1%} is REPORTED, not gating"
                        + (f" -- {readiness_why}" if readiness_why else ""))
 
+    # THE SURVIVAL BAR (principal, 2026-09-07: "remove 30 heat cap fully so if growth optimum
+    # says 35-40 that's allowed"). It is not a second opinion on the growth ceiling; it answers a
+    # different question and is allowed to be either side of it. Growth says where the book stops
+    # being paid for exposure; survival says where the account is destroyed. Whichever comes
+    # first is the ceiling, and NEITHER of them is a constant when both are measured.
+    surv = None if survival_ceiling is None else float(survival_ceiling)
+    if surv is not None and (not math.isfinite(surv) or surv <= 0.0):
+        reasons.append(f"survival ceiling ignored: {survival_ceiling!r} is not a positive heat")
+        surv = None
+    if surv is not None:
+        reasons.append(survival_why or f"survival ceiling {surv:.2%}")
+    # `min` and NOT `max`: an unmeasured survival bar leaves the growth ceiling alone, and a
+    # measured one may only ever TIGHTEN what growth already allowed. A survival surface saying
+    # "45% would survive" is not a reason to run 45% -- growth still has to want it.
+    op_ceiling = hard_ceiling if surv is None else min(hard_ceiling, surv)
+
     # THE CEILING COUNTS EFFECTIVE HEAT, THE FLOOR COUNTS NOMINAL. See `effective_ceiling`: the
     # room ABOVE the floor is bought with independent risk, and the floor itself is never touched
     # by a correlation estimate.
     eff_cap, eff_why, eff_detail = effective_ceiling(
-        effective_heat, target=target, hard_ceiling=hard_ceiling)
+        effective_heat, target=target, hard_ceiling=op_ceiling)
     reasons.append(eff_why)
 
     # H*_t: the current state's own growth curve, inside the band the two bars leave open.
     h_state, state_why, state_detail = state_target(
-        curves, state, floor=floor, ceiling=min(hard_ceiling, eff_cap), fallback=curve)
+        curves, state, floor=floor, ceiling=min(op_ceiling, eff_cap), fallback=curve)
     if curves or state:
         reasons.append(state_why)
 
@@ -554,8 +607,20 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
     if (curves or state) and h_state > h + 1e-12:
         reasons.append(f"state opportunity: {h:.2%} -> {h_state:.2%} on E[log W | X_t]")
         h, binding = float(h_state), "state_growth"
+    # THE SURVIVAL BAR IS CHECKED FIRST AND NAMED SEPARATELY, because the two clips mean opposite
+    # things to a reader and to `missed_growth`. "growth wanted more than growth pays for" is the
+    # optimum being found; "growth wanted more than the account survives" is a book that must
+    # earn breadth before it can have what it wants. Collapsing both into "ceiling" is how the
+    # 30% constant stayed invisible for five days: everything read as a ceiling, so nothing said
+    # WHICH ceiling.
+    if surv is not None and h > surv + 1e-12:
+        reasons.append(f"SURVIVAL CEILING: growth wanted {h:.2%}, clipped to {surv:.2%} -- "
+                       "past here a sampled world destroys the account or breaches the drawdown "
+                       "tolerance. This bar is measured every pass and moves in both directions.")
+        h, binding = float(surv), "survival_ceiling"
     if h > hard_ceiling:
-        reasons.append(f"HARD CEILING: growth wanted {h:.2%}, clipped to {hard_ceiling:.2%}")
+        reasons.append(f"GROWTH CEILING: growth wanted {h:.2%}, clipped to {hard_ceiling:.2%} "
+                       "-- past here the curve stops paying for exposure")
         h, binding = hard_ceiling, "ceiling"
     if h > eff_cap + 1e-12:
         reasons.append(f"EFFECTIVE-HEAT CEILING BINDS: nominal {h:.2%} wanted, "
@@ -573,7 +638,8 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
                        effective_ceiling=float(eff_cap), effective=eff_detail,
                        state=str(state or ""),
                        state_worlds=int(state_detail.get("n_worlds", 0.0)),
-                       state_optimum=float(h_state))
+                       state_optimum=float(h_state),
+                       survival_ceiling=surv)
 
 
 def measured_ceiling(curve: dict[float, float], *, floor: float = HEAT_TARGET,

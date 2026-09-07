@@ -60,7 +60,22 @@ RAILS: tuple[Rail, ...] = (
          "measure_bounds"),
     Rail("family_cap", "cap", "heat_policy.enforce_family_cap (MAX_FAMILY_HEAT_SHARE)",
          "measure_bounds"),
-    Rail("hard_ceiling", "cap", "heat_policy.resolve HEAT_HARD_CEILING 30%", "measure_ceiling"),
+    # THE GROWTH CEILING. No longer the 30% constant (principal, 2026-09-07): it is
+    # `heat_policy.measured_ceiling`'s reading of THIS pass's growth curve -- the highest heat
+    # still within tolerance of the peak growth rate, never past the last heat sampled. It moves
+    # every pass, in both directions, and the recorded constant is only what holds when the curve
+    # cannot be read at all.
+    Rail("hard_ceiling", "cap", "heat_policy.resolve <- measured_ceiling(growth curve)",
+         "measure_ceiling"),
+    # THE SURVIVAL CEILING, and it is INTEGRITY rather than a cap on purpose. `kelly_surface.
+    # envelope` bounds heat where P(ruin) stops being zero, where P(drawdown > the principal's
+    # 35% tolerance) leaves the CVaR fraction, where margin becomes infeasible or where capacity
+    # runs out. It is billed like every other rail so the desk can see what survival costs in
+    # growth -- but it carries no `tunable` band, because a rail that can be walked down when it
+    # proves expensive is exactly the wrong shape for the one bar that keeps the account alive.
+    Rail("survival_ceiling", "integrity",
+         "heat_policy.resolve <- kelly_surface.envelope (ruin / drawdown / margin / capacity)",
+         "measure_survival_ceiling"),
     # THE CEILING THAT COUNTS EFFECTIVE HEAT. `heat_policy.effective_ceiling` caps NOMINAL heat at
     # the heat the book's independent risk earns -- target * sqrt(N_eff / 2.26) with N_eff from
     # max(covariance, factor, tail) -- so four sleeves that are one hidden USD factor cannot buy

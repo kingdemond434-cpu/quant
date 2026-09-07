@@ -1,8 +1,9 @@
 """The Aggression Governor: why the deployed heat is what it is, in components, every pass.
 
 NOT A SAFETY GOVERNOR. The desk's heat is resolved by `heat_policy.resolve`: the principal's
-floor (20%), growth free above it to the catastrophe ceiling (30%), and only the ruin layer
-below. This module does not add a lever on top of that -- it AUDITS it, so that a book which
+floor (20%), growth free above it to the MEASURED ceiling -- min(growth curve, survival surface,
+effective independence), no longer the 30% constant (principal, 2026-09-07) -- and only the ruin
+layer below. This module does not add a lever on top of that -- it AUDITS it, so that a book which
 sits at the floor while the evidence would bear more is a finding with a number rather than a
 quiet default. The multiplier it reports,
 
@@ -22,7 +23,9 @@ and the verdict is one of:
 
     AT_FLOOR              free optimum at or below the floor: the mandate is what deploys
     GROWTH_ABOVE_FLOOR    growth wanted more and got it, inside the ceiling and the tail bound
-    CEILING_BOUND         growth wanted more than the catastrophe ceiling allows
+    CEILING_BOUND         growth wanted more than the measured ceiling allows -- and note
+                          that the ceiling passed in is the OPERATIVE one, so this verdict now
+                          names a measurement rather than a constant
     TAIL_BOUND            the Kelly surface would not bear the free optimum
     UNUSED_UPSIDE         growth wanted more, the tail would bear it, the book got less --
                           a defect to fix, never a preference
@@ -110,7 +113,9 @@ def explain(*, floor: float, ceiling: float, total_heat: float, free_optimum: fl
         "verdict": verdict,
         "unused_upside_heat": round(max(0.0, float(room)), 6) if verdict == UNUSED_UPSIDE else 0.0,
         "gaps": gaps,
-        "rule": ("A = deployed / floor; the floor is the principal's 20% and growth is free above "
-                 "it to the 30% ceiling; only the ruin/tolerance bound (f_tail) may sit between "
-                 "the free optimum and the book, and UNUSED_UPSIDE names anything else that does"),
+        "rule": (f"A = deployed / floor; the floor is the principal's 20% and growth is free "
+                 f"above it to the MEASURED ceiling ({floor:.0%} floor, {ceiling:.2%} ceiling "
+                 "this pass -- growth curve and survival surface, not a constant); only the "
+                 "ruin/tolerance bound (f_tail) may sit between the free optimum and the book, "
+                 "and UNUSED_UPSIDE names anything else that does"),
     }

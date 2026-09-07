@@ -58,7 +58,78 @@ def test_the_hard_bar_is_hard() -> None:
     v = resolve(0.55, curve=GOOD)
     assert v.total_heat == pytest.approx(HEAT_HARD_CEILING)
     assert v.binding == "ceiling"
-    assert any("HARD CEILING" in r for r in v.reasons)
+    assert any("GROWTH CEILING" in r for r in v.reasons)
+
+
+# --------------------------------------------------------------- the survival bar (2026-09-07)
+# "remove 30 heat cap fully so if growth optimum says 35-40 that's allowed aswell until it
+# computes something diff the next few moments later" -- the principal. The 20% floor stays; the
+# ceiling stops being a constant and becomes two MEASURED bars, growth and survival.
+
+def test_growth_may_exceed_the_old_constant_when_the_curve_supports_it() -> None:
+    """The removal, in one assertion: 38% is deployable when 38% is what the curve measured.
+
+    `hard_ceiling` is `measured_ceiling`'s reading of THIS pass's growth curve, not a constant.
+    A book whose curve still climbs at 38% gets 38% -- which the old law made impossible however
+    good the evidence, because the bar was a number recorded from one world set on 2026-09-02.
+    """
+    v = resolve(0.38, curve=GOOD, hard_ceiling=0.42)
+    assert v.total_heat == pytest.approx(0.38)
+    assert v.binding == "growth"
+    assert v.total_heat > HEAT_HARD_CEILING, "the recorded constant no longer binds a measurement"
+
+
+def test_the_survival_bar_clips_growth_and_names_itself() -> None:
+    v = resolve(0.38, curve=GOOD, hard_ceiling=0.42, survival_ceiling=0.26,
+                survival_why="ruin at the next sampled heat")
+    assert v.total_heat == pytest.approx(0.26)
+    assert v.binding == "survival_ceiling"
+    assert v.survival_ceiling == pytest.approx(0.26)
+    assert any("SURVIVAL CEILING" in r for r in v.reasons)
+
+
+def test_a_thin_book_is_held_TIGHTER_than_the_old_constant_ever_held_it() -> None:
+    """The direction nobody expects from "remove the cap", and the one that matters most.
+
+    A book that ruins in a sampled world at 22% was waved through at 30% by the constant. The
+    measured bar refuses it at 21% -- so removing the aesthetic ceiling makes a weak book SMALLER
+    and only a strong one larger. That asymmetry is the whole argument for the change.
+    """
+    v = resolve(0.29, curve=GOOD, hard_ceiling=0.30, survival_ceiling=0.21)
+    assert v.total_heat == pytest.approx(0.21)
+    assert v.binding == "survival_ceiling"
+    assert v.total_heat < HEAT_HARD_CEILING
+
+
+def test_the_survival_bar_may_only_tighten_never_widen() -> None:
+    """A survival surface saying 45% would survive is not a reason to run 45%.
+
+    Survival answers "does the account live", growth answers "is the exposure paid for". A book
+    may only hold what BOTH allow, so the survival reading can never lift heat above the growth
+    ceiling -- it can only pull it down.
+    """
+    v = resolve(0.55, curve=GOOD, hard_ceiling=0.24, survival_ceiling=0.45)
+    assert v.total_heat == pytest.approx(0.24)
+    assert v.binding == "ceiling"
+
+
+def test_an_unmeasured_survival_bar_changes_nothing() -> None:
+    """Absence is never permission, and it is never a penalty either: it is simply absence."""
+    with_none = resolve(0.28, curve=GOOD, hard_ceiling=0.30, survival_ceiling=None)
+    assert with_none.total_heat == pytest.approx(0.28)
+    assert with_none.survival_ceiling is None
+    for junk in (0.0, -0.1, float("nan"), float("inf")):
+        v = resolve(0.28, curve=GOOD, hard_ceiling=0.30, survival_ceiling=junk)
+        assert v.total_heat == pytest.approx(0.28), junk
+        assert v.survival_ceiling is None, junk
+
+
+def test_the_floor_is_untouched_by_all_of_this() -> None:
+    """The principal excluded the 20% floor from the change, twice, in the same message."""
+    for surv in (None, 0.21, 0.45):
+        v = resolve(0.01, curve=GOOD, hard_ceiling=0.42, survival_ceiling=surv)
+        assert v.total_heat == pytest.approx(HEAT_TARGET), surv
+        assert v.binding == "mandate", surv
 
 
 def test_only_the_integrity_layer_goes_below_target() -> None:
