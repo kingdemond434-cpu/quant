@@ -96,7 +96,27 @@ function Invoke-Git {
     # NOT named $Args: that is a PowerShell automatic variable, and binding a
     # parameter over it in a non-advanced function silently loses the arguments.
     param([string[]] $GitArgs, [switch] $AllowFail)
-    $out = & git -C $RepoRoot @GitArgs 2>&1
+    # `2>&1` ON A NATIVE COMMAND UNDER `ErrorActionPreference = Stop` IS A TRAP, and it killed
+    # this script on its first real run. PowerShell turns each stderr LINE from an external
+    # program into an ErrorRecord, and under `Stop` the first one becomes TERMINATING -- so the
+    # script aborts on output that is not an error at all. git writes its ordinary progress to
+    # stderr:
+    #
+    #     git.exe : From https://github.com/<owner>/<repo>
+    #     At Adopt-Release.ps1:196 char:9 ... NativeCommandError
+    #
+    # That is a successful fetch reporting what it fetched. EXIT CODE IS THE TRUTH for a native
+    # command, and this function already checks it; the preference is therefore relaxed only
+    # around the call and restored immediately, so a real PowerShell error still stops the script.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        # Each record is forced to a string as it arrives: an ErrorRecord that reaches the caller
+        # un-stringified fails `-match '\S'` and would silently drop a line of real output.
+        $out = & git -C $RepoRoot @GitArgs 2>&1 | ForEach-Object { "$_" }
+    } finally {
+        $ErrorActionPreference = $prev
+    }
     if ($LASTEXITCODE -ne 0 -and -not $AllowFail) {
         throw ("git {0} failed rc={1}: {2}" -f ($GitArgs -join " "), $LASTEXITCODE, ($out -join "`n"))
     }
@@ -193,7 +213,14 @@ if (-not $NoFetch) {
     $delay = 2
     $ok = $false
     foreach ($attempt in 1..4) {
-        & git -C $RepoRoot fetch origin $Branch 2>&1 | Out-Null
+        # Same trap as `Invoke-Git`, and this is where it actually fired: `git fetch` reports
+        # "From https://github.com/<owner>/<repo>" and its ref updates on stderr, which is a
+        # SUCCESSFUL fetch describing itself. Under `Stop` that first line terminated the script
+        # before a single file had been adopted.
+        $prev = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        try { & git -C $RepoRoot fetch origin $Branch 2>&1 | Out-Null }
+        finally { $ErrorActionPreference = $prev }
         if ($LASTEXITCODE -eq 0) { $ok = $true; break }
         Write-Host ("  fetch attempt {0} failed -- retrying in {1}s" -f $attempt, $delay)
         Start-Sleep -Seconds $delay

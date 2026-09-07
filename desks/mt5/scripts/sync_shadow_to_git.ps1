@@ -127,7 +127,20 @@ function Merge-FetchHead {
     # The box's copy is moved aside rather than deleted: for the data artifacts it is the LIVE
     # state and strictly newer than anything on the branch. It is restored below exactly like the
     # tracked ones, so the merge can run and the box keeps what it had.
-    $probe = @(& git -C $RepoRoot merge --no-commit --no-ff FETCH_HEAD 2>&1)
+    # THE SAME `Stop` + `2>&1` TRAP `Git-In-Repo` GUARDS AGAINST, AND THIS CALL NEEDS IT MOST.
+    # The probe exists to make the merge FAIL and read the list of untracked files out of the
+    # failure text -- so stderr output is the expected, load-bearing result, not an anomaly.
+    # Under `ErrorActionPreference = "Stop"` the first stderr line becomes a terminating
+    # NativeCommandError, which kills the pass at precisely the moment the probe succeeds at its
+    # job, and the parking logic below never runs. Relaxed only around the call.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $probe = @(& git -C $RepoRoot merge --no-commit --no-ff FETCH_HEAD 2>&1 |
+                   ForEach-Object { "$_" })
+    } finally {
+        $ErrorActionPreference = $prev
+    }
     Git-In-Repo @("merge", "--abort") | Out-Null
     $untracked = @()
     $inList = $false
