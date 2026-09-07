@@ -125,6 +125,37 @@ declined, is reporting half its work.
 
 ---
 
+### V.b The standing weaknesses, and the compounding rule
+
+Repairing defects keeps the desk alive. It does not make it better. A pass that only closes
+incidents leaves the desk exactly as strong as it was yesterday, and a year of that is a year of
+maintenance mistaken for progress.
+
+So **every pass must also move at least one standing weakness, and must record the number before
+and after.** These are not incidents — nothing is broken, the desk is simply weaker here than it
+could be:
+
+| Weakness | Measured | What progress looks like |
+|---|---|---|
+| **Conversion** | ~6% of the docket reaches a backtest; ~2% is certified | more of the docket judged per day, at unchanged gates |
+| **Nothing is live** | `matched_fills: 0` — execution UNMEASURED | the first fill, because every execution number is unmeasurable until one exists |
+| **Miner yield** | ~8% of miners convert anything | a zero-yield miner either converts or is retired; noise at cost is a cost |
+| **Effective breadth** | signal count ≫ independent bets | `N_eff` up, not candidate count up |
+| **Missing mechanisms** | reachable families the book does not hold | one reachable mechanism proposed into the gauntlet |
+| **Unaddressed capabilities** | groups with no module on this tree | one built, wired and measured — or one honestly reclassified |
+| **Capacity** | the lot floor forces multiples of policy risk at this equity | measured per sleeve, and the allocator told |
+| **Research seat** | organs dark for want of a credential | the seat resolved, or the blocked population named |
+
+**The compounding rule.** Prefer the change that makes *future* passes cheaper or more productive
+over the change that produces one more candidate today. A faster funnel, a cache that holds, a
+detector that removes an hour of diagnosis, a miner retired — each pays every day afterwards. One
+more certificate pays once. When both are available and time allows only one, take the first and
+say why.
+
+**Growth is not permission.** None of this licenses a loosened gate, a larger size, or a candidate
+admitted through any door but the gauntlet. The desk compounds by testing more things properly and
+by removing what does not pay rent — never by lowering what counts as a pass.
+
 ## VI. NOON lane — Claude. Conversion and throughput.
 
 **The question:** why did the desk convert so little, and what unblocks the next stage?
@@ -146,7 +177,40 @@ declined, is reporting half its work.
 5. **Frontier and implementer.** Confirm the frontier miner, the implementer and the world crawler
    each ran within the hour, and that the implementer's challengers carry a falsifier.
 
-**Never** admit a candidate directly. There is one door and it is the gauntlet.
+### VI.b Maximum quantity through the survivor loop
+
+The desk's edge comes from **how many honest tests it can run**, not from how clever any one test
+is. Every gate stays exactly where it is; what this lane maximises is the number of candidates
+that reach them.
+
+Drive the loop, and report the number at each stage:
+
+```
+docket → backtested → judged → certified → clocked → promoted
+```
+
+1. **Raise the budget for this pass.** The hourly backtest is deliberately time-boxed so it cannot
+   block the next hour. A daily pass has no such constraint: give it hours. The cursor resumes
+   where it stops, so nothing is lost and nothing is repeated.
+2. **Use every core.** The stage is parallel and its worker pool caches a symbol's bars per
+   process — cells sorted by symbol so a worker loads each parquet once. A serial pass here is
+   the single largest throughput loss available to fix.
+3. **Never-tested first.** The cursor puts untested cells ahead of re-tests. Confirm it, because a
+   sort applied after the cursor silently discards it.
+4. **Chase the drops, not the passes.** For every cell that did *not* reach a backtest, name the
+   reason: no bars, no cost row, unresolvable family, missing runtime inputs. Those are fixable
+   supply problems and each one recovers a block of cells, not one.
+5. **Judge everything backtested.** A survivor that is never judged is a survivor that never
+   existed. Then certify everything judged, and clock everything certified.
+6. **Close the loop.** Certified-and-clockless is the only line in the funnel that is purely a
+   work item — it passed every gate and accrues nothing.
+
+**Throughput is the metric, and it is reported as a rate:** cells judged per hour, and the stage
+where the ratio collapses. "More candidates" is not the goal — *more candidates through the same
+unchanged gates* is.
+
+**Never** admit a candidate directly. There is one door and it is the gauntlet. A pass that
+increases quantity by lowering what counts as a pass has produced nothing but a longer list.
 
 ## VII. MIDNIGHT lane — Codex. Wiring, cadence and repair.
 
@@ -166,7 +230,44 @@ declined, is reporting half its work.
    is the highest finding on the board — a desk that cannot adopt code cannot be fixed by writing
    code.
 
+### VII.b Trace every chain end to end
+
+Scheduling is only half of plumbing. The other half is that each hop's **writer and reader agree**
+— on the path, the format, the key and the timeframe — and that something actually moves through.
+Almost every defect this desk has paid for lived at a hop where both sides looked correct alone.
+
+Walk each chain. At every arrow ask three questions: *does the writer write where the reader
+reads? do the identities match? did the volume that entered come out?*
+
+```
+CANDIDATE   miner → compiler → docket → backtest → gauntlet → certificate
+                  → forward clock → promoter → allocator → gateway → order
+DATA        terminal → bars → parquet → family readers
+            tick tape → bronze → silver → parquet → tape-input families
+EXECUTION   intent → order → deal → ledger → markout → execution twin → cost model
+PUBLICATION state files → sync → branch → dashboard
+IDENTITY    code → seal → RELEASE.json → running SHA → NEW_RISK_OK
+CREDENTIAL  env var / secrets file → seat → every LLM organ
+```
+
+Known shapes at a hop, all of them found here:
+
+- **Two roots.** `desks/mt5/x` where the file is at `x`. Open every configured path.
+- **Two layouts.** A writer emitting `{sym}_{tf}.parquet` and a reader globbing `*_H1` leaves
+  every other timeframe permanently stale while both sides look right.
+- **Two keys.** A join on a key one side does not carry produces an empty intersection that reads
+  as "nothing qualified" rather than "these never met".
+- **Two lanes.** State written to one file and counted from another.
+- **A hop with no consumer.** An artifact nothing reads is a producer paying rent for nothing —
+  either wire the consumer or retire the producer.
+- **A hop that drops volume silently.** N in, far fewer out, no line saying why. The count of
+  what was dropped *and the reason* is the deliverable.
+
+Report each chain as: intact, or broken at a named hop with the number that proves it.
+
 **Never** rewrite research logic to make a schedule pass. Wiring is the lane; statistics are not.
+If a chain is broken because the statistics are wrong, hand it to the NOON lane rather than
+"fixing" a gate to make the plumbing look connected.
 
 ---
 
