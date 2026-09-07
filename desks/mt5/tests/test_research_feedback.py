@@ -24,6 +24,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, p)
 
 from libs.regime.state_admission import Trade  # noqa: E402
+from libs.research import bandit  # noqa: E402
 from research import data_prospector, deepening_worker, regime_coverage, resurrection  # noqa: E402
 
 
@@ -147,12 +148,27 @@ def test_a_feature_that_carries_nothing_is_not_admitted():
 # ------------------------------------------------------------------------------------------
 
 def test_coverage_gap_tasks_are_worked_before_plain_crawler_rows():
+    """A directed task outranks an undirected crawler row, and the BUDGET decides the rest.
+
+    This used to pin `regime_coverage` above `fund_playbook` outright. That froze one budget's
+    output into a test: the two sources belong to different bandit arms, and which arm deserves
+    the next unit of compute is exactly what `research_budget.json` exists to answer. When the
+    breadth credit landed (2026-09-07) `new_mechanism` overtook `conditional_state_edge` --
+    correctly, because a new mechanism can occupy one of the eleven empty alpha clusters and a
+    state-conditioned re-cut of a held edge cannot -- and this test failed for doing its job.
+
+    So it now asserts the two things that are actually invariant: the undirected crawler row is
+    worked LAST, and the order of the rest follows the arm weights rather than list position.
+    """
     tasks = [{"source": "world_crawler", "title": "a", "url": "u1"},
              {"source": "regime_coverage", "kind": "coverage_gap", "title": "b", "url": "u2"},
              {"source": "fund_playbook", "evidence_grade": "A", "title": "c", "url": "u3"}]
     ordered = deepening_worker.voi_order(tasks)
-    assert ordered[0]["source"] == "regime_coverage"
-    assert ordered[1]["source"] == "fund_playbook"
+    assert ordered[-1]["source"] == "world_crawler", (
+        "an undirected crawler row must never outrank a directed research task")
+    weights = [bandit.arm_weight(t.get("source"), t.get("kind")) for t in ordered]
+    assert weights == sorted(weights, reverse=True), (
+        f"VOI order must follow the research budget: {[t['source'] for t in ordered]} at {weights}")
 
 
 def test_voi_ordering_is_deterministic():

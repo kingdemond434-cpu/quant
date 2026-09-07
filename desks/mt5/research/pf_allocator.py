@@ -638,6 +638,38 @@ def search_trials() -> dict[str, int]:
     return out
 
 
+def _execution_costs(names: Any) -> dict[str, Any]:
+    """Each sleeve's measured execution under-charge, keyed by sleeve name.
+
+    THE SYMBOL AND THE SELECTOR BOTH COME OUT OF THE SLEEVE NAME, which is how every other organ
+    on this desk reads them (`_symbol_of`, `_state_returns`, `classify_sleeve`), so no new
+    metadata channel is invented for this and no certificate has to be re-issued for it to work.
+    A name that carries no session token is UNPRICED and says so; it is not guessed at, because a
+    guessed fill hour prices the sleeve at an hour it does not trade.
+    """
+    try:
+        from libs.portfolio.execution_cost import costs_for
+        surface = json.loads((BASE / "data" / "cost_surface.json").read_text("utf-8"))
+    except (OSError, ValueError, ImportError) as exc:
+        return {"sleeves": {},
+                "summary": {"n_sleeves": 0, "n_measured": 0, "n_unpriced": 0,
+                            "n_undercharged": 0, "n_overcharged": 0, "n_clipped": 0,
+                            "n_registry_defect": 0, "n_no_spread_provenance": 0,
+                            "worst_undercharge": None,
+                            "verdict": f"no cost surface on this host ({type(exc).__name__})"}}
+    # THE REGISTRY IS PASSED SO THE PROVENANCE GATE CAN RUN. Without it every symbol prices, and
+    # on this desk's data that means pricing 241 of 251 symbols off a spread nobody can attribute
+    # to a producer. An unreadable registry is treated as "no provenance for anything", which is
+    # the conservative direction: nothing is corrected.
+    try:
+        reg = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
+        reg = reg.get("symbols", reg) if isinstance(reg, dict) else {}
+    except (OSError, ValueError):
+        reg = {}
+    rows = [{"name": str(c), "symbol": str(c).split("_")[0], "selector": str(c)} for c in names]
+    return costs_for(rows, surface, registry=reg)
+
+
 def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     live: dict[str, int],
                     trials: dict[str, int] | None = None,
@@ -655,6 +687,20 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
     observations of the same sleeve, and the posterior weights them 4x (live 12x) precisely
     because they are the only ones the sleeve could not have been selected on.
     """
+    # EXECUTION PRICED AT EACH SLEEVE'S OWN FILL HOUR, before any sleeve is built. Until
+    # 2026-09-07 every sleeve was handed the literal `cost_r=0.05` -- one constant for a session
+    # breakout on EURZAR filling at 01:00 and for a gold bracket on an administered spread -- and
+    # `research/cost_surface.py` had ALREADY measured that the pooled scalar those returns were
+    # charged at is 6.16x too small on USDZAR's own fill bars, on a live certified sleeve. The
+    # measurement reached the gauntlet and never reached the allocator, which is the
+    # producer/consumer collapse this desk keeps paying for.
+    cost_doc = _execution_costs(daily.columns)
+    _log(f"execution cost: {cost_doc['summary']['n_measured']}/"
+         f"{cost_doc['summary']['n_sleeves']} sleeves priced at their own fill hour; "
+         f"{cost_doc['summary']['n_undercharged']} under-charged, worst "
+         f"{cost_doc['summary']['worst_undercharge']}")
+    costs = cost_doc["sleeves"]
+
     out: list[SleeveEvidence] = []
     series: dict[str, np.ndarray] = {
         str(c): daily[c].fillna(0.0).to_numpy(dtype=float) for c in daily.columns
@@ -685,9 +731,17 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             name=name, daily_r=hist, family=fam, symbol=parts[0], n_trials=int(n_trials),
             forward_days=len(fwd), live_days=int(live.get(name, 0)),
             # Cost LEVEL is already inside the replayed R multiples (Costs.from_symbol at the
-            # honest 2x baseline); this is the per-trade scale used to size the UNCERTAINTY
-            # around it, never a second charge.
-            cost_r=0.05,
+            # honest 2x baseline); `cost_r` is the per-trade scale used to size the UNCERTAINTY
+            # around it, never a second charge -- and it now MOVES WITH THE SLEEVE, because a
+            # sleeve filling where the spread is three times the pooled scalar is not merely more
+            # expensive, it is more uncertainly expensive.
+            #
+            # `cost_bias_r` is the separate, deterministic statement: the R per trade the replay
+            # did NOT charge, measured as (spread at this sleeve's own fill hour / the pooled
+            # spread it was charged at). Zero where the desk cannot price the sleeve, which is
+            # exactly the behaviour that existed before -- unpriced is not cheap.
+            cost_r=float((costs.get(name) or {}).get("cost_r", 0.05)),
+            cost_bias_r=float((costs.get(name) or {}).get("cost_bias_r", 0.0)),
             # THE HOUR, AS THE NARROWEST LEVEL OF A SHRINKAGE THAT ALREADY EXISTED. Empty unless
             # a phase and this sleeve's own trades were supplied, and empty means the posterior
             # behaves exactly as it did before -- a caller that does not know the hour is not

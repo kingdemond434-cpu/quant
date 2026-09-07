@@ -79,6 +79,18 @@ class SleeveEvidence:
     #: Per-trade cost already charged inside `daily_r`, in R. Used only to size the UNCERTAINTY
     #: around it -- the level is already in the returns and must not be charged twice.
     cost_r: float = 0.0
+    #: THE COST THE REPLAY DID NOT CHARGE, in R per trade, MEASURED (`libs.portfolio.
+    #: execution_cost`). Not a second charge of the modelled cost: the modelled cost was applied
+    #: at the POOLED median spread, and `cost_surface` measured that the spread at some sleeves'
+    #: OWN FILL HOUR is up to six times that -- USDZAR 329 pts pooled against 2,028 pts on its
+    #: own fill bars, on a live certified sleeve. This is the DIFFERENCE, and it shifts the
+    #: posterior mean down deterministically in proportion to how often the sleeve trades.
+    #:
+    #: THIS IS WHAT "EXECUTION IS AUTHORITY-BEARING" MEANS IN ARITHMETIC. There is no rule about
+    #: spreads and no veto: a sleeve whose edge does not survive its own fill hour simply stops
+    #: being profitable, and an optimiser maximising E[log W] stops funding it without being told
+    #: to. 0.0 is the honest default and means "unpriced", never "cheap".
+    cost_bias_r: float = 0.0
     #: HOW MANY CANDIDATES WERE SEARCHED TO FIND THIS ONE. The single most important field here
     #: and the one a Bayesian shrinkage by sample size cannot substitute for: a sleeve with 2,000
     #: observations is precisely estimated AND selected out of thousands of trials, so its sample
@@ -401,7 +413,13 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
     activity = (hist != 0.0).mean(axis=0)
     cost_lvl = np.array([abs(e.cost_r) for e in ev])
     cost_draw = rng.normal(0.0, cfg.cost_uncertainty, size=(n_worlds, n)) * cost_lvl[None, :]
-    cost_draw = cost_draw * activity[None, :]
+    # THE MEASURED UNDER-CHARGE, added to the ZERO-MEAN spread above. The draw says "the cost is
+    # uncertain by this much"; the bias says "and it is this much larger than the returns claim".
+    # They are different statements and only the second can make a sleeve unprofitable, which is
+    # exactly what it is for. Deterministic, not drawn: it is a measurement, so treating it as
+    # noise would let half the worlds pretend it is not there.
+    cost_bias = np.array([max(0.0, float(getattr(e, "cost_bias_r", 0.0))) for e in ev])
+    cost_draw = (cost_draw + cost_bias[None, :]) * activity[None, :]
 
     crisis = rng.random(n_worlds) < cfg.crisis_prob
 
