@@ -59,7 +59,7 @@ CAPABILITIES: tuple[Capability, ...] = (
                "whether an observation carries the time it was actually knowable"),
     Capability("DATA_ACQUISITION", "information", "desks/mt5/research/data_prospector.py",
                "turning an identified information family into an ingested point-in-time series"),
-    Capability("ALT_DATA", "information", "",
+    Capability("ALT_DATA", "information", "desks/mt5/side_channels/cot_miner.py",
                "economic observation outside price and calendar: flows, physical, text"),
     Capability("MICROSTRUCTURE_DATA", "information", "desks/mt5/recorders/tick_recorder.py",
                "the desk's own tape -- ticks, spreads, depth -- which cannot be backfilled"),
@@ -135,7 +135,7 @@ CAPABILITIES: tuple[Capability, ...] = (
     # ------------------------------------------------------------------ execution
     Capability("EXECUTION", "execution", "desks/mt5/mt5desk/execution_registry.py",
                "the fraction of a predicted edge that survives contact with the venue"),
-    Capability("MARKET_IMPACT", "execution", "",
+    Capability("MARKET_IMPACT", "execution", "libs/execution/book_walk.py",
                "what our own order does to the price we get"),
     Capability("FILL_MODELS", "execution", "desks/mt5/mt5desk/fill_surface.py",
                "predicting the fill before sending, so the choice can be made"),

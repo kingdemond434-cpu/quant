@@ -57,6 +57,15 @@ def test_every_declared_owner_exists_on_disk(name: str, owner: str) -> None:
     ("ENSEMBLES", "desks/mt5/mt5desk/family_ensemble.py"),
     ("GRAPH_MODELS", "desks/mt5/research/cross_asset_graph.py"),
     ("CAPACITY", "desks/mt5/research/capacity.py"),
+    # MARKET_IMPACT has two real owners -- book_walk.py answers the TAKER side with a sqrt-law
+    # walk of the book, passive_impact.py answers the maker side. The field holds one, and the
+    # taker model is the canonical "what our order does to the price we get".
+    ("MARKET_IMPACT", "libs/execution/book_walk.py"),
+    # ALT_DATA is "flows, physical, text" and this desk has all three: cot_miner (CFTC
+    # positioning), fetch_sge_premium (Shanghai physical gold premium) and bis_speech_tone
+    # (central-bank speech). Naming one instance is honest -- PARTIAL means a module exists,
+    # not that the capability is complete.
+    ("ALT_DATA", "desks/mt5/side_channels/cot_miner.py"),
 ])
 def test_the_four_recovered_owners_stay_claimed(name: str, owner: str) -> None:
     """Pinned individually, because each was found by reading the tree rather than the registry.
@@ -75,13 +84,11 @@ def test_the_unaddressed_list_is_exactly_the_eight_genuine_gaps() -> None:
     count would not catch the substitution.
     """
     assert set(ontology.unaddressed()) == {
-        "ALT_DATA",                 # no ingestion of flows, physical or text outside price
         "REPRESENTATION_LEARNING",  # no learned latent state
         "MULTIMODAL",               # no joint text + price + cross-asset event model
         "SELF_SUPERVISED",          # nothing learns from unlabelled bars
         "DISTRIBUTED_TRAINING",     # experiments run in sequence
         "MIXTURE_OF_EXPERTS",       # no gate choosing a specialist per regime
-        "MARKET_IMPACT",            # unmeasurable: matched_fills is 0
         "GEOPOLITICS",              # no unscheduled structural event model
     }
 
