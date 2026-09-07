@@ -934,6 +934,32 @@ def main() -> None:
     # enrolment logic was never the defect -- only its cadence.
     ecl = _costed("enrol_clocks", lambda: _producer(
         "shadow_forward", "research/shadow_forward.py"))
+    # THE GROWTH-MAXIMISING SIZER, WHICH HAS NEVER RUN. `pf_allocator` solves posterior E[log W]
+    # for PER-SLEEVE heat -- the fraction of equity each sleeve should risk to maximise compound
+    # growth, which is the only principled answer to "how big should this trade be". Everything
+    # downstream is already wired for it: `decision_core.allocator_heat` reads its artifact,
+    # `allocator_book` reads its per-sleeve fractions, and `promoted_lot(from_book=True)` sizes
+    # from those instead of the authority ladder.
+    #
+    # MEASURED 2026-09-07: data/PF_ALLOCATOR_ARMED has been present since 2026-09-04 and
+    # reports/pf_allocation.json HAS NEVER EXISTED. The allocator is armed, wired and consumed,
+    # and nothing has ever called it -- so `allocator_heat` returns "no pf_allocation.json" every
+    # pass, `allocator_book` returns None, and every sleeve on this desk falls back to
+    # `ramped_fraction`: the authority ramp, which is a function of how many trades a sleeve has
+    # closed and contains no estimate of growth whatsoever.
+    #
+    # AN HOURLY CLOCK IS NOT A CHOICE HERE, IT IS THE DESIGN. `decision_core._ALLOC_MAX_AGE_S` is
+    # 3600, so the artifact is refused the moment it turns an hour old. Any cadence slower than
+    # hourly guarantees the book is always stale and always rejected -- which is indistinguishable
+    # from never running it, and is why "the allocator is armed" was true and worthless at once.
+    #
+    # `--mode normal` is the hourly fidelity the file's own three-clock design names (fast every
+    # five minutes, normal hourly, heavy overnight), and its job lock makes an overlap safe: a
+    # pass that cannot get memory waits rather than thrashing beside one already resident.
+    #
+    # It runs AFTER enrolment so it solves over this hour's sleeve set rather than last hour's.
+    pa = _costed("pf_allocator", lambda: _producer(
+        "pf_allocator", "research/pf_allocator.py", "--mode", "normal"))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
@@ -1065,7 +1091,7 @@ def main() -> None:
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "external_gauntlet": gt, "merge_docket": mh, "backtest": bt,
-                    "recertify_canon": rc,
+                    "recertify_canon": rc, "pf_allocator": pa,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
