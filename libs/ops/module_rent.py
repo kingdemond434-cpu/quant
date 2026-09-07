@@ -66,8 +66,15 @@ from libs.research.bandit import ARMS, SOURCE_ARM
 
 ROOT = Path(__file__).resolve().parents[2]
 
+#: RESEARCH_ALLOCATOR was registered without being declared here (commit 7f894766, 2026-09-06),
+#: so `frontier_roi` -- the ranker that decides which external capability gets replication effort
+#: -- failed the registry's own arity check from the moment it was priced. A module whose KIND is
+#: unknown cannot be billed, and the fence that exists to catch unbilled modules was the thing
+#: refusing it. It is a real kind: the blueprint's allocator hierarchy has research sitting beside
+#: capital and compute, and it decides where effort goes rather than where money does.
 KINDS: tuple[str, ...] = ("rail", "proposer", "state_dimension", "execution_algo",
-                          "allocator_component", "data_source", "ai_organ", "organ")
+                          "allocator_component", "research_allocator", "data_source",
+                          "ai_organ", "organ")
 EARNS, COSTS, NOT_BINDING, UNMEASURED = "EARNS", "COSTS", "NOT_BINDING", "UNMEASURED"
 
 #: Samples (days, trials, fills, test trades) before a verdict is a verdict.

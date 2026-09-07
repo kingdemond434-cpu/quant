@@ -1,5 +1,19 @@
 # The desk cycle: two agents, twelve hours apart
 
+> **This is the WINDOWS-BOX operating brief, not a new mandate.**
+>
+> `docs/MASTER_QUANT_CONSTITUTION.md` is authoritative and this is never a replacement, reduction
+> or amendment of it. `ops/midnight_codex_prompt.txt` is the existing midnight controller brief,
+> run on the VPS by `ops/run_midnight_codex_controller.sh` through systemd — read it first; where
+> the two differ on doctrine, it wins.
+>
+> What this file adds is the part that could not exist there: **the Windows trading box has no
+> systemd**, so the controller that runs the research pipeline on the VPS has never run on the
+> machine that holds the gateway, the forward clocks and the promoter. That is the same gap that
+> left `enrol_clocks` unreachable on the box for months. This brief carries the lane mechanics
+> (two slots, checkpoint/resume, canonical close) and the box-specific inspection order; it
+> restates doctrine only where a pass would be unsafe without it.
+
 Two autonomous passes run every day against this repository and the live box.
 
 | Lane | Agent | Local time | Owns |
