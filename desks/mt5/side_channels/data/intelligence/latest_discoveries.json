@@ -1,10 +1,53 @@
 {
   "youtube": {
-    "count": 0,
-    "discoveries": []
+    "count": 3,
+    "discoveries": [
+      {
+        "source": "youtube",
+        "title": "Gold &amp; Silver Scalping Strategy | Last Week\u2019s Complete Performance Review#xauusdscalping #xauusdlive",
+        "channel": "G.M Forex Academy ",
+        "url": "https://youtube.com/watch?v=qLaGGwsE_U4",
+        "published": "2026-09-07T05:26:28Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "GOLD (XAUUSD) Daily Technical Analysis &amp; Today&#39;s Trading Setup | Forex Market Analysis",
+        "channel": "Forex Fever",
+        "url": "https://youtube.com/watch?v=1jhuqGzdizE",
+        "published": "2026-09-07T03:41:11Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Xauusd\ud83d\udcca #forextrading #liquidity #priceaction #smc #tradingstrategy #tradingtips #youtubeshorts",
+        "channel": "A.tradz\ud83d\udcca",
+        "url": "https://youtube.com/watch?v=exRCr7mHQ70",
+        "published": "2026-09-07T03:25:09Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [
+          "order block",
+          "liquidity"
+        ],
+        "confidence": 0.5
+      }
+    ]
   },
   "github": {
-    "count": 25,
+    "count": 21,
     "discoveries": [
       {
         "source": "github",
@@ -173,17 +216,16 @@
       },
       {
         "source": "github",
-        "repo": "orangepineapple/mean_reversion_strategies",
-        "url": "https://github.com/orangepineapple/mean_reversion_strategies",
-        "description": "Here I go through the processing of prototyping a mean reversion trading strategy using statistical concepts, then test it in backtrader.",
-        "stars": 83,
-        "language": "Jupyter Notebook",
+        "repo": "nmj94/momentum-lab",
+        "url": "https://github.com/nmj94/momentum-lab",
+        "description": "Find the optimal momentum trading strategy for any asset. Just provide a ticker. 26 strategies, 1.6M+ parameter combinations, regime-aware adaptive switching.",
+        "stars": 101,
+        "language": "Python",
         "symbols": [],
         "patterns": [
-          "mean reversion",
-          "RSI"
+          "momentum"
         ],
-        "confidence": 0.383
+        "confidence": 0.251
       },
       {
         "source": "github",
@@ -197,19 +239,6 @@
           "momentum"
         ],
         "confidence": 0.173
-      },
-      {
-        "source": "github",
-        "repo": "nmj94/momentum-lab",
-        "url": "https://github.com/nmj94/momentum-lab",
-        "description": "Find the optimal momentum trading strategy for any asset. Just provide a ticker. 26 strategies, 1.6M+ parameter combinations, regime-aware adaptive switching.",
-        "stars": 101,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "momentum"
-        ],
-        "confidence": 0.251
       },
       {
         "source": "github",
@@ -308,46 +337,6 @@
           "momentum"
         ],
         "confidence": 0.44899999999999995
-      },
-      {
-        "source": "github",
-        "repo": "ashikscreativemath-commits/Paldo-ALM",
-        "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
-        "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
-        "stars": 21,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "scalping",
-          "swing"
-        ],
-        "confidence": 0.321
-      },
-      {
-        "source": "github",
-        "repo": "goodie1972/algoforge",
-        "url": "https://github.com/goodie1972/algoforge",
-        "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
-        "stars": 5,
-        "language": "HTML",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.20500000000000002
-      },
-      {
-        "source": "github",
-        "repo": "xzaviourr/zerodha-algorithmic-trader",
-        "url": "https://github.com/xzaviourr/zerodha-algorithmic-trader",
-        "description": "Archived Flask trading-server prototype integrating Zerodha Kite Connect with five-EMA and Bank NIFTY short-straddle strategies; not investment advice.",
-        "stars": 8,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.158
       }
     ]
   },
@@ -433,8 +422,20 @@
     ]
   },
   "reddit": {
-    "count": 46,
+    "count": 82,
     "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Trade",
+        "url": "",
+        "symbols": [
+          "GBPUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
       {
         "source": "reddit",
         "subreddit": "Forex",
@@ -474,9 +475,9 @@
         "title": "I built an open-source MT5 visual replacer for backtesting \u2014 looking for honest feedback before I take it further",
         "url": "",
         "symbols": [
-          "XAUUSD",
           "EURUSD",
-          "GBPUSD"
+          "GBPUSD",
+          "XAUUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -618,13 +619,440 @@
       },
       {
         "source": "reddit",
-        "subreddit": "Forex",
-        "title": "XAUUSD",
+        "subreddit": "Gold",
+        "title": "utah gold home running dirt",
         "url": "",
         "symbols": [
           "XAUUSD"
         ],
         "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "My friends owns a home with a river in the back full of gold flakes",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Cool find",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "No chart. Just a handful of gold.",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Baht gold collecting",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "SMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Aussie gold. The prettiest color.",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "25x 1g gold from Costco",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Carrying gold coins on a USA domestic flight?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Scratch and dent sales",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "New to stacking, been doing research. Do you find it\u2019s important to really get fractional eagles vs others, as an American",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Legit check",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Been collecting from a long time like a hobby",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "WTB: Gold American eagle coin cufflinks",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Jewellery vs Bars",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Apmex vs Costco",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Central figure arrested in Tarrant County elderly gold theft scheme, more than 40 indicted",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Selling Fractional Coins & Bars",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Where would I purchase the gold bars",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Picked up a nice 14k gold bracelet at a thrift shop for $3. 7.9g",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Can anyone help me find a bezel for my 5g gold bar",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Not a gold guy but just picked up our wedding rings",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Chain worth anything beyond melt value? 10k gold box chain made in Italy, est. 1960s-1980s",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Real story",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Kitco buying?",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Considering redeeming portion of investment for gold",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "$1000 in twenty dollar bills vs $1000 in pure gold. (CAD)",
+        "url": "",
+        "symbols": [
+          "XAUUSD",
+          "DXY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "GOLD INTO STOCKS ?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Why is my gold-plated jewelry turning black",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Most accurate way of testing gold?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Wie viel ist das Armband meiner verstorbenen Oma Wert.",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Should I sell my gold now?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "LMU Gold 20 Franc coins country collection",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Gold up\u2026.gold down",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Found this in an abandoned factory, is this actually gold?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "If Fed doesn\u2019t raise rates in September, Gold will rip higher like never seen before. A fed hold after the data we\u2019ve seen so far would mean a complete capitulation and loss of credibility.",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "World's biggest sovereign wealth fund plans to cut U.S. Treasury holdings -- Norway's mammoth wealth fund wants to cut its holdings of government bonds, chiefly affecting U.S. Treasurys",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Gold",
+        "title": "Gold? Silber? Bin ich reich?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "It's been sad days for me, but I made it up to myself",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Acquiring My First Vintage Piece: A 1 oz Johnson Matthey Bullion Bar (Serial #249998)",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [
+          "RSI"
+        ],
         "confidence": 0.3
       },
       {
@@ -663,6 +1091,40 @@
       {
         "source": "reddit",
         "subreddit": "silverbugs",
+        "title": "Mall call",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "New favorite silver round.",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "DXY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Selling silver eagles purchased in 2015",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
         "title": "My stack for being 15?",
         "url": "",
         "symbols": [
@@ -674,7 +1136,31 @@
       {
         "source": "reddit",
         "subreddit": "silverbugs",
-        "title": "Selling silver eagles purchased in 2015",
+        "title": "Any information on this National Dallas silver hand pour bar?",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "State of the stack",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "RSI"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Where to have silver melted?",
         "url": "",
         "symbols": [
           "XAGUSD"
@@ -696,86 +1182,21 @@
       {
         "source": "reddit",
         "subreddit": "silverbugs",
-        "title": "Bought my first silver today.",
+        "title": "Anybody else collect these as well?",
         "url": "",
         "symbols": [
-          "XAGUSD"
+          "XAGUSD",
+          "XAUUSD"
         ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Stack update! 3.07 OZ.",
-        "url": "",
-        "symbols": [
-          "XAUUSD",
-          "XAGUSD"
+        "patterns": [
+          "SMA"
         ],
-        "patterns": [],
         "confidence": 0.3
       },
       {
         "source": "reddit",
         "subreddit": "silverbugs",
         "title": "Is This Silver?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Mall call",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "$50 flea market find... 1492g of Egyptian hallmarked 900 silver.",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Seeking information on this piece...?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Samurai Silver!",
-        "url": "",
-        "symbols": [
-          "XAUUSD",
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "90%/92.5% or pure",
         "url": "",
         "symbols": [
           "XAGUSD"
@@ -801,6 +1222,96 @@
         "url": "",
         "symbols": [
           "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Bought my first silver today.",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "90%/92.5% or pure",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Stack update! 3.07 OZ.",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "$50 flea market find... 1492g of Egyptian hallmarked 900 silver.",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Silver ladle, can anyone recognize the name and stamps here?",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Best place to sell in Denver?",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Seeking information on this piece...?",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Samurai Silver!",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -843,129 +1354,15 @@
       {
         "source": "reddit",
         "subreddit": "silverbugs",
-        "title": "Best place to sell in Denver?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
         "title": "The Best Looking \"Cull\" I've Ever Pulled From An LCS Bargain Bin. 1897 - P Morgan Silver Dollar",
         "url": "",
         "symbols": [
-          "DXY",
-          "XAGUSD"
+          "XAGUSD",
+          "DXY"
         ],
         "patterns": [
           "support"
         ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Tarnished silver?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "What brand is this and is it silver.",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Got some really good LCS deals yesterday",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Best way to sell 200oz",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Daytrading",
-        "title": "QQQ Weekly Technical Analysis Breakdown -Stock Market 9/8 to 9/11",
-        "url": "",
-        "symbols": [
-          "NAS100"
-        ],
-        "patterns": [
-          "resistance"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Daytrading",
-        "title": "Need help",
-        "url": "",
-        "symbols": [
-          "USOIL"
-        ],
-        "patterns": [
-          "SMA"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Daytrading",
-        "title": "Blindgrade - a daily chart with the ticker and dates hidden, so you can't cheat with hindsight. Free, no account. Try to break it.",
-        "url": "",
-        "symbols": [
-          "BTCUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Daytrading",
-        "title": "ongoing eurusd short",
-        "url": "",
-        "symbols": [
-          "EURUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Daytrading",
-        "title": "Retail positioning, currency strength, S/R zones and daily AI trade plans for FX and gold",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
         "confidence": 0.3
       }
     ]
@@ -1330,8 +1727,35 @@
     "discoveries": []
   },
   "academic": {
-    "count": 0,
-    "discoveries": []
+    "count": 2,
+    "discoveries": [
+      {
+        "source": "arxiv",
+        "type": "academic_paper",
+        "title": "Dust Substructures and Line Perturbations driven by a Forming Planet in J16120",
+        "summary": "Hints of planet formation have been independently reported within the gap of the disc around 2MASS J16120668-301027 from millimetre continuum, infrared, and H-alpha observations. In this work, we pres",
+        "url": "https://arxiv.org/abs/2609.05366v1",
+        "published": "2026-09-04T17:11:12Z",
+        "trading_terms": [
+          "alpha"
+        ],
+        "symbols": [],
+        "confidence": 0.1
+      },
+      {
+        "source": "arxiv",
+        "type": "academic_paper",
+        "title": "Electromagnetic alignment and jet precession around supermassive black holes: Quasi-periodic oscillations in tidal disruption events",
+        "summary": "We evaluate quasi-periodic oscillations and jet formation in tidal disruption events using the covariant formulation of electromagnetic angular-momentum transfer. General-relativistic frame-dragging t",
+        "url": "https://arxiv.org/abs/2609.05350v1",
+        "published": "2026-09-04T16:58:18Z",
+        "trading_terms": [
+          "momentum"
+        ],
+        "symbols": [],
+        "confidence": 0.1
+      }
+    ]
   },
   "correlations": {
     "count": 0,
