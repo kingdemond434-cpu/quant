@@ -135,6 +135,34 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Hours 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "Health, mining, and the daily chain: shadow -> promoter -> markout -> export." },
+    @{ Name = "MT5-AllocatorFast"
+       Script = "research\\pf_allocator.py"
+       Args = "--mode fast"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 5) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       # THE ALLOCATOR'S OWN FAST CLOCK, which its docstring names and nothing ever ran.
+       # `--mode fast` reuses the cached scenario population and re-solves the book in ~5 min,
+       # so the per-sleeve growth-maximising fractions track the account between hourly passes.
+       # `decision_core._ALLOC_MAX_AGE_S` is 3600, so without a sub-hourly clock the book spends
+       # most of every hour close to expiry; with one it is always fresh. The file holds a single
+       # job lock across all three modes, so a fast pass that collides with the hourly `normal`
+       # one waits instead of thrashing beside it.
+       Desc = "E[log W] per-sleeve heat, fast clock: re-solve the book every 5 minutes." },
+    @{ Name = "MT5-NewsDesk"
+       Script = "research\\news_desk.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 5) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       # THE NEWS LANE, WHICH RAN ON NO CLOCK AT ALL. Measured 2026-09-07: news_desk.py,
+       # earnings_miner.py, delayed_reaction_miner.py, failed_reaction_miner.py and
+       # operational_calendar_miner.py appear in neither cycle and in no task. Under the
+       # principal's two-lane mandate (2026-09-06) single-name equities are traded on news,
+       # earnings and financial reports and are never hunted for statistical hypotheses -- so
+       # with this lane unscheduled, that entire half of the universe had no path to a trade.
+       # Five minutes because a reaction edge decays in minutes; an hourly news desk is a
+       # history desk.
+       Desc = "News, earnings and event reaction: the equity lane's own clock." },
     @{ Name = "MT5-Shadow"
        Script = "research\shadow_cycle.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
@@ -154,7 +182,11 @@ foreach ($t in $tasks) {
     # arguments field is passed to python as a literal argument otherwise.
     # cmd.exe needs an OUTER quote pair when the executable itself is quoted. Without it,
     # Task Scheduler returns 1 before Python starts and no log is created.
-    $cmd = "/d /s /c `"`"$Python`" $pyArgs`"$script`" >> `"$log`" 2>&1`""
+    # SCRIPT ARGUMENTS, so a task can name WHICH mode it runs. pf_allocator has three clocks
+    # (`fast` ~5 min, `normal` hourly, `heavy` overnight) selected by --mode, and without an
+    # argument slot here the table could only ever register its default. Absent Args is "".
+    $targs = if ($t.ContainsKey("Args") -and $t.Args) { " " + $t.Args } else { "" }
+    $cmd = "/d /s /c `"`"$Python`" $pyArgs`"$script`"$targs >> `"$log`" 2>&1`""
 
     if ($WhatIfOnly) {
         Write-Host ("  [DRY ] {0,-14} cmd {1}" -f $t.Name, $cmd)
