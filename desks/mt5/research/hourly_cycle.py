@@ -891,6 +891,25 @@ def main() -> None:
     sw = _costed("sweep", sweep)
     cc = _costed("compile_candidates", compile_candidates)
     dp = _costed("deepen", deepen)
+    # THE GAUNTLET, ON A CLOCK. It was on NO schedule -- not this roster's fifty legs, not the
+    # daily cycle (which runs `scalp_gauntlet`, the scalp lane's own fixed list), and not the
+    # Windows task set, which installs exactly MT5-Gateway, MT5-Hourly and MT5-Shadow.
+    # `ops/reboot_drill.ps1` REQUIRES a task named MT5-Gauntlet and `Install-QuantWindows.ps1`
+    # has never created one, so the drill has been checking for something that does not exist.
+    #
+    # THAT IS WHY `certified` IS ZERO. The funnel produces: miners fill the docket hourly, the
+    # compiler turns it into 4,742 executable cells, enrolment and promotion both run on this
+    # roster -- and the one stage that mints a certificate ran only when a person started it by
+    # hand. Measured 2026-09-07: 2,371 docket candidates, 0 certified, and a build cursor whose
+    # newest entry is 2026-09-04. The desk reads as "the gates are too strict"; the gates were
+    # not being reached.
+    #
+    # BOUNDED BY ITS OWN DESIGN, which is why it can sit on an hourly clock at all: the sweep
+    # carries a memory budget (`MEMORY_BUDGET_MB`, measured from the host) and a per-symbol build
+    # cursor, so each pass takes a slice and the next one resumes where it stopped instead of
+    # restarting the rotation. Nothing here needs a time limit bolted on; the cursor IS the limit.
+    gt = _costed("external_gauntlet", lambda: _producer(
+        "external_gauntlet", "scripts/external_gauntlet.py"))
     et = _costed("execution_twin", execution_twin)
     cg = _costed("causal_graph", causal_graph)
     ms = _costed("model_skill", model_skill)
@@ -1011,6 +1030,7 @@ def main() -> None:
                     "release_identity": ri, "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
+                    "external_gauntlet": gt,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
