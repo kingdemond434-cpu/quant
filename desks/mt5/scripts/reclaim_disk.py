@@ -220,9 +220,36 @@ def main(argv: list[str] | None = None) -> int:
     do_tape = "--compact-tape" in args
 
     free_before = shutil.disk_usage(BASE).free
+    bars, bars_bytes = bar_lake()
+
+    # SHED THE BARS FIRST, BEFORE ANYTHING SLOW. Measured on the box 2026-09-07: `git pull` died
+    # with "No space left on device" and `git stash` could not even save the worktree, so the fix
+    # could not be pulled onto the machine that needed it. In that state the ONE thing that
+    # matters is bytes back, now -- and `duplicate_discoveries()` reads and SHA-256s every one of
+    # 326,224 discovery rows before it frees a single byte. It is the right sweep for a routine
+    # pass and exactly the wrong one for a full disk, which is how it came to be interrupted
+    # rather than finished. The bar lake is the largest refetchable thing on the box (the tape is
+    # larger and is never touched), so it goes first and its result is printed immediately.
+    bars_shed = 0
+    if apply and shed_bars:
+        # ONLY ON AN EXPLICIT FLAG. Shedding bars costs a re-download, which is minutes and no
+        # information -- but it is still a deliberate act, not something a routine hourly sweep
+        # should do behind the operator's back.
+        for path, _ in bars:
+            if _is_protected(path):
+                continue
+            try:
+                path.unlink()
+                bars_shed += 1
+            except OSError:
+                pass
+        free_now = shutil.disk_usage(BASE).free
+        print(f"bars shed        : {bars_shed:,} file(s), {_gb(bars_bytes)} GB -- free now "
+              f"{_gb(free_now)} GB (was {_gb(free_before)} GB)", flush=True)
+        print("refetch with     : python desks/mt5/scripts/download_remaining.py", flush=True)
+
     derived = derived_bytes()
     dup_files, per_miner = duplicate_discoveries()
-    bars, bars_bytes = bar_lake()
 
     tape_plan = compact_tape(apply and do_tape) if do_tape else None
     plan = {
@@ -256,18 +283,9 @@ def main(argv: list[str] | None = None) -> int:
             except OSError:
                 pass
         if shed_bars:
-            # ONLY ON AN EXPLICIT FLAG. Shedding bars costs a re-download, which is minutes and
-            # no information -- but it is still a deliberate act, not something a routine hourly
-            # sweep should do behind the operator's back.
-            for path, _ in bars:
-                if _is_protected(path):
-                    continue
-                try:
-                    path.unlink()
-                    removed += 1
-                except OSError:
-                    pass
-            plan["bars_shed"] = len(bars)
+            # Already done above, before the expensive scans, so a full disk is relieved first.
+            removed += bars_shed
+            plan["bars_shed"] = bars_shed
             plan["refetch_with"] = "python desks/mt5/scripts/download_remaining.py"
         plan["paths_removed"] = removed
         plan["free_gb_after"] = _gb(shutil.disk_usage(BASE).free)
@@ -294,7 +312,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"reclaimed        : {plan['reclaimed_gb']} GB  (free now {plan['free_gb_after']} GB)")
     else:
         print("(measure only -- pass --apply to reclaim)")
-    top = sorted(per_miner.items(), key=lambda kv: -kv[1].get("dup_rows", 0))[:8]
+    # `duplicate_discoveries` returns a per-miner mapping OR, on a host with no
+    # data/intelligence, `{"note": "..."}` -- a string value. This loop called `.get` on it and
+    # crashed AFTER the reclaim had already succeeded, so a run that freed the disk exited with a
+    # traceback and read as a failure. Filter to the mapping rows rather than trusting the shape.
+    stats = {k: v for k, v in per_miner.items() if isinstance(v, dict)}
+    top = sorted(stats.items(), key=lambda kv: -kv[1].get("dup_rows", 0))[:8]
     for miner, s in top:
         if s.get("dup_rows"):
             print(f"   {miner:24} {s['rows']:>8,} rows, {s['dup_rows']:>8,} exact duplicates")
