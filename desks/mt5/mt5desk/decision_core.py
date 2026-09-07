@@ -351,6 +351,51 @@ def auto_lot(equity: float, dist_usd: float | None = None,
     return float(min(max(lot, 0.01), 5.0))
 
 
+#: The gold book's minimum lot per leg. PRINCIPAL'S INSTRUCTION 2026-09-07: "let them use 0.02
+#: lots each" and "don't reduce their risk or size from before". Those two sentences are one
+#: rule and it is a FLOOR, not a setting: `gold_lot` returns the LARGER of the policy lot and
+#: this, so a window that fixed-fractional sizing already puts above 0.02 is untouched, and no
+#: equity, ramp or fade can take a gold leg below it.
+#:
+#: THIS RAISES A FLOOR; IT DOES NOT RAISE THE CEILING. `cap_by_heat` still prices the book and
+#: still defers legs, and because the floored lot is billed to the heat ledger (see the gold
+#: `q_charge` branch in gateway.main) the cap sees the real 0.02, not the policy lot it replaced.
+#: At the equity where 0.02 x 3 legs exceeds the budget the cap drops a leg exactly as it always
+#: has -- which is the intended behaviour, not a bug to be routed around, and the reason this is
+#: a floor on SIZE rather than an edit to Q_OPT, the heat budget or any gate.
+GOLD_MIN_LOT = 0.02
+#: A box may override the floor without a code push. Absent or unreadable -> GOLD_MIN_LOT.
+GOLD_MIN_LOT_FILE = _DESK / "data" / "GOLD_MIN_LOT.json"
+
+
+def gold_min_lot() -> float:
+    """The gold floor: the override file if it holds a usable number, else `GOLD_MIN_LOT`.
+
+    NEVER BELOW THE CONSTANT. A file that reads 0.01 -- a stale copy, a bad edit, a half-written
+    write -- would silently halve the principal's instruction, and a floor that can be lowered by
+    a file nobody is watching is not a floor. The override can only raise it.
+    """
+    try:
+        raw = json.loads(GOLD_MIN_LOT_FILE.read_text(encoding="utf-8"))
+        val = float(raw.get("lot") if isinstance(raw, dict) else raw)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return float(GOLD_MIN_LOT)
+    if not (val == val) or val <= 0:
+        return float(GOLD_MIN_LOT)
+    return float(max(val, GOLD_MIN_LOT))
+
+
+def gold_lot(equity: float, dist_usd: float | None = None,
+             info: object | None = None) -> float:
+    """The gold book's lot: fixed-fractional sizing, floored at `gold_min_lot()`.
+
+    The gateway's `"auto"` branch is the gold book and nothing else (`roster` gives `"auto"` to
+    the three GOLD_WINDOWS rows alone), so the floor lives here rather than inside `auto_lot`,
+    which sizes every instrument on the desk and must not learn gold's constants a second time.
+    """
+    return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot()))
+
+
 def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) -> float:
     """The effective risk fraction of a NON-BOOK promoted sleeve: base clamp x authority x fade.
 

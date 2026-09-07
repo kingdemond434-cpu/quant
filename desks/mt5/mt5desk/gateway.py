@@ -200,6 +200,26 @@ def auto_lot(equity: float, dist_usd: float | None = None,
     return _core.auto_lot(equity, dist_usd, symbol, info, q=q)
 
 
+#: The gold book's minimum lot and its optional override file, bound here so the gateway's own
+#: surface names every number that decides a live order (see `test_decision_core`'s reachability
+#: fence). Read through `gold_min_lot()`, never assigned to.
+GOLD_MIN_LOT = _core.GOLD_MIN_LOT
+GOLD_MIN_LOT_FILE = _core.GOLD_MIN_LOT_FILE
+
+
+def gold_min_lot() -> float:
+    """The gold book's minimum lot -- `decision_core.gold_min_lot`, bound here by name (see
+    `promoted_lot` for why a `def` rather than a re-export)."""
+    return _core.gold_min_lot()
+
+
+def gold_lot(equity: float, dist_usd: float | None = None,
+             info: object | None = None) -> float:
+    """The gold book's lot, floored at the principal's minimum -- `decision_core.gold_lot`,
+    bound here by name (see `promoted_lot` for why a `def` rather than a re-export)."""
+    return _core.gold_lot(equity, dist_usd, info)
+
+
 def realised_q(equity: float, dist_usd: float | None = None,
                symbol: str = GOLD_SYMBOL, info: object | None = None,
                lot: float | None = None) -> float:
@@ -1951,6 +1971,18 @@ def main() -> None:
             # heat ledger and the order path could come to disagree about the same leg.
             _s["q_charge"] = ramped_fraction(_s.get("risk_frac"), sleeve_live_n(_s["name"]),
                                              _s.get("decay_faded"))
+        elif _s.get("lot") == "auto":
+            # THE GOLD BOOK, BILLED AT THE LOT IT WILL ACTUALLY SEND. Without this the cap fell
+            # through to its own `realised_q(equity, None, XAUUSD)`, which prices the POLICY lot
+            # -- and the principal's 0.02 floor is precisely the case where the lot sent is
+            # larger than the lot policy asked for. The book would then have run at up to twice
+            # the risk the heat ledger was reserving for it, in the one direction a heat budget
+            # exists to prevent. The stop is not known until `stop_distance(spec)` inside the
+            # placement loop, so this uses gold's house nominal exactly as `cap_by_heat` does
+            # for this symbol; the two agree by construction because they now call the same
+            # sizer with the same arguments.
+            _s["q_charge"] = realised_q(equity, None, _s.get("symbol", GOLD_SYMBOL),
+                                        lot=gold_lot(equity))
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
@@ -2023,7 +2055,10 @@ def main() -> None:
             # FX_EUR` was a frozen stand-in for. A sleeve whose risk cannot be priced does not
             # trade, for the same reason a sleeve with no usable stop does not.
             try:
-                lot = auto_lot(equity, dist, s["symbol"], sym) if s["lot"] == "auto" else (
+                # `"auto"` IS THE GOLD BOOK AND NOTHING ELSE (`decision_core.roster` gives it to
+                # the three GOLD_WINDOWS rows alone), so this is where the principal's 0.02 floor
+                # binds -- as `max(policy lot, floor)`, never as a replacement for the policy lot.
+                lot = gold_lot(equity, dist, sym) if s["lot"] == "auto" else (
                     promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,
                                  s.get("risk_frac"), s.get("decay_faded"),
                                  from_book=(s.get("sized_by") == "allocator_book"))
