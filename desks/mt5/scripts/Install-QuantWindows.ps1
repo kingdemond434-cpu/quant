@@ -168,13 +168,106 @@ $tasks = @(
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
                      -RepetitionInterval (New-TimeSpan -Minutes 15) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
-       Desc = "Refresh broker bars and replay every configured zero-capital sleeve every 15m." }
+       Desc = "Refresh broker bars and replay every configured zero-capital sleeve every 15m." },
+    # ---- THE SIX THIS INSTALLER NEVER REGISTERED --------------------------------------------
+    # `ops/reboot_drill.ps1` has always REQUIRED eleven tasks and this table only ever built
+    # five, so a rebuilt box passed the installer and then failed its own drill. Worse, the
+    # tasks it did not build are the ones nobody notices missing: the publisher, the watchdog
+    # and the gauntlet all fail SILENTLY -- the desk keeps computing and simply stops being
+    # seen, judged or healed. Measured 2026-09-07: data\stall_watch.json last written
+    # 2026-09-06T23:57, thirteen hours before the box was next looked at.
+    @{ Name = "MT5-DeskState"
+       Script = "scripts\\build_zentech_state.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 5) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       # FIVE MINUTES BECAUSE THE DRILL ITSELF SETS THE BOUND: reboot_drill fails the box when
+       # desk_state's account read is over 900s old, so any slower clock guarantees a FAIL that
+       # says "terminal is up but not feeding" when nothing is wrong except this cadence.
+       Desc = "Rebuild web/desk_state.json -- the file every dashboard reads." },
+    @{ Name = "MT5-Gauntlet"
+       Script = "scripts\\external_gauntlet.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Hours 1) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       # The ten gates. Also a leg of the hourly cycle, and deliberately BOTH: the cycle can be
+       # long, and a judged docket is what every downstream stage waits on. Its own job lock
+       # makes the overlap a wait, not a race.
+       Desc = "The ten statistical gates, hourly, over every newly backtested cell." },
+    @{ Name = "MT5-Frontier"
+       Script = "frontier_intel\\frontier_supervisor.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Hours 1) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       # THE INSTITUTIONAL FRONTIER MINER, on its own clock rather than only inside the hourly
+       # cycle: its whole purpose is to keep closing the gap to the best publicly observable
+       # research organisations, and an organ that only runs when a 55-leg cycle reaches leg 48
+       # is an organ that stops the first time an earlier leg is slow.
+       Desc = "Frontier gap scan: what elite public research orgs do that this desk does not." },
+    @{ Name = "MT5-MoatSilver"
+       Script = "moat\\moat_silver.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Hours 1) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       Desc = "Bronze tick tape -> the parquet the tape-input families actually read." },
+    @{ Name = "MT5-MoatRecorder"
+       Script = "moat\\moat_recorder.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 10) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       # A RESIDENT LOOP ON A TEN-MINUTE TRIGGER, which is not a contradiction: the recorder
+       # holds a single-instance lock, so a trigger that fires while it is running exits
+       # immediately and a trigger that fires after a crash restarts it. That is the cheapest
+       # correct watchdog for a process whose failure mode is "died quietly at 02:00".
+       TimeLimit = (New-TimeSpan -Days 3650)
+       Desc = "The permanent Fusion tick tape -- restarts itself within 10 minutes of any death." },
+    @{ Name = "MT5-StallWatch"
+       Kind = "ps1"
+       Script = "scripts\\stall_watch.ps1"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 10) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       Desc = "Heal stacked, stalled and Disabled research tasks; never touches the money path." },
+    @{ Name = "MT5-ShadowSync"
+       Kind = "ps1"
+       Script = "scripts\\sync_shadow_to_git.ps1"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 15) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       # THE PUBLISHER. `ops/box-repair.ps1` already treats its absence as a hard failure --
+       # "this box has no 15-minute publisher" -- and yet the canonical installer could not
+       # create it, so the only way to have one was to remember a separate manual step.
+       Desc = "Publish this box's state to the shared branch every 15 minutes." }
 )
 
+# NOT IN THIS TABLE, AND THE REASONS ARE NOT SYMMETRIC:
+#   MT5-TerminalBoot  starts terminal64.exe, which is a GUI process. A task registered here runs
+#                     in the same session as the rest, but the terminal needs an INTERACTIVE
+#                     logon; ops/box-repair.ps1 documents the fix (schtasks /Change /RU <user>
+#                     /IT, elevated). Registering it from this table would create a task that
+#                     reports success and never produces a terminal, which is worse than absent.
+#   MT5-Universe      names no script in this checkout. Registering a guess would satisfy the
+#                     reboot drill's name check while running nothing -- the exact "capability
+#                     that is code, not a capability" failure the desk keeps paying for.
+# Both are reported by the drill as MISSING, which is the honest state until each is resolved.
+
+# TWO ROOTS, EXACTLY AS `hourly_cycle._producer` RESOLVES THEM. The research organs live under
+# `desks/mt5/...`, but the publication and maintenance scripts live at the REPOSITORY root --
+# `scripts\build_zentech_state.py` is the dashboard builder and it is not under the desk. With a
+# single root the loop below finds nothing, prints `[SKIP]`, and the installer exits reporting
+# success on a box that has no dashboard publisher: the drill then fails with MT5-DeskState
+# MISSING and the cause is one Join-Path away from where anyone looks.
+$RepoRoot = (Resolve-Path (Join-Path $DeskRoot "..\..")).Path
+
 foreach ($t in $tasks) {
-    $script = Join-Path $DeskRoot $t.Script
-    if (-not (Test-Path $script)) {
-        Write-Host ("  [SKIP] {0,-14} {1} not found" -f $t.Name, $t.Script)
+    $script = $null
+    foreach ($root in @($DeskRoot, $RepoRoot)) {
+        $cand = Join-Path $root $t.Script
+        if (Test-Path $cand) { $script = $cand; break }
+    }
+    if (-not $script) {
+        Write-Host ("  [SKIP] {0,-14} {1} found under neither {2} nor {3}" -f `
+                    $t.Name, $t.Script, $DeskRoot, $RepoRoot)
         continue
     }
     $log = Join-Path $logDir ("{0}.log" -f $t.Name)
@@ -186,7 +279,20 @@ foreach ($t in $tasks) {
     # (`fast` ~5 min, `normal` hourly, `heavy` overnight) selected by --mode, and without an
     # argument slot here the table could only ever register its default. Absent Args is "".
     $targs = if ($t.ContainsKey("Args") -and $t.Args) { " " + $t.Args } else { "" }
-    $cmd = "/d /s /c `"`"$Python`" $pyArgs`"$script`"$targs >> `"$log`" 2>&1`""
+    # KIND, because two of this desk's most important periodic jobs are PowerShell and not
+    # Python: the 15-minute publisher and the stall watchdog. Running a .ps1 through $Python
+    # does not fail loudly -- Python reports a SyntaxError into the log and the task records
+    # result 1, which reads exactly like a script that ran and found a problem. So the
+    # interpreter is chosen from the task, and the default stays Python.
+    $kind = if ($t.ContainsKey("Kind") -and $t.Kind) { $t.Kind } else { "py" }
+    if ($kind -eq "ps1") {
+        # -NonInteractive and -NoProfile so a profile that prompts, writes, or fails cannot
+        # hang or contaminate a task that nobody is watching. ExecutionPolicy Bypass is scoped
+        # to this one process and changes no machine policy.
+        $cmd = "/d /s /c `"powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$script`"$targs >> `"$log`" 2>&1`""
+    } else {
+        $cmd = "/d /s /c `"`"$Python`" $pyArgs`"$script`"$targs >> `"$log`" 2>&1`""
+    }
 
     if ($WhatIfOnly) {
         Write-Host ("  [DRY ] {0,-14} cmd {1}" -f $t.Name, $cmd)
@@ -198,11 +304,15 @@ foreach ($t in $tasks) {
     # RestartCount/RestartInterval are what replace systemd's Restart=always.
     # StartWhenAvailable catches up a run missed while the box was off, which is
     # the whole point on a machine that is not guaranteed up.
+    # FOUR HOURS IS A CEILING FOR A PASS, NOT FOR A RESIDENT LOOP. The tick recorder is meant to
+    # stay up; killing it every four hours would punch a four-hourly hole in the one dataset on
+    # this desk that cannot be re-obtained. A task that declares TimeLimit overrides the default.
+    $limit = if ($t.ContainsKey("TimeLimit") -and $t.TimeLimit) { $t.TimeLimit } else { New-TimeSpan -Hours 4 }
     $settings = New-ScheduledTaskSettingsSet `
         -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
         -StartWhenAvailable -RestartCount 3 `
         -RestartInterval (New-TimeSpan -Minutes 1) `
-        -ExecutionTimeLimit (New-TimeSpan -Hours 4)
+        -ExecutionTimeLimit $limit
 
     try {
         Unregister-ScheduledTask -TaskName $t.Name -Confirm:$false -ErrorAction SilentlyContinue

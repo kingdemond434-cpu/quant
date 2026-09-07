@@ -1,0 +1,337 @@
+<#
+.SYNOPSIS
+    Land the branch's tree on this box without ever asking the filesystem to
+    unlink a file, then record the merge so the ordinary sync resumes.
+
+.DESCRIPTION
+    THE FAILURE THIS EXISTS FOR
+
+    A hard power-off (2026-09-07, the disk-full hang) left one tracked path
+    with a corrupt NTFS directory entry:
+
+        error: unable to unlink old 'desks/mt5/side_channels/run_external_backtest.py':
+        Invalid argument
+
+    No process holds it -- `taskkill` reports no python, `Move-Item` fails the
+    same way. The entry itself is damaged, so every operation that goes through
+    DeleteFile/MoveFile returns EINVAL. `git merge`, `git checkout <ref> -- .`
+    and `git pull` all update a file by unlinking the old one and creating a
+    new one, so all three die on that single path and take the WHOLE adoption
+    with them: nothing lands, and `Sync-Pull` exits 1 before it publishes.
+
+    That is not a small outage. The box then runs whatever code it happened to
+    hold, the dashboard stops updating, and the desk goes silent -- the same
+    266-hour silence as before, from a different cause.
+
+    WHY THIS WORKS WHERE GIT DOES NOT
+
+    Opening an existing file with FileMode.Truncate rewrites its CONTENTS in
+    place. It never touches the directory entry, so a damaged entry is simply
+    not consulted. Every path the incoming tree changes is written that way,
+    the paths are staged BY NAME, and the result is committed. Only then is
+    the merge recorded with `-s ours` -- which is safe precisely because the
+    tree already matches, and the script REFUSES to record it if it does not.
+
+    So the ordering is the safety property, not a convenience:
+
+        write in place -> stage by name -> commit -> VERIFY tree == ref -> record
+
+    A `-s ours` merge run before that verification would silently discard the
+    incoming work while reporting success. Run after it, it discards nothing:
+    it only writes down a parent that is already true of the tree.
+
+    WHAT IT WILL NOT DO
+
+    A path the incoming tree DELETES still needs a real unlink, and if that
+    unlink fails the file stays. The script does not pretend otherwise: it
+    counts those, names them, and leaves the exit code non-zero so a caller
+    cannot read a partial adoption as a clean one. Nothing is force-removed.
+
+    It never runs a bare `git add -A` and never stashes: every path it stages
+    was enumerated from a diff or from `git status`, and the box's own
+    uncommitted state is committed as itself, not parked.
+
+    THIS DOES NOT REPAIR THE FILESYSTEM. `chkdsk C: /F` (no /R -- the surface
+    scan is not what is wrong) plus a reboot is the actual repair, and it stays
+    the right thing to do at the next convenient restart. This makes the desk
+    whole in the meantime, and costs nothing if the entry is later fixed.
+
+.PARAMETER RepoRoot
+    Repository root. Defaults to three levels above this script, correct by
+    construction.
+
+.PARAMETER Branch
+    Branch to adopt. Defaults to the checkout's current branch, which is what
+    `sync_shadow_to_git.ps1` pulls -- so this adopts exactly what the sync
+    could not.
+
+.PARAMETER NoFetch
+    Adopt the FETCH_HEAD already on disk instead of fetching first. For a
+    rerun, or a box whose network is the thing that is broken.
+
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File desks\mt5\scripts\Adopt-Release.ps1
+#>
+[CmdletBinding()]
+param(
+    [string] $RepoRoot,
+    [string] $Branch,
+    [switch] $NoFetch
+)
+
+$ErrorActionPreference = "Stop"
+
+if (-not $RepoRoot) {
+    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
+}
+if (-not (Test-Path (Join-Path $RepoRoot ".git"))) {
+    throw "not a repository root: $RepoRoot"
+}
+
+function Invoke-Git {
+    # Captures stdout as text and THROWS on a non-zero exit, so a failed plumbing
+    # call can never be mistaken for an empty result -- which is how a bad diff
+    # would otherwise read as "nothing to adopt".
+    #
+    # NOT named $Args: that is a PowerShell automatic variable, and binding a
+    # parameter over it in a non-advanced function silently loses the arguments.
+    param([string[]] $GitArgs, [switch] $AllowFail)
+    $out = & git -C $RepoRoot @GitArgs 2>&1
+    if ($LASTEXITCODE -ne 0 -and -not $AllowFail) {
+        throw ("git {0} failed rc={1}: {2}" -f ($GitArgs -join " "), $LASTEXITCODE, ($out -join "`n"))
+    }
+    return $out
+}
+
+function Invoke-GitBytes {
+    # BYTE-EXACT, and it has to be. PowerShell 5.1's `>` writes UTF-16 and
+    # Out-File writes a BOM; either one changes the content, so the file would
+    # not match the ref, the verification below would fail, and the adoption
+    # would be refused for a reason that has nothing to do with the tree.
+    # Reading the raw stdout stream is the only way to get the exact bytes.
+    param([string] $ArgLine)
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName               = "git"
+    $psi.Arguments              = ('-C "{0}" {1}' -f $RepoRoot, $ArgLine)
+    $psi.UseShellExecute        = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError  = $true
+    $psi.CreateNoWindow         = $true
+    $proc = [System.Diagnostics.Process]::Start($psi)
+    $ms = New-Object System.IO.MemoryStream
+    $proc.StandardOutput.BaseStream.CopyTo($ms)
+    $err = $proc.StandardError.ReadToEnd()
+    $proc.WaitForExit()
+    return @{ Bytes = $ms.ToArray(); ExitCode = $proc.ExitCode; Error = $err }
+}
+
+function Get-WorktreeBytes {
+    # `--filters`, NOT plain `cat-file blob`. The blob is the REPOSITORY form --
+    # always LF -- and Git for Windows checks files out through an eol filter, so
+    # writing the blob raw puts LF into files this box expects to hold CRLF. For
+    # `.cmd` that is not cosmetic: cmd.exe parsing of labels and `goto` is not
+    # reliable on LF-only batch files, and four .cmd files are tracked here.
+    #
+    # `cat-file --filters <rev>:<path>` emits exactly the bytes git itself would
+    # write to the working tree, so the adopted file is indistinguishable from a
+    # checked-out one. Staging converts back on the way in, so the committed blob
+    # still matches the target and the verification below is unaffected either way.
+    #
+    # Falls back to the raw blob on a git too old for --filters (< 2.11): LF
+    # content is still correct for every interpreter used here, and refusing to
+    # adopt at all would be the worse failure.
+    param([string] $Rev, [string] $Path)
+    $r = Invoke-GitBytes ('cat-file --filters "{0}:{1}"' -f $Rev, $Path)
+    if ($r.ExitCode -ne 0) {
+        $r = Invoke-GitBytes ('cat-file blob "{0}:{1}"' -f $Rev, $Path)
+        if ($r.ExitCode -ne 0) {
+            throw ("cat-file {0}:{1} failed: {2}" -f $Rev, $Path, $r.Error)
+        }
+    }
+    return $r.Bytes
+}
+
+function Write-InPlace {
+    # THE WHOLE POINT OF THE SCRIPT IS THIS FUNCTION. Truncate opens the
+    # existing entry and rewrites the bytes; it issues no DeleteFile and no
+    # MoveFile, so a corrupt directory entry is never consulted. Create is only
+    # for a path the incoming tree ADDS, where there is no entry to damage.
+    param([string] $Full, [byte[]] $Bytes)
+    $dir = Split-Path $Full -Parent
+    if ($dir -and -not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    }
+    if (Test-Path -LiteralPath $Full) {
+        $mode = [System.IO.FileMode]::Truncate
+        # Clear read-only rather than fail on it: git leaves modes alone, but a
+        # restore-from-backup or a rescue-shell copy can set the attribute, and
+        # a read-only bit is not a reason to abandon an adoption.
+        $item = Get-Item -LiteralPath $Full -Force
+        if ($item.Attributes -band [System.IO.FileAttributes]::ReadOnly) {
+            $item.Attributes = $item.Attributes -bxor [System.IO.FileAttributes]::ReadOnly
+        }
+    } else {
+        $mode = [System.IO.FileMode]::Create
+    }
+    $fs = [System.IO.File]::Open($Full, $mode, [System.IO.FileAccess]::Write,
+                                 [System.IO.FileShare]::None)
+    try { $fs.Write($Bytes, 0, $Bytes.Length) } finally { $fs.Close() }
+}
+
+Write-Host "ADOPT RELEASE"
+Write-Host ("  repo   {0}" -f $RepoRoot)
+
+if (-not $Branch) { $Branch = (Invoke-Git @("rev-parse", "--abbrev-ref", "HEAD")).Trim() }
+Write-Host ("  branch {0}" -f $Branch)
+
+# FETCH_HEAD, NOT origin/<branch>. A `git fetch origin <branch>` with an explicit
+# branch argument does not necessarily update the remote-tracking ref, and this
+# box has already produced "unknown revision origin/claude/..." immediately after
+# a successful fetch of that same branch. FETCH_HEAD is written by the fetch that
+# just ran, every time.
+if (-not $NoFetch) {
+    $delay = 2
+    $ok = $false
+    foreach ($attempt in 1..4) {
+        & git -C $RepoRoot fetch origin $Branch 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+        Write-Host ("  fetch attempt {0} failed -- retrying in {1}s" -f $attempt, $delay)
+        Start-Sleep -Seconds $delay
+        $delay = $delay * 2
+    }
+    if (-not $ok) { throw "fetch of origin/$Branch failed after 4 attempts" }
+}
+$target = (Invoke-Git @("rev-parse", "FETCH_HEAD")).Trim()
+$head   = (Invoke-Git @("rev-parse", "HEAD")).Trim()
+Write-Host ("  head   {0}" -f $head.Substring(0, 12))
+Write-Host ("  target {0}" -f $target.Substring(0, 12))
+
+if ($head -eq $target) { Write-Host "  already at target -- nothing to adopt"; exit 0 }
+
+# ---- 1. THE BOX'S OWN UNCOMMITTED STATE, COMMITTED AS ITSELF -----------------
+# The sync commits state every fifteen minutes, so a dirty tree here means a pass
+# was interrupted -- which is exactly the situation this script is run in. Those
+# edits are the box's measurements and they are not disposable, so they are
+# committed rather than parked: `git stash` in a tree another process is writing
+# has already lost work on this desk once (R0423), and it stays banned.
+# Only TRACKED modifications are staged, each named. Untracked files are left
+# untouched -- a bare `git add -A` here would sweep logs, caches and secrets into
+# the branch, and no adoption is worth that.
+$dirty = @(Invoke-Git @("status", "--porcelain", "--untracked-files=no") |
+           Where-Object { "$_" -match '\S' })
+if ($dirty.Count -gt 0) {
+    # `XY path`, or `R  old -> new` for a rename: the destination is what to stage.
+    $dirtyPaths = @($dirty | ForEach-Object {
+        $p = "$_".Substring(3)
+        if ($p -match ' -> ') { $p = ($p -split ' -> ')[-1] }
+        $p.Trim().Trim('"')
+    })
+    Write-Host ("  committing {0} uncommitted state path(s) first" -f $dirtyPaths.Count)
+    foreach ($p in $dirtyPaths) { Invoke-Git @("add", "--", $p) -AllowFail | Out-Null }
+    Invoke-Git @("commit", "-m", "Box state captured before release adoption") -AllowFail | Out-Null
+}
+
+# ---- 2. WRITE EVERY CHANGED PATH IN PLACE ------------------------------------
+# `core.quotePath=false` so paths arrive raw rather than C-quoted, and NOT `-z`:
+# PowerShell captures a child process's stdout as text split on newlines, so a
+# NUL-delimited stream arrives as one opaque string and the parse depends on NUL
+# surviving the marshalling. NTFS forbids control characters in filenames, so on
+# this box one record per line is exactly safe.
+$records = @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-status", "HEAD", $target) |
+             ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
+
+$written = 0; $added = 0; $removed = 0
+$unremoved = New-Object System.Collections.ArrayList
+$staged    = New-Object System.Collections.ArrayList
+
+foreach ($rec in $records) {
+    $cols   = $rec -split "`t"
+    $status = $cols[0]
+    # R/C carry TWO paths (old, new); every other status carries one.
+    if ($status -match '^[RC]') {
+        $ops = @(@{ Kind = "D"; Path = $cols[1] }, @{ Kind = "A"; Path = $cols[2] })
+    } else {
+        $ops = @(@{ Kind = $status.Substring(0, 1); Path = $cols[1] })
+    }
+    foreach ($op in $ops) {
+        $rel  = $op.Path
+        $full = Join-Path $RepoRoot ($rel -replace '/', '\')
+        if ($op.Kind -eq "D") {
+            # The one operation that CANNOT avoid an unlink. If the entry is the
+            # damaged one, it stays -- and it is reported, never swallowed.
+            try {
+                if (Test-Path -LiteralPath $full) { [System.IO.File]::Delete($full) }
+                $removed++
+            } catch {
+                [void]$unremoved.Add($rel)
+                continue
+            }
+        } else {
+            try {
+                Write-InPlace -Full $full -Bytes (Get-WorktreeBytes -Rev $target -Path $rel)
+                if ($op.Kind -eq "A") { $added++ } else { $written++ }
+            } catch {
+                Write-Host ("  [FAIL] {0}: {1}" -f $rel, $_.Exception.Message)
+                [void]$unremoved.Add($rel)
+                continue
+            }
+        }
+        [void]$staged.Add($rel)
+    }
+}
+Write-Host ("  wrote {0} modified, {1} added, {2} deleted in place" -f $written, $added, $removed)
+
+# ---- 3. STAGE BY NAME AND COMMIT ---------------------------------------------
+# Chunked: a repository-sized pathspec list overruns the Windows command line,
+# and the failure mode is a TRUNCATED add that commits part of the tree.
+if ($staged.Count -gt 0) {
+    for ($c = 0; $c -lt $staged.Count; $c += 200) {
+        $chunk = @($staged.GetRange($c, [Math]::Min(200, $staged.Count - $c)))
+        $addArgs = @("add", "--all", "--") + $chunk
+        Invoke-Git $addArgs | Out-Null
+    }
+    $pending = @(Invoke-Git @("diff", "--cached", "--name-only") |
+                 ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
+    if ($pending.Count -gt 0) {
+        Invoke-Git @("commit", "-m",
+            ("Adopt {0} in place; NTFS entry corruption blocks unlink" -f $target.Substring(0, 12))) | Out-Null
+        Write-Host ("  committed {0} path(s)" -f $pending.Count)
+    }
+}
+
+# ---- 4. VERIFY BEFORE RECORDING ----------------------------------------------
+# This is the gate that makes step 5 safe. `merge -s ours` writes down a parent
+# and keeps THIS tree; if this tree still differs from the target, recording it
+# would bury the difference under a commit that claims to contain it. So the
+# difference must be empty, or the merge is not recorded at all.
+$drift = @(Invoke-Git @("diff", "--name-only", "HEAD", $target) |
+           ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
+if ($drift.Count -gt 0) {
+    Write-Host ""
+    Write-Host ("REFUSING to record the merge: {0} path(s) still differ from the target." -f $drift.Count)
+    $drift | Select-Object -First 20 | ForEach-Object { Write-Host ("    {0}" -f $_) }
+    if ($unremoved.Count -gt 0) {
+        Write-Host ""
+        Write-Host ("{0} path(s) could not be written or unlinked -- the corrupt entries:" -f $unremoved.Count)
+        $unremoved | ForEach-Object { Write-Host ("    {0}" -f $_) }
+        Write-Host "Repair with:  chkdsk C: /F   (then reboot), and run this again."
+    }
+    exit 1
+}
+
+# ---- 5. RECORD THE MERGE -----------------------------------------------------
+# Without this the branch is adopted but not DESCENDED from the target, so every
+# later `Sync-Pull` sees itself behind, tries to merge, and dies on the same
+# entry again -- an adoption that has to be repeated every hour is not an
+# adoption. `-s ours` touches no file, which is why it survives the corruption.
+Invoke-Git @("merge", "-s", "ours", $target, "-m",
+             "Record the release merge; tree adopted in place by Adopt-Release") | Out-Null
+
+Write-Host ""
+Write-Host ("ADOPTED. HEAD is now {0} and descends from {1}." -f `
+            (Invoke-Git @("rev-parse", "--short", "HEAD")).Trim(), $target.Substring(0, 12))
+Write-Host "The next sync will fast-forward instead of failing on the merge."
+Write-Host ""
+Write-Host "Next:  python desks\mt5\mt5desk\release_identity.py"
+Write-Host "       python desks\mt5\scripts\check_gold_live.py"
+exit 0
