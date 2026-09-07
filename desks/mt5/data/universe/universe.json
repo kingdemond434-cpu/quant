@@ -1,255 +1,3943 @@
 {
-  "XAUUSD": {
-    "bars": 49758,
-    "first": "2018-03-19 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100.0,
-    "tick_size": 0.01,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 16.0
+ "3M": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 26,
+  "point": 0.01,
+  "spread_price": 0.26,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "ADAUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 4,
+  "median_spread_pts": 32,
+  "point": 0.0001,
+  "spread_price": 0.0032,
+  "tick_size": 0.0001,
+  "volume_min": 0.01
+ },
+ "ADP": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 14,
+  "point": 0.01,
+  "spread_price": 0.14,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AMD": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 26,
+  "point": 0.01,
+  "spread_price": 0.26,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AT&T": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AUDCAD": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4",
+   "M15"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 27,
+  "point": 1e-05,
+  "spread_price": 0.00027,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "AUDCHF": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 40,
+  "point": 1e-05,
+  "spread_price": 0.0004,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "AUDHUF": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 68906,
+  "point": 1e-05,
+  "spread_price": 0.68906,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "AUDJPY": {
+  "bars": 53649,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 22,
+  "min_volume": 0.01,
+  "point": 0.001,
+  "spread_price": 0.022,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "AUDNZD": {
+  "bars": 53649,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4",
+   "M15"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 32,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.00032,
+  "tick_size": 1e-05,
+  "tick_value": 0.5097723356748877,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "AUDSGD": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 98,
+  "point": 1e-05,
+  "spread_price": 0.00098,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "AUDUSD": {
+  "bars": 53649,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 6,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 6e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "AUS200": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 100,
+  "point": 0.01,
+  "spread_price": 1.0,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "AVAXUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1000.0,
+  "digits": 3,
+  "median_spread_pts": 37,
+  "point": 0.001,
+  "spread_price": 0.037,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "Accenture": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 27,
+  "point": 0.01,
+  "spread_price": 0.27,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Adobe": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 32,
+  "point": 0.01,
+  "spread_price": 0.32,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Airbnb": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 29,
+  "point": 0.01,
+  "spread_price": 0.29,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AlibabaGroup": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Alphabet-A": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 25,
+  "point": 0.01,
+  "spread_price": 0.25,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Alphabet-C": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 29,
+  "point": 0.01,
+  "spread_price": 0.29,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Amazon": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 31,
+  "point": 0.01,
+  "spread_price": 0.31,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AmericanExpress": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 17,
+  "point": 0.01,
+  "spread_price": 0.17,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Amgen": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 20,
+  "point": 0.01,
+  "spread_price": 0.2,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Apple": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 10,
+  "point": 0.01,
+  "spread_price": 0.1,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AppliedMaterials": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 59,
+  "point": 0.01,
+  "spread_price": 0.59,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Atlassian": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 49,
+  "point": 0.01,
+  "spread_price": 0.49,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "BCHUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 155,
+  "point": 0.01,
+  "spread_price": 1.55,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "BNBUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 114,
+  "point": 0.01,
+  "spread_price": 1.14,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "BTCUSD": {
+  "bars": 62998,
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 1804,
+  "min_volume": 0.01,
+  "point": 0.01,
+  "spread_price": 18.04,
+  "tick_size": 0.01,
+  "tick_value": 0.008632298608473466,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "Baidu": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 32,
+  "point": 0.01,
+  "spread_price": 0.32,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "BankofAmericaCorp": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Berkshire": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 20,
+  "point": 0.01,
+  "spread_price": 0.2,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "BeyondMeat": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-09-04T03:23:01+00:00",
+    "source": "parquet_on_disk"
+   }
   },
-  "XAGUSD": {
-    "bars": 49757,
-    "first": "2018-03-19 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 5000.0,
-    "tick_size": 0.001,
-    "tick_value": 4.316149304236733,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 21.0
+  "bars": 6542,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "BlackRock": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 194,
+  "point": 0.01,
+  "spread_price": 1.94,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "BlockInc": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-09-04T03:23:01+00:00",
+    "source": "parquet_on_disk"
+   }
   },
-  "EURUSD": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 12.0
+  "bars": 6637,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 500,
+  "point": 0.01,
+  "spread_price": 5.0,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Boeing": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 23,
+  "point": 0.01,
+  "spread_price": 0.23,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Booking": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 9,
+  "point": 0.01,
+  "spread_price": 0.09,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Broadcom": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 38,
+  "point": 0.01,
+  "spread_price": 0.38,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "CA60": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 120,
+  "point": 0.01,
+  "spread_price": 1.2,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "CADCHF": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 53,
+  "point": 1e-05,
+  "spread_price": 0.00053,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "CADJPY": {
+  "bars": 53649,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 26,
+  "min_volume": 0.01,
+  "point": 0.001,
+  "spread_price": 0.026,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "CHFDKK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 244,
+  "point": 1e-05,
+  "spread_price": 0.00244,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "CHFHUF": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 116584,
+  "point": 1e-05,
+  "spread_price": 1.16584,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "CHFJPY": {
+  "bars": 53650,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 68,
+  "min_volume": 0.01,
+  "point": 0.001,
+  "spread_price": 0.068,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "CHFNOK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 3160,
+  "point": 1e-05,
+  "spread_price": 0.0316,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "CHFPLN": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 588,
+  "point": 1e-05,
+  "spread_price": 0.00588,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "CHFSEK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2150,
+  "point": 1e-05,
+  "spread_price": 0.0215,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "CHFSGD": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 199,
+  "point": 1e-05,
+  "spread_price": 0.00199,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "CHINAH": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 280,
+  "point": 0.01,
+  "spread_price": 2.8,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "COFARA": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 10.0,
+  "digits": 2,
+  "median_spread_pts": 45,
+  "point": 0.01,
+  "spread_price": 0.45,
+  "tick_size": 0.01,
+  "volume_min": 1.0
+ },
+ "COFROB": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 316,
+  "point": 0.01,
+  "spread_price": 3.16,
+  "tick_size": 0.01,
+  "volume_min": 1.0
+ },
+ "CORN": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 2.0,
+  "digits": 2,
+  "median_spread_pts": 55,
+  "point": 0.01,
+  "spread_price": 0.55,
+  "tick_size": 0.01,
+  "volume_min": 1.0
+ },
+ "COTTON": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 10.0,
+  "digits": 3,
+  "median_spread_pts": 100,
+  "point": 0.001,
+  "spread_price": 0.1,
+  "tick_size": 0.001,
+  "volume_min": 1.0
+ },
+ "CVSHealth": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 9,
+  "point": 0.01,
+  "spread_price": 0.09,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Caterpillar": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 85,
+  "point": 0.01,
+  "spread_price": 0.85,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "CharlesSchwab": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 11,
+  "point": 0.01,
+  "spread_price": 0.11,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Charter": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 59,
+  "point": 0.01,
+  "spread_price": 0.59,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Chevron": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 22,
+  "point": 0.01,
+  "spread_price": 0.22,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Cisco": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 9,
+  "point": 0.01,
+  "spread_price": 0.09,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Citigroup": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 7,
+  "point": 0.01,
+  "spread_price": 0.07,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Coca-Cola": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 7,
+  "point": 0.01,
+  "spread_price": 0.07,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Coinbase": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 34,
+  "point": 0.01,
+  "spread_price": 0.34,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Comcast": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "CostcoWholesale": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 51,
+  "point": 0.01,
+  "spread_price": 0.51,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "DOGEUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1000.0,
+  "digits": 5,
+  "median_spread_pts": 44,
+  "point": 1e-05,
+  "spread_price": 0.00044,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "DOTUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 50.0,
+  "digits": 3,
+  "median_spread_pts": 31,
+  "point": 0.001,
+  "spread_price": 0.031,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "DocuSign": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Doordash": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 19,
+  "point": 0.01,
+  "spread_price": 0.19,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Dow": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "E35": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 1400,
+  "point": 0.01,
+  "spread_price": 14.0,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "EOSUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 4,
+  "median_spread_pts": 103,
+  "point": 0.0001,
+  "spread_price": 0.0103,
+  "tick_size": 0.0001,
+  "volume_min": 0.01
+ },
+ "ETHUSD": {
+  "bars": 63020,
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 321,
+  "min_volume": 0.01,
+  "point": 0.01,
+  "spread_price": 3.21,
+  "tick_size": 0.01,
+  "tick_value": 0.008632298608473466,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "EURAUD": {
+  "bars": 53649,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 32,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.00032,
+  "tick_size": 1e-05,
+  "tick_value": 0.6136023365976979,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "EURCAD": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 37,
+  "point": 1e-05,
+  "spread_price": 0.00037,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURCHF": {
+  "bars": 53685,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 20,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.0002,
+  "tick_size": 1e-05,
+  "tick_value": 1.0647812939222285,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "EURCZK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2340,
+  "point": 1e-05,
+  "spread_price": 0.0234,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURDKK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 66,
+  "point": 1e-05,
+  "spread_price": 0.00066,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURGBP": {
+  "bars": 53649,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 12,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.00012,
+  "tick_size": 1e-05,
+  "tick_value": 1.1696316829830289,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "EURHKD": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 206,
+  "point": 1e-05,
+  "spread_price": 0.00206,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURHUF": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 102104,
+  "point": 1e-05,
+  "spread_price": 1.02104,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURILS": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2911,
+  "point": 1e-05,
+  "spread_price": 0.02911,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURJPY": {
+  "bars": 53685,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 16,
+  "min_volume": 0.01,
+  "point": 0.001,
+  "spread_price": 0.016,
+  "tick_size": 0.001,
+  "tick_value": 0.541791052862553,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "EURMXN": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1312,
+  "point": 1e-05,
+  "spread_price": 0.01312,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURNOK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1422,
+  "point": 1e-05,
+  "spread_price": 0.01422,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURNZD": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 48,
+  "point": 1e-05,
+  "spread_price": 0.00048,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURPLN": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 574,
+  "point": 1e-05,
+  "spread_price": 0.00574,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURRUB": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1397460,
+  "point": 1e-05,
+  "spread_price": 13.9746,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURSEK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 682,
+  "point": 1e-05,
+  "spread_price": 0.00682,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURSGD": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 155,
+  "point": 1e-05,
+  "spread_price": 0.00155,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURTRY": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 47934,
+  "point": 1e-05,
+  "spread_price": 0.47934,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EURUSD": {
+  "bars": 53684,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 0,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.0,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "EURZAR": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2200,
+  "point": 1e-05,
+  "spread_price": 0.022,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "EUSTX50": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 140,
+  "point": 0.01,
+  "spread_price": 1.4,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "ElectronicArts": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 10,
+  "point": 0.01,
+  "spread_price": 0.1,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "ExxonMobil": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 18,
+  "point": 0.01,
+  "spread_price": 0.18,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "FRA40": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 120,
+  "point": 0.01,
+  "spread_price": 1.2,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "Ford": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "GBPAUD": {
+  "bars": 53684,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 42,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.00042,
+  "tick_size": 1e-05,
+  "tick_value": 0.6136023365976979,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "GBPCAD": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 49,
+  "point": 1e-05,
+  "spread_price": 0.00049,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPCHF": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 40,
+  "point": 1e-05,
+  "spread_price": 0.0004,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPDKK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 208,
+  "point": 1e-05,
+  "spread_price": 0.00208,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPHUF": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 123352,
+  "point": 1e-05,
+  "spread_price": 1.23352,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPJPY": {
+  "bars": 53684,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 35,
+  "min_volume": 0.01,
+  "point": 0.001,
+  "spread_price": 0.035,
+  "tick_size": 0.001,
+  "tick_value": 0.541791052862553,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "GBPMXN": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2460,
+  "point": 1e-05,
+  "spread_price": 0.0246,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPNOK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2920,
+  "point": 1e-05,
+  "spread_price": 0.0292,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPNZD": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 63,
+  "point": 1e-05,
+  "spread_price": 0.00063,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPPLN": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 599,
+  "point": 1e-05,
+  "spread_price": 0.00599,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPSEK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1790,
+  "point": 1e-05,
+  "spread_price": 0.0179,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPSGD": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 187,
+  "point": 1e-05,
+  "spread_price": 0.00187,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPTRY": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 44904,
+  "point": 1e-05,
+  "spread_price": 0.44904,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GBPUSD": {
+  "bars": 53685,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 10,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.0001,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "GBPZAR": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 6206,
+  "point": 1e-05,
+  "spread_price": 0.06206,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "GER40": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 320,
+  "point": 0.01,
+  "spread_price": 3.2,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "GeneralElectric": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 39,
+  "point": 0.01,
+  "spread_price": 0.39,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "GeneralMotors": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 11,
+  "point": 0.01,
+  "spread_price": 0.11,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "GileadSciences": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 20,
+  "point": 0.01,
+  "spread_price": 0.2,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "GoldmanSachs": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 135,
+  "point": 0.01,
+  "spread_price": 1.35,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "HK50": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 1060,
+  "point": 0.01,
+  "spread_price": 10.6,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "HKDJPY": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 18,
+  "point": 0.001,
+  "spread_price": 0.018,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "HomeDepot": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 34,
+  "point": 0.01,
+  "spread_price": 0.34,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Honeywell": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 35,
+  "point": 0.01,
+  "spread_price": 0.35,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "IBM": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 25,
+  "point": 0.01,
+  "spread_price": 0.25,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Intel": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 7,
+  "point": 0.01,
+  "spread_price": 0.07,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Intuit": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 47,
+  "point": 0.01,
+  "spread_price": 0.47,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "IntuitiveSurgical": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 44,
+  "point": 0.01,
+  "spread_price": 0.44,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "JPMorganChase": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 31,
+  "point": 0.01,
+  "spread_price": 0.31,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "JPN225": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 10.0,
+  "digits": 2,
+  "median_spread_pts": 600,
+  "point": 0.01,
+  "spread_price": 6.0,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "Johnson&Johnson": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 39,
+  "point": 0.01,
+  "spread_price": 0.39,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "LNKUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 10.0,
+  "digits": 3,
+  "median_spread_pts": 41,
+  "point": 0.001,
+  "spread_price": 0.041,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "LTCUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 34,
+  "point": 0.01,
+  "spread_price": 0.34,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "LucidGroup": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Lyft": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "MATICUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 10000.0,
+  "digits": 4,
+  "median_spread_pts": 31,
+  "point": 0.0001,
+  "spread_price": 0.0031,
+  "tick_size": 0.0001,
+  "volume_min": 0.01
+ },
+ "MXNJPY": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 28,
+  "point": 0.001,
+  "spread_price": 0.028,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "Mastercard": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 160,
+  "point": 0.01,
+  "spread_price": 1.6,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "McDonalds": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Medtronic": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 9,
+  "point": 0.01,
+  "spread_price": 0.09,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Merck": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 29,
+  "point": 0.01,
+  "spread_price": 0.29,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Meta": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 51,
+  "point": 0.01,
+  "spread_price": 0.51,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "MicronTechnology": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 279,
+  "point": 0.01,
+  "spread_price": 2.79,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Microsoft": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 20,
+  "point": 0.01,
+  "spread_price": 0.2,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "MorganStanley": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 24,
+  "point": 0.01,
+  "spread_price": 0.24,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "NAS100": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 80,
+  "point": 0.01,
+  "spread_price": 0.8,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "NETH25": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 27,
+  "point": 0.01,
+  "spread_price": 0.27,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "NIO": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "NOKJPY": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 47,
+  "point": 0.001,
+  "spread_price": 0.047,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "NOKSEK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 194,
+  "point": 1e-05,
+  "spread_price": 0.00194,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "NVIDIA": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 10,
+  "point": 0.01,
+  "spread_price": 0.1,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "NZDCAD": {
+  "bars": 53684,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4",
+   "M15"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 23,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.00023,
+  "tick_size": 1e-05,
+  "tick_value": 0.6223937262712392,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "NZDCHF": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 19,
+  "point": 1e-05,
+  "spread_price": 0.00019,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "NZDHUF": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 58180,
+  "point": 1e-05,
+  "spread_price": 0.5818,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "NZDJPY": {
+  "bars": 53683,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 19,
+  "min_volume": 0.01,
+  "point": 0.001,
+  "spread_price": 0.019,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "NZDSGD": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 81,
+  "point": 1e-05,
+  "spread_price": 0.00081,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "NZDUSD": {
+  "bars": 53684,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 3,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 3e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "Netflix": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 14,
+  "point": 0.01,
+  "spread_price": 0.14,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Nike": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "OJ": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 10.0,
+  "digits": 2,
+  "median_spread_pts": 122,
+  "point": 0.01,
+  "spread_price": 1.22,
+  "tick_size": 0.01,
+  "volume_min": 1.0
+ },
+ "Oracle": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 20,
+  "point": 0.01,
+  "spread_price": 0.2,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Palantir": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 12,
+  "point": 0.01,
+  "spread_price": 0.12,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "PayPal": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Pepsi": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 17,
+  "point": 0.01,
+  "spread_price": 0.17,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Pfizer": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "PhilipMorrisInternational": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 19,
+  "point": 0.01,
+  "spread_price": 0.19,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Pinterest": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Procter&Gamble": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 16,
+  "point": 0.01,
+  "spread_price": 0.16,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Qualcomm": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 30,
+  "point": 0.01,
+  "spread_price": 0.3,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "RobinhoodMarkets": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 4,
+  "median_spread_pts": 1500,
+  "point": 0.0001,
+  "spread_price": 0.15,
+  "tick_size": 0.0001,
+  "volume_min": 0.1
+ },
+ "Roku": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 47,
+  "point": 0.01,
+  "spread_price": 0.47,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "S&PGlobal": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 30,
+  "point": 0.01,
+  "spread_price": 0.3,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "SEKJPY": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 52,
+  "point": 0.001,
+  "spread_price": 0.052,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "SGDJPY": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 127,
+  "point": 0.001,
+  "spread_price": 0.127,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "SOLUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1000.0,
+  "digits": 3,
+  "median_spread_pts": 200,
+  "point": 0.001,
+  "spread_price": 0.2,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "SOYBEAN": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 75,
+  "point": 0.01,
+  "spread_price": 0.75,
+  "tick_size": 0.01,
+  "volume_min": 1.0
+ },
+ "SUGAR": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 2.0,
+  "digits": 2,
+  "median_spread_pts": 53,
+  "point": 0.01,
+  "spread_price": 0.53,
+  "tick_size": 0.01,
+  "volume_min": 1.0
+ },
+ "SUGARRAW": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 50.0,
+  "digits": 3,
+  "median_spread_pts": 30,
+  "point": 0.001,
+  "spread_price": 0.03,
+  "tick_size": 0.001,
+  "volume_min": 1.0
+ },
+ "Salesforce": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 21,
+  "point": 0.01,
+  "spread_price": 0.21,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "ServiceNow": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 14,
+  "point": 0.01,
+  "spread_price": 0.14,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Shopify": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 19,
+  "point": 0.01,
+  "spread_price": 0.19,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Snapchat": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Snowflake": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 137,
+  "point": 0.01,
+  "spread_price": 1.37,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "SpaceX": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 23,
+  "point": 0.01,
+  "spread_price": 0.23,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Spotify": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 200,
+  "point": 0.01,
+  "spread_price": 2.0,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Starbucks": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 17,
+  "point": 0.01,
+  "spread_price": 0.17,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "TMEGroup": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "TSMC": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 25,
+  "point": 0.01,
+  "spread_price": 0.25,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Target": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 17,
+  "point": 0.01,
+  "spread_price": 0.17,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Tesla": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 52,
+  "point": 0.01,
+  "spread_price": 0.52,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "TexasInstruments": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 31,
+  "point": 0.01,
+  "spread_price": 0.31,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "ThermoFisherScientific": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 28,
+  "point": 0.01,
+  "spread_price": 0.28,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Toyota": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 54,
+  "point": 0.01,
+  "spread_price": 0.54,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Travelers": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 23,
+  "point": 0.01,
+  "spread_price": 0.23,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Twilio": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 67,
+  "point": 0.01,
+  "spread_price": 0.67,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "UK100": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 80,
+  "point": 0.01,
+  "spread_price": 0.8,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "UKCOCOA": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 810,
+  "point": 0.01,
+  "spread_price": 8.1,
+  "tick_size": 0.01,
+  "volume_min": 1.0
+ },
+ "UKGILT": {
+  "category": "Bonds",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 36,
+  "point": 0.001,
+  "spread_price": 0.036,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "US2000": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 30,
+  "point": 0.01,
+  "spread_price": 0.3,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "US30": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 280,
+  "point": 0.01,
+  "spread_price": 2.8,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "US500": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 36,
+  "point": 0.01,
+  "spread_price": 0.36,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "USCOCOA": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 616,
+  "point": 0.01,
+  "spread_price": 6.16,
+  "tick_size": 0.01,
+  "volume_min": 1.0
+ },
+ "USDBRL": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 375,
+  "point": 1e-05,
+  "spread_price": 0.00375,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDCAD": {
+  "bars": 53685,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 12,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.00012,
+  "tick_size": 1e-05,
+  "tick_value": 0.6223937262712392,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "USDCHF": {
+  "bars": 53684,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 20,
+  "min_volume": 0.01,
+  "point": 1e-05,
+  "spread_price": 0.0002,
+  "tick_size": 1e-05,
+  "tick_value": 1.0647812939222285,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "USDCNH": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 59,
+  "point": 1e-05,
+  "spread_price": 0.00059,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDCZK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2088,
+  "point": 1e-05,
+  "spread_price": 0.02088,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDDKK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 100,
+  "point": 1e-05,
+  "spread_price": 0.001,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDHKD": {
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 85,
+  "point": 1e-05,
+  "spread_price": 0.00085,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDHUF": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 92280,
+  "point": 1e-05,
+  "spread_price": 0.9228,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDIDR": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 1,
+  "median_spread_pts": 251,
+  "point": 0.1,
+  "spread_price": 25.1,
+  "tick_size": 0.1,
+  "volume_min": 0.01
+ },
+ "USDILS": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2340,
+  "point": 1e-05,
+  "spread_price": 0.0234,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDINR": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 61,
+  "point": 0.001,
+  "spread_price": 0.061,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "USDJPY": {
+  "bars": 53684,
+  "category": "Forex",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 10,
+  "min_volume": 0.01,
+  "point": 0.001,
+  "spread_price": 0.01,
+  "tick_size": 0.001,
+  "tick_value": 0.541791052862553,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "USDKRW": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 2,
+  "median_spread_pts": 158,
+  "point": 0.01,
+  "spread_price": 1.58,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "USDMXN": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 404,
+  "point": 1e-05,
+  "spread_price": 0.00404,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDNOK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 728,
+  "point": 1e-05,
+  "spread_price": 0.00728,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDPLN": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 144,
+  "point": 1e-05,
+  "spread_price": 0.00144,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDRUB": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 145102,
+  "point": 1e-05,
+  "spread_price": 1.45102,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDSEK": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 966,
+  "point": 1e-05,
+  "spread_price": 0.00966,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDSGD": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 121,
+  "point": 1e-05,
+  "spread_price": 0.00121,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDTHB": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 6230,
+  "point": 1e-05,
+  "spread_price": 0.0623,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDTRY": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 5464,
+  "point": 1e-05,
+  "spread_price": 0.05464,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "USDX": {
+  "category": "Indices",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 24,
+  "point": 0.001,
+  "spread_price": 0.024,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "USDZAR": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1050,
+  "point": 1e-05,
+  "spread_price": 0.0105,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "UST05Y": {
+  "category": "Bonds",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 22,
+  "point": 0.001,
+  "spread_price": 0.022,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "UST10Y": {
+  "category": "Bonds",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 39,
+  "point": 0.001,
+  "spread_price": 0.039,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "Uber": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 11,
+  "point": 0.01,
+  "spread_price": 0.11,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "UnionPacific": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 58,
+  "point": 0.01,
+  "spread_price": 0.58,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "UnitedHealth": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 60,
+  "point": 0.01,
+  "spread_price": 0.6,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "UnitedParcelService": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 12,
+  "point": 0.01,
+  "spread_price": 0.12,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Verizon": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Visa": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 54,
+  "point": 0.01,
+  "spread_price": 0.54,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "WHEAT": {
+  "category": "Soft Commodity",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 55,
+  "point": 0.01,
+  "spread_price": 0.55,
+  "tick_size": 0.01,
+  "volume_min": 1.0
+ },
+ "Walgreens": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-09-04T03:23:01+00:00",
+    "source": "parquet_on_disk"
+   }
   },
-  "GBPUSD": {
-    "bars": 53685,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
-  },
-  "USDJPY": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.541791052862553,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
-  },
-  "EURJPY": {
-    "bars": 53685,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.541791052862553,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
-  },
-  "GBPJPY": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.541791052862553,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
-  },
-  "AUDUSD": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 14.0
-  },
-  "USDCAD": {
-    "bars": 53685,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.6223937262712392,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
-  },
-  "USDCHF": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 1.0647812939222285,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
-  },
-  "NZDUSD": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 14.0
-  },
-  "EURGBP": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 1.1696316829830289,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
-  },
-  "EURCHF": {
-    "bars": 53685,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 1.0647812939222285,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 14.0
-  },
-  "AUDJPY": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.5417851821752675,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 16.0
-  },
-  "CADJPY": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.5417851821752675,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 15.0
-  },
-  "NZDJPY": {
-    "bars": 53683,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.5417851821752675,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 15.0
-  },
-  "CHFJPY": {
-    "bars": 53650,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.5417851821752675,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 18.0
-  },
-  "AUDNZD": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.5097723356748877,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 15.0
-  },
-  "NZDCAD": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.6223937262712392,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 17.0
-  },
-  "EURAUD": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.6136023365976979,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
-  },
-  "GBPAUD": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.6136023365976979,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 15.0
-  },
-  "BTCUSD": {
-    "bars": 62998,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 1.0,
-    "tick_size": 0.01,
-    "tick_value": 0.008632298608473466,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 1694.0
-  },
-  "ETHUSD": {
-    "bars": 63020,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 1.0,
-    "tick_size": 0.01,
-    "tick_value": 0.008632298608473466,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 258.0
-  }
+  "bars": 8079,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Walmart": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "WaltDisney": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 7,
+  "point": 0.01,
+  "spread_price": 0.07,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "WellsFargo": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 9,
+  "point": 0.01,
+  "spread_price": 0.09,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "XAGEUR": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 5000.0,
+  "digits": 3,
+  "median_spread_pts": 45,
+  "point": 0.001,
+  "spread_price": 0.045,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "XAGUSD": {
+  "bars": 49757,
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 5000.0,
+  "digits": 3,
+  "first": "2018-03-19 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 28,
+  "min_volume": 0.01,
+  "point": 0.001,
+  "spread_price": 0.028,
+  "tick_size": 0.001,
+  "tick_value": 4.316149304236733,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "XALUSD": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 3200,
+  "point": 0.001,
+  "spread_price": 3.2,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "XAUAUD": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1"
+  ],
+  "contract_size": 100.0,
+  "digits": 2,
+  "median_spread_pts": 135,
+  "point": 0.01,
+  "spread_price": 1.35,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "XAUEUR": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 2,
+  "median_spread_pts": 46,
+  "point": 0.01,
+  "spread_price": 0.46,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "XAUUSD": {
+  "bars": 49758,
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4",
+   "M1",
+   "M15",
+   "M5"
+  ],
+  "contract_size": 100.0,
+  "digits": 2,
+  "first": "2018-03-19 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 20,
+  "min_volume": 0.01,
+  "point": 0.01,
+  "spread_price": 0.2,
+  "tick_size": 0.01,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01,
+  "volume_step": 0.01
+ },
+ "XBRUSD": {
+  "category": "Energy",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1000.0,
+  "digits": 3,
+  "median_spread_pts": 20,
+  "point": 0.001,
+  "spread_price": 0.02,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "XCUUSD": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 5100,
+  "point": 0.001,
+  "spread_price": 5.1,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "XLMUSD": {
+  "category": "Crypto",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 10000.0,
+  "digits": 5,
+  "median_spread_pts": 60,
+  "point": 1e-05,
+  "spread_price": 0.0006,
+  "tick_size": 1e-05,
+  "volume_min": 0.01
+ },
+ "XNGUSD": {
+  "category": "Energy",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 10000.0,
+  "digits": 4,
+  "median_spread_pts": 70,
+  "point": 0.0001,
+  "spread_price": 0.007,
+  "tick_size": 0.0001,
+  "volume_min": 0.01
+ },
+ "XNIUSD": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 13940,
+  "point": 0.001,
+  "spread_price": 13.94,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "XPBUSD": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 3550,
+  "point": 0.001,
+  "spread_price": 3.55,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "XPDUSD": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 2,
+  "median_spread_pts": 675,
+  "point": 0.01,
+  "spread_price": 6.75,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "XPTUSD": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 2,
+  "median_spread_pts": 530,
+  "point": 0.01,
+  "spread_price": 5.3,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "XTIUSD": {
+  "category": "Energy",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1000.0,
+  "digits": 3,
+  "median_spread_pts": 30,
+  "point": 0.001,
+  "spread_price": 0.03,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "XZNUSD": {
+  "category": "Commodities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 3470,
+  "point": 0.001,
+  "spread_price": 3.47,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "ZARJPY": {
+  "category": "Forex Exotics",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 15,
+  "point": 0.001,
+  "spread_price": 0.015,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "eBay": {
+  "category": "Equities",
+  "charts": [
+   "D1",
+   "H1",
+   "H4"
+  ],
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 16,
+  "point": 0.01,
+  "spread_price": 0.16,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ }
 }

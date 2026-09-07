@@ -1,19 +1,28 @@
 {
-    "free_gb":  2.3,
-    "checked_at":  "2026-09-07T07:45:11.8086437Z",
+    "free_gb":  14.4,
+    "checked_at":  "2026-09-07T14:31:10.3891704Z",
     "actions":  [
-                    "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
-                    "DISK: C: was 2.3GB free -- pruned old logs + series cache -\u003e 2.3GB"
+                    "FAILING MT5-Hourly: last result 267011, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
+                    "FAILING MT5-QQuantGatesCertify: last result 267011 twice in a row -- re-run",
+                    "RAM-LOW: 108MB free (phys 108MB / virt 21217MB, strike 1 of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box"
                 ],
-    "low_mem_strikes":  0,
+    "low_mem_strikes":  1,
     "procs":  {
-                  "fail.MT5-MoatRecorder":  {
-                                                "cpu":  1,
-                                                "at":  "2026-09-07T09:40:54.6115933+02:00"
-                                            },
-                  "edge_search.4896":  {
-                                           "cpu":  21.109375,
-                                           "at":  "2026-09-07T09:40:54.6115933+02:00"
-                                       }
+                  "external_gauntlet.2268":  {
+                                                 "cpu":  202.296875,
+                                                 "at":  "2026-09-07T16:30:29.9964493+02:00"
+                                             },
+                  "fail.MT5-Hourly":  {
+                                          "cpu":  267011,
+                                          "at":  "2026-09-07T16:30:29.9964493+02:00"
+                                      },
+                  "fail.MT5-QQuantGatesCertify":  {
+                                                      "cpu":  267011,
+                                                      "at":  "2026-09-07T16:30:29.9964493+02:00"
+                                                  },
+                  "shadow_cycle.4848":  {
+                                            "cpu":  6.953125,
+                                            "at":  "2026-09-07T16:30:29.9964493+02:00"
+                                        }
               }
 }

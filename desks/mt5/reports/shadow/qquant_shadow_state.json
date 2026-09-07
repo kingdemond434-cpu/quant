@@ -1,28 +1,28 @@
 {
-  "updated_at": "2026-09-07T07:45:21.913686+00:00",
-  "certified_qquant_sleeves": 0,
-  "processed_qquant_sleeves": 0,
+  "updated_at": "2026-09-07T14:39:57.287447+00:00",
+  "certified_qquant_sleeves": 1,
+  "processed_qquant_sleeves": 1,
   "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
     "certificate": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
     "cell": "AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
     "forward_start": "2026-08-23T13:51:10.738675+00:00",
-    "last_attempt_at": "2026-09-07T00:16:03.922342+00:00",
+    "last_attempt_at": "2026-09-07T14:39:57.287447+00:00",
     "promotion_authority": true,
     "order_authority": false,
     "n": 2,
     "bar_source": "MT5:FusionMarkets-Live",
-    "bars_freshest": "2026-09-07T00:00:00+00:00",
-    "why": "accruing: 2/50 closed trades; 14/14 days; 6 forward decision bars evaluated; 2 eligible signals",
+    "bars_freshest": "2026-09-07T14:00:00+00:00",
+    "why": "accruing: 2/50 closed trades; 15/14 days; 6 forward decision bars evaluated; 2 eligible signals",
     "cum_r": -1.2759748195517595,
     "exp_r": -0.6379874097758798,
     "max_dd_r": -1.4353154788924283,
-    "days_active": 14,
+    "days_active": 15,
     "ledger": "reports\\shadow\\ledger_qquant.hunt16.json.AUDNZD_dav_range_filter_adx_SHORT_afternoon_NORMAL_DAY.json",
     "status": "ACTIVE",
-    "forward_bars_evaluated": 241,
+    "forward_bars_evaluated": 255,
     "forward_decision_bars": 6,
     "forward_eligible_signals": 2,
-    "last_evaluated_bar": "2026-09-07T00:00:00+00:00"
+    "last_evaluated_bar": "2026-09-07T14:00:00+00:00"
   },
   "source_gate_policy_valid": true
 }
