@@ -1,12 +1,17 @@
 <#
 .SYNOPSIS
-    Run one lane of the daily desk cycle: NOON (Claude, conversion) or MIDNIGHT (Codex, wiring).
+    Run one lane of the daily desk cycle: NOON (Claude, 12:00) or MIDNIGHT (Codex, 00:00).
 
 .DESCRIPTION
-    Two autonomous passes run twelve hours apart against this repository and the live box. Both
-    execute `docs/DESK_CYCLE_PROMPT.md`; the lane decides which half of it they own. The lane
-    split is not decoration -- it is what stops two agents editing the same files twelve hours
-    apart and calling the result progress.
+    Two autonomous passes run twelve hours apart against this repository and the live box. BOTH
+    RUN THE COMPLETE PROMPT (`docs/DESK_CYCLE_PROMPT.md`); the lane selects a time slot and a
+    checkpoint file, nothing else.
+
+    A split scope would mean half the work stops the day one agent's CLI is missing or its
+    credential expires -- and the half that stopped is invisible, because the other half keeps
+    reporting success. Two complete passes by two different agents means every check runs twice a
+    day, and what one misses the other can still find. They never overlap (ten-hour bound,
+    repetition stops at eleven), so they cannot collide.
 
     WHAT THIS SCRIPT IS. A launcher and a log, nothing more. It resolves an agent CLI, hands it
     the prompt with the lane named, and records what happened. It contains no desk logic and no
@@ -25,7 +30,7 @@
     reads nor forwards a key, and it never prints one.
 
 .PARAMETER Lane
-    `noon` (Claude, conversion and throughput) or `midnight` (Codex, wiring and repair).
+    `noon` or `midnight`. Same work; different slot and checkpoint.
 
 .PARAMETER AgentCommand
     Override the CLI. Defaults to `claude` for noon and `codex` for midnight, which is the pairing
@@ -166,8 +171,8 @@ stages need, which is how a pass ends up always beginning and never finishing.
 $brief = @"
 You are the $($Lane.ToUpper()) lane of the desk cycle.
 
-Read docs/DESK_CYCLE_PROMPT.md in full and execute YOUR LANE ONLY -- section VI for noon,
-section VII for midnight. Sections I through V and VIII through IX bind both lanes.
+Read docs/DESK_CYCLE_PROMPT.md in full and execute ALL OF IT. Both lanes run the same
+complete pass; the lane name selects a time slot and a checkpoint file, nothing else.
 
 Repository root: $RepoRoot
 $resumeNote

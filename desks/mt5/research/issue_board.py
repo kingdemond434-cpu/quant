@@ -85,6 +85,12 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # clear until the account grows tenfold is exactly the red light L1.37 says teaches everyone
     # to ignore the board. So the number is published and read; it does not page.
     ("capacity", "desks/mt5/reports/CAPACITY.json", 3600, "research/capacity.py"),
+    # THE CHART LADDER. A desk that researches one timeframe cannot discover anything faster or
+    # slower than it, and produces no evidence of what it missed -- so the coverage is measured
+    # rather than assumed. Hourly because the downloader runs hourly and this is how anyone finds
+    # out whether it is actually filling the ladder.
+    ("timeframe_coverage", "desks/mt5/reports/TIMEFRAME_COVERAGE.json", 3600,
+     "scripts/check_timeframe_coverage.py"),
     ("miner_conversion", "data/miner_conversion.json", 86400,
      "scripts/check_miner_conversion.py"),
     ("ceiling_audit", "desks/mt5/reports/ABSOLUTE_CEILING_STATUS.json", 86400,

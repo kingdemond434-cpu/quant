@@ -45,8 +45,11 @@ def test_the_lanes_run_at_noon_and_midnight_twelve_hours_apart() -> None:
 
 
 def test_each_lane_passes_its_own_lane_argument() -> None:
-    """A launcher with no lane would run both halves in both passes -- the collision the split
-    exists to prevent."""
+    """The lane selects a slot and a checkpoint file -- not a scope.
+
+    Both passes run the complete prompt. The argument still matters: without it the two lanes
+    would share one checkpoint and the midnight pass would read noon's DONE and exit.
+    """
     assert "-Lane noon" in _block("MT5-CycleNoon")
     assert "-Lane midnight" in _block("MT5-CycleMidnight")
 
@@ -155,6 +158,7 @@ def test_the_prompt_exists_and_states_the_laws() -> None:
 def test_the_prompt_names_both_lanes_and_the_checkpoint() -> None:
     text = PROMPT.read_text("utf-8")
     assert "NOON" in text and "MIDNIGHT" in text
+    assert "Both lanes do everything below" in text
     assert "cycle_state_<lane>.json" in text
     assert "Do not redo them" in text
 

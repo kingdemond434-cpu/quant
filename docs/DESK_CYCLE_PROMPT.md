@@ -4,11 +4,21 @@ Two autonomous passes run every day against this repository and the live box.
 
 | Lane | Agent | Local time | Owns |
 |---|---|---|---|
-| **NOON** | Claude | 12:00 | Conversion and research throughput |
-| **MIDNIGHT** | Codex | 00:00 | Wiring, schedules, staleness and failure repair |
+| **NOON** | Claude | 12:00 | The full pass |
+| **MIDNIGHT** | Codex | 00:00 | The full pass |
 
-They share every law below. They do not share files: the lane split exists so two agents never
-edit the same thing twelve hours apart and call the result progress.
+**Both lanes do everything below.** The lane name selects a time slot and a checkpoint file,
+nothing else — there is no division of labour.
+
+That is deliberate. A split scope means half the work stops the day one agent's CLI is missing,
+its credential expires, or its pass silently fails — and the half that stopped is invisible,
+because the other half keeps reporting success. Two complete passes by two different agents means
+every check runs twice a day, and what one misses the other can still find.
+
+They never run concurrently — each is bounded to ten hours and its repetition stops at eleven —
+so they cannot collide. The second pass of the day simply finds less to do, which is the correct
+outcome rather than wasted work: a pass that finds nothing has *confirmed* the desk is healthy,
+and that confirmation is exactly what nobody had while it sat quiet for 266 hours.
 
 ---
 
@@ -176,6 +186,35 @@ by removing what does not pay rent — never by lowering what counts as a pass.
    Propose — the gauntlet decides.
 5. **Frontier and implementer.** Confirm the frontier miner, the implementer and the world crawler
    each ran within the hour, and that the implementer's challengers carry a falsifier.
+
+### VI.a Every chart, every mechanism — no hourly assumption anywhere
+
+Mechanisms live on charts. A desk that researches one timeframe cannot discover anything faster
+or slower than it, and it will never know what it missed, because an untested mechanism leaves no
+trace of its absence. This is a breadth question, not a tidiness one.
+
+Run `scripts/check_timeframe_coverage.py` every pass, and act on all three of its answers:
+
+1. **The bars exist.** Every hunted symbol should carry the full ladder — M1, M5, M15, M30, H1,
+   H4, D1. A chart absent from the store entirely means no mechanism on it can be discovered at
+   all. `download_all_symbols.py` fetches; confirm it has actually run and filled the ladder
+   rather than assuming a fixed downloader fixed the data.
+2. **Nothing assumes H1.** Hits are graded by where they sit, never counted — a raw total over
+   the tree is hundreds and is useless. A hardcoded chart in a one-off debug script is noise; the
+   same literal as a **default in a miner source** flattens the chart a strategy was actually
+   described on, before the docket ever sees it, so a cell hunted on M5 is replayed on H1 bars
+   and its failure reads as *"this mechanism does not work"* rather than *"it was never tested"*.
+   Fix PIPELINE and MINER_SOURCE hits; leave THROWAWAY alone.
+3. **The ladder is required only for the hunted lane.** Single-name equities are traded on news,
+   financial reports and earnings reaction, and are **never hunted for statistical hypotheses**
+   (principal, 2026-09-06). Demanding the full ladder for hundreds of share CFDs would report a
+   gap that is a deliberate policy and spend the download budget filling it. Route by **asset
+   class from MetaTrader's own registry**, never by a symbol list — a ticker is exactly what lies
+   about a share CFD called `3M` or `A`. An unroutable symbol is UNCLASSIFIED, not permitted:
+   unknown is not permission.
+
+If a breach or a gap is found, fix it and ship the fixer (§III). A chart the desk cannot see is a
+research ceiling nobody chose.
 
 ### VI.b Maximum quantity through the survivor loop
 

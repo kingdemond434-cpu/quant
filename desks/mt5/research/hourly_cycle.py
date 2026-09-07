@@ -1072,6 +1072,8 @@ def main() -> None:
     mc = _costed("miner_conversion", lambda: _producer(
         "check_miner_conversion", "scripts/check_miner_conversion.py"))
     _costed("capacity", lambda: _producer("capacity", "research/capacity.py"))
+    _costed("timeframe_coverage", lambda: _producer(
+        "timeframe_coverage", "scripts/check_timeframe_coverage.py"))
     _costed("frontier_report", lambda: frontier_report(h))
     # THE FRONTIER LOOP'S LAST MISSING RUNG. Until now it ended at a plan: the supervisor scored a
     # gap, wrote a queue row, and a person carried the idea to a builder by hand. That courier
