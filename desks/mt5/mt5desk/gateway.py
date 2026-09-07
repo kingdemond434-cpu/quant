@@ -200,17 +200,17 @@ def auto_lot(equity: float, dist_usd: float | None = None,
     return _core.auto_lot(equity, dist_usd, symbol, info, q=q)
 
 
-#: The gold book's minimum lot and its optional override file, bound here so the gateway's own
-#: surface names every number that decides a live order (see `test_decision_core`'s reachability
-#: fence). Read through `gold_min_lot()`, never assigned to.
-GOLD_MIN_LOT = _core.GOLD_MIN_LOT
-GOLD_MIN_LOT_FILE = _core.GOLD_MIN_LOT_FILE
+#: The desk's minimum lot per trade and its optional override file, bound here so the gateway's
+#: own surface names every number that decides a live order (see `test_decision_core`'s
+#: reachability fence). Read through `min_lot()`, never assigned to.
+MIN_LOT = _core.MIN_LOT
+MIN_LOT_FILE = _core.MIN_LOT_FILE
 
 
-def gold_min_lot() -> float:
-    """The gold book's minimum lot -- `decision_core.gold_min_lot`, bound here by name (see
+def min_lot() -> float:
+    """The desk's minimum lot per trade -- `decision_core.min_lot`, bound here by name (see
     `promoted_lot` for why a `def` rather than a re-export)."""
-    return _core.gold_min_lot()
+    return _core.min_lot()
 
 
 def gold_lot(equity: float, dist_usd: float | None = None,
@@ -2073,6 +2073,21 @@ def main() -> None:
                 continue
             log(f"[{s['name']}] stop {dist:.5g} -> lot {lot:.2f} "
                 f"(realised q {q_real:.2%})")
+            # WHEN THE FLOOR IS WHAT SET THE SIZE, SAY SO AND SAY WHAT IT COST. The desk floor
+            # (0.02 since the principal's 2026-09-07 order) sits where the venue's 0.01 sat, and
+            # a floor always runs a LARGER fraction of a small account than policy asked for --
+            # that is what `realised_q` was written to expose. For a promoted sleeve the heat
+            # ledger reserved `ramped_fraction`, computed before this sleeve's stop was known, so
+            # it cannot see the floor's overshoot; naming both fractions on the same line is what
+            # keeps that difference measured rather than merely true.
+            _floor = min_lot()
+            if lot <= _floor + 1e-9:
+                _billed = s.get("q_charge")
+                log(f"[{s['name']}] lot came from the DESK FLOOR {_floor:.2f}, not from policy: "
+                    f"this leg runs {q_real:.2%} of equity"
+                    + (f" against the {float(_billed):.2%} the heat ledger reserved for it"
+                       if isinstance(_billed, (int, float)) and not isinstance(_billed, bool)
+                       and float(_billed) > 0 else ""))
             # margin guard (machine kill switch): skip sleeve if tight
             if not margin_ok(s["symbol"], lot, max(hi, lo)):
                 log(f"[{s['name']}] SKIPPED: margin tight (lot={lot})")

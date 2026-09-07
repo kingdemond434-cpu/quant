@@ -187,7 +187,11 @@ def test_the_promoted_ramp_floors_rather_than_rounds():
             ramp = 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
             q_eff = clamp_risk_frac(None) * ramp
             bound = NS["auto_lot"](eq, 53.40, NS["GOLD_SYMBOL"], None, q=q_eff)
-            assert lot <= max(bound, 0.01) + 1e-9
+            # The bound is the policy lot OR the desk floor, whichever is larger. The floor was
+            # the venue's 0.01 until the principal raised it to 0.02 on 2026-09-07; read it
+            # rather than spell it, so this keeps testing "never above policy" and does not
+            # quietly become a second opinion about how small a position may be.
+            assert lot <= max(bound, NS["min_lot"]()) + 1e-9
 
 
 # ------------------------------------------------------- the live path is wired

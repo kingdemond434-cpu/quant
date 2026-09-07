@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -218,6 +219,34 @@ def _box_identity() -> object:
     sys.modules[spec.name] = mod        # dataclasses resolve string annotations via sys.modules
     spec.loader.exec_module(mod)
     return mod
+
+
+def test_every_path_the_box_publishes_is_declared_non_code() -> None:
+    """NON_CODE and the sync script's `$relPaths` are one list kept in two files.
+
+    THIS IS THE TEST THAT WOULD HAVE CAUGHT IT. Measured 2026-09-07: sync_shadow_to_git.ps1
+    published TEN paths every fifteen minutes and NON_CODE named SIX. So a seal was valid for at
+    most one sync cycle -- the box committed `account_state.json` or one of the four shadow lane
+    ledgers, `accepts()` read that as unreleased CODE, and the gateway refused new risk from then
+    on. `NEW_RISK_OK` had never once been true, every automatically promoted family and scalp
+    sleeve silently placed nothing, and the only symptom was a `report` line no dashboard showed.
+
+    The script is the authority here, not this set: it is what actually writes to the branch. So
+    the assertion is one-directional -- everything published must be declared -- and adding a
+    path to the script without declaring it fails HERE rather than on the box, three days later,
+    as an unexplained absence of fills.
+    """
+    ps = (Path(release.__file__).resolve().parents[2]
+          / "desks" / "mt5" / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
+    assert "$relPaths = @(" in ps, "the sync script no longer declares $relPaths -- retarget this"
+    block = ps.split("$relPaths = @(", 1)[1].split("\n)", 1)[0]
+    published = [m for m in re.findall(r'"([^"]+)"', block) if "/" in m]
+    assert len(published) >= 6, f"parsed only {published} out of the sync script; parser is wrong"
+    undeclared = sorted(p for p in published if p not in release.NON_CODE)
+    assert not undeclared, (
+        f"sync_shadow_to_git.ps1 publishes {undeclared} but release.NON_CODE does not name "
+        f"them. Every one refuses new risk within fifteen minutes of any seal, silently: the "
+        f"promoter goes on promoting and nothing it promotes ever places an order.")
 
 
 def test_the_box_side_mirror_hashes_and_allowlists_identically(tmp_path: Path) -> None:

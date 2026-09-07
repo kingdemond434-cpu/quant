@@ -261,11 +261,18 @@ def test_promoted_lot_ramps_fades_floors_and_ceils(monkeypatch) -> None:
     assert lot(1000.0, 500, 10.0, "EURUSD", None, 0.03, "2026-08-29") == pytest.approx(1.5)
     # The ceiling and the floor.
     assert lot(1000.0, 500, 10.0, "EURUSD", None, 0.10, None) == 5.0
+    # The floor is `min_lot()` -- the venue's 0.01 until the principal raised it to 0.02 on
+    # 2026-09-07. Read rather than spelled, so this asserts the PROPERTY (policy sizing never
+    # sends below the desk floor) instead of pinning whatever number the floor happens to be.
     monkeypatch.setattr(dc, "auto_lot", lambda equity, dist, symbol, info, q: 0.0)
-    assert lot(1000.0, 500, 10.0, "EURUSD", None, 0.03, None) == 0.01
-    # FLOOR, not nearest: 0.0199 lots is 0.01, never 0.02.
+    assert lot(1000.0, 500, 10.0, "EURUSD", None, 0.03, None) == pytest.approx(dc.min_lot())
+    # FLOOR, not nearest, on the 0.01 GRAIN: 0.0399 lots is 0.03, never 0.04. Tested above the
+    # desk floor, which is the only place the grain rule is observable on its own.
+    monkeypatch.setattr(dc, "auto_lot", lambda equity, dist, symbol, info, q: 0.0399)
+    assert lot(1000.0, 500, 10.0, "EURUSD", None, 0.03, None) == pytest.approx(0.03)
+    # ...and below the desk floor the grain still rounds down first, then the floor lifts it.
     monkeypatch.setattr(dc, "auto_lot", lambda equity, dist, symbol, info, q: 0.0199)
-    assert lot(1000.0, 500, 10.0, "EURUSD", None, 0.03, None) == pytest.approx(0.01)
+    assert lot(1000.0, 500, 10.0, "EURUSD", None, 0.03, None) == pytest.approx(dc.min_lot())
 
 
 def test_the_books_fraction_reaches_the_venue_unshrunk(monkeypatch) -> None:

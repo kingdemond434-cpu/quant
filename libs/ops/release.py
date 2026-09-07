@@ -81,6 +81,22 @@ DATA_SCHEMA_VERSION = "pit-1;features-2026-09-04.1"
 #: itself (the pure seal commit) and the files the Windows box WRITES and commits through
 #: sync_shadow_to_git.ps1 every fifteen minutes: outputs of the running code, never inputs that
 #: change what it does. Anything else in `git diff code_sha..HEAD` is unreleased code.
+#:
+#: THIS LIST AND THE SYNC SCRIPT'S `$relPaths` ARE ONE LIST MAINTAINED IN TWO PLACES, and until
+#: 2026-09-07 they disagreed: the script published TEN paths and this named SIX. The five it did
+#: not name are the reason `NEW_RISK_OK` had never once been true. A seal would be taken, and
+#: within fifteen minutes the box committed `account_state.json` or one of the four shadow state
+#: files -- a path this set does not allow -- so `accepts()` saw "unreleased code", the gateway
+#: refused new risk, and every automatically promoted family and scalp sleeve went on placing
+#: nothing while the promoter went on promoting. The desk read as fully automated end to end and
+#: was silently log-only at the last inch, with no message anywhere saying so.
+#:
+#: Adding them LOOSENS NOTHING. The gate's question is "is this box running unreleased CODE", and
+#: none of the five is code: they are the shadow ledgers the running code writes and the account
+#: read the terminal box alone can publish, exactly like `gateway_state.json` and `sleeves.json`
+#: already in this set. `test_release_seal` now parses `$relPaths` out of the sync script and
+#: fails if anything published is not declared here, so the two cannot drift apart again -- which
+#: is the actual defect, not the five names.
 NON_CODE: frozenset[str] = frozenset({
     RELEASE_REL,
     "desks/mt5/data/release_identity.json",
@@ -88,6 +104,13 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/gateway_state.json",
     "desks/mt5/data/sleeves.json",
     "desks/mt5/data/regime_state.json",
+    # The four shadow lane ledgers and the live account read, published by the same script and
+    # on the same fifteen-minute clock as the five above.
+    "desks/mt5/reports/shadow/shadow_state.json",
+    "desks/mt5/reports/shadow/scalp_shadow_state.json",
+    "desks/mt5/reports/shadow/qquant_shadow_state.json",
+    "desks/mt5/reports/shadow/external_shadow_state.json",
+    "desks/mt5/data/account_state.json",
 })
 
 SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --name-only "

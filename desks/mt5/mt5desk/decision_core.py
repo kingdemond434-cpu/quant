@@ -351,49 +351,67 @@ def auto_lot(equity: float, dist_usd: float | None = None,
     return float(min(max(lot, 0.01), 5.0))
 
 
-#: The gold book's minimum lot per leg. PRINCIPAL'S INSTRUCTION 2026-09-07: "let them use 0.02
-#: lots each" and "don't reduce their risk or size from before". Those two sentences are one
-#: rule and it is a FLOOR, not a setting: `gold_lot` returns the LARGER of the policy lot and
-#: this, so a window that fixed-fractional sizing already puts above 0.02 is untouched, and no
-#: equity, ramp or fade can take a gold leg below it.
+#: THE DESK'S MINIMUM LOT PER TRADE. PRINCIPAL'S INSTRUCTION 2026-09-07, in three messages:
+#: "let them use 0.02 lots each", "dont reduce their risk or size from before", and -- once the
+#: promoted lanes were unblocked -- "0.02 lots each trade but same as before". Those are one
+#: rule and it is a FLOOR, not a setting: every sizer here returns the LARGER of the policy lot
+#: and this, so any sleeve fixed-fractional sizing already puts above 0.02 is untouched, and no
+#: equity, ramp or fade can take a leg below it.
 #:
-#: THIS RAISES A FLOOR; IT DOES NOT RAISE THE CEILING. `cap_by_heat` still prices the book and
-#: still defers legs, and because the floored lot is billed to the heat ledger (see the gold
-#: `q_charge` branch in gateway.main) the cap sees the real 0.02, not the policy lot it replaced.
-#: At the equity where 0.02 x 3 legs exceeds the budget the cap drops a leg exactly as it always
-#: has -- which is the intended behaviour, not a bug to be routed around, and the reason this is
-#: a floor on SIZE rather than an edit to Q_OPT, the heat budget or any gate.
-GOLD_MIN_LOT = 0.02
-#: A box may override the floor without a code push. Absent or unreadable -> GOLD_MIN_LOT.
-GOLD_MIN_LOT_FILE = _DESK / "data" / "GOLD_MIN_LOT.json"
+#: IT REPLACES THE VENUE FLOOR, IT DOES NOT INVENT A NEW KIND OF THING. `auto_lot` and
+#: `promoted_lot` have always floored at the venue's 0.01, and `realised_q` exists precisely
+#: because that floor makes a small account run a LARGER fraction than policy asked for -- read
+#: its docstring: "a book configured for 0.75% could run at 5.9% with nothing in the code, the
+#: log or the state file ever saying so". This raises that same floor from 0.01 to 0.02, so the
+#: overshoot it causes is the overshoot the desk already measures and logs per leg as
+#: `realised q`. What is NOT permitted is for it to be silent, which is why every placement
+#: whose lot came from the floor says so in the log.
+#:
+#: A LEG THE ALLOCATOR PRICED AT ZERO STAYS ZERO. `promoted_lot` returns 0.0 for a sleeve the
+#: solve gave no heat, before this floor is reached -- `book_zeroed` depends on that, and a
+#: floor that lifted a zeroed leg to 0.02 would put capital on the one sleeve the optimiser
+#: explicitly refused.
+#:
+#: IT IS A LOT FLOOR, NOT A RISK BASE, and the principal named that distinction himself
+#: (2026-09-07): "its base floor minimum of minimum but not risk floor base where all promoted
+#: sleeves start of with that only". The risk BASE is `clamp_risk_frac`'s 3% -- the fraction of
+#: equity a promoted sleeve targets per trade, which it earns up from through `authority_ramp`.
+#: Nothing here touches that ladder: `promoted_lot` still computes `q_eff` from risk_frac x ramp
+#: x fade and still sizes `auto_lot` with it. This clamps only the LOT that comes out the far
+#: end, in venue units, after the policy has had its say. A sleeve does not "start at 0.02" any
+#: more than it used to "start at 0.01"; 0.02 is simply the smallest position this desk will
+#: send, and on any sleeve whose policy size is larger the floor never appears at all.
+MIN_LOT = 0.02
+#: A box may override the floor without a code push. Absent or unreadable -> MIN_LOT.
+MIN_LOT_FILE = _DESK / "data" / "MIN_LOT.json"
 
 
-def gold_min_lot() -> float:
-    """The gold floor: the override file if it holds a usable number, else `GOLD_MIN_LOT`.
+def min_lot() -> float:
+    """The desk floor: the override file if it holds a usable number, else `MIN_LOT`.
 
     NEVER BELOW THE CONSTANT. A file that reads 0.01 -- a stale copy, a bad edit, a half-written
     write -- would silently halve the principal's instruction, and a floor that can be lowered by
     a file nobody is watching is not a floor. The override can only raise it.
     """
     try:
-        raw = json.loads(GOLD_MIN_LOT_FILE.read_text(encoding="utf-8"))
+        raw = json.loads(MIN_LOT_FILE.read_text(encoding="utf-8"))
         val = float(raw.get("lot") if isinstance(raw, dict) else raw)
     except (OSError, ValueError, TypeError, AttributeError):
-        return float(GOLD_MIN_LOT)
+        return float(MIN_LOT)
     if not (val == val) or val <= 0:
-        return float(GOLD_MIN_LOT)
-    return float(max(val, GOLD_MIN_LOT))
+        return float(MIN_LOT)
+    return float(max(val, MIN_LOT))
 
 
 def gold_lot(equity: float, dist_usd: float | None = None,
              info: object | None = None) -> float:
-    """The gold book's lot: fixed-fractional sizing, floored at `gold_min_lot()`.
+    """The gold book's lot: fixed-fractional sizing, floored at `min_lot()`.
 
     The gateway's `"auto"` branch is the gold book and nothing else (`roster` gives `"auto"` to
-    the three GOLD_WINDOWS rows alone), so the floor lives here rather than inside `auto_lot`,
-    which sizes every instrument on the desk and must not learn gold's constants a second time.
+    the three GOLD_WINDOWS rows alone), so the floor is applied here rather than inside
+    `auto_lot`, which is also the pure policy sizer every caller compares against.
     """
-    return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot()))
+    return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), min_lot()))
 
 
 def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) -> float:
@@ -464,7 +482,11 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
     # exists to prevent, on exactly the sleeves with the least forward evidence.
     lot = math.floor(lot / 0.01 + 1e-9) * 0.01
-    return float(min(max(lot, 0.01), 5.0))
+    # THE DESK FLOOR, applied where the venue's 0.01 was (principal 2026-09-07: "0.02 lots each
+    # trade but same as before"). Reached only by a leg that was going to trade: the
+    # allocator-zeroed `return 0.0` above happens first, so a sleeve the solve gave no heat is
+    # still given none. `min` last, so the floor can never push a leg past the 5.0 ceiling.
+    return float(min(max(lot, min_lot()), 5.0))
 
 
 def sleeve_live_n(name: str, ledger: Path) -> int:

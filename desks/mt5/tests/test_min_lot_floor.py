@@ -59,23 +59,23 @@ def test_the_floor_is_monotone_in_equity_terms() -> None:
 
 def test_an_override_file_can_raise_the_floor_but_never_lower_it(tmp_path, monkeypatch) -> None:
     """A stale or bad override must not silently halve the principal's instruction."""
-    path = tmp_path / "GOLD_MIN_LOT.json"
-    monkeypatch.setattr(dc, "GOLD_MIN_LOT_FILE", path)
+    path = tmp_path / "MIN_LOT.json"
+    monkeypatch.setattr(dc, "MIN_LOT_FILE", path)
 
     path.write_text(json.dumps({"lot": 0.05}), "utf-8")
-    assert dc.gold_min_lot() == pytest.approx(0.05), "an override above the constant applies"
+    assert dc.min_lot() == pytest.approx(0.05), "an override above the constant applies"
 
     path.write_text(json.dumps({"lot": 0.01}), "utf-8")
-    assert dc.gold_min_lot() == pytest.approx(0.02), (
+    assert dc.min_lot() == pytest.approx(0.02), (
         "an override BELOW the constant must be ignored -- a floor a file can lower is not a floor")
 
     for junk in ("{", "null", '{"lot": "big"}', '{"lot": -3}', '{"lot": 0}'):
         path.write_text(junk, "utf-8")
-        assert dc.gold_min_lot() == pytest.approx(0.02), f"unusable override {junk!r} must fall "\
+        assert dc.min_lot() == pytest.approx(0.02), f"unusable override {junk!r} must fall "\
                                                          f"back to the constant"
 
     path.unlink()
-    assert dc.gold_min_lot() == pytest.approx(0.02), "absent override falls back to the constant"
+    assert dc.min_lot() == pytest.approx(0.02), "absent override falls back to the constant"
 
 
 def test_the_heat_ledger_bills_the_floored_lot_not_the_policy_lot() -> None:
@@ -98,6 +98,54 @@ def test_the_heat_ledger_bills_the_floored_lot_not_the_policy_lot() -> None:
         "order disagree about the same leg")
 
 
+def test_promoted_sleeves_get_the_floor_too() -> None:
+    """Principal 2026-09-07: "0.02 lots each trade". Not gold alone -- every sleeve that trades."""
+    small = 100.0
+    lot = dc.promoted_lot(small, 10, None, "EURUSD", None, risk_frac=0.03)
+    assert lot >= 0.02, f"a promoted sleeve sized to {lot}, below the desk floor"
+
+
+def test_a_leg_the_allocator_zeroed_is_still_zero() -> None:
+    """THE ONE EXCEPTION, and it is not negotiable.
+
+    `book_zeroed` puts a sleeve the solve gave NO heat into the book at exactly 0.0 so it places
+    nothing while keeping any bracket it still has open. A floor applied after that would put
+    capital on the single sleeve the optimiser explicitly refused -- the worst leg in the book,
+    chosen by a rounding rule.
+    """
+    assert dc.promoted_lot(5_000.0, 300, 20.0, "EURUSD", None,
+                           risk_frac=0.0, from_book=True) == 0.0
+
+
+def test_the_floor_is_a_lot_floor_and_not_a_risk_base() -> None:
+    """Principal 2026-09-07: "its base floor minimum of minimum but not risk floor base".
+
+    The RISK base is `clamp_risk_frac`'s 3%, earned up through `authority_ramp`. This test fails
+    if the lot floor was ever implemented by touching that ladder -- which would make every
+    promoted sleeve START at a risk fraction rather than merely never send a tiny position.
+    """
+    assert dc.clamp_risk_frac(None) == pytest.approx(0.03), "the 3% risk base moved"
+    assert dc.MIN_LOT != dc.clamp_risk_frac(None), "the lot floor and the risk base are not the "\
+                                                   "same kind of number and must not be equal"
+    # The ladder still scales risk: a sleeve with no forward evidence is sized BELOW one with
+    # 300 live trades wherever policy sizing is what decides (i.e. above the floor).
+    # Equity and stop chosen so BOTH sit well above the floor: the point is that the ramp still
+    # decides the size there, which is only observable where the floor is not what decided it.
+    young = dc.promoted_lot(1_000_000.0, 1, 0.05, "EURUSD", None, risk_frac=0.03)
+    proven = dc.promoted_lot(1_000_000.0, 300, 0.05, "EURUSD", None, risk_frac=0.03)
+    assert young > dc.min_lot() and proven > dc.min_lot(), (
+        f"precondition: both legs must be above the floor ({young}, {proven})")
+    assert young < proven, (
+        f"authority ramp no longer separates a new sleeve ({young}) from a proven one "
+        f"({proven}) -- the floor has been applied to the risk fraction, not the lot")
+    import inspect
+    for fn in (dc.ramped_fraction, dc.clamp_risk_frac, dc.authority_ramp):
+        body = inspect.getsource(fn)
+        assert "min_lot" not in body and "MIN_LOT" not in body, (
+            f"{fn.__name__} references the lot floor: risk fractions and lot sizes are different "
+            f"quantities and the floor belongs only to the second")
+
+
 def test_nothing_else_on_the_desk_inherits_gold_s_floor() -> None:
     """`auto_lot` sizes every instrument. The gold floor must not have been put inside it.
 
@@ -113,7 +161,7 @@ def test_nothing_else_on_the_desk_inherits_gold_s_floor() -> None:
         "leaked into the general sizer")
     import inspect
     body = inspect.getsource(dc.auto_lot)
-    for token in ("GOLD_MIN_LOT", "gold_min_lot", "gold_lot"):
+    for token in ("MIN_LOT", "min_lot", "gold_lot"):
         assert token not in body, (
             f"auto_lot references {token}: the gold book's floor belongs in gold_lot, not in "
             f"the sizer every instrument on the desk shares")

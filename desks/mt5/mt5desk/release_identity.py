@@ -58,7 +58,10 @@ ENV_MAX_AGE_H = "MT5_RELEASE_MAX_AGE_H"
 ENV_STALE_REFUSES = "MT5_RELEASE_STALE_REFUSES"
 
 #: Fallback for a release record that predates the seal and carries no `non_code` list.
-#: Mirrors libs/ops/release.NON_CODE; a test pins the two together.
+#: Mirrors libs/ops/release.NON_CODE; a test pins the two together, and a second test pins BOTH
+#: to the path list `desks/mt5/scripts/sync_shadow_to_git.ps1` actually publishes -- the drift
+#: between those two lists is what kept `ok` false on every seal this desk ever took. See the
+#: note on libs/ops/release.NON_CODE for the measurement.
 NON_CODE: frozenset[str] = frozenset({
     RELEASE_REL,
     "desks/mt5/data/release_identity.json",
@@ -66,6 +69,11 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/gateway_state.json",
     "desks/mt5/data/sleeves.json",
     "desks/mt5/data/regime_state.json",
+    "desks/mt5/reports/shadow/shadow_state.json",
+    "desks/mt5/reports/shadow/scalp_shadow_state.json",
+    "desks/mt5/reports/shadow/qquant_shadow_state.json",
+    "desks/mt5/reports/shadow/external_shadow_state.json",
+    "desks/mt5/data/account_state.json",
 })
 
 _SHA = re.compile(r"[0-9a-f]{40}")
