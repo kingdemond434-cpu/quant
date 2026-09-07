@@ -419,10 +419,35 @@ if (-not (Test-Path $sync)) {
     if (-not $WhatIf) {
         Info "publishing state now"
         $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $sync 2>&1
-        if ($LASTEXITCODE -eq 0) { Ok "state published to git -- the dashboard picks it up on the VPS's next pull" }
-        else {
+        $text = ($out | Out-String)
+        # EXIT 0 IS NOT "PUBLISHED". sync_shadow_to_git.ps1 exits 0 on three different outcomes:
+        # it pushed, it had nothing to push ("no change since last sync"), and it found no state
+        # files at all ("SKIP"). Reading the exit code alone, this step announced "state published
+        # to git" on a run that published nothing -- measured 2026-09-07, while the last shadow
+        # sync commit in the repository was still 08-26. That is precisely the fault this whole
+        # step exists to catch, committed by the check itself.
+        #
+        # The script says which of the three happened, in words, on its last line. Read that.
+        if ($LASTEXITCODE -ne 0) {
             Fail "sync_shadow_to_git.ps1 exited $LASTEXITCODE -- the box's state did NOT reach the dashboard"
             ($out | Select-Object -Last 10) | ForEach-Object { Info $_ }
+        }
+        elseif ($text -match "shadow state synced to git") {
+            Ok "state published to git -- the dashboard picks it up on the VPS's next pull"
+        }
+        elseif ($text -match "no change since last sync") {
+            Fail "the sync ran cleanly and published NOTHING: it saw no change in the state files"
+            Info "the files are fresh on disk, so 'no change' means git cannot see them. Check:"
+            Info "  git check-ignore -v desks/mt5/reports/shadow/shadow_health.json   (must print nothing)"
+            Info "  git status --porcelain -- desks/mt5/reports/shadow/                (must show the file)"
+            Info "An ignored or already-committed file is invisible to `git add`, and the sync is right to say so."
+        }
+        elseif ($text -match "SKIP: none of the tracked state files exist") {
+            Fail "the sync found NO state files on this box -- nothing has been written for it to publish"
+        }
+        else {
+            Warn "the sync exited 0 with an outcome this step does not recognise; its own words:"
+            ($out | Select-Object -Last 6) | ForEach-Object { Info $_ }
         }
     }
 }
