@@ -311,10 +311,22 @@ def test_the_manifest_row_carries_the_attestation_and_the_chain_still_verifies(
     assert set(e2["allocator_certificate"]) == {"hash", "passed", "at"}
     assert "status" in e2["health"]
     # The attestation is inside the hash: editing it after the fact breaks the chain.
+    #
+    # THE TAMPER IS A FLIP, NOT AN ASSIGNMENT, and that distinction is why this test was wrong.
+    # It used to set `allows_new_risk = True` and `verdict = "OK"` -- the values a HEALTHY desk
+    # already has. It passed for as long as it did only because `NEW_RISK_OK` was stuck False
+    # (release.NON_CODE named six of the ten paths the box publishes, so every seal died inside
+    # fifteen minutes). The moment that was fixed, the "tamper" wrote back exactly what the row
+    # already said, the bytes did not change, and the chain verified -- so a test of the hash
+    # chain silently became a test of whether the desk was broken. Flipping whatever is there
+    # guarantees a real edit at any verdict.
     lines = (tmp_path / "m.jsonl").read_text("utf-8").splitlines()
     row = json.loads(lines[0])
-    row["release"]["allows_new_risk"] = True
-    row["release"]["verdict"] = "OK"
+    before = json.dumps(row, sort_keys=True)
+    row["release"]["allows_new_risk"] = not row["release"]["allows_new_risk"]
+    row["release"]["verdict"] = "REFUSED" if row["release"]["verdict"] == "OK" else "OK"
+    assert json.dumps(row, sort_keys=True) != before, (
+        "the tamper did not change the row, so this asserts nothing about the chain")
     lines[0] = json.dumps(row)
     (tmp_path / "m.jsonl").write_text("\n".join(lines) + "\n", "utf-8")
     v = live_manifest.verify()

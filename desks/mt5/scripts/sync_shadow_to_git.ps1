@@ -173,16 +173,63 @@ function Merge-FetchHead {
 
 
 
+# SHED REFETCHABLE BYTES BEFORE GIT NEEDS THEM. Measured 2026-09-07: the box hit 0 free and git
+# died as "cannot write loose object file: No space left on device", then `git stash` could not
+# save the worktree either -- so the machine could not pull the fix for the thing that was wrong
+# with it. A full disk does not present as a disk problem; it presents as git, parquet and the
+# tape all failing in unrelated-looking ways.
+#
+# The bar lake is the largest thing on this box that costs nothing to lose: 250 symbols x 21
+# charts, re-downloaded from the terminal already running, in minutes. The tick tape is larger
+# and is NEVER touched -- a tick nobody recorded cannot be re-obtained at any price -- and
+# universe.json stays, because only *.parquet is shed.
+function Free-DiskForGit {
+    param([string]$RepoRoot, [double]$FloorGB = 1.5)
+    $free = (Get-PSDrive C).Free / 1GB
+    if ($free -ge $FloorGB) { return }
+    $lake = Join-Path $RepoRoot "desks\mt5\data\universe"
+    if (-not (Test-Path $lake)) {
+        Write-SyncLog "DISK: only $([math]::Round($free,2))GB free and no bar lake to shed -- git may fail"
+        return
+    }
+    $files = @(Get-ChildItem -Path $lake -Filter *.parquet -File -ErrorAction SilentlyContinue)
+    if ($files.Count -eq 0) {
+        Write-SyncLog "DISK: only $([math]::Round($free,2))GB free and the bar lake is already shed -- git may fail"
+        return
+    }
+    $gb = [math]::Round((($files | Measure-Object -Property Length -Sum).Sum) / 1GB, 2)
+    $files | Remove-Item -Force -ErrorAction SilentlyContinue
+    $after = [math]::Round((Get-PSDrive C).Free / 1GB, 2)
+    Write-SyncLog ("DISK: $([math]::Round($free,2))GB free (floor ${FloorGB}GB) -- shed " +
+                   "$($files.Count) bar file(s), ${gb}GB reclaimed, ${after}GB free now. " +
+                   "Refetch: python desks\mt5\scripts\download_remaining.py")
+}
+
 # THE PULL, AND IT RUNS BEFORE EVERY EARLY EXIT. See Sync-Pull's caller near the top of the run.
 function Sync-Pull {
     param([string]$RepoRoot, [string]$Branch)
     Write-SyncLog "pulling origin/$Branch (delivery must not depend on having something to say)"
+    Free-DiskForGit -RepoRoot $RepoRoot
     $rc = Git-In-Repo @("fetch", "origin", $Branch)
+    if ($rc -ne 0) {
+        # A STALE REMOTE-TRACKING REF IS RECOVERABLE AND USED TO STOP THE SYNC DEAD. Measured
+        # 2026-09-07: `error: cannot lock ref 'refs/remotes/origin/<branch>': is at 2fb56f78 but
+        # expected 81e2ed3d`. Two fetches raced -- this task runs every fifteen minutes and a
+        # person was pulling by hand -- so the ref had ALREADY advanced to the commit being
+        # fetched and git refused to write the update it no longer needed to write. The desired
+        # state was reached and reported as a failure.
+        #
+        # `--prune` rewrites the tracking refs from what the remote actually has, which is exactly
+        # the disagreement here, so one retry through it clears both the race and a tracking ref
+        # left stale by an earlier interrupted fetch. Still non-fatal if it fails again.
+        Write-SyncLog "fetch failed rc=$rc -- retrying with --prune (stale or raced tracking ref)"
+        $rc = Git-In-Repo @("fetch", "--prune", "origin", $Branch)
+    }
     if ($rc -ne 0) {
         # A FAILED FETCH IS NOT A REASON TO ABORT THE SYNC. The local state is still worth
         # committing and pushing, and the push-rejection path fetches again. Degrading to the old
         # behaviour beats trading a delivery bug for an availability one.
-        Write-SyncLog "WARN: fetch failed rc=$rc -- continuing; the push path still fetches on rejection"
+        Write-SyncLog "WARN: fetch failed rc=$rc after retry -- continuing; the push path still fetches on rejection"
         return
     }
     $behind = @(& git -C $RepoRoot rev-list --count "HEAD..FETCH_HEAD") | Select-Object -First 1
