@@ -307,11 +307,33 @@ def test_no_bar_producer_targets_a_username() -> None:
 
 
 def test_bar_producers_agree_on_one_layout() -> None:
-    """A writer that puts bars somewhere the reader does not look re-downloads the universe."""
+    """A writer that puts bars somewhere the reader does not look re-downloads the universe.
+
+    THE PROPERTY, NOT ONE SPELLING OF IT. This used to assert the literal
+    `OUT / f"{sym}_H1.parquet"`, which stopped being true when `refresh_tail` was generalised to
+    every timeframe -- the store holds XAUUSD at M1/M5/M15 besides the H1 files, and a refresher
+    that could only ever name `_H1` left those six permanently stale. The generalisation was the
+    fix; the literal assertion was what broke.
+
+    So what is checked is the agreement itself: both producers resolve the SAME directory from
+    `desk_root()`, and both name files `{symbol}_{timeframe}.parquet`. Either half diverging is
+    the defect this test is for -- bars written where the reader does not look, and a universe
+    re-downloaded every pass because the cache always looks empty.
+    """
     dl = (_DESK / "scripts" / "download_all_symbols.py").read_text(encoding="utf-8")
     rt = (_DESK / "scripts" / "refresh_tail.py").read_text(encoding="utf-8")
+
+    for name, src in (("download_all_symbols.py", dl), ("refresh_tail.py", rt)):
+        assert 'desk_root() / "data" / "universe"' in src, (
+            f"{name} no longer resolves the universe store from desk_root()")
+        assert '_{tf}.parquet"' in src or '_{sym_tf}.parquet"' in src, (
+            f"{name} does not name parquets {{symbol}}_{{timeframe}}.parquet -- a producer "
+            "that hardcodes one timeframe leaves every other file permanently stale")
+
+    # download_all_symbols keeps parquets in the store root rather than a subdirectory; that is
+    # the shared layout refresh_tail's `OUT.glob("*.parquet")` sweep depends on.
     assert "PARQUET_DIR = OUT_DIR\n" in dl
-    assert 'OUT / f"{sym}_H1.parquet"' in rt
+    assert 'OUT.glob("*.parquet")' in rt
 
 
 def test_bar_refresh_cannot_tear_down_the_daily_cycle() -> None:

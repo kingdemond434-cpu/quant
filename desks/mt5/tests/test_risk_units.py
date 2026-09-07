@@ -268,11 +268,54 @@ def test_an_explicit_scalar_q_still_applies_to_every_sleeve():
 def test_the_trade_loop_passes_the_sleeve_s_own_symbol_and_live_info():
     """The fix is only real if the trade loop hands over the instrument. A source check,
     because the loop itself needs a live terminal to run."""
-    assert 'auto_lot(equity, dist, s["symbol"], sym)' in _SRC
+    # THE GOLD BRANCH SIZES THROUGH `gold_lot`, WHICH TAKES NO SYMBOL ON PURPOSE. `"auto"` is
+    # emitted by exactly one place -- decision_core's `for label, sig_hour, rng in GOLD_WINDOWS`
+    # loop, where every row is `"symbol": "XAUUSD"` -- so the instrument is structurally XAUUSD
+    # and `gold_lot` hardcodes GOLD_SYMBOL rather than accepting one it could be handed wrongly.
+    # What this test is actually about survives intact: the LIVE INFO (`sym`) is still passed, so
+    # sizing uses the venue's real contract specs rather than a default. That invariant is pinned
+    # by `test_the_auto_branch_is_gold_only` below -- without it, hardcoding the symbol would be
+    # a silent mis-size the moment any non-gold sleeve was given "auto".
+    assert 'gold_lot(equity, dist, sym)' in _SRC
     # canon also hands over the sleeve's own risk_frac (clamped inside promoted_lot)
     assert 'promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym' in _SRC
     assert 'realised_q(equity, dist, s["symbol"], sym, lot=lot)' in _SRC
     assert "cannot price" in _SRC
+
+
+def test_the_auto_branch_is_gold_only():
+    """`gold_lot` hardcodes GOLD_SYMBOL, so `"auto"` must never reach a non-gold sleeve.
+
+    THIS IS THE LOAD-BEARING HALF of the change above. The gateway sizes the `"auto"` branch with
+    `gold_lot`, which takes no symbol and prices against XAUUSD's contract specs. That is correct
+    only while every sleeve carrying `"lot": "auto"` IS gold -- and if one ever were not, the
+    result is not a crash but a silently wrong lot on a live order, sized against the wrong
+    instrument's tick value.
+
+    Checked structurally rather than by reading the current roster: the assignment happens in one
+    place in `decision_core`, inside the `GOLD_WINDOWS` loop, and every dict literal there carries
+    `"symbol": "XAUUSD"`. A future sleeve type that wants `"auto"` has to pass this test first.
+    """
+    tree = ast.parse(_CORE_SRC)
+    offenders = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Dict):
+            continue
+        pairs = {
+            k.value: v for k, v in zip(node.keys, node.values)
+            if isinstance(k, ast.Constant) and isinstance(k.value, str)
+        }
+        lot = pairs.get("lot")
+        if not (isinstance(lot, ast.Constant) and lot.value == "auto"):
+            continue
+        symbol = pairs.get("symbol")
+        if not (isinstance(symbol, ast.Constant) and symbol.value == "XAUUSD"):
+            offenders.append(node.lineno)
+    assert not offenders, (
+        f"decision_core.py:{offenders} emits 'lot': 'auto' on a sleeve that is not XAUUSD. "
+        "The gateway sizes that branch with gold_lot(), which prices against gold's contract "
+        "specs -- this would be a silently wrong lot on a live order, not an error."
+    )
 
 
 def test_no_sizing_call_site_omits_the_symbol():

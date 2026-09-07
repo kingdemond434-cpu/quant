@@ -1072,6 +1072,18 @@ def main() -> None:
     mc = _costed("miner_conversion", lambda: _producer(
         "check_miner_conversion", "scripts/check_miner_conversion.py"))
     _costed("frontier_report", lambda: frontier_report(h))
+    # THE FRONTIER LOOP'S LAST MISSING RUNG. Until now it ended at a plan: the supervisor scored a
+    # gap, wrote a queue row, and a person carried the idea to a builder by hand. That courier
+    # step is the thing the mandate names -- "no known gap is allowed to remain merely because
+    # nobody manually remembered to tell the builder."
+    #
+    # `--apply` IS SAFE HERE FOR A STRUCTURAL REASON, not an optimistic one: the implementer can
+    # only write under `frontier_intel/challengers/`, the containment is checked on the RESOLVED
+    # path so a generated name carrying `..` cannot walk into the money path, and every artifact
+    # is stamped authority ZERO. It opens no branch and merges nothing. A challenger nobody
+    # promotes costs a directory; the ladder to capital is unchanged.
+    fi = _costed("frontier_implementer", lambda: _producer(
+        "frontier_implementer", "frontier_intel/implementer.py", "--apply"))
     # PUBLICATION IS THE LAST TWO LEGS, and their order is not arbitrary: sealing survivors makes
     # new rows the dashboard should show, so publishing the view before sealing would render a
     # board that is one full hour behind the pass that just produced it.
@@ -1152,6 +1164,7 @@ def main() -> None:
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "external_gauntlet": gt, "merge_docket": mh, "backtest": bt,
                     "recertify_canon": rc, "pf_allocator": pa,
+                    "frontier_implementer": fi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)

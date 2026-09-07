@@ -53,5 +53,31 @@ def test_an_empty_or_single_row_ledger_expresses_no_opinion() -> None:
     assert P.degenerate_evidence(_rows("g", [-1.0]), "g") == ""
 
 
-def test_one_differing_value_is_enough_dispersion() -> None:
-    assert not P.degenerate_evidence(_rows("g", [-1.0] * 29 + [-0.5]), "g")
+def test_one_differing_value_is_not_enough_dispersion() -> None:
+    """SUPERSEDED BY THE SECOND INCIDENT, and the rename records which way the law moved.
+
+    This test used to assert the opposite -- that 29 identical values plus one different one was
+    enough dispersion to retire on. That was written when `degenerate_evidence` only refused a
+    PERFECTLY constant series, and it was exactly the hole the 09-02 retirement went through:
+    about twenty-five identical -1.000s and a few other values, enough to pass a test for perfect
+    constancy, none of the dispersion a real book has. gold_asia was retired on it while the
+    account those sleeves trade went 500 -> 743.
+
+    The 80% modal check that closed that hole is STRICTER, not looser: it refuses MORE
+    retirements, and a retirement is a live book being stopped. 29 of 30 identical is 97% and is
+    the defect shape, not evidence. Nothing about the retire thresholds themselves moved -- a
+    genuinely losing sleeve loses different amounts and still trips every rule.
+    """
+    assert P.degenerate_evidence(_rows("g", [-1.0] * 29 + [-0.5]), "g")
+
+
+def test_dispersion_below_the_modal_threshold_still_retires() -> None:
+    """The guard must cost nothing on a series that is merely BAD rather than broken.
+
+    Just under 80% of one value: real, ugly, dispersed performance. If this were refused the
+    guard would have become a way for a losing sleeve to avoid retirement, which is the failure
+    mode in the opposite direction.
+    """
+    vals = [-1.0] * 23 + [-0.4, -1.7, -0.9, 0.3, -2.1, -0.15, 0.55]
+    assert len(vals) == 30 and vals.count(-1.0) / 30 < 0.80
+    assert not P.degenerate_evidence(_rows("g", vals), "g")
