@@ -354,8 +354,8 @@
         "title": "Trade",
         "url": "",
         "symbols": [
-          "GBPUSD",
-          "XAUUSD"
+          "XAUUSD",
+          "GBPUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -399,9 +399,9 @@
         "title": "I built an open-source MT5 visual replacer for backtesting \u2014 looking for honest feedback before I take it further",
         "url": "",
         "symbols": [
-          "GBPUSD",
           "XAUUSD",
-          "EURUSD"
+          "EURUSD",
+          "GBPUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -709,7 +709,7 @@
     ]
   },
   "sec_edgar": {
-    "count": 8,
+    "count": 9,
     "discoveries": [
       {
         "source": "sec_edgar",
@@ -722,18 +722,6 @@
         ],
         "confidence": 0.4,
         "description": "Bridgewater has recent 13F filing - check for position changes"
-      },
-      {
-        "source": "sec_edgar",
-        "type": "13f_filing",
-        "fund": "Renaissance",
-        "cik": "0001037389",
-        "symbols": [
-          "US500",
-          "NAS100"
-        ],
-        "confidence": 0.4,
-        "description": "Renaissance has recent 13F filing - check for position changes"
       },
       {
         "source": "sec_edgar",
@@ -786,6 +774,18 @@
       {
         "source": "sec_edgar",
         "type": "13f_filing",
+        "fund": "Millennium",
+        "cik": "0001103804",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Millennium has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
         "fund": "Baupost",
         "cik": "0001061768",
         "symbols": [
@@ -806,6 +806,18 @@
         ],
         "confidence": 0.4,
         "description": "Soros has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Appaloosa",
+        "cik": "0001103847",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Appaloosa has recent 13F filing - check for position changes"
       }
     ]
   },
