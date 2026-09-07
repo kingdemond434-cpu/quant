@@ -221,6 +221,29 @@ def _box_identity() -> object:
     return mod
 
 
+def test_a_sync_that_publishes_all_ten_paths_leaves_the_seal_valid(repo: Path) -> None:
+    """The end-to-end claim, walked with the REAL list rather than a sample of it.
+
+    `test_a_state_sync_commit_on_top_of_the_seal_is_the_same_code` used two paths and passed
+    throughout the eleven days the desk was refusing new risk, because the two it happened to
+    pick were both declared. Committing every path the script publishes is what makes the test
+    fail when one of them is not.
+    """
+    ps = (ROOT / "desks" / "mt5" / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
+    block = ps.split("$relPaths = @(", 1)[1].split("\n)", 1)[0]
+    published = [m for m in re.findall(r'"([^"]+)"', block) if "/" in m]
+
+    doc = release.seal(root=repo)
+    _commit(repo, release.RELEASE_REL, None, "seal release")
+    head = ""
+    for rel in published:
+        head = _commit(repo, rel, '{"synced": true}\n', "mt5 shadow state sync")
+
+    ok, why, code = release.accepts(head, doc, root=repo)
+    assert ok and code == [], (
+        f"after publishing all {len(published)} state paths the seal was refused: {why}")
+
+
 def test_every_path_the_box_publishes_is_declared_non_code() -> None:
     """NON_CODE and the sync script's `$relPaths` are one list kept in two files.
 
