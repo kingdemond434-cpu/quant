@@ -122,6 +122,73 @@ def duplicate_discoveries() -> tuple[list[tuple[Path, int]], dict]:
     return removable, {k: dict(v) for k, v in sorted(per_miner.items())}
 
 
+#: Charts in the order `download_remaining.TIMEFRAMES` fetches them: most value per byte first.
+#: Shedding walks this list BACKWARDS, so MN1 and the odd minute charts go before H1 ever does.
+_TF_VALUE_ORDER = ("H1", "M15", "M5", "M30", "H4", "D1", "M1", "W1", "MN1",
+                   "H2", "H3", "H6", "H8", "H12", "M2", "M3", "M4", "M6", "M10", "M12", "M20")
+
+#: Free space below which the hourly sweep sheds charts on its own, no flag required. Set under
+#: `download_remaining`'s 8 GB floor so the two do not fight: the downloader fills to 8, this only
+#: acts if something else (the tape, a pull, a cache) has eaten into 4.
+AUTO_SHED_BELOW_GB = 4.0
+#: What an automatic shed aims to leave free. Above AUTO_SHED_BELOW_GB so one sweep ends the
+#: emergency rather than trimming to the trigger and firing again an hour later.
+AUTO_SHED_TARGET_GB = 6.0
+
+
+def _tf_of(path: Path) -> str:
+    """The chart in a `<SYMBOL>_<TF>.parquet` name, or "" when the name does not carry one."""
+    stem = path.stem
+    return stem.rsplit("_", 1)[1].upper() if "_" in stem else ""
+
+
+def shed_bars_to_target(target_bytes: int, apply: bool) -> tuple[int, int, list[str]]:
+    """Remove the LEAST valuable charts until `target_bytes` are free. Returns (files, bytes, tfs).
+
+    ALL-OR-NOTHING WAS THE WRONG SHAPE. `--shed-bars` deleted the entire lake, so relieving a
+    disk cost every chart on every symbol and the next hourly download re-fetched all of them --
+    a full rebuild to recover a couple of gigabytes, on a box whose downloads are the reason it
+    filled up. Worse, it threw away H1 (which every family reads) to save the same bytes as
+    M20 (which almost nothing does).
+
+    So this sheds in reverse of the order `download_remaining` FETCHES in -- that list is already
+    ordered by value per byte, and reusing it is what keeps the two halves from disagreeing about
+    which chart matters. MN1, M20, M12 and the other marginal periods go first; H1 is last and in
+    practice never reached. Charts whose name carries no timeframe are shed before any known one:
+    nothing on this desk reads a bar file it cannot name.
+    """
+    files, _total = bar_lake()
+    if not files:
+        return 0, 0, []
+    # An UNNAMEABLE chart ranks past the least valuable named one, so it is shed first: nothing
+    # on this desk reads a bar file whose timeframe it cannot parse, and keeping one in
+    # preference to M20 would be preferring a file with no known reader to a file with a rare
+    # one. (Verified: the shed order begins WEIRD, MN1, M20, M12 ... and reaches H1 last.)
+    unknown_rank = len(_TF_VALUE_ORDER) + 1
+    rank = {tf: i for i, tf in enumerate(_TF_VALUE_ORDER)}
+    files.sort(key=lambda fs: -rank.get(_tf_of(fs[0]), unknown_rank))
+    freed, shed, tfs = 0, 0, []
+    for path, size in files:
+        if _is_protected(path):
+            continue
+        try:
+            if shutil.disk_usage(BASE).free + freed >= target_bytes:
+                break
+        except OSError:
+            pass
+        if apply:
+            try:
+                path.unlink()
+            except OSError:
+                continue
+        freed += size
+        shed += 1
+        tf = _tf_of(path) or "?"
+        if tf not in tfs:
+            tfs.append(tf)
+    return shed, freed, tfs
+
+
 def bar_lake() -> tuple[list[tuple[Path, int]], int]:
     """Every bar parquet, with its total size. REFETCHABLE, and that is the whole point.
 
@@ -231,6 +298,27 @@ def main(argv: list[str] | None = None) -> int:
     # rather than finished. The bar lake is the largest refetchable thing on the box (the tape is
     # larger and is never touched), so it goes first and its result is printed immediately.
     bars_shed = 0
+    # THE HOURLY SWEEP NOW RELIEVES A LOW DISK ON ITS OWN. `hourly_cycle` runs this with --apply
+    # and no --shed-bars, so for as long as the flag was the only route the box could sit at its
+    # download floor indefinitely and no scheduled thing would ever take a byte back. A cleanup
+    # that requires a human to notice is not a cleanup on a desk nobody is watching.
+    #
+    # Only the least valuable charts go, and only far enough to clear the emergency -- see
+    # `shed_bars_to_target`. The tape is untouched at every threshold, as everywhere in this file.
+    if apply and not shed_bars:
+        try:
+            free_now = shutil.disk_usage(BASE).free
+        except OSError:
+            free_now = None
+        if free_now is not None and free_now < AUTO_SHED_BELOW_GB * (1024 ** 3):
+            n, freed, tfs = shed_bars_to_target(int(AUTO_SHED_TARGET_GB * (1024 ** 3)), True)
+            bars_shed += n
+            plan["auto_shed"] = {"files": n, "gb": _gb(freed), "charts": tfs,
+                                 "trigger_gb": AUTO_SHED_BELOW_GB,
+                                 "target_gb": AUTO_SHED_TARGET_GB}
+            print(f"AUTO-SHED        : {_gb(free_now)} GB free (below {AUTO_SHED_BELOW_GB} GB) "
+                  f"-- shed {n:,} file(s), {_gb(freed)} GB, least valuable charts first "
+                  f"{tfs[:8]}; free now {_gb(shutil.disk_usage(BASE).free)} GB", flush=True)
     if apply and shed_bars:
         # ONLY ON AN EXPLICIT FLAG. Shedding bars costs a re-download, which is minutes and no
         # information -- but it is still a deliberate act, not something a routine hourly sweep

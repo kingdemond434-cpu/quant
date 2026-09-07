@@ -126,7 +126,23 @@ def main(argv: list[str] | None = None) -> int:
     #
     # The floor is generous on purpose: the tape appends continuously while this runs, and leaving
     # it a gigabyte of headroom costs a few charts that the next pass picks up anyway.
-    floor_bytes = float(os.environ.get("BARS_MIN_FREE_GB", "2")) * (1024 ** 3)
+    # THE FLOOR IS WHAT THE REST OF THE BOX NEEDS, NOT WHAT THIS SCRIPT NEEDS.
+    #
+    # It was 2 GB, and that number is why the disk kept ending up full. This runs EVERY HOUR from
+    # `hourly_cycle.refresh_bars`, and it downloads until free space reaches the floor -- so the
+    # steady state of this box is "exactly the floor, forever". Two gigabytes is more than enough
+    # for the next parquet and nowhere near enough for what else lives here: a `git pull` of this
+    # repo unpacks and writes loose objects, the tick tape appends continuously and can never be
+    # deleted, and the gauntlet writes a cache. Measured 2026-09-07, in this order: the lake
+    # refilled to the floor, `git pull` died as "cannot write loose object file: No space left on
+    # device", `git stash` could not save the worktree, and the box could not pull the fix for
+    # what was wrong with it. None of those three announce themselves as a disk problem.
+    #
+    # 8 GB leaves room for a pull, a tape that grows ~0.2-0.5 GB a day, and the caches -- roughly
+    # three weeks of tape growth before anything has to give, and `reclaim_disk` sheds the least
+    # valuable charts if it ever does. Overridable per-box, because the right number is a
+    # property of the disk this runs on and not of this file.
+    floor_bytes = float(os.environ.get("BARS_MIN_FREE_GB", "8")) * (1024 ** 3)
     stopped_for_space = False
 
     # CHART-MAJOR, NOT SYMBOL-MAJOR, and on a disk-limited box this is the whole point of the
