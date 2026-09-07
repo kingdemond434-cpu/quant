@@ -42,8 +42,32 @@ def _installer_text() -> str:
 
 
 def _registered_names() -> set[str]:
-    """Task names the installer's table declares."""
-    return set(re.findall(r'@\{\s*Name\s*=\s*"([^"]+)"', _installer_text()))
+    """Every task name the installer actually registers, by either route.
+
+    TWO ROUTES, AND ONLY COUNTING ONE IS HOW A DUPLICATE GOT WRITTEN. Most tasks come from the
+    `$tasks` table, but several have their own `Register-ScheduledTask` block further down --
+    MT5-ShadowSync, MT5-ResearchSupervisor, MT5-RiskUnitsFence, MT5-QQuantGatesCertify -- because
+    they need settings the table cannot express (an offset trigger, -MultipleInstances IgnoreNew,
+    a daily schedule). A coverage check that reads only the table reports those as MISSING, which
+    invites exactly the fix that broke it: adding a table row for a task that already had a
+    better block, so both run and the surviving settings are a coin toss.
+    """
+    text = _installer_text()
+    return (set(re.findall(r'@\{\s*Name\s*=\s*"([^"]+)"', text))
+            | set(re.findall(r'Register-ScheduledTask\s+-TaskName\s+"([^"]+)"', text)))
+
+
+def test_no_task_is_registered_by_both_routes() -> None:
+    """A task in the table AND in its own block is registered twice, last writer wins.
+
+    That is not harmless redundancy: the two registrations carry different triggers and settings,
+    so which ones the box ends up running depends on statement order rather than on intent.
+    """
+    text = _installer_text()
+    table = set(re.findall(r'@\{\s*Name\s*=\s*"([^"]+)"', text))
+    blocks = set(re.findall(r'Register-ScheduledTask\s+-TaskName\s+"([^"]+)"', text))
+    both = sorted(table & blocks)
+    assert not both, f"registered twice, with different settings each time: {both}"
 
 
 def _table_entries() -> list[tuple[str, str]]:

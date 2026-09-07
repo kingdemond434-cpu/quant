@@ -244,20 +244,18 @@ $tasks = @(
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
                      -RepetitionInterval (New-TimeSpan -Minutes 10) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
-       Desc = "Heal stacked, stalled and Disabled research tasks; never touches the money path." },
-    @{ Name = "MT5-ShadowSync"
-       Kind = "ps1"
-       Script = "scripts\\sync_shadow_to_git.ps1"
-       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                     -RepetitionInterval (New-TimeSpan -Minutes 15) `
-                     -RepetitionDuration (New-TimeSpan -Days 3650) }
-       # THE PUBLISHER. `ops/box-repair.ps1` already treats its absence as a hard failure --
-       # "this box has no 15-minute publisher" -- and yet the canonical installer could not
-       # create it, so the only way to have one was to remember a separate manual step.
-       Desc = "Publish this box's state to the shared branch every 15 minutes." }
+       Desc = "Heal stacked, stalled and Disabled research tasks; never touches the money path." }
 )
 
 # NOT IN THIS TABLE, AND THE REASONS ARE NOT SYMMETRIC:
+#   MT5-ShadowSync    already has its own registration block further down, and that block is
+#                     strictly better than a table row: it offsets the trigger five minutes past
+#                     the 00/15/30/45 replay slots so the publisher never races a ledger write,
+#                     and sets -MultipleInstances IgnoreNew. A table row would fire exactly ON
+#                     those slots -- the race its own comment exists to avoid -- and, registering
+#                     first, would simply be replaced by the block a moment later. Two
+#                     registrations of one task is not redundancy, it is a coin toss about which
+#                     settings survive.
 #   MT5-TerminalBoot  starts terminal64.exe, which is a GUI process. A task registered here runs
 #                     in the same session as the rest, but the terminal needs an INTERACTIVE
 #                     logon; ops/box-repair.ps1 documents the fix (schtasks /Change /RU <user>

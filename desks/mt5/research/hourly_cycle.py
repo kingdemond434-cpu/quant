@@ -443,18 +443,49 @@ def _costed(name: str, fn):
     NEVER FAILS THE LEG. A ledger that can take down the work it measures would be removed within
     a week, correctly. An absent `libs` (this file also runs from the desk root on the box) simply
     means the leg runs uncosted, which is the state it was in before.
+
+    ONE LEG MUST NEVER TAKE THE PASS WITH IT, which is `_producer`'s own stated principle --
+    "a crash inside them must not take the cycle's remaining legs with it" -- extended from the
+    subprocess legs to every leg. Subprocess legs already had it; in-process legs and, as it
+    turned out, errors raised while BUILDING a call did not.
+
+    MEASURED 2026-09-07, and the cost was not theoretical:
+
+        TypeError: _producer() takes from 2 to 3 positional arguments but 4 were given
+
+    escaped `main` at leg `pf_allocator`, so `publish_state`, `issue_board` and the four research
+    report producers -- every leg after it -- never ran. The board then froze and reported those
+    same reports as STALLED. A fifty-five-leg research cycle that stops dead on one bad call is
+    a cycle whose reliability is the product of fifty-five things all going right.
+
+    NOT SILENT, WHICH IS THE WHOLE DIFFERENCE. The failure is printed, recorded in the compute
+    ledger with its exception, and returned as the leg's result -- so it lands in
+    `sync_marker.json` and reaches the issue board like any other bad leg. What changes is only
+    that the OTHER fifty-four legs still get to run.
+
+    KeyboardInterrupt and SystemExit are re-raised: those are someone stopping the pass, not the
+    pass failing, and catching them would make the cycle unkillable.
     """
     try:
         from libs.ops.compute_ledger import close_run, open_run
     except Exception:                                                   # noqa: BLE001
-        return fn()
-    run = open_run(name, kind="hourly_cycle")
+        open_run = close_run = None                                     # type: ignore[assignment]
+    run = open_run(name, kind="hourly_cycle") if open_run else None
     try:
         out = fn()
-    except BaseException as exc:
-        close_run(run, outcome=f"{type(exc).__name__}: {exc}"[:200])
+    except (KeyboardInterrupt, SystemExit):
+        if close_run and run is not None:
+            close_run(run, outcome="interrupted")
         raise
-    close_run(run, outcome="ok")
+    except BaseException as exc:                                        # noqa: BLE001
+        detail = f"{type(exc).__name__}: {exc}"
+        if close_run and run is not None:
+            close_run(run, outcome=detail[:200])
+        print(f"  LEG FAILED {name}: {detail}", flush=True)
+        return {"error": detail[:300], "status": "LEG_FAILED",
+                "at": datetime.now(UTC).isoformat()}
+    if close_run and run is not None:
+        close_run(run, outcome="ok")
     return out
 
 
@@ -466,8 +497,37 @@ def _costed(name: str, fn):
 SEARCH_BUDGET_SEC = 720
 
 
-def _producer(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
+def _producer(name: str, script: str,
+              *args: str | tuple[str, ...] | list[str]) -> dict:
     """Run one hypothesis producer as a subprocess, bounded, and report what happened.
+
+    ARGUMENTS ARE VARIADIC AND TUPLES ARE FLATTENED, because the old single-tuple signature took
+    the whole cycle down. Measured on the box 2026-09-07:
+
+        TypeError: _producer() takes from 2 to 3 positional arguments but 4 were given
+
+    from `_producer("pf_allocator", "research/pf_allocator.py", "--mode", "normal")`. That is the
+    obvious way to write it, two of the legs here were written that way, and the signature
+    accepted only `("--mode", "normal")` as one tuple. `_costed` does not swallow a TypeError
+    raised while BUILDING the call -- the exception escapes `main`, so the cycle died at leg
+    `pf_allocator` and every leg after it never ran: `publish_state`, `issue_board` and the four
+    research reports among them. The issue board froze at 12:37 and reported the reports it never
+    got to run as STALLED, which is a defect describing its own symptom.
+
+    Accepting both shapes costs three lines and removes the whole class. A call that reads
+    naturally is not a call that should crash a fifty-five-leg cycle.
+    """
+    flat: list[str] = []
+    for a in args:
+        if isinstance(a, (tuple, list)):
+            flat.extend(str(x) for x in a)
+        else:
+            flat.append(str(a))
+    return _producer_impl(name, script, tuple(flat))
+
+
+def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
+    """The body: resolve the script against both roots and run it under the cycle budget.
 
     NOT IN-PROCESS, unlike `deepen`. These are search jobs: they allocate heavily, they can hang
     on a terminal call, and a crash inside them must not take the cycle's remaining legs with it.
