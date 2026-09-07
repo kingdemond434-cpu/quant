@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import sys
 from collections import defaultdict
@@ -189,6 +190,54 @@ def shed_bars_to_target(target_bytes: int, apply: bool) -> tuple[int, int, list[
     return shed, freed, tfs
 
 
+def mt5_history_cache() -> tuple[list[Path], int]:
+    """MetaTrader's OWN downloaded history cache, and its size. REFETCHABLE, like the bar lake.
+
+    THE THING THAT ACTUALLY FILLED THE DISK, and nothing on this desk had ever looked at it.
+    MEASURED FROM RESCUE 2026-09-07, on a 100 GB volume with 20 MB free:
+
+        30 GB   pagefile.sys                       (Windows rebuilds it at boot)
+        21 GB   AppData/Roaming/MetaQuotes/.../bases
+        17 GB   opt/quant/.git
+        4.3 GB  data/tape                          (irreplaceable, never touched)
+        0.22 GB data/universe                      <- the bar lake
+
+    The bar lake -- the only thing this script and `stall_watch` could shed, the thing a whole
+    day was spent deleting -- was TWO HUNDRED AND TWENTY MEGABYTES. Every sweep the desk owned
+    could have run to completion, hourly, forever, and the disk would still have filled, because
+    none of them could see the two files holding fifty gigabytes between them.
+
+    `bases` is where the terminal caches every chart it downloads. `refresh_bars` asks it for 21
+    timeframes across 250 symbols every hour, so it grows monotonically with exactly the thing
+    this desk does most. It is a CACHE: deleting it costs a re-download and no information, which
+    is the same trade as the bar lake at a hundred times the size.
+
+    Only `bases` is removed -- never the MetaQuotes folder itself, which holds the terminal's
+    login, profiles and settings. Losing those would mean an unattended box that cannot reconnect
+    to the broker, which is a far worse outcome than a full disk.
+    """
+    roots: list[Path] = []
+    for env in ("APPDATA", "USERPROFILE"):
+        v = os.environ.get(env)
+        if not v:
+            continue
+        base = Path(v)
+        if env == "USERPROFILE":
+            base = base / "AppData" / "Roaming"
+        roots.append(base / "MetaQuotes" / "Terminal")
+    found: list[Path] = []
+    total = 0
+    for r in roots:
+        if not r.exists():
+            continue
+        for term in r.iterdir():
+            cache = term / "bases"
+            if cache.is_dir() and not _is_protected(cache):
+                found.append(cache)
+                total += _size(cache)
+    return found, total
+
+
 def bar_lake() -> tuple[list[tuple[Path, int]], int]:
     """Every bar parquet, with its total size. REFETCHABLE, and that is the whole point.
 
@@ -311,6 +360,21 @@ def main(argv: list[str] | None = None) -> int:
         except OSError:
             free_now = None
         if free_now is not None and free_now < AUTO_SHED_BELOW_GB * (1024 ** 3):
+            # THE TERMINAL'S CACHE GOES FIRST, because it is the larger refetchable thing by two
+            # orders of magnitude (21 GB against 0.22 GB, measured 2026-09-07) and because
+            # shedding it costs the same as shedding bars: a re-download, no information.
+            caches, cache_bytes = mt5_history_cache()
+            if caches:
+                for c in caches:
+                    shutil.rmtree(c, ignore_errors=True)
+                plan["mt5_cache_shed_gb"] = _gb(cache_bytes)
+                print(f"AUTO-SHED        : MetaTrader history cache {_gb(cache_bytes)} GB in "
+                      f"{len(caches)} terminal(s) -- the terminal refills what it needs",
+                      flush=True)
+                try:
+                    free_now = shutil.disk_usage(BASE).free
+                except OSError:
+                    pass
             n, freed, tfs = shed_bars_to_target(int(AUTO_SHED_TARGET_GB * (1024 ** 3)), True)
             bars_shed += n
             plan["auto_shed"] = {"files": n, "gb": _gb(freed), "charts": tfs,
@@ -387,6 +451,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"duplicate rows   : {plan['duplicate_discovery_gb']} GB in "
           f"{plan['fully_duplicate_discovery_files']} fully-duplicate discovery file(s)")
     print(f"tick tape        : {plan['tape_gb_PROTECTED']} GB -- PROTECTED, never touched (a tick nobody recorded is gone)")
+    _caches, _cache_bytes = mt5_history_cache()
+    plan["mt5_history_cache_gb_REFETCHABLE"] = _gb(_cache_bytes)
+    print(f"MT5 history cache: {_gb(_cache_bytes)} GB in {len(_caches)} terminal(s) -- REFETCHABLE "
+          f"(this was 21 GB and invisible to every sweep until 2026-09-07)")
     print(f"bar lake         : {plan['bar_lake_gb_REFETCHABLE']} GB in {plan['bar_files']:,} file(s) -- REFETCHABLE in minutes"
           + ("" if shed_bars else "  [--shed-bars to reclaim]"))
     if tape_plan and tape_plan.get("files"):
