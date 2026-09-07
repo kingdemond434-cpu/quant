@@ -369,6 +369,28 @@ def degenerate_evidence(ledger: list[dict], name: str) -> str:
                 f"is a computation defect, not performance; refusing to retire on it")
     if all(x == 0.0 for x in rs):
         return f"all {len(rs)} r_multiples are 0.0 -- risk_per_lot was unmeasurable on every fill"
+    # NEAR-CONSTANT IS THE SAME DEFECT, AND THE EXACT TEST ABOVE MISSED IT BY A HAIR. The 09-01
+    # retirement was caught because all thirty r_multiples were EXACTLY -1.000. The 09-02 one was
+    # not: exp -0.842 over n=30, which is about twenty-five identical -1.000s and a few other
+    # values -- enough dispersion to pass a test for perfect constancy, and none of the dispersion
+    # a real book has. It retired gold_asia while the account those sleeves trade went 500 -> 743.
+    #
+    # A GENUINELY LOSING SLEEVE LOSES DIFFERENT AMOUNTS. Stops slip, spreads vary, partial fills
+    # land differently; thirty trades do not settle on one number. A series dominated by a single
+    # repeated value is the signature of a stop-distance or risk_per_lot computation returning a
+    # constant, and the losses being reported are arithmetic rather than money.
+    #
+    # This softens no threshold. A real loser trips every rule below on a dispersed series; what
+    # it refuses is retiring a LIVE BOOK on a number that cannot be what it claims to be.
+    counts: dict[float, int] = {}
+    for x in rs:
+        key = round(x, 9)
+        counts[key] = counts.get(key, 0) + 1
+    value, hits = max(counts.items(), key=lambda kv: kv[1])
+    if hits / len(rs) >= 0.80:
+        return (f"{hits} of {len(rs)} r_multiples are exactly {value:+.3f} ({100*hits/len(rs):.0f}%)"
+                f" -- a near-constant series is a computation defect, not performance; a real "
+                f"sleeve's losses differ in size. Refusing to retire on it")
     return ""
 
 
