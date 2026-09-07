@@ -195,14 +195,33 @@ def evidence(graph_rows: Iterable[dict[str, Any]],
 
 
 def allocate(ev: dict[str, dict[str, Any]], rng: np.random.Generator, *, draws: int = 400,
-             explore: float = EXPLORE) -> dict[str, float]:
-    """Thompson shares: P(arm is best) under sampled survival rates, plus the exploration floor."""
+             explore: float = EXPLORE,
+             credit: dict[str, float] | None = None) -> dict[str, float]:
+    """Thompson shares: P(arm is best) under sampled survival rates, plus the exploration floor.
+
+    `credit` is `libs.research.breadth_credit` -- what a HIT from this arm is worth to the
+    PORTFOLIO, as opposed to on its own. It multiplies the worth/cost ratio AFTER the cold-arm
+    clamp below, deliberately: the clamp exists to stop an arm's own thin evidence deciding the
+    budget, and the breadth credit is not evidence about an arm at all. It is arithmetic about
+    what a hit is worth given where the arm's output lands, and it applies to a cold arm exactly
+    as it applies to a warm one. Clamping it away would erase it from the nine arms that carry no
+    judged hypotheses -- which is every arm that could raise this book's effective breadth.
+    """
     arms = [a for a in ARMS if a in ev]
     ratio = {a: ev[a]["worth"] / ev[a]["cost"] for a in arms}
     pooled_ratio = float(np.mean(list(ratio.values()))) if ratio else 1.0
     for a in arms:
         if ev[a]["failed"] + ev[a]["certified"] < MIN_JUDGED:
-            ratio[a] = min(ratio[a], pooled_ratio)              # cold arm: no price advantage
+            # ASSIGNED, NOT `min`. The clamp used to be `min(ratio[a], pooled_ratio)`, which
+            # removed a cheap arm's price ADVANTAGE and left an expensive arm's price PENALTY
+            # untouched -- so with `worth` flat at 1.0 across all eleven arms, as it was measured
+            # on 2026-09-07, the budget was still decided by the cost table: corr(share, 1/cost)
+            # = 0.87, `new_mechanism` at 5.8% against `combine_survivors` at 13.6%. The comment
+            # already said "evidence, not price, allocates" and the asymmetric clamp is what
+            # stopped it being true. A cold arm has no price signal in either direction.
+            ratio[a] = pooled_ratio
+    for a in arms:
+        ratio[a] *= float((credit or {}).get(a, 1.0))
     wins = np.zeros(len(arms))
     for _ in range(draws):
         s = np.array([rng.beta(ev[a]["alpha"], ev[a]["beta"]) * ratio[a] for a in arms])
@@ -264,6 +283,52 @@ def _marginal_by_arm() -> dict[str, float]:
     return out
 
 
+def _cluster_of(row: dict[str, Any]) -> str | None:
+    """The alpha cluster a hypothesis row monetises, or None when it cannot be named."""
+    try:
+        from libs.research.alpha_clusters import UNCLASSIFIED, classify_family, classify_sleeve
+    except Exception:                                                    # noqa: BLE001
+        return None
+    for key in ("family", "cell", "name", "id"):
+        v = row.get(key)
+        if not isinstance(v, str) or not v:
+            continue
+        lab = classify_family(v) if key == "family" else classify_sleeve(v)
+        if lab and lab != UNCLASSIFIED:
+            return str(lab)
+    return None
+
+
+def breadth_credit() -> dict[str, Any]:
+    """Per-arm portfolio dE[log W] credit, measured where the graph allows and declared elsewhere.
+
+    THE ARM THAT CAN RAISE BREADTH WAS THE ARM BEING STARVED. `new_mechanism` owns
+    `empty_alpha_cluster` and therefore every one of the eleven unoccupied alpha clusters, and it
+    was receiving 5.8% of research compute because it costs 9 declared units while
+    `combine_survivors` costs 3. This is the term that makes the difference between those two
+    arms an economic statement rather than a price comparison.
+    """
+    try:
+        from libs.research.breadth_credit import credits, occupied_shares
+        from libs.research.hypothesis_graph import Graph
+        rows = [r for r in Graph().rows() if isinstance(r, dict)]
+        state = None
+        try:
+            from libs.research.breadth_credit import book_state
+            state = book_state()
+        except Exception:                                                # noqa: BLE001
+            state = None
+        occupied = set((state or {}).get("occupied") or [])
+        shares_by_arm = occupied_shares(rows, lambda r: arm_of(r.get("source"), r.get("kind")),
+                                        _cluster_of, occupied)
+        return credits(ARMS, measured_shares=shares_by_arm)
+    except Exception as exc:                                             # noqa: BLE001
+        # UNMEASURED means every credit is 1.0, which is exactly the behaviour that existed
+        # before this term did. A broken credit must never be able to change an allocation.
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}",
+                "credit": {a: 1.0 for a in ARMS}}
+
+
 def run(seed: int = 0, write: bool = True) -> dict[str, Any]:
     try:
         from libs.research.hypothesis_graph import Graph
@@ -271,11 +336,17 @@ def run(seed: int = 0, write: bool = True) -> dict[str, Any]:
     except Exception:
         rows = []
     ev = evidence(rows, _marginal_by_arm())
-    shares = allocate({a: v for a, v in ev.items() if a in ARMS}, np.random.default_rng(seed))
+    bc = breadth_credit()
+    shares = allocate({a: v for a, v in ev.items() if a in ARMS}, np.random.default_rng(seed),
+                      credit=bc.get("credit"))
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "graph_rows": len(rows),
            "explore": EXPLORE, "pseudo_counts": PSEUDO, "shares": shares, "arms": ev,
-           "rule": ("score = E[dElogW] x P(survivor) / cost; Thompson shares + uniform "
-                    f"exploration {EXPLORE:.0%}; consumers: deepening_worker.voi_order, "
+           "breadth_credit": bc,
+           "rule": ("score = E[dElogW] x P(survivor) x breadth_credit / cost, where the credit is "
+                    "the marginal dk_eff this arm's output buys the CURRENT book -- dE[log W] is "
+                    "proportional to k_eff for a Kelly book, so a duplicate scores below a weaker "
+                    "but independent mechanism. Thompson shares + uniform exploration "
+                    f"{EXPLORE:.0%}; consumers: deepening_worker.voi_order, "
                     "daily_cycle proposer budgets")}
     if write:
         BUDGET.parent.mkdir(parents=True, exist_ok=True)

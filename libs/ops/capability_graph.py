@@ -603,7 +603,15 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/hypothesis_graph.jsonl", "desks/mt5/data/research_marginal.json",
                 # dElog per data source and the DEAD INFORMATION list: the budget is where
                 # naming becomes a decision.
-                "desks/mt5/reports/allocator_attribution.json"),
+                "desks/mt5/reports/allocator_attribution.json",
+                # THE BREADTH CREDIT'S INPUT, and the edge that makes the research budget respond
+                # to a PORTFOLIO weakness rather than to a price list (principal, 2026-09-07:
+                # "your research allocator should respond to portfolio weaknesses"). This edge is
+                # the loop closing: the allocator measures effective breadth, `alpha_breadth`
+                # publishes it and the clusters nobody occupies, and the bandit prices an arm's
+                # output by the dk_eff it would buy THIS book. Without the edge the bandit reads
+                # only its own history and can never learn that the book is one bet.
+                "desks/mt5/reports/EFFECTIVE_BREADTH.json"),
          writes=("desks/mt5/data/research_budget.json",
                  "desks/mt5/reports/RESEARCH_BANDIT.json")),
 
