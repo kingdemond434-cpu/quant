@@ -1650,6 +1650,9 @@ def main():
     # which is the explicit revocation record the authority ratchet accepts as grounds for a floor
     # to fall (check_authority_ratchet.REVOCATION_KEYS). Dropping them silently would read to that
     # ratchet as evidence vanishing -- the alarm it exists to raise.
+    # Correction: eligibility for a NEW test is not proof for revoking an EXISTING result.
+    # A missing host cache must not erase every certificate on the Windows box. Require explicit
+    # venue restriction below; native data and promotion guards still govern execution.
     retired = dict(old_doc.get("retired_certificates") or {})
     if meta:
         stamp = datetime.now(UTC).isoformat()

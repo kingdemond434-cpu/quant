@@ -383,6 +383,7 @@ def main() -> int:
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
     per_source: dict[str, dict[str, int]] = {}
+    source_candidates: dict[str, set[str]] = {}
     untestable = structurally_untestable_families()
     if untestable:
         print("families routed to DEEPENING (measured untestable at current parameters): "
@@ -404,6 +405,13 @@ def main() -> int:
                 continue
             if identity not in candidates:
                 candidates[identity] = candidate
+            # Keep all contributing miners without submitting the same experiment twice.
+            origins = candidates[identity].setdefault("contributing_sources", [])
+            if source not in origins:
+                origins.append(source)
+            seen = source_candidates.setdefault(source, set())
+            if identity not in seen:
+                seen.add(identity)
                 stats["candidates"] += 1
         if not produced:
             compact = {
@@ -416,8 +424,9 @@ def main() -> int:
             }
             key = hashlib.sha256(
                 json.dumps(compact, sort_keys=True, default=str).encode()).hexdigest()
-            deepening[key] = compact
-            stats["deepening"] += 1
+            if key not in deepening:
+                deepening[key] = compact
+                stats["deepening"] += 1
 
     # THE GRAPH REMEMBERS WHAT WAS BURIED. Every compiled candidate is registered as BORN with
     # its miner row as parent, and every one that lands in a parameter region the gauntlet has

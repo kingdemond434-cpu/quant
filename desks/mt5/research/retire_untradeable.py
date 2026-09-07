@@ -18,9 +18,11 @@ recognises that key, so the certificate count may fall without the ratchet readi
 destroyed. A count that drops with no record is indistinguishable from a wipe, which is the exact
 failure the ratchet exists to catch.
 
-THE PREDICATE IS GATE 0's OWN. `external_gauntlet.symbol_is_tradeable`, imported rather than
-restated, so admission and retirement can never disagree about which symbols exist. A symbol the
-broker starts quoting tomorrow is tradeable tomorrow, and this stops retiring it.
+CORRECTION (2026-09-07): the historical missing-parquet rationale above proved unsafe across
+hosts. Missing local bars or registry membership blocks measurement, but does not prove permanent
+venue ineligibility. `external_gauntlet.certificate_retirement_reason` now requires an explicit
+venue restriction. Gate 0 for NEW candidates remains unchanged. Previously retired rows are not
+automatically restored by this maintenance job.
 
 IDEMPOTENT AND FAIL-CLOSED. Re-running changes nothing; a symbol whose tradeability cannot be
 measured is LEFT ALONE, because "cannot tell" is not "cannot trade" (L1.28a).
