@@ -1,7 +1,316 @@
 {
   "youtube": {
-    "count": 3,
+    "count": 27,
     "discoveries": [
+      {
+        "source": "youtube",
+        "title": "Gold Price Outlook Today: Sept 7, 2026 Technical Pivot Alert!",
+        "channel": "Bulls Eye Trade",
+        "url": "https://youtube.com/watch?v=4-5UbBtOKTI",
+        "published": "2026-09-07T06:35:21Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "LIVESTREAM TRADING Th\u1ef1c chi\u1ebfn l\u01b0\u1edbt s\u00f3ng v\u00e0ng ng\u00e0y 07/09/2026. #xauusd   #forextrading",
+        "channel": "\u0110\u1ee9c Anh Trader (Th\u1ea7n R\u00f9a)",
+        "url": "https://youtube.com/watch?v=VQWcka4cA0Q",
+        "published": "2026-09-07T06:05:23Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Turn Your Trading Skills Into a Strategy \ud83d\udcb0 #Forex #ForexTrading #ForexTrader #GoldTrading #XAUUSD",
+        "channel": "TradeWithX_1\ud83d\udcc8\ud83d\udcb8",
+        "url": "https://youtube.com/watch?v=JPXk3K8j6qs",
+        "published": "2026-09-07T05:17:27Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD Gold SELL Setup | 07 September 2026 | Entry, SL &amp; 3 Take Profit Levels | #shorts",
+        "channel": "Pip Trading",
+        "url": "https://youtube.com/watch?v=tm6BC7bU_ec",
+        "published": "2026-09-07T05:14:57Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Daily gold live trade analysis \ud83d\udc4c\ud83d\udc4d#live#trending#trading#short #forex trading#fyp\u30b7\u309aviral",
+        "channel": "Learn trading with kainat Khan ",
+        "url": "https://youtube.com/watch?v=a-UJbKI6asw",
+        "published": "2026-09-07T07:51:10Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "POWER OF MSNR \u26a1 SNIPER ENTRY | Alchemist Concept | XAUUSD #Shorts #trading",
+        "channel": "Trader Mindsets | Zero 2 Prime",
+        "url": "https://youtube.com/watch?v=6mh2fCn2Xmg",
+        "published": "2026-09-07T07:36:24Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Gold Buy Setup | Waiting for 1H Shift\ud83d\udc40",
+        "channel": "Blacklist Trades",
+        "url": "https://youtube.com/watch?v=h6zFyFa9E0s",
+        "published": "2026-09-07T06:40:26Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [
+          [
+            "1",
+            "H"
+          ],
+          [
+            "4",
+            "H"
+          ]
+        ],
+        "patterns": [],
+        "confidence": 0.4
+      },
+      {
+        "source": "youtube",
+        "title": "The Ultimate Candlestick Patterns Cheat Sheet #trading #alerts #forex #gold  #xauusd #priceaction",
+        "channel": "PIP PIONEER FX",
+        "url": "https://youtube.com/watch?v=kXLCluxO2NA",
+        "published": "2026-09-07T06:39:12Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "\ud83d\udd34 LIVE XAUUSD TRADING | GOLD Live Trading | CRYPTO Live | Bitcoin Live Trading #xauusd #forextrading",
+        "channel": "The Trading Girl",
+        "url": "https://youtube.com/watch?v=axUZF5XoyX8",
+        "published": "2026-09-07T06:39:27Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Gold Price Outlook Today: Sept 7, 2026 Technical Pivot Alert!",
+        "channel": "Bulls Eye Trade",
+        "url": "https://youtube.com/watch?v=4-5UbBtOKTI",
+        "published": "2026-09-07T06:35:21Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD GOLD SMC &amp; ICT Trading Setup \ud83d\udd25 #shorts #shortsfeed",
+        "channel": "Onpoint Fx Nitesh",
+        "url": "https://youtube.com/watch?v=H6eiP1cjTcw",
+        "published": "2026-09-07T06:31:47Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [
+          "ICT"
+        ],
+        "confidence": 0.35
+      },
+      {
+        "source": "youtube",
+        "title": "Gold scalping small account  #xauusd #livetrading part 1",
+        "channel": "C.C.O.T 404",
+        "url": "https://youtube.com/watch?v=qN30rRPvSgE",
+        "published": "2026-09-07T06:18:02Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [
+          "SMA"
+        ],
+        "confidence": 0.35
+      },
+      {
+        "source": "youtube",
+        "title": "\u30109/7\u3011\u9031\u982d\u306eUSDJPY(\u30c9\u30eb\u5186)\u306a\u300c\u5f85\u3061\u300d\uff5cEURUSD(\u30e6\u30fc\u30ed\u30c9\u30eb)\u62bc\u3057\u76ee\u8cb7\u3044\u6ce8\u76ee\uff01\uff5c\u76f8\u5834\u5206\u6790\uff5c #Shorts",
+        "channel": "Taira'sFX",
+        "url": "https://youtube.com/watch?v=erzu1hlyAh8",
+        "published": "2026-09-06T22:00:06Z",
+        "symbols": [
+          "EURUSD",
+          "USDJPY"
+        ],
+        "timeframes": [],
+        "patterns": [
+          "SMA"
+        ],
+        "confidence": 0.55
+      },
+      {
+        "source": "youtube",
+        "title": "\u30aa\u30fc\u30b8\u30fc\u5186(AUDJPY)\u65e5\u8db3\u30ec\u30f3\u30b8\u30d6\u30ec\u30a4\u30af\u5f8c\u306e\u7acb\u3061\u56de\u308a\u89e3\u8aac",
+        "channel": "\u30a8\u30f3\u30bf\u30e1FX",
+        "url": "https://youtube.com/watch?v=Roc-BCMv3hM",
+        "published": "2026-09-06T11:15:06Z",
+        "symbols": [
+          "AUDJPY"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "7-11 Week Bias Gold,DXY,JPY BTCUSD",
+        "channel": "StegaFx",
+        "url": "https://youtube.com/watch?v=8zXeGC2zjpI",
+        "published": "2026-09-05T20:54:54Z",
+        "symbols": [
+          "BTCUSD"
+        ],
+        "timeframes": [
+          [
+            "11",
+            "Week"
+          ]
+        ],
+        "patterns": [],
+        "confidence": 0.30000000000000004
+      },
+      {
+        "source": "youtube",
+        "title": "\ud835\udc06\ud835\udc01\ud835\udc0f\ud835\udc09\ud835\udc0f\ud835\udc18 \ud835\udc07\ud835\udfd2 |\ud835\udfce\ud835\udfd5 - \ud835\udfcf\ud835\udfcf \ud835\udc12\ud835\udc1e\ud835\udc29\ud835\udc2d\ud835\udc1e\ud835\udc26\ud835\udc1b\ud835\udc1e\ud835\udc2b \ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #smc #trading #forex #gbpjpy #jpy #gbp #technicalanalysis",
+        "channel": "Samurai FX",
+        "url": "https://youtube.com/watch?v=VUA3MF_zae8",
+        "published": "2026-09-05T17:14:11Z",
+        "symbols": [
+          "GBPJPY"
+        ],
+        "timeframes": [
+          "H4"
+        ],
+        "patterns": [],
+        "confidence": 0.30000000000000004
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD LONDON SESSION LIVE \ud83d\udd34 | WILL GOLD BREAK THE ASIAN RANGE? | Forex Trading &amp; Live Analysis",
+        "channel": "Next Trader ",
+        "url": "https://youtube.com/watch?v=iO1h-Zpi9zc",
+        "published": "2026-09-07T05:28:25Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD LONDON SESSION LIVE \ud83d\udd34 | WILL GOLD BREAK THE ASIAN RANGE? | Forex Trading &amp; Live Analysis",
+        "channel": "Next Trader ",
+        "url": "https://youtube.com/watch?v=-bIfCtMjSoc",
+        "published": "2026-09-07T05:00:57Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "LIVE | Forex Analysis | Sep 3 | CHINMAY GADHARI",
+        "channel": "Chinmay Gadhari ",
+        "url": "https://youtube.com/watch?v=mp2YPmTItUo",
+        "published": "2026-09-03T19:13:41Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "LIVE XAUUSD TRADING | GOLD , BTC | Live Forex Trading \ud83d\ude80  @BullishMasterFX @bullishbullmaster",
+        "channel": "Bullish Master FX",
+        "url": "https://youtube.com/watch?v=5hhA1rtpJqE",
+        "published": "2026-09-03T12:55:49Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "LIVE XAUUSD TRADING | GOLD , BTC | Live Forex Trading \ud83d\ude80  @BullishMasterFX @bullishbullmaster",
+        "channel": "Bullish Master FX",
+        "url": "https://youtube.com/watch?v=Am0NrMrg0dA",
+        "published": "2026-09-01T12:28:53Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "POWER OF MSNR \u26a1 SNIPER ENTRY | Alchemist Concept | XAUUSD #Shorts #trading",
+        "channel": "Trader Mindsets | Zero 2 Prime",
+        "url": "https://youtube.com/watch?v=6mh2fCn2Xmg",
+        "published": "2026-09-07T07:36:24Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
       {
         "source": "youtube",
         "title": "Gold &amp; Silver Scalping Strategy | Last Week\u2019s Complete Performance Review#xauusdscalping #xauusdlive",
@@ -17,10 +326,10 @@
       },
       {
         "source": "youtube",
-        "title": "GOLD (XAUUSD) Daily Technical Analysis &amp; Today&#39;s Trading Setup | Forex Market Analysis",
-        "channel": "Forex Fever",
-        "url": "https://youtube.com/watch?v=1jhuqGzdizE",
-        "published": "2026-09-07T03:41:11Z",
+        "title": "POWER OF MSNR \u26a1 SNIPER ENTRY | Alchemist Concept | XAUUSD #Shorts #trading",
+        "channel": "Trader Mindsets | Zero 2 Prime",
+        "url": "https://youtube.com/watch?v=6mh2fCn2Xmg",
+        "published": "2026-09-07T07:36:24Z",
         "symbols": [
           "XAUUSD"
         ],
@@ -30,19 +339,46 @@
       },
       {
         "source": "youtube",
-        "title": "Xauusd\ud83d\udcca #forextrading #liquidity #priceaction #smc #tradingstrategy #tradingtips #youtubeshorts",
-        "channel": "A.tradz\ud83d\udcca",
-        "url": "https://youtube.com/watch?v=exRCr7mHQ70",
-        "published": "2026-09-07T03:25:09Z",
+        "title": "\ud83d\udcc8MACD + Moving Average Strategy Explained #MACD #Forex #MovingAverage #EURUSD #WealthixMarket",
+        "channel": "Wealthix Markets",
+        "url": "https://youtube.com/watch?v=K55lIFait-I",
+        "published": "2026-09-06T16:36:04Z",
+        "symbols": [
+          "EURUSD"
+        ],
+        "timeframes": [],
+        "patterns": [
+          "moving average",
+          "EMA",
+          "MACD"
+        ],
+        "confidence": 0.6499999999999999
+      },
+      {
+        "source": "youtube",
+        "title": "\ud83d\udd34 BTC Live trading 367 / 07.09.2026 #bitcoin  #nfp  #forex #gold #gbpjpytrading  #crypto",
+        "channel": "UpDown FX",
+        "url": "https://youtube.com/watch?v=LzrCWxizYJU",
+        "published": "2026-09-07T04:01:52Z",
+        "symbols": [
+          "GBPJPY"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Forex NFP Trade #forextrading #nfplivetrade #xauusdanalysis",
+        "channel": "FinTech Lab",
+        "url": "https://youtube.com/watch?v=oHONHJYmkDs",
+        "published": "2026-09-06T14:50:31Z",
         "symbols": [
           "XAUUSD"
         ],
         "timeframes": [],
-        "patterns": [
-          "order block",
-          "liquidity"
-        ],
-        "confidence": 0.5
+        "patterns": [],
+        "confidence": 0.2
       }
     ]
   },
@@ -81,40 +417,40 @@
         "repo": "Anastasiamaster/forex-c15-trader-strategy-mt4",
         "url": "https://github.com/Anastasiamaster/forex-c15-trader-strategy-mt4",
         "description": "Official repository for Forex C 15 Trader Strategy on MetaTrader 4 (MT4). Clean, non-repainting M15 intraday trading signals, trend filter, and risk management templates for Forex & Gold (XAUUSD).",
-        "stars": 98,
+        "stars": 99,
         "language": null,
         "symbols": [
           "XAUUSD"
         ],
         "patterns": [],
-        "confidence": 0.29800000000000004
+        "confidence": 0.29900000000000004
       },
       {
         "source": "github",
         "repo": "Evangeline668/forex-market-balance-trading-system",
         "url": "https://github.com/Evangeline668/forex-market-balance-trading-system",
         "description": "An institutional Forex Market Balance strategy for MetaTrader 4 (MT4). Automate value area detection, identify order flow imbalances, and trade alongside smart money with high R:R setups.",
-        "stars": 101,
+        "stars": 102,
         "language": null,
         "symbols": [],
         "patterns": [
           "SMA",
           "smart money"
         ],
-        "confidence": 0.401
+        "confidence": 0.402
       },
       {
         "source": "github",
         "repo": "Evangeline668/forex-tp-pro-trend-strategy-mt4",
         "url": "https://github.com/Evangeline668/forex-tp-pro-trend-strategy-mt4",
         "description": "Forex TP PRO Trend Strategy for MetaTrader 4 \u2014 A 100% no-repaint signal system for trading currency pairs and XAUUSD with built-in risk rules.",
-        "stars": 100,
+        "stars": 101,
         "language": null,
         "symbols": [
           "XAUUSD"
         ],
         "patterns": [],
-        "confidence": 0.30000000000000004
+        "confidence": 0.30100000000000005
       },
       {
         "source": "github",
@@ -134,7 +470,7 @@
         "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
         "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
         "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
-        "stars": 99,
+        "stars": 100,
         "language": null,
         "symbols": [
           "XAUUSD"
@@ -142,28 +478,28 @@
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.44899999999999995
+        "confidence": 0.44999999999999996
       },
       {
         "source": "github",
         "repo": "Clementinemaster/forex-mpx-zones-strategy-mt4",
         "url": "https://github.com/Clementinemaster/forex-mpx-zones-strategy-mt4",
         "description": "Forex MPX Zones Strategy for MT4 \u2013 Master institutional order flow trading. Automate smart money zone mapping, get real-time price alerts, and upgrade your FX execution.",
-        "stars": 98,
+        "stars": 99,
         "language": null,
         "symbols": [],
         "patterns": [
           "SMA",
           "smart money"
         ],
-        "confidence": 0.398
+        "confidence": 0.399
       },
       {
         "source": "github",
         "repo": "Clementinemaster/forex-stgfx-advanced-strategy-mt4",
         "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
         "description": "High Risk-to-Reward Forex & Gold (XAUUSD) trading strategy for MetaTrader 4 (MT4). Built on 100% non-repainting signals, multi-timeframe volatility filtering, and systematic risk management. Includes complete setup guide, templates (.tpl), and presets (.set).",
-        "stars": 99,
+        "stars": 100,
         "language": null,
         "symbols": [
           "XAUUSD"
@@ -171,7 +507,7 @@
         "patterns": [
           "EMA"
         ],
-        "confidence": 0.44899999999999995
+        "confidence": 0.44999999999999996
       },
       {
         "source": "github",
@@ -191,7 +527,7 @@
         "repo": "rolling-panda-san/notebooks",
         "url": "https://github.com/rolling-panda-san/notebooks",
         "description": "Analysis on systematic trading strategies (e.g., trend-following, carry and mean-reversion). The result is regularly updated. ",
-        "stars": 756,
+        "stars": 757,
         "language": "Jupyter Notebook",
         "symbols": [],
         "patterns": [
@@ -213,6 +549,19 @@
           "RSI"
         ],
         "confidence": 0.681
+      },
+      {
+        "source": "github",
+        "repo": "nirholas/robinhood-chain-trading-bot",
+        "url": "https://github.com/nirholas/robinhood-chain-trading-bot",
+        "description": "Open-source autonomous trading bot for Robinhood Chain. Four strategies: launch sniping, momentum, Stock Token premium/discount arbitrage, and a bring-your-own-key LLM strategist (Claude, OpenAI, Groq, or OpenRouter). Real risk caps, real signed swaps, paper mode by default, live P&L dashboard.",
+        "stars": 7,
+        "language": "TypeScript",
+        "symbols": [],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.157
       },
       {
         "source": "github",
@@ -298,19 +647,6 @@
       },
       {
         "source": "github",
-        "repo": "nirholas/robinhood-chain-trading-bot",
-        "url": "https://github.com/nirholas/robinhood-chain-trading-bot",
-        "description": "Open-source autonomous trading bot for Robinhood Chain. Four strategies: launch sniping, momentum, Stock Token premium/discount arbitrage, and a bring-your-own-key LLM strategist (Claude, OpenAI, Groq, or OpenRouter). Real risk caps, real signed swaps, paper mode by default, live P&L dashboard.",
-        "stars": 7,
-        "language": "TypeScript",
-        "symbols": [],
-        "patterns": [
-          "momentum"
-        ],
-        "confidence": 0.157
-      },
-      {
-        "source": "github",
         "repo": "jefrnc/strategy-orb15-momentum",
         "url": "https://github.com/jefrnc/strategy-orb15-momentum",
         "description": "Opening Range Breakout system in Python \u2014 reproducible backtest, risk management and walk-forward validation. Results are in the repo; no return promises.",
@@ -328,7 +664,7 @@
         "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
         "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
         "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
-        "stars": 99,
+        "stars": 100,
         "language": null,
         "symbols": [
           "XAUUSD"
@@ -336,7 +672,7 @@
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.44899999999999995
+        "confidence": 0.44999999999999996
       }
     ]
   },
@@ -422,7 +758,7 @@
     ]
   },
   "reddit": {
-    "count": 82,
+    "count": 16,
     "discoveries": [
       {
         "source": "reddit",
@@ -430,8 +766,8 @@
         "title": "Trade",
         "url": "",
         "symbols": [
-          "GBPUSD",
-          "XAUUSD"
+          "XAUUSD",
+          "GBPUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -475,9 +811,9 @@
         "title": "I built an open-source MT5 visual replacer for backtesting \u2014 looking for honest feedback before I take it further",
         "url": "",
         "symbols": [
-          "EURUSD",
+          "XAUUSD",
           "GBPUSD",
-          "XAUUSD"
+          "EURUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -615,754 +951,6 @@
           "XAUUSD"
         ],
         "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "utah gold home running dirt",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "My friends owns a home with a river in the back full of gold flakes",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Cool find",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "No chart. Just a handful of gold.",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Baht gold collecting",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "SMA"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Aussie gold. The prettiest color.",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "25x 1g gold from Costco",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Carrying gold coins on a USA domestic flight?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Scratch and dent sales",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "New to stacking, been doing research. Do you find it\u2019s important to really get fractional eagles vs others, as an American",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Legit check",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Been collecting from a long time like a hobby",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "WTB: Gold American eagle coin cufflinks",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Jewellery vs Bars",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Apmex vs Costco",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Central figure arrested in Tarrant County elderly gold theft scheme, more than 40 indicted",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Selling Fractional Coins & Bars",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Where would I purchase the gold bars",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Picked up a nice 14k gold bracelet at a thrift shop for $3. 7.9g",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Can anyone help me find a bezel for my 5g gold bar",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Not a gold guy but just picked up our wedding rings",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Chain worth anything beyond melt value? 10k gold box chain made in Italy, est. 1960s-1980s",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Real story",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Kitco buying?",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Considering redeeming portion of investment for gold",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "$1000 in twenty dollar bills vs $1000 in pure gold. (CAD)",
-        "url": "",
-        "symbols": [
-          "XAUUSD",
-          "DXY"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "GOLD INTO STOCKS ?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Why is my gold-plated jewelry turning black",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Most accurate way of testing gold?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Wie viel ist das Armband meiner verstorbenen Oma Wert.",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Should I sell my gold now?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "LMU Gold 20 Franc coins country collection",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Gold up\u2026.gold down",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Found this in an abandoned factory, is this actually gold?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "If Fed doesn\u2019t raise rates in September, Gold will rip higher like never seen before. A fed hold after the data we\u2019ve seen so far would mean a complete capitulation and loss of credibility.",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "World's biggest sovereign wealth fund plans to cut U.S. Treasury holdings -- Norway's mammoth wealth fund wants to cut its holdings of government bonds, chiefly affecting U.S. Treasurys",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Gold",
-        "title": "Gold? Silber? Bin ich reich?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "It's been sad days for me, but I made it up to myself",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Acquiring My First Vintage Piece: A 1 oz Johnson Matthey Bullion Bar (Serial #249998)",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [
-          "RSI"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Am I tripping or did SD Bullion send me a rare coin on accident??",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Bought my first ever silver after visiting Costco",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "New fractional addition to the stack",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Mall call",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "New favorite silver round.",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "DXY"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Selling silver eagles purchased in 2015",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "My stack for being 15?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Any information on this National Dallas silver hand pour bar?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "State of the stack",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "RSI"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Where to have silver melted?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Collection is growing a bit",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Anybody else collect these as well?",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [
-          "SMA"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Is This Silver?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "RCM Commemorative Silver Coin weighs less than specified, is this normal?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Loose Silver Treasure Box (last image unlocks the treasure)",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Bought my first silver today.",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "90%/92.5% or pure",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Stack update! 3.07 OZ.",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "$50 flea market find... 1492g of Egyptian hallmarked 900 silver.",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Silver ladle, can anyone recognize the name and stamps here?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Best place to sell in Denver?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Seeking information on this piece...?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Samurai Silver!",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Found a sunbaker, 925",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Traded my last remaining 26 40% silver kennedys for 4 American Silver Eagles .999",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "1984 1 oz Silver Libertad",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "The Best Looking \"Cull\" I've Ever Pulled From An LCS Bargain Bin. 1897 - P Morgan Silver Dollar",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "DXY"
-        ],
-        "patterns": [
-          "support"
-        ],
         "confidence": 0.3
       }
     ]

@@ -1,28 +1,23 @@
 {
-  "updated_at": "2026-09-07T06:15:09+00:00",
-  "certificate_lookup_error": null,
+  "updated_at": "2026-08-22T22:30:07+00:00",
   "shadow_start": "2026-08-22T18:00:00+00:00",
   "source": {
-    "fetched_at": "2026-09-07T06:15:09+00:00",
-    "source_server": "FusionMarkets-Live",
-    "source_company": "Fusion Markets Pty Ltd",
-    "account_trade_allowed": true,
+    "fetched_at": "2026-08-22T22:30:05+00:00",
+    "source_server": "VantageMarkets-Live 14",
+    "source_company": "VIG Group Ltd.",
+    "account_trade_allowed": false,
     "symbol": "XAUUSD",
     "rows": {
       "M1": 20000,
       "M5": 20000,
       "M15": 20000
     },
-    "promotion_authority": true
+    "promotion_authority": false
   },
-  "declared_sleeves": 4,
   "configured_sleeves": 4,
-  "gate_blocked_sleeves": 0,
   "sleeves": {
     "xau_m5_anti_breakout_overlap": {
-      "forward_start": "2026-09-06T00:30:48.331467+00:00",
-      "first_trade_at": null,
-      "status": "ACCUMULATING",
+      "status": "WAITING_FOR_FORWARD_BARS",
       "timeframe": "M5",
       "choice": {
         "family": "anti_donchian_breakout",
@@ -32,32 +27,18 @@
         "max_hold": 9
       },
       "n": 0,
-      "n_historical": 39,
-      "days": 1,
-      "days_active": 1,
-      "forward_empty_reason": "the clock froze at 2026-09-06T00:30:48.331467+00:00 and no trade has occurred since",
+      "days": 0,
       "expectancy_r": null,
       "max_drawdown_r": 0.0,
-      "forward_verdict": {
-        "n_eff": 0.0,
-        "n_eff_basis": "n<2",
-        "seq_lower_bound": null,
-        "significant": false,
-        "independent": false,
-        "reason": "immature: 0/30 trades, 1/14 days; needs 30 more trades"
-      },
-      "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-09-07T09:15:00+00:00",
+      "last_source_bar": "2026-08-21T23:55:00+00:00",
       "matured": false,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
-      "note": "Fusion-native forward shadow."
+      "promotion_authority": false,
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
     },
     "xau_m5_anti_momentum_ny": {
-      "forward_start": "2026-09-06T00:30:48.331490+00:00",
-      "first_trade_at": null,
-      "status": "ACCUMULATING",
+      "status": "WAITING_FOR_FORWARD_BARS",
       "timeframe": "M5",
       "choice": {
         "family": "anti_three_bar_momentum",
@@ -67,32 +48,18 @@
         "max_hold": 9
       },
       "n": 0,
-      "n_historical": 65,
-      "days": 1,
-      "days_active": 1,
-      "forward_empty_reason": "the clock froze at 2026-09-06T00:30:48.331490+00:00 and no trade has occurred since",
+      "days": 0,
       "expectancy_r": null,
       "max_drawdown_r": 0.0,
-      "forward_verdict": {
-        "n_eff": 0.0,
-        "n_eff_basis": "n<2",
-        "seq_lower_bound": null,
-        "significant": false,
-        "independent": false,
-        "reason": "immature: 0/30 trades, 1/14 days; needs 30 more trades"
-      },
-      "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-09-07T09:15:00+00:00",
+      "last_source_bar": "2026-08-21T23:55:00+00:00",
       "matured": false,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
-      "note": "Fusion-native forward shadow."
+      "promotion_authority": false,
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
     },
     "xau_m15_anti_breakout": {
-      "forward_start": "2026-09-06T00:30:48.331504+00:00",
-      "first_trade_at": null,
-      "status": "ACCUMULATING",
+      "status": "WAITING_FOR_FORWARD_BARS",
       "timeframe": "M15",
       "choice": {
         "family": "anti_donchian_breakout",
@@ -102,32 +69,18 @@
         "max_hold": 6
       },
       "n": 0,
-      "n_historical": 70,
-      "days": 1,
-      "days_active": 1,
-      "forward_empty_reason": "the clock froze at 2026-09-06T00:30:48.331504+00:00 and no trade has occurred since",
+      "days": 0,
       "expectancy_r": null,
       "max_drawdown_r": 0.0,
-      "forward_verdict": {
-        "n_eff": 0.0,
-        "n_eff_basis": "n<2",
-        "seq_lower_bound": null,
-        "significant": false,
-        "independent": false,
-        "reason": "immature: 0/30 trades, 1/14 days; needs 30 more trades"
-      },
-      "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-09-07T09:15:00+00:00",
+      "last_source_bar": "2026-08-21T23:45:00+00:00",
       "matured": false,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
-      "note": "Fusion-native forward shadow."
+      "promotion_authority": false,
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
     },
     "xau_m15_anti_momentum": {
-      "forward_start": "2026-08-22T18:00:00+00:00",
-      "first_trade_at": null,
-      "status": "KILL",
+      "status": "WAITING_FOR_FORWARD_BARS",
       "timeframe": "M15",
       "choice": {
         "family": "anti_three_bar_momentum",
@@ -136,30 +89,17 @@
         "target_atr": 1.5,
         "max_hold": 6
       },
-      "n": 129,
-      "n_historical": 0,
-      "days": 16,
-      "days_active": 16,
-      "forward_empty_reason": "",
-      "expectancy_r": -0.006006540880508568,
-      "max_drawdown_r": -5.049974889583536,
-      "forward_verdict": {
-        "n_eff": 129.0,
-        "n_eff_basis": "acf_adjusted(rho_sum=0.000)",
-        "seq_lower_bound": -0.217074,
-        "significant": false,
-        "independent": true,
-        "reason": "matured and independent but mean R -0.0060 is not positive"
-      },
-      "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-09-07T09:15:00+00:00",
-      "matured": true,
+      "n": 0,
+      "days": 0,
+      "expectancy_r": null,
+      "max_drawdown_r": 0.0,
+      "last_source_bar": "2026-08-21T23:45:00+00:00",
+      "matured": false,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
-      "note": "Fusion-native forward shadow."
+      "promotion_authority": false,
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
     }
   },
-  "quarantined_candidates": {},
   "represented_sleeves": 4
 }
