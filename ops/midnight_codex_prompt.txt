@@ -17,6 +17,10 @@ Repair in dependency order:
 launches, schedules and sync/publication. Verify hourly miner/intake/compiler/gauntlet/certifier
 completion and existing faster shadow cadence. Resume long jobs with candidate-level checkpoints,
 locks, bounded retries and no duplication; never restart completed experiments.
+Explicitly audit the tier-1 frontier miner, implementer, world crawler and every existing hourly
+research organ: correct schedule, successful recent execution, meaningful fresh output and actual
+downstream consumption. Repair missing hourly wiring and recurring causes with regression tests;
+an empty success, repeating identical discoveries or a restarted-but-stalled worker is not fixed.
 2. Drain every eligible docket cell through the canonical backtest and unchanged ten gates.
 Account by immutable identity for compiled, backtested, judged, rejected, blocked, certified and
 forward states. Preserve early terminal rejects, whole-search multiplicity and full-program
