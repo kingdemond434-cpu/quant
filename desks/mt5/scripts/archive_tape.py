@@ -183,6 +183,45 @@ def _verified_copy(src: Path, dst: Path) -> tuple[bool, str]:
     return True, "copied and verified"
 
 
+def _is_object_store(dest: str) -> bool:
+    return dest.startswith("s3://") or dest == "s3"
+
+
+def _object_key(prefix: str, symbol: str, day: str) -> str:
+    p = prefix.strip("/")
+    return f"{p}/{symbol}/{day}.parquet" if p else f"{symbol}/{day}.parquet"
+
+
+def _verified_upload(cfg, prefix: str, src: Path, symbol: str, day: str) -> tuple[bool, str, str]:
+    """Upload one partition and PROVE it arrived. Returns (ok, note, sha256 of the bytes sent).
+
+    The proof is the same standard the local path holds: the source is not removed until the
+    destination has been read back and shown to be these bytes. Here that is a HEAD comparing
+    length and ETag rather than a re-download -- see `object_store.verify` for why an ETag is
+    sufficient for a single-part PUT and why a multipart one is refused instead of trusted.
+
+    An object that is ALREADY correct is accepted without re-uploading, so an interrupted run
+    resumes over the network instead of re-shipping gigabytes it already shipped.
+    """
+    from mt5desk import object_store
+    key = _object_key(prefix, symbol, day)
+    try:
+        data = src.read_bytes()
+    except OSError as exc:
+        return False, f"cannot read source: {exc}", ""
+    digest = hashlib.sha256(data).hexdigest()
+    ok, why = object_store.verify(cfg, key, data)
+    if ok:
+        return True, "already archived and verified", digest
+    ok, detail = object_store.put(cfg, key, data)
+    if not ok:
+        return False, f"upload failed: {detail}", digest
+    ok, why = object_store.verify(cfg, key, data)
+    if not ok:
+        return False, f"uploaded but NOT verified ({why}) -- source kept", digest
+    return True, "uploaded and verified", digest
+
+
 def _append_manifest(row: dict) -> None:
     MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     with MANIFEST.open("a", encoding="utf-8") as fh:
@@ -225,8 +264,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dest", required=True,
-                    help="directory the old partitions move to: another volume, a mapped drive "
-                         "or a mounted remote. Must NOT be inside data/tape.")
+                    help="where partitions move to. Either a DIRECTORY (another volume, a mapped "
+                         "drive, a mounted remote -- must not be inside data/tape), or an "
+                         "S3-COMPATIBLE URL `s3://<prefix>` using the bucket and endpoint from "
+                         "TAPE_ARCHIVE_* / data/secrets/tape_archive.json. The object store is "
+                         "the one destination that never becomes another machine's disk problem.")
     ap.add_argument("--keep-days", type=int, default=KEEP_DAYS,
                     help=f"days of tape that stay on the box (default {KEEP_DAYS}; the flag "
                          f"refuses anything below {READER_WINDOW_DAYS + 5})")
@@ -246,8 +288,11 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, indent=1))
         return 0 if not (result["missing_count"] or result["corrupt_count"]) else 1
 
+    s3_prefix = None
+    if _is_object_store(args.dest):
+        s3_prefix = args.dest[len("s3://"):] if args.dest.startswith("s3://") else ""
     # A destination inside the tape would "move" a file onto itself and then delete the source.
-    if _inside(dest, TAPE):
+    if s3_prefix is None and _inside(dest, TAPE):
         print(f"REFUSING: --dest {dest} is inside {TAPE}. The archive must leave this tree.")
         return 2
     if args.keep_days < READER_WINDOW_DAYS + 5:
@@ -281,6 +326,66 @@ def main(argv: list[str] | None = None) -> int:
     if not args.apply:
         print(f"\nMEASURE ONLY. --apply would move {_gb(total)} GB to {dest}")
         return 0
+
+    if s3_prefix is not None:
+        from mt5desk import object_store
+        cfg, why = object_store.load()
+        if cfg is None:
+            print(f"REFUSING: {why}")
+            return 2
+        print(f"destination     : {cfg.describe()} prefix={s3_prefix or '(root)'}")
+        moved = failed = already = 0
+        moved_bytes = 0
+        problems: list[str] = []
+        at = datetime.now(UTC).isoformat(timespec="seconds")
+        for r in rows:
+            src: Path = r["path"]
+            shape = _shape(src)
+            if shape is None:
+                failed += 1
+                problems.append(f"{r['symbol']} {r['day']}: unreadable parquet -- left in place")
+                continue
+            ok, note, digest = _verified_upload(cfg, s3_prefix, src, r["symbol"], r["day"])
+            if not ok:
+                failed += 1
+                problems.append(f"{r['symbol']} {r['day']}: {note}")
+                continue
+            # Manifest BEFORE the delete, as on the local path: a crash between the two leaves a
+            # recorded partition present in both places, which is recoverable. The other order
+            # loses the only record of where an irreplaceable file went.
+            _append_manifest({"symbol": r["symbol"], "day": r["day"], "bytes": r["bytes"],
+                              "rows": shape[0], "columns": list(shape[1]), "sha256": digest,
+                              "dest": f"s3://{cfg.bucket}/{_object_key(s3_prefix, r['symbol'], r['day'])}",
+                              "moved_at": at})
+            try:
+                src.unlink()
+            except OSError as exc:
+                failed += 1
+                problems.append(f"{r['symbol']} {r['day']}: uploaded and verified but source not "
+                                f"removed: {exc}")
+                continue
+            moved_bytes += r["bytes"]
+            moved += 1
+            if note.startswith("already"):
+                already += 1
+        free_after = _free_bytes(TAPE if TAPE.exists() else BASE)
+        REPORT.parent.mkdir(parents=True, exist_ok=True)
+        REPORT.write_text(json.dumps(
+            {"generated_at": at, "dest": f"s3://{cfg.bucket}/{s3_prefix}",
+             "keep_days": args.keep_days, "partitions_moved": moved,
+             "already_archived": already, "failed": failed, "gb_moved": _gb(moved_bytes),
+             "free_gb_before": _gb(free_here) if free_here is not None else None,
+             "free_gb_after": _gb(free_after) if free_after is not None else None,
+             "problems": problems[:100]}, indent=1), "utf-8")
+        print(f"\nuploaded   {moved} partitions, {_gb(moved_bytes)} GB")
+        if failed:
+            print(f"FAILED     {failed} -- every one still has its source file on this box")
+            for pr in problems[:10]:
+                print(f"  {pr}")
+        print(f"free here  {_gb(free_here) if free_here is not None else '?'} GB -> "
+              f"{_gb(free_after) if free_after is not None else '?'} GB")
+        print(f"manifest   {MANIFEST}")
+        return 1 if failed else 0
 
     dest.mkdir(parents=True, exist_ok=True)
     free_there = _free_bytes(dest)
