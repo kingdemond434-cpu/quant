@@ -125,15 +125,27 @@ def main(argv: list[str] | None = None) -> int:
     try:
         from mt5desk.release_identity import verdict
         ident = verdict(write=False)
-        say(OK if ident.ok else INFO,
+        # BLOCKING, NOT INFORMATIONAL, and getting this wrong made the whole script lie. It was
+        # written as INFO back when I believed the release verdict gated only the promoted lanes.
+        # When I found it also gates gold (the bracket loop tests it at gateway.py:2116, before
+        # `place_bracket` is reached) I corrected the TEXT and left the SEVERITY, so the script
+        # printed "NOTHING places until this is true" and then concluded "nothing refuses the
+        # gold book" in the same run. A check that explains the fault correctly and then reports
+        # the opposite verdict is worse than no check: it is the one thing a person acts on.
+        if not ident.ok:
+            blocking.append("release identity refuses new risk (NEW_RISK_OK false)")
+        say(OK if ident.ok else BAD,
             f"release identity: NEW_RISK_OK={bool(ident.ok)}"
             + ("" if ident.ok else
                f" -- {ident.reason}. NOTHING places until this is true: the bracket loop checks "
                f"it before it reaches place_bracket, so GOLD is refused by this too, not only "
                f"the promoted lanes (gateway.py:2116)."))
     except Exception as exc:                                   # noqa: BLE001
-        say(INFO, f"release identity UNMEASURED on this host ({type(exc).__name__}) -- the "
-                  f"gateway defaults it to False, and False refuses EVERY lane including gold")
+        # UNMEASURED IS NOT A PASS. The gateway's own default for NEW_RISK_OK is False, so a
+        # host that cannot measure the verdict is a host where nothing places.
+        blocking.append(f"release identity UNMEASURED ({type(exc).__name__})")
+        say(BAD, f"release identity UNMEASURED on this host ({type(exc).__name__}) -- the "
+                 f"gateway defaults it to False, and False refuses EVERY lane including gold")
 
     # -- 3. the registry ---------------------------------------------------------------------
     try:
