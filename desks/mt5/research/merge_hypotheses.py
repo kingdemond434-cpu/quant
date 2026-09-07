@@ -39,6 +39,14 @@ SOURCES = (
     # A generic producer, not a bond one -- it hunts whichever class the rotation has
     # left uncovered, so it works the same day equities or softs fall out.
     ("coverage_search_results.json", "hypotheses"),
+    # THE TICK TAPE, AS CANDIDATES RATHER THAN AS A RANKING NUDGE. Until 2026-09-07 the moat's
+    # entire contribution to research was `mined_ground.scan_moat`, which awards a symbol
+    # MOAT_WEIGHT * days_of_tape -- a flat +36 against XAUUSD's 5233, or 0.7%. Attention is not a
+    # hypothesis: it cannot be backtested, cannot pass a gate and cannot become a sleeve, so no
+    # amount of tape could reach the money path through it. `moat_miner` proposes cells for the
+    # families that already read the tape (liquidity_regime, orderflow_imbalance) and they face
+    # the same ten gates as everything else here.
+    ("moat_candidates.json", "hypotheses"),
     # Historical STATISTICAL_ONLY rejects re-stamped after a mechanism-map extension
     # (scripts/requeue_named_mechanisms.py). Merged when freshly rebuilt; hourly runs skip it
     # as stale once consumed -- a map extension re-opens gate 1, never any later gate.

@@ -881,6 +881,11 @@ def main() -> None:
     # rules. The cycle previously ran deepen BEFORE mine and never ran compile at all, so the
     # worker spent every hour on a queue nobody had refreshed and anything the crawlers fetched
     # after the last manual compile was unread for ever.
+    # THE MOAT, AS A PRODUCER. It runs immediately before `mine` so its rows are in
+    # data/hypotheses/ when `compile_candidates` merges the docket in this same pass -- a
+    # producer whose output arrives after its consumer has run is a producer nobody reads, which
+    # is the defect this file has now recorded three times.
+    mo = _costed("moat_miner", lambda: _producer("moat_miner", "research/moat_miner.py"))
     m = _costed("mine", mine)
     se = _costed("search", search)
     sw = _costed("sweep", sweep)
@@ -992,7 +997,7 @@ def main() -> None:
                     "graveyard_model": gm, "world_crawler": wc,
                     "release_identity": ri, "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
-                    "miner_conversion": mc, "smoke_release": smoke},
+                    "miner_conversion": mc, "moat_miner": mo, "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 
