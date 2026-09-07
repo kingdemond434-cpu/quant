@@ -860,6 +860,22 @@ def main() -> None:
     # a re-run that fails the gates is the correct answer to a claim the desk could never execute.
     rq = _costed("requeue_unrunnable", lambda: _producer(
         "requeue_unrunnable", "research/requeue_unrunnable.py", "--apply"))
+    # DUPLICATES REMOVED EVERY HOUR, WHICH IS ALSO THE DISK FIX. The discovery files are
+    # append-only by construction: every miner pass writes a new timestamped file knowing nothing
+    # about what earlier passes already wrote, so identical rows accumulate forever. Measured
+    # 2026-09-07: trading_latam 3,003 rows of which 3,003 are exact repeats, seasonality 97%,
+    # regional_survivors 77%, and 1,629 discovery files whose every row already existed.
+    #
+    # That is the same fact as the box sitting at 0.8 GB free -- and a full disk is not reported
+    # as a full disk: a push dies as "the remote end hung up unexpectedly", a parquet write
+    # truncates, a tape append loses what it could not flush. One cause, three subsystems blamed.
+    #
+    # Deduplicated on a hash of the row's own JSON, never on the economic key: a raw miner row
+    # has no family or symbol yet, so `_mechanism_key` would call 36,982 different swap rows
+    # identical and delete 36,981 of them. `data/tape` is excluded by resolved path at every
+    # threshold -- a tick nobody recorded cannot be re-downloaded.
+    dd = _costed("reclaim_disk", lambda: _producer(
+        "reclaim_disk", "scripts/reclaim_disk.py", "--apply"))
     # THE CONVERSION CHAIN, IN THE ORDER IT CONVERTS. mine fetches, compile turns what was fetched
     # into candidates and deepening tasks, deepen reverse-engineers the tasks that are not yet
     # rules. The cycle previously ran deepen BEFORE mine and never ran compile at all, so the
@@ -956,7 +972,7 @@ def main() -> None:
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
                     "release_identity": ri, "publish_state": pub,
-                    "enrol_clocks": ecl, "requeue_unrunnable": rq,
+                    "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
