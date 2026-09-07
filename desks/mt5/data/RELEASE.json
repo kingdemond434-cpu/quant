@@ -1,13 +1,13 @@
 {
- "generated_utc": "2026-09-07T07:57:29.458778+00:00",
- "live_sha": "d6405ff1bb90f2cc61bda2e6dd8c533e3204356f",
- "code_sha": "d6405ff1bb90f2cc61bda2e6dd8c533e3204356f",
- "parent_sha": "f634d8715daee4b192489df7af74ff81bd281104",
- "tree_sha": "a3ef90a0ddf3a7a1ed189e183ac87695d6763678",
+ "generated_utc": "2026-09-07T08:20:10.726048+00:00",
+ "live_sha": "dd7d5925876eda5318ec91ff469466acc4a8cad6",
+ "code_sha": "dd7d5925876eda5318ec91ff469466acc4a8cad6",
+ "parent_sha": "4847ae0f5e1b4f1e4c5d9ee3ad705c9bab48699d",
+ "tree_sha": "674d9ae4c40ec6431d791b359be4eaf8b4198bd8",
  "config_hash": "2852fb93553ef99e",
  "survivor_registry_hash": "35060cf42337de40",
  "allocator_hash": "9850f31d17c70363",
- "money_path_hash": "ce44c4ac41550a17",
+ "money_path_hash": "1077e98729f12461",
  "data_schema_version": "pit-1;features-2026-09-04.1",
  "money_path": [
   "desks/mt5/mt5desk/gateway.py",
@@ -34,8 +34,8 @@
   "libs/portfolio/capital_modifiers.py"
  ],
  "money_path_files": {
-  "desks/mt5/mt5desk/gateway.py": "44d1746d494425ec",
-  "desks/mt5/mt5desk/decision_core.py": "d3c3e6e70d40ca65",
+  "desks/mt5/mt5desk/gateway.py": "804942ca7fc41673",
+  "desks/mt5/mt5desk/decision_core.py": "e6f3602a05679482",
   "desks/mt5/mt5desk/sizing.py": "92ad3714cf680e19",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "510a350593f45297",
   "desks/mt5/mt5desk/engine.py": "2c1f8249b5edab5b",
@@ -80,13 +80,14 @@
   "desks/mt5/reports/shadow/shadow_health.json",
   "desks/mt5/reports/shadow/shadow_state.json"
  ],
- "release_id": "22eb5c85d01b",
+ "release_id": "8b594d7201bd",
  "sealed": true,
- "sealed_at": "2026-09-07T07:57:29.458778+00:00",
+ "sealed_at": "2026-09-07T08:20:10.726048+00:00",
  "sealed_by": "desk",
  "ci_run_id": null,
  "tested_sha": null,
  "worktree_dirty": [
-  "desks/mt5/data/moat_coverage.json"
+  "desks/mt5/data/moat_coverage.json",
+  "desks/mt5/data/release_identity.json"
  ]
 }
