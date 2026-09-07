@@ -122,13 +122,37 @@ def duplicate_discoveries() -> tuple[list[tuple[Path, int]], dict]:
     return removable, {k: dict(v) for k, v in sorted(per_miner.items())}
 
 
+def bar_lake() -> tuple[list[tuple[Path, int]], int]:
+    """Every bar parquet, with its total size. REFETCHABLE, and that is the whole point.
+
+    Measured on the box 2026-09-07: 0.964 GB free with a 5.664 GB tick tape. Caches and duplicate
+    discovery rows came to 0.007 GB between them -- nothing there is the problem. The two large
+    things on that disk are the tape and the bars, and they are opposites:
+
+      the tape   broker-native ticks nobody else holds. A tick that was not recorded is GONE.
+                 It must be MOVED off the box, never deleted, and this script never touches it.
+      the bars   downloaded from the terminal that is already running, 250 symbols x 7 charts
+                 in minutes, by desks/mt5/scripts/download_remaining.py.
+
+    So the bars are the only large thing on the box that can be shed and simply re-obtained, and
+    shedding them is how a full disk gets un-stuck without losing anything at all.
+    """
+    lake = BASE / "data" / "universe"
+    if not lake.exists():
+        return [], 0
+    files = [(p, _size(p)) for p in lake.glob("*.parquet") if p.is_file()]
+    return files, sum(n for _, n in files)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
     apply = "--apply" in args
+    shed_bars = "--shed-bars" in args
 
     free_before = shutil.disk_usage(BASE).free
     derived = derived_bytes()
     dup_files, per_miner = duplicate_discoveries()
+    bars, bars_bytes = bar_lake()
 
     plan = {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -138,6 +162,8 @@ def main(argv: list[str] | None = None) -> int:
         "fully_duplicate_discovery_files": len(dup_files),
         "duplicate_discovery_gb": _gb(sum(n for _, n in dup_files)),
         "tape_gb_PROTECTED": _gb(_size(TAPE)),
+        "bar_lake_gb_REFETCHABLE": _gb(bars_bytes),
+        "bar_files": len(bars),
         "per_miner": per_miner,
         "applied": apply,
     }
@@ -157,6 +183,20 @@ def main(argv: list[str] | None = None) -> int:
                 removed += 1
             except OSError:
                 pass
+        if shed_bars:
+            # ONLY ON AN EXPLICIT FLAG. Shedding bars costs a re-download, which is minutes and
+            # no information -- but it is still a deliberate act, not something a routine hourly
+            # sweep should do behind the operator's back.
+            for path, _ in bars:
+                if _is_protected(path):
+                    continue
+                try:
+                    path.unlink()
+                    removed += 1
+                except OSError:
+                    pass
+            plan["bars_shed"] = len(bars)
+            plan["refetch_with"] = "python desks/mt5/scripts/download_remaining.py"
         plan["paths_removed"] = removed
         plan["free_gb_after"] = _gb(shutil.disk_usage(BASE).free)
         plan["reclaimed_gb"] = round(plan["free_gb_after"] - plan["free_gb_before"], 3)
@@ -168,7 +208,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"derived caches   : {plan['derived_gb']} GB in {plan['derived_dirs']} dir(s)")
     print(f"duplicate rows   : {plan['duplicate_discovery_gb']} GB in "
           f"{plan['fully_duplicate_discovery_files']} fully-duplicate discovery file(s)")
-    print(f"tick tape        : {plan['tape_gb_PROTECTED']} GB -- PROTECTED, never touched")
+    print(f"tick tape        : {plan['tape_gb_PROTECTED']} GB -- PROTECTED, never touched (a tick nobody recorded is gone)")
+    print(f"bar lake         : {plan['bar_lake_gb_REFETCHABLE']} GB in {plan['bar_files']:,} file(s) -- REFETCHABLE in minutes"
+          + ("" if shed_bars else "  [--shed-bars to reclaim]"))
     if apply:
         print(f"reclaimed        : {plan['reclaimed_gb']} GB  (free now {plan['free_gb_after']} GB)")
     else:
