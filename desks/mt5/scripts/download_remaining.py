@@ -162,7 +162,25 @@ def main(argv: list[str] | None = None) -> int:
             if out.exists() and not args.refresh:
                 skipped += 1
                 continue
-            rates = mt5.copy_rates_from_pos(name, const, 0, BARS.get(tf, 50_000))
+            # ASK SMALLER WHEN THE TERMINAL SAYS NOTHING, because "nothing" is what MT5 returns
+            # when the request EXCEEDS its Max-bars-in-chart setting -- not fewer bars, none at
+            # all. Measured on the box 2026-09-07: H1 (50,000) and H4 (30,000) fetched 212 and
+            # 50 charts, while M5 (200,000), M15 (150,000) and M30 (100,000) returned empty for
+            # all 250 symbols -- roughly 750 empties in three charts. Read as "the broker has no
+            # intraday history", which is false: the terminal simply holds fewer bars than asked
+            # for, and the whole intraday and scalp universe was unreachable because of it.
+            #
+            # Halving down to a floor asks the same question in terms the terminal can answer.
+            # The first non-empty answer is the deepest history it actually has, so this fetches
+            # MORE data than a conservative fixed cap would, not less -- and a symbol that truly
+            # has no history for a chart still ends at `empty`, reported as before.
+            want = BARS.get(tf, 50_000)
+            rates = None
+            while want >= 2_000:
+                rates = mt5.copy_rates_from_pos(name, const, 0, want)
+                if rates is not None and len(rates):
+                    break
+                want //= 2
             if rates is None or len(rates) == 0:
                 empty += 1
                 continue
