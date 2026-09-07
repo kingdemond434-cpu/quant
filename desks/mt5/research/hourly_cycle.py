@@ -895,6 +895,25 @@ def main() -> None:
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
     mm = _costed("maintain_miners", maintain_miners)
+    # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
+    # box regenerated `data/miner_conversion.json`. It has one scheduled caller -- a systemd unit
+    # -- which runs on the VPS, and the box is Windows with no systemd, so the file the dashboard
+    # reads was written by whichever machine last happened to run it, whenever that was, with
+    # whatever code it had then. Same shape as the enrolment gap two legs up.
+    #
+    # WHAT THAT COST, MEASURED OFF THE LIVE BOARD 2026-09-07. The published breadth panel showed
+    # 52 miners, 290,105 discoveries, reached_backtest 0 for every one of them, and duplicate
+    # rates of 99.9-100% -- 36,982 broker_swaps rows collapsing to ONE "distinct mechanism". That
+    # is not a measurement of the desk, it is the signature of the OLD key: `_mechanism_key` is
+    # family|SYMBOL|session, which a raw miner row does not carry, so every raw row keyed to
+    # unknown|*|* and the intersection with tested rows was empty by construction (L0232). The
+    # same checker on current code reads 53 miners and 6 zero-yield. So MINER_YIELD_ALARM has
+    # been firing on a stale artifact, and "miners are producing rows and no survivors" was a
+    # statement about a key, not about the miners.
+    #
+    # Last leg before publication, so the panel the dashboard renders is this hour's answer.
+    mc = _costed("miner_conversion", lambda: _producer(
+        "check_miner_conversion", "scripts/check_miner_conversion.py"))
     _costed("frontier_report", lambda: frontier_report(h))
     # PUBLICATION IS THE LAST TWO LEGS, and their order is not arbitrary: sealing survivors makes
     # new rows the dashboard should show, so publishing the view before sealing would render a
@@ -973,7 +992,7 @@ def main() -> None:
                     "graveyard_model": gm, "world_crawler": wc,
                     "release_identity": ri, "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
-                    "smoke_release": smoke},
+                    "miner_conversion": mc, "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 
