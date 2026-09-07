@@ -271,6 +271,16 @@ $written = 0; $added = 0; $removed = 0
 $unremoved = New-Object System.Collections.ArrayList
 $staged    = New-Object System.Collections.ArrayList
 
+# PROGRESS, BECAUSE SILENCE HERE IS INDISTINGUISHABLE FROM A HANG. Each path costs one
+# `git cat-file` process, and on a checkout far behind its branch this loop can run to thousands
+# of them -- minutes of no output on a box whose last two problems both presented as "it stopped".
+# An operator watching a dead terminal reasonably kills it, and a half-adopted tree is the one
+# state this script exists to avoid.
+$total = 0
+foreach ($rec in $records) { $total += if ($rec -match '^[RC]') { 2 } else { 1 } }
+Write-Host ("  adopting {0} path(s) in place..." -f $total)
+$seen = 0
+
 foreach ($rec in $records) {
     $cols   = $rec -split "`t"
     $status = $cols[0]
@@ -304,6 +314,10 @@ foreach ($rec in $records) {
             }
         }
         [void]$staged.Add($rel)
+        $seen++
+        if ($seen % 250 -eq 0) {
+            Write-Host ("    {0}/{1} ..." -f $seen, $total)
+        }
     }
 }
 Write-Host ("  wrote {0} modified, {1} added, {2} deleted in place" -f $written, $added, $removed)
