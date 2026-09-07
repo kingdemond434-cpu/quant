@@ -83,13 +83,20 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- 2b. the arming gates, PER LANE -------------------------------------------------------
     # These are not one switch and they do not gate the same sleeves, which is exactly how a
-    # half-armed desk reads as a broken one. Gold's brackets are placed behind `st["armed"]`
-    # ALONE (gateway.place_bracket / cancel_pending / close_positions all test only that). The
-    # family_market and scalp_market lanes additionally require data/GENERIC_EXEC_ENABLED and a
-    # true release verdict: `armed = st["armed"] and GENERIC_EXEC_ENABLED.exists() and
-    # NEW_RISK_OK` (gateway.py:1433 and :1640). So a desk with NEW_RISK_OK false trades gold
-    # normally and logs every promoted sleeve as shadow -- and reporting one number for both
-    # would say the opposite about one of them.
+    # half-armed desk reads as a broken one.
+    #
+    # GOLD IS GATED BY THE RELEASE VERDICT TOO, and reading `place_bracket` alone says otherwise.
+    # That function tests `st["armed"]` and nothing else, which is true and misleading: its
+    # CALLER, the bracket loop, checks `if not NEW_RISK_OK` first and logs "[name] bracket NOT
+    # placed: release identity refuses new risk" without ever reaching it (gateway.py:2116).
+    # I read the callee and reported gold unaffected by the release gate. It is not. With
+    # NEW_RISK_OK false -- which it had been since the gate was written, NON_CODE naming six of
+    # the ten paths the box publishes -- gold placed nothing either, and `matched_fills: 0` on an
+    # account that has never had a position is that fact.
+    #
+    # The promoted lanes need MORE than gold, not something different: `armed = st["armed"] and
+    # GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK` (gateway.py:1453 and :1660). So
+    # GENERIC_EXEC_ENABLED separates the lanes; the release verdict does not.
     kill = DATA / "CASHCARRY_KILL"
     if kill.exists():
         say(BAD, "data/CASHCARRY_KILL EXISTS -- the deadman ruin rail has fired and flattened")
@@ -107,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
     generic = DATA / "GENERIC_EXEC_ENABLED"
     if generic.exists():
         say(OK, "data/GENERIC_EXEC_ENABLED present -- the family and scalp lanes are wired to "
-                "place (gold never needed this file)")
+                "place (this file is what separates them from gold; the release verdict is not)")
     else:
         say(INFO, "data/GENERIC_EXEC_ENABLED absent -- promoted family/scalp sleeves stay "
                   "LOG-ONLY. This does NOT affect the gold book.")
@@ -121,11 +128,12 @@ def main(argv: list[str] | None = None) -> int:
         say(OK if ident.ok else INFO,
             f"release identity: NEW_RISK_OK={bool(ident.ok)}"
             + ("" if ident.ok else
-               f" -- {ident.reason}; promoted family/scalp sleeves cannot place until this is "
-               f"true. Gold is unaffected."))
+               f" -- {ident.reason}. NOTHING places until this is true: the bracket loop checks "
+               f"it before it reaches place_bracket, so GOLD is refused by this too, not only "
+               f"the promoted lanes (gateway.py:2116)."))
     except Exception as exc:                                   # noqa: BLE001
         say(INFO, f"release identity UNMEASURED on this host ({type(exc).__name__}) -- the "
-                  f"gateway defaults it to False, which refuses the promoted lanes only")
+                  f"gateway defaults it to False, and False refuses EVERY lane including gold")
 
     # -- 3. the registry ---------------------------------------------------------------------
     try:
