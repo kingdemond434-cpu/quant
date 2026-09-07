@@ -21,6 +21,12 @@ Explicitly audit the tier-1 frontier miner, implementer, world crawler and every
 research organ: correct schedule, successful recent execution, meaningful fresh output and actual
 downstream consumption. Repair missing hourly wiring and recurring causes with regression tests;
 an empty success, repeating identical discoveries or a restarted-but-stalled worker is not fixed.
+Trace beneficial unwired/unscheduled components through producer -> artifact -> consumer. Reuse
+existing schedulers and assign cadence from data arrival, market sessions, latency requirements,
+measured runtime and resource headroom rather than blindly running everything hourly. Wire and
+test useful missing paths; explicitly reject obsolete/duplicate/negative-value machinery. For all
+staleness/failures, distinguish market closure or legitimately unchanged evidence from a stopped
+producer. Verify lasting recovery and fixer coverage; never promise failures cannot recur.
 2. Drain every eligible docket cell through the canonical backtest and unchanged ten gates.
 Account by immutable identity for compiled, backtested, judged, rejected, blocked, certified and
 forward states. Preserve early terminal rejects, whole-search multiplicity and full-program
