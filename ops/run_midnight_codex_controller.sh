@@ -137,7 +137,7 @@ if [ "$CLAIM_STATUS" = "LEASE_HELD" ]; then
     HOLDER=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("controller", "unknown"))' "$CLAIM_FILE" 2>/dev/null || echo unknown)
     write_status "LEASE_HELD" "Controller lease already held by $HOLDER; duplicate mutation refused" 0
     echo "midnight-codex: lease held by $HOLDER; duplicate controller refused" | tee -a "$LOG"
-    exit 0
+    exit 75
 fi
 export QUANT_CONTROLLER="codex-midnight"
 export QUANT_CONTROLLER_EPOCH

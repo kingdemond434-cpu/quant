@@ -66,6 +66,11 @@ unresolved blocker and escalation evidence. Missing data never counts as a passi
 Commit coherent fixes, run deployment gates, preserve concurrent work, sync through the established
 GitHub/VPS/Contabo workflow and verify running hashes and downstream artifacts. Local patches are
 not deployed fixes. Leave durable resumable checkpoints and a concise morning before/after ledger:
+Canonically integrate tested repairs into the shared authoritative lineage, not permanent private
+forks. Fetch and reconcile the latest builders' changes, merge only verified compatible work,
+preserve unrelated dirty state, push through existing conventions and verify the corresponding
+VPS/Contabo consumers. Never force-push or auto-resolve conflicting live authority. Record any
+unsynced repair explicitly so the next controller can finish the same change without duplication.
 issues closed, cells tested/judged/rejected/blocked, valid certificates, measured active clocks,
 freshness, tests, commits, deployment proof and exact remaining dependencies. No essays.
 Aim for complete accounting and maximum validated conversion, never guaranteed survivor output,
