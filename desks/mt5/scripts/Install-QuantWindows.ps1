@@ -204,6 +204,23 @@ $tasks = @(
        # research organisations, and an organ that only runs when a 55-leg cycle reaches leg 48
        # is an organ that stops the first time an earlier leg is slow.
        Desc = "Frontier gap scan: what elite public research orgs do that this desk does not." },
+    @{ Name = "MT5-ResearchReports"
+       Script = "scripts\\run_research_reports.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Hours 1) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       # ELEVEN PRODUCERS DECLARE AN HOURLY CADENCE AND ARE REACHABLE ONLY AS LEGS OF A 55-LEG
+       # CYCLE THAT NOW EXCEEDS AN HOUR. `issue_board` is itself a leg of that cycle and runs
+       # BEFORE the four research reports it measures, so at measurement time their artifacts
+       # were written by the PREVIOUS pass -- their age is one full cycle duration. Past
+       # STALE_TOLERANCE (2.0) the board reports them STALLED on every pass, forever, while the
+       # producers run perfectly well. Measured 2026-09-07: issue_board last wrote 12:37 and had
+       # not run again by 13:49.
+       #
+       # The fix is a clock, not a looser threshold: raising the tolerance would silence the
+       # symptom and leave the artifacts exactly as old. This refreshes only what is past half
+       # its cadence, under a per-producer lock, so on a healthy box it is one stat() apiece.
+       Desc = "Give every hourly producer its own clock, independent of the long cycle." },
     @{ Name = "MT5-MoatSilver"
        Script = "moat\\moat_silver.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
