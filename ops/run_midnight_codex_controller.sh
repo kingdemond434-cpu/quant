@@ -221,7 +221,7 @@ fi
 # this blesses it.
 FALLBACK_RC=-1
 FALLBACK_BRAIN="none"
-if [ "$CODEX_RC" -ne 0 ] && [ -x ops/run_deepseek_factory.sh ]; then
+if [ "${CODEX_NIGHTLY_FALLBACK:-1}" != "0" ] && [ "$CODEX_RC" -ne 0 ] && [ -x ops/run_deepseek_factory.sh ]; then
     echo "midnight-codex: paid reasoner unavailable (rc=$CODEX_RC, quota=$QUOTA_HIT); routing this window to the FREE reasoner" | tee -a "$LOG"
     if timeout 3600 bash ops/run_deepseek_factory.sh >>"$LOG" 2>&1; then
         FALLBACK_RC=0
