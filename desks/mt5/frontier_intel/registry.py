@@ -234,6 +234,78 @@ FIRMS: tuple[Firm, ...] = (
 
 BY_NAME: dict[str, Firm] = {f.name: f for f in FIRMS}
 
+#: WHERE EACH FIRM ACTUALLY PUBLISHES, and why this is separate from `Firm.sources`.
+#:
+#: `sources` names the KINDS of source a firm has ("official_site", "careers_page") and is what
+#: `admissible` grades. It contains no addresses, so nothing on this desk could ever VISIT these
+#: organisations -- and `frontier_supervisor.scout()` filters the intelligence roots for rows that
+#: MENTION a tracked firm. With no firm page ever crawled, the only rows it could match were
+#: incidental mentions in material gathered for something else. The miner was reading about these
+#: firms by accident.
+#:
+#: EVERY URL BELOW RETURNED 2xx WHEN ADDED (2026-09-07). That is not decoration: a seed list is a
+#: bounded fetch budget, and a guessed address spends one of those every run forever while
+#: returning nothing. Three candidates were checked and are deliberately absent --
+#: `winton.com/research` and `imc.com/us/articles` are 404 (the site roots are used instead), and
+#: `citadelsecurities.com` answers 403 to a non-browser client, so seeding it would buy a refusal
+#: every hour. Verification is part of adding an entry here, not a nicety.
+#:
+#: These are public pages read as published. The package's boundary is unchanged: replicate
+#: observable PRINCIPLES, never bypass an access control, and no page here decides anything -- it
+#: only opens an investigation that our own gates then settle.
+HOMEPAGES: dict[str, tuple[str, ...]] = {
+    "High-Flyer": ("https://www.high-flyer.cn/",),
+    "Lingjun": ("https://www.lingjuninvest.com/",),
+    "Ubiquant": ("https://www.ubiquant.com/",),
+    "Minghong": ("https://www.mhfunds.com/",),
+    "D. E. Shaw": ("https://www.deshaw.com/research",),
+    "Two Sigma": ("https://www.twosigma.com/articles/",),
+    "Man AHL": ("https://www.man.com/insights",),
+    "AQR": ("https://www.aqr.com/Insights/Research",),
+    "Winton": ("https://www.winton.com/",),
+    "WorldQuant": ("https://www.worldquant.com/",),
+    "Qube Research & Technologies": ("https://www.qube-rt.com/",),
+    "Squarepoint": ("https://www.squarepoint-capital.com/",),
+    "Jane Street": ("https://blog.janestreet.com/",),
+    "XTX Markets": ("https://www.xtxmarkets.com/",),
+    "Hudson River Trading": ("https://www.hudsonrivertrading.com/hrtbeat/",),
+    "Optiver": ("https://optiver.com/insights/",),
+    "IMC": ("https://www.imc.com/us",),
+    "arXiv q-fin / cs.LG": ("https://arxiv.org/list/q-fin.TR/recent",
+                            "https://arxiv.org/list/q-fin.CP/recent"),
+    "SSRN / NBER": ("https://www.nber.org/papers?page=1&perPage=50&sortBy=public_date",),
+    "central bank research": ("https://www.bis.org/forum/research.htm",),
+}
+
+
+def crawl_seeds() -> tuple[str, ...]:
+    """Every firm page the desk's crawler should visit, deduplicated and ordered.
+
+    ONE TABLE, TWO CONSUMERS -- the same shape as `issue_board.CADENCE` driving the report clock.
+    The registry already decides who is worth watching; deriving the crawl from it means adding a
+    firm gives it a seed in the same edit rather than in a second one somebody forgets, and a firm
+    that is watched but never fetched cannot silently exist.
+
+    Seeded into `world_crawler` rather than fetched here on purpose: that crawler already owns the
+    fetch budget, the rate limiting, the vault and the source policy, and a second fetch layer in
+    this package would be a second thing to get blocked and a second copy of all four.
+    """
+    seen: list[str] = []
+    for firm in FIRMS:
+        for url in HOMEPAGES.get(firm.name, ()):
+            if url not in seen:
+                seen.append(url)
+    return tuple(seen)
+
+
+def unseeded_firms() -> tuple[str, ...]:
+    """Watched organisations with no address. A gap in the miner's own coverage, reported.
+
+    A firm on the registry with no page is one the scout can only reach by accident, and that is
+    exactly the kind of hole that survives for months because everything looks configured.
+    """
+    return tuple(f.name for f in FIRMS if not HOMEPAGES.get(f.name))
+
 
 def admissible(source_kind: str) -> tuple[bool, str]:
     """May this package read a source of this kind, and why not when it may not."""

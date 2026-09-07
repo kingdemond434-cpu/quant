@@ -840,9 +840,36 @@ SEEDS = (
 )
 
 
+def frontier_seeds() -> tuple[str, ...]:
+    """The watched organisations' own pages, from the frontier registry.
+
+    THE MINER WAS READING ABOUT THESE FIRMS BY ACCIDENT. `frontier_supervisor.scout()` filters the
+    intelligence roots for rows that MENTION a tracked organisation, and `registry.FIRMS` lists
+    twenty-two of them -- but no firm page was ever seeded anywhere on this desk, so the only rows
+    it could match were incidental mentions in material gathered for something else. An hourly
+    organ whose whole subject is those organisations had no path to their own words.
+
+    Seeded HERE rather than fetched in `frontier_intel`, because this crawler already owns the
+    fetch budget, the rate limiting, the vault, the deduplication and the source policy. A second
+    fetch layer in that package would be a second thing to get blocked and a second copy of all
+    five -- which is the reason the supervisor's scouting is offline by design.
+
+    Soft-failing on purpose: a crawler that cannot start because an unrelated package moved is a
+    worse outcome than a crawl without these seeds, and the rest of the ground is still worth
+    covering.
+    """
+    try:
+        sys.path.insert(0, str(BASE))
+        from frontier_intel import registry as _registry
+        return _registry.crawl_seeds()
+    except Exception as exc:                                            # noqa: BLE001
+        log(f"frontier seeds unavailable ({type(exc).__name__}: {exc}) -- crawling without them")
+        return ()
+
+
 def seed(sources: dict[str, wf.Source]) -> int:
     added = 0
-    for url in SEEDS:
+    for url in (*SEEDS, *frontier_seeds()):
         if wf.add(sources, url, via="seed"):
             added += 1
     return added
