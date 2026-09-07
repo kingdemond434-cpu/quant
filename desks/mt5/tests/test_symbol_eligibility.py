@@ -22,6 +22,18 @@ import external_gauntlet as eg  # noqa: E402
 META = {"EURUSD": {"contract_size": 1e5}, "AFG": {"contract_size": 1e5}}
 
 
+def test_missing_host_data_cannot_revoke_existing_certificate(tmp_path, monkeypatch):
+    monkeypatch.setattr(eg, "UNI", tmp_path)
+    assert eg.symbol_is_tradeable("EURUSD", META)[0] is False
+    assert eg.certificate_retirement_reason("EURUSD", META) is None
+    assert eg.certificate_retirement_reason("EURUSD", {}) is None
+
+
+def test_explicit_venue_restriction_still_retires_certificate():
+    assert eg.certificate_retirement_reason(
+        "EURUSD", {"EURUSD": {"tradeable": False, "trade_mode": 3}})
+
+
 @pytest.fixture
 def bars(tmp_path, monkeypatch):
     """A universe directory holding EURUSD bars and nothing else."""

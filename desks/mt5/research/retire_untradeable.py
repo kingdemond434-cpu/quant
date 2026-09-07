@@ -58,7 +58,7 @@ def retire(dry_run: bool = False) -> dict[str, Any]:
     if not SURVIVORS.exists():
         return {"error": "no UNIVERSAL_SURVIVORS.json", "retired": 0}
     try:
-        from external_gauntlet import symbol_is_tradeable
+        from external_gauntlet import certificate_retirement_reason
     except Exception as exc:
         # WITHOUT THE PREDICATE NOTHING IS RETIRED. Guessing which symbols exist is precisely
         # what this module refuses to do.
@@ -78,8 +78,8 @@ def retire(dry_run: bool = False) -> dict[str, Any]:
             (keep.__setitem__(key, row) if as_dict else keep.append(row))
             continue
         sym = _symbol_of(row)
-        ok, why = symbol_is_tradeable(sym, meta) if sym else (True, "")
-        if ok:
+        why = certificate_retirement_reason(sym, meta)
+        if why is None:
             (keep.__setitem__(key, row) if as_dict else keep.append(row))
             continue
         retired.append({
