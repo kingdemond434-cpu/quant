@@ -828,25 +828,6 @@ def main() -> None:
     s = _costed("state_vector", state_vector)
     d = _costed("daily", daily)
     hc = _costed("heal_clocks", heal_clocks)
-    # ENROLMENT, ON THE MACHINE THAT MINTS THE CERTIFICATES. `heal_clocks` above repairs clocks
-    # that EXIST and have gone IDENTITY_BROKEN; it does nothing whatever for a certificate that
-    # has no clock at all, and those are two different failures that read the same on a dashboard.
-    #
-    # NOTHING ENROLLED ON THIS BOX, ON ANY SCHEDULE. `shadow_forward` is the enroller and this
-    # cycle never called it -- it appears in this file only inside comments. The one scheduled
-    # caller is nightly_catchup's `enrol_clocks` step, which is a SYSTEMD unit: it runs on the
-    # VPS, and the box is Windows with no systemd. So the machine that certifies could never
-    # enrol what it had just certified, and every new certificate waited for a human.
-    #
-    # MEASURED off the live board 2026-09-06: 66 certified, 6 unrunnable, 27 on a clock -- 33
-    # runnable certificates passing every one of the ten gates and accruing no out-of-sample
-    # evidence, so none of them could ever mature into capital. That is the whole promotion
-    # pipeline stalled behind a missing hourly call, and it presents as a research shortfall.
-    #
-    # Verified in a checkout of the same canon: all 48 authorized runs enrol cleanly, so the
-    # enrolment logic was never the defect -- only its cadence.
-    ecl = _costed("enrol_clocks", lambda: _producer(
-        "shadow_forward", "research/shadow_forward.py"))
     # THE OTHER HALF OF THE SAME LEDGER. A certificate whose `shadow_spec.params` is None passed
     # all ten gates and can never be run: the parameterisation that passed was never recorded, so
     # there is nothing to replay. The issue board offers `survivor_publication` as the repair and
@@ -934,6 +915,35 @@ def main() -> None:
     # promotion and the dashboard all read -- was up to 24 hours behind the gates.
     rc = _costed("recertify_canon", lambda: _producer(
         "recertify_canon", "scripts/recertify_canon.py"))
+    # ENROLMENT, ON THE MACHINE THAT MINTS THE CERTIFICATES. `heal_clocks` above repairs clocks
+    # that EXIST and have gone IDENTITY_BROKEN; it does nothing whatever for a certificate that
+    # has no clock at all, and those are two different failures that read the same on a dashboard.
+    #
+    # NOTHING ENROLLED ON THIS BOX, ON ANY SCHEDULE. `shadow_forward` is the enroller and this
+    # cycle never called it -- it appears in this file only inside comments. The one scheduled
+    # caller is nightly_catchup's `enrol_clocks` step, which is a SYSTEMD unit: it runs on the
+    # VPS, and the box is Windows with no systemd. So the machine that certifies could never
+    # enrol what it had just certified, and every new certificate waited for a human.
+    #
+    # MEASURED off the live board 2026-09-06: 66 certified, 6 unrunnable, 27 on a clock -- 33
+    # runnable certificates passing every one of the ten gates and accruing no out-of-sample
+    # evidence, so none of them could ever mature into capital. That is the whole promotion
+    # pipeline stalled behind a missing hourly call, and it presents as a research shortfall.
+    #
+    # Verified in a checkout of the same canon: all 48 authorized runs enrol cleanly, so the
+    # enrolment logic was never the defect -- only its cadence.
+    ecl = _costed("enrol_clocks", lambda: _producer(
+        "shadow_forward", "research/shadow_forward.py"))
+    # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
+    # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
+    # this roster today. So it enrolled the certificates the canon held at the START of the pass
+    # and every certificate this hour minted waited a full extra hour for its clock, on a
+    # fourteen-day maturation that is already the longest pole in the funnel.
+    #
+    # It runs after `recertify_canon` because that is what SEALS a certificate into the canon
+    # `shadow_forward` reads. Enrolling before the seal would walk the previous canon and find
+    # nothing new, which is the same one-hour lag wearing a different explanation.
+
     et = _costed("execution_twin", execution_twin)
     cg = _costed("causal_graph", causal_graph)
     ms = _costed("model_skill", model_skill)
