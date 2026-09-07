@@ -278,6 +278,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--apply", action="store_true", help="actually move; default measures only")
     ap.add_argument("--verify", action="store_true",
                     help="re-check the existing archive against the manifest and exit")
+    ap.add_argument("--if-configured", action="store_true",
+                    help="exit 0 (not 2) when no object store is configured. For the hourly "
+                         "roster: an unconfigured box is a state to report, not a failing leg.")
     ap.add_argument("--allow-unmeasured-space", action="store_true",
                     help="proceed when the destination's free space cannot be read")
     args = ap.parse_args(argv)
@@ -331,8 +334,11 @@ def main(argv: list[str] | None = None) -> int:
         from mt5desk import object_store
         cfg, why = object_store.load()
         if cfg is None:
-            print(f"REFUSING: {why}")
-            return 2
+            # ON THE HOURLY ROSTER THIS IS NOT A FAILURE. A box with no bucket yet must not turn
+            # every cycle red -- that trains the reader to ignore the one leg that will matter
+            # the day the tape has to move. It says what is missing, once an hour, and exits 0.
+            print(f"tape archive not configured, nothing moved: {why}")
+            return 0 if args.if_configured else 2
         print(f"destination     : {cfg.describe()} prefix={s3_prefix or '(root)'}")
         moved = failed = already = 0
         moved_bytes = 0

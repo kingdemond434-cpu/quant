@@ -917,6 +917,19 @@ def main() -> None:
     # statement about a key, not about the miners.
     #
     # Last leg before publication, so the panel the dashboard renders is this hour's answer.
+    # THE TAPE LEAVES THE BOX ON ITS OWN, THE HOUR A BUCKET EXISTS. The tick tape is the only
+    # dataset here that cannot be re-obtained and the only one that grows without bound on a disk
+    # shared with a git checkout and a 21-chart bar lake; every local answer to that is a choice
+    # about what to sacrifice. This ships partitions older than KEEP_DAYS (45 -- fifteen days
+    # clear of the thirty every reader opens) to S3-compatible storage, and deletes a source only
+    # after the destination has been read back and proved to be those bytes.
+    #
+    # `--if-configured` so an unconfigured box exits 0 rather than reddening every cycle: it says
+    # what is missing once an hour and moves nothing. Nothing here can delete a tick that has not
+    # been verified somewhere else first.
+    ta = _costed("archive_tape", lambda: _producer(
+        "archive_tape", "scripts/archive_tape.py", "--dest", "s3://ticks", "--apply",
+        "--if-configured"))
     mc = _costed("miner_conversion", lambda: _producer(
         "check_miner_conversion", "scripts/check_miner_conversion.py"))
     _costed("frontier_report", lambda: frontier_report(h))
@@ -997,7 +1010,8 @@ def main() -> None:
                     "graveyard_model": gm, "world_crawler": wc,
                     "release_identity": ri, "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
-                    "miner_conversion": mc, "moat_miner": mo, "smoke_release": smoke},
+                    "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
+                    "smoke_release": smoke},
                    indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 
