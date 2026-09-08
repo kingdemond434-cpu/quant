@@ -57,6 +57,13 @@ vocabulary. Do not decide something the desk already decided.
   2026-09-08 morning would have refused every hourly sweep (`rc=75`) and was reverted the same
   day. `stall_watch.json` now publishes `memory.total_phys_mb` and the six largest commit
   holders, so the dashboard answers this; read it before arguing it.
+- **Reaching the box without pasting: Claude Code ON the box, in Remote Control.** This cloud
+  container has no SSH to anything (HTTPS through its proxy only), so an SSH server on the box
+  helps the principal's laptop, never a cloud session. The principal was told 2026-09-08 to run
+  `irm https://claude.ai/install.ps1 | iex`, `cd C:\opt\quant`, `claude`, `/login`,
+  `/remote-control` over RDP. Once that session exists, `/list-agents` here shows it and
+  SendMessage reaches it: hand it the box commands (install_adopt_release_task.ps1,
+  check_gold_live.py, task tables) instead of handing them to the principal.
 - **The box's state is the box's.** `Adopt-Release.ps1` keeps every state path (the
   `STATE_PREFIXES` in `libs/ops/release.py`, minus `docs/`) that the box changed since it
   diverged, adopts code and origin-only inputs, and records the merge. The next push carries the
