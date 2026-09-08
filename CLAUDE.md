@@ -68,9 +68,10 @@ vocabulary. Do not decide something the desk already decided.
   forward clocks that all map to ONE gateway window, `gold_asia`, which places at 07:00 broker
   (= 04:00 UTC in summer; the venue is UTC+3 in summer, the measured file's +2 is the winter
   anchor). `gold_london_am` places at 10:00 UTC and `gold_afternoon` at 14:00 UTC. GOLD_RETIRED
-  entries are now RE-DERIVED by the promoter against the account in hand (a retirement made on
-  rows the promoter would refuse today is voided to GOLD_RETIRED_VOIDED.json and re-judged on
-  the same pass). The three promoted scalp sleeves reach the gateway only as LIVE rows in
+  entries are RE-DERIVED by the promoter against the account in hand, on POSITIVE evidence only
+  (a degenerate admissible series, or the file holding the recorded n rows all stamped to another
+  account); an empty, short, unreadable or unstamped ledger never voids -- the entry stands
+  (voids go to GOLD_RETIRED_VOIDED.json and the window is re-judged on the same pass). The three promoted scalp sleeves reach the gateway only as LIVE rows in
   data/sleeves.json; that needs a MEASURED heavy admission scan (MT5-Hourly now runs heavy when
   the last scan is missing or >2h old) and two admitting promoter readings for a STANDBY row.
   CLOSE_HOUR (19:30 UTC) closes the gold book only; the scalp lane runs to its own time exit.
