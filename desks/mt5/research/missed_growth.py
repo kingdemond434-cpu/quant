@@ -425,10 +425,21 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
             continue
         if r.tunable:
             cur = float(cal.get(r.name, 1.0))
-            nxt = max(r.lo, cur * (1.0 - STEP))
-            if nxt < cur - 1e-9:
+            # WHICH WAY IS LOOSER DEPENDS ON THE RAIL. For a shrink or an inertia, less of it is
+            # weaker and the walk goes DOWN. For a CAP, more room is weaker and it goes UP --
+            # walking a cap down would TIGHTEN it every time it proved expensive, which is the
+            # growth governance running backwards. Rails without a direction keep "down", so
+            # every rail that existed before this behaves exactly as it did.
+            if getattr(r, "weaken_dir", "down") == "up":
+                nxt = min(r.hi, cur * (1.0 + STEP))
+                moved = nxt > cur + 1e-9
+            else:
+                nxt = max(r.lo, cur * (1.0 - STEP))
+                moved = nxt < cur - 1e-9
+            if moved:
                 cal[r.name] = round(nxt, 4)
                 changed.append({"rail": r.name, "from": cur, "to": round(nxt, 4),
+                                "dir": getattr(r, "weaken_dir", "down"),
                                 "means": r.weaken_means})
         else:
             tasks.append({"source": "missed_growth", "kind": "rail_review",

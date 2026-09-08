@@ -392,7 +392,12 @@ def per_sleeve_bounds(worst_dd_r: dict[str, float], total_heat: float,
     if effective_heat is not None:
         cap, _why, _detail = effective_ceiling(effective_heat)
         total = min(total, cap)
-    share_cap = MAX_SLEEVE_HEAT_SHARE * total
+    # THE CAP RE-CERTIFIES ITSELF (principal, 2026-09-07). `rails.rail_multiplier` is 1.0 unless
+    # `missed_growth` has MEASURED that this cap costs forward E[log W], in which case it is
+    # walked one step looser per pass and clipped at the rail's declared `hi`. It is never walked
+    # tighter by that loop, and it cannot exceed its bound -- a rail that can walk to "no rail"
+    # is not a rail.
+    share_cap = MAX_SLEEVE_HEAT_SHARE * _rail_mult("sleeve_share_cap") * total
     out: dict[str, float] = {}
     for name, dd in worst_dd_r.items():
         dd_r = float(dd) if dd and float(dd) > 0 else _DEFAULT_DD_R
@@ -408,8 +413,22 @@ def per_sleeve_bounds(worst_dd_r: dict[str, float], total_heat: float,
 CERTIFY_TOLERANCE = 0.02
 
 
+def _rail_mult(name: str) -> float:
+    """The rail's calibrated multiplier, or 1.0 when rails are unavailable.
+
+    Imported lazily and defensively: `heat_policy` is on the sizing path and must not acquire a
+    hard dependency on the calibration ledger. No ledger means multiplier 1.0, which is the
+    declared constant -- the conservative direction and exactly today's behaviour.
+    """
+    try:
+        from libs.portfolio.rails import rail_multiplier
+        return float(rail_multiplier(name))
+    except Exception:                                                    # noqa: BLE001
+        return 1.0
+
+
 def enforce_family_cap(heat: dict[str, float], family_of: dict[str, str], total: float,
-                       share: float = MAX_FAMILY_HEAT_SHARE) -> dict[str, float]:
+                       share: float | None = None) -> dict[str, float]:
     """Per-sleeve upper bounds that hold any one MECHANISM under `share` of the book.
 
     A CONSTRAINT, NOT A PRICE. The redundancy term in `robust_elog` charges pairwise correlation
@@ -425,6 +444,12 @@ def enforce_family_cap(heat: dict[str, float], family_of: dict[str, str], total:
     """
     if total <= 0:
         return {}
+    # SELF-CERTIFYING, same rule as the sleeve share cap: the declared 60% unless `missed_growth`
+    # has MEASURED that this cap costs forward E[log W], and then one step looser per pass inside
+    # the rail's `hi`. `share=None` is the caller saying "use the law"; an explicit `share` is a
+    # caller (a test, a sweep) pinning it, and that still wins.
+    if share is None:
+        share = MAX_FAMILY_HEAT_SHARE * _rail_mult("family_cap")
     cap = share * total
     by_fam: dict[str, float] = {}
     for name, h in heat.items():

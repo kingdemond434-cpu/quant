@@ -39,6 +39,13 @@ class Rail:
     hi: float = 1.0
     #: what a multiplier BELOW 1 does to this rail ("weakens" it), for the reader
     weaken_means: str = ""
+    #: WHICH WAY "WEAKER" IS for this rail's multiplier -- "down" for a shrink or an inertia
+    #: (less of it applied), "up" for a CAP (more room allowed). The calibration loop walks a
+    #: rail that costs growth toward looseness, and until 2026-09-07 it only knew how to walk
+    #: DOWN, so a cap could not be made tunable at all: the walk would have TIGHTENED it every
+    #: time it proved expensive, which is the opposite of the growth governance. Existing rails
+    #: keep the default and behave exactly as before.
+    weaken_dir: str = "down"
 
 
 RAILS: tuple[Rail, ...] = (
@@ -56,10 +63,25 @@ RAILS: tuple[Rail, ...] = (
          weaken_means="k_state is smaller, so a state's own evidence moves the posterior more"),
     Rail("per_sleeve_bounds", "cap", "heat_policy.per_sleeve_bounds (drawdown leg)",
          "measure_bounds"),
+    # THE TWO CAPS NOW RE-CERTIFY THEMSELVES (principal, 2026-09-07: "eventually even 60%
+    # shouldn't be sacred -- let the cap continuously re-certify itself"). They were binary rails,
+    # so a measured growth cost produced a review TASK and the constant stood until somebody read
+    # it. They are now tunable in the loosening direction only, walked by `missed_growth` exactly
+    # like every other tunable rail: only on a MEASURED opportunity cost, one STEP per pass, and
+    # never in the tightening direction.
+    #
+    # THE BOUND ON THE BOUND IS WHAT KEEPS THIS A RE-CERTIFICATION AND NOT A REMOVAL. `hi` caps
+    # how far evidence may loosen the cap -- 1.4x on the sleeve share (25% -> 35% of the book in
+    # one name) and 1.25x on the family (60% -> 75% in one mechanism). A rail that can walk to
+    # "no rail" is not a rail, and the desk has already measured that concentration past 60%
+    # worsened its tail characteristics. `lo = 1.0` means neither can ever be walked TIGHTER by
+    # this loop: strengthening a rail is a decision, not a side effect.
     Rail("sleeve_share_cap", "cap", "heat_policy.per_sleeve_bounds (MAX_SLEEVE_HEAT_SHARE)",
-         "measure_bounds"),
+         "measure_bounds", tunable=True, lo=1.0, hi=1.4, weaken_dir="up",
+         weaken_means="one sleeve may hold a larger share of the book before the cap trims it"),
     Rail("family_cap", "cap", "heat_policy.enforce_family_cap (MAX_FAMILY_HEAT_SHARE)",
-         "measure_bounds"),
+         "measure_bounds", tunable=True, lo=1.0, hi=1.25, weaken_dir="up",
+         weaken_means="one mechanism may hold a larger share of total heat before it is scaled"),
     # THE GROWTH CEILING. No longer the 30% constant (principal, 2026-09-07): it is
     # `heat_policy.measured_ceiling`'s reading of THIS pass's growth curve -- the highest heat
     # still within tolerance of the peak growth rate, never past the last heat sampled. It moves
