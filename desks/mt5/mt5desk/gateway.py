@@ -1084,26 +1084,47 @@ def _position_context(deal: object) -> tuple[float, float, float, str]:
     records every other fill: that is exactly how one AttributeError kept the entire live ledger
     empty while the account carried real P&L.
     """
-    pid = getattr(deal, "position_id", None)
+    e = _position_entry(getattr(deal, "position_id", None))
+    return e["entry_price"], e["sl"], e["tp"], e["comment"]
+
+
+def _position_entry(pid) -> dict:
+    """Everything the position's OPENING side knows, keyed so a closing deal can be joined back
+    to the intent that caused it.
+
+    THE JOIN THAT NEVER MATCHED (2026-09-08, the review's "P&L happened, 0 attributed fills").
+    `order_intents.jsonl` records the pending ENTRY order's ticket at send time. The ledger
+    recorded closing deals, whose `order` is the server-created stop/target order -- a ticket
+    the desk never saw -- and `markout.compute` joined the two on exactly those fields. So the
+    join could not match by construction, on any account, on any day; and the "fill" it would
+    have compared was the CLOSING price, not the entry. MT5 offers one bridge: a position's id is
+    the ticket of the order that opened it, and every deal of the position carries `position_id`.
+    This returns that bridge -- the entry deal's `order` (== the intent's ticket for a pending
+    stop) and the entry deal's own ticket -- beside the entry price, stop and target.
+
+    Zeros and empties rather than raising: one unreadable position must not abort the loop that
+    records every other fill.
+    """
+    out = {"entry_price": 0.0, "sl": 0.0, "tp": 0.0, "comment": "",
+           "entry_order": None, "entry_deal": None, "position_id": pid}
     if not pid:
-        return 0.0, 0.0, 0.0, ""
-    entry = sl = tp = 0.0
-    comment = ""
+        return out
     try:
         for o in (mt5.history_orders_get(position=pid) or ()):
-            if not comment:
-                comment = str(getattr(o, "comment", "") or "")
+            if not out["comment"]:
+                out["comment"] = str(getattr(o, "comment", "") or "")
             if float(getattr(o, "sl", 0.0) or 0.0) > 0:
-                sl = float(o.sl)
-                tp = float(getattr(o, "tp", 0.0) or 0.0)
+                out["sl"] = float(o.sl)
+                out["tp"] = float(getattr(o, "tp", 0.0) or 0.0)
         for x in (mt5.history_deals_get(position=pid) or ()):
             if getattr(x, "entry", None) == mt5.DEAL_ENTRY_IN:
-                entry = float(getattr(x, "price", 0.0) or 0.0)
+                out["entry_price"] = float(getattr(x, "price", 0.0) or 0.0)
+                out["entry_order"] = getattr(x, "order", None)
+                out["entry_deal"] = getattr(x, "ticket", None)
                 break
     except Exception as exc:
         log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
-        return 0.0, 0.0, 0.0, comment
-    return entry, sl, tp, comment
+    return out
 
 
 def record_trades(st: dict, sleeves: list[dict]) -> None:
@@ -1137,8 +1158,15 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # forever, because nothing ever looked backwards. Dedupe by deal ticket makes a wider
         # window free, so the lookback is bounded by history rather than by uptime.
         since = datetime.now(tz=UTC) - timedelta(days=LEDGER_LOOKBACK_DAYS)
-        deals = mt5.history_deals_get(since, datetime.now(tz=UTC), magic=MAGIC) or []
-    except Exception:
+        # THE MAGIC FILTER IS APPLIED HERE, IN PYTHON. `history_deals_get` documents three call
+        # shapes -- (date_from, date_to, group=...), (ticket=...), (position=...) -- and `magic`
+        # is not among them; a keyword the binding refuses lands in the `except` below and the
+        # ledger is silently never written, which is indistinguishable from a quiet day.
+        # Filtering the returned deals costs a list scan and cannot fail.
+        deals = [d for d in (mt5.history_deals_get(since, datetime.now(tz=UTC)) or [])
+                 if int(getattr(d, "magic", 0) or 0) == MAGIC]
+    except Exception as exc:
+        log(f"ledger: history unreadable ({type(exc).__name__}: {exc}); nothing recorded")
         return
     written = 0
     for d in deals:
@@ -1157,8 +1185,9 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # swap, volume}; TradeOrder has {price_open, sl, tp}. So the risk this trade actually
         # took is reconstructed from the position's OPENING deal (entry price) and its ORDER
         # (stop), joined on position_id -- the only join MT5 offers between the two.
-        entry_price, sl_price, tp_price, order_comment = _position_context(d)
-        comment = (d.comment or order_comment or "")
+        ctx = _position_entry(getattr(d, "position_id", None))
+        entry_price, sl_price, tp_price = ctx["entry_price"], ctx["sl"], ctx["tp"]
+        comment = (d.comment or ctx["comment"] or "")
         # MAGIC IS THE IDENTITY, NOT THE COMMENT. history_deals_get already filtered to
         # magic=MAGIC, so every deal here is this gateway's own; requiring the comment to ALSO
         # start with "DW" made a broker-side rewrite silently discard the entire ledger. Brokers
@@ -1192,6 +1221,13 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                "sl": float(sl_price), "tp": float(tp_price),
                "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0),
                "order": getattr(d, "order", None),
+               # THE KEY CHAIN (2026-09-08): intent.ticket == entry_order == position_id for a
+               # pending stop; entry_deal and this closing deal hang off position_id. With these
+               # four on the row, a euro of realised P&L walks back to the intent, its
+               # release_id and its state vector -- the chain the review found empty.
+               "position_id": getattr(d, "position_id", None),
+               "entry_order": ctx["entry_order"], "entry_deal": ctx["entry_deal"],
+               "close_order": getattr(d, "order", None), "magic": getattr(d, "magic", None),
                "contract_size": float(sym_info.trade_contract_size),
                "risk_quote": round(float(risk_quote), 6),
                # WHICH ACCOUNT TRADED. The broker is switched by editing one line of

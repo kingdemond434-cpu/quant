@@ -156,6 +156,47 @@ def _gateway_func(*names: str, ns: dict | None = None) -> dict:
     return env
 
 
+class _FakeMT5:
+    """Just enough of the terminal for `_position_entry`: a position opened by pending order 7
+    (entry deal 71 at 2000.5) and closed by the server's order 7001."""
+    DEAL_ENTRY_IN = 0
+    DEAL_ENTRY_OUT = 1
+
+    class _O:
+        def __init__(self, ticket, sl, tp, comment):
+            self.ticket, self.sl, self.tp, self.comment = ticket, sl, tp, comment
+
+    class _D:
+        def __init__(self, ticket, order, entry, price):
+            self.ticket, self.order, self.entry, self.price = ticket, order, entry, price
+
+    @staticmethod
+    def history_orders_get(position=None):
+        assert position == 7
+        return [_FakeMT5._O(7, 1981.4, 2038.2, "DWgold_asia"), _FakeMT5._O(7001, 0.0, 0.0, "")]
+
+    @staticmethod
+    def history_deals_get(position=None):
+        assert position == 7
+        return [_FakeMT5._D(71, 7, 0, 2000.5), _FakeMT5._D(72, 7001, 1, 2019.1)]
+
+
+def test_the_position_entry_returns_the_bridge_to_the_intent():
+    """Executed, not pattern-matched: the closing deal's position id yields the entry order (the
+    intent's ticket), the entry deal, the entry fill and the stop -- the whole key chain."""
+    env = _gateway_func("_position_entry", "_position_context", ns={"mt5": _FakeMT5})
+    out = env["_position_entry"](7)
+    assert out["entry_order"] == 7 and out["entry_deal"] == 71
+    assert out["entry_price"] == 2000.5 and out["sl"] == 1981.4 and out["tp"] == 2038.2
+    assert out["comment"] == "DWgold_asia"
+    assert env["_position_entry"](None)["entry_order"] is None
+
+    class _Deal:
+        position_id = 7
+
+    assert env["_position_context"](_Deal()) == (2000.5, 1981.4, 2038.2, "DWgold_asia")
+
+
 def test_the_intent_row_carries_the_market_it_was_sent_into():
     """Slippage without the conditions it was paid in averages over every situation at once."""
     import ast

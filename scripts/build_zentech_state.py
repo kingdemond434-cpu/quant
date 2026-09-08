@@ -683,6 +683,11 @@ def build() -> dict[str, Any]:
         "execution": {
             "markout_usable": markout.get("usable") is True,
             "matched_fills": markout.get("n_matched"), "why": markout.get("why"),
+            # Deals the desk can walk back to an intent, over all deals its magic placed. The
+            # attribution number the review found at zero; target 1.0.
+            "attributed_deals": markout.get("attributed_deals"),
+            "deals": markout.get("n_deals"),
+            "attributed_share": markout.get("attributed_share"),
             "open_trades": _find(gateway, "open_positions", "positions") or [],
         },
         # EVERY ISSUE THE DESK CAN SEE, ON THE BOARD. Detection was never the gap -- 121
