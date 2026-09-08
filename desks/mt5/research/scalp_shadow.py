@@ -208,9 +208,21 @@ def run(now: datetime | None = None) -> dict:
                 _bound = None
         _all = list(records)
         if _bound is not None:
+            # `opened_at` FIRST, for the same reason as in `pf_allocator.scalp_evidence`: it is
+            # the field `scalp_reverse_engineering.simulate` actually writes, and asking only for
+            # the other three meant EVERY row fell through to the SHADOW_START default and so
+            # compared >= the boundary regardless of when it happened. That is the two-stage law
+            # failing open -- selection-era observations tagged `forward` and counted toward a
+            # forward threshold, which is exactly the leakage the boundary exists to stop.
+            #
+            # For the four gold clocks live today this changes no count: their earliest row is
+            # 2026-08-24 and their clocks froze ~2026-08-23, so nothing sat in the window that
+            # was being wrongly admitted. It stops the NEXT clock from being credited with its
+            # own selection window.
             records = [r for r in _all
-                       if pd.Timestamp(str(r.get("entry_time") or r.get("time") or
-                                           r.get("open_time") or SHADOW_START)) >= _bound]
+                       if pd.Timestamp(str(r.get("opened_at") or r.get("entry_time") or
+                                           r.get("time") or r.get("open_time") or
+                                           SHADOW_START)) >= _bound]
             _empty_why = ("" if records else
                           f"the clock froze at {_fs} and no trade has occurred since")
         else:

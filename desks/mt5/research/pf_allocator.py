@@ -367,7 +367,22 @@ def scalp_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
         for r in rows:
             if not isinstance(r, dict) or str(r.get("phase")) != "forward":
                 continue
-            stamp = r.get("exit_time") or r.get("entry_time") or r.get("time")
+            # THE WRITER'S OWN FIELD NAMES COME FIRST, and their absence is why no scalp sleeve
+            # has ever been funded. `scalp_reverse_engineering.simulate(detailed=True)` -- the
+            # only producer of these ledgers -- emits `opened_at` / `closed_at`. This read asked
+            # for `exit_time` / `entry_time` / `time`, none of which any row has ever carried, so
+            # `stamp` was None on EVERY row, `by_day` finished empty, and the clock was refused
+            # with "0 forward day(s)". Measured 2026-09-08 on four gold clocks holding 344 real
+            # forward trades spanning Aug 24 to Sep 8:
+            #
+            #   scalp_evidence refuses -> sleeve absent from the priced universe
+            #     -> no allocator row -> promoter's capital_verdict finds nothing
+            #     -> "PROMOTED (scalp) ... -> STANDBY at 0.00% risk"
+            #
+            # Three sleeves sat at PROMOTION CANDIDATE, past their 14-day window, for weeks, and
+            # the reason was two spellings of "when did this trade happen".
+            stamp = (r.get("closed_at") or r.get("opened_at")
+                     or r.get("exit_time") or r.get("entry_time") or r.get("time"))
             value = r.get("r")
             if stamp is None or value is None:
                 continue
