@@ -61,8 +61,17 @@ if (-not $RepoRoot) { $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..\
 Set-Location $RepoRoot
 $desk    = Join-Path $RepoRoot "desks\mt5"
 $release = Join-Path $desk "data\RELEASE.json"
-$py      = Join-Path $RepoRoot ".venv\Scripts\python.exe"
-if (-not (Test-Path $py)) { $py = "python" }
+# THE INTERPRETER, RESOLVED THE WAY THE INSTALLER RESOLVES IT: the repo venv, then the Windows
+# launcher `py -3` (every scheduled task on this box runs through it), then bare `python`. The
+# first version fell straight from the venv (which this box does not have) to `python`, and a
+# box where that name is not on the task's PATH would have exited 4 at the seal -- adopted, never
+# sealed, gateway still refusing on the old seal, and the whole run reading as "it ran".
+$py = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $pyArgs = @()
+if (-not (Test-Path $py)) {
+    if (Get-Command py -ErrorAction SilentlyContinue) { $py = "py"; $pyArgs = @("-3") }
+    elseif (Get-Command python -ErrorAction SilentlyContinue) { $py = "python" }
+    else { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: no python interpreter found (.venv, py, python)"; exit 2 }
+}
 
 function Log([string] $m) { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: $m" }
 
@@ -107,7 +116,7 @@ if ($dirty.Count -gt 0) {
     $dirty | Select-Object -First 12 | ForEach-Object { Log "    $_" }
     exit 3
 }
-& $py -c "from libs.ops import release; d=release.seal(by='Adopt-And-Seal'); print(d.get('code_sha') or d.get('live_sha'))"
+& $py @pyArgs -c "from libs.ops import release; d=release.seal(by='Adopt-And-Seal'); print(d.get('code_sha') or d.get('live_sha'))"
 if ($LASTEXITCODE -ne 0) { Log "release.seal failed (exit $LASTEXITCODE)"; exit 4 }
 
 # --------------------------------------------- 3. RELEASE.json alone -- the pure-seal commit

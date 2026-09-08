@@ -185,3 +185,15 @@ def test_the_standalone_installer_runs_the_first_adoption_now_and_is_idempotent(
     assert "Start-ScheduledTask -TaskName $TaskName" in STANDALONE
     assert STANDALONE.index("Register-ScheduledTask") < STANDALONE.index("Start-ScheduledTask")
     assert "$ErrorActionPreference = 'Stop'" in STANDALONE
+
+
+def test_adopt_and_seal_resolves_python_the_way_the_installer_does() -> None:
+    """The box has no .venv and runs every task through `py -3`; a seal that fell straight to
+    bare `python` would exit 4 on a box where that name is not on the task's PATH -- adopted,
+    never sealed, gateway still refusing on the old seal."""
+    order = ['.venv\\Scripts\\python.exe', "Get-Command py", "Get-Command python",
+             "no python interpreter found"]
+    idx = [ADOPT_CODE.index(s) for s in order]
+    assert idx == sorted(idx), "venv, then the launcher, then bare python, then a loud exit"
+    assert '$pyArgs = @("-3")' in ADOPT_CODE
+    assert "& $py @pyArgs -c" in ADOPT_CODE
