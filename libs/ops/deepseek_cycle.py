@@ -178,9 +178,46 @@ class Seat:
     deep_model: str = ""
     why: str = ""
     env_var: str = "OPENROUTER_API_KEY"
+    key_source: str = ""                       # env:OPENROUTER_API_KEY | file:llm_panel.json
 
 
-def seat_state(env: dict[str, str] | None = None) -> Seat:
+#: The desk's credential file -- the SAME one every other seat reads (llm_seat.SECRETS). Never
+#: printed, never copied; only its presence and the provider names are ever reported.
+SECRETS = _ROOT / "data" / "secrets" / "llm_panel.json"
+
+
+def resolve_key(env: dict[str, str] | None = None, secrets: Path | None = None
+                ) -> tuple[str, str]:
+    """(key, source): the environment first, then data/secrets/llm_panel.json -- the order
+    `llm_seat.seats` uses for every other organ.
+
+    THE SEAT RAN DARK BY CONSTRUCTION (measured 2026-09-08 by a reconcile verifier): this module
+    read OPENROUTER_API_KEY from the environment only, ops/brain_env.sh exports no such name,
+    and quant-deepseek.service loads no EnvironmentFile -- while the key the desk actually holds
+    sits in the secrets file that kimi_hunter, the director and llm_seat all read. Every daily
+    run reported DARK and exited 0, honestly, and produced nothing. An openrouter provider row
+    is preferred (one key reaches every free model); failing that, the first row with a key.
+    """
+    e = dict(os.environ if env is None else env)
+    key = e.get("OPENROUTER_API_KEY", "").strip()
+    if key:
+        return key, "env:OPENROUTER_API_KEY"
+    path = secrets or SECRETS
+    try:
+        cfg = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return "", ""
+    rows = [p for p in (cfg.get("providers") or []) if isinstance(p, dict)
+            and str(p.get("key") or "").strip()]
+    for p in rows:
+        if "openrouter" in (str(p.get("name") or "") + str(p.get("base_url") or "")).lower():
+            return str(p["key"]).strip(), "file:llm_panel.json"
+    if rows:
+        return str(rows[0]["key"]).strip(), "file:llm_panel.json"
+    return "", ""
+
+
+def seat_state(env: dict[str, str] | None = None, secrets: Path | None = None) -> Seat:
     """IV + the dark-seat rule. A missing key is a REPORTED state, never an exception.
 
     Model IDs are read from the environment and never hardcoded: the mandate is explicit that
@@ -188,14 +225,16 @@ def seat_state(env: dict[str, str] | None = None) -> Seat:
     would silently route the second flywheel to a model that no longer exists.
     """
     e = dict(os.environ if env is None else env)
-    key = e.get("OPENROUTER_API_KEY", "").strip()
+    key, source = resolve_key(e, secrets)
     if not key:
         return Seat(lit=False, why=(
-            "DARK: OPENROUTER_API_KEY is not set. This is a REPORTED STATE and exit 0 -- the "
+            "DARK: OPENROUTER_API_KEY is not set and data/secrets/llm_panel.json holds no key. "
+            "This is a REPORTED STATE and exit 0 -- the "
             "desk's improvement rate must not depend on a credential, and an organ that "
             "hard-fails on a missing key takes the scheduler down with it"))
     return Seat(
         lit=True,
+        key_source=source,
         provider=e.get("DEEPSEEK_PROVIDER", "openrouter"),
         bulk_model=e.get("DEEPSEEK_BULK_MODEL", ""),
         deep_model=e.get("DEEPSEEK_DEEP_MODEL", ""),
@@ -583,7 +622,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
 
     ls_seat = llm_seat.Seat(name=f"deepseek_{'deep' if deep else 'bulk'}",
                             base_url=e.get("DEEPSEEK_BASE_URL", "https://openrouter.ai/api/v1"),
-                            key=e.get("OPENROUTER_API_KEY", ""), model=model)
+                            key=resolve_key(e)[0], model=model)
     text, err = llm_seat.chat(user, system=system, seat=ls_seat,
                               max_tokens=(16000 if deep else 4000))
     if err:

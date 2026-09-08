@@ -67,6 +67,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: docs/GAP_REGISTER.md:272 ("the */5 divergence sampler");
 #   docs/research/deep_sweep/20260729_data-intelligence.md:77 ("venue_divergence every 5m")
 # CONFIDENCE: documented-cadence
+# KEPT 2026-09-08: a reconcile verifier read this sampler as a cash-carry organ (it reads
+# web/venue_equity.json); tests/scripts/test_scheduler_manifest.py::test_row58_named_jobs_are_covered
+# pins it as a DR-floor job the 2026-09-05 sweep chose to keep. The pin stands until the
+# principal retires the sampler itself; a manifest edit is not the place to overrule a test.
 */5 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_venue_divergence_shadow.py >> data/cro_ai_logs/venue_divergence_cron.log 2>&1
 
 # RATCHET FENCE (constitution L1.0/L2.0): every measurable property of the desk reported as
@@ -736,7 +740,12 @@ QUANT_ROOT=/home/quant/quant-platform
 # TCA fills (the cost-DRIFT signal no single organ could compute). Recommend-only by design.
 # EVIDENCE: scripts/run_execution_intel.py (built 2026-07-29, triage #102)
 # CONFIDENCE: committed-script (new this cycle)
-*/20 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_execution_intel.py >> data/cro_ai_logs/execution_intel.log 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): scripts/run_execution_intel.py reads data/cashcarry_trades.json -- the retired cash-carry book's fills,
+# every one of which is absent from this tree, so the row fired as a perpetual missing-input no-op.
+# 19c333f8 (claude/wonderful-darwin-7uiobi) had disabled it on 2026-08-25; the reconcile of 2026-09-08
+# carried the desk manifest wholesale and a verifier found the disable dropped. The MT5 desk's
+# equivalents run under desks/mt5/research/.
+# (was: */20 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_execution_intel.py >> data/cro_ai_logs/execution_intel.log 2>&1)
 
 # FEE ATTRIBUTION: which SYMBOLS paid the $1,750.88 futures commission that is 88.7% of the
 # sleeve's non-funding loss. The trade tape carries no fee field on any of its 500 rows, so this
@@ -755,7 +764,12 @@ QUANT_ROOT=/home/quant/quant-platform
 # REALITY GAP: backtest -> shadow -> live -> venue-truth chain comparison (constitution L2.10).
 # EVIDENCE: scripts/run_reality_gap.py (built 2026-07-29, triage #127)
 # CONFIDENCE: committed-script (new this cycle)
-23 */2 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_reality_gap.py >> data/cro_ai_logs/reality_gap.log 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): scripts/run_reality_gap.py reads data/cashcarry_trades.json and web/cashcarry_live|shadow.json -- the retired cash-carry book,
+# every one of which is absent from this tree, so the row fired as a perpetual missing-input no-op.
+# 19c333f8 (claude/wonderful-darwin-7uiobi) had disabled it on 2026-08-25; the reconcile of 2026-09-08
+# carried the desk manifest wholesale and a verifier found the disable dropped. The MT5 desk's
+# equivalents run under desks/mt5/research/.
+# (was: 23 */2 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_reality_gap.py >> data/cro_ai_logs/reality_gap.log 2>&1)
 
 # DAILY EXECUTION ECONOMICS: the one page that adds the desk's execution costs UP -- net APR
 # decomposed (gross funding - futures comm - SPOT comm - slippage - funding paid), churn (round
@@ -1406,7 +1420,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # so flock provided no mutual exclusion between the two -- exactly the max_audit/quota_verdict
 # class. check_scheduler_manifest now fences same-script-different-lock structurally.
 # CONFIDENCE: adopted-live (cadences observed, not re-derived).
-*/30 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_growth_audit.py >/dev/null 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): scripts/run_growth_audit.py keys on data/CASHCARRY_KILL, run_cashcarry_executor.py and web/cashcarry_live.json -- the retired cash-carry executor,
+# every one of which is absent from this tree, so the row fired as a perpetual missing-input no-op.
+# 19c333f8 (claude/wonderful-darwin-7uiobi) had disabled it on 2026-08-25; the reconcile of 2026-09-08
+# carried the desk manifest wholesale and a verifier found the disable dropped. The MT5 desk's
+# equivalents run under desks/mt5/research/.
+# (was: */30 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_growth_audit.py >/dev/null 2>&1)
 
 # REJECT RECOVERY LOOP (wired 2026-07-31, closes rejection-shadow-unscored): rescore matured
 # rejects on their post-rejection forward window, then re-run the shadow audit that judges gate
@@ -1433,7 +1452,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # still unhedged, and will reverse. HOURLY, alongside the other live-state fences.
 # EVIDENCE: scripts/check_mechanism_attribution.py -> data/mechanism_attribution.json
 # CONFIDENCE: committed-script (new this cycle; caught the live case on its first run)
-35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_attribution.lock .venv/bin/python scripts/check_mechanism_attribution.py --report-only >> data/cro_ai_logs/attribution.log 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): scripts/check_mechanism_attribution.py reads the retired cash-carry live/positions files,
+# every one of which is absent from this tree, so the row fired as a perpetual missing-input no-op.
+# 19c333f8 (claude/wonderful-darwin-7uiobi) had disabled it on 2026-08-25; the reconcile of 2026-09-08
+# carried the desk manifest wholesale and a verifier found the disable dropped. The MT5 desk's
+# equivalents run under desks/mt5/research/.
+# (was: 35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_attribution.lock .venv/bin/python scripts/check_mechanism_attribution.py --report-only >> data/cro_ai_logs/attribution.log 2>&1)
 
 # TRADE REVIEW (R0139): the discretionary desk's LEARNING LOOP, on BINANCE perps. Reads each closed
 # paper trade against what was claimed at entry -- thesis, named structure, falsifier, chart state
@@ -1737,11 +1761,21 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_cost_identification.py -> data/cost_surface.json; CONSTITUTION L1.45
 # CONFIDENCE: committed-script (new this cycle; first run reported UNDERPOWERED and published
 # nothing, which is the refusal path working -- 7 usable fills against MIN_FILLS_FOR_RAMP=30)
-20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costident.lock .venv/bin/python scripts/run_cost_identification.py --write-ramp >> data/cro_ai_logs/cost_identification.log 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): scripts/run_cost_identification.py reads run_cashcarry_executor.py / cashcarry_trades.jsonl -- the retired cash-carry book,
+# every one of which is absent from this tree, so the row fired as a perpetual missing-input no-op.
+# 19c333f8 (claude/wonderful-darwin-7uiobi) had disabled it on 2026-08-25; the reconcile of 2026-09-08
+# carried the desk manifest wholesale and a verifier found the disable dropped. The MT5 desk's
+# equivalents run under desks/mt5/research/.
+# (was: 20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costident.lock .venv/bin/python scripts/run_cost_identification.py --write-ramp >> data/cro_ai_logs/cost_identification.log 2>&1)
 # EVIDENCE: scripts/check_excitation.py -> data/excitation_status.json; CONSTITUTION L1.45
 # CONFIDENCE: committed-script (new this cycle; first run fired ABSORBING and named the two
 # incident-#6 symbols permanently denylisted on the desk's own since-fixed close bug)
-35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_excitation.lock .venv/bin/python scripts/check_excitation.py --report-only >> data/cro_ai_logs/excitation.log 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): scripts/check_excitation.py reads run_cashcarry_executor.py / cashcarry_trades.jsonl -- the retired cash-carry book,
+# every one of which is absent from this tree, so the row fired as a perpetual missing-input no-op.
+# 19c333f8 (claude/wonderful-darwin-7uiobi) had disabled it on 2026-08-25; the reconcile of 2026-09-08
+# carried the desk manifest wholesale and a verifier found the disable dropped. The MT5 desk's
+# equivalents run under desks/mt5/research/.
+# (was: 35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_excitation.lock .venv/bin/python scripts/check_excitation.py --report-only >> data/cro_ai_logs/excitation.log 2>&1)
 # EVIDENCE: scripts/fit_passive_impact.py -> data/passive_impact.json; CONSTITUTION L1.45 / R0267
 # CADENCE CEILING (L1.28c): DATA-ARRIVAL. The estimand is a book-level constant fitted from
 # data/moat, which accrues continuously, but a decay length does not move hour to hour and the
@@ -1750,7 +1784,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # against nearly the same tape. Raise it if the decay length is ever measured to move faster.
 # CONFIDENCE: committed-script (new this cycle; the own-fills half refuses UNIDENTIFIED by
 # construction -- every desk quote rests at the touch, so the offset has no variance to fit)
-50 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_passive_impact.lock .venv/bin/python scripts/fit_passive_impact.py --report-only >> data/cro_ai_logs/passive_impact.log 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): scripts/fit_passive_impact.py loops the retired venues ('fut','spot','bybit') over data/moat/execution_tape/cashcarry_trades.jsonl,
+# every one of which is absent from this tree, so the row fired as a perpetual missing-input no-op.
+# 19c333f8 (claude/wonderful-darwin-7uiobi) had disabled it on 2026-08-25; the reconcile of 2026-09-08
+# carried the desk manifest wholesale and a verifier found the disable dropped. The MT5 desk's
+# equivalents run under desks/mt5/research/.
+# (was: 50 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_passive_impact.lock .venv/bin/python scripts/fit_passive_impact.py --report-only >> data/cro_ai_logs/passive_impact.log 2>&1)
 # MOAT MICROSTRUCTURE CAMPAIGN (principal 2026-08-01). Scores order-book candidates against the
 # RECORDED tape -- the only dataset this desk owns that the crowd does not. Runs on the PRIMARY
 # only: the moat lives on one box by design (two collectors writing two lakes is divergence, not
@@ -2047,7 +2086,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # the dominant lever. Caveat recorded with the number: the 254-trade sample spans the 07-27 churn
 # incident, whose rail-forced closes distort the hold distribution, so the verdict must be re-read
 # on post-fix fills before any parameter moves.
-25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_netopt.lock .venv/bin/python scripts/optimise_net_profit.py >> data/cro_ai_logs/net_profit_optimum.log 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): scripts/optimise_net_profit.py TRADES = data/cashcarry_trades.json -- the retired cash-carry book,
+# every one of which is absent from this tree, so the row fired as a perpetual missing-input no-op.
+# 19c333f8 (claude/wonderful-darwin-7uiobi) had disabled it on 2026-08-25; the reconcile of 2026-09-08
+# carried the desk manifest wholesale and a verifier found the disable dropped. The MT5 desk's
+# equivalents run under desks/mt5/research/.
+# (was: 25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_netopt.lock .venv/bin/python scripts/optimise_net_profit.py >> data/cro_ai_logs/net_profit_optimum.log 2>&1)
 
 # POINT-IN-TIME UNIVERSE SNAPSHOT (R0239). list_perp_symbols filters exchangeInfo to
 # status == TRADING and discards the rest, so every backfilled panel is conditioned on the symbol
@@ -2444,7 +2488,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # longest, risk_pause_opens, 7.47d live. It also killed its own premise: best stablecoin APY
 # 3.78% vs risk-free 3.73%/yr, so net of the 300bps haircut the lending rung loses; breakeven
 # haircut is 5.5bps, so that underived constant decides the verdict single-handed)
-27 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_idlecost.lock .venv/bin/python scripts/check_idle_cost.py --report-only >> data/cro_ai_logs/idle_cost.log 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): scripts/check_idle_cost.py reads the retired cash-carry live/positions files,
+# every one of which is absent from this tree, so the row fired as a perpetual missing-input no-op.
+# 19c333f8 (claude/wonderful-darwin-7uiobi) had disabled it on 2026-08-25; the reconcile of 2026-09-08
+# carried the desk manifest wholesale and a verifier found the disable dropped. The MT5 desk's
+# equivalents run under desks/mt5/research/.
+# (was: 27 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_idlecost.lock .venv/bin/python scripts/check_idle_cost.py --report-only >> data/cro_ai_logs/idle_cost.log 2>&1)
 # PROMPT RATCHET (2026-08-05). Prompts are the desk's highest-leverage artifacts -- 30 governed
 # files (11 miner/dig prompts, 13 panel missions, the doctrine, the CRO constitution, the two
 # inline scheduled-Routine prompts) that every organ pays on every call -- and they were the one
@@ -3239,9 +3288,15 @@ SYSTEMD unit="quant-certify-gauntlet.timer" on="*:10" exec="scripts/certify_gaun
 # ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder. The MT5
 # gateway carries its own cost, quality and guard path under desks/mt5/.
 # (was: SYSTEMD unit="quant-cost-hunt.timer" on="*-*-* *:23:00" exec="scripts/run_cost_hunt.py")
-SYSTEMD unit="quant-cost-ident.timer" on="*-*-* *:20:00" exec="scripts/run_cost_identification.py"
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): quant-cost-ident.timer ran scripts/run_cost_identification.py, a
+# reader of the retired cash-carry book (see the cron row above); unit files deleted with it.
+# On the VPS the live copy under ~/.config/systemd/user must be `systemctl --user disable --now`;
+# check_unit_health reports live units with no repo copy and never deletes them.
+# (was: SYSTEMD unit="quant-cost-ident.timer" on="*-*-* *:20:00" exec="scripts/run_cost_identification.py")
 SYSTEMD unit="quant-cot-zcache.timer" on="Tue,Wed,Sat 07:35" exec="scripts/refresh_cot_zcache.py"
-SYSTEMD unit="quant-deepseek.timer" on="*-*-* 04:20:00 UTC" exec="ops/run_deepseek_factory.sh"
+# 2026-09-08: hourly per DEEPSEEK_SECOND_FLYWHEEL_MANDATE (bcc10c20 restored it on the dead cron plane;
+# this is the live one). Free ids only. (was: on="*-*-* 04:20:00 UTC")
+SYSTEMD unit="quant-deepseek.timer" on="*-*-* *:20:00 UTC" exec="ops/run_deepseek_factory.sh"
 SYSTEMD unit="quant-desk-cycles.timer" on="*:2,17,32,47" exec="scripts/check_desk_cycles.py"
 SYSTEMD unit="quant-desk-module-drift.timer" on="*:0/10" exec="scripts/check_desk_module_drift.py"
 SYSTEMD unit="quant-desk-parity.timer" on="*:11/30" exec="scripts/check_desk_code_parity.py"
@@ -3261,7 +3316,11 @@ SYSTEMD unit="quant-forward-clock.timer" on="*:00,30" exec="scripts/check_forwar
 SYSTEMD unit="quant-fxblue-harvest.timer" on="*-*-* 00/2:19:00" exec="desks/mt5/scripts/fxblue_track_record_miner.py"
 SYSTEMD unit="quant-gap-wirer.timer" on="Tue *-*-* 18:00:00 Europe/Dublin" exec="ops/run_gap_wirer.sh"
 SYSTEMD unit="quant-governance-pulse.timer" on="*:03,18,33,48" exec="scripts/check_governance_pulse.py"
-SYSTEMD unit="quant-growth-audit.timer" on="*-*-* *:00/30:00" exec="scripts/run_growth_audit.py"
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): quant-growth-audit.timer ran scripts/run_growth_audit.py, a
+# reader of the retired cash-carry book (see the cron row above); unit files deleted with it.
+# On the VPS the live copy under ~/.config/systemd/user must be `systemctl --user disable --now`;
+# check_unit_health reports live units with no repo copy and never deletes them.
+# (was: SYSTEMD unit="quant-growth-audit.timer" on="*-*-* *:00/30:00" exec="scripts/run_growth_audit.py")
 SYSTEMD unit="quant-job-manifest.timer" on="*:07/30" exec="scripts/check_job_manifest.py"
 # HOURLY 2026-09-08 (principal: "make kimi free tier hunter run hourly"). The service runs the
 # ROUTINE invocation (no --deep) after sourcing ops/free_tier.env, and since bcc10c20 the routine

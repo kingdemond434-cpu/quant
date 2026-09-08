@@ -522,3 +522,56 @@ class TestDonation:
              "capability_source": "Renaissance", "evidence_grade": "PEER_REPORTED"}]}))
         assert out["status"] == "OK", "a missing enrichment must not crash the cycle"
         assert out["donated_to"], "the finding must still be donated"
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+# ------------------------------------------------- the seat reads the desk's secrets file too
+def test_the_seat_lights_from_the_secrets_file_when_the_environment_has_no_key(tmp_path) -> None:
+    """MEASURED 2026-09-08: ops/brain_env.sh exports no OPENROUTER_API_KEY and the service loads
+    no EnvironmentFile, while the key the desk holds sits in data/secrets/llm_panel.json -- the
+    file every other seat reads. The flywheel reported DARK daily and did nothing."""
+    from libs.ops.deepseek_cycle import resolve_key, seat_state
+    secrets = tmp_path / "llm_panel.json"
+    secrets.write_text(json.dumps({"providers": [
+        {"name": "other", "base_url": "https://api.example.com/v1", "key": "k-other"},
+        {"name": "openrouter", "base_url": "https://openrouter.ai/api/v1", "key": "k-or"},
+    ]}), "utf-8")
+    assert resolve_key({}, secrets) == ("k-or", "file:llm_panel.json")      # openrouter preferred
+    assert resolve_key({"OPENROUTER_API_KEY": "k-env"}, secrets) == \
+        ("k-env", "env:OPENROUTER_API_KEY")
+    s = seat_state({"DEEPSEEK_BULK_MODEL": "deepseek/deepseek-r1:free"}, secrets)
+    assert s.lit and s.key_source == "file:llm_panel.json"
+    assert "k-or" not in s.why and "k-or" not in json.dumps(s.__dict__)     # never reported
+
+
+def test_no_key_anywhere_is_still_a_reported_dark_state(tmp_path) -> None:
+    from libs.ops.deepseek_cycle import resolve_key, seat_state
+    absent = tmp_path / "none.json"
+    assert resolve_key({}, absent) == ("", "")
+    (tmp_path / "empty.json").write_text(
+        json.dumps({"providers": [{"name": "x", "key": ""}]}), "utf-8")
+    assert resolve_key({}, tmp_path / "empty.json") == ("", "")
+    s = seat_state({}, absent)
+    assert s.lit is False and "DARK" in s.why and "llm_panel.json" in s.why
+
+
+def test_the_request_uses_the_same_resolution_as_the_seat() -> None:
+    src = (ROOT / "libs" / "ops" / "deepseek_cycle.py").read_text("utf-8")
+    assert "key=resolve_key(e)[0], model=model)" in src
+    assert 'key=e.get("OPENROUTER_API_KEY", "")' not in src
+
+
+def test_the_flywheel_is_hourly_on_the_live_plane_and_free() -> None:
+    """bcc10c20 restored the mandate's hourly cadence on the cron plane, which has been dead since
+    2026-08-20; the live plane is the user timer. Both model ids are :free, so hourly spends
+    nothing; the manifest row must carry the timer's OnCalendar verbatim."""
+    timer = (ROOT / "ops" / "quant-deepseek.timer").read_text("utf-8")
+    assert "OnCalendar=*-*-* *:20:00 UTC" in timer and "Persistent=true" in timer
+    manifest = (ROOT / "ops" / "crontab.manifest").read_text("utf-8")
+    assert 'SYSTEMD unit="quant-deepseek.timer" on="*-*-* *:20:00 UTC"' in manifest
+    env = (ROOT / "ops" / "free_tier.env").read_text("utf-8")
+    for var in ("DEEPSEEK_BULK_MODEL", "DEEPSEEK_DEEP_MODEL"):
+        line = next(ln for ln in env.splitlines() if ln.startswith(f"export {var}="))
+        assert line.rstrip('"').endswith(":free"), line

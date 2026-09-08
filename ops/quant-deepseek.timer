@@ -1,10 +1,17 @@
 [Unit]
-Description=DeepSeek flywheel daily (free tier)
+Description=DeepSeek flywheel hourly (free tier)
 
 [Timer]
-OnCalendar=*-*-* 04:20:00 UTC
+# HOURLY, 2026-09-08. docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md: "Run a FULL HOURLY DEEPSEEK
+# RESEARCH CYCLE. Default: EVERY 1 HOUR". bcc10c20 restored that cadence on the cron plane, which
+# has been dead since 2026-08-20; this timer is the live plane. Both DEEPSEEK_*_MODEL ids are
+# :free (ops/free_tier.env), so the cadence spends nothing. :20 keeps it off the kimi hunter's
+# :40 slot on the same 3.8GB box; systemd never stacks a timer onto a unit still running
+# (TimeoutStartSec=2h), so a slow hour is skipped, never doubled.
+# ops/crontab.manifest's SYSTEMD row must carry this OnCalendar verbatim.
+OnCalendar=*-*-* *:20:00 UTC
 Persistent=true
-RandomizedDelaySec=600
+RandomizedDelaySec=300
 
 [Install]
 WantedBy=timers.target
