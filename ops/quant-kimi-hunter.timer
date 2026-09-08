@@ -1,8 +1,14 @@
 [Unit]
-Description=Kimi hunter daily (free tier)
+Description=Kimi hunter hourly (free tier)
 
 [Timer]
-OnCalendar=*-*-* 05:40:00 UTC
+# HOURLY, 2026-09-08 (principal: "make kimi free tier hunter run hourly"). The service runs the
+# ROUTINE invocation (no --deep), which since bcc10c20 walks ROUTINE_MODEL_CHAIN -- free-tier ids
+# only -- so the cadence spends nothing; the 2x/week --deep row in ops/crontab.manifest is the only
+# paid path and is NOT made hourly. Persistent catches an hour lost to a reboot; systemd never
+# starts a second instance of an active oneshot (TimeoutStartSec=1h), so a slow hour is skipped,
+# never stacked. ops/crontab.manifest's SYSTEMD row must carry this OnCalendar verbatim.
+OnCalendar=*-*-* *:40:00 UTC
 Persistent=true
 RandomizedDelaySec=600
 

@@ -140,7 +140,12 @@ QUANT_ROOT=/home/quant/quant-platform
 # 2026-07-24 incident class ($21.48 in one day from unbounded resend). Each run executes the full
 # wave 1->2->3 protocol; duplicate finds are suppressed by the graveyard + novelty gate, so extra
 # frequency cannot manufacture duplicate work.
-5 */3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
+# RETIRED 2026-09-08: the routine (no --deep) hunt now runs HOURLY on the user-timer plane
+# (quant-kimi-hunter.timer, SYSTEMD row below, free-tier ROUTINE_MODEL_CHAIN). This cron row was
+# never allowlisted in scripts/run_manifest_dispatch.py, so it has fired nothing since root cron
+# died on 08-20 (L0175); keeping it would let a future deploy/reconstitute_cron.sh double-fire the
+# same script against the timer. The WEEKLY DEEP row below (paid chain) is unchanged.
+# (was: 5 */3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1)
 # WEEKLY DEEP: longer budget, targets previously unexplored languages/regions/eras per L1.11a.
 35 5 * * 0,3 cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py --deep >> data/cro_ai_logs/kimi_hunter_deep.log 2>&1
 
@@ -695,7 +700,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: scripts/run_model_upgrade.py + libs/ops/model_chain.py + ops/model_chain.env (single
 #           source, extracted from 3 hardcoded copies 2026-07-30); tests/ops/test_model_chain.py
 # CONFIDENCE: committed-script (new this cycle)
-11 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_model_upgrade.py --apply >> data/cro_ai_logs/model_upgrade.log 2>&1
+# CADENCE CUT 2026-08-20 (seat cap, reconciled 2026-09-08 from wonderful-darwin dc727fbd): monthly on
+# the 1st at 04:00 UTC instead of daily. A flagship ships on a monthly rhythm, not a daily one, and
+# each apply PING-VERIFIES against the paid seat; the daily grid spent credit re-discovering the same
+# head 29 days out of 30. (was: 11 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_model_upgrade.py --apply >> data/cro_ai_logs/model_upgrade.log 2>&1)
+0 4 1 * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_model_upgrade.py --apply >> data/cro_ai_logs/model_upgrade.log 2>&1
 
 # WIRING AGENT: built things get WIRED automatically (principal order 2026-07-30). Detection
 # alone reproduced the original failure one level up -- a dormancy report nobody actions is itself
@@ -830,7 +839,12 @@ QUANT_ROOT=/home/quant/quant-platform
 # instead of after two of four. Beyond 4x/day the director re-reads unchanged desk state --
 # the honest ceiling is the information-arrival rate, not the cron syntax; the path past it
 # is EVENT-DRIVEN fires (rowed), not a denser fixed grid. Dormant until OpenRouter is funded.
-40 4,10,16,22 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
+# CADENCE CUT 2026-08-20 (seat cap, reconciled 2026-09-08 from wonderful-darwin dc727fbd): ONE director
+# read per day at 04:40 UTC, after the overnight cycle. The paragraph above records why 4x/day was
+# the information-matched ceiling; the external-seat envelope (data/panel_budget.json, $50/mo) is
+# the binding constraint now, and the director re-reads a dossier that changes daily. Raising it
+# back is a principal decision, not a merge one. (was: 40 4,10,16,22 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1)
+40 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
 
 # BACKTEST ENGINE SELF-VERIFICATION: cross-checks the event-driven engine against an independent
 # pure-NumPy reference that shares no code path with it. Activates libs/backtest, which max_audit
@@ -1302,7 +1316,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: libs/execution/sub_accounts.py -> data/subaccounts.json;
 #           tests/execution/test_sub_accounts.py (13 tests, all guards exercised)
 # CONFIDENCE: committed-script (new this cycle)
-48 5 * * * cd "$QUANT_ROOT" && .venv/bin/python -c "from libs.execution.sub_accounts import probe; print(probe().detail)" >> data/cro_ai_logs/subaccounts.log 2>&1
+# RETIRED 2026-09-08 under the MT5 universe mandate (2026-08-18): libs/execution/sub_accounts.py was
+# the Binance sub-account probe of the retired crypto-exchange desk and is ABSENT from the tree, so
+# this inline `python -c` row failed on import every day at 05:48 UTC -- invisible to
+# check_scheduler_manifest because an inline row carries no script path. Fusion/MT5 has no
+# sub-account API of this shape; the capability does not transfer.
+# (was: 48 5 * * * cd "$QUANT_ROOT" && .venv/bin/python -c "from libs.execution.sub_accounts import probe; print(probe().detail)" >> data/cro_ai_logs/subaccounts.log 2>&1)
 
 # CADENCE MAXIMISATION (principal order 2026-07-31: "maximise and exhaust cadence frequencies for
 # everything if it benefits and has ROI, ignoring costs"). Raised above: max-push, promotion
@@ -1796,7 +1815,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # credential gets disabled, and a disabled organ recommends nothing.
 # EVIDENCE: scripts/run_cro.py -> data/cro_review.json + docs/research/cro_recommendations.jsonl
 # CONFIDENCE: committed-script (new; runs dark until OPENAI_API_KEY is exported, and says so)
-20 5,11,17,23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
+# CADENCE CUT 2026-08-20 (seat cap, reconciled 2026-09-08 from wonderful-darwin dc727fbd): the cron
+# CRO seat fires ONCE daily at 05:20 UTC; the "4x daily" in the paragraph above is history, not the
+# live cadence. The systemd plane is untouched: quant-cro.timer (08:01 daily_research_cycle.py) and
+# quant-cro-ai.timer (08:45 run_cro_ai.sh) keep their OnCalendar verbatim. (was: 20 5,11,17,23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1)
+20 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
 
 # SURVIVOR BOTTLENECK PANEL -- every seat argues about why nothing has ever survived.
 # The desk's root-cause finding (52 of 350 recorded negatives, 14.9%, were powered enough to mean
@@ -3240,7 +3263,13 @@ SYSTEMD unit="quant-gap-wirer.timer" on="Tue *-*-* 18:00:00 Europe/Dublin" exec=
 SYSTEMD unit="quant-governance-pulse.timer" on="*:03,18,33,48" exec="scripts/check_governance_pulse.py"
 SYSTEMD unit="quant-growth-audit.timer" on="*-*-* *:00/30:00" exec="scripts/run_growth_audit.py"
 SYSTEMD unit="quant-job-manifest.timer" on="*:07/30" exec="scripts/check_job_manifest.py"
-SYSTEMD unit="quant-kimi-hunter.timer" on="*-*-* 05:40:00 UTC" exec="scripts/kimi_hunter.py"
+# HOURLY 2026-09-08 (principal: "make kimi free tier hunter run hourly"). The service runs the
+# ROUTINE invocation (no --deep) after sourcing ops/free_tier.env, and since bcc10c20 the routine
+# path walks ROUTINE_MODEL_CHAIN -- :free ids only -- so 24 fires/day spend nothing on the
+# OpenRouter balance; only the 2x/week --deep row below touches the paid chain. This SYSTEMD
+# row must match ops/quant-kimi-hunter.timer OnCalendar verbatim (check_scheduler_manifest (b)).
+# (was: SYSTEMD unit="quant-kimi-hunter.timer" on="*-*-* 05:40:00 UTC" exec="scripts/kimi_hunter.py")
+SYSTEMD unit="quant-kimi-hunter.timer" on="*-*-* *:40:00 UTC" exec="scripts/kimi_hunter.py"
 # RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18): scripts/run_live_guard.py was
 # an ops/execution organ bound to the retired crypto executor and its Gate-0 staging ladder. The
 # MT5 gateway carries its own cost, quality and guard path under desks/mt5/.

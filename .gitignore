@@ -12,6 +12,11 @@ data/*
 !data/nav_attestation.jsonl
 !data/decision_ledger.json
 !data/cashcarry_config.json
+# The monthly $ envelope for external-LLM seats (CRO/GPT, kimi_hunter's model chain,
+# run_external_panel) is CONFIG, not generated state: a gitignored cap evaporates on the next
+# container reset and never reaches the VPS, which is how the desk ends up back on the code's
+# unset-file default ($120/mo) without anyone deciding that.
+!data/panel_budget.json
 # DEEPSEEK'S OWN OUTPUT, allowlisted 2026-09-03. The flywheel's donate step is
 # `git add -- data/ docs/research/`, and `git add` on an ignored path is a SILENT NO-OP -- so the
 # second brain ran daily, committed, pushed, and published none of its own findings, while the

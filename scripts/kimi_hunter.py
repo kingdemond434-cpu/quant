@@ -44,6 +44,7 @@ KEYS = ROOT / "data/secrets/llm_panel.json"
 from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
 from libs.ops.llm_route import build_chain  # noqa: E402
 from libs.research import hunt_frontier as hf  # noqa: E402
+from libs.research.free_panel import HEAVY as _FREE_PANEL_HEAVY  # noqa: E402
 
 BUDGET = ROOT / "data/panel_budget.json"
 BSTATE = ROOT / "data/panel_budget_state.json"
@@ -80,6 +81,33 @@ MODEL_CHAIN: tuple[str, ...] = (
     "moonshotai/kimi-k2:free",       # free tier -- last, never omitted
     "deepseek/deepseek-r1:free",
     "qwen/qwen3-235b-a22b:free",
+)
+
+#: ROUTINE vs DEEP (2026-08-20, principal: keep the benefit, cut the cost by an order of
+#: magnitude). --deep was a DEAD FLAG until today -- passed by cron, never read by this file, so
+#: the "2x/week deep run" and the 8x/day routine run were byte-identical: every firing paid the
+#: same paid-flagship price. That is the actual cost driver, not the hunt's design.
+#:
+#: THE SPLIT. Routine (8x/day) runs the SAME Wave 1->2->3 protocol on the SAME free-tier models
+#: already in MODEL_CHAIN -- this is not a worse hunt, it is the identical code path this file's
+#: own resilience design already treats as a real hunt ("a free-tier hunt is worth immeasurably
+#: more than no hunt"). Deep (--deep, cadence held at 2x/week) is the ONLY path that spends paid
+#: credit, on the full flagship chain, for the runs where a sharper prior is worth paying for.
+#: Every finding still carries which model produced it, so nothing here is a quality compromise
+#: hidden as economy -- it is the same fallback logic MODEL_CHAIN already uses, just made the
+#: FIRST choice instead of the last resort for the ten routine runs a week.
+ROUTINE_MODEL_CHAIN: tuple[str, ...] = (
+    "moonshotai/kimi-k2:free",
+    "deepseek/deepseek-r1:free",
+    "qwen/qwen3-235b-a22b:free",
+    #: HOURLY TAIL (2026-09-08, the routine run went from daily to hourly on
+    #: quant-kimi-hunter.timer). The three ids above are the mandate's preferred free seats but
+    #: none is on the free panel's 2026-08-29 verified-answering list (libs/research/free_panel
+    #: HEAVY); an hourly run whose whole chain is refused would write BLOCKED 24x/day. The HEAVY
+    #: tier is appended as the walk-down tail -- every id is :free, so the routine path still
+    #: spends nothing -- and it is imported rather than copied so the verified list stays single-
+    #: sourced. The chain's order IS the policy: the mandate's seats are tried first.
+    *_FREE_PANEL_HEAVY,
 )
 
 _COVERAGE = ROOT / "data/hunt_coverage.json"
@@ -273,15 +301,19 @@ def _budget_ok() -> tuple[bool, str]:
         return (True, "budget state unreadable -- proceeding, guard is advisory")
 
 
-def _providers() -> list[tuple[str, str, str]]:
+def _providers(*, deep: bool = False) -> list[tuple[str, str, str]]:
     """Every (model, base_url, key) worth trying, in preference order.
 
-    Built by crossing MODEL_CHAIN with the seated roster: a roster entry naming a chain model is
+    Built by crossing a chain with the seated roster: a roster entry naming a chain model is
     used directly, and any other roster entry sharing that entry's base_url can also SERVE the
     chain model, because OpenRouter routes by the `model` field rather than by the credential.
     That second rule is what turns one dead string into a working hunt -- previously a roster
     holding four OpenRouter seats none of which was literally `moonshotai/kimi-k3` produced
     "not in the seated roster", exit 2, no hunt, no artifact, no complaint.
+
+    `deep=False` (the routine, 8x/day cadence) uses ROUTINE_MODEL_CHAIN -- free-tier only, so the
+    ten routine runs a week spend nothing. `deep=True` (the 2x/week --deep cadence) uses the full
+    paid-first MODEL_CHAIN, so the sharper flagship prior is bought only where it was budgeted.
 
     Returns [] when there is genuinely no credential anywhere. That is a BLOCKER to record, and
     main() records it -- it is not a reason for this function to invent one.
@@ -290,7 +322,8 @@ def _providers() -> list[tuple[str, str, str]]:
     # model and stop; copying this logic into each would guarantee eleven slightly different
     # versions and eleven separate regressions, so the routing lives in a library they can all
     # adopt and check_llm_routing names the ones that have not.
-    return [(r.model, r.base_url, r.key) for r in build_chain(MODEL_CHAIN, KEYS)]
+    chain = MODEL_CHAIN if deep else ROUTINE_MODEL_CHAIN
+    return [(r.model, r.base_url, r.key) for r in build_chain(chain, KEYS)]
 
 
 def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
@@ -494,8 +527,9 @@ def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
 def main() -> None:
     attempts: list[dict] = []
     models_used: list[str] = []
+    deep = "--deep" in sys.argv
     ok, why = _budget_ok()
-    print("=== KIMI HUNTER -- Deep Forest Protocol (Wave 1 -> 2 -> 3) ===")
+    print(f"=== KIMI HUNTER -- Deep Forest Protocol (Wave 1 -> 2 -> 3) [{'deep' if deep else 'routine'}] ===")
     print(f"    budget: {why}\n")
     if not ok:
         raise SystemExit("envelope exhausted -- refusing to start (guard, not a failure)")
@@ -505,7 +539,7 @@ def main() -> None:
     # is absent looks exactly like an organ nobody scheduled. The desk could not tell "the hunter
     # is unfunded" from "the hunter was never built", which is the difference between a bill to
     # pay and a thing to build.
-    chain = _providers()
+    chain = _providers(deep=deep)
     if not chain:
         _blocked("no usable credential: data/secrets/llm_panel.json is absent or holds no seat "
                  "with both a base_url and a key. The Deep Forest protocol is INTACT and unrun -- "
