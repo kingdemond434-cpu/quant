@@ -410,6 +410,74 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _cycle_cadence(now: datetime) -> dict[str, Any]:
+    """Did the HOURLY cycle run, and did the conversion chain succeed in it?
+
+    THE QUESTION NOBODY COULD ANSWER OVER HTTPS, and the reason it matters: the principal's
+    standing bar is that miners, backtests, the gauntlet and certification run EVERY HOUR or the
+    desk is a failure. `hourly_cycle` already records exactly that -- `data/sync_marker.json`
+    carries `last_cycle` plus a result for all fifty-odd legs, including the six that turn a
+    docket row into a certificate on a clock. None of it reached this board.
+
+    WORSE, THE FIELD THAT LOOKED LIKE IT DID MEASURES A DIFFERENT ORGAN. `data_health.organs`
+    reports `last_cycle_success_h` from `data/cro_ai_logs/2026*_*.log` -- the CRO-AI lane, not
+    this cycle. Reading it as the MT5 cadence says "the hourly cycle has never succeeded" when
+    it may have run twenty minutes ago, which is the desk's oldest recurring failure shape: a
+    monitor pointed at the wrong organ, answering confidently about something it never watched.
+
+    THE CHAIN IS NAMED EXPLICITLY rather than summarised. "The cycle ran" is not the claim that
+    matters -- a pass where `external_gauntlet` threw and everything else succeeded still mints no
+    certificates, and an aggregate would show it green.
+    """
+    marker = _read(DESK / "data" / "sync_marker.json")
+    if not marker:
+        return {"status": "UNMEASURED",
+                "why": ("data/sync_marker.json is absent: the hourly cycle has not completed a "
+                        "pass on this host since the file was last cleared. This is NOT the same "
+                        "as `organs.last_cycle_success_h`, which watches data/cro_ai_logs.")}
+    last = _timestamp(marker.get("last_cycle"))
+    age_h = round((now - last).total_seconds() / 3600.0, 2) if last else None
+    #: The legs that carry a candidate from docket row to certificate on a forward clock, in
+    #: order. A break anywhere stops conversion, and each one reads differently to an operator.
+    chain = ("mine", "merge_docket", "backtest", "external_gauntlet", "recertify_canon",
+             "enrol_clocks", "pf_allocator")
+    legs: dict[str, Any] = {}
+    for name in chain:
+        leg = marker.get(name)
+        if not isinstance(leg, dict):
+            legs[name] = {"status": "ABSENT",
+                          "why": "the cycle did not record this leg -- it is not on the roster "
+                                 "this box is running, so it cannot have run"}
+            continue
+        rc = leg.get("exit_code")
+        err = leg.get("error") or leg.get("status")
+        ok = (rc == 0) if isinstance(rc, int) else (err in (None, "", "OK"))
+        legs[name] = {"status": "OK" if ok else "FAILED",
+                      "exit_code": rc, "error": (str(err)[:200] if err and not ok else None),
+                      "at": leg.get("at"), "seconds": leg.get("seconds")}
+    failed = sorted(k for k, v in legs.items() if v["status"] == "FAILED")
+    absent = sorted(k for k, v in legs.items() if v["status"] == "ABSENT")
+    # LATE AFTER TWO HOURS, not one: a pass that starts at :55 and takes twenty minutes is not a
+    # missed hour, and alarming on it would train the reader to ignore this field.
+    late = age_h is not None and age_h > 2.0
+    status = ("STALE" if late else
+              "BROKEN" if failed else
+              "INCOMPLETE" if absent else
+              "OK" if age_h is not None else "UNMEASURED")
+    return {
+        "status": status, "last_cycle": marker.get("last_cycle"), "age_h": age_h,
+        "late_after_h": 2.0, "conversion_chain": legs,
+        "failed_legs": failed, "absent_legs": absent,
+        "why": (f"hourly cycle last completed {age_h}h ago"
+                + ("; STALE past the 2h bar" if late else "")
+                + (f"; FAILED: {', '.join(failed)}" if failed else "")
+                + (f"; not on this box's roster: {', '.join(absent)}" if absent else "")
+                if age_h is not None else "no last_cycle stamp in the marker"),
+        "note": ("`organs.last_cycle_success_h` in health.json watches data/cro_ai_logs and is a "
+                 "DIFFERENT organ; it says nothing about this chain."),
+    }
+
+
 def _mt5_snapshot() -> dict[str, Any]:
     """Live account read straight from the terminal, when this box has one.
 
@@ -629,6 +697,11 @@ def build() -> dict[str, Any]:
             # number here: a REPORTING box makes them observations, a SILENT one makes them
             # history rendered in the present tense.
             "box": box,
+            # THE HOURLY CADENCE, AND THE SIX LEGS THAT MINT CERTIFICATES. Published because a
+            # cadence nobody can observe cannot be enforced: the standing bar is that the miners,
+            # the backtest and the gauntlet run every hour, and until now the only field that
+            # looked like it reported that was watching a different organ entirely.
+            "cycle": _cycle_cadence(now),
         },
         "equity_curve": _series(rows, start),
         "disclaimer": "Research and operator telemetry only. Missing values are UNMEASURED; shadow has zero order authority.",
