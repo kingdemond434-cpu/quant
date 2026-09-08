@@ -137,7 +137,7 @@ if [ "$CLAIM_STATUS" = "LEASE_HELD" ]; then
     HOLDER=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("controller", "unknown"))' "$CLAIM_FILE" 2>/dev/null || echo unknown)
     write_status "LEASE_HELD" "Controller lease already held by $HOLDER; duplicate mutation refused" 0
     echo "midnight-codex: lease held by $HOLDER; duplicate controller refused" | tee -a "$LOG"
-    exit 0
+    exit 75
 fi
 export QUANT_CONTROLLER="codex-midnight"
 export QUANT_CONTROLLER_EPOCH
@@ -221,7 +221,7 @@ fi
 # this blesses it.
 FALLBACK_RC=-1
 FALLBACK_BRAIN="none"
-if [ "$CODEX_RC" -ne 0 ] && [ -x ops/run_deepseek_factory.sh ]; then
+if [ "${CODEX_NIGHTLY_FALLBACK:-1}" != "0" ] && [ "$CODEX_RC" -ne 0 ] && [ -x ops/run_deepseek_factory.sh ]; then
     echo "midnight-codex: paid reasoner unavailable (rc=$CODEX_RC, quota=$QUOTA_HIT); routing this window to the FREE reasoner" | tee -a "$LOG"
     if timeout 3600 bash ops/run_deepseek_factory.sh >>"$LOG" 2>&1; then
         FALLBACK_RC=0
