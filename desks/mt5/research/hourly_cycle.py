@@ -457,10 +457,69 @@ def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None) 
     return ((now or datetime.now(UTC)) - ts).total_seconds()
 
 
-def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None = None) -> str:
-    """`heavy` when the admission scan is missing or stale, else the hourly `normal`."""
+def _rostered_but_unpriced(art: Path | None = None, sleeves: Path | None = None) -> list[str]:
+    """Names on the roster (data/sleeves.json, LIVE or STANDBY) that the carried admission scan
+    never priced -- absent from its published `admission.universe` under every key
+    `promoter._join_keys` would try.
+
+    A SCAN THAT NEVER PRICED A ROSTERED SLEEVE IS NOT A SCAN OF THE CURRENT BOOK. Measured
+    2026-09-08: until `pf_allocator.scalp_evidence` read the ledger's own field names
+    (closed_at/opened_at), no scalp clock was in the priced universe, so every scan on disk
+    answered "nothing" about the three PROMOTION_CANDIDATE scalp sleeves -- and `normal` kept
+    carrying that scan forward as MEASURED and fresh for as long as it was under two hours old.
+    `promoter.capital_verdict` reads a sleeve the universe lacks as UNMEASURED ("nobody looked"),
+    which by design neither adds nor removes risk, so a STANDBY row stayed STANDBY on a scan
+    that had no opinion about it, while every artifact read healthy. The join is the promoter's
+    own (`_join_keys` / `_index`), so this cannot disagree with the reader it serves.
+
+    Returns [] -- the age rule alone decides -- when the roster is empty or unreadable, and when
+    the promoter's join cannot be imported (printed, so the gap is not silent).
+    """
+    sleeves = sleeves or (BASE / "data" / "sleeves.json")
+    try:
+        rows = [s for s in (json.loads(sleeves.read_text("utf-8")).get("sleeves") or [])
+                if isinstance(s, dict)
+                and str(s.get("status") or "").upper() in ("LIVE", "STANDBY")]
+    except (OSError, ValueError, AttributeError):
+        return []
+    if not rows:
+        return []
+    art = art or (BASE / "reports" / "pf_allocation.json")
+    try:
+        adm = json.loads(art.read_text("utf-8")).get("admission") or {}
+        universe = adm.get("universe") if isinstance(adm.get("universe"), dict) else {}
+    except (OSError, ValueError, AttributeError):
+        universe = {}
+    try:
+        from promoter import _index, _join_keys
+    except Exception as exc:
+        print(f"  pf_allocator: cannot read the promoter's join ({type(exc).__name__}: {exc}); "
+              f"the scan's age alone decides the mode", flush=True)
+        return []
+    idx = _index({str(k): v for k, v in universe.items() if isinstance(v, dict)})
+    missing: list[str] = []
+    for s in rows:
+        name = str(s.get("name") or "")
+        keys = _join_keys(name, str(s.get("symbol") or ""), str(s.get("family") or ""),
+                          str(s.get("selector") or s.get("window") or ""))
+        if name and not any(k in idx for k in keys):
+            missing.append(name)
+    return missing
+
+
+def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None = None,
+                                 sleeves: Path | None = None) -> str:
+    """`heavy` when the admission scan is missing, stale, or never priced a rostered sleeve;
+    else the hourly `normal`."""
     age = _admission_scan_age_s(art, now)
-    return "heavy" if age is None or age > ADMISSION_SCAN_MAX_AGE_S else "normal"
+    if age is None or age > ADMISSION_SCAN_MAX_AGE_S:
+        return "heavy"
+    missing = _rostered_but_unpriced(art, sleeves)
+    if missing:
+        print(f"  pf_allocator: heavy -- {len(missing)} rostered sleeve(s) absent from the "
+              f"carried scan's universe: {missing[:6]}", flush=True)
+        return "heavy"
+    return "normal"
 
 
 def _costed(name: str, fn):
@@ -1060,6 +1119,23 @@ def main() -> None:
     # ADMISSION_SCAN_MAX_AGE_S -- a scheduling redundancy, not a change to any admission rule.
     pa = _costed("pf_allocator", lambda: _producer(
         "pf_allocator", "research/pf_allocator.py", "--mode", _allocator_mode_for_the_hour()))
+    # THE PROMOTER READS THE SCAN THE LEG ABOVE JUST WROTE (2026-09-08). A promoted row reaches
+    # the gateway only at status LIVE, and LIVE is written only by the promoter -- on a fresh
+    # MEASURED admission that admits the sleeve, and for a STANDBY row on PROMOTE_ADMIT_STREAK
+    # consecutive such readings, each reading being one promoter pass (`reconcile_capital`).
+    # The promoter had two schedulers: the 22:00 UTC gateway pass and the daily cycle. So the
+    # allocator could measure an admission at 13:00 and the row that admission funds would wait
+    # until 22:00 for its first reading and until the NEXT day's for its second, while the scan
+    # that admitted it aged past the 26h the promoter accepts. Three scalp sleeves sat at
+    # PROMOTION_CANDIDATE for seventeen days with every artifact reading healthy.
+    #
+    # `promoter.main` is idempotent on a roster that has not changed: a name already in
+    # sleeves.json is skipped by every promotion door, `reconcile_capital` records the current
+    # reading on each row and moves it only on the asymmetric rule it already holds, and the
+    # retire walk applies the same thresholds it applies at 22:00. Running it here changes no
+    # admission law, no streak, no threshold: it makes the readings hourly, which is the cadence
+    # the allocator's own artifact expiry (`decision_core._ALLOC_MAX_AGE_S` = 3600) assumes.
+    pr = _costed("promoter", lambda: _producer("promoter", "research/promoter.py"))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
@@ -1206,7 +1282,7 @@ def main() -> None:
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "external_gauntlet": gt, "merge_docket": mh, "backtest": bt,
-                    "recertify_canon": rc, "pf_allocator": pa,
+                    "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")

@@ -62,6 +62,8 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
     monkeypatch.setattr(promoter, "GOLD_RETIRED_FILE", tmp_path / "data" / "GOLD_RETIRED.json")
+    monkeypatch.setattr(promoter, "GOLD_RETIRED_VOIDED_FILE",
+                        tmp_path / "data" / "GOLD_RETIRED_VOIDED.json")
     monkeypatch.setattr(promoter.provenance, "current_account", lambda _acc: _ACC)
     authority: set = set()
     monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set(authority))
@@ -154,6 +156,53 @@ def test_a_retired_scalp_sleeve_is_killed_in_its_own_lane_and_never_re_promoted(
     assert desk.read_scalp()["sleeves"][_NAME]["status"] == "KILL"
     promoter.main()
     assert [x["status"] for x in desk.sleeves()] == ["RETIRED"]
+
+
+def test_three_standby_rows_go_live_on_two_consecutive_admitting_readings(desk, tmp_path):
+    """THE CAPITAL DOOR, END TO END (2026-09-08). The roster emits a scalp row only at status
+    LIVE (decision_core.load_sleeves), and a STANDBY row -- which is what `_door_status` writes
+    when the allocator has not measured the sleeve -- flips to LIVE only through
+    `reconcile_capital` on PROMOTE_ADMIT_STREAK consecutive admitting readings from a fresh
+    MEASURED scan. One reading per promoter pass, which is why the hourly cycle now runs one.
+
+    Three rows at STANDBY, as the box's dashboard reports for xau_m15_anti_breakout and its two
+    siblings; the scan admits all three at 5% heat. After ONE pass they are still STANDBY with
+    the streak at 1 (the asymmetry binds); after TWO they are LIVE at min(heat, 3%), and the
+    roster emits them with exec scalp_market.
+    """
+    names = [_NAME, "xau_m5_anti_breakout", "xau_m15_vwap_fade"]
+    rows = [{"name": n, "symbol": "XAUUSD", "timeframe": "M15", "family": "anti_donchian_breakout",
+             "session": "all", "stop_atr": 1.0, "target_atr": 1.5, "max_hold": 6,
+             "exec": "scalp_market", "lot": "auto_ramp", "risk_frac": 0.0,
+             "risk_frac_source": "none", "status": "STANDBY", "admit_streak": 0,
+             "promoted_at": "2026-08-25T22:00:00+00:00"} for n in names]
+    (tmp_path / "data" / "sleeves.json").write_text(json.dumps({"sleeves": rows}), "utf-8")
+    desk.scalp({n: dict(_CAND) for n in names})            # candidates, and a scan admitting them
+    alloc = tmp_path / "reports" / "pf_allocation.json"
+    doc = json.loads(alloc.read_text("utf-8"))
+    for c in doc["admission"]["candidates"].values():
+        c["heat_earned"] = 0.05                              # above the promoter's 3% ceiling
+    alloc.write_text(json.dumps(doc), "utf-8")
+
+    promoter.main()
+    after_one = {s["name"]: s for s in desk.sleeves()}
+    assert set(after_one) == set(names)
+    assert all(s["status"] == "STANDBY" and s["admit_streak"] == 1 for s in after_one.values())
+    assert all("1/2 consecutive" in s["admission"]["why"] for s in after_one.values())
+    assert _dc.load_sleeves(tmp_path / "data" / "sleeves.json") == []   # nothing for the gateway
+
+    promoter.main()
+    after_two = {s["name"]: s for s in desk.sleeves()}
+    assert all(s["status"] == "LIVE" for s in after_two.values())
+    assert all(s["risk_frac"] == min(0.05, promoter.PROMOTED_RISK_FRAC) == 0.03
+               for s in after_two.values())
+    assert all(s["risk_frac_source"] == "allocator_marginal" and "restored_at" in s
+               for s in after_two.values())
+    live = _dc.load_sleeves(tmp_path / "data" / "sleeves.json")
+    roster, _notes = _dc.roster({}, live)
+    scalp = [r for r in roster if r.get("exec") == "scalp_market"]   # gold rows carry no exec
+    assert sorted(r["name"] for r in scalp) == sorted(names)
+    assert all(r["symbol"] == "XAUUSD" and r["risk_frac"] == 0.03 for r in scalp)
 
 
 # ------------------------------------------------------------------------------- the planner
