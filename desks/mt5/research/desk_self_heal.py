@@ -241,13 +241,107 @@ def check_universe_data(root: Path, now: datetime,
                    f"{len(pq)} instrument file(s), newest {newest:.1f}h old")
 
 
+#: Free gigabytes below which the desk is one bad hour from losing every artifact write at once.
+#: The same floor `stall_watch.ps1` prunes at; this check exists because the noon lane must see
+#: the condition even on a pass where stall_watch itself did not run.
+DISK_FLOOR_GB = 5.0
+
+#: The organs whose cadence IS the desk, and the age past which each is not doing its job. The
+#: gauntlet is the tightest because it is the conversion step: nothing becomes a certificate
+#: without it, so a stalled gauntlet freezes the whole funnel while everything downstream keeps
+#: reporting its last good number and looks healthy.
+CADENCE_H = {
+    "external_gauntlet": 6.0,
+    "research_pipeline": 6.0,
+    "universal_gate": 12.0,
+    "allocation": 12.0,
+    "research_loop": 12.0,
+}
+
+
+def check_disk_headroom(root: Path, now: datetime) -> Finding:
+    """Free space on the volume the desk writes to.
+
+    MEASURED 2026-09-08: C: fell to 0.5GB, `stall_watch` pruned its one reclaim pool, recovered
+    nothing, wrote "needs a human decision" and stopped. The desk publisher died ten minutes
+    later and every downstream organ went stale for twelve hours -- gauntlet 4.6 days, allocation
+    5.1 days, markout 9 days -- while `audit()` had no check that could have named the cause.
+    Five checks, all of them about artifacts, and none about the resource that produces them.
+
+    A disk fault is NOT fixable by running a task, so it escalates rather than pretending a
+    remedy exists. Naming it is the whole job: the noon lane's report is what a person reads.
+    """
+    try:
+        import shutil
+        free_gb = shutil.disk_usage(str(root)).free / (1024 ** 3)
+    except OSError as exc:
+        return Finding("disk", True,
+                       f"UNMEASURED — could not stat the volume at {root} ({exc}). "
+                       "NOT the same as healthy.")
+    if free_gb >= DISK_FLOOR_GB:
+        return Finding("disk", True, f"{free_gb:.1f}GB free (floor {DISK_FLOOR_GB:.0f}GB)")
+    return Finding(
+        "disk", False,
+        f"{free_gb:.1f}GB free, under the {DISK_FLOOR_GB:.0f}GB floor. stall_watch prunes the "
+        "safe pools every 10 minutes; if this persists the growth is in protected data (tape, "
+        "universe) or outside the desk tree, and no task can reclaim it.",
+        fixable=False)
+
+
+def check_research_cadence(root: Path, now: datetime) -> Finding:
+    """Are the organs that convert research into certificates actually running?
+
+    THE ONE THIS DESK KEEPS MISSING. Every other check asks whether an artifact EXISTS and is
+    recent. This asks whether the pipeline that produces artifacts has run at all -- and on
+    2026-09-08 that distinction was the whole failure: `shadow_health.json` was present and
+    parseable and the gauntlet had not completed a run in 4.6 days. A stale organ keeps its last
+    good output on disk, so "the file is there" stays true long after the desk stopped working.
+    """
+    f = root / "desks/mt5/reports/midnight_report.json"
+    if not f.exists():
+        return _absent("cadence", "desks/mt5/reports", root,
+                       "midnight_report.json does not exist, so no organ's last-run time is "
+                       "recorded anywhere this check can read.")
+    try:
+        fresh = (json.loads(f.read_text("utf-8")).get("freshness") or {})
+    except (OSError, ValueError) as exc:
+        return Finding("cadence", False, f"midnight_report.json is unreadable ({exc})",
+                       fixable=False)
+    stale: list[str] = []
+    for organ, limit in CADENCE_H.items():
+        raw = fresh.get(organ)
+        if not raw:
+            stale.append(f"{organ} UNRECORDED")
+            continue
+        try:
+            ts = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            stale.append(f"{organ} unparseable ({raw})")
+            continue
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=UTC)
+        age = (now - ts).total_seconds() / 3600.0
+        if age > limit:
+            stale.append(f"{organ} {age / 24:.1f}d (limit {limit / 24:.1f}d)")
+    if not stale:
+        return Finding("cadence", True, f"{len(CADENCE_H)} organs inside their cadence")
+    # Re-running the hourly lane is exactly the work the scheduler already does, so it is a
+    # legitimate remedy -- the same verb every other remedy in this module uses.
+    return Finding("cadence", False, "; ".join(stale), fixable=True)
+
+
 def audit(root: Path, now: datetime | None = None) -> list[Finding]:
     now = now or datetime.now(UTC)
     return [check_shadow_freshness(root, now),
             check_published_state(root, now),
             check_certification(root, now),
             check_export(root, now),
-            check_universe_data(root, now)]
+            check_universe_data(root, now),
+            # ADDED 2026-09-08 after a disk-full took the desk down for twelve hours with every
+            # existing check still reading PASS. Resource before artifact, cadence before
+            # freshness: both name causes the other five can only show as symptoms.
+            check_disk_headroom(root, now),
+            check_research_cadence(root, now)]
 
 
 # --------------------------------------------------------------------------
@@ -279,6 +373,10 @@ def plan(findings: Sequence[Finding], *,
         "certification": "MT5-QQuantGatesCertify",
         "export": "MT5-Hourly",
         "universe data": "MT5-Universe",
+        # A stalled conversion organ is fixed the same way as every other fault here: re-run the
+        # task that already owns it. `disk` is deliberately absent -- no task can reclaim space,
+        # so it escalates rather than pretending a remedy exists.
+        "cadence": "MT5-Gauntlet",
     }
     for f in findings:
         if f.ok:
