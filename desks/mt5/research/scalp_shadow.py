@@ -245,6 +245,20 @@ def run(now: datetime | None = None) -> dict:
         days = max(0, (last_bar.date() - _clock_from.date()).days)
         exp = float(np.mean(rs)) if rs else None
         max_dd = _drawdown(rs)
+        # THE FORWARD t, WHICH THIS LANE NEVER COMPUTED. `shadow_forward` publishes `forward_t`
+        # on every clock it owns; this lane published none, so `build_zentech_state` read
+        # `_number(row["forward_t"], row["t"])` -> None and the dashboard rendered every scalp
+        # sleeve's significance as an em dash. A blank column reads as "not applicable" when it
+        # actually means "nobody measured it", and those demand opposite responses.
+        #
+        # IT IS PUBLISHED, NOT ENFORCED. The promotion rule below is unchanged -- `exp > 0.05`
+        # with no significance requirement -- because tightening a promotion bar is the
+        # principal's call, not a side effect of making a number visible. What this does is make
+        # the bar's weakness READABLE: xau_m5_anti_breakout_overlap sits at +0.0504R on n=43, a
+        # hair over an arbitrary threshold, and until now nothing on the dashboard said so.
+        sd = float(np.std(rs, ddof=1)) if len(rs) > 1 else 0.0
+        forward_t = (float(exp) / (sd / float(len(rs)) ** 0.5)
+                     if exp is not None and len(rs) > 1 and sd > 0 else None)
         matured = n >= 50 or (days >= 14 and n >= 20)
         # THE UNIFIED VERDICT'S DIAGNOSTICS ride on the row -- effective n, the always-valid
         # lower bound, significance -- so the allocator and a reader can see how much of the
@@ -287,6 +301,10 @@ def run(now: datetime | None = None) -> dict:
             # responses; only one of them is a defect, and it is invisible without this line.
             "forward_empty_reason": _empty_why,
             "expectancy_r": exp, "max_drawdown_r": max_dd, "forward_verdict": diagnostics,
+            # THE NAME IS `shadow_forward`'S NAME, deliberately. `build_zentech_state` reads
+            # `_number(row["forward_t"], row["t"])`, so publishing it under any other spelling
+            # would leave the dashboard rendering an em dash exactly as before.
+            "forward_t": forward_t,
             "certificate": (f"ten_gate:{SCALP_KEY_PREFIX}{name}" if name in certified else
                             "forward_clock (no ten-gate certificate for this cell yet; "
                             "scripts/scalp_gauntlet.py judges it daily -> "
