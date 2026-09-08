@@ -43,6 +43,7 @@ SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
 #: turns back into an unevaluated row would re-enter the book, and a PROMOTION CANDIDATE that
 #: loses its verdict to a transient cost-map miss loses a decision the desk already made.
 _TERMINAL_STATUSES = ("KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARANTINED",
+                      "REFUSED_BY_UNIVERSE_POLICY",
                       "PROMOTION CANDIDATE", "IDENTITY_BROKEN")
 
 
@@ -472,6 +473,43 @@ def main() -> None:
             st["order_authority"] = False
             state[key] = st
             slog(f"QUARANTINED {key}: {st['quarantine_reason']}")
+            continue
+
+        # THE UNIVERSE POLICY IS CHECKED BEFORE THE BARS, AND THAT ORDER IS THE WHOLE POINT.
+        #
+        # Measured on the live board 2026-09-08: 10 of 27 forward clocks read BLOCKED_NO_BARS,
+        # and EIGHT of those are AFG and AFL -- registry rows carrying `asset_class: None` and
+        # `bars: None`. `universe_policy.lane` returns UNCLASSIFIED for them, so
+        # `may_hypothesise` is False and this desk may not seek a statistical edge in them at
+        # all. They should never have been enrolled.
+        #
+        # A WRONG CURE IS WORSE THAN NO CURE, which is why this is not left to the bars branch
+        # below. BLOCKED_NO_BARS tells an operator to go subscribe the symbol in Market Watch and
+        # backfill its history -- work that would take real time and, for an instrument the
+        # policy excludes, buy exactly nothing. The row would then sit ACTIVE and accrue evidence
+        # toward a promotion the mandate forbids. Naming the actual reason turns eight
+        # "backfill these" items into one "these should not exist".
+        #
+        # TERMINAL, because this is not a transient. A symbol's lane changes only when the
+        # registry learns its asset class, and at that point the certificate can be re-enrolled
+        # deliberately rather than drifting back in.
+        try:
+            from universe_policy import lane, may_hypothesise
+            _allowed, _lane = may_hypothesise(sym), lane(sym)
+        except Exception:                                            # noqa: BLE001
+            _allowed, _lane = True, ""      # no policy module: enrol exactly as before
+        if not _allowed:
+            st["status"] = "REFUSED_BY_UNIVERSE_POLICY"
+            st["promotion_authority"] = False
+            st["order_authority"] = False
+            st["last_attempt_at"] = datetime.now(UTC).isoformat()
+            st["last_error"] = (
+                f"{sym} is in the {_lane or 'UNCLASSIFIED'} lane, so this desk may not seek a "
+                "statistical edge in it (universe_policy.may_hypothesise). The cure is NOT to "
+                "backfill its bars -- it is to stop certifying it. Re-enrolment is deliberate, "
+                "after the registry learns the symbol's asset class.")
+            state[key] = st
+            slog(f"REFUSED_BY_UNIVERSE_POLICY {key}: {st['last_error']}")
             continue
 
         # BLAST RADIUS: ONE SLEEVE, NEVER THE BOOK (gap-wirer 2026-08-27). This loop had no
