@@ -50,6 +50,7 @@ from mt5desk.decision_core import (
     MAX_TOTAL_REJECTIONS,
     MIN_RATCHET_IMPROVEMENT_R,
     PROMOTED_MIN_EQUITY,
+    REJECTION_STREAK_WINDOW_H,
     addon_desc,
     addon_entries,
     allocator_rank,
@@ -394,6 +395,21 @@ def connect() -> bool:
     return True
 
 
+def _rejection_streak_expired(last_at: str, now_at: str) -> bool:
+    """Is the last rejection older than REJECTION_STREAK_WINDOW_H? Unparseable stamps are NOT
+    expired: a streak the desk cannot date is kept, never forgotten."""
+    try:
+        a = datetime.fromisoformat(last_at.replace("Z", "+00:00"))
+        b = datetime.fromisoformat(now_at.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return False
+    if a.tzinfo is None:
+        a = a.replace(tzinfo=UTC)
+    if b.tzinfo is None:
+        b = b.replace(tzinfo=UTC)
+    return (b - a).total_seconds() > REJECTION_STREAK_WINDOW_H * 3600.0
+
+
 def note_placement(st: dict, sleeve: str, orders: list) -> bool:
     """Record whether a placement pass succeeded, and PAUSE THE DESK if none do.
 
@@ -419,6 +435,17 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
         hist["consecutive_total_rejections"] = 0
         hist["last_ok"] = now()
         return True
+
+    # A STREAK IS CONSECUTIVE IN TIME, NOT ONLY IN COUNT (see REJECTION_STREAK_WINDOW_H). The
+    # last rejection's own timestamp decides; a record without one keeps its streak -- absence
+    # is not a reason to forget a refusal.
+    prev = hist.get("consecutive_total_rejections") or 0
+    last_at = str((hist.get("last_error") or {}).get("time") or "")
+    if prev and last_at and _rejection_streak_expired(last_at, now()):
+        log(f"placement streak of {prev} last seen {last_at} is older than "
+            f"{REJECTION_STREAK_WINDOW_H:.0f}h -- not evidence about today's venue; counting "
+            f"this rejection from zero")
+        hist["consecutive_total_rejections"] = 0
 
     hist["consecutive_total_rejections"] += 1
     hist["last_error"] = {"time": now(), "sleeve": sleeve, "diagnoses": diags}

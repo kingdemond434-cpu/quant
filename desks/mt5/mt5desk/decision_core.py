@@ -196,6 +196,15 @@ RETCODE_MEANING = {
 #: three is another whole day of a desk that is not trading and does not know it.
 MAX_TOTAL_REJECTIONS = 2
 
+#: How long a rejection streak stays EVIDENCE. The counter above is "consecutive passes", and
+#: a pass only happens when a bracket is sent -- so on a desk that sent nothing for two weeks
+#: (release identity refused every order 2026-09-05 -> 09-08) the streak of two from
+#: 2026-08-25's 10027 ("AutoTrading disabled by client") was still standing on 2026-09-08, one
+#: rejection away from pausing every sleeve on the first modern attempt. A fourteen-day-old
+#: refusal is not a fact about today's terminal. A streak whose last rejection is older than
+#: this restarts from zero; two rejections inside a day still pause, exactly as before.
+REJECTION_STREAK_WINDOW_H = 24.0
+
 #: Minimum improvement, in R, before a stop modification is worth sending. A modify costs a
 #: round trip to the broker and a chance of rejection; nudging a stop by a fraction of a tick
 #: every pass spends both for nothing. Expressed in R rather than price so it means the same

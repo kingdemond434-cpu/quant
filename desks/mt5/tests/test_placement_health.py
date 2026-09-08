@@ -9,6 +9,7 @@ produced the same silence, because nothing ever checked for SUCCESS.
 from __future__ import annotations
 
 import ast
+from datetime import UTC, datetime
 import sys
 from pathlib import Path
 
@@ -34,8 +35,11 @@ def _load(tmp_paused: Path):
     ns.update({"PAUSED": tmp_paused, "now": lambda: "2026-08-18T00:00:00+00:00",
                "log": logged.append})
     keep = [n for n in tree.body
-            if isinstance(n, ast.FunctionDef) and n.name == "note_placement"]
-    assert keep, "note_placement is no longer defined in gateway.py"
+            if isinstance(n, ast.FunctionDef)
+            and n.name in ("note_placement", "_rejection_streak_expired")]
+    assert len(keep) == 2, "note_placement / _rejection_streak_expired missing from gateway.py"
+    ns.setdefault("datetime", datetime)
+    ns.setdefault("UTC", UTC)
     exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), ns)
     ns["_logged"] = logged
     return ns
@@ -202,3 +206,49 @@ def test_place_bracket_actually_calls_the_success_check():
 def test_place_bracket_checks_legality_before_sending():
     assert "entry_is_legal(" in _SRC
     assert "NOT AVAILABLE [" in _SRC
+
+
+# ------------------------------------------------ a streak is consecutive in time, not count
+
+def _stale_streak(n: int = 2, at: str = "2026-08-04T04:00:03+00:00") -> dict:
+    """The box's own shape on 2026-09-08: a streak of two whose last rejection was two weeks old,
+    standing because release identity refused every order in between and no pass ever ran."""
+    return {"placement_health": {"consecutive_total_rejections": n, "last_ok": None,
+                                 "last_error": {"time": at, "sleeve": "gold_asia",
+                                                "diagnoses": ["10027"]}}}
+
+
+def test_a_two_week_old_streak_is_not_evidence_about_today(gw):
+    """The harness clock is 2026-08-18; the streak's last rejection is 2026-08-04. The first
+    modern rejection counts from zero: no pause, streak 1, and the reason is logged."""
+    st = _stale_streak()
+    assert gw["note_placement"](st, "asia", _rej()) is True
+    assert st["placement_health"]["consecutive_total_rejections"] == 1
+    assert not gw["PAUSED"].exists()
+    assert any("older than 24h" in x for x in gw["_logged"])
+
+
+def test_a_streak_inside_the_window_still_pauses(gw):
+    """Two rejections inside a day pause exactly as before -- the law is unchanged."""
+    st = _stale_streak(n=1, at="2026-08-17T23:00:00+00:00")     # one hour before the clock
+    assert gw["note_placement"](st, "asia", _rej()) is False
+    assert gw["PAUSED"].exists()
+
+
+def test_a_streak_the_desk_cannot_date_is_kept(gw):
+    """Absence is not a reason to forget a refusal: no timestamp, or an unreadable one, keeps the
+    streak."""
+    st = _stale_streak(n=1, at="not a time")
+    assert gw["note_placement"](st, "asia", _rej()) is False
+    st = {"placement_health": {"consecutive_total_rejections": 1, "last_ok": None,
+                               "last_error": None}}
+    assert gw["note_placement"](st, "asia", _rej()) is False
+
+
+def test_the_window_is_a_day_and_lives_in_the_core(gw):
+    assert "REJECTION_STREAK_WINDOW_H = 24.0" in _CORE_SRC
+    expired = gw["_rejection_streak_expired"]
+    assert expired("2026-08-04T04:00:03+00:00", "2026-08-18T00:00:00+00:00")
+    assert not expired("2026-08-17T23:00:00+00:00", "2026-08-18T00:00:00+00:00")
+    assert not expired("", "2026-08-18T00:00:00+00:00")
+    assert not expired("not a time", "2026-08-18T00:00:00+00:00")

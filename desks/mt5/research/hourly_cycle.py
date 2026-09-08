@@ -430,6 +430,39 @@ def heal_clocks() -> dict:
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
+#: The admission scan's own cadence is the supervisor's hourly heavy pass; twice that is "the
+#: supervisor has missed a pass", which is the condition this roster steps in on.
+ADMISSION_SCAN_MAX_AGE_S = 2 * 3600.0
+
+
+def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None) -> float | None:
+    """Seconds since the last MEASURED admission scan in reports/pf_allocation.json, or None
+    when there is no measured scan to date (absent artifact, unreadable, not MEASURED, or the
+    scan is only carried forward from an older measurement -- `carried_from` names the real
+    stamp, and it is that stamp which ages)."""
+    art = art or (BASE / "reports" / "pf_allocation.json")
+    try:
+        adm = json.loads(art.read_text("utf-8")).get("admission") or {}
+    except (OSError, ValueError, AttributeError):
+        return None
+    if not isinstance(adm, dict) or adm.get("status") != "MEASURED":
+        return None
+    stamp = adm.get("carried_from") or adm.get("measured_utc")
+    try:
+        ts = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=UTC)
+    return ((now or datetime.now(UTC)) - ts).total_seconds()
+
+
+def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None = None) -> str:
+    """`heavy` when the admission scan is missing or stale, else the hourly `normal`."""
+    age = _admission_scan_age_s(art, now)
+    return "heavy" if age is None or age > ADMISSION_SCAN_MAX_AGE_S else "normal"
+
+
 def _costed(name: str, fn):
     """Run one leg and record what it COST, whatever it returns or raises.
 
@@ -1018,8 +1051,15 @@ def main() -> None:
     # pass that cannot get memory waits rather than thrashing beside one already resident.
     #
     # It runs AFTER enrolment so it solves over this hour's sleeve set rather than last hour's.
+    # HEAVY WHEN NOBODY ELSE HAS MEASURED (2026-09-08). Only `--mode heavy` runs the admission
+    # scan (pf_allocator: `if heavy and funded`), the scan is what lets a PROMOTION_CANDIDATE
+    # leave STANDBY (promoter.reconcile_capital reads it), and heavy had exactly ONE scheduler:
+    # the persistent MT5-ResearchSupervisor worker. A dead or stalled supervisor meant no scalp
+    # sleeve could ever go LIVE while every artifact read healthy. This roster is on a clock the
+    # box owns, so it measures the scan itself whenever the last one is missing or older than
+    # ADMISSION_SCAN_MAX_AGE_S -- a scheduling redundancy, not a change to any admission rule.
     pa = _costed("pf_allocator", lambda: _producer(
-        "pf_allocator", "research/pf_allocator.py", "--mode", "normal"))
+        "pf_allocator", "research/pf_allocator.py", "--mode", _allocator_mode_for_the_hour()))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
