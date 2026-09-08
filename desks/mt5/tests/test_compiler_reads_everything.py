@@ -200,6 +200,29 @@ class TestTheDesksOwnAnomaliesCompile:
 
 
 class TestNothingIsDroppedSilently:
+    def test_dedup_preserves_sources_without_duplicate_tasks(self, tmp_path, monkeypatch):
+        import sys
+        monkeypatch.setitem(sys.modules, "libs.research.hypothesis_graph", None)
+        monkeypatch.setattr(mc, "OUT", tmp_path / "candidates.json")
+        monkeypatch.setattr(mc, "DEEPEN", tmp_path / "deepening.json")
+        monkeypatch.setattr(mc, "known_symbols", lambda: {"EURUSD"})
+        monkeypatch.setattr(mc, "structurally_untestable_families", lambda: {})
+        monkeypatch.setattr(mc, "recent_rows", lambda now: [
+            ("a", {"recipe": True}), ("a", {"recipe": True}),
+            ("b", {"recipe": True}), ("a", {}), ("a", {})])
+        monkeypatch.setattr(mc, "compile_row", lambda src, row, uni: (
+            ([{"symbol": "EURUSD", "family": "test", "params": {}}]
+             if row.get("recipe") else []), "NEEDS_RULE"))
+        mc.main()
+        doc = json.loads(mc.OUT.read_text())
+        assert doc["rows_accounted"] == 5
+        assert doc["executable_candidates"] == 1
+        assert doc["deepening_tasks"] == 1
+        assert doc["hypotheses"][0]["contributing_sources"] == ["a", "b"]
+        assert doc["per_source"]["a"]["candidates"] == 1
+        assert doc["per_source"]["b"]["candidates"] == 1
+        assert doc["per_source"]["a"]["deepening"] == 1
+
     def test_every_row_is_either_a_candidate_or_a_deepening_task(self, roots) -> None:
         """The compiler's own contract: no row silently dies. A row that produces no candidate
         must appear in the deepening queue, which is what the reverse-engineering worker drains."""

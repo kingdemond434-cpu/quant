@@ -90,8 +90,8 @@ def test_one_leg_failure_cannot_terminate_later_independent_legs() -> None:
     assert "except KeyboardInterrupt:" in body
     assert "except BaseException as exc:" in body
     assert '"status": "FAILED"' in body
-    assert "except BaseException as exc:\n        close_run" in body
-    assert "close_run(run, outcome=f" in body
+    assert "except BaseException as exc:\n        record" in body
+    assert 'record(f"{type(exc).__name__}' in body
 
 
 # ------------------------------------------------------- the loop that has to never stop, 24/7

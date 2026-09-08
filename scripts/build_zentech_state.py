@@ -251,8 +251,8 @@ def _certificate_census(certs: dict[str, Any]) -> dict[str, Any]:
     """
     try:
         sys.path.insert(0, str(DESK / "research"))
-        from gate_policy import all_ten_pass          # type: ignore[import-not-found]
-    except Exception as exc:                          # noqa: BLE001 - reported, never guessed
+        from gate_policy import all_ten_pass  # type: ignore[import-not-found]
+    except Exception as exc:
         return {"basis": f"UNAVAILABLE ({type(exc).__name__}: {exc})", "certified": None,
                 "gate_failed": None, "gate_failed_names": [], "unrunnable_names": []}
     passed, failed = [], []

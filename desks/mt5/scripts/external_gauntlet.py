@@ -580,6 +580,20 @@ def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
     return True, ""
 
 
+def certificate_retirement_reason(sym: str, meta: dict) -> str | None:
+    """Retirement needs venue evidence, not absence of this host's parquet cache.
+
+    New research still uses symbol_is_tradeable unchanged. Missing bars block execution
+    and testing; they do not invalidate previously measured statistical evidence.
+    Unknown registry membership is likewise not proof of permanent delisting.
+    """
+    sym = canonical_symbol(sym, meta)
+    row = meta.get(sym)
+    if isinstance(row, dict) and row.get("tradeable") is False:
+        return f"symbol {sym!r} explicitly disallows new trades (trade_mode {row.get('trade_mode')})"
+    return None
+
+
 def partition_at_economic_prior(specs: list[dict],
                                 meta: dict | None = None) -> tuple[list[dict], list[dict]]:
     """Apply gate 1 before constructing signals and return eligible specs plus exact rejects.
@@ -1636,13 +1650,16 @@ def main():
     # which is the explicit revocation record the authority ratchet accepts as grounds for a floor
     # to fall (check_authority_ratchet.REVOCATION_KEYS). Dropping them silently would read to that
     # ratchet as evidence vanishing -- the alarm it exists to raise.
+    # Correction: eligibility for a NEW test is not proof for revoking an EXISTING result.
+    # A missing host cache must not erase every certificate on the Windows box. Require explicit
+    # venue restriction below; native data and promotion guards still govern execution.
     retired = dict(old_doc.get("retired_certificates") or {})
     if meta:
         stamp = datetime.now(UTC).isoformat()
         for key in list(survivors_all):
             sym = str((survivors_all[key] or {}).get("sym") or "")
-            ok, why = symbol_is_tradeable(sym, meta) if sym else (False, "no symbol on the row")
-            if not ok:
+            why = certificate_retirement_reason(sym, meta)
+            if why:
                 row = dict(survivors_all.pop(key) or {})
                 row["retired_at"] = stamp
                 row["retired_reason"] = why

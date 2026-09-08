@@ -430,16 +430,32 @@ def _costed(name: str, fn):
     """
     try:
         from libs.ops.compute_ledger import close_run, open_run
-    except Exception:                                                   # noqa: BLE001
-        return fn()
-    run = open_run(name, kind="hourly_cycle")
+    except Exception as exc:
+        print(f"{name} compute ledger UNAVAILABLE: {type(exc).__name__}: {exc}", flush=True)
+        open_run = None
+        close_run = None
+    run = None
+    if open_run is not None:
+        try:
+            run = open_run(name, kind="hourly_cycle")
+        except Exception as exc:
+            print(f"{name} compute ledger OPEN FAILED: {type(exc).__name__}: {exc}", flush=True)
+
+    def record(outcome: str) -> None:
+        if run is not None and close_run is not None:
+            try:
+                close_run(run, outcome=outcome)
+            except Exception as exc:
+                print(f"{name} compute ledger CLOSE FAILED: {type(exc).__name__}: {exc}",
+                      flush=True)
+
     try:
         out = fn()
     except KeyboardInterrupt:
-        close_run(run, outcome="KeyboardInterrupt")
+        record("KeyboardInterrupt")
         raise
     except BaseException as exc:
-        close_run(run, outcome=f"{type(exc).__name__}: {exc}"[:200])
+        record(f"{type(exc).__name__}: {exc}"[:200])
         # A producer's explicit non-zero/SystemExit is its verdict, not authority to terminate
         # every independent producer after it.  The ledger and console retain the exact failure;
         # the hourly factory continues so one broken organ cannot manufacture system-wide idle.
@@ -448,7 +464,20 @@ def _costed(name: str, fn):
                 and isinstance(exc.code, int) else None,
                 "status": "FAILED", "error": f"{type(exc).__name__}: {exc}",
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
-    close_run(run, outcome="ok")
+    # A subprocess returning a failure dictionary did not raise. Preserve its verdict so the
+    # allocator cannot mistake repeated timeouts or missing producers for useful successful runs.
+    outcome = "ok"
+    if isinstance(out, dict):
+        status = str(out.get("status") or "").upper()
+        if out.get("error"):
+            outcome = f"FAILED: {out['error']}"[:200]
+        elif status and status not in {"OK", "SUCCESS", "COMPLETED"}:
+            outcome = status
+        elif out.get("timeout_s") and out.get("exit_code") is None:
+            outcome = "TIMEOUT"
+        elif "exit_code" in out and out["exit_code"] != 0:
+            outcome = f"exit_code={out['exit_code']}"
+    record(outcome)
     return out
 
 
@@ -495,7 +524,7 @@ def _producer(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
                         f"whatever it had already written",
                 "at": datetime.now(UTC).isoformat()}
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
 
 
@@ -615,7 +644,7 @@ def frontier() -> dict:
                 "queued": (doc.get("ranked") or {}).get("n_queued"),
                 "missing_capabilities": doc.get("capability_matrix_missing"),
                 "at": datetime.now(UTC).isoformat()}
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
 
 
@@ -812,6 +841,13 @@ def maintain_miners() -> dict:
     return _producer("miner_maintenance", "scripts/run_miner_maintenance.py")
 
 
+def refresh_regime() -> dict:
+    """Refresh from native ledgers only; never overwrite authority from a VPS mirror."""
+    if sys.platform != "win32":
+        return {"status": "SKIPPED", "why": "regime authority belongs to the native Windows desk"}
+    return _producer("regime_monitor", "research/regime_monitor.py")
+
+
 def main() -> None:
     # BARS FIRST. Every leg below reasons about a chart, so a stale chart makes all of them
     # confidently wrong rather than merely late.
@@ -820,6 +856,7 @@ def main() -> None:
     h = _costed("health", health)
     t = _costed("record_tape", record_tape)
     s = _costed("state_vector", state_vector)
+    rg = _costed("regime_monitor", refresh_regime)
     d = _costed("daily", daily)
     hc = _costed("heal_clocks", heal_clocks)
     # THE CONVERSION CHAIN, IN THE ORDER IT CONVERTS. mine fetches, compile turns what was fetched
@@ -891,13 +928,17 @@ def main() -> None:
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
+                    "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt, "queue_compact": qc, "issue_board": ib,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
+                    "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
+                    "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,
+                    "queue_compact": qc, "issue_board": ib,
                     "execution_resolver": xr, "counterfactual_world": cw,
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,

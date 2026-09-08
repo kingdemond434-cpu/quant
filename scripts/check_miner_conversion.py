@@ -82,14 +82,17 @@ def _read(p: Path):
         return None
 
 
-def _mechanism_key(row: dict) -> str:
+def _mechanism_key(row: dict) -> str | None:
     """Dedup key by ECONOMIC EXPOSURE, never by title.
 
     Two rows are the same discovery if they trade the same family on the same instrument in the
     same session, however differently they are described. Titles are the worst possible key: the
     corpus is full of the same mechanism renamed by each source that found it.
     """
-    fam = str(row.get("family") or row.get("mechanism") or "unknown").casefold()
+    family = row.get("family") or row.get("mechanism")
+    if not isinstance(family, str) or family.casefold() in {"", "unknown"}:
+        return None
+    fam = family.casefold()
     sym = str(row.get("symbol") or row.get("sym") or "*").upper()
     ses = str(row.get("session") or row.get("window") or row.get("selector") or "*").casefold()
     return f"{fam}|{sym}|{ses}"
@@ -103,7 +106,7 @@ def miner_rows(cutoff: datetime) -> dict[str, list[dict]]:
             continue
         for src in sorted(d for d in base.iterdir() if d.is_dir()):
             rows: list[dict] = []
-            for f in list(src.glob("discoveries_*.json")) + list(src.glob("*.json")):
+            for f in sorted(src.glob("*.json")):
                 try:
                     if datetime.fromtimestamp(f.stat().st_mtime, tz=UTC) < cutoff:
                         continue
@@ -130,28 +133,38 @@ def main() -> int:
                             "symbol": (c.get("shadow_spec") or {}).get("symbol"),
                             "session": (c.get("shadow_spec") or {}).get("selector")})
             for c in certs.values()}
+    held.discard(None)
     fam_counts = Counter(str((c.get("shadow_spec") or {}).get("family") or "unknown")
                          for c in certs.values())
 
     tested = {_mechanism_key(r) for r in (_read(HYP) or []) if isinstance(r, dict)}
+    tested.discard(None)
     survivor_keys = held
+    compiler = _read(DESK / "data" / "hypotheses" / "miner_candidates.json") or {}
+    compiled_sources = compiler.get("per_source") or {}
 
     per_miner: dict[str, dict] = {}
     zero_yield: list[str] = []
     for miner, rows in sorted(miner_rows(cutoff).items()):
-        keys = [_mechanism_key(r) for r in rows]
+        keys = [key for r in rows if (key := _mechanism_key(r)) is not None]
         uniq = set(keys)
         novel = uniq - held
+        compiled = compiled_sources.get(miner) or {}
         per_miner[miner] = {
             "discoveries": len(rows),
             "distinct_mechanisms": len(uniq),
             "novel_mechanisms": len(novel),
-            "reached_backtest": len(novel & tested),
+            "reached_backtest": len(uniq & tested),
             "survivors": len(uniq & survivor_keys),
             "conversion": round(len(uniq & survivor_keys) / len(rows), 4) if rows else None,
-            "duplicate_rate": round(1 - len(uniq) / len(rows), 3) if rows else None,
+            "duplicate_rate": round(1 - len(uniq) / len(keys), 3) if keys else None,
+            "unmapped_rows": len(rows) - len(keys),
+            "compiled_candidates": compiled.get("candidates"),
+            "deepening_tasks": compiled.get("deepening"),
+            "compiler_updated_at": compiler.get("compiled_at"),
+            "attribution_status": "UNMEASURED" if len(keys) != len(rows) else "EXPOSURE_MATCH",
         }
-        if len(rows) >= 20 and not (uniq & survivor_keys):
+        if len(keys) == len(rows) and len(rows) >= 20 and not (uniq & survivor_keys):
             zero_yield.append(miner)
 
     total_certs = sum(fam_counts.values())
@@ -194,7 +207,9 @@ def main() -> int:
                     "Near 1.0 means every certificate is the same bet, and no amount of mining "
                     "inside that family raises the book's effective independent bets."),
         },
-        "note": ("Deduplication is by economic exposure (family|symbol|session), never by title: "
+        "note": ("Raw rows lacking a mechanism are UNMEASURED, never identical strategies. "
+                 "Compiler counts are separate from backtest and survivor evidence. "
+                 "Deduplication is by economic exposure (family|symbol|session), never by title: "
                  "the corpus renames the same mechanism per source, and counting those as "
                  "separate discoveries mistakes volume for breadth."),
     }
