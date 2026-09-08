@@ -109,7 +109,8 @@ def test_family_phrases_are_word_bounded() -> None:
 
 
 def test_the_longest_phrase_wins_and_at_most_two_families_are_named() -> None:
-    fams = mcc.text_families("opening range breakout after a gap fill with a pin bar and rsi oversold")
+    fams = mcc.text_families(
+        "opening range breakout after a gap fill with a pin bar and rsi oversold")
     assert len(fams) == 2
     assert fams[0][0] == "session_range_breakout"                       # longest phrase first
 
