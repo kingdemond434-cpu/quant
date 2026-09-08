@@ -1,25 +1,18 @@
 {
-    "free_gb":  13.6,
-    "checked_at":  "2026-09-04T03:20:12.4418344Z",
+    "free_gb":  17.8,
+    "checked_at":  "2026-09-08T15:10:46.0001577Z",
     "actions":  [
-                    "FAILING MT5-Gauntlet: last result -1 twice in a row -- re-run",
-                    "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
-                    "FEED LAG: 2 CLOCKED symbol(s) \u003e6h stale: USDCAD,USDCHF",
-                    "FEED LAG fixer: re-selected 2 symbol(s) in MarketWatch"
+                    "RAM-LOW: 270MB free (phys 270MB / virt 6246MB, strike 1 of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box"
                 ],
-    "low_mem_strikes":  0,
+    "low_mem_strikes":  1,
     "procs":  {
-                  "fail.MT5-Gauntlet":  {
-                                            "cpu":  -1,
-                                            "at":  "2026-09-04T05:20:05.1476330+02:00"
-                                        },
-                  "fail.MT5-MoatRecorder":  {
-                                                "cpu":  1,
-                                                "at":  "2026-09-04T05:20:05.1476330+02:00"
-                                            },
-                  "shadow_cycle.8252":  {
-                                            "cpu":  182.703125,
-                                            "at":  "2026-09-04T05:20:05.1476330+02:00"
-                                        }
+                  "edge_search.7364":  {
+                                           "cpu":  0.359375,
+                                           "at":  "2026-09-08T17:10:36.7139019+02:00"
+                                       },
+                  "external_gauntlet.5492":  {
+                                                 "cpu":  274.109375,
+                                                 "at":  "2026-09-08T17:10:36.7139019+02:00"
+                                             }
               }
 }

@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-09-08T15:01:15+00:00",
+  "updated_at": "2026-09-08T15:31:17+00:00",
   "certificate_lookup_error": null,
   "shadow_start": "2026-08-22T18:00:00+00:00",
   "source": {
-    "fetched_at": "2026-09-08T15:01:02+00:00",
+    "fetched_at": "2026-09-08T15:30:44+00:00",
     "source_server": "FusionMarkets-Live",
     "source_company": "Fusion Markets Pty Ltd",
     "account_trade_allowed": true,
@@ -47,7 +47,7 @@
         "reason": "43 trades (n_eff 43.0), 17d, always-valid lower bound -0.3430R > 0"
       },
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-09-08T18:00:00+00:00",
+      "last_source_bar": "2026-09-08T18:30:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
@@ -82,7 +82,7 @@
         "reason": "77 trades (n_eff 77.0), 17d, always-valid lower bound -0.3265R > 0"
       },
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-09-08T18:00:00+00:00",
+      "last_source_bar": "2026-09-08T18:30:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
@@ -117,7 +117,7 @@
         "reason": "78 trades (n_eff 78.0), 17d, always-valid lower bound -0.2985R > 0"
       },
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-09-08T18:00:00+00:00",
+      "last_source_bar": "2026-09-08T18:30:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
@@ -141,18 +141,18 @@
       "days": 17,
       "days_active": 17,
       "forward_empty_reason": "",
-      "expectancy_r": 0.010360362582243234,
+      "expectancy_r": 0.01022450860827469,
       "max_drawdown_r": -5.049974889583536,
       "forward_verdict": {
         "n_eff": 146.0,
         "n_eff_basis": "acf_adjusted(rho_sum=0.000)",
-        "seq_lower_bound": -0.187807,
+        "seq_lower_bound": -0.187943,
         "significant": false,
         "independent": true,
-        "reason": "146 trades (n_eff 146.0), 17d, always-valid lower bound -0.1878R > 0"
+        "reason": "146 trades (n_eff 146.0), 17d, always-valid lower bound -0.1879R > 0"
       },
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-09-08T18:00:00+00:00",
+      "last_source_bar": "2026-09-08T18:30:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
