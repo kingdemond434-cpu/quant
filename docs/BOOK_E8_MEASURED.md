@@ -165,6 +165,50 @@ days peaks at **~44.6%** across everything tested. **No configuration both passe
 passes inside a month** — that is a property of the 1.5:1 barrier and the consistency rule, not of
 the sizing. Buying speed past this point buys failure, not time.
 
+## Why this number has moved, and the band it must not leave again
+
+Recorded 2026-09-08 after the principal pointed out, correctly, that the pass probability changed
+every time it was asked for: 92% (the original doc), 67%, 73.6%. The defence "each change was a
+correction" is worth nothing unless the changes are ATTRIBUTABLE, so they were attributed. Same
+account, same 0.30% risk, one specification choice changed at a time:
+
+| what changed | P(pass) | median | vs base |
+|---|---:|---:|---:|
+| **base: OOS exp_R, 16 symbols, consistency on** | **73.5%** | 28d | — |
+| exp_R = +0.20 (the original assumption) | 98.9% | 14d | +25.4 |
+| exp_R = +0.1413 (the in-sample five) | 95.2% | 18d | +21.8 |
+| exp_R = +0.109 (forward breakout) | 90.4% | 21d | +16.9 |
+| **trailing drawdown instead of static** | 50.3% | 21d | **−23.1** |
+| exp_R at its 95% bounds | 66.3% / 79.4% | 29d / 26d | ∓7 |
+| 5 live symbols instead of 16 | 70.9% | 69d | −2.6 |
+| no daily stop | 70.3% | 25d | −3.1 |
+| consistency rule not modelled | 74.4% | 24d | +1.0 |
+
+**Specification range 50.3%–98.9% (49 points). Sampling range with the spec fixed, 13 points.**
+
+The dominant uncertainty is SPECIFICATION, not sampling, and every point estimate this desk has
+published sat inside the band while being quoted to one decimal place. That was the error, each
+time, independent of which estimate was closest — a number whose specification band is 49 points
+wide is not decision-grade at any precision.
+
+**The standing answer is a band: 60–75% pass, 25–35 day median**, at $100k / 6% static DD /
+0.30% risk / 16 symbols / −5R daily stop. It does not move again without one of these:
+
+1. **Static vs trailing confirmed** — worth 23 points, the single largest term, and it is a
+   product fact rather than a measurement.
+2. **`repair_universe_spreads.py --apply` on the full lake** — 199 symbols still carry no
+   measured spread. Widens the book past 16, which buys TIME, not probability.
+3. **Forward clocks on the 11 unenrolled symbols** — the only step that kills the exp_R
+   uncertainty rather than bounding it.
+
+### Two claims in this document were overstated and are corrected here
+
+* **"Breadth is the entire story" — wrong for pass probability.** At 0.30% the 5-symbol book
+  passes 70.9% against the 16-symbol book's 73.5%. Breadth is the entire story for TIME
+  (69 days against 28) and close to nothing for whether the account passes at all.
+* **The consistency rule is worth 1.0 point, not "what bounds fast".** The barrier ratio bounds
+  fast. The rule was worth modelling and was not worth the emphasis it was given.
+
 ## Four things that would make this wrong
 
 1. **Mechanism breadth is 1.** k_eff 13.26 is *instrument* diversity. All 16 sleeves are one
