@@ -363,6 +363,7 @@ def test_health_summary_reads_the_shadow_cycle_shape(tmp_path: Path,
 # ---------------------------------------------------------------------------- parity
 def test_hash_and_allowlist_mirror_the_seal(tmp_path: Path) -> None:
     assert ri.NON_CODE == release.NON_CODE
+    assert ri.STATE_PREFIXES == release.STATE_PREFIXES
     (tmp_path / "a.py").write_bytes(b"x = 1\r\n")
     (tmp_path / "b.py").write_bytes(b"y = 2\n")
     paths = ("a.py", "b.py", "absent.py")
@@ -379,3 +380,34 @@ def test_verdict_uses_utc_now_by_default(sealed: Path) -> None:
     assert datetime.fromisoformat(v.at).tzinfo is not None
     assert v.age_h is not None and 0 <= v.age_h < 1
     assert datetime.now(tz=UTC) >= datetime.fromisoformat(v.at)
+
+
+# ------------------------------------------------- the verdict the gateway reads honours state
+def test_a_state_sync_that_commits_an_unlisted_evidence_file_is_still_the_same_release(
+    sealed: Path,
+) -> None:
+    """MEASURED 2026-09-08: the state-prefix rule landed in `release.accepts`, which the gateway
+    does not call; `verdict` here still held every path outside the eleven-file allowlist to be
+    code. An adoption's 'Box state captured' commit carries ~190 evidence paths under
+    desks/mt5/data/ and desks/mt5/reports/ -- none of them in the allowlist -- so the box would
+    have refused new risk again the minute it adopted, until the next :20 re-seal."""
+    for rel in ("desks/mt5/data/hypotheses/edge_search_results.json",
+                "desks/mt5/reports/gauntlet_cache/x.pkl", "web/desk_state.json",
+                "docs/desk_lessons.jsonl", "data/miner_conversion.json"):
+        _commit(sealed, rel, "{}\n", "Box state captured before release adoption")
+    v = ri.verdict(sealed)
+    assert v.ok and v.allows_new_risk(), v.reason
+    assert v.changed_paths == ()
+    assert "seal/state commits only" in v.reason
+
+
+def test_a_code_path_beside_the_evidence_still_refuses(sealed: Path) -> None:
+    _commit(sealed, "desks/mt5/data/hypotheses/edge_search_results.json", "{}\n", "state")
+    c = _commit(sealed, SIZING, "# new sizing\n", "code")
+    v = ri.verdict(sealed)
+    assert not v.ok and v.running_sha == c and v.changed_paths == (SIZING,)
+
+
+def test_a_state_looking_name_outside_a_state_directory_is_still_code(sealed: Path) -> None:
+    _commit(sealed, "desks/mt5/mt5desk/data_feed.py", "x = 1\n", "code")
+    assert not ri.verdict(sealed).ok

@@ -76,6 +76,31 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/account_state.json",
 })
 
+#: STATE DIRECTORIES, verbatim from libs/ops/release.STATE_PREFIXES (mirrored, not imported --
+#: see PURE ON PURPOSE above; test_hash_and_allowlist_mirror_the_seal pins the two together).
+#:
+#: THE GATEWAY CALLS THIS MODULE, NOT `release.accepts` (2026-09-08). The state-prefix rule was
+#: added to `libs.ops.release.accepts` this morning after the gateway had refused new risk once a
+#: minute for a day on "83 path(s) the sealed release never named" -- every one an evidence file
+#: under desks/mt5/data/. It fixed the function the gateway does not call. decision_core reads
+#: `release_identity.verdict`, and this classifier still held every path outside the eleven-file
+#: allowlist to be code, so the first box commit touching any OTHER state path (an adoption's
+#: "Box state captured" commit carries ~190 of them) would have refused again until the next :20
+#: re-seal. The governed files under these directories -- canon, judge manifest, the money path
+#: -- are each held to their own hash in step 2 below, so classifying the DIRECTORY as state for
+#: the SHA check loses nothing.
+STATE_PREFIXES: tuple[str, ...] = (
+    "desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+    "data/", "reports/", "logs/", "web/", "docs/",
+)
+
+
+def _is_state_path(rel: str) -> bool:
+    """A repo-relative path that is evidence/record/rendering rather than code."""
+    p = str(rel).replace("\\", "/").lstrip("./")
+    return any(p.startswith(prefix) for prefix in STATE_PREFIXES)
+
+
 _SHA = re.compile(r"[0-9a-f]{40}")
 
 
@@ -315,7 +340,7 @@ def verdict(root: Path | None = None, *, now: datetime | None = None,
         else:
             paths = sorted({ln.strip() for ln in out.splitlines() if ln.strip()})
             allow = set(rec.get("non_code") or NON_CODE)
-            changed = [p for p in paths if p not in allow]
+            changed = [p for p in paths if p not in allow and not _is_state_path(p)]
             if changed:
                 ok, why = False, (f"running {sha[:12]} carries {len(changed)} path(s) the sealed "
                                   f"release {release_sha[:12]} never named: {changed[:6]}")
