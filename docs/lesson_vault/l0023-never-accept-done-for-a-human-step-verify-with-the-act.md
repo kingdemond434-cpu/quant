@@ -20,3 +20,7 @@ the principal twice believed VPS auth was complete when it was not; ~/.claude_to
 
 - [[l0114-a-resourcewarning-fired-from-a-deallocator-is-unraisab]]
 - [[l0225-a-date-stamp-that-records-that-a-job-ran-never-what-it]]
+- [[l0233-a-size-floor-must-be-max-policy-floor-and-must-be-bill]]
+- [[l0240-a-guard-in-the-caller-is-invisible-from-the-callee-bef]]
+- [[l0241-when-you-correct-a-check-s-text-because-you-learned-it]]
+- [[l0249-a-signature-that-takes-trailing-arguments-as-one-tuple]]

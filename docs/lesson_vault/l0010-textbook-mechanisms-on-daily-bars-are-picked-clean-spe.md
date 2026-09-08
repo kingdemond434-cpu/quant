@@ -26,3 +26,5 @@ Textbook mechanisms on daily bars are picked clean. Spend the multiplicity budge
 - [[l0035-volatility-is-predictable-direction-is-not-difficulty-]]
 - [[l0100-a-collector-that-overwrites-a-revised-source-destroys-]]
 - [[l0152-when-a-kill-s-cause-is-mechanical-leak-clock-alignment]]
+- [[l0258-one-error-string-for-five-different-causes-is-one-diag]]
+- [[l0269-a-fallback-chain-whose-only-writer-never-fires-is-a-ch]]

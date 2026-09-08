@@ -1,6 +1,6 @@
 # Desk lessons
 
-230 lessons, generated from `docs/desk_lessons.jsonl`.
+274 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -21,33 +21,33 @@ there dilutes the lessons that do apply.
 - #governance (25)
 - #statistics (17)
 - #research (14)
+- #ops (13)
 - #verification (13)
 - #design (13)
-- #ops (12)
 - #priors (11)
 - #validation (10)
+- #testing (10)
+- #measurement (8)
+- #data (8)
 - #mining (8)
-- #measurement (7)
-- #data (7)
-- #testing (7)
+- #silent-failure (7)
+- #execution (6)
+- #provenance (6)
+- #frontier (6)
 - #fences (5)
+- #windows (5)
 - #ci (4)
+- #scheduling (4)
+- #coverage (4)
 - #free-data (4)
+- #sizing (4)
+- #breadth (4)
 - #accounting (3)
+- #safety (3)
 - #discovery (3)
+- #calibration (3)
 - #units (3)
-- #provenance (3)
-- #research-method (3)
-- #legitimacy (3)
-- #shared-tree (3)
-- #data-provenance (3)
-- #monitoring (2)
-- #campaign (2)
-- #safety (2)
-- #execution (2)
-- #memory (2)
-- #law (2)
-- #calibration (2)
+- #git (3)
 
 ## All lessons
 
@@ -281,3 +281,47 @@ there dilutes the lessons that do apply.
 - [[l0228-a-defect-that-has-not-fired-yet-is-worse-than-one-that]]
 - [[l0229-when-a-reader-finds-nothing-check-the-producer-s-forma]]
 - [[l0230-a-dataset-s-own-label-for-its-statistic-can-be-wrong-a]]
+- [[l0231-an-allowlist-that-sits-above-its-own-exclusion-does-no]]
+- [[l0232-never-measure-a-pipeline-stage-with-a-key-that-the-sta]]
+- [[l0233-a-size-floor-must-be-max-policy-floor-and-must-be-bill]]
+- [[l0234-a-diagnostic-that-reaches-its-subject-through-the-modu]]
+- [[l0235-when-one-list-is-maintained-in-two-files-the-safety-pr]]
+- [[l0236-a-test-that-samples-an-allowlist-cannot-find-a-hole-in]]
+- [[l0237-a-lot-floor-and-a-risk-base-are-different-quantities-r]]
+- [[l0238-a-tamper-test-must-flip-the-value-it-corrupts-never-as]]
+- [[l0239-recovery-work-must-free-resources-before-it-spends-the]]
+- [[l0240-a-guard-in-the-caller-is-invisible-from-the-callee-bef]]
+- [[l0241-when-you-correct-a-check-s-text-because-you-learned-it]]
+- [[l0242-a-corrupt-directory-entry-blocks-git-updates-because-g]]
+- [[l0243-two-lists-that-must-agree-and-are-checked-by-nothing-w]]
+- [[l0244-a-deliberately-literal-mapper-needs-something-upstream]]
+- [[l0245-ten-reposts-are-not-ten-confirmations-one-origin-trave]]
+- [[l0246-a-regex-alternation-ending-in-a-word-boundary-matches-]]
+- [[l0247-an-organ-s-freshness-must-not-be-a-function-of-how-lon]]
+- [[l0248-naming-what-to-watch-is-not-the-same-as-knowing-where-]]
+- [[l0249-a-signature-that-takes-trailing-arguments-as-one-tuple]]
+- [[l0250-a-55-leg-cycle-whose-reliability-is-the-product-of-55-]]
+- [[l0251-a-coverage-check-that-reads-only-one-registration-rout]]
+- [[l0252-a-test-that-pins-a-literal-rather-than-a-property-fail]]
+- [[l0253-an-autonomous-implementer-is-safe-when-containment-is-]]
+- [[l0254-capacity-at-a-small-account-is-a-floor-problem-not-the]]
+- [[l0255-an-empty-owner-field-is-not-a-neutral-default-it-asser]]
+- [[l0256-the-two-root-confusion-again-research-organs-live-unde]]
+- [[l0257-check-the-log-for-the-lines-naming-each-refusal-is-not]]
+- [[l0258-one-error-string-for-five-different-causes-is-one-diag]]
+- [[l0259-powershell-turns-every-stderr-line-from-a-native-comma]]
+- [[l0260-the-most-dangerous-place-for-the-stop-2-1-trap-is-a-ca]]
+- [[l0261-mechanisms-live-on-charts-so-a-desk-that-researches-on]]
+- [[l0262-a-hardcoded-chart-s-severity-depends-entirely-on-where]]
+- [[l0263-a-coverage-requirement-must-be-routed-by-lane-single-n]]
+- [[l0264-a-correct-subtraction-over-two-different-populations-i]]
+- [[l0265-a-prop-evaluation-is-a-barrier-problem-not-a-growth-pr]]
+- [[l0266-a-constant-removed-at-the-policy-layer-keeps-binding-w]]
+- [[l0267-an-asymmetric-clamp-does-not-neutralise-a-signal-it-ke]]
+- [[l0268-before-believing-a-ratio-of-two-measurements-prove-the]]
+- [[l0269-a-fallback-chain-whose-only-writer-never-fires-is-a-ch]]
+- [[l0270-do-not-score-a-channel-your-instrument-cannot-measure-]]
+- [[l0271-a-derived-artifact-that-copies-a-field-from-its-source]]
+- [[l0272-repair-the-input-not-the-instrument-priced-at-its-own-]]
+- [[l0273-a-self-tuning-loop-encodes-a-direction-and-the-directi]]
+- [[l0274-when-you-replace-a-winner-take-all-choice-with-a-blend]]
