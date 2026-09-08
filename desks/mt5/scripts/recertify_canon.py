@@ -35,6 +35,21 @@ DESK = BASE / "desks" / "mt5"
 OUT = DESK / "reports" / "recertification_audit.json"
 
 
+def _cost_total(cell: dict) -> float | None:
+    """Return a reportable current cost, or None when the rebuild has no cost object.
+
+    Rebuilding a certificate can legitimately fail to price a formerly accepted recipe when
+    its current native cost inputs are unavailable.  That is an UNMEASURED recertification,
+    not permission to crash the entire batch (and thereby leave every other certificate
+    unreviewed), nor permission to substitute a default cost.
+    """
+    costs = cell.get("costs")
+    try:
+        return round(float(costs.spread_per_lot) + float(costs.commission_per_lot), 4)
+    except (AttributeError, TypeError, ValueError):
+        return None
+
+
 def main(*, output_path: Path | None = None) -> int:
     import external_gauntlet as eg
 
@@ -60,7 +75,7 @@ def main(*, output_path: Path | None = None) -> int:
     except Exception as exc:
         print(f"recertify: authorized_runs unavailable ({type(exc).__name__}: {exc})")
 
-    cells, keys, skipped = [], [], []
+    cells, keys, cost_totals, skipped = [], [], [], []
     for name, row in survivors.items():
         spec = row.get("shadow_spec")
         if not isinstance(spec, dict) or not spec.get("symbol"):
@@ -78,17 +93,22 @@ def main(*, output_path: Path | None = None) -> int:
         if cell is None:
             skipped.append({"certificate": name, "why": "cell could not be rebuilt"})
             continue
+        cost_total = _cost_total(cell)
+        if cost_total is None:
+            skipped.append({"certificate": name,
+                            "why": ("current native cost inputs unavailable; "
+                                    "recertification is UNMEASURED")})
+            continue
         cells.append(cell)
         keys.append(name)
+        # The gauntlet releases each cell's costs to bound memory, so retain the scalar before
+        # invoking it.  The value is derived only from the exact reconstructed cell.
+        cost_totals.append(cost_total)
 
     if not cells:
         print("recertify: no certificate could be rebuilt -- nothing measured, nothing claimed")
         return 1
 
-    # The gauntlet releases each cell's costs to bound memory. Snapshot scalar reporting
-    # values BEFORE invoking it, otherwise a completed run crashes before publishing results.
-    cost_totals = [round(float(c["costs"].spread_per_lot)
-                         + float(c["costs"].commission_per_lot), 4) for c in cells]
     res = eg.run_gauntlet(cells, "recertification_audit", meta)
     verdicts = {v.get("cell"): v for v in (res.get("verdicts") or [])}
 

@@ -255,6 +255,17 @@ rm -f "$_UT" 2>/dev/null || true
 
 rm -f web/desk_state.json.tmp desks/mt5/reports/shadow/*.tmp desks/mt5/reports/*.tmp 2>/dev/null
 if [ "$ok" = "1" ]; then
+  # The trading-box snapshot preserves account telemetry, but its shadow rows may retain
+  # historical promotion provenance.  Rebuild the public view from the freshly pulled
+  # canonical artifacts so terminal rows cannot render that provenance as live authority.
+  # `build_zentech_state` keeps the just-pulled account snapshot when this host has no MT5
+  # terminal, so this is a projection-only repair: it neither changes sleeve state nor submits
+  # orders.  A failed projection is a failed pull, because serving an unsafe interpretation is
+  # not a successful publication.
+  if ! .venv/bin/python scripts/build_zentech_state.py >/dev/null; then
+    echo "$(date -u +%FT%TZ) PULL FAILED -- dashboard projection rebuild failed"
+    exit 1
+  fi
   echo "$(date -u +%FT%TZ) desk state pulled"
 else
   echo "$(date -u +%FT%TZ) PULL FAILED -- serving last good copy; the page's age field shows it"
