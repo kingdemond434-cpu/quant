@@ -155,6 +155,38 @@ DECLARED_NEED_MB = 8192
 
 MEMORY_BUDGET_MB = _measured_budget_mb()
 
+#: MEMORY ONE BUILD WORKER IS BUDGETED, in MB. A worker holds its own bounded frame cache ("two
+#: dozen frames", `_FRAME_CACHE`) plus ONE cell's signals, released on return -- it never
+#: accumulates the way the single-process sweep did when it kept every cell's `sigs` alive
+#: between the two cost arms. 768 is headroom over that shape, not a measured peak; override
+#: with GAUNTLET_PER_WORKER_MB once a run has been watched.
+PER_WORKER_MB = float(os.environ.get("GAUNTLET_PER_WORKER_MB", "768"))
+
+
+def _worker_count() -> int:
+    """How many cells to build at once. THE ARITHMETIC THAT DECIDED THIS WAS NECESSARY:
+
+    the build is ~22s a cell and was single-process. At 45 minutes an hour that is ~123 cells an
+    hour, ~3,000 a day -- against a docket of 23,465 whose cache key rolls over with the data
+    day, so any cell not rebuilt inside one day goes cold again. A single process cannot converge
+    that docket at all; it is not slow, it is structurally unable, exactly the shape the build
+    budget's own docstring names for the cold sweep. Workers are the only exit.
+
+    Sized from what the box actually has: one core kept free for the terminal and the other
+    legs, and never more workers than the memory budget can hold at PER_WORKER_MB each -- so on
+    a box where the measured budget is small this collapses to 1 and the sweep behaves exactly
+    as before. GAUNTLET_WORKERS overrides both.
+    """
+    override = os.environ.get("GAUNTLET_WORKERS")
+    if override:
+        return max(1, int(float(override)))
+    cores = os.cpu_count() or 1
+    by_mem = int(MEMORY_BUDGET_MB // PER_WORKER_MB) if PER_WORKER_MB > 0 else 1
+    return max(1, min(cores - 1, by_mem))
+
+
+WORKERS = _worker_count()
+
 
 def _rss_mb() -> float:
     """This process's CURRENT resident size, or 0.0 where the platform will not say.
@@ -780,15 +812,142 @@ def cache_save(key: str, ds1, ds3) -> None:
         import numpy as _np
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         common = ds1.index.intersection(ds3.index)
-        _np.savez_compressed(CACHE_DIR / f"{key}.npz",
-                             dates=pd.to_datetime(common).astype("int64").to_numpy(),
-                             v1=ds1.reindex(common).to_numpy(float),
-                             v3=ds3.reindex(common).to_numpy(float))
+        # ATOMIC, because more than one process now writes this directory. A worker killed
+        # mid-write must leave either the previous file or nothing -- never a torn `.npz` that a
+        # later `cache_load` might read as a cell with a partial series. Written through a file
+        # handle on purpose: given a PATH, `savez_compressed` appends `.npz` to anything that
+        # does not already end in it, which would turn the temp name into a second cache entry.
+        final = CACHE_DIR / f"{key}.npz"
+        tmp = CACHE_DIR / f"{key}.{os.getpid()}.tmp"
+        with open(tmp, "wb") as fh:
+            _np.savez_compressed(fh,
+                                 dates=pd.to_datetime(common).astype("int64").to_numpy(),
+                                 v1=ds1.reindex(common).to_numpy(float),
+                                 v3=ds3.reindex(common).to_numpy(float))
+        os.replace(tmp, final)
     except Exception as exc:
         if not _CACHE_SAVE_WARNED[0]:
             _CACHE_SAVE_WARNED[0] = True
             print(f"  CACHE SAVE FAILING ({type(exc).__name__}: {exc}) -- sweeps will run at "
                   f"cold speed until this is fixed; reporting once, not per cell")
+
+def _warm_one(spec: dict, meta: dict) -> dict:
+    """Build ONE cell's series pair into the on-disk cache. Runs in a worker process.
+
+    THIS IS THE FRESH PATH OF THE MAIN LOOP AND `run_gauntlet`, EXTRACTED -- `_bars_for`, the
+    cell's own data-day, `build_cell`, both cost arms through `daily_series`, `cache_save` --
+    and nothing else. The verdict logic is untouched: after the pool runs, the main loop finds
+    every warmed key in the cache and takes the branch it has always taken for a cached cell.
+    Nothing crosses the process boundary except the spec in and a status out; the frames and
+    signals a cell needs stay in the worker and die with the task, which is what keeps a
+    worker's memory at ONE cell rather than the sweep's whole history of them.
+
+    A cell whose 3x arm fails is NOT saved: `run_gauntlet` handles that case itself (FAIL-3x, with
+    the 1x series kept), and caching half a pair would hide it.
+    """
+    sym, family = str(spec.get("sym") or ""), str(spec.get("family") or "")
+    params = spec.get("params") or {}
+    tf = timeframe_of(params, family)
+    out: dict = {"sym": sym, "family": family, "tf": tf, "status": "", "why": ""}
+    try:
+        frame = _bars_for(sym, tf)
+        if frame is None or len(frame) == 0:
+            out["status"] = "NOT_RUN_DATA_MISSING"
+            return out
+        last_day = frame.index[-1].normalize()
+        ckey = _cache_key(sym, family, params, str(last_day.date()), tf)
+        out["ckey"] = ckey
+        if cache_load(ckey) is not None:
+            out["status"] = "HIT"
+            return out
+        obj = build_cell(sym, family, params, meta)
+        if not obj:
+            out["status"] = "NOT_RUN_BUILD_FAILED"
+            return out
+        ds1 = _series_trim_partial(daily_series(obj["df"], obj["sigs"], obj["costs"]), last_day)
+        try:
+            ds3 = _series_trim_partial(
+                daily_series(obj["df"], obj["sigs"], costs_for(sym, meta, mult=COST_SCENARIO)),
+                last_day)
+        except Exception as exc3:
+            out["status"], out["why"] = "FAIL_3X", f"{type(exc3).__name__}: {exc3}"
+            return out
+        cache_save(ckey, ds1, ds3)
+        out["status"] = "WARMED" if cache_load(ckey) is not None else "SAVE_FAILED"
+        return out
+    except Exception as exc:
+        out["status"], out["why"] = "ERROR", f"{type(exc).__name__}: {exc}"
+        return out
+
+
+def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+    """Warm the cell cache for `specs` in parallel, in their given order, until `deadline`.
+
+    THE ORDER IS THE MAIN LOOP'S ORDER, on purpose. The loop rotates longest-unbuilt symbol first
+    so that deferral is self-correcting; a pool that drew from its own queue in another order
+    would rebuild the head of the docket every hour and never reach the tail -- the exact
+    failure the rotation exists to prevent, back by a different door. Cells are submitted in
+    sequence and at most 2x WORKERS are in flight, so that when the deadline arrives the
+    not-yet-started queue can actually be cancelled rather than having been handed out already.
+
+    THE DEADLINE IS THE SAME ONE THE MAIN LOOP HONOURS. The pool spends the build budget; the
+    loop that follows finds the budget spent and defers what the pool did not reach, exactly as
+    it defers today. The hourly cadence is unchanged: this makes the 45 minutes worth WORKERS
+    times more cells, it does not make them longer.
+    """
+    from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
+
+    summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
+               "unreached": 0, "seconds": 0.0, "failures": {}}
+    t0 = time.time()
+    it = iter(specs)
+    pending: dict = {}
+    with ProcessPoolExecutor(max_workers=WORKERS) as pool:
+        def _submit_next() -> bool:
+            sp = next(it, None)
+            if sp is None:
+                return False
+            pending[pool.submit(_warm_one, sp, meta)] = sp
+            summary["submitted"] += 1
+            return True
+
+        for _ in range(2 * WORKERS):
+            if not _submit_next():
+                break
+        while pending:
+            if time.time() > deadline:
+                # Stop handing out work. Cells already running finish (one cell each); cells
+                # not yet started are cancelled and counted as unreached -- the main loop then
+                # records them DEFERRED with the budget as the reason, as it always has.
+                for f in list(pending):
+                    if f.cancel():
+                        summary["unreached"] += 1
+                        pending.pop(f)
+            done, _ = wait(list(pending), timeout=5, return_when=FIRST_COMPLETED)
+            for f in done:
+                pending.pop(f, None)
+                try:
+                    r = f.result()
+                except Exception as exc:
+                    r = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
+                st = str(r.get("status") or "ERROR")
+                if st == "WARMED":
+                    summary["warmed"] += 1
+                elif st == "HIT":
+                    summary["hit"] += 1
+                else:
+                    summary["failed"] += 1
+                    summary["failures"][st] = summary["failures"].get(st, 0) + 1
+                if time.time() <= deadline:
+                    _submit_next()
+    summary["unreached"] += sum(1 for _ in it)
+    summary["seconds"] = round(time.time() - t0, 1)
+    print(f"PRE-WARM: {summary['workers']} worker(s) warmed {summary['warmed']} cell(s) in "
+          f"{summary['seconds']:.0f}s ({summary['hit']} already cached, {summary['failed']} "
+          f"failed, {summary['unreached']} not reached before the build budget)"
+          + (f"; failures by kind {summary['failures']}" if summary["failures"] else ""))
+    return summary
+
 
 def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     """Run full 10-gate gauntlet on a list of cells."""
@@ -1278,6 +1437,16 @@ def main():
                         str(sp.get("sym") or ""),
                         timeframe_of(sp.get("params"), str(sp.get("family") or "")),
                         str(sp.get("family") or "")))
+    # PARALLEL PRE-WARM, BEFORE THE LOOP THAT HAS ALWAYS RUN. Workers build the uncached cells
+    # into the on-disk cache in this exact order until the build budget is spent; the loop
+    # below then finds them and takes its cached branch, and defers whatever the pool did not
+    # reach -- the same deferral, with the same reason, that a single process produced. The
+    # deadline is `_build_t0 + FRESH_BUILD_BUDGET_SEC`, the loop's own clock, so the two share
+    # one budget rather than stacking to ninety minutes and breaking the hourly cadence.
+    # With WORKERS == 1 this block is skipped and the sweep is byte-for-byte what it was.
+    _prewarm = None
+    if WORKERS > 1 and len(eligible_specs) > 1:
+        _prewarm = _prewarm_cache(eligible_specs, meta, _build_t0 + FRESH_BUILD_BUDGET_SEC)
     for spec in eligible_specs:
         key = f"{spec['sym']}.{spec['family']}.{json.dumps(spec['params'], sort_keys=True)}"
         spec_tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
@@ -1391,6 +1560,10 @@ def main():
     # invisible and a docket quietly stops converging.
     result["n_cells_deferred_memory_budget"] = _mem_deferred
     result["memory_budget_mb"] = MEMORY_BUDGET_MB
+    # WHAT THE POOL DID, in the report beside the budgets that bounded it -- so "42 judged" can
+    # be read against "N workers warmed M cells" rather than guessed at from wall time.
+    result["workers"] = WORKERS
+    result["prewarm"] = _prewarm
     result["peak_rss_mb"] = round(_rss_mb(), 1)
     _save_build_cursor(_cursor, _built_syms)
     result["build_rotation"] = {

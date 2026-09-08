@@ -346,7 +346,7 @@ def scalp_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     the raw sleeve name, lowercased -- matches directly. A second naming convention here would
     reproduce the join failure this function exists to remove.
     """
-    acct: dict[str, Any] = {"ledgers": 0, "priced": 0, "refused": {}}
+    acct: dict[str, Any] = {"ledgers": 0, "priced": 0, "not_scalp": 0, "refused": {}}
     shadow = BASE / "reports" / "shadow"
     if not shadow.exists():
         acct["refused"]["shadow"] = f"{shadow} absent on this host"
@@ -362,6 +362,17 @@ def scalp_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             continue
         if not isinstance(rows, list):
             acct["refused"][name] = "ledger is not a list of trades"
+            continue
+        # NOT EVERY `ledger_*.json` IS A SCALP LEDGER, and the glob cannot tell. `shadow_forward`
+        # writes its certified clocks to the same directory with the same prefix -- rows carrying
+        # `r_multiple` / `entry_time`, not `r` / `opened_at` -- and those sleeves are priced by
+        # the CERTIFIED library, never here. Reading them here would price them twice; refusing
+        # them for "0 forward day(s)" (which is what `r.get("r")` returning None produced, on
+        # all 81 of them, measured 2026-09-08) reports a plumbing gap as missing evidence. They
+        # are counted apart so `scalp_library` reads as what it is: 85 files, 81 another lane's.
+        if rows and all(isinstance(r, dict) and "r" not in r and "r_multiple" in r
+                        for r in rows[:5]):
+            acct["not_scalp"] += 1
             continue
         by_day: dict[Any, float] = {}
         for r in rows:
@@ -398,7 +409,8 @@ def scalp_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
         out[name] = pd.Series([by_day[d] for d in sorted(by_day)], index=sorted(by_day))
         acct["priced"] += 1
     _log(f"scalp library: {acct['priced']}/{acct['ledgers']} clock(s) priced from their forward "
-         f"ledgers, {len(acct['refused'])} refused")
+         f"ledgers, {acct['not_scalp']} belong to the certified lane, "
+         f"{len(acct['refused'])} refused")
     return out, acct
 
 
