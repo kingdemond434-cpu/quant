@@ -95,6 +95,19 @@ while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContin
     $waited += 5
 }
 
+# THE LOCK EVERY GIT WRITER ON THIS BOX TAKES (2026-09-08). The task-state wait above covers the
+# MT5-ShadowSync task; it cannot see `hourly_cycle.publish_state`, which launches the same sync
+# script directly, nor a hand run. sync_shadow_to_git.ps1 now holds the named mutex
+# Local\MT5-GitWriter for its whole pass, so this script takes the same mutex BEFORE adopting and
+# keeps it through the seal commit: Adopt-Release is a child process, but the lock is ours, and
+# the sync yields on it. An abandoned mutex (a writer that died holding it) is a grant, not a
+# wedge. Nine minutes, as above.
+$script:GitWriterMutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter")
+$gotLock = $false
+try { $gotLock = $script:GitWriterMutex.WaitOne(540000) }
+catch [System.Threading.AbandonedMutexException] { $gotLock = $true }
+if (-not $gotLock) { Log "another git writer holds Local\MT5-GitWriter after 9 min; not adopting under it"; exit 6 }
+
 # ---------------------------------------------------------------- 1. adopt the branch's tree
 $adoptScript = Join-Path $desk "scripts\Adopt-Release.ps1"
 if (-not (Test-Path $adoptScript)) { Log "Adopt-Release.ps1 missing at $adoptScript"; exit 2 }

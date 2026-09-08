@@ -18,7 +18,7 @@ What is pinned: (a) an entry whose n cannot be reproduced from the account in ha
 voided into the sibling audit file and the window is emitted again; (b) a dispersed, losing,
 admissible ledger keeps it retired; (c) a near-constant ledger voids it on the degenerate reason
 and does not re-retire; (d) a void is re-judged on the SAME pass by the unchanged thresholds;
-(e) an UNKNOWN account judges nothing.
+(e) an UNKNOWN account judges nothing; (f) absence of evidence never voids.
 """
 from __future__ import annotations
 
@@ -102,40 +102,67 @@ def desk(tmp_path, monkeypatch):
 
 
 # ------------------------------------------------------------------ (a) the entry on the tree
-def test_the_standing_entry_is_void_when_no_admissible_row_supports_it(desk) -> None:
-    """The box's shape: the live account has no fills, so no admissible ledger holds the thirty
-    rows the record claims to have judged."""
+def test_a_ledger_with_no_admissible_row_keeps_the_entry_standing(desk) -> None:
+    """CORRECTED 2026-09-08 (verifier): the live account has no fills, and the FIRST version of
+    the rule voided on exactly that -- an admissible count below the recorded n -- which is true
+    of an empty ledger, a missing file, a torn file and an account that has not traded. Absence
+    of evidence re-opened the one-way door. It no longer does: the entry stands until something
+    POSITIVE says the number was wrong."""
     desk.retire(gold_asia=dict(_ENTRY))
     assert desk.roster_names() == ["gold_london_am", "gold_afternoon"]
+    promoter.main()                                    # no ledger file at all
+    assert desk.retired()["gold_asia"] == _ENTRY and desk.voided() == {}
+    desk.ledger([])                                    # a ledger with nothing in it
     promoter.main()
-    assert "gold_asia" not in desk.retired()
-    v = desk.voided()["gold_asia"]
-    assert v["n"] == 30 and v["retired_at"] == _ENTRY["retired_at"]
-    assert "cannot be reproduced from admissible rows" in v["voided_why"]
-    assert "login=5551234" in v["voided_why"] and "kind=live" in v["voided_why"]
-    assert v["voided_at"] > v["retired_at"]
-    assert desk.roster_names() == ["gold_asia", "gold_london_am", "gold_afternoon"]
+    assert desk.retired()["gold_asia"] == _ENTRY and desk.voided() == {}
+    desk.ledger(_DISPERSED_LOSER[:5])                  # a few admissible rows, fewer than n
+    promoter.main()
+    assert desk.retired()["gold_asia"] == _ENTRY and desk.voided() == {}
+    assert desk.roster_names() == ["gold_london_am", "gold_afternoon"]
 
 
 def test_rows_from_another_account_are_not_this_account_s_evidence(desk) -> None:
-    """Thirty rows exist in the file, every one from a demo login: `load_ledger` admits none, so
-    the recorded n is not reproducible on the account in hand."""
+    """Thirty rows exist in the file, every one from a demo login: the number that retired the
+    window was another account's. That is POSITIVE evidence, and the entry is void."""
     desk.retire(gold_asia=dict(_ENTRY))
     desk.ledger(_DISPERSED_LOSER, acc=_OTHER)
     promoter.main()
     assert "gold_asia" not in desk.retired()
-    assert "n=0 for gold_asia" in desk.voided()["gold_asia"]["voided_why"]
+    why = desk.voided()["gold_asia"]["voided_why"]
+    assert "all stamped to another account" in why and "9990001@FusionMarkets-Demo/demo" in why
+    assert "login=5551234" in why and "kind=live" in why
+    assert desk.voided()["gold_asia"]["voided_at"] > _ENTRY["retired_at"]
+    assert desk.roster_names() == ["gold_asia", "gold_london_am", "gold_afternoon"]
 
 
-def test_rows_stamped_unknown_never_reproduce_a_retirement(desk) -> None:
+def test_fewer_foreign_rows_than_the_record_claims_prove_nothing(desk) -> None:
+    desk.retire(gold_asia=dict(_ENTRY))
+    desk.ledger(_DISPERSED_LOSER[:20], acc=_OTHER)     # 20 foreign rows against n=30
+    promoter.main()
+    assert "gold_asia" in desk.retired() and desk.voided() == {}
+
+
+def test_rows_stamped_unknown_are_not_proof_of_another_account(desk) -> None:
+    """A row with no provenance is a real trade on some account the desk cannot name. It is
+    admissible for nobody -- and it is not proof the retirement came from elsewhere either."""
     desk.retire(gold_asia=dict(_ENTRY))
     desk.ledger(_DISPERSED_LOSER, acc={"login": 5551234, "server": "FusionMarkets-Live",
                                        "kind": provenance.UNKNOWN})
     promoter.main()
-    assert "gold_asia" not in desk.retired() and "gold_asia" in desk.voided()
+    assert "gold_asia" in desk.retired() and desk.voided() == {}
 
 
-# ---------------------------------------------------------------- (b) a real loser stays retired
+def test_a_torn_final_line_does_not_blind_the_ledger(desk) -> None:
+    desk.retire(gold_asia=dict(_ENTRY))
+    desk.ledger(_DISPERSED_LOSER, acc=_OTHER)
+    ledger = promoter.LEDGER
+    ledger.write_text(ledger.read_text("utf-8") + '\n{"sleeve": "gold_asia", "r_mul', "utf-8")
+    rows = promoter._all_ledger_rows()
+    assert rows is not None and len(rows) == 30            # the torn line is skipped, not fatal
+    promoter.main()
+    assert "gold_asia" not in desk.retired()               # the thirty foreign rows still count
+
+
 def test_a_dispersed_losing_admissible_ledger_keeps_the_retirement(desk) -> None:
     desk.retire(gold_asia=dict(_ENTRY))
     desk.ledger(_DISPERSED_LOSER)
@@ -165,20 +192,31 @@ def test_a_near_constant_ledger_voids_on_the_degenerate_reason_and_is_not_re_ret
 
 
 # ------------------------------------------- (d) the thresholds still bind on the same pass
-def test_a_void_is_re_judged_by_the_unchanged_thresholds_on_the_same_pass(desk) -> None:
-    """Twelve admissible dispersed losses: fewer than the recorded thirty (void), but n >= 10
-    and roll20 <= 0 (retire). The window must NOT be emitted between the two."""
+def test_a_void_falls_through_to_the_unchanged_retire_rules_and_they_still_bite(desk) -> None:
+    """A void by foreign evidence is followed, on the SAME pass, by the unchanged retire walk on
+    the admissible rows -- with none, nothing re-retires (n=0 < RETIRE_MIN_N). Then twelve
+    admissible dispersed losses arrive: n >= 10 and roll20 <= 0, and the window is retired AGAIN,
+    on this account's own evidence, before the gateway reads the file. The thresholds did not
+    move."""
     desk.retire(gold_asia=dict(_ENTRY))
+    desk.ledger(_DISPERSED_LOSER, acc=_OTHER)
+    promoter.main()
+    assert "gold_asia" not in desk.retired() and desk.voided()["gold_asia"]["n"] == 30
+    assert desk.roster_names() == ["gold_asia", "gold_london_am", "gold_afternoon"]
     twelve = _DISPERSED_LOSER[:12]
     assert promoter.RETIRE_MIN_N <= 12 and sum(twelve) / 12 <= 0.0
-    desk.ledger(twelve)
+    foreign = [{**provenance.stamp(_OTHER), "sleeve": "gold_asia", "r_multiple": v}
+               for v in _DISPERSED_LOSER]
+    mine = [{**provenance.stamp(_ACC), "sleeve": "gold_asia", "r_multiple": v} for v in twelve]
+    promoter.LEDGER.write_text("\n".join(json.dumps(r) for r in foreign + mine), "utf-8")
     promoter.main()
     entry = desk.retired()["gold_asia"]
     assert entry["n"] == 12 and entry["reason"].startswith("roll20 exp")
     assert entry["retired_at"] > _ENTRY["retired_at"]              # a NEW retirement
-    assert desk.voided()["gold_asia"]["n"] == 30                   # the old one, audited
     assert desk.roster_names() == ["gold_london_am", "gold_afternoon"]
-    # and the retire thresholds themselves did not move
+    # and a mixed file is not "all another account's": the new entry stands on the next pass
+    promoter.main()
+    assert desk.retired()["gold_asia"] == entry
     assert (promoter.RETIRE_MIN_N, promoter.RETIRE_MAX_DD,
             promoter.RETIRE_MIN_EXP) == (10, -25.0, 0.05)
 
@@ -208,12 +246,22 @@ def test_an_entry_with_no_recorded_n_is_kept_unless_its_evidence_is_degenerate(d
     assert "gold_asia" in desk.retired() and desk.voided() == {}
 
 
-def test_the_void_reason_is_pure_and_names_its_three_outcomes() -> None:
+def test_the_void_reason_is_pure_and_names_its_outcomes() -> None:
     rows = [{"sleeve": "gold_asia", "r_multiple": v} for v in _DISPERSED_LOSER]
     unknown = provenance.current_account(None)
+    foreign = [{**provenance.stamp(_OTHER), "sleeve": "gold_asia", "r_multiple": v}
+               for v in _DISPERSED_LOSER]
     assert promoter.retirement_void_reason(_ENTRY, [], "gold_asia", unknown) == ""
     assert promoter.retirement_void_reason(_ENTRY, rows, "gold_asia", _ACC) == ""
-    assert "cannot be reproduced" in promoter.retirement_void_reason(_ENTRY, [], "gold_asia", _ACC)
+    # absence proves nothing: no rows, an unreadable file, a short file
+    assert promoter.retirement_void_reason(_ENTRY, [], "gold_asia", _ACC) == ""
+    assert promoter.retirement_void_reason(_ENTRY, [], "gold_asia", _ACC, all_rows=None) == ""
+    assert promoter.retirement_void_reason(_ENTRY, [], "gold_asia", _ACC, all_rows=[]) == ""
+    assert promoter.retirement_void_reason(_ENTRY, [], "gold_asia", _ACC,
+                                           all_rows=foreign[:29]) == ""
+    # positive evidence: another account's rows, or a degenerate admissible series
+    assert "another account" in promoter.retirement_void_reason(
+        _ENTRY, [], "gold_asia", _ACC, all_rows=foreign)
     assert "computation defect" in promoter.retirement_void_reason(
         _ENTRY, [{"sleeve": "gold_asia", "r_multiple": -1.0}] * 30, "gold_asia", _ACC)
 
@@ -257,4 +305,6 @@ def test_main_measures_the_account_once_and_hands_it_to_the_ledger() -> None:
     assert "acc = account_in_hand()" in main_src
     assert "ledger = load_ledger(acc)" in main_src
     assert main_src.index("acc = account_in_hand()") < main_src.index("ledger = load_ledger(acc)")
-    assert "retirement_void_reason(gold_retired[gname], ledger, gname, acc)" in main_src
+    assert "retirement_void_reason(gold_retired[gname], ledger, gname, acc," in main_src
+    assert "all_rows=all_rows)" in main_src
+    assert "all_rows = _all_ledger_rows()" in main_src

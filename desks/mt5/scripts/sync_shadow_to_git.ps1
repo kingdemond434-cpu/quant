@@ -81,6 +81,24 @@ if ($adopting) {
     exit 0
 }
 
+# ONE GIT WRITER AT A TIME, BY PROCESS, NOT BY TASK NAME (2026-09-08, after a verifier read the
+# guard above and found its blind spot). This script has a second invoker that is not the
+# MT5-ShadowSync task: `hourly_cycle.publish_state` launches it directly, and a hand run under
+# box-repair is a third. A guard keyed on Task Scheduler state sees none of those, and the
+# adoption's mirror guard cannot see them either. A named mutex is held by whichever PROCESS owns
+# it, whoever launched it, and the operating system releases it when that process exits -- so a
+# crashed writer never wedges the lock (the next waiter receives it as ABANDONED, which is a
+# grant). Two minutes covers a full sync pass; a writer that cannot get the lock in that time
+# yields exactly as the task check above yields, and the next slot is fifteen minutes away.
+$script:GitWriterMutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter")
+$gotLock = $false
+try { $gotLock = $script:GitWriterMutex.WaitOne(120000) }
+catch [System.Threading.AbandonedMutexException] { $gotLock = $true }
+if (-not $gotLock) {
+    Write-SyncLog "SKIP: another git writer holds Local\MT5-GitWriter after 2 min; this pass yields"
+    exit 0
+}
+
 # PARK THE DIRTY FILES THAT BLOCK THE MERGE, MERGE, PUT THEM BACK. One function, two callers.
 #
 # It was inlined in the push-rejection retry loop, which is the only place that ever fetched --

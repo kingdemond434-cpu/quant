@@ -448,12 +448,12 @@ def test_an_adoption_whose_only_change_is_untracking_is_still_committed(tmp_path
 
 def test_the_script_untracks_state_deletions_before_it_keeps_or_deletes() -> None:
     code = _executable_lines(SCRIPT.read_text("utf-8"))
-    untrack = code.index('if ($op.Kind -eq "D" -and (Test-StatePath $rel))')
+    untrack = code.index('if ($op.Kind -eq "D" -and (Test-StatePath $rel) -and -not $boxAdded.ContainsKey($rel))')
     assert untrack < code.index("if (Test-KeptByBox $rel)")
     assert untrack < code.index("[System.IO.File]::Delete($full)")
     branch = code[untrack:code.index("if (Test-KeptByBox $rel)")]
     assert '"rm", "--cached", "--quiet", "--", $rel' in branch
-    assert "$staged.Add" not in branch and "Delete" not in branch and "continue" in branch
+    assert "$staged.Add" not in branch and "File]::Delete" not in branch and "continue" in branch
     # the commit is not nested under the staged-count guard
     guard = code.index("if ($staged.Count -gt 0)")
     pending = code.index("$pending = ")
@@ -468,3 +468,19 @@ def test_a_locked_file_is_retried_before_it_is_reported() -> None:
     assert "catch [System.IO.IOException]" in code
     assert "if ($tries -ge 3) { throw }" in code
     assert "Start-Sleep -Seconds 2" in code
+
+
+def test_untracking_is_narrowed_to_paths_origin_dropped_and_never_swallows_a_failure() -> None:
+    """Two verifier hardenings. A state path the BOX added since the merge base was never
+    tracked by origin, so origin cannot have dropped it: it falls through to the kept-by-box
+    rule. And a `git rm --cached` that fails leaves the path in HEAD; counting it as handled
+    would let the verify gate read a difference as none."""
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    assert "$boxAdded = @{}" in code
+    assert "if ($cols[0] -match '^A') { $boxAdded[$p] = $true }" in code
+    assert ('if ($op.Kind -eq "D" -and (Test-StatePath $rel) -and -not $boxAdded.ContainsKey($rel))'
+            in code)
+    rm_at = code.index('Invoke-Git @("rm", "--cached", "--quiet", "--", $rel) -AllowFail')
+    after = code[rm_at:rm_at + 500]
+    assert "if ($LASTEXITCODE -ne 0)" in after and "$unremoved.Add($rel)" in after
+    assert code.index("$boxAdded[$p] = $true") < rm_at          # the set exists before the loop

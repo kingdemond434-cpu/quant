@@ -308,6 +308,32 @@ def account_in_hand() -> dict:
                 mt5.shutdown()
 
 
+def _all_ledger_rows() -> list[dict] | None:
+    """Every row in the ledger file regardless of account, or None when the file is absent or
+    cannot be read at all. A torn final line is skipped, never fatal (the same tolerance
+    `decision_core.ledger_rows` has): a ledger that parsed all-or-nothing read as EMPTY on one
+    torn byte, and an empty ledger is exactly the reading the void rule below must never act on.
+    None and [] are different answers -- "could not read" and "read, nothing there"."""
+    if not LEDGER.exists():
+        return None
+    try:
+        text = LEDGER.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    out: list[dict] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            out.append(row)
+    return out
+
+
 def load_ledger(acc: dict | None = None) -> list[dict]:
     """Closed trades from the account THIS DESK IS CURRENTLY TRADING, and no others.
 
@@ -326,12 +352,8 @@ def load_ledger(acc: dict | None = None) -> list[dict]:
     `acc` is the account in hand (`account_in_hand()`), passed by `main` so the ledger and the
     gold retirement re-derivation below are judged against ONE measurement of it.
     """
-    if not LEDGER.exists():
-        return []
-    try:
-        rows = [json.loads(line) for line in LEDGER.read_text(encoding="utf-8").splitlines()
-                if line.strip()]
-    except Exception:
+    rows = _all_ledger_rows()
+    if rows is None:
         return []
     if acc is None:
         acc = account_in_hand()
@@ -420,7 +442,18 @@ def _load_gold_voided() -> dict:
         return {}
 
 
-def retirement_void_reason(rec: dict, ledger: list[dict], name: str, acc: dict) -> str:
+def _stamped_to_another_account(row: dict, acc: dict) -> bool:
+    """Is this row POSITIVELY about some other account: a known login/server/kind that is not
+    the account in hand? A row with no provenance, or an UNKNOWN kind, is evidence about nothing
+    the desk can name -- it is not proof the retirement came from elsewhere."""
+    login, _server, kind = provenance.row_account(row)
+    if kind == provenance.UNKNOWN or login is None:
+        return False
+    return not provenance.same_account(row, acc)
+
+
+def retirement_void_reason(rec: dict, ledger: list[dict], name: str, acc: dict,
+                           all_rows: list[dict] | None = None) -> str:
     """Why a STANDING gold retirement is void on today's admissible evidence, or "" if it stands.
 
     A RETIREMENT IS A CLAIM ABOUT EVIDENCE, AND THE CLAIM IS RE-DERIVED, NOT TRUSTED. Measured
@@ -433,45 +466,51 @@ def retirement_void_reason(rec: dict, ledger: list[dict], name: str, acc: dict) 
         the 09-02 one was never re-judged, and the live account it stops has recorded no fill
         (gateway_state.execution.matched_fills 0).
       * `load_ledger` admits only rows `provenance.same_account` accepts for the account in hand.
-        A retirement whose recorded n cannot be reproduced from those rows was computed from rows
-        about SOME OTHER account (a demo login, a pre-provenance file, a VPS copy) -- exactly the
-        history `load_ledger` refuses to judge a live sleeve on. Refusing it for retirement while
-        honouring a retirement already made from it is the same defect with a date on it.
+        A retirement whose rows are all stamped to SOME OTHER account (a demo login, another
+        server) was computed from history `load_ledger` refuses to judge a live sleeve on.
+        Refusing it for retirement while honouring a retirement already made from it is the
+        same defect with a date on it.
 
-    THE RULE, AND WHAT IT CANNOT DO. An entry is void when the admissible ledger for `name` is
-    one the promoter would refuse to retire on today (`degenerate_evidence`), or holds fewer rows
-    than the record claims to have judged. It cannot void a retirement the thresholds would make
+    THE RULE VOIDS ON POSITIVE EVIDENCE ONLY (corrected 2026-09-08, the same evening, after a
+    verifier refuted the first version). The first version also voided when the admissible row
+    count was merely BELOW the recorded n -- which is true of an empty ledger, a missing file, a
+    file that failed to parse, and a live account that simply has not traded yet. That re-opened
+    the one-way door on the ABSENCE of evidence: a loosened risk law, whatever the intent. Now an
+    entry is void only when (a) the admissible series for the sleeve is one `degenerate_evidence`
+    refuses -- proof the number was a computation defect -- or (b) the file holds at least the
+    recorded n rows for the sleeve and EVERY one of them is stamped to a different, known account
+    -- proof the number was another account's. A short, empty, unreadable or unstamped ledger
+    proves nothing and the entry STANDS. It cannot void a retirement the thresholds would make
     again: `main` falls through to the UNCHANGED retire rules on the same pass, so a genuinely
     losing sleeve on admissible, dispersed evidence is re-retired before the gateway's next read.
-    No threshold, floor or size moves; the one-way door is the same door, re-derived from the
-    evidence it is entitled to use -- the correction `sleeve_registry.reconcile` already applies
-    to IDENTITY_BROKEN clocks, applied to the gold book.
+    No threshold, floor or size moves.
 
-    UNKNOWN IS NOT EMPTY. With no account in hand there are no admissible rows, and "none" would
-    void every retirement on a visibility outage -- adding risk on a compute limit, the mirror of
-    the demotion `reconcile_capital` refuses to make on one. So an UNKNOWN account judges nothing:
-    the entry stands, and the pass says so.
+    UNKNOWN IS NOT EMPTY. With no account in hand nothing is admissible, and the entry stands.
 
-    This supersedes "undo is a person's act" (decision_core.roster, and the gold block below as
-    it stood): under the principal's standing order that no human decision is needed, an
-    inadmissible retirement is cleared by the organ that made it, with the audit written to
-    GOLD_RETIRED_VOIDED.json.
+    `all_rows` is the whole file (`_all_ledger_rows()`), account-agnostic, for rule (b); None
+    means the file could not be read, and rule (b) is then not consulted.
     """
     if acc.get("kind") == provenance.UNKNOWN or acc.get("login") is None:
         return ""
     why = degenerate_evidence(ledger, name)
     if why:
         return why
+    if all_rows is None:
+        return ""
     try:
         rec_n = int(rec.get("n") or 0)
     except (TypeError, ValueError, AttributeError):
         rec_n = 0
-    fs = sleeve_forward_stats(ledger, name)
-    if fs["n"] < rec_n:
-        return (f"recorded n={rec_n} cannot be reproduced from admissible rows (n={fs['n']} for "
-                f"{name} on the account in hand: login={acc.get('login')} "
-                f"server={acc.get('server')} kind={acc.get('kind')}): the evidence that retired "
-                f"it is not evidence about this account")
+    if rec_n <= 0:
+        return ""
+    rows_for = [r for r in all_rows if r.get("sleeve") == name]
+    if len(rows_for) >= rec_n and all(_stamped_to_another_account(r, acc) for r in rows_for):
+        others = sorted({f"{r.get('account')}@{r.get('server')}/{r.get('account_kind')}"
+                        for r in rows_for})
+        return (f"the {len(rows_for)} row(s) that retired it are all stamped to another account "
+                f"({', '.join(others[:3])}), none admissible for the account in hand "
+                f"(login={acc.get('login')} server={acc.get('server')} kind={acc.get('kind')}): "
+                f"the evidence that retired it is not evidence about this account")
     return ""
 
 
@@ -1154,6 +1193,7 @@ def main() -> None:
     # is being read.
     acc = account_in_hand()
     ledger = load_ledger(acc)
+    all_rows = _all_ledger_rows()          # account-agnostic, for the void rule's rule (b)
     existing = {s["name"] for s in sleeves}
     gate_authority = authorized_specs(BASE)
     regrade_fails = regrade_failures()
@@ -1360,7 +1400,8 @@ def main() -> None:
     gold_retired = _load_gold_retired()
     for gname in GOLD_SLEEVE_NAMES:
         if gname in gold_retired:
-            why_void = retirement_void_reason(gold_retired[gname], ledger, gname, acc)
+            why_void = retirement_void_reason(gold_retired[gname], ledger, gname, acc,
+                                              all_rows=all_rows)
             if not why_void:
                 if acc.get("kind") == provenance.UNKNOWN:
                     plog(f"RETIREMENT STANDS UNJUDGED {gname}: no account in hand, so no row is "

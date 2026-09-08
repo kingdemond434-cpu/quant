@@ -336,12 +336,19 @@ $records = @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-status",
 # No merge base (unrelated histories) means nothing can be told apart, and the safe reading of
 # "cannot tell" is that every state path is the box's.
 $boxTouched = @{}
+# Paths the box ADDED since the merge base (status A): a state file only this box has ever held.
+# Origin cannot have "dropped" what it never tracked, so such a path is never untracked below;
+# it falls through to the kept-by-box rule like any other box-written state.
+$boxAdded = @{}
 $mergeBase = (Invoke-Git @("merge-base", "HEAD", $target) -AllowFail | ForEach-Object { "$_" } |
               Where-Object { $_ -match '\S' } | Select-Object -First 1)
 if ($mergeBase) {
-    foreach ($p in @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-only", "$mergeBase", "HEAD") |
-                     ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })) {
+    foreach ($rec in @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-status", "$mergeBase", "HEAD") |
+                       ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })) {
+        $cols = $rec -split "`t"
+        $p = $cols[-1]
         $boxTouched[$p] = $true
+        if ($cols[0] -match '^A') { $boxAdded[$p] = $true }
     }
 }
 function Test-KeptByBox {
@@ -378,7 +385,7 @@ foreach ($rec in $records) {
     foreach ($op in $ops) {
         $rel  = $op.Path
         $full = Join-Path $RepoRoot ($rel -replace '/', '\')
-        if ($op.Kind -eq "D" -and (Test-StatePath $rel)) {
+        if ($op.Kind -eq "D" -and (Test-StatePath $rel) -and -not $boxAdded.ContainsKey($rel)) {
             # ORIGIN STOPPED TRACKING A STATE PATH, so it leaves the INDEX and only the index.
             # a4bd8663 (2026-09-06) untracked desks/mt5/logs/ -- seventeen console logs and the
             # supervisor's pid/state/marker -- because running hunts hold them open and every
@@ -394,6 +401,15 @@ foreach ($rec in $records) {
             # Deliberately NOT added to $staged: a later `git add --all -- <path>` would re-add
             # any copy .gitignore does not cover. Code deletions still take the branch below.
             Invoke-Git @("rm", "--cached", "--quiet", "--", $rel) -AllowFail | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                # Not swallowed: an index that will not drop the path (staged content differing
+                # from both the file and HEAD) leaves it in HEAD, and the verify gate must see
+                # that rather than a count that says it was handled.
+                Write-Host ("  [FAIL] {0}: git rm --cached rc={1}" -f $rel, $LASTEXITCODE)
+                [void]$unremoved.Add($rel)
+                $seen++
+                continue
+            }
             $untracked++
             $seen++
             continue

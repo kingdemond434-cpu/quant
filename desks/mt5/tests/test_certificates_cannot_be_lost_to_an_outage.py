@@ -245,3 +245,21 @@ def test_adopt_and_seal_resolves_python_the_way_the_installer_does() -> None:
     assert idx == sorted(idx), "venv, then the launcher, then bare python, then a loud exit"
     assert '$pyArgs = @("-3")' in ADOPT_CODE
     assert "& $py @pyArgs -c" in ADOPT_CODE
+
+
+def test_every_git_writer_on_the_box_takes_the_same_process_level_lock() -> None:
+    """A verifier refuted the task-state guards: sync_shadow_to_git.ps1 has a second invoker
+    (hourly_cycle.publish_state launches it directly) and a third (a hand run), and neither
+    shows as MT5-ShadowSync 'Running'. The lock must belong to the PROCESS, whoever started it."""
+    for src, name in ((SYNC, "sync"), (ADOPT_CODE, "adopt")):
+        assert 'New-Object System.Threading.Mutex($false, "Local\\MT5-GitWriter")' in src, name
+        assert "catch [System.Threading.AbandonedMutexException] { $gotLock = $true }" in src, name
+    # the sync takes it after its yield and before its first git operation; a miss yields (exit 0)
+    lock_at = SYNC.index('"Local\\MT5-GitWriter"')
+    assert SYNC.index("SKIP: MT5-AdoptRelease is adopting") < lock_at
+    assert lock_at < SYNC.index("Sync-Pull -RepoRoot $RepoRoot -Branch $branch")
+    assert "exit 0" in SYNC[lock_at:lock_at + 600]
+    # the adoption takes it before invoking Adopt-Release and refuses loudly (exit 6) on a miss
+    alock = ADOPT_CODE.index('"Local\\MT5-GitWriter"')
+    assert alock < ADOPT_CODE.index("$adoptScript")
+    assert "exit 6" in ADOPT_CODE[alock:alock + 600]
