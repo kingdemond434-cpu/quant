@@ -308,7 +308,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "ALLOCATION", alloc)
     monkeypatch.setattr(promoter, "clock_identities", lambda: {})
     monkeypatch.setattr(promoter, "regrade_failures", lambda now=None: {})
-    monkeypatch.setattr(promoter, "load_ledger", lambda: [])
+    monkeypatch.setattr(promoter, "load_ledger", lambda *a, **k: [])
     monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set())
 
     class Desk:

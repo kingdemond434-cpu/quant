@@ -1073,8 +1073,11 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
     # writes the loser to GOLD_RETIRED.json with its reason. Until 2026-09-01 the armed gold book
     # was exempt from retirement entirely -- so the desk's ONLY live sleeves were the only ones
     # with no automatic decay protection, because the retire rules walked sleeves.json, which
-    # is empty. ABSENT FILE = NOTHING RETIRED, which is the behaviour up to now; and re-arming
-    # stays a person's act, because undoing a retirement means deleting the entry by hand.
+    # is empty. ABSENT FILE = NOTHING RETIRED, which is the behaviour up to now. Re-arming is NOT
+    # a person's act any more (2026-09-08): the promoter re-derives every standing entry against
+    # the ledger it is entitled to read (`promoter.retirement_void_reason`) and moves an entry
+    # whose evidence it would refuse today to GOLD_RETIRED_VOIDED.json -- this function reads
+    # only GOLD_RETIRED.json, so a voided window is simply absent here and emitted again.
     for label, sig_hour, rng in GOLD_WINDOWS:
         name = f"gold_{label}"
         if name in retired_gold:
