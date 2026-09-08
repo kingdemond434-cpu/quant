@@ -27,6 +27,10 @@ _DESK = Path(__file__).resolve().parents[1]
 GAUNTLET = (_DESK / "scripts" / "external_gauntlet.py").read_text("utf-8")
 UGATE = (_DESK / "research" / "universal_gate.py").read_text("utf-8")
 ADOPT = (_DESK / "scripts" / "Adopt-And-Seal.ps1").read_text("utf-8")
+#: The script's CODE, after the comment-based help block. The help block names the things the
+#: script must never do -- `git add -A`, `stash` -- and a test that forbade the WORDS would
+#: forbid documenting the rule. The invariants below are about what the script does.
+ADOPT_CODE = ADOPT.split("#>", 1)[1]
 INSTALL = (_DESK / "scripts" / "Install-QuantWindows.ps1").read_text("utf-8")
 
 
@@ -71,8 +75,8 @@ def test_the_round_trip_is_stamped_so_it_is_visible() -> None:
 
 def test_the_purge_itself_is_unchanged() -> None:
     """The restore does not weaken the purge: an untradeable symbol still leaves `survivors`."""
-    assert "ok, why = symbol_is_tradeable(sym, meta) if sym else (False, \"no symbol on the row\")" \
-        in GAUNTLET
+    assert ("ok, why = symbol_is_tradeable(sym, meta) if sym else "
+            "(False, \"no symbol on the row\")") in GAUNTLET
     assert "row = dict(survivors_all.pop(key) or {})" in GAUNTLET
 
 
@@ -80,7 +84,8 @@ def test_the_purge_itself_is_unchanged() -> None:
 def test_retained_exact_survivors_never_returns_empty_on_a_header_mismatch() -> None:
     fn = _block(UGATE, "def retained_exact_survivors", "\ndef ")
     # the catastrophic branch is gone ...
-    assert not re.search(r"if not is_exact_policy\(current\.get\(\"gate_policy\"\)\):\s*\n\s*return \{\}", fn)
+    assert not re.search(
+        r"if not is_exact_policy\(current\.get\(\"gate_policy\"\)\):\s*\n\s*return \{\}", fn)
     # ... and replaced by keeping the rows, loudly
     assert "keeping " in fn and "its rows for recertification rather than starting from empty" in fn
     # the row-level filter still stands: a row without a full gates record is not retained
@@ -112,11 +117,11 @@ def test_adopt_and_seal_refuses_a_partial_adoption_and_a_dirty_tree() -> None:
 
 
 def test_adopt_and_seal_stages_exactly_one_path_and_never_stashes() -> None:
-    assert ADOPT.count("git add") == 1
-    assert 'git add -- "desks/mt5/data/RELEASE.json"' in ADOPT
-    assert "git add -A" not in ADOPT
-    assert "stash" not in ADOPT.replace("no `git stash`", "")
-    assert "--force" not in ADOPT and "-f " not in ADOPT.split("param(")[1]
+    assert ADOPT_CODE.count("git add") == 1
+    assert 'git add -- "desks/mt5/data/RELEASE.json"' in ADOPT_CODE
+    assert "git add -A" not in ADOPT_CODE
+    assert "stash" not in ADOPT_CODE
+    assert "--force" not in ADOPT_CODE and " -f " not in ADOPT_CODE
 
 
 def test_adopt_and_seal_guards_native_stderr() -> None:

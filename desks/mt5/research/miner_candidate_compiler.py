@@ -238,6 +238,257 @@ def _registered_family(name: str) -> bool:
         return False
 
 
+# ================================================================== extraction FROM PROSE
+#
+# WHY THIS EXISTS. `resolve_symbols` reads four STRUCTURED fields -- symbol, currency, symbols,
+# instruments -- and nothing else. Every prose miner (world, reddit, github, bis_speeches,
+# arxiv_qfin, amarkets, mql5_catalog, forextsd_cdx ...) writes its evidence to `title` / `text` /
+# `summary` / `description` and an EMPTY `symbols` list, so each of those rows reached
+# `compile_row` with no symbol, took the NEEDS_SYMBOL_EXTRACTION exit, and converted at exactly
+# zero. MEASURED 2026-09-08 on the board: world 10,062 rows -> 1 distinct -> 0 tested;
+# bis_speeches 6,160 -> 1 -> 0; reddit 6,962 -> 1 -> 0; github_topics 6,754 -> 1 -> 0. Not
+# because the prose named nothing, because nothing read the prose.
+#
+# WHAT IT IS AND IS NOT. Deterministic vocabulary against the live registry: an instrument is
+# extracted only if the registry can price it, a family only if it is registered AND price-only
+# (a family that needs swap terms or a peer instrument cannot be built from a paragraph), a
+# session only from the ONE forward engine's own window names. Nothing is guessed from prose
+# that the gauntlet does not then judge; a text candidate is a HYPOTHESIS with the family's
+# default parameters, and the matched phrase is written onto it so a reader can see exactly
+# which words put it in the docket. The ten gates remain the only arbiter of profitability.
+#
+# BOUNDS, because a docket is a budget: at most four instruments and two families per row, the
+# two longest phrase matches winning; bare three-letter currency codes are NOT expanded from
+# prose (a speech that says "the euro" would otherwise mint ten pairs); operational rows -- a
+# walled site, a fetch error, a stub -- are refused outright, because an error message contains
+# no mechanism and extracting instruments from one manufactures candidates out of plumbing.
+
+_OPERATIONAL_KINDS = frozenset({"walled", "fetch_error", "stub", "probe", "error", "skipped"})
+_TEXT_FIELDS = ("title", "text", "summary", "description", "abstract", "body", "content",
+                "snippet", "headline", "claim", "hypothesis", "mechanism", "notes")
+_TEXT_LIST_FIELDS = ("trading_terms", "mechanism_tags", "policy_signals", "tags", "keywords")
+_MAX_TEXT_CHARS = 20_000
+_MAX_TEXT_SYMBOLS = 4
+_MAX_TEXT_FAMILIES = 2
+
+#: Instrument aliases -> registry symbols, in preference order. A target is used ONLY when it is
+#: in the live universe: the alias list is vocabulary, the registry is the authority, and an
+#: alias can never mint a symbol the desk cannot price.
+_ALIASES: dict[str, tuple[str, ...]] = {
+    "gold": ("XAUUSD",), "xau": ("XAUUSD",), "silver": ("XAGUSD",), "xag": ("XAGUSD",),
+    "brent": ("UKOIL", "BRENT", "XBRUSD"), "wti": ("USOIL", "WTI", "XTIUSD"),
+    "crude": ("USOIL", "UKOIL", "WTI", "BRENT"), "crude oil": ("USOIL", "UKOIL"),
+    "nasdaq": ("NAS100", "USTEC", "US100"), "s&p 500": ("US500", "SPX500", "SP500"),
+    "s&p": ("US500", "SPX500", "SP500"), "spx": ("US500", "SPX500", "SP500"),
+    "dow jones": ("US30", "DJ30"), "dax": ("GER40", "DE40", "GER30", "DE30"),
+    "ftse": ("UK100",), "nikkei": ("JPN225", "JP225"),
+    "bitcoin": ("BTCUSD",), "btc": ("BTCUSD",), "ethereum": ("ETHUSD",), "ether": ("ETHUSD",),
+    "cable": ("GBPUSD",), "fiber": ("EURUSD",), "loonie": ("USDCAD",), "aussie": ("AUDUSD",),
+    "kiwi": ("NZDUSD",), "swissy": ("USDCHF",),
+}
+
+#: Phrase -> price-only family. Every family here takes bars and nothing else; the longest
+#: matched phrase decides. A family that needs an external input (carry, cot_*, event_reaction,
+#: relative_value, lead_lag ...) is deliberately absent: it cannot be built from a paragraph.
+_FAMILY_VOCAB: dict[str, tuple[str, ...]] = {
+    "session_range_breakout": ("opening range breakout", "session range breakout",
+                               "range breakout", "asian range breakout", "london breakout",
+                               "session breakout", "orb strategy", "opening range"),
+    "failed_breakout": ("failed breakout", "false breakout", "fakeout", "fake breakout",
+                        "bull trap", "bear trap", "failed break"),
+    "level_breakout": ("resistance breakout", "support breakout", "key level breakout",
+                       "break of structure", "breakout above resistance",
+                       "breakdown below support", "level breakout"),
+    "monday_gap": ("monday gap", "weekend gap", "sunday gap", "monday open gap"),
+    "overnight_gap_decay": ("gap fill", "gap fade", "overnight gap", "gap and go",
+                            "fading the gap", "gap close"),
+    "overnight_drift": ("overnight drift", "overnight return", "close to open", "overnight premium"),
+    "dow_effect": ("day of the week", "day-of-week", "monday effect", "friday effect",
+                   "turnaround tuesday", "weekday effect", "weekend effect"),
+    "turn_of_month": ("turn of the month", "turn-of-the-month", "month end rebalancing",
+                      "month-end rebalancing", "end of month effect", "first day of the month"),
+    "calendar_month": ("january effect", "sell in may", "santa rally", "santa claus rally",
+                       "december rally", "seasonal pattern", "seasonality", "seasonal tendency",
+                       "seasonal bias"),
+    "mean_reversion_rsi": ("rsi oversold", "rsi overbought", "rsi divergence",
+                           "rsi mean reversion", "relative strength index", "rsi(2)", "rsi 2"),
+    "mean_reversion_bollinger": ("bollinger band", "bollinger bands", "bollinger bounce",
+                                 "lower band bounce", "upper band fade"),
+    "volatility_squeeze": ("volatility squeeze", "bollinger squeeze", "ttm squeeze",
+                           "keltner squeeze", "volatility contraction", "narrow range",
+                           "inside bar breakout", "nr7"),
+    "trend_ma_cross": ("moving average crossover", "ma crossover", "ema crossover",
+                       "sma crossover", "golden cross", "death cross", "ma cross"),
+    "london_close_momentum": ("london close", "london fix momentum", "london closing"),
+    "asia_momentum": ("asian session momentum", "asia session momentum", "tokyo momentum"),
+    "momentum_volgate": ("momentum with volatility filter", "volatility-gated momentum",
+                         "momentum vol filter"),
+    "range_reversion": ("range trading", "range-bound", "range bound", "trading the range",
+                        "buy support sell resistance", "mean reversion in a range"),
+    "volume_spike": ("volume spike", "volume surge", "climax volume", "unusual volume",
+                     "volume breakout"),
+    "pullback_entry": ("pullback entry", "buy the dip", "buy the pullback", "retracement entry",
+                       "fibonacci retracement", "fib retracement", "pullback to the moving average"),
+    "pin_bar_reversal": ("pin bar", "pinbar", "hammer candle", "shooting star", "rejection wick",
+                         "long wick reversal"),
+    "engulfing_reversal": ("engulfing candle", "bullish engulfing", "bearish engulfing",
+                           "engulfing pattern"),
+    "ict_fvg": ("fair value gap", "fvg", "order block", "liquidity sweep", "liquidity grab",
+                "smart money concept", "ict concept", "breaker block"),
+    "retail_overlap_reversal": ("retail sentiment", "contrarian retail", "fade retail",
+                                "fade the crowd", "retail positioning", "position ratio"),
+    "vol_mean_reversion": ("volatility mean reversion", "vix mean reversion", "vol crush",
+                           "volatility risk premium", "short volatility"),
+    "vol_transition": ("volatility regime", "vol regime", "regime change in volatility",
+                       "low vol to high vol", "volatility expansion"),
+    "drawdown_conditional": ("after a drawdown", "buy after decline", "drawdown recovery",
+                             "post-drawdown", "after a selloff"),
+    "spread_state": ("spread widening", "wide spread", "spread regime", "spread compression"),
+    "comex_settlement": ("comex settlement", "comex close", "gold settlement", "comex fix"),
+}
+
+_SESSION_VOCAB: dict[str, tuple[str, ...]] = {
+    "asia": ("asian session", "asia session", "asian range", "tokyo session", "asian open",
+             "tokyo open"),
+    "london_am": ("london open", "london session", "london breakout", "european open",
+                  "frankfurt open", "european session"),
+    "ny_open": ("new york open", "ny open", "us open", "new york session", "ny session",
+                "wall street open"),
+    "afternoon": ("afternoon session", "london close", "us afternoon", "late session"),
+}
+#: The ONE forward engine's windows, exactly as `external_gauntlet.WINDOWS_KNOWN` names them, so
+#: a text-extracted session cell is the same cell a certified one would be.
+_SESSION_PARAMS: dict[str, dict] = {
+    "asia": {"range_start": 7},
+    "london_am": {"range_start": 10, "range_end": 13, "signal_at": 13},
+    "ny_open": {"range_start": 13, "range_end": 14, "signal_at": 14},
+    "afternoon": {"range_start": 14, "range_end": 17, "signal_at": 17},
+}
+_MONTHS = {m: i for i, m in enumerate(("january", "february", "march", "april", "may", "june",
+                                        "july", "august", "september", "october", "november",
+                                        "december"), start=1)}
+_UP_WORDS = ("rally", "rallies", "rise", "rises", "rising", "bullish", "strong", "strength",
+             "outperform", "gain", "gains", "higher", "positive", "buy")
+_DOWN_WORDS = ("fall", "falls", "falling", "drop", "drops", "bearish", "weak", "weakness",
+               "underperform", "decline", "declines", "lower", "negative", "sell", "short")
+
+_REG_CACHE: dict[str, bool] = {}
+
+
+def _registered_cached(name: str) -> bool:
+    if name not in _REG_CACHE:
+        _REG_CACHE[name] = _registered_family(name)
+    return _REG_CACHE[name]
+
+
+def _phrase_re(phrase: str):
+    import re
+    return re.compile(r"(?<![a-z0-9])" + re.escape(phrase.lower()) + r"(?![a-z0-9])")
+
+
+def _row_text(row: dict) -> str:
+    parts: list[str] = []
+    for key in _TEXT_FIELDS:
+        v = row.get(key)
+        if isinstance(v, str) and v.strip():
+            parts.append(v)
+    for key in _TEXT_LIST_FIELDS:
+        v = row.get(key)
+        if isinstance(v, list):
+            parts.extend(str(x) for x in v if isinstance(x, (str, int, float)))
+    return " ".join(parts)[:_MAX_TEXT_CHARS].lower()
+
+
+def text_symbols(text: str, universe: set[str]) -> list[str]:
+    """Instruments the prose names that the registry can price. Exact six-letter codes,
+    slash/dash pairs, and aliases; never a bare three-letter currency expanded to its pairs."""
+    import re
+    found: list[str] = []
+    for m in re.finditer(r"(?<![a-z0-9])([a-z]{6})(?![a-z0-9])", text):
+        s = m.group(1).upper()
+        if s in universe and s not in found:
+            found.append(s)
+    for m in re.finditer(r"(?<![a-z0-9])([a-z]{3})\s?[/\-]\s?([a-z]{3})(?![a-z0-9])", text):
+        s = (m.group(1) + m.group(2)).upper()
+        if s in universe and s not in found:
+            found.append(s)
+    for alias, targets in _ALIASES.items():
+        if _phrase_re(alias).search(text):
+            for t in targets:
+                if t in universe:
+                    if t not in found:
+                        found.append(t)
+                    break
+    return found[:_MAX_TEXT_SYMBOLS]
+
+
+def text_families(text: str) -> list[tuple[str, str]]:
+    """(family, matched phrase), longest phrase first, at most two, registered families only."""
+    hits: dict[str, str] = {}
+    for fam, phrases in _FAMILY_VOCAB.items():
+        for ph in phrases:
+            if _phrase_re(ph).search(text) and len(ph) > len(hits.get(fam, "")):
+                hits[fam] = ph
+    ranked = sorted(((fam, ph) for fam, ph in hits.items() if _registered_cached(fam)),
+                    key=lambda x: (-len(x[1]), x[0]))
+    return ranked[:_MAX_TEXT_FAMILIES]
+
+
+def text_session(text: str) -> str | None:
+    best: tuple[int, str] | None = None
+    for sess, phrases in _SESSION_VOCAB.items():
+        for ph in phrases:
+            if _phrase_re(ph).search(text) and (best is None or len(ph) > best[0]):
+                best = (len(ph), sess)
+    return best[1] if best else None
+
+
+def _text_params(family: str, text: str) -> dict | None:
+    """The family's parameters as far as the prose names them; None when the family needs
+    something the prose did not say (a month for calendar_month)."""
+    if family == "session_range_breakout":
+        sess = text_session(text)
+        return dict(_SESSION_PARAMS[sess]) if sess else {}
+    if family == "calendar_month":
+        month = next((n for name, n in _MONTHS.items() if _phrase_re(name).search(text)), None)
+        if month is None:
+            return None
+        up = any(_phrase_re(w).search(text) for w in _UP_WORDS)
+        down = any(_phrase_re(w).search(text) for w in _DOWN_WORDS)
+        if up == down:
+            return None                              # no direction, or both: not a recipe
+        return {"active_month": month, "side_bias": 1 if up else -1}
+    return {}                                        # family defaults, judged as such
+
+
+def compile_from_text(source: str, row: dict, universe: set[str]) -> tuple[list[dict], str]:
+    """Candidates the row's PROSE supports, or the exact reason it supports none."""
+    kind = str(row.get("kind") or row.get("type") or "").lower()
+    if kind in _OPERATIONAL_KINDS or row.get("needs_selector_work"):
+        return [], "OPERATIONAL_ROW"
+    text = _row_text(row)
+    if not text:
+        return [], "NEEDS_SYMBOL_EXTRACTION"
+    symbols = text_symbols(text, universe)
+    if not symbols:
+        return [], "NEEDS_SYMBOL_EXTRACTION"
+    families = text_families(text)
+    if not families:
+        return [], "NEEDS_EXACT_RULE_EXTRACTION"
+    out: list[dict] = []
+    for fam, phrase in families:
+        params = _text_params(fam, text)
+        if params is None:
+            continue
+        for sym in symbols:
+            out.append(_candidate(
+                sym, fam, dict(params), source, row,
+                f"text extraction: '{phrase}' named with {sym} in the row's prose; "
+                + ("session/month taken from the text" if params else "family defaults")
+                + " -- a hypothesis for the ten gates, not a claim"))
+    return (out, "TEXT_EXTRACTED") if out else ([], "NEEDS_EXACT_RULE_EXTRACTION")
+
+
 def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict], str]:
     """Return executable candidates and the exact disposition for one evidence row."""
     symbols = resolve_symbols(row, universe)
@@ -343,6 +594,13 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
                             "monthly seasonality")
                  for s in symbols], "STRUCTURED_CALENDAR")
 
+    # PROSE, LAST. Every structured shape above is exact and wins; only a row none of them
+    # claims is read as text. Before this line the prose miners converted at zero.
+    text_cands, text_disp = compile_from_text(source, row, universe)
+    if text_cands:
+        return text_cands, text_disp
+    if not symbols and text_disp == "OPERATIONAL_ROW":
+        return [], text_disp
     if not symbols:
         return [], "NEEDS_SYMBOL_EXTRACTION"
     return [], "NEEDS_EXACT_RULE_EXTRACTION"
