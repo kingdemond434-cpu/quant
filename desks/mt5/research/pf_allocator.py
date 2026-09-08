@@ -893,6 +893,38 @@ def growth_curve(ev: list[SleeveEvidence], worlds: Worlds, bounds: dict[str, flo
     return curve
 
 
+def _competing_pairs(d: dict[str, Any], top: int = 10) -> list[dict[str, Any]]:
+    """The sleeve pairs whose cross-partial says they are the SAME BET, worst first.
+
+    d2G/dh_i dh_j is most negative for sleeves that load the same thing: buying one makes the
+    other worse. Normalised by the geometric mean of the two diagonals so the ranking is about
+    the RELATIONSHIP rather than about which sleeve happens to be large -- the result is a
+    correlation-like number in [-1, 0] where -1 is a duplicate.
+
+    This is the same finding `breadth_credit` reaches from declared cluster occupancy, arrived at
+    from realised returns instead. Where the two disagree, the disagreement is the finding: a pair
+    the taxonomy calls independent and the Hessian calls a duplicate is a cluster label that is
+    wrong, and it is wrong in the direction that flatters the book.
+    """
+    names = d.get("names") or []
+    H = d.get("hessian")
+    if d.get("status") != "MEASURED" or not H or len(names) < 2:
+        return []
+    m = np.asarray(H, dtype="float64")
+    diag = np.diag(m)
+    out: list[dict[str, Any]] = []
+    for i in range(len(names)):
+        for j in range(i + 1, len(names)):
+            den = math.sqrt(abs(float(diag[i])) * abs(float(diag[j])))
+            if den <= 0 or not math.isfinite(den):
+                continue
+            out.append({"a": names[i], "b": names[j],
+                        "normalised_cross_partial": round(float(m[i, j]) / den, 4),
+                        "raw": round(float(m[i, j]), 10)})
+    out.sort(key=lambda r: r["normalised_cross_partial"])
+    return out[:top]
+
+
 def _capacity_ceiling() -> float | None:
     """The most total heat the MARKET can absorb, in account fraction, or None when unmeasured.
 
@@ -2291,6 +2323,43 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     except Exception as exc:
         aggression = {"error": f"{type(exc).__name__}: {exc}"}
         _log(f"aggression audit unavailable: {aggression['error']}")
+    # WHERE THE NEXT BASIS POINT GOES (principal, 2026-09-07: "the allocator can literally answer:
+    # where does the next 10 basis points of risk create the most wealth?"). Exact closed-form
+    # dG/dh_i and d2G/dh_i dh_j on the SAME world array the solve used -- no re-optimisation, no
+    # finite differences -- plus the second-order gain from a 10bp step, which is the question as
+    # actually asked: a gradient ranking is only exact in the limit, and a sleeve with a big
+    # gradient and violent curvature ranks first on the gradient and second on the real step.
+    growth_derivs: dict[str, Any] = {}
+    try:
+        from libs.portfolio.growth_derivatives import best_next as _best_next
+        from libs.portfolio.growth_derivatives import derivatives as _derivs
+        if funded and worlds is not None and getattr(worlds, "r", None) is not None:
+            _names = list(worlds.names)
+            _h = np.array([float(funded.get(n, 0.0)) for n in _names], dtype="float64")
+            _d = _derivs(worlds.r, _h, names=_names)
+            _step = _best_next(_d, delta=0.001,
+                               cap=per_sleeve_bounds(dd, max(book.total_heat, HEAT_TARGET)),
+                               held=funded)
+            growth_derivs = {
+                "status": _d.get("status"), "why": _d.get("why"),
+                "curvature_ok": _d.get("curvature_ok"),
+                "n_usable_rows": _d.get("n_usable"), "n_ruined_rows": _d.get("n_ruined"),
+                "gradient": {k: round(v, 8) for k, v in (_d.get("gradient") or {}).items()},
+                "curvature": {k: round(v, 8) for k, v in (_d.get("hessian_diag") or {}).items()},
+                # The full Hessian is n^2 and the artifact is read by humans; the DIAGONAL and the
+                # ranked step are what a reader acts on, and the strongest competing PAIRS are
+                # what the breadth work needs -- so the matrix is summarised, not dumped.
+                "next_10bp": {k: _step.get(k) for k in
+                              ("status", "best", "best_gain_per_day", "linear_best",
+                               "second_order_changes_the_answer", "why")},
+                "next_10bp_ranked": (_step.get("ranked") or [])[:12],
+                "competing_pairs": _competing_pairs(_d),
+            }
+            _log(f"next 10bp -> {_step.get('best')} "
+                 f"({_step.get('best_gain_per_day')}/day); {_step.get('why')}")
+    except Exception as exc:                                             # noqa: BLE001
+        growth_derivs = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
     # THE FOUR HEATS AND THE WORLDS-BASED TRADE VALUE: what the nominal heat is really made of
     # (covariance / latent-factor / tail), and what moving from the held book buys on these
     # worlds net of turnover -- the inertia rail's own measurement.
@@ -2506,6 +2575,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "aggression": aggression,
         "posterior_growth": posterior,
         "kelly_surface": ks_doc,
+        "growth_derivatives": growth_derivs,
         "effective_heat": effective_heat,
         "trade_value_worlds": trade_value,
         # WHICH MECHANISMS HOLD THE BOOK. A single-family book is a single bet however many

@@ -290,10 +290,28 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
     state = str((art.get("heat") or {}).get("state") or "")
     src, swhy = select(cert, state) if cert is not None else ("", cwhy)
     if src and src != "dynamic":
-        # The certificate's books are at the contest's equalised heat, which is `heat.total`
-        # (`contest` runs on `funded` AFTER `bind_verdict`), so the core's sum check still holds.
+        # THE ENSEMBLE, NOT THE SINGLE WINNER (principal, 2026-09-07: "don't necessarily
+        # winner-take-all -- learn w_A = P(A is best | X_t) and blend"). The certificate scores
+        # every contested book and `select` used exactly one, which over-claims whenever two
+        # scores are the same number. `select_blend` mixes the books within the desk's own
+        # declared noise margin and returns the winner alone when nothing else is close, so this
+        # can only differ where the evidence was genuinely ambiguous.
+        #
+        # AUTHORITY IS STILL `select`'S. The blend runs only on the path `select` already routed
+        # to a challenger, over the books it deems eligible; a book that LOST this state is
+        # excluded from the mixture rather than down-weighted into it.
         by_name = {str(k): float(v) for k, v in
                    (((cert or {}).get("books") or {}).get(src) or {}).items() if float(v) > 0.0}
+        try:
+            from libs.portfolio.allocator_blend import select_blend
+            from libs.portfolio.allocator_proof import MARGIN_FRAC
+            mix = select_blend(cert, state, margin_frac=MARGIN_FRAC)
+            if mix.get("status") == "BLENDED" and mix.get("book"):
+                by_name = {str(k): float(v) for k, v in mix["book"].items() if float(v) > 0.0}
+                src, swhy = "blend", mix["why"]
+        except Exception as exc:                                         # noqa: BLE001
+            # A broken ensemble must never cost the desk the book `select` already chose.
+            swhy = f"{swhy}; ensemble unavailable ({type(exc).__name__}: {exc})"
         if by_name:
             return book_from_allocation(total, art.get("book"),
                                         {"name": src, "book": by_name},
