@@ -23,3 +23,4 @@ screen_orderbook_state held ~23MB of parsed dicts per partition (~550MB/day-cell
 - [[l0177-syntax-check-with-compile-never-ast-parse-or-a-linter-]]
 - [[l0225-a-date-stamp-that-records-that-a-job-ran-never-what-it]]
 - [[l0240-a-guard-in-the-caller-is-invisible-from-the-callee-bef]]
+- [[l0277-the-sha-check-answers-is-this-the-sealed-code-the-per-]]

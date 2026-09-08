@@ -40,6 +40,17 @@ vocabulary. Do not decide something the desk already decided.
   repointing is queued principal-gated work (LAWS §4).
 - The MT5 desk lives in `desks/mt5/`; universe registry `desks/mt5/data/universe/universe.json`.
   Branch pointers rot — trust `git branch --show-current` and recent `git log`, not this file.
+- **The MT5 box PULLS (2026-09-08).** `desks/mt5/scripts/Adopt-And-Seal.ps1`, registered as
+  `MT5-AdoptRelease` (hourly at :20, after the :05 sync), lands the branch's tree in place,
+  re-seals only on a clean tree, commits `RELEASE.json` alone and restarts the gateway. Until it
+  was written the box only ever pushed, and a day of fixes sat on origin while the gateway ran a
+  tree that could not import `libs`. If the box is not adopting, that task is the first thing to
+  check. One-time: run `Install-QuantWindows.ps1` (or the script itself) once to register it.
+- **Box memory: the principal reports 80 GB.** `stall_watch.json` reports `phys 142MB free /
+  virt 11.7 GB` on the same box — the two disagree ~80x and it is UNRESOLVED which counter is
+  right. It matters: the gauntlet's admission floor is 8192 MB (`DECLARED_NEED_MB`, sized off
+  the 80 GB figure) and `exclusive_job` fails CLOSED on it — `rc=75 not admitted` in the gauntlet
+  log means the counter won and the floor must be measured, not argued.
 
 ## Laws a fresh session most often violates (full set: LAWS §6)
 

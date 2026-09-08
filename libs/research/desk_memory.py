@@ -318,6 +318,43 @@ def malformed(path: Path | None = None) -> list[tuple[int, str, list[str]]]:
     return out
 
 
+#: RECURRENCE IS A COUNT, AND THE LEDGER WRITES IT AS PROSE. MEASURED 2026-09-08: 33 of 274 rows
+#: carry a string -- 'structural' (21), 'standing' (5), 'once' (3), 'once, ongoing',
+#: 'once, self-inflicted', 'third time', 'second time on this desk'. `int()` on the first of them
+#: (L0242) raised out of `load()`, so `reach()` raised, so every organ's injection failed and
+#: read NO memory at all, for as long as that row has existed -- while CLAUDE.md said the whole
+#: corpus was reachable. The comment beside the call site says losing all lessons because of one
+#: is the failure this module exists to prevent; the check it describes (`_row_defects`) never
+#: covered this field, and `learn.py add` could not add a lesson about it because it loads first.
+#:
+#: Coercion is deliberately UNINVENTIVE: a number is a number, a leading integer or an ordinal
+#: is its count, 'once' is one, and any other word is the default 1. No weight is guessed for
+#: 'structural' or 'standing' -- a guessed multiplier on 26 rows would silently re-rank the
+#: corpus every organ is scored against. The ledger row itself is untouched: this is read-side.
+_ORDINALS: dict[str, int] = {"once": 1, "first": 1, "single": 1, "second": 2, "twice": 2,
+                             "third": 3, "thrice": 3, "fourth": 4, "fifth": 5}
+
+
+def _recurrence(value: Any) -> int:
+    """The row's recurrence as the count the scorer needs, never an exception."""
+    import re
+
+    if isinstance(value, bool):
+        return 1
+    if isinstance(value, (int, float)):
+        return max(1, int(value))
+    s = str(value or "").strip().lower()
+    if not s:
+        return 1
+    lead = re.match(r"^\s*(\d+)", s)
+    if lead:
+        return max(1, int(lead.group(1)))
+    for word, n in _ORDINALS.items():
+        if re.match(rf"^{word}\b", s):
+            return n
+    return 1
+
+
 def load(path: Path | None = None, root: Path | None = None) -> list[Lesson]:
     """Every ACTIVE lesson, highest-scoring first. Retired rows stay in the file as history and
     are excluded here -- the ledger is append-only so that a retired lesson can be audited later,
@@ -351,7 +388,7 @@ def load(path: Path | None = None, root: Path | None = None) -> list[Lesson]:
         out.append(Lesson(
             id=str(row["id"]), learned=str(row["learned"]), cost=str(row["cost"]),
             lesson=str(row["lesson"]), evidence=str(row["evidence"]),
-            recurrence=int(row.get("recurrence", 1)),
+            recurrence=_recurrence(row.get("recurrence", 1)),
             tags=tuple(row.get("tags", ())), source=str(row.get("source", "")),
             enforced_by=ref,
             enforcement_retired=str(row.get("enforcement_retired", "")).strip(),
@@ -826,7 +863,7 @@ def bump(lesson_id: str, path: Path | None = None) -> int:
             continue
         row = json.loads(s)
         if str(row.get("id")) == lesson_id:
-            found = int(row.get("recurrence", 1)) + 1
+            found = _recurrence(row.get("recurrence", 1)) + 1
             row["recurrence"] = found
             out.append(json.dumps(row, ensure_ascii=False))
         else:

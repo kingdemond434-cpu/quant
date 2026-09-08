@@ -28,3 +28,4 @@ Stage a long-running writer's appends OUTSIDE the repo; automation unlinks track
 - [[l0185-a-reader-that-raises-inside-a-fetch-chain-that-swallow]]
 - [[l0194-a-liveness-check-written-against-posix-exceptions-is-d]]
 - [[l0212-a-miner-that-swallows-its-fetch-exception-and-writes-t]]
+- [[l0277-the-sha-check-answers-is-this-the-sealed-code-the-per-]]
