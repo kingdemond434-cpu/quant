@@ -12,6 +12,23 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# THE REPO ROOT, FIRST -- so `libs.*` resolves to the real package. Only the desk root was on the
+# path, and `libs/` lives beside `desks/`, not inside it. MEASURED 2026-09-08 in the gateway log,
+# every minute, for weeks:
+#
+#     sizing: proof unreadable (ModuleNotFoundError: No module named 'libs.portfolio')
+#     release-refusal record failed (non-fatal) [gold_afternoon]: ... 'libs.research'
+#
+# Both failures are swallowed by design (a telemetry import must not break the money path), so
+# the gateway kept running -- on BASE sizing, never once reading the allocator's certificate,
+# with `sizing: no allocator book` as the only trace. The allocator solved a book every five
+# minutes and the process that places orders could not import the module that reads it.
+#
+# Index 0, ahead of the desk root, deliberately: the box carries untracked copies of desk files
+# beside the tracked ones, and a stale `libs/` under `desks/mt5` would otherwise win. Nothing
+# under the repo root collides with a bare desk import (checked: no `config`, `data`, `scripts`,
+# `tests`... imported bare anywhere in mt5desk/ or research/).
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from mt5desk import gateway  # noqa: E402
 

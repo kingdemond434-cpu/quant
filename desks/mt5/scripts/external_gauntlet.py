@@ -75,8 +75,13 @@ COST_SCENARIO = 3.0
 #: over a handful of runs and then every sweep is a pure cache hit: "Cell cache: N/N loaded, 0 to
 #: compute", which is the regime that took twelve minutes.
 #:
-#: Twenty minutes leaves the hourly cadence intact with room for the gates themselves.
-FRESH_BUILD_BUDGET_SEC = float(os.environ.get("GAUNTLET_FRESH_BUDGET_SEC", "1200"))
+#: Forty-five minutes leaves the hourly cadence intact with room for the gates themselves: the
+#: pure-cache regime measured twelve minutes for the gates, so 2700s of building plus the gates
+#: fits inside the hour with margin. The previous twenty minutes was sized alongside the 8GB
+#: memory floor below and, with the docket at 23,465 and the sweep reaching 42 cells a pass
+#: (measured 2026-09-08), would have needed 558 hourly passes -- 23 days -- to judge what the
+#: miners had already produced. Throughput, not supply, was binding, and this was the throttle.
+FRESH_BUILD_BUDGET_SEC = float(os.environ.get("GAUNTLET_FRESH_BUDGET_SEC", "2700"))
 
 #: THE MEMORY THIS SWEEP IS ALLOWED TO HOLD, in MB. It is the SAME number the job declares at
 #: admission (`job_lock.exclusive_job(need_mb=1200)`), and that is the point: a job that asks the
@@ -132,7 +137,21 @@ def _measured_budget_mb() -> float:
 
 
 #: What the sweep DECLARES at admission. The floor for both the ask and the throttle above.
-DECLARED_NEED_MB = 1200
+#:
+#: RAISED 1200 -> 8192 on 2026-09-08. The 1200 was measured on an 8GB box the desk no longer runs
+#: on; the principal reports the current box at 80GB. On that box the floor had become the
+#: throttle, and a SELF-TIGHTENING one: the budget is max(declared, p75 of observed peaks), and a
+#: sweep that defers cells at 1200MB never records a peak above 1200MB, so no run could ever
+#: raise it. That is the exact "compute limit hardening into a verdict" the order rotation above
+#: was written to prevent, arriving by a different door.
+#:
+#: 8192 is ~10% of the reported box, not a measured peak: it leaves `edge_search` (2000),
+#: `orthogonal_sweep` (1250), the terminal and every other leg their room several times over,
+#: and the p75 mechanism still corrects it UPWARD from real runs. It fails closed: `exclusive_job`
+#: is admitted on this same figure, so if the box does not in fact have 8GB free the sweep is
+#: refused at the door rather than let in on a false statement -- which is how a wrong number
+#: here shows up as a visible refusal instead of a silent throttle.
+DECLARED_NEED_MB = 8192
 
 MEMORY_BUDGET_MB = _measured_budget_mb()
 
