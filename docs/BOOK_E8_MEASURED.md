@@ -103,8 +103,10 @@ matrix in 5-day blocks, so shared drawdowns and shared dead weeks survive. No ρ
 anywhere. Every sleeve's mean is forced to **+0.0552R**, incumbents included.
 
 Modelled: trailing **and** static max DD, the 4% daily loss limit against each day's opening
-equity, and the **40% consistency rule** — no single day above 40% of total profit. That last one
-is what bounds "fast", and every earlier estimate on this desk ignored it.
+equity, and the **40% consistency rule** — no single day above 40% of total profit. Every earlier
+estimate on this desk ignored the consistency rule; modelling it turns out to be worth 1.0 point,
+so it was worth including and was NOT, as first written here, "what bounds fast". The barrier
+ratio bounds fast.
 
 ### What breadth buys (6% static DD, same mechanism, only the symbol count changes)
 
@@ -115,8 +117,12 @@ is what bounds "fast", and every earlier estimate on this desk ignored it.
 | screened | 16 | 13.26 | 0.25% | 76.5% | **38.3%** | 30d |
 | screened | 16 | 13.26 | 0.35% | 61.4% | 43.2% | 21d |
 
-Breadth is the entire story. The 5-symbol book cannot pass inside a month at any size: pushed
-fast enough to try, it fails more often than it passes.
+**Breadth buys TIME, not pass probability** — see the attribution table below, which isolates it
+properly by holding risk fixed. At a common 0.30% the two books pass 70.9% (5 symbols) against
+73.5% (16); what separates them is 69 days against 28. The apparent gap in the table above is
+mostly the risk level moving with the book, not the book itself. What remains true either way is
+that the 5-symbol book cannot pass inside a month at any size: pushed fast enough to try, it
+fails more often than it passes.
 
 ### Static beats trailing, everywhere
 
@@ -148,7 +154,10 @@ already the thing killing the account, which is exactly what the barrier diagnos
 **E8 One $100k · 6% drawdown (9% target) · static if available · 16-symbol book · 0.30% risk per
 trade · −5R daily stop.**
 
-> P(pass) **73.6%** · median **28 days** · p90 70 days · P(fail) 26.1% · P(pass within 30d) 40.5%
+> **P(pass) 60–75% · median 25–35 days.** The point estimate at this exact specification is 73.6%
+> with a 28-day median (p90 70d, P(fail) 26.1%, P(pass within 30d) 40.5%) — but see the band
+> below. The specification uncertainty around it is 49 points wide, so the point estimate is
+> reported for reproducibility and the BAND is the answer.
 
 Alternatives on the same frontier:
 
