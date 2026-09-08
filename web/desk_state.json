@@ -1,0 +1,308 @@
+{
+  "generated_at": "2026-09-06T17:09:29.250225+00:00",
+  "identity": {
+    "name": "QUANT DESK",
+    "caption": "AUTONOMOUS MULTI-ASSET MT5 RESEARCH DESK"
+  },
+  "account": {
+    "venue": "UNMEASURED",
+    "currency": "UNMEASURED",
+    "balance": null,
+    "equity": null,
+    "starting_capital": null,
+    "today_pnl": null,
+    "open_pnl": null,
+    "margin": null,
+    "free_margin": null,
+    "growth_pct": null,
+    "source_updated_at": null,
+    "source_age_seconds": null
+  },
+  "research": {
+    "candidates_tested": null,
+    "historical_survivors": null,
+    "canonical_survivors": null,
+    "gate_failures": {},
+    "survivors": []
+  },
+  "shadow": {
+    "profitable": [],
+    "profitable_count": 0
+  },
+  "execution": {
+    "markout_usable": false,
+    "matched_fills": null,
+    "why": null,
+    "open_trades": []
+  },
+  "issues": {},
+  "health": {
+    "newest_h1_file": "2026-09-06T17:09:28.126698+00:00",
+    "midnight": {
+      "schema_version": 1,
+      "generated_at": "2026-09-03T22:58:44.067685+00:00",
+      "scope": "MT5_FUSION_ONLY",
+      "execution_authority": false,
+      "universe": {
+        "metadata_entities": 251,
+        "h1_bar_files": 251,
+        "metadata_mtime": "2026-09-03T22:55:53.498371+00:00",
+        "newest_h1_mtime": "2026-09-03T12:00:40.367164+00:00"
+      },
+      "conversion": {
+        "research_queue": {
+          "BLOCKED_CANONICAL_DOCKET_MISSING": 287,
+          "DONE": 10,
+          "GAUNTLET_PASSED": 49,
+          "GAUNTLET_REJECTED": 46774,
+          "PENDING": 17
+        },
+        "universal_survivors": 59,
+        "shadow_sleeves": 86,
+        "shadow_observations": 351,
+        "shadow_last_run": "2026-09-03"
+      },
+      "freshness": {
+        "research_loop": "2026-09-03T12:01:02.669869+00:00",
+        "research_pipeline": "2026-09-03T22:45:10+00:00",
+        "external_gauntlet": "2026-09-03T22:41:53+00:00",
+        "universal_gate": "2026-09-03T22:45:10+00:00",
+        "allocation": "2026-09-03T12:00:45.862584+00:00",
+        "markout": "2026-08-30T08:35:16+00:00",
+        "markout_usable": false,
+        "markout_matched_fills": 0
+      },
+      "capability_reuse": {
+        "artifact": "data/intelligence/mt5_capability_reuse.json",
+        "generated_at": "2026-09-03T22:58:42.618629+00:00",
+        "counts": {
+          "DISPOSED_BLOCKED": 7,
+          "DISPOSED_SUPERSEDED": 10,
+          "REACHABLE_MT5_STATIC": 77,
+          "UNWIRED_REVIEW": 563,
+          "VENUE_SPECIFIC_REVIEW": 11
+        },
+        "proof_level": "STATIC_REACHABILITY_ONLY"
+      },
+      "defects": [
+        "execution markout stale; current costs remain unmeasured"
+      ]
+    },
+    "daily_cycle": {
+      "last_run": "2026-09-06",
+      "steps": {
+        "refresh_bars": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'MetaTrader5'",
+          "seconds": 0.0
+        },
+        "cost_fields": {
+          "ok": true,
+          "seconds": 0.0
+        },
+        "factor_residual": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'numpy'",
+          "seconds": 0.0
+        },
+        "research_bandit": {
+          "ok": true,
+          "seconds": 0.0
+        },
+        "world_miners": {
+          "ok": true,
+          "seconds": 81.9
+        },
+        "proposers": {
+          "ok": true,
+          "seconds": 0.2
+        },
+        "futures_curves": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'pandas'",
+          "seconds": 0.0
+        },
+        "curve_strategies": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'numpy'",
+          "seconds": 0.0
+        },
+        "state_admission": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'numpy'",
+          "seconds": 0.0
+        },
+        "reconcile": {
+          "ok": true,
+          "seconds": 0.1
+        },
+        "scalp_gauntlet": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'pandas'",
+          "seconds": 0.0
+        },
+        "shadow": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'pandas'",
+          "seconds": 0.0
+        },
+        "qquant_shadow": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'pandas'",
+          "seconds": 0.0
+        },
+        "execution": {
+          "ok": true,
+          "seconds": 0.0
+        },
+        "recertify": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'numpy'",
+          "seconds": 0.0
+        },
+        "promoter": {
+          "ok": true,
+          "seconds": 0.0
+        },
+        "markout": {
+          "ok": true,
+          "seconds": 0.0
+        },
+        "portfolio": {
+          "ok": true,
+          "seconds": 0.0
+        },
+        "decay": {
+          "ok": true,
+          "seconds": 0.0
+        },
+        "state_research_feedback": {
+          "ok": true,
+          "seconds": 14.7
+        },
+        "module_rent": {
+          "ok": false,
+          "error": "ModuleNotFoundError: No module named 'numpy'",
+          "seconds": 0.0
+        },
+        "zentech": {
+          "ok": true,
+          "seconds": 0.3
+        },
+        "conservation": {
+          "ok": true,
+          "seconds": 0.1
+        },
+        "export_aurum": {
+          "ok": true,
+          "seconds": 0.0
+        }
+      }
+    },
+    "status": "UNMEASURED",
+    "box": {
+      "status": "SILENT",
+      "silent_seconds": 959013,
+      "last_reported_at": "2026-08-26T14:45:56+00:00",
+      "late_after_seconds": 2700,
+      "silent_after_seconds": 21600,
+      "per_report": {
+        "shadow_health.json": {
+          "age_seconds": 959013,
+          "at": "2026-08-26T14:45:56+00:00",
+          "status": "STALE"
+        },
+        "gateway_state.json": {
+          "age_seconds": 1789467,
+          "at": "2026-08-17T00:05:02+00:00",
+          "status": "STALE"
+        },
+        "regime_state.json": {
+          "age_seconds": 1448067,
+          "at": "2026-08-20T22:55:02+00:00",
+          "status": "STALE"
+        },
+        "account_state.json": {
+          "age_seconds": null,
+          "status": "ABSENT",
+          "why": "data/account_state.json does not exist here; it is written on the trading box and reaches this host only through the shadow sync"
+        },
+        "scalp_shadow_state.json": {
+          "age_seconds": null,
+          "status": "ABSENT",
+          "why": "reports/shadow/scalp_shadow_state.json does not exist here; it is written on the trading box and reaches this host only through the shadow sync"
+        }
+      },
+      "why": "box has not reported for 266.4h. Nothing on this dashboard is current. Do not size capital off it until the box reports again"
+    }
+  },
+  "equity_curve": [],
+  "disclaimer": "Research and operator telemetry only. Missing values are UNMEASURED; shadow has zero order authority.",
+  "stall_watch": {
+    "free_gb": 13.6,
+    "checked_at": "2026-09-04T03:20:12.4418344Z",
+    "actions": [
+      "FAILING MT5-Gauntlet: last result -1 twice in a row -- re-run",
+      "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
+      "FEED LAG: 2 CLOCKED symbol(s) >6h stale: USDCAD,USDCHF",
+      "FEED LAG fixer: re-selected 2 symbol(s) in MarketWatch"
+    ],
+    "low_mem_strikes": 0,
+    "procs": {
+      "fail.MT5-Gauntlet": {
+        "cpu": -1,
+        "at": "2026-09-04T05:20:05.1476330+02:00"
+      },
+      "fail.MT5-MoatRecorder": {
+        "cpu": 1,
+        "at": "2026-09-04T05:20:05.1476330+02:00"
+      },
+      "shadow_cycle.8252": {
+        "cpu": 182.703125,
+        "at": "2026-09-04T05:20:05.1476330+02:00"
+      }
+    }
+  },
+  "readiness": {
+    "status": "UNMEASURED",
+    "blocking": [
+      "readiness has not been assessed"
+    ]
+  },
+  "breadth": {},
+  "stats": {
+    "closed_trades": 0,
+    "win_rate": null,
+    "sharpe_daily": null,
+    "max_dd_r": null,
+    "current_dd_r": null,
+    "daily_pnl": [],
+    "today_pnl": null
+  },
+  "pipeline": {
+    "certificates_unrunnable": 0,
+    "unrunnable_reason": "`shadow_spec.params` is absent (None), so there is no parameterisation to execute. Re-certify through the current gauntlet, which records the parameterisation it tested. An EMPTY mapping is not this case -- it is the complete parameterisation 'family defaults' and enrols normally.",
+    "unrunnable_examples": [],
+    "certified_gate_failed": null,
+    "certified_gate_failed_examples": [],
+    "census_basis": "UNAVAILABLE (reports/UNIVERSAL_SURVIVORS.json did not reach this host, so no ten-gate census could be taken)",
+    "forward_observations": 0,
+    "historical_observations": 0,
+    "discovered_backtested": 147,
+    "docket_candidates": 23465,
+    "gauntlet_last_judged": null,
+    "gauntlet_last_unmeasured": null,
+    "certified": null,
+    "forward_clocks": 0,
+    "promotion_ready": 0,
+    "promotion_ready_names": [],
+    "live": 0,
+    "forward_detail": []
+  },
+  "decay": {
+    "checked_at": "2026-09-04T02:38:50+00:00",
+    "live_sleeves": 0,
+    "verdicts": {},
+    "actions": []
+  }
+}

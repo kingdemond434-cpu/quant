@@ -1,0 +1,31 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "The Rand as a Carry Trade Target: Risk, Returns and Policy Implications",
+  "url": "https://www.resbank.co.za/en/home/publications/publication-detail-pages/working-papers/2011/4878",
+  "published": "2026-09-08T17:35:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.5,
+  "lang": "en",
+  "endpoints": [
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-information-from-zipped-data-files",
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-information-from-xlsx-data-files",
+   "https://www.resbank.co.za/en/home/publications/quarterly-bulletin1/download-zipped-eviews-files"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "047773e7a8e265132c4e",
+  "host": "www.resbank.co.za",
+  "ground": "SARB working papers",
+  "region": "za",
+  "cluster": "africa",
+  "dataset_class": null,
+  "available_time": "2026-09-08T17:35:38+00:00",
+  "ingested_time": "2026-09-08T17:35:38+00:00",
+  "source_hash": "047773e7a8e265132c4e",
+  "claims": [],
+  "n_claims": 0
+ }
+]

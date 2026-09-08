@@ -1,0 +1,12 @@
+[
+ {
+  "source": "forextsd_cdx",
+  "kind": "fetch_error",
+  "title": "[Errno 13] Permission denied: '/home/quant/quant-platform/desks/mt5/data/intelligence/seed_miners_state.json'",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-06T22:24:56+00:00",
+  "needs_selector_work": true
+ }
+]

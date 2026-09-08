@@ -67,6 +67,52 @@ def test_the_two_recorders_do_not_share_a_verdict() -> None:
         "the two recorders are not invoked through separately-guarded calls"
 
 
+def test_state_vector_cannot_terminate_the_hourly_controller() -> None:
+    """Native model failure is contained in a subprocess, not the factory process."""
+    body = SRC.split("def state_vector()", 1)[1].split("\ndef ", 1)[0]
+    assert "subprocess.run(" in body
+    assert '"state_vector_build.py"' in body
+    assert "STATE_VECTOR_HOURLY_BUDGET_SEC" in body
+    assert "state_vector_build.main()" not in body
+    assert '"status": "OK" if r.returncode == 0 else "FAILED"' in body
+
+
+def test_daily_promotion_chain_cannot_terminate_hourly_discovery() -> None:
+    body = SRC.split("def daily()", 1)[1].split("\ndef ", 1)[0]
+    assert "subprocess.run(" in body
+    assert '"daily_cycle.py"' in body
+    assert "DAILY_CYCLE_HOURLY_BUDGET_SEC" in body
+    assert "daily_cycle.main(" not in body
+
+
+def test_one_leg_failure_cannot_terminate_later_independent_legs() -> None:
+    """Written on the VPS (2026-09-06) against its own `_costed`, which read a leg's SystemExit
+    as that leg's verdict; the desk's `_costed` (2026-09-07) re-raises SystemExit because every
+    in-process leg that can raise it already reports its own code at the call. The two were
+    merged 2026-09-08 on the desk's rule, so this pins the BEHAVIOUR both were written for --
+    a failing leg is recorded and the legs after it still run -- rather than either file's text.
+    """
+    import hourly_cycle
+
+    ran: list[str] = []
+
+    def bad() -> dict:
+        raise RuntimeError("simulated: one broken organ")
+
+    def later() -> dict:
+        ran.append("later")
+        return {"ok": True}
+
+    first = hourly_cycle._costed("bad", bad)
+    second = hourly_cycle._costed("later", later)
+    assert first["status"] == "LEG_FAILED" and "RuntimeError" in first["error"]
+    assert second == {"ok": True} and ran == ["later"], (
+        "a leg's failure must be a recorded verdict, never authority to stop the pass")
+    body = SRC.split("def _costed(", 1)[1].split("\ndef ", 1)[0]
+    assert "except BaseException as exc:" in body
+    assert "close_run(run, outcome=" in body, "the failure must reach the compute ledger"
+
+
 # ------------------------------------------------------- the loop that has to never stop, 24/7
 
 LAUNCHER = (DESK / "scripts" / "MT5Hourly.cmd").read_text("utf-8")

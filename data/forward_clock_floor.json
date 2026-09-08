@@ -23,6 +23,14 @@
   }
  ],
  "earliest_forward_start": {
+  "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDKRW_12_horizon=1_side=-1": "2026-09-06T20:00:43.001458+00:00",
+  "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDPLN_12_z_horizon=1_side=-1": "2026-09-06T20:00:43.001489+00:00",
+  "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NETH25_12_horizon=1_side=-1": "2026-09-06T20:00:43.001500+00:00",
+  "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NZDCAD_12_z_horizon=1_side=-1": "2026-09-06T20:00:43.001509+00:00",
+  "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_horizon=1_side=-1": "2026-09-06T20:00:43.001518+00:00",
+  "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDMXN_z_horizon=1_side=-1": "2026-09-06T20:00:43.001526+00:00",
+  "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_z_horizon=1_side=-1": "2026-09-06T20:00:43.001534+00:00",
+  "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDPLN_z_horizon=1_side=-1": "2026-09-06T20:00:43.001542+00:00",
   "AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1": "2026-09-01T07:19:53.790415+00:00",
   "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURDKK_z_horizon=1_side=-1": "2026-09-01T12:21:28.398481+00:00",
   "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1": "2026-08-31T08:05:44.111207+00:00",
@@ -84,8 +92,8 @@
   "xau_m5_anti_breakout_overlap": "2026-08-30T07:30:13.876430+00:00",
   "xau_m5_anti_momentum_ny": "2026-08-30T07:30:13.876460+00:00"
  },
- "max_clock_age_days": 11.925,
- "measured_at": "2026-09-04T12:03:45+00:00",
+ "max_clock_age_days": 14.593,
+ "measured_at": "2026-09-07T04:04:57+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0

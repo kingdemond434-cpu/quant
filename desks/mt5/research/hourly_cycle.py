@@ -16,6 +16,7 @@ Run every hour (Startup loop MT5Hourly.cmd). Fail-visible, resumable, cheap.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -226,15 +227,27 @@ def daily() -> dict:
     exactly one run per day whenever it happens to be awake, instead of missing the day entirely
     because the laptop was shut at the scheduled minute.
     """
+    # This chain includes terminal/native numerical work.  Keep it outside the controller for
+    # the same reason as state_vector(): on 2026-09-06 it terminated the process after the state
+    # refresh had returned, leaving every mining/publication leg below permanently unreachable.
+    target = BASE / "research" / "daily_cycle.py"
+    timeout_s = max(60, float(os.environ.get("DAILY_CYCLE_HOURLY_BUDGET_SEC", "900")))
     try:
-        import daily_cycle
-        return {"exit_code": daily_cycle.main([]),
+        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(target)],
+                           capture_output=True, text=True, cwd=str(BASE),
+                           timeout=timeout_s, check=False)
+        return {"exit_code": int(r.returncode),
+                "status": "OK" if r.returncode == 0 else "FAILED",
+                "tail": (r.stdout or r.stderr or "")[-500:],
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
-    except Exception as exc:
-        # Reported, never swallowed: this hourly cycle must survive, but a desk that cannot run its
-        # promotion chain has to say so rather than print "cycle done".
+    except subprocess.TimeoutExpired as exc:
+        return {"exit_code": None, "status": "TIMEOUT", "timeout_s": exc.timeout,
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except OSError as exc:
         print(f"daily cycle FAILED to start: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
+        return {"exit_code": None, "status": "FAILED_TO_START",
+                "error": f"{type(exc).__name__}: {exc}",
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
 def record_tape() -> dict:
@@ -328,13 +341,31 @@ def state_vector() -> dict:
     NEVER FAILS THE CYCLE. A state vector that cannot be built is a recorded gap, and the
     allocator degrades to the unconditioned solve it ran before this existed.
     """
+    # ISOLATED, because this leg fits native numerical models over multiple parquet panels.
+    # On 2026-09-06 its process terminated during a fit without raising a Python exception; when
+    # it ran in-process that also terminated the hourly controller before mining, validation,
+    # publication and the other producers could run.  A failed world-state refresh is a visible
+    # degraded input, never permission to turn one optional model into a factory-wide kill switch.
+    target = BASE / "research" / "state_vector_build.py"
+    timeout_s = max(15, float(os.environ.get("STATE_VECTOR_HOURLY_BUDGET_SEC", "45")))
     try:
-        import state_vector_build
-
-        rc = state_vector_build.main()
-        return {"exit_code": int(rc), "at": datetime.now(UTC).isoformat(timespec="seconds")}
-    except Exception as exc:                                          # noqa: BLE001
-        return {"exit_code": 1, "error": f"{type(exc).__name__}: {exc}",
+        r = subprocess.run(
+            [sys.executable, "-u", "-W", "ignore", str(target), "--budget-s",
+             str(max(10, timeout_s - 5))],
+            capture_output=True, text=True, cwd=str(BASE), timeout=timeout_s, check=False,
+        )
+        return {
+            "exit_code": int(r.returncode),
+            "status": "OK" if r.returncode == 0 else "FAILED",
+            "tail": (r.stdout or r.stderr or "")[-500:],
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+        }
+    except subprocess.TimeoutExpired as exc:
+        return {"exit_code": None, "status": "TIMEOUT", "timeout_s": exc.timeout,
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except OSError as exc:
+        return {"exit_code": None, "status": "FAILED_TO_START",
+                "error": f"{type(exc).__name__}: {exc}",
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
@@ -566,6 +597,13 @@ def _costed(name: str, fn):
     try:
         out = fn()
     except (KeyboardInterrupt, SystemExit):
+        # THE SAME FIX WAS MADE TWICE (2026-09-06 on the VPS as "keep hourly factory alive after
+        # isolated leg failure", 2026-09-07 here as "stop one leg ending the pass") and the two
+        # differed on SystemExit only. The VPS read a leg's SystemExit as its verdict and carried
+        # its code; this branch re-raises it, because every in-process leg that can raise it
+        # (`deepen`, the searches) already catches it at the call and reports the code itself,
+        # so the only SystemExit that reaches here is someone stopping the pass. Merged
+        # 2026-09-08 on this branch's rule, which test_hourly_cycle_legs_are_callable pins.
         if close_run and run is not None:
             close_run(run, outcome="interrupted")
         raise

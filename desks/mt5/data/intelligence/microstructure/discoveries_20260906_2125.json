@@ -1,0 +1,44 @@
+{
+ "source": "microstructure",
+ "generated_at": "2026-09-06T21:25:01.682659+00:00",
+ "tests_run": 216,
+ "discoveries": [
+  {
+   "source": "microstructure",
+   "kind": "microstructure",
+   "symbol": "AUDCAD",
+   "family": "spread_state",
+   "params": {
+    "mode": "spike_reversion",
+    "min_move_atr": 0.5,
+    "hold_bars": 4,
+    "spike_pct": 0.98
+   },
+   "mechanism": "the broker's own spread state: a spread spike on a moving bar is liquidity, not information; fade it",
+   "title": "AUDCAD.spread_state.spike_reversion {'mode': 'spike_reversion', 'min_move_atr': 0.5, 'hold_bars': 4, 'spike_pct': 0.98}",
+   "url": "",
+   "evidence": {
+    "n_independent": 339,
+    "gross_per_trade": 0.00076492,
+    "net_per_trade": 0.00015083,
+    "cost_frac": 0.00061409,
+    "t_gross": 7.446,
+    "t_deflated_sweep": 4.81,
+    "n_tests_sweep": 216,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   },
+   "event_time": null,
+   "available_time": "2026-09-06T21:25:01.673969+00:00",
+   "ingested_time": "2026-09-06T21:25:01.673969+00:00",
+   "source_version": "a7d3e5134",
+   "payload_hash": "be1147a621e7beddb33874b8",
+   "prereg_hash": "b7dbac067acc80fd"
+  }
+ ],
+ "counts": {
+  "donated": 1,
+  "refused_unstamped": 0
+ },
+ "refusals": [],
+ "rule": "a candidate without a point-in-time stamp is refused here and counted, never written: absence of an available_time is not permission to use the row"
+}

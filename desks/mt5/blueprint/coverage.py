@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -61,14 +62,21 @@ def _git_sha() -> str:
 def _py_files() -> tuple[tuple[str, str], ...]:
     """(relative path, source) for every python file outside .git and the venv."""
     rows: list[tuple[str, str]] = []
-    for p in ROOT.rglob("*.py"):
-        rel = p.relative_to(ROOT).as_posix()
-        if rel.startswith((".git/", ".venv/", "node_modules/")):
-            continue
-        try:
-            rows.append((rel, p.read_text("utf-8", errors="ignore")))
-        except OSError:
-            continue
+    # Path.rglob walks INTO .git before the post-filter can reject its results.  On the shared
+    # repo, .git/worktrees and object packs make that take longer than the hourly control cycle.
+    # Prune directory traversal at the source; this changes no file admitted to the census.
+    skip = {".git", ".venv", "node_modules", "__pycache__", ".pytest_cache"}
+    for parent, dirs, files in os.walk(ROOT):
+        dirs[:] = [d for d in dirs if d not in skip]
+        for name in files:
+            if not name.endswith(".py"):
+                continue
+            p = Path(parent) / name
+            rel = p.relative_to(ROOT).as_posix()
+            try:
+                rows.append((rel, p.read_text("utf-8", errors="ignore")))
+            except OSError:
+                continue
     return tuple(rows)
 
 
@@ -105,6 +113,51 @@ def consumers_of(module_rel: str, artifact_rel: str) -> dict[str, list[str]]:
         if art and art in src:
             readers.append(rel)
     return {"imports": sorted(imports)[:12], "artifact_readers": sorted(readers)[:12]}
+
+
+@lru_cache(maxsize=4)
+def _reference_index(
+    stems: tuple[str, ...], artifacts: tuple[str, ...]
+) -> tuple[dict[str, list[str]], dict[str, list[str]], dict[str, list[str]]]:
+    """Index imports, artifact readers and tests in one repository pass.
+
+    The registry used to call ``consumers_of`` and ``tests_for`` for every capability,
+    producing roughly 188 complete source-tree scans per closure check.  Closure is a
+    control-plane loop and must be cheap enough to run hourly, so compile the complete
+    capability vocabulary once and invert the references in one pass.
+    """
+    stem_set = set(stems)
+    artifact_set = set(artifacts)
+    imports = {stem: [] for stem in stems}
+    readers = {art: [] for art in artifacts}
+    tests = {stem: [] for stem in stems}
+    artifact_pattern = (re.compile("|".join(re.escape(a) for a in
+                                            sorted(artifacts, key=len, reverse=True)))
+                        if artifacts else None)
+    stem_pattern = (re.compile("|".join(re.escape(s) for s in
+                                        sorted(stems, key=len, reverse=True)))
+                    if stems else None)
+    import_pattern = re.compile(r"\b(?:import|from)\s+([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)")
+
+    for rel, src in _py_files():
+        imported = {
+            part
+            for module in import_pattern.findall(src)
+            for part in module.split(".")
+            if part in stem_set
+        }
+        for stem in imported:
+            imports[stem].append(rel)
+
+        if artifact_pattern:
+            for art in set(artifact_pattern.findall(src)) & artifact_set:
+                readers[art].append(rel)
+
+        if stem_pattern and any(rel.startswith(d) for d in TEST_DIRS):
+            for stem in set(stem_pattern.findall(src)) & stem_set:
+                tests[stem].append(rel)
+
+    return imports, readers, tests
 
 
 def scheduler_for(module_rel: str) -> list[str]:
@@ -150,11 +203,22 @@ def registry() -> dict[str, Any]:
     from check_absolute_ceiling import audit          # the ONE authority on status
 
     base = audit()
+    owners = tuple(sorted({Path(cap.get("owner_module") or "").stem
+                           for cap in base["capabilities"] if cap.get("owner_module")}))
+    artifacts = tuple(sorted({Path(cap.get("artifact") or "").name
+                              for cap in base["capabilities"] if cap.get("artifact")}))
+    import_index, reader_index, test_index = _reference_index(owners, artifacts)
     rows: list[dict[str, Any]] = []
     for cap in base["capabilities"]:
         owner = cap.get("owner_module") or ""
         art = cap.get("artifact") or ""
-        link = consumers_of(owner, art)
+        stem = Path(owner).stem if owner else ""
+        art_name = Path(art).name if art else ""
+        link = {
+            "imports": sorted(rel for rel in import_index.get(stem, []) if rel != owner)[:12],
+            "artifact_readers": sorted(rel for rel in reader_index.get(art_name, [])
+                                       if rel != owner)[:12],
+        }
         sched = scheduler_for(owner)
         rows.append({
             "id": cap["capability_id"],
@@ -168,7 +232,7 @@ def registry() -> dict[str, Any]:
             "decision_path": cap.get("open_gap") or "producer -> artifact -> consumer -> decision",
             "status": cap["current_stage"],
             "code_paths": [owner] if owner else [],
-            "tests": tests_for(owner),
+            "tests": sorted(test_index.get(stem, []))[:8],
             "measurements": cap.get("rent_metric") or "",
             "rent_status": ("PRICED" if cap["current_stage"] in ("MEASURED", "PROVEN")
                             else "UNPRICED"),

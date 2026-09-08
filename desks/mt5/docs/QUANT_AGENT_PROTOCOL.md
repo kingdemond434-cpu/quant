@@ -22,9 +22,6 @@ CAPITAL_RULE_VERSION        = 1   (forward E[log W], ruin-avoidance mandate)
    CPCV mean OOS SR>0 -> walk_forward 4 splits (min_oos_sharpe 0, stability 0.5) ->
    stress_costs X3 exp>0 -> lockbox OOS SR>=0 -> expected_value mean>0. All original
    thresholds from C:\Users\dell\quant-platform\libs\validation — never re-tuned.
-   These ten gates are the ONLY shadow-admission authority. Discovery screens,
-   batteries, effective-N variants and later harsher overlays may diagnose or rank,
-   but may never admit, block, revoke or grandfather a shadow sleeve.
 5. ENTRY_CODE_HASH changes -> prior statistical certificate INVALID -> rerun gates.
    Registry code_hash discipline is mandatory (research/registry.py).
 6. Optimization only after raw edge at reasonable defaults. Never optimize a loser

@@ -1,0 +1,236 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1059619",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "AUDUSD",
+   "EURCAD",
+   "EURGBP",
+   "EURUSD",
+   "GBPCAD",
+   "GBPUSD",
+   "NZDCAD",
+   "NZDUSD",
+   "UDSCAD",
+   "USDCAD"
+  ],
+  "found_at": "2026-09-08T03:25:39+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 28.336,
+  "growth_pct": 1232.16,
+  "weeks": 275.0,
+  "pf": 1.53,
+  "max_dd_pct": null,
+  "trades": 5691.0,
+  "win_pct": 3877.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/jltvrhapsody",
+  "author_other_signals": [
+   {
+    "sid": "1975768",
+    "title": "'Salaryman EA' by Jose Luis Thenier Villa",
+    "growth": "142%",
+    "curve_points": 20,
+    "curve_dd": -4.0
+   },
+   {
+    "sid": "2379915",
+    "title": "'TharosLongTerm' by Jose Luis Thenier Villa",
+    "growth": "86%",
+    "curve_points": 20,
+    "curve_dd": -3.0
+   },
+   {
+    "sid": "2380939",
+    "title": "'Lowleverage LM' by Jose Luis Thenier Villa",
+    "growth": "28%",
+    "curve_points": 20,
+    "curve_dd": -38.0
+   }
+  ],
+  "hour_histogram": {
+   "11": 2,
+   "08": 4,
+   "05": 1,
+   "16": 3,
+   "19": 1,
+   "14": 2,
+   "13": 3,
+   "09": 1,
+   "18": 1,
+   "00": 1,
+   "07": 1,
+   "23": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2376950",
+  "symbols": [],
+  "found_at": "2026-09-08T03:25:39+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 8.468,
+  "growth_pct": 376.54,
+  "weeks": 263.0,
+  "pf": 1.17,
+  "max_dd_pct": null,
+  "trades": 12601.0,
+  "win_pct": 8548.0,
+  "algo_pct": 97.0,
+  "subscribers": 0.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [
+   {
+    "sid": "2265877",
+    "title": "'Gold Reaper New V2 2' by Profalgo Limited",
+    "growth": "301%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2204998",
+    "title": "'Gold Reaper Goldtrade Pro Daytrade Pro' by Profalgo Limited",
+    "growth": "953%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   },
+   {
+    "sid": "2084890",
+    "title": "'Goldtrade Pro ICM' by Profalgo Limited",
+    "growth": "649%",
+    "curve_points": 20,
+    "curve_dd": -9.0
+   }
+  ],
+  "hour_histogram": {
+   "10": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2360068",
+  "symbols": [
+   "AUDCAD",
+   "NZDCAD"
+  ],
+  "found_at": "2026-09-08T03:25:39+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 32.264,
+  "growth_pct": 2228.48,
+  "weeks": 109.0,
+  "pf": 1.94,
+  "max_dd_pct": null,
+  "trades": 1194.0,
+  "win_pct": 784.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/mnimoos",
+  "author_other_signals": [
+   {
+    "sid": "2388397",
+    "title": "'Harmonizer Mid Risk PAMM' by Amir Hossein Moharreri",
+    "growth": "171%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2388399",
+    "title": "'Harmonizer High Risk PAMM' by Amir Hossein Moharreri",
+    "growth": "101%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "20": 1,
+   "11": 3,
+   "10": 1,
+   "12": 4,
+   "09": 2,
+   "01": 1,
+   "03": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2364493",
+  "symbols": [
+   "BTCUSD",
+   "CHFJPY",
+   "EURJPY",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "NAS100",
+   "US500",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-08T03:25:39+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 3.826,
+  "growth_pct": 356.17,
+  "weeks": 60.0,
+  "pf": 1.24,
+  "max_dd_pct": null,
+  "trades": 1048.0,
+  "win_pct": 547.0,
+  "algo_pct": 97.0,
+  "subscribers": 1.0,
+  "author": "/en/users/tonnek",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "22": 1,
+   "21": 1,
+   "19": 1,
+   "05": 1,
+   "17": 2,
+   "20": 3,
+   "18": 1,
+   "16": 1,
+   "13": 1,
+   "09": 1,
+   "01": 2,
+   "23": 2,
+   "00": 1,
+   "06": 1,
+   "08": 1,
+   "02": 1
+  }
+ }
+]

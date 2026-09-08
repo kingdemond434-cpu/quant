@@ -1,0 +1,50 @@
+{
+ "source": "survivor_distiller",
+ "generated_at": "2026-09-06T21:57:54.407696+00:00",
+ "tests_run": 66,
+ "discoveries": [
+  {
+   "source": "survivor_distiller",
+   "kind": "survivor_distiller",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.0,
+     0.25
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "mechanism": "discovered on EURCHF: session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price (mutation: step_band_up)",
+   "title": "EURCHF.discovered.step_band_up from external.EURCHF.discovered.p=c14e361e680e6d0b",
+   "url": "",
+   "evidence": {
+    "n_independent": 2245,
+    "gross_per_trade": 0.00047959,
+    "net_per_trade": 7.84e-06,
+    "cost_frac": 0.00047175,
+    "t_gross": 21.822,
+    "t_deflated_sweep": 19.612,
+    "n_tests_sweep": 66,
+    "t_deflated_lifetime": 17.909,
+    "n_tests_lifetime": 20407,
+    "parent": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+    "operator": "step_band_up",
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   },
+   "event_time": null,
+   "available_time": "2026-09-06T21:57:54.349464+00:00",
+   "ingested_time": "2026-09-06T21:57:54.349464+00:00",
+   "source_version": "13e57c974",
+   "payload_hash": "6f8bfc9aa473dd58577c80a8"
+  }
+ ],
+ "counts": {
+  "donated": 1,
+  "refused_unstamped": 0
+ },
+ "refusals": [],
+ "rule": "a candidate without a point-in-time stamp is refused here and counted, never written: absence of an available_time is not permission to use the row"
+}

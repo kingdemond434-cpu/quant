@@ -1,0 +1,27 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Trang Chủ - Ngân hàng Nhà nước Việt Nam",
+  "url": "https://www.sbv.gov.vn/",
+  "published": "2026-09-08T12:33:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "vi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8ec842837c851d80537",
+  "host": "www.sbv.gov.vn",
+  "ground": "Ngân hàng Nhà nước tỷ giá",
+  "region": "vn",
+  "cluster": "sea",
+  "dataset_class": "central_bank_data",
+  "available_time": "2026-09-08T12:33:48+00:00",
+  "ingested_time": "2026-09-08T12:33:48+00:00",
+  "source_hash": "a8ec842837c851d80537",
+  "claims": [],
+  "n_claims": 0
+ }
+]

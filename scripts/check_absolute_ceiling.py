@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -493,37 +494,62 @@ def _import_counts() -> dict[str, int]:
     if _IMPORTS is not None:
         return _IMPORTS
     counts: dict[str, int] = {}
-    for p in ROOT.rglob("*.py"):
-        rel = p.relative_to(ROOT).as_posix()
-        if "/tests/" in f"/{rel}" or rel.startswith("tests/") or "__pycache__" in rel:
-            continue
-        try:
-            src = p.read_text("utf-8", errors="ignore")
-        except OSError:
-            continue
-        for mod in re.findall(r"(?:from|import)\s+([a-zA-Z_][\w.]*)", src):
-            leaf = mod.split(".")[-1]
-            counts[leaf] = counts.get(leaf, 0) + 1
-            counts[mod] = counts.get(mod, 0) + 1
-        # Subprocess and CLI references: "research/world_causal_graph.py", 'scripts/x.py'.
-        for ref in re.findall(r"['\"][\w/]*?([a-zA-Z_][\w]*)\.py['\"]", src):
-            counts[ref] = counts.get(ref, 0) + 1
+    skip = {".git", ".venv", "node_modules", "__pycache__", ".pytest_cache"}
+    for parent, dirs, files in os.walk(ROOT):
+        dirs[:] = [d for d in dirs if d not in skip]
+        for name in files:
+            if not name.endswith(".py"):
+                continue
+            p = Path(parent) / name
+            rel = p.relative_to(ROOT).as_posix()
+            if "/tests/" in f"/{rel}" or rel.startswith("tests/"):
+                continue
+            try:
+                src = p.read_text("utf-8", errors="ignore")
+            except OSError:
+                continue
+            for mod in re.findall(r"(?:from|import)\s+([a-zA-Z_][\w.]*)", src):
+                leaf = mod.split(".")[-1]
+                counts[leaf] = counts.get(leaf, 0) + 1
+                counts[mod] = counts.get(mod, 0) + 1
+            # Subprocess and CLI references: "research/world_causal_graph.py", 'scripts/x.py'.
+            for ref in re.findall(r"['\"][\w/]*?([a-zA-Z_][\w]*)\.py['\"]", src):
+                counts[ref] = counts.get(ref, 0) + 1
     _IMPORTS = counts
     return counts
 
 
-def _graph_stage(module_stem: str) -> str:
-    """What the capability graph says about the node owning this module, if any."""
+_GRAPH_STAGES: dict[str, str] | None = None
+
+
+def _graph_stages() -> dict[str, str]:
+    """Capability-graph stage by module, computed once per audit process.
+
+    ``stages()`` performs artifact and reachability checks. Calling it once for each of the 94
+    blueprint rows made the completion fence take many minutes and regularly overrun its own
+    schedule. The graph is immutable during one audit, so recomputation cannot add information.
+    """
+    global _GRAPH_STAGES
+    if _GRAPH_STAGES is not None:
+        return _GRAPH_STAGES
     try:
         from libs.ops.capability_graph import NODES, stages
+        node_stages = stages()
     except Exception:
-        return ""
-    st = stages()
-    for n in NODES:
-        mod = str(getattr(n, "module", "") or "")
-        if module_stem and (module_stem in mod or mod.endswith(f"{module_stem}.py")):
-            return str((st.get(n.name) or {}).get("stage", "") or "")
-    return ""
+        _GRAPH_STAGES = {}
+        return _GRAPH_STAGES
+    out: dict[str, str] = {}
+    for node in NODES:
+        stem = Path(str(getattr(node, "module", "") or "")).stem
+        if stem:
+            out[stem] = str((node_stages.get(node.name) or {}).get("stage", "") or "")
+    _GRAPH_STAGES = out
+    return out
+
+
+def _graph_stage(module_stem: str) -> str:
+    """What the capability graph says about the node owning this module, if any."""
+    return _graph_stages().get(module_stem, "") if module_stem else ""
 
 
 def _rent_verdict(module_stem: str) -> str:

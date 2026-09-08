@@ -1,0 +1,12 @@
+[
+ {
+  "source": "bis_speeches",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='www.bis.org', port=443): Max retries exceeded with url: /doclist/cbspeeches.rss (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violat",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-08T08:04:38+00:00",
+  "needs_selector_work": true
+ }
+]
