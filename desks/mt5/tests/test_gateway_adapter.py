@@ -545,3 +545,13 @@ def test_main_scopes_the_daily_close_and_not_the_friday_one() -> None:
     assert "keep = scalp_position_tags(sleeves)" in _GW_SRC[:daily]
     after = _GW_SRC[friday:friday + 200]
     assert 'close_positions(st, s["symbol"])' in after and "keep_tags" not in after
+
+
+def test_no_bracket_is_sent_at_or_after_the_cancel_hour() -> None:
+    """The bracket loop had a lower bound (the signal hour) and no upper one: a gateway armed
+    at 22:40 broker sent two real brackets and cancelled them in the same pass."""
+    loop = _GW_SRC[_GW_SRC.index('if st["last_bracket_date"] == day_key:'):]
+    sig = loop.index('if hour < s["sig_hour"]:')
+    cancel = loop.index("if _past_cancel_hour(hour):")
+    assert sig < cancel < loop.index("sym = mt5.symbol_info(s[\"symbol\"])")
+    assert "st[\"placement_pass\"] = tnow.isoformat()" in _GW_SRC

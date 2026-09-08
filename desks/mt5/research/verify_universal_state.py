@@ -77,7 +77,18 @@ def main() -> int:
         out["remote_tip"] = "fetch-failed"
 
     pulls = []
-    if rc == 0 and out.get("remote_tip") != out.get("local_head"):
+    # THE BOX DOES NOT MERGE CODE HERE (2026-09-08). On the trading box code arrives through
+    # MT5-AdoptRelease (Adopt-And-Seal.ps1), which lands the tree in place, re-seals the release
+    # and restarts the gateway under the git-writer lock. A second, unlocked `merge -X theirs`
+    # from this hourly verifier raced that adoption for .git/index.lock and, worse, moved HEAD
+    # off the sealed commit between seals -- so release identity refused NEW risk until the next
+    # :12 for no reason but this merge. The box REPORTS the drift; the VPS still pulls.
+    behind = rc == 0 and out.get("remote_tip") != out.get("local_head")
+    if behind and BOX == "local":
+        pulls.append({"action": "none: MT5-AdoptRelease owns code delivery on the box",
+                      "ok": True, "detail": f"local {out.get('local_head')} != origin "
+                                            f"{out.get('remote_tip')}; adoption lands it"})
+    elif behind:
         rc2, msg2 = git("merge", "--no-edit", "-X", "theirs",
                         f"origin/{BRANCH}", timeout=180)
         pulls.append({"action": "merge -X theirs", "ok": rc2 == 0,

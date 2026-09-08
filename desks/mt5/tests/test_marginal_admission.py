@@ -407,15 +407,22 @@ def test_demotion_needs_one_reading_and_restoration_needs_several(desk) -> None:
     assert "retired_at" not in s and s.get("retire_reason") is None
 
     # The FIRST positive reading is not enough to give it back.
-    desk.allocate({"CADJPY.asia": _row(admit=True, heat=0.02)}, at=old)
+    desk.allocate({"CADJPY.asia": _row(admit=True, heat=0.02)}, at=old + timedelta(minutes=5))
     promoter.main()
     (s,) = desk.sleeves()
     assert s["status"] == "STANDBY", "one reading must not restore what one reading removed"
     assert s["admit_streak"] == 1
     assert f"1/{promoter.PROMOTE_ADMIT_STREAK}" in s["admission"]["why"]
 
-    # The second consecutive one is.
-    desk.allocate({"CADJPY.asia": _row(admit=True, heat=0.02)}, at=old)
+    # The same scan read again is NOT a second reading (2026-09-08): the promoter runs hourly
+    # over an allocator that carries one heavy scan forward.
+    promoter.main()
+    (s,) = desk.sleeves()
+    assert s["status"] == "STANDBY" and s["admit_streak"] == 1
+    assert "same admission scan" in s["admission"]["why"]
+
+    # The second consecutive reading, on a NEW scan, is.
+    desk.allocate({"CADJPY.asia": _row(admit=True, heat=0.02)}, at=old + timedelta(minutes=10))
     promoter.main()
     (s,) = desk.sleeves()
     assert s["status"] == "LIVE" and s["risk_frac"] == pytest.approx(0.02)

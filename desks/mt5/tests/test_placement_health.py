@@ -252,3 +252,30 @@ def test_the_window_is_a_day_and_lives_in_the_core(gw):
     assert not expired("2026-08-17T23:00:00+00:00", "2026-08-18T00:00:00+00:00")
     assert not expired("", "2026-08-18T00:00:00+00:00")
     assert not expired("not a time", "2026-08-18T00:00:00+00:00")
+
+
+# ------------------------------------------------ the streak counts passes, not sleeves
+
+def test_two_sleeves_refused_in_one_pass_are_one_pass(gw):
+    """MEASURED 2026-09-08: a gateway armed at 22:40 broker computed both london_am and
+    afternoon and sent them in one minute; on a terminal with AutoTrading off that was two total
+    rejections in ONE pass -> MAX_TOTAL_REJECTIONS -> GATEWAY_PAUSED on one bad minute, the case
+    the number two was chosen to tolerate. The pass stamp `main` writes makes them one."""
+    st = {"placement_pass": "2026-08-18T00:00:00+00:00"}
+    assert gw["note_placement"](st, "gold_london_am", _rej()) is True
+    assert gw["note_placement"](st, "gold_afternoon", _rej()) is True
+    assert st["placement_health"]["consecutive_total_rejections"] == 1
+    assert st["placement_health"]["last_error"]["sleeve"] == "gold_afternoon"
+    assert not gw["PAUSED"].exists()
+    assert any("not counted twice" in x for x in gw["_logged"])
+    # the NEXT pass, refused again: that is the second consecutive pass, and it pauses
+    st["placement_pass"] = "2026-08-18T00:01:00+00:00"
+    assert gw["note_placement"](st, "gold_london_am", _rej()) is False
+    assert gw["PAUSED"].exists()
+
+
+def test_without_a_pass_stamp_the_old_per_call_count_stands(gw):
+    """A state file from before the stamp existed keeps the stricter behaviour."""
+    st = {}
+    gw["note_placement"](st, "a", _rej())
+    assert gw["note_placement"](st, "b", _rej()) is False

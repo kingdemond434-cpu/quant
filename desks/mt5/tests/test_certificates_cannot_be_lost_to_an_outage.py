@@ -263,3 +263,26 @@ def test_every_git_writer_on_the_box_takes_the_same_process_level_lock() -> None
     alock = ADOPT_CODE.index('"Local\\MT5-GitWriter"')
     assert alock < ADOPT_CODE.index("$adoptScript")
     assert "exit 6" in ADOPT_CODE[alock:alock + 600]
+
+
+def test_the_box_s_hourly_verifier_no_longer_merges_code_behind_the_seal() -> None:
+    """research/verify_universal_state.py did `git merge -X theirs origin/<branch>` hourly on
+    the box with no lock -- racing the adoption and moving HEAD off the sealed commit between
+    seals, so identity refused new risk until the next :12 for no reason but this merge."""
+    src = (_DESK / "research" / "verify_universal_state.py").read_text("utf-8")
+    assert 'if behind and BOX == "local":' in src
+    assert "MT5-AdoptRelease owns code delivery on the box" in src
+    assert (src.index('if behind and BOX == "local":')
+            < src.index('"merge", "--no-edit", "-X", "theirs"'))
+
+
+def test_a_seal_or_state_commit_on_top_of_the_sealed_code_is_not_re_sealed() -> None:
+    """After the first seal HEAD is the seal commit itself and every sync moves it again, so a
+    literal `sealed != head` re-sealed hourly forever. The rule is the gateway's own:
+    release.accepts."""
+    assert "release.accepts(sys.argv[1], release.load() or {})" in ADOPT_CODE
+    eq = ADOPT_CODE.index("if ($sealed -eq $head)")
+    acc = ADOPT_CODE.index("release.accepts(")
+    dirty = ADOPT_CODE.index("git status --porcelain --untracked-files=no")
+    assert eq < acc < dirty
+    assert "plus seal/state commits only; nothing to seal" in ADOPT_CODE

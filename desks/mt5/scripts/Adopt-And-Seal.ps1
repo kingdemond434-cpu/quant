@@ -130,6 +130,18 @@ if ($sealed -eq $head) {
     Log "HEAD $($head.Substring(0,12)) is already the sealed code; nothing to do"
     exit 0
 }
+# A SEAL COMMIT OR A STATE-SYNC COMMIT ON TOP OF THE SEALED CODE IS THE SAME RELEASE. After the
+# first seal HEAD is the seal commit itself, and every quarter-hour sync moves it again, so
+# "sealed != head" is true for the rest of time; taken literally it re-sealed and re-committed
+# RELEASE.json every hour forever. `release.accepts` is the rule the gateway itself applies
+# (the SHA differs only by seal/state paths), so it is the rule here too.
+if ($sealed) {
+    $acc = & $py @pyArgs -c "import sys; from libs.ops import release; ok, why, _ = release.accepts(sys.argv[1], release.load() or {}); print('OK' if ok else 'NO'); print(why)" $head 2>$null
+    if ("$acc" -match '^OK') {
+        Log "HEAD $($head.Substring(0,12)) is the sealed release $($sealed.Substring(0,12)) plus seal/state commits only; nothing to seal"
+        exit 0
+    }
+}
 # `release.seal` refuses a tree with a dirty CODE path. Say so HERE, with the paths, rather than
 # let a Python traceback be the only record. Untracked files (??) are not dirt; a tracked STATE
 # path is not dirt either -- on this box every organ rewrites its artifact between syncs, so a

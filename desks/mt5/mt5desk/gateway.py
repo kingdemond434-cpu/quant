@@ -395,6 +395,13 @@ def connect() -> bool:
     return True
 
 
+def _past_cancel_hour(hour: float) -> bool:
+    """Is the day's pending-order backstop already due? A bracket sent now is cancelled by the
+    housekeeping block in the same pass (named so the housekeeping test can still find its own
+    `if hour >= CANCEL_HOUR` first)."""
+    return hour >= CANCEL_HOUR
+
+
 def _rejection_streak_expired(last_at: str, now_at: str) -> bool:
     """Is the last rejection older than REJECTION_STREAK_WINDOW_H? Unparseable stamps are NOT
     expired: a streak the desk cannot date is kept, never forgotten."""
@@ -440,22 +447,35 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
     # last rejection's own timestamp decides; a record without one keeps its streak -- absence
     # is not a reason to forget a refusal.
     prev = hist.get("consecutive_total_rejections") or 0
-    last_at = str((hist.get("last_error") or {}).get("time") or "")
+    last = hist.get("last_error") or {}
+    last_at = str(last.get("time") or "")
     if prev and last_at and _rejection_streak_expired(last_at, now()):
         log(f"placement streak of {prev} last seen {last_at} is older than "
             f"{REJECTION_STREAK_WINDOW_H:.0f}h -- not evidence about today's venue; counting "
             f"this rejection from zero")
         hist["consecutive_total_rejections"] = 0
+        prev = 0
 
-    hist["consecutive_total_rejections"] += 1
-    hist["last_error"] = {"time": now(), "sleeve": sleeve, "diagnoses": diags}
+    # THE STREAK COUNTS PASSES, NOT SLEEVES IN ONE PASS (2026-09-08). MAX_TOTAL_REJECTIONS is
+    # "consecutive placement PASSES with no accepted order" -- two, so one bad minute at the open
+    # is not a pause. Counted per sleeve, two windows refused in the SAME minute reached two and
+    # paused the whole desk on one bad minute, which is exactly the case the number was chosen
+    # to tolerate. `main` stamps every pass; a rejection carrying the stamp of the last one is
+    # the same pass and does not advance the count.
+    pass_id = str(st.get("placement_pass") or "")
+    same_pass = bool(pass_id) and prev > 0 and str(last.get("placement_pass") or "") == pass_id
+    if not same_pass:
+        hist["consecutive_total_rejections"] += 1
+    hist["last_error"] = {"time": now(), "sleeve": sleeve, "diagnoses": diags,
+                          "placement_pass": pass_id}
     n = hist["consecutive_total_rejections"]
     log(f"PLACEMENT FAILED ENTIRELY [{sleeve}] -- {n} consecutive pass(es) with no "
-        f"accepted order")
+        f"accepted order" + (" (same pass as the last rejection; not counted twice)"
+                             if same_pass else ""))
     for d in diags:
         log(f"    {d}")
-    if n < MAX_TOTAL_REJECTIONS:
-        return True
+    if same_pass or n < MAX_TOTAL_REJECTIONS:
+        return n < MAX_TOTAL_REJECTIONS
 
     # PAUSE, not just shout. A desk nobody is watching that logs an error and
     # keeps going is a desk that discovers the problem when someone happens to
@@ -1921,6 +1941,9 @@ def main() -> None:
     today = tnow.date()
     hour = tnow.hour + tnow.minute / 60.0
     day_key = str(today)
+    # ONE PASS, ONE IDENTITY: `note_placement` counts rejection PASSES, and every sleeve placed in
+    # this pass carries this stamp so two sleeves refused in one minute are one pass, not two.
+    st["placement_pass"] = tnow.isoformat()
 
     # stale tick (weekend/holiday/terminal dead): never trade a closed market
     age_sec = (datetime.now(tz=UTC) - tnow).total_seconds()
@@ -2089,6 +2112,14 @@ def main() -> None:
             if st["brackets"].get(s["name"]):
                 continue
             if hour < s["sig_hour"]:
+                continue
+            if _past_cancel_hour(hour):
+                # THE DAY'S BACKSTOP HAS ALREADY RUN (2026-09-08). This loop had a lower bound
+                # (the signal hour) and no upper one, so a gateway armed at 22:40 broker computed
+                # and SENT the london_am and afternoon brackets and the housekeeping block below
+                # cancelled them in the same pass -- two real order_sends for nothing, and on a
+                # terminal with AutoTrading off, two total rejections in one pass. A bracket the
+                # cancel hour would take back is never sent.
                 continue
             sym = mt5.symbol_info(s["symbol"])
             if sym is None:

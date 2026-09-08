@@ -190,7 +190,19 @@ def test_three_standby_rows_go_live_on_two_consecutive_admitting_readings(desk, 
     assert all(s["status"] == "STANDBY" and s["admit_streak"] == 1 for s in after_one.values())
     assert all("1/2 consecutive" in s["admission"]["why"] for s in after_one.values())
     assert _dc.load_sleeves(tmp_path / "data" / "sleeves.json") == []   # nothing for the gateway
+    first_scan = doc["admission"]["measured_utc"]
+    assert all(s["admit_scan"] == first_scan for s in after_one.values())
 
+    # THE SAME SCAN READ AGAIN IS NOT A SECOND READING (2026-09-08): the promoter runs hourly
+    # and every minute at 22:00, over an allocator that carries one heavy scan forward.
+    promoter.main()
+    same = {s["name"]: s for s in desk.sleeves()}
+    assert all(s["status"] == "STANDBY" and s["admit_streak"] == 1 for s in same.values())
+    assert all("same admission scan" in s["admission"]["why"] for s in same.values())
+
+    # a NEW scan, admitting again: the second consecutive reading, and the rows go LIVE
+    doc["admission"]["measured_utc"] = "2026-09-08T19:00:00+00:00"
+    alloc.write_text(json.dumps(doc), "utf-8")
     promoter.main()
     after_two = {s["name"]: s for s in desk.sleeves()}
     assert all(s["status"] == "LIVE" for s in after_two.values())

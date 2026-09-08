@@ -1063,17 +1063,36 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
                 f"that predates the sleeve")
             changed = changed or json.dumps(s, sort_keys=True, default=str) != before
             continue
+        # A READING IS A SCAN, NOT A PASS (2026-09-08). The promoter now runs hourly and at
+        # 22:00 UTC once a minute, while `--mode normal`/`fast` allocator passes carry the last
+        # heavy scan forward unchanged. Two passes over ONE scan are one measurement read twice,
+        # and counting them as "two consecutive admitting readings" let a STANDBY row take
+        # capital on a single scan -- the asymmetry the streak exists to enforce, collapsed by a
+        # clock. The scan's own stamp travels on the row; a reading on the same stamp cannot
+        # advance the streak. The demotion direction is untouched: one non-admitting scan still
+        # removes risk on its first reading.
+        scan = str(view.get("admission_at") or "")
+        streak_in = int(s.get("admit_streak") or 0)
+        same_scan = bool(scan) and status != "LIVE" and str(s.get("admit_scan") or "") == scan
+        held = same_scan and streak_in > 0
+        if held:
+            streak_in -= 1
         cap = capital_verdict(view, str(s.get("name") or ""),
                               symbol=str(s.get("symbol") or ""),
                               family=str(s.get("family") or ""),
                               selector=str(s.get("selector") or s.get("window") or ""),
-                              streak=int(s.get("admit_streak") or 0),
+                              streak=streak_in,
                               # A LIVE row is not ADDING risk, it is keeping what it holds, so the
                               # streak does not apply to it -- only to a STANDBY row taking
                               # capital, which is the direction the principal ordered made slow.
                               first_promotion=(status == "LIVE"))
+        if held and cap.get("status") == "STANDBY":
+            cap["why"] = (f"same admission scan ({scan}) as the last reading -- a second reading "
+                          f"needs a new scan. {cap.get('why', '')}")
         s["admission"] = cap
         s["admit_streak"] = cap["streak"]
+        if scan:
+            s["admit_scan"] = scan
         if cap["status"] == "UNMEASURED":
             # NOBODY LOOKED. Not in the priced universe, or the scan's budget ran out. Removing
             # risk on that is removing it on a compute limit, which is an outage wearing a risk
