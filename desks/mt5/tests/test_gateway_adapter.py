@@ -488,3 +488,60 @@ def test_the_source_fences_the_desk_runs_still_hold_on_the_adapter() -> None:
                                   "bracket_spec", "roster", "hibernated", "release_gate"])
 def test_every_decision_the_gateway_relies_on_lives_in_the_core(name: str) -> None:
     assert callable(getattr(dc, name)), f"decision_core has no {name}"
+
+
+# ------------------------------------------------- the gold book's day end vs the scalp lane
+def _positions_mt5(positions: list[SimpleNamespace]) -> SimpleNamespace:
+    sent: list[dict] = []
+    return SimpleNamespace(
+        positions_get=lambda symbol=None: [p for p in positions if p.symbol == symbol],
+        symbol_info_tick=lambda symbol: SimpleNamespace(bid=100.0, ask=100.1),
+        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, comment="")),
+        TRADE_ACTION_DEAL=1, ORDER_TYPE_SELL=1, ORDER_TYPE_BUY=0, POSITION_TYPE_BUY=0,
+        sent=sent)
+
+
+def _pos(ticket: int, comment: str, symbol: str = "XAUUSD") -> SimpleNamespace:
+    return SimpleNamespace(ticket=ticket, symbol=symbol, volume=0.02, type=0, comment=comment)
+
+
+def test_the_end_of_day_close_leaves_the_scalp_lane_s_positions_to_their_own_exit(
+) -> None:
+    """MEASURED 2026-09-08 on the tree: `close_positions(st, symbol)` at CLOSE_HOUR closed every
+    XAUUSD position -- a scalp basket opened at 19:31 by an 'all'-session M15 sleeve was flat
+    at 19:32, spread paid for nothing, while its forward clock had certified holding to the
+    time exit. The close is now scoped by the lane's order-comment tag."""
+    logs: list[str] = []
+    mt5 = _positions_mt5([_pos(1, "DWgold_london_am"), _pos(2, "DWxau_m15_anti_momentum_all"),
+                          _pos(3, "DWgold_afternoon")])
+    ns = _exec(("close_positions", "scalp_position_tags"),
+               {"mt5": mt5, "log": logs.append, "MAGIC": 1})
+    sleeves = [{"name": "gold_london_am", "symbol": "XAUUSD"},
+               {"name": "xau_m15_anti_momentum_all", "symbol": "XAUUSD", "exec": "scalp_market"}]
+    keep = ns["scalp_position_tags"](sleeves)
+    assert keep == frozenset({"DWxau_m15_anti_momentum_all"})
+    ns["close_positions"]({"armed": True}, "XAUUSD", keep_tags=keep)
+    assert sorted(r["position"] for r in mt5.sent) == [1, 3]        # the gold book, both legs
+    # Friday's weekend close is every lane's: no keep set, every position goes flat.
+    mt5.sent.clear()
+    ns["close_positions"]({"armed": True}, "XAUUSD")
+    assert sorted(r["position"] for r in mt5.sent) == [1, 2, 3]
+
+
+def test_the_scalp_tag_is_the_lane_s_own_and_only_the_scalp_lane_s() -> None:
+    ns = _exec(("scalp_position_tags",), {})
+    assert ns["scalp_position_tags"]([{"name": "gold_asia"}, {"name": "x", "exec": "family_market"},
+                                      {"exec": "scalp_market"}]) == frozenset()
+    tag = ns["scalp_position_tags"]([{"name": "a" * 40, "exec": "scalp_market"}])
+    assert tag == frozenset({("DW" + "a" * 40)[:31]})            # the venue's 31-char comment
+
+
+def test_main_scopes_the_daily_close_and_not_the_friday_one() -> None:
+    """Pinned on the source: the daily backstop passes the scalp tags, the weekend close does
+    not, and the daily one comes first."""
+    daily = _GW_SRC.index('close_positions(st, s["symbol"], keep_tags=keep)')
+    friday = _GW_SRC.index("Friday: weekend close, EVERY lane")
+    assert daily < friday
+    assert "keep = scalp_position_tags(sleeves)" in _GW_SRC[:daily]
+    after = _GW_SRC[friday:friday + 200]
+    assert 'close_positions(st, s["symbol"])' in after and "keep_tags" not in after

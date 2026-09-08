@@ -826,11 +826,33 @@ def cancel_pending(st: dict, symbol: str) -> None:
             f"confirmed absent from orders_get")
 
 
-def close_positions(st: dict, symbol: str) -> None:
+def scalp_position_tags(sleeves: list[dict]) -> frozenset[str]:
+    """The order-comment tags of the scalp lane's positions: the ones the gold book's end-of-day
+    close must leave alone. Every lane tags its positions `DW<sleeve name>` (`place_bracket`,
+    `run_scalp_sleeves`), so the tag is the lane."""
+    return frozenset(f"DW{s['name']}"[:31] for s in sleeves
+                     if s.get("exec") == "scalp_market" and s.get("name"))
+
+
+def close_positions(st: dict, symbol: str, keep_tags: frozenset[str] = frozenset()) -> None:
+    """Force-close every position on `symbol` except those tagged in `keep_tags`.
+
+    THE GOLD BOOK'S END OF DAY IS NOT THE SCALP LANE'S (2026-09-08). CLOSE_HOUR (19:30 UTC) is
+    the gold windows' rule: their brackets are day trades and nothing of theirs may sit
+    overnight. It was applied BY SYMBOL, and the promoted scalp sleeves trade the same XAUUSD --
+    so a basket an 'all'-session M15 sleeve opened at 19:31 was closed at 19:32 by the gold
+    book's backstop, spread paid for nothing, every night. The forward clock that certified
+    that sleeve held its positions to their own time exit (`scalp_exec` max_hold) straight
+    through 19:30; the live lane did not, so live was not the certified behaviour. Scoping the
+    close by the lane's tag restores it. This LOOSENS nothing: the scalp lane keeps its own
+    TTL and session exits, and the Friday weekend close below still takes every lane flat.
+    """
     if not st["armed"]:
         log("SHADOW would force-close open positions")
         return
     for p in mt5.positions_get(symbol=symbol) or []:
+        if keep_tags and str(getattr(p, "comment", "") or "") in keep_tags:
+            continue
         tick = mt5.symbol_info_tick(symbol)
         req = {
             "action": mt5.TRADE_ACTION_DEAL,
@@ -2188,9 +2210,12 @@ def main() -> None:
         for s in sleeves:
             cancel_pending(st, s["symbol"])
     if hour >= CLOSE_HOUR:
+        # The gold book's day ends here; the scalp lane's positions run to their own time exit
+        # (see `close_positions`). Friday's weekend close below is every lane's.
+        keep = scalp_position_tags(sleeves)
         for s in sleeves:
-            close_positions(st, s["symbol"])
-    if tnow.dayofweek == 4 and hour >= CLOSE_HOUR:  # Friday: weekend close
+            close_positions(st, s["symbol"], keep_tags=keep)
+    if tnow.dayofweek == 4 and hour >= CLOSE_HOUR:  # Friday: weekend close, EVERY lane
         for s in sleeves:
             close_positions(st, s["symbol"])
 
