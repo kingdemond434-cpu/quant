@@ -1,0 +1,5 @@
+{
+  "monthly_envelope_usd": 50.0,
+  "alert_at_usd": 40.0,
+  "note": "Principal directive 2026-08-20: bound external-LLM-panel spend (CRO/GPT, kimi_hunter's Kimi/DeepSeek/Qwen chain, run_external_panel) to ~$50/month while keeping the seats functional. Was previously the code's hardcoded default of $120/mo (unset file). Enforced by run_external_panel.py's self-calibrating guard (reads OpenRouter's real credit balance + trailing observed run costs, PAGE+ABORT before a run would breach this, never a silent quality cut) and by kimi_hunter.py's own pre-flight check against the same state file. No credential is configured in this environment yet, so this is pre-set so spend is capped the moment one is added."
+}

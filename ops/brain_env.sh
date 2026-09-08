@@ -498,6 +498,11 @@ export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-opus-5}"  # primary = OPUS 5 (
 # NOTE the frontier miners already ran fable-first via their own export; this makes the global
 # default agree with them instead of contradicting them (the miners were right).
 export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8}"
+# DEEPSEEK SECOND FLYWHEEL (docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md): the BULK/DEEP model
+# split is NOT exported here. Both DEEPSEEK_BULK_MODEL and DEEPSEEK_DEEP_MODEL live in the single
+# free-tier policy file ops/free_tier.env (both on the :free id per the 2026-08-26 free-first order),
+# which ops/run_deepseek_factory.sh sources BEFORE this file. Reconcile note 2026-09-08: the
+# wonderful-darwin branch carried a paid DEEP default in this file; it was deliberately not taken.
 
 # LAW GATE AT ORGAN SPAWN (L1.37, principal order 2026-07-31 "enforced 24/7 with every
 # interaction"). Every organ sources this file, so this is the one place that runs before ALL of
