@@ -28,6 +28,7 @@ skips under a root CI runner rather than passing vacuously.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -53,7 +54,17 @@ def _repo(tmp_path: Path) -> Path:
     return repo
 
 
-def _adopt(repo: Path, target: str) -> list[str]:
+#: The prefixes the script keeps for the box, verbatim from the script (the test below pins
+#: them to `libs.ops.release.STATE_PREFIXES` minus docs/).
+STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+                  "data/", "reports/", "logs/", "web/")
+
+
+def _is_state(rel: str) -> bool:
+    return any(rel.startswith(p) for p in STATE_PREFIXES)
+
+
+def _adopt(repo: Path, target: str, kept: list[str] | None = None) -> list[str]:
     """The script's steps 2-5, in Python, against a real repository.
 
     Deliberately a re-implementation rather than a call: PowerShell does not exist on the CI
@@ -61,9 +72,15 @@ def _adopt(repo: Path, target: str) -> list[str]:
     what each one leaves behind. The in-place write is `r+b`/truncate for the same reason the
     script uses FileMode.Truncate: it rewrites the bytes of an existing entry and issues no
     unlink.
+
+    THE KEEP RULE (2026-09-08), exactly as the script applies it: a state path THIS BOX changed
+    since the merge base is the box's evidence and is neither written, deleted nor staged. It
+    is appended to `kept` so the caller can assert on it.
     """
     records = _git(repo, "-c", "core.quotePath=false", "diff",
                    "--name-status", "HEAD", target).splitlines()
+    base = _git(repo, "merge-base", "HEAD", target).strip()
+    touched = set(_git(repo, "diff", "--name-only", base, "HEAD").split()) if base else None
     staged: list[str] = []
     for rec in [r for r in records if r.strip()]:
         cols = rec.split("\t")
@@ -71,6 +88,10 @@ def _adopt(repo: Path, target: str) -> list[str]:
                else [(cols[0][0], cols[1])])
         for kind, rel in ops:
             full = repo / rel
+            if _is_state(rel) and (touched is None or rel in touched):
+                if kept is not None:
+                    kept.append(rel)
+                continue
             if kind == "D":
                 full.unlink(missing_ok=True)
             else:
@@ -219,3 +240,118 @@ def test_the_script_never_uses_the_operations_this_desk_has_banned() -> None:
     assert '@("add", "--all", "--") + $chunk' in code
     # And the ordering that makes step 5 safe must still be there.
     assert code.index("REFUSING to record the merge") < code.index('"merge", "-s", "ours"')
+
+
+# ------------------------------------------------------------ the box's state is the box's
+def test_the_box_s_own_state_is_kept_and_only_origin_s_inputs_are_adopted(
+    tmp_path: Path,
+) -> None:
+    """The 2026-09-07 shape. The box has not pushed for a day; origin's copy of its ledger is
+    old, origin also carries a new gateway, a research budget a session wrote FOR the box, and
+    new docs. The first version rewrote all four with origin's bytes -- the ledger included,
+    rolling the box's forward record back to its last push."""
+    repo = _repo(tmp_path)
+    for rel, body in (("desks/mt5/mt5desk/gateway.py", "old gateway\n"),
+                      ("desks/mt5/data/ledger.json", "day 1\n"),
+                      ("desks/mt5/data/research_budget.json", "budget v1\n"),
+                      ("docs/desk_lessons.jsonl", "L1\n")):
+        (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+        (repo / rel).write_text(body)
+        _git(repo, "add", "--", rel)
+    _git(repo, "commit", "-q", "-m", "base")
+
+    # origin: code, an input for the box, docs -- and a touch on the ledger too (both sides).
+    _git(repo, "checkout", "-q", "-b", "release")
+    (repo / "desks/mt5/mt5desk/gateway.py").write_text("new gateway\n")
+    (repo / "desks/mt5/data/research_budget.json").write_text("budget v2\n")
+    (repo / "docs/desk_lessons.jsonl").write_text("L1\nL2\n")
+    (repo / "desks/mt5/data/ledger.json").write_text("day 1 (origin's older copy, re-stamped)\n")
+    _git(repo, "add", "--", "desks", "docs")
+    _git(repo, "commit", "-q", "-m", "release")
+    target = _git(repo, "rev-parse", "HEAD").strip()
+
+    # the box: a day of forward record, committed by step 1 exactly as the script does.
+    _git(repo, "checkout", "-q", "main")
+    (repo / "desks/mt5/data/ledger.json").write_text("day 1\nday 2\n")
+    _git(repo, "add", "--", "desks/mt5/data/ledger.json")
+    _git(repo, "commit", "-q", "-m", "Box state captured before release adoption")
+
+    kept: list[str] = []
+    _adopt(repo, target, kept)
+
+    assert kept == ["desks/mt5/data/ledger.json"]
+    assert (repo / "desks/mt5/data/ledger.json").read_text() == "day 1\nday 2\n"      # kept
+    assert (repo / "desks/mt5/mt5desk/gateway.py").read_text() == "new gateway\n"      # code
+    assert (repo / "desks/mt5/data/research_budget.json").read_text() == "budget v2\n"  # input
+    assert (repo / "docs/desk_lessons.jsonl").read_text() == "L1\nL2\n"               # docs
+
+    # The gate: nothing OUTSIDE the kept set differs from the target.
+    drift = [p for p in _git(repo, "diff", "--name-only", "HEAD", target).split()
+             if not (_is_state(p) and p in kept)]
+    assert drift == []
+
+    # Recording the merge keeps the box's ledger, and the next sync is a fast-forward.
+    _git(repo, "merge", "-s", "ours", target, "-m", "Record the release merge")
+    assert (repo / "desks/mt5/data/ledger.json").read_text() == "day 1\nday 2\n"
+    assert "Already up to date" in _git(repo, "merge", target)
+    assert _git(repo, "merge-base", "--is-ancestor", target, "HEAD") == ""   # exit 0: descends
+
+
+def test_a_state_path_the_box_never_touched_is_adopted_like_code(tmp_path: Path) -> None:
+    """A research budget a session wrote for the box to read is an input, not evidence: the
+    box did not measure it, so origin's copy is the newer one."""
+    repo = _repo(tmp_path)
+    (repo / "desks/mt5/data").mkdir(parents=True)
+    (repo / "desks/mt5/data/research_budget.json").write_text("v1\n")
+    _git(repo, "add", "--", "desks/mt5/data/research_budget.json")
+    _git(repo, "commit", "-q", "-m", "base")
+    _git(repo, "checkout", "-q", "-b", "release")
+    (repo / "desks/mt5/data/research_budget.json").write_text("v2\n")
+    _git(repo, "add", "--", "desks/mt5/data/research_budget.json")
+    _git(repo, "commit", "-q", "-m", "release")
+    target = _git(repo, "rev-parse", "HEAD").strip()
+    _git(repo, "checkout", "-q", "main")
+    kept: list[str] = []
+    _adopt(repo, target, kept)
+    assert kept == []
+    assert (repo / "desks/mt5/data/research_budget.json").read_text() == "v2\n"
+    assert _git(repo, "diff", "--name-only", "HEAD", target).strip() == ""
+
+
+def test_the_script_s_keep_rule_is_the_release_module_s_state_list_minus_docs() -> None:
+    """Two copies of one list, pinned to each other: the script cannot import `libs` (it runs
+    before the adopted `libs` is on disk), so it carries the prefixes as a literal."""
+    import sys
+    repo_root = str(BASE.parent.parent)
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+    from libs.ops import release
+    assert tuple(p for p in release.STATE_PREFIXES if p != "docs/") == STATE_PREFIXES
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    m = re.search(r"\$StatePrefixes = @\(([^)]*)\)", code, re.S)
+    assert m, "the script no longer declares $StatePrefixes"
+    assert tuple(re.findall(r'"([^"]+)"', m.group(1))) == STATE_PREFIXES
+    assert "docs/" not in m.group(1)          # origin's docs are adopted; the box never writes them
+
+
+def test_the_script_keeps_before_it_deletes_and_verifies_outside_the_kept_set() -> None:
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    # the keep test runs before the D branch, so a kept path is never unlinked
+    assert code.index("if (Test-KeptByBox $rel)") < code.index('if ($op.Kind -eq "D")')
+    # a kept path is not staged either -- it is left for the sync that owns it
+    keep_branch = code[code.index("if (Test-KeptByBox $rel)"):code.index('if ($op.Kind -eq "D")')]
+    assert "$staged.Add" not in keep_branch and "continue" in keep_branch
+    # the verification gate excludes exactly the kept set, nothing wider
+    assert "Where-Object { -not (Test-KeptByBox $_) })" in code
+    # box-touched is measured from the merge base AFTER the box's own state is committed
+    assert (code.index("Box state captured before release adoption")
+            < code.index('"merge-base", "HEAD", $target'))
+    # and no merge base means every state path is the box's -- never "adopt everything"
+    assert "if (-not $mergeBase) { return $true }" in code
+
+
+def test_a_locked_file_is_retried_before_it_is_reported() -> None:
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    assert "catch [System.IO.IOException]" in code
+    assert "if ($tries -ge 3) { throw }" in code
+    assert "Start-Sleep -Seconds 2" in code

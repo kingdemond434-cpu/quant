@@ -128,8 +128,14 @@ def _measured_budget_mb() -> float:
         # file -- sys.path carries `desks/mt5`, not `desks/mt5/research`. A bare `job_lock` here
         # raised ModuleNotFoundError, was swallowed by the fallback, and silently pinned the
         # budget to the declaration: the exact silent-degradation shape this file fences.
-        from research.job_lock import measured_need_mb
-        return float(measured_need_mb("external_gauntlet", DECLARED_NEED_MB)[0])
+        from research.job_lock import free_mb, measured_need_mb
+        need = float(measured_need_mb("external_gauntlet", DECLARED_NEED_MB)[0])
+        free = free_mb()
+        if free is None:
+            # An unmeasurable box gets the measured need, never unlimited.
+            return need
+        # THE ROOM THE BOX ACTUALLY HAS, not a figure anyone typed. See HEADROOM_SHARE.
+        return max(need, min(HEADROOM_SHARE * float(free), HEADROOM_CAP_MB))
     except Exception:
         # A budget that cannot be measured falls back to the declaration, never to unlimited:
         # an unmeasurable box must not have its throttle removed.
@@ -138,20 +144,33 @@ def _measured_budget_mb() -> float:
 
 #: What the sweep DECLARES at admission. The floor for both the ask and the throttle above.
 #:
-#: RAISED 1200 -> 8192 on 2026-09-08. The 1200 was measured on an 8GB box the desk no longer runs
-#: on; the principal reports the current box at 80GB. On that box the floor had become the
-#: throttle, and a SELF-TIGHTENING one: the budget is max(declared, p75 of observed peaks), and a
-#: sweep that defers cells at 1200MB never records a peak above 1200MB, so no run could ever
-#: raise it. That is the exact "compute limit hardening into a verdict" the order rotation above
-#: was written to prevent, arriving by a different door.
+#: 1200 IS THE MEASURED FLOOR, AND IT IS BACK (2026-09-08, the same day it was raised). It went
+#: to 8192 this morning on the principal's report of an 80GB box, and 8192 would have stood the
+#: sweep down at the door EVERY HOUR on the box the desk actually runs on -- every counter that
+#: box has ever published says 8GB: `stall_watch` 2026-08-28 "free RAM cycled 3329 -> 448 ->
+#: 3329MB" around a 3.7GB searcher; 2026-09-08 "phys 142MB free / virt 11719MB"; the page file
+#: "full at 12,756MB"; and this file's own 2026-09-05 measurement of one 4882MB process "leaving
+#: 280MB free". An 80GB box does not run out of memory to a 4.9GB process. (80GB is the size of
+#: its DISK.) A floor sized off a claim instead of a counter is a throttle when the claim is
+#: high and a permanent refusal when it is low, and this one would have been the refusal --
+#: `exclusive_job` fails closed on exactly this number, rc=75, no backtests, no certificates.
 #:
-#: 8192 is ~10% of the reported box, not a measured peak: it leaves `edge_search` (2000),
-#: `orthogonal_sweep` (1250), the terminal and every other leg their room several times over,
-#: and the p75 mechanism still corrects it UPWARD from real runs. It fails closed: `exclusive_job`
-#: is admitted on this same figure, so if the box does not in fact have 8GB free the sweep is
-#: refused at the door rather than let in on a false statement -- which is how a wrong number
-#: here shows up as a visible refusal instead of a silent throttle.
-DECLARED_NEED_MB = 8192
+#: THE THROUGHPUT PROBLEM THE RAISE WAS FOR IS SOLVED BY MEASURING, NOT BY TYPING. The 1200 was
+#: a self-tightening throttle only because the budget was PINNED to it: max(declared, p75 of
+#: peaks), and a sweep that defers at the declaration never records a higher peak. The budget
+#: now takes the room the box has at start (`_measured_budget_mb`), so on a box with the memory
+#: the sweep grows into it, and on this one it stays where it was measured. The number the sweep
+#: is admitted on is that same budget (`_cli_main`), so ask and throttle remain ONE number.
+DECLARED_NEED_MB = 1200
+
+#: THE SHARE OF FREE MEMORY THE SWEEP MAY TAKE, and a ceiling on it. Half: `edge_search`
+#: (2000MB), `orthogonal_sweep` (1250MB) and the live terminal must still fit beside a running
+#: sweep, and `exclusive_job` makes a late neighbour WAIT rather than refuse -- so a sweep that
+#: takes half of what was free at its start leaves the other half for whoever is admitted next.
+#: The ceiling keeps a very large box from handing one sweep more workers than it can use; on
+#: an 8GB box neither figure binds and the p75-corrected need is what the sweep gets.
+HEADROOM_SHARE = float(os.environ.get("GAUNTLET_HEADROOM_SHARE", "0.5"))
+HEADROOM_CAP_MB = float(os.environ.get("GAUNTLET_HEADROOM_CAP_MB", "8192"))
 
 MEMORY_BUDGET_MB = _measured_budget_mb()
 
@@ -1960,7 +1979,10 @@ def _cli_main() -> int:
     # and asking for it made every reproduction stand down on admission and report UNMEASURED
     # (rc=75) -- honest, and useless, because a reproducer that is never admitted checks nothing.
     _job = "external_gauntlet_repro" if _REPRO is not None else "external_gauntlet"
-    _need = 300 if _REPRO is not None else DECLARED_NEED_MB
+    # THE ASK IS THE THROTTLE. MEMORY_BUDGET_MB is what the sweep will hold; asking the box for
+    # anything less lets it in on a false statement, anything more refuses it for room it will
+    # not use. (`exclusive_job` still corrects the ask upward by the p75 of recorded peaks.)
+    _need = 300 if _REPRO is not None else int(MEMORY_BUDGET_MB)
     with exclusive_job(_job, need_mb=_need) as acquired:
         if not acquired:
             return 75

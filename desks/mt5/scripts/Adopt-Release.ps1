@@ -56,6 +56,30 @@
     the right thing to do at the next convenient restart. This makes the desk
     whole in the meantime, and costs nothing if the entry is later fixed.
 
+    STATE THE BOX HAS WRITTEN IS THE BOX'S (2026-09-08)
+
+    The first version adopted EVERY path that differed from the target, and on
+    a box that had not pushed for a day and a half that meant rewriting its own
+    forward ledgers, certificates, hypotheses dockets and stall-watch verdicts
+    with origin's older copies -- the box's live evidence rolled back to the
+    last thing it had managed to publish. The two adoption attempts of 2026-09-07
+    died mid-write (a locked path), left the code half-written and uncommitted,
+    and every hourly sync since failed on the merge of that tree; the gateway
+    refused new risk on the drift for a day while five sleeves placed nothing.
+
+    A path under a state prefix (the same list `libs.ops.release.STATE_PREFIXES`
+    holds, minus docs/, which the box never writes) that THIS BOX has changed
+    since it diverged from the target is kept, not adopted: it is evidence, and
+    the box is the only place it is measured. A state path only origin changed
+    -- a research budget, a measured venue clock, an input a session wrote for
+    the box to read -- is adopted like code. Code is always adopted. The merge
+    is recorded once every path outside the kept set matches the target, so the
+    next sync fast-forwards and the box's own state travels to origin with it.
+
+    The cost of that rule is stated rather than hidden: where BOTH sides changed
+    a state path, the box's copy wins and origin's edit is reverted by the box's
+    next push. Every such path is named in the output.
+
 .PARAMETER RepoRoot
     Repository root. Defaults to three levels above this script, correct by
     construction.
@@ -193,9 +217,38 @@ function Write-InPlace {
     } else {
         $mode = [System.IO.FileMode]::Create
     }
-    $fs = [System.IO.File]::Open($Full, $mode, [System.IO.FileAccess]::Write,
-                                 [System.IO.FileShare]::None)
-    try { $fs.Write($Bytes, 0, $Bytes.Length) } finally { $fs.Close() }
+    # A READER IN THE WAY IS A MOMENT, NOT A VERDICT. Both 2026-09-07 attempts died on a path an
+    # organ happened to hold open, and the loop above treated the first sharing violation as the
+    # path being corrupt. A python import or a log tail holds a file for milliseconds; three
+    # tries two seconds apart outlast that, and a path still locked after six seconds is
+    # reported exactly as before.
+    $tries = 0
+    while ($true) {
+        try {
+            $fs = [System.IO.File]::Open($Full, $mode, [System.IO.FileAccess]::Write,
+                                         [System.IO.FileShare]::None)
+            try { $fs.Write($Bytes, 0, $Bytes.Length) } finally { $fs.Close() }
+            return
+        } catch [System.IO.IOException] {
+            $tries++
+            if ($tries -ge 3) { throw }
+            Start-Sleep -Seconds 2
+        }
+    }
+}
+
+# THE STATE PREFIXES, verbatim from `libs.ops.release.STATE_PREFIXES` minus docs/ (which the box
+# never writes, so origin's docs are adopted like code). Kept as a literal because this script
+# runs BEFORE the adopted `libs` is on disk; test_adopt_release_keeps_the_box_s_state pins the
+# two lists to each other.
+$StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+                   "data/", "reports/", "logs/", "web/")
+
+function Test-StatePath {
+    param([string] $Rel)
+    $p = ($Rel -replace '\\', '/').TrimStart('.', '/')
+    foreach ($prefix in $StatePrefixes) { if ($p.StartsWith($prefix)) { return $true } }
+    return $false
 }
 
 Write-Host "ADOPT RELEASE"
@@ -267,7 +320,29 @@ if ($dirty.Count -gt 0) {
 $records = @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-status", "HEAD", $target) |
              ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
 
+# WHAT THIS BOX HAS WRITTEN SINCE IT DIVERGED. Measured against the merge base, AFTER step 1,
+# so the state that was still uncommitted a moment ago counts as the box's. A state path in
+# this set is live evidence and is kept; one outside it is an input origin wrote for the box.
+# No merge base (unrelated histories) means nothing can be told apart, and the safe reading of
+# "cannot tell" is that every state path is the box's.
+$boxTouched = @{}
+$mergeBase = (Invoke-Git @("merge-base", "HEAD", $target) -AllowFail | ForEach-Object { "$_" } |
+              Where-Object { $_ -match '\S' } | Select-Object -First 1)
+if ($mergeBase) {
+    foreach ($p in @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-only", "$mergeBase", "HEAD") |
+                     ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })) {
+        $boxTouched[$p] = $true
+    }
+}
+function Test-KeptByBox {
+    param([string] $Rel)
+    if (-not (Test-StatePath $Rel)) { return $false }
+    if (-not $mergeBase) { return $true }
+    return $boxTouched.ContainsKey($Rel)
+}
+
 $written = 0; $added = 0; $removed = 0
+$kept      = New-Object System.Collections.ArrayList
 $unremoved = New-Object System.Collections.ArrayList
 $staged    = New-Object System.Collections.ArrayList
 
@@ -293,6 +368,14 @@ foreach ($rec in $records) {
     foreach ($op in $ops) {
         $rel  = $op.Path
         $full = Join-Path $RepoRoot ($rel -replace '/', '\')
+        if (Test-KeptByBox $rel) {
+            # The box's own measurement. Not written, not deleted, not staged: it stays
+            # exactly as the organ that produced it left it, and travels to origin on the
+            # next push.
+            [void]$kept.Add($rel)
+            $seen++
+            continue
+        }
         if ($op.Kind -eq "D") {
             # The one operation that CANNOT avoid an unlink. If the entry is the
             # damaged one, it stays -- and it is reported, never swallowed.
@@ -321,6 +404,11 @@ foreach ($rec in $records) {
     }
 }
 Write-Host ("  wrote {0} modified, {1} added, {2} deleted in place" -f $written, $added, $removed)
+if ($kept.Count -gt 0) {
+    Write-Host ("  kept {0} state path(s) this box wrote since it diverged (the box's evidence wins; origin's copy is reverted by the next push):" -f $kept.Count)
+    $kept | Select-Object -First 12 | ForEach-Object { Write-Host ("    {0}" -f $_) }
+    if ($kept.Count -gt 12) { Write-Host ("    ... and {0} more" -f ($kept.Count - 12)) }
+}
 
 # ---- 3. STAGE BY NAME AND COMMIT ---------------------------------------------
 # Chunked: a repository-sized pathspec list overruns the Windows command line,
@@ -345,8 +433,12 @@ if ($staged.Count -gt 0) {
 # and keeps THIS tree; if this tree still differs from the target, recording it
 # would bury the difference under a commit that claims to contain it. So the
 # difference must be empty, or the merge is not recorded at all.
-$drift = @(Invoke-Git @("diff", "--name-only", "HEAD", $target) |
-           ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
+# The kept state paths are the one sanctioned difference: they differ from the
+# target BY DESIGN (the box's evidence over origin's older copy), and step 5
+# records exactly that -- the next push carries them up, it does not bury them.
+$drift = @(Invoke-Git @("-c", "core.quotePath=false", "diff", "--name-only", "HEAD", $target) |
+           ForEach-Object { "$_" } | Where-Object { $_ -match '\S' } |
+           Where-Object { -not (Test-KeptByBox $_) })
 if ($drift.Count -gt 0) {
     Write-Host ""
     Write-Host ("REFUSING to record the merge: {0} path(s) still differ from the target." -f $drift.Count)
@@ -369,8 +461,8 @@ Invoke-Git @("merge", "-s", "ours", $target, "-m",
              "Record the release merge; tree adopted in place by Adopt-Release") | Out-Null
 
 Write-Host ""
-Write-Host ("ADOPTED. HEAD is now {0} and descends from {1}." -f `
-            (Invoke-Git @("rev-parse", "--short", "HEAD")).Trim(), $target.Substring(0, 12))
+Write-Host ("ADOPTED. HEAD is now {0} and descends from {1}; code == target, {2} state path(s) kept as the box's." -f `
+            (Invoke-Git @("rev-parse", "--short", "HEAD")).Trim(), $target.Substring(0, 12), $kept.Count)
 Write-Host "The next sync will fast-forward instead of failing on the merge."
 Write-Host ""
 Write-Host "Next:  python desks\mt5\mt5desk\release_identity.py"

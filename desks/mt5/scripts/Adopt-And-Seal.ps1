@@ -88,11 +88,22 @@ if ($sealed -eq $head) {
     Log "HEAD $($head.Substring(0,12)) is already the sealed code; nothing to do"
     exit 0
 }
-# `release.seal` refuses a dirty tree. Say so HERE, with the paths, rather than let a Python
-# traceback be the only record. Untracked files (??) are not dirt; tracked modifications are.
-$dirty = @(git status --porcelain 2>$null | Where-Object { $_ -and ($_ -notmatch '^\?\?') })
+# `release.seal` refuses a tree with a dirty CODE path. Say so HERE, with the paths, rather than
+# let a Python traceback be the only record. Untracked files (??) are not dirt; a tracked STATE
+# path is not dirt either -- on this box every organ rewrites its artifact between syncs, so a
+# ledger is dirty for most of every hour by design, and a check that refused on it could only
+# ever seal in the seconds after a sync (it never did). The same prefixes
+# `libs.ops.release.STATE_PREFIXES` names, and `release.seal` applies the same rule itself.
+$statePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+                   "data/", "reports/", "logs/", "web/", "docs/")
+$dirty = @(git status --porcelain --untracked-files=no 2>$null | Where-Object { $_ } | ForEach-Object {
+    $p = ("$_".Substring(3) -split ' -> ')[-1].Trim().Trim('"') -replace '\\', '/'
+    $isState = $false
+    foreach ($prefix in $statePrefixes) { if ($p.StartsWith($prefix)) { $isState = $true; break } }
+    if (-not $isState) { $p }
+})
 if ($dirty.Count -gt 0) {
-    Log "refusing to seal: $($dirty.Count) tracked path(s) differ from HEAD after adoption:"
+    Log "refusing to seal: $($dirty.Count) tracked code path(s) differ from HEAD after adoption:"
     $dirty | Select-Object -First 12 | ForEach-Object { Log "    $_" }
     exit 3
 }

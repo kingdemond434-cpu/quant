@@ -147,3 +147,41 @@ def test_the_installer_registers_the_adoption_hourly_after_the_sync_slot() -> No
 def test_the_sync_slot_really_is_before_the_adoption_slot() -> None:
     assert "(Get-Date).Date.AddMinutes(5)" in INSTALL      # ShadowSync
     assert INSTALL.index("AddMinutes(5)") < INSTALL.index("AddMinutes(20)")
+
+
+# ------------------------------------------- 4. the seal is taken between syncs, not never
+def test_adopt_and_seal_s_dirty_check_ignores_state_and_untracked_paths() -> None:
+    """On the box a tracked ledger is dirty for most of every hour by design; a check that
+    refused on it could only seal in the seconds after a sync, and never did."""
+    assert "git status --porcelain --untracked-files=no" in ADOPT_CODE
+    import sys
+    repo_root = str(_DESK.parent.parent)
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+    from libs.ops import release
+    for prefix in release.STATE_PREFIXES:
+        assert f'"{prefix}"' in ADOPT_CODE, prefix
+    assert "tracked code path(s) differ from HEAD after adoption" in ADOPT_CODE
+
+
+STANDALONE = (_DESK / "scripts" / "install_adopt_release_task.ps1").read_text("utf-8")
+
+
+def test_the_standalone_installer_agrees_with_the_full_one() -> None:
+    """Re-running the whole installer on a live box has failed with "Access is denied" on the
+    S4U principals, so the one task that unblocks the box gets its own installer -- which must
+    register the SAME task, or the two routes would fight over its settings every install."""
+    blk = _block(INSTALL, "$adoptSeal = Join-Path", "# MT5-ArtifactSync")
+    for s in ("MT5-AdoptRelease", "Adopt-And-Seal.ps1",
+              "-RepetitionInterval (New-TimeSpan -Hours 1)", "(Get-Date).Date.AddMinutes(20)",
+              "-ExecutionTimeLimit (New-TimeSpan -Minutes 20)", "-MultipleInstances IgnoreNew",
+              "-LogonType Interactive -RunLevel Limited", "-StartWhenAvailable"):
+        assert s in blk, f"installer block lost {s}"
+        assert s in STANDALONE, f"standalone installer lost {s}"
+
+
+def test_the_standalone_installer_runs_the_first_adoption_now_and_is_idempotent() -> None:
+    assert "Unregister-ScheduledTask -TaskName $TaskName" in STANDALONE
+    assert "Start-ScheduledTask -TaskName $TaskName" in STANDALONE
+    assert STANDALONE.index("Register-ScheduledTask") < STANDALONE.index("Start-ScheduledTask")
+    assert "$ErrorActionPreference = 'Stop'" in STANDALONE

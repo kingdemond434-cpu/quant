@@ -38,7 +38,15 @@ def _load():
 
 @pytest.fixture
 def peaks(tmp_path, monkeypatch):
-    """Write a peak history the module will read when it computes its budget."""
+    """Write a peak history the module will read when it computes its budget.
+
+    THE HEADROOM TERM IS SWITCHED OFF HERE (2026-09-08). The budget is now
+    max(measured need, HEADROOM_SHARE x free memory at start), and the second term is the
+    BOX's -- it depends on what the machine running this test has free, which is exactly the
+    kind of input a test must not read. `test_gauntlet_budgets_fit_the_box` pins that term
+    against a stubbed box; this file pins the measured-need term alone, so the share is zero.
+    """
+    monkeypatch.setenv("GAUNTLET_HEADROOM_SHARE", "0")
     locks = _ROOT / "desks" / "mt5" / "data" / ".job_locks"
     locks.mkdir(parents=True, exist_ok=True)
     path = locks / "external_gauntlet.peaks.json"
@@ -95,9 +103,12 @@ def test_the_env_override_still_wins(monkeypatch, peaks) -> None:
     assert m.MEMORY_BUDGET_MB == 900.0
 
 
-def test_the_admission_ask_uses_the_same_declaration(peaks) -> None:
+def test_the_admission_ask_is_the_throttle_itself(peaks) -> None:
     """Two literals is how one of them goes stale, which is the whole defect. The ask and the
-    throttle must both descend from one constant."""
+    throttle must be ONE number: the ask IS MEMORY_BUDGET_MB, which itself descends from the
+    declaration and the measured peaks. Asking for the bare declaration while throttling at the
+    budget would let the sweep in on a smaller statement than it will make good on."""
     src = (_ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py").read_text("utf-8")
-    assert "_need = 300 if _REPRO is not None else DECLARED_NEED_MB" in src, (
-        "the admission ask has its own literal again")
+    assert "_need = 300 if _REPRO is not None else int(MEMORY_BUDGET_MB)" in src, (
+        "the admission ask no longer descends from the budget")
+    assert "_need = 300 if _REPRO is not None else DECLARED_NEED_MB" not in src

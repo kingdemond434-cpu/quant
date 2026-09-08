@@ -232,9 +232,14 @@ def _allocator_certificate(root: Path) -> dict[str, Any] | None:
     return out
 
 
-def dirty_paths(root: Path | None = None) -> list[str]:
+def dirty_paths(root: Path | None = None, *, code_only: bool = False) -> list[str]:
     """Tracked files that differ from HEAD, the manifest excluded. Untracked files are not
-    listed: the box writes hundreds of artifacts and none of them is code."""
+    listed: the box writes hundreds of artifacts and none of them is code.
+
+    `code_only` drops the state paths too (`is_state_path`). On the box every organ rewrites
+    its artifact between one sync and the next, so a tracked ledger is dirty for most of every
+    hour by design; a seal that refused on that could only ever be taken in the seconds after a
+    sync, which is why the unattended one never was."""
     out = _git(["status", "--porcelain", "--untracked-files=no"], _root(root))
     if not out:
         return []
@@ -243,7 +248,7 @@ def dirty_paths(root: Path | None = None) -> list[str]:
         if len(ln) < 4:
             continue
         p = ln[3:].split(" -> ")[-1].strip().strip('"')
-        if p and p != RELEASE_REL:
+        if p and p != RELEASE_REL and not (code_only and is_state_path(p)):
             paths.append(p)
     return sorted(paths)
 
@@ -301,18 +306,21 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
     RELEASE.json ALONE -- that commit is the pure seal `accepts()` recognises.
 
     `tested` attests that the suite ran green on this SHA before sealing (CI passes it after the
-    test jobs; an operator sealing by hand does not get to claim it by default). A dirty tree is
-    refused unless `allow_dirty`, in which case the dirty paths are recorded rather than hidden:
-    the seal is still exact, but the operator should know their screen is not what they sealed.
+    test jobs; an operator sealing by hand does not get to claim it by default). A tree with a
+    dirty CODE path is refused unless `allow_dirty`; dirty state paths never refuse (the seal
+    hashes HEAD's blobs, and on the box state is dirty by design between syncs -- see
+    `dirty_paths`). Every dirty path, state included, is recorded rather than hidden: the seal
+    is still exact, but the operator should know their screen is not what they sealed.
     """
     r = _root(root)
     head = git_head(r)
     if head == "unknown":
         raise RuntimeError("cannot seal: git HEAD is unknown here (no git, or not a repository)")
     dirty = dirty_paths(r)
-    if dirty and not allow_dirty:
-        raise RuntimeError(f"cannot seal a dirty tree ({len(dirty)} tracked path(s) differ from "
-                           f"HEAD: {dirty[:5]}); commit them or pass allow_dirty")
+    dirty_code = [p for p in dirty if not is_state_path(p)]
+    if dirty_code and not allow_dirty:
+        raise RuntimeError(f"cannot seal a dirty tree ({len(dirty_code)} tracked code path(s) "
+                           f"differ from HEAD: {dirty_code[:5]}); commit them or pass allow_dirty")
     doc = _describe(r, head)
     doc.update(sealed=True, sealed_at=doc["generated_utc"],
                sealed_by=by or os.environ.get("GITHUB_ACTOR") or "operator",

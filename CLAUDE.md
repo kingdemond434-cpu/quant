@@ -45,12 +45,23 @@ vocabulary. Do not decide something the desk already decided.
   re-seals only on a clean tree, commits `RELEASE.json` alone and restarts the gateway. Until it
   was written the box only ever pushed, and a day of fixes sat on origin while the gateway ran a
   tree that could not import `libs`. If the box is not adopting, that task is the first thing to
-  check. One-time: run `Install-QuantWindows.ps1` (or the script itself) once to register it.
-- **Box memory: the principal reports 80 GB.** `stall_watch.json` reports `phys 142MB free /
-  virt 11.7 GB` on the same box — the two disagree ~80x and it is UNRESOLVED which counter is
-  right. It matters: the gauntlet's admission floor is 8192 MB (`DECLARED_NEED_MB`, sized off
-  the 80 GB figure) and `exclusive_job` fails CLOSED on it — `rc=75 not admitted` in the gauntlet
-  log means the counter won and the floor must be measured, not argued.
+  check. One-time: `desks\mt5\scripts\install_adopt_release_task.ps1` registers it AND runs the
+  first adoption immediately (re-running the whole installer on a live box has failed with
+  "Access is denied" on the S4U principals; this touches one task).
+- **Box memory: 8 GB by every counter the box has published; the principal says 80 GB.** Four
+  independent readings agree on 8 GB (`stall_watch` 2026-08-28: free RAM cycling 3329→448 MB
+  around a 3.7 GB searcher; 2026-09-08: `phys 142MB free / virt 11719MB`; a page file "full at
+  12,756MB"; `external_gauntlet` 2026-09-05: one 4882 MB process "leaving 280MB free"). An
+  80 GB box does not starve on a 4.9 GB process; **80 GB is the DISK** (the Hetzner CX32 shape:
+  4 vCPU / 8 GB / 80 GB). Never size a floor off the claim: the 8192 MB gauntlet floor of
+  2026-09-08 morning would have refused every hourly sweep (`rc=75`) and was reverted the same
+  day. `stall_watch.json` now publishes `memory.total_phys_mb` and the six largest commit
+  holders, so the dashboard answers this; read it before arguing it.
+- **The box's state is the box's.** `Adopt-Release.ps1` keeps every state path (the
+  `STATE_PREFIXES` in `libs/ops/release.py`, minus `docs/`) that the box changed since it
+  diverged, adopts code and origin-only inputs, and records the merge. The next push carries the
+  box's state up and REVERTS any origin edit to a state path both sides changed — so never fix
+  the box by editing a ledger/registry/docket on origin; fix the organ that writes it.
 
 ## Laws a fresh session most often violates (full set: LAWS §6)
 

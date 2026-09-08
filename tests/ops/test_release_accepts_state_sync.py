@@ -118,3 +118,50 @@ def test_the_exact_equality_and_unknown_cases_are_unchanged(monkeypatch) -> None
     assert not ok and "unmeasured" in why
     ok, why, _ = release.accepts(RUNNING, {})
     assert not ok and "names no code_sha" in why
+
+
+# ----------------------------------------------------- a seal on the box, between two syncs
+def _repo(tmp_path):
+    import subprocess
+
+    repo = tmp_path / "box"
+    repo.mkdir()
+    for args in (("init", "-q", "-b", "main"), ("config", "user.email", "t@t"),
+                 ("config", "user.name", "t")):
+        subprocess.run(["git", "-C", str(repo), *args], check=True)
+    (repo / "libs").mkdir()
+    (repo / "libs" / "x.py").write_text("code = 1\n")
+    (repo / "desks" / "mt5" / "data").mkdir(parents=True)
+    (repo / "desks" / "mt5" / "data" / "ledger.json").write_text("[1]\n")
+    subprocess.run(["git", "-C", str(repo), "add", "--", "libs/x.py",
+                    "desks/mt5/data/ledger.json"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", "base"], check=True)
+    return repo
+
+
+def test_dirty_paths_can_leave_state_out(tmp_path) -> None:
+    repo = _repo(tmp_path)
+    (repo / "desks" / "mt5" / "data" / "ledger.json").write_text("[1, 2]\n")
+    (repo / "libs" / "x.py").write_text("code = 2\n")
+    assert release.dirty_paths(repo) == ["desks/mt5/data/ledger.json", "libs/x.py"]
+    assert release.dirty_paths(repo, code_only=True) == ["libs/x.py"]
+
+
+def test_a_seal_is_not_refused_by_the_ledger_an_organ_rewrote_a_minute_ago(tmp_path) -> None:
+    """On the box every organ rewrites its artifact between syncs, so a tracked state path is
+    dirty for most of every hour by design. The unattended seal never succeeded once because of
+    it. The seal hashes HEAD's blobs; the dirt is recorded, never hidden."""
+    repo = _repo(tmp_path)
+    (repo / "desks" / "mt5" / "data" / "ledger.json").write_text("[1, 2]\n")
+    doc = release.seal(root=repo, by="test", write=False)
+    assert doc["sealed"] is True
+    assert doc["worktree_dirty"] == ["desks/mt5/data/ledger.json"]
+
+
+def test_a_seal_still_refuses_a_dirty_code_path(tmp_path) -> None:
+    repo = _repo(tmp_path)
+    (repo / "libs" / "x.py").write_text("code = 2\n")
+    with pytest.raises(RuntimeError, match=r"1 tracked code path\(s\)"):
+        release.seal(root=repo, by="test", write=False)
+    doc = release.seal(root=repo, by="test", write=False, allow_dirty=True)
+    assert doc["worktree_dirty"] == ["libs/x.py"]

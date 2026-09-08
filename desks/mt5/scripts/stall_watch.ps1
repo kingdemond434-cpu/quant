@@ -143,8 +143,33 @@ foreach ($tn in $researchTasks) {
 # its per-cell cache intact, so the work resumes. A terminal starved of memory mid-session is a
 # money-path event, and the money path is never something research gets to gamble.
 # The largest offender goes first, and NOTHING on the money path is ever a candidate.
+# THE CENSUS IS PUBLISHED (2026-09-08). "80GB" was argued across a whole day against this
+# watchdog's "phys 142MB free"; the number that settles it -- TotalVisibleMemorySize -- was read
+# on every pass and written nowhere. Total and free, physical and commit, and the six largest
+# commit holders by name now travel to the dashboard with the rest of the verdict, so the next
+# argument about what the box has is answered by the box.
+$memCensus = @{ status = 'UNMEASURED' }
 try {
   $os = Get-CimInstance Win32_OperatingSystem
+  $memCensus = @{
+    total_phys_mb   = [math]::Round($os.TotalVisibleMemorySize / 1KB)
+    free_phys_mb    = [math]::Round($os.FreePhysicalMemory / 1KB)
+    total_commit_mb = [math]::Round($os.TotalVirtualMemorySize / 1KB)
+    free_commit_mb  = [math]::Round($os.FreeVirtualMemory / 1KB)
+    top_commit      = @()
+  }
+  # Every process, not just python: the terminal and the dashboard's browser are candidates for
+  # the answer even though they are never candidates for shedding.
+  foreach ($h in @(Get-CimInstance Win32_Process | Sort-Object -Property PageFileUsage -Descending | Select-Object -First 6)) {
+    $hn = $h.Name
+    if ($h.CommandLine -match '([\w_]+\.py)') { $hn = $matches[1] }
+    $memCensus.top_commit += @{ name = $hn; pid = $h.ProcessId
+                                commit_mb = [math]::Round($h.PageFileUsage / 1KB)
+                                rss_mb = [math]::Round($h.WorkingSetSize / 1MB) }
+  }
+} catch { }
+try {
+  if (-not $os) { $os = Get-CimInstance Win32_OperatingSystem }
   # THE BINDING CONSTRAINT IS THE SMALLER OF RAM AND COMMIT. Physical free memory alone said
   # 2,705MB while the box had 234MB of usable virtual memory (page file full at 12,756MB), so
   # this floor read healthy at the exact moment nothing could allocate and the sweep was dying
@@ -412,7 +437,7 @@ if ($free -lt $DiskFloorGB) {
   }
 }
 
-@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes } |
+@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes; memory = $memCensus } |
   ConvertTo-Json -Depth 4 | Set-Content $stateFile
 
 if ($actions) { $actions | ForEach-Object { "$($now.ToUniversalTime().ToString('u')) $_" } }

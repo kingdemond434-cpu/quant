@@ -97,3 +97,37 @@ def test_the_floor_is_still_five_gigabytes() -> None:
     """This change is about what happens BELOW the floor, not about moving it."""
     assert "$DiskFloorGB = 5" in BLOCK
     assert "if ($free -lt $DiskFloorGB)" in BLOCK
+
+
+# ------------------------------------------------------------------ the RAM census is published
+RAM = SRC[SRC.index("# RAM FLOOR"):SRC.index("# PROGRESS, NOT JUST PULSE")]
+RAM_CODE = "\n".join(ln for ln in RAM.splitlines() if not ln.lstrip().startswith("#"))
+
+
+def test_the_box_publishes_what_it_has_not_only_what_is_free() -> None:
+    """A day was spent arguing 80GB against "phys 142MB free". The counter that settles it was
+    read on every pass and written nowhere."""
+    assert "TotalVisibleMemorySize" in RAM_CODE
+    assert "TotalVirtualMemorySize" in RAM_CODE
+    for key in ("total_phys_mb", "free_phys_mb", "total_commit_mb", "free_commit_mb"):
+        assert key in RAM_CODE, key
+
+
+def test_the_largest_commit_holders_are_named_across_every_process() -> None:
+    """Shedding sorts by commit; the census must show the same ranking, and it must include the
+    terminal and the browser, which are never shed but are half the answer."""
+    assert "top_commit" in RAM_CODE
+    assert ("Get-CimInstance Win32_Process | Sort-Object -Property PageFileUsage -Descending"
+            in RAM_CODE)
+    assert "-First 6" in RAM_CODE
+
+
+def test_the_census_travels_with_the_verdict_and_starts_unmeasured() -> None:
+    assert "memory = $memCensus" in SRC
+    assert "$memCensus = @{ status = 'UNMEASURED' }" in RAM_CODE   # a failed read is not zero
+
+
+def test_the_shed_still_measures_the_smaller_of_ram_and_commit() -> None:
+    """The census is additive; the floor's own arithmetic is untouched."""
+    assert "$freeMB = [math]::Min($freePhysMB, $freeVirtMB)" in RAM_CODE
+    assert "if ($freeMB -lt 500 -and $strikes -ge 2)" in RAM_CODE
