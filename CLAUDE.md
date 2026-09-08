@@ -41,7 +41,8 @@ vocabulary. Do not decide something the desk already decided.
 - The MT5 desk lives in `desks/mt5/`; universe registry `desks/mt5/data/universe/universe.json`.
   Branch pointers rot — trust `git branch --show-current` and recent `git log`, not this file.
 - **The MT5 box PULLS (2026-09-08).** `desks/mt5/scripts/Adopt-And-Seal.ps1`, registered as
-  `MT5-AdoptRelease` (hourly at :20, after the :05 sync), lands the branch's tree in place,
+  `MT5-AdoptRelease` (hourly at :12, between the :05 and :20 sync slots; both writers hold the
+  named mutex `Local\MT5-GitWriter`), lands the branch's tree in place,
   re-seals only on a clean tree, commits `RELEASE.json` alone and restarts the gateway. Until it
   was written the box only ever pushed, and a day of fixes sat on origin while the gateway ran a
   tree that could not import `libs`. If the box is not adopting, that task is the first thing to
