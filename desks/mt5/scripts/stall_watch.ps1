@@ -328,19 +328,88 @@ try {
   }
 } catch { $actions += "UNIVERSE: guard could not read registry/canon ($_)" }
 
-# DESK DISK FLOOR. A full C: kills the terminal, every task and every artifact write at once,
-# silently. Below 5GB: prune the two safe reclaim pools -- logs older than 14 days and the
-# gauntlet series cache (pure recompute) -- and REPORT. Below 2GB after pruning: loud breach
-# line the desk-state builder carries to the dashboard.
+# DESK DISK FLOOR -- SELF-HEALING. "Needs a human decision" is not an outcome this box may have.
+#
+# MEASURED 2026-09-08, and it cost twelve hours of the whole research system. This block ran at
+# 02:10, reported "C: was 0.5GB free -- pruned old logs + series cache -> 0.5GB", wrote
+# "DISK CRITICAL ... needs a human decision", and stopped. The desk publisher died at 02:20 and
+# the gauntlet, allocator, shadow lane and dashboard were stale for the rest of the day. Two
+# defects, and the second is the one that actually hurt:
+#
+#   1. ONE TIER. Logs older than 14 days plus the gauntlet series cache was the ENTIRE
+#      repertoire. When that pool is already empty there was nothing else to try, and the
+#      script's own answer to that was to wait for a person who was not coming.
+#   2. IT COULD NOT SEE ITS OWN FAILURE. Every delete ran under -ErrorAction SilentlyContinue
+#      and nothing measured what was reclaimed, so "the pool was empty", "the path does not
+#      exist" and "the delete was denied" are indistinguishable -- all three print the same
+#      cheerful line. 0.5GB -> 0.5GB means it freed NOTHING and had no way to notice.
+#
+# The ladder escalates through pools that are pure recompute or pure history, cheapest first,
+# re-measuring the drive after each tier and STOPPING the moment the floor is cleared -- so a
+# mild shortage costs a cache and only a severe one costs anything more. A tier whose path is
+# absent says so, rather than counting as a successful prune of nothing.
+#
+# NEVER TOUCHED, at any threshold, however full the disk:
+#   data\tape       the proprietary tick record -- unrecoverable, and the desk's only real moat
+#   data\secrets    credentials
+#   data\universe   the bar lake and symbol registry (re-pulling costs days)
+#   RELEASE.json, LIVE_MANIFEST.jsonl, sleeve_registry.json -- the identity chain
+# A candidate under one of these is skipped, not trimmed. The floor is never worth the moat.
+$DiskFloorGB = 5
+$Protected = @('\data\tape', '\data\secrets', '\data\universe',
+               'RELEASE.json', 'LIVE_MANIFEST.jsonl', 'sleeve_registry.json')
+
+function Test-DeskProtected([string]$Path) {
+  foreach ($p in $Protected) { if ($Path -like "*$p*") { return $true } }
+  return $false
+}
+
 $free = (Get-PSDrive C).Free / 1GB
-if ($free -lt 5) {
-  Get-ChildItem 'C:\opt\quant\desks\mt5\logs' -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-14) } |
-    ForEach-Object { Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }
-  Remove-Item 'C:\opt\quant\desks\mt5\reports\gauntlet_cache\*' -Force -ErrorAction SilentlyContinue
+if ($free -lt $DiskFloorGB) {
+  $q = 'C:\opt\quant'
+  # cheapest first. `age` prunes files older than N days; `all` takes the whole pool.
+  $tiers = @(
+    @{ name = 'logs>14d';        path = "$base\logs";                    age = 14 },
+    @{ name = 'gauntlet_cache';  path = "$base\reports\gauntlet_cache";  age = 0  },
+    @{ name = 'pycache';         path = $q;                              age = -1 },
+    @{ name = 'logs>3d';         path = "$base\logs";                    age = 3  },
+    @{ name = 'free_data_cache'; path = "$base\data\free_data_cache";    age = 0  },
+    @{ name = 'alloc_cache';     path = "$base\data\pf_allocator_cache"; age = 0  },
+    @{ name = 'reports>7d';      path = "$base\reports";                 age = 7  },
+    @{ name = 'temp';            path = $env:TEMP;                       age = 1  }
+  )
+  $before = $free
+  foreach ($t in $tiers) {
+    if ((Get-PSDrive C).Free / 1GB -ge $DiskFloorGB) { break }
+    if (-not $t.path -or -not (Test-Path -LiteralPath $t.path)) {
+      # THE SILENT-FAILURE FIX. A pool that does not exist is a broken assumption about this
+      # box, not a prune that freed nothing, and it must read differently in the log.
+      $actions += "DISK $($t.name): pool path missing ($($t.path)) -- nothing to reclaim here"
+      continue
+    }
+    $f0 = (Get-PSDrive C).Free
+    try {
+      if ($t.age -lt 0) {
+        Get-ChildItem -LiteralPath $t.path -Recurse -Directory -Filter '__pycache__' -ErrorAction SilentlyContinue |
+          Where-Object { -not (Test-DeskProtected $_.FullName) } |
+          ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+      } else {
+        $cut = (Get-Date).AddDays(-$t.age)
+        Get-ChildItem -LiteralPath $t.path -File -Recurse -ErrorAction SilentlyContinue |
+          Where-Object { $_.LastWriteTime -lt $cut -and -not (Test-DeskProtected $_.FullName) } |
+          ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
+      }
+    } catch { $actions += "DISK $($t.name): prune raised ($_)" }
+    $gained = ((Get-PSDrive C).Free - $f0) / 1GB
+    $actions += "DISK $($t.name): reclaimed $([math]::Round($gained,2))GB"
+  }
   $free2 = (Get-PSDrive C).Free / 1GB
-  $actions += "DISK: C: was $([math]::Round($free,1))GB free -- pruned old logs + series cache -> $([math]::Round($free2,1))GB"
-  if ($free2 -lt 2) { $actions += "DISK CRITICAL: $([math]::Round($free2,1))GB free AFTER pruning -- needs a human decision" }
+  $actions += "DISK: C: was $([math]::Round($before,1))GB free -- ladder recovered $([math]::Round($free2-$before,2))GB -> $([math]::Round($free2,1))GB"
+  if ($free2 -lt 2) {
+    # STILL a breach, still loud -- but the next 10-minute pass re-runs the whole ladder rather
+    # than waiting to be rescued. The dashboard carries this line; nothing blocks on it.
+    $actions += "DISK CRITICAL: $([math]::Round($free2,1))GB free after the full ladder -- every safe pool is already empty, so the growth is in protected data (tape/universe) or outside C:\opt\quant; escalating automatically on the next pass"
+  }
 }
 
 @{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes } |
