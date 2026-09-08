@@ -452,6 +452,41 @@ if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
     Write-Host "  [DRY ] MT5-ShadowSync 15-minute artifact publisher"
 }
 
+# MT5-AdoptRelease: the box PULLS. Until 2026-09-08 this box only ever pushed its state to the
+# branch and never took anything back, so every fix landed on origin and stayed there while the
+# gateway ran a tree that could not import `libs` and refused new risk on a stale seal for a
+# full day. Adopt-And-Seal.ps1 lands the branch's tree in place (Adopt-Release.ps1 -- survives a
+# locked or NTFS-damaged path), re-seals only when HEAD is not already the sealed code, commits
+# RELEASE.json alone, and restarts the gateway so the new seal is read. Twenty past the hour:
+# after the :05 ShadowSync slot has committed the box's state, so adoption never lands inside a
+# sync, and before the research legs at the top of the next hour read code.
+$adoptSeal = Join-Path $DeskRoot "scripts\Adopt-And-Seal.ps1"
+if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
+    try {
+        $adoptAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
+            ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $adoptSeal)
+        $adoptTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(20)) `
+            -RepetitionInterval (New-TimeSpan -Hours 1) `
+            -RepetitionDuration (New-TimeSpan -Days 3650)
+        $adoptSettings = New-ScheduledTaskSettingsSet `
+            -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+            -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 2) `
+            -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -MultipleInstances IgnoreNew
+        $adoptPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+            -LogonType Interactive -RunLevel Limited
+        Unregister-ScheduledTask -TaskName "MT5-AdoptRelease" `
+            -Confirm:$false -ErrorAction SilentlyContinue
+        Register-ScheduledTask -TaskName "MT5-AdoptRelease" -Action $adoptAction `
+            -Trigger $adoptTrigger -Settings $adoptSettings -Principal $adoptPrincipal `
+            -Description "Adopt the branch's code in place, re-seal the release, restart the gateway on the new seal." | Out-Null
+        Write-Host "  [OK  ] MT5-AdoptRelease registered (hourly at :20)"
+    } catch {
+        Write-Host ("  [FAIL] MT5-AdoptRelease {0}" -f $_.Exception.Message)
+    }
+} elseif ($WhatIfOnly) {
+    Write-Host "  [DRY ] MT5-AdoptRelease hourly adopt + re-seal"
+}
+
 # MT5-ArtifactSync (sync_to_vps.ps1) is UNWIRED, not deleted (2026-08-23): its whole job was
 # scp'ing to Hetzner (95.216.191.70), which is now fully decommissioned. There is no destination
 # left, so registering this task would just fail every hour forever. Ensure it is NOT registered

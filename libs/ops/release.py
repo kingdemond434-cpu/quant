@@ -347,6 +347,37 @@ def release_id() -> str:
 
 
 # --------------------------------------------------------------------------------- identity
+#: STATE DIRECTORIES. Anything under these is the desk's evidence, telemetry, record or
+#: rendering -- never the code that places, sizes or vetoes an order. `accepts()` used to
+#: classify every changed path outside the short enumerated NON_CODE list as CODE, so the hourly
+#: state-sync commit -- which adds evidence files under desks/mt5/data/ every hour by design --
+#: made the running SHA "carry paths the sealed release never named" within an hour of ANY seal.
+#: MEASURED 2026-09-08 in the gateway log, every minute:
+#:
+#:     RELEASE IDENTITY refuses NEW risk: running 92480baa4c66 carries 83 path(s) the sealed
+#:     release ca12b75a8a7f never named: ['desks/mt5/data/cross_asset_anchors.pkl',
+#:     'desks/mt5/data/decay_live.json', 'desks/mt5/data/forward_reconcile.json',
+#:     'desks/mt5/data/hypotheses/coverage_search_results.json', ...]
+#:
+#: Not one of those is code, and the fence's own docstring says a state-sync commit on top of the
+#: sealed code is the same release. The governed files that DO live under these directories --
+#: the survivor canon, the immutable manifest, the sleeve registry, RELEASE.json itself -- are
+#: each held to their own hash in `verify()`, so classifying the directory as state for the SHA
+#: check loses nothing: a change to any of them still fails identity, by the component built to
+#: catch it. The SHA answers "is this the sealed CODE"; the hashes answer "is this the sealed
+#: STATE"; one check answering both is how the first one refused on evidence.
+STATE_PREFIXES: tuple[str, ...] = (
+    "desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+    "data/", "reports/", "logs/", "web/", "docs/",
+)
+
+
+def is_state_path(rel: str) -> bool:
+    """A repo-relative path that is evidence/record/rendering rather than code."""
+    p = str(rel).replace("\\", "/").lstrip("./")
+    return any(p.startswith(prefix) for prefix in STATE_PREFIXES)
+
+
 def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None = None
             ) -> tuple[bool, str, list[str]]:
     """Is `running_sha` the sealed code? (ok, why, the code paths that say otherwise).
@@ -368,10 +399,12 @@ def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None =
                        f"(git unavailable, or the sealed commit is not in this clone)"), []
     changed = sorted({ln.strip() for ln in out.splitlines() if ln.strip()})
     allow = set(rec.get("non_code") or NON_CODE)
-    code = [p for p in changed if p not in allow]
+    code = [p for p in changed if p not in allow and not is_state_path(p)]
     if not code:
+        n_state = len(changed)
         return True, (f"running {running_sha[:12]} differs from sealed {code_sha[:12]} only by "
-                      f"seal/state paths {changed}"), []
+                      f"{n_state} seal/state path(s) {changed[:6]}"
+                      + (" ..." if n_state > 6 else "")), []
     return False, (f"running {running_sha[:12]} carries {len(code)} path(s) the sealed release "
                    f"{code_sha[:12]} never named: {code[:6]}"), code
 

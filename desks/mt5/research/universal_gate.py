@@ -110,7 +110,16 @@ def retained_exact_survivors(path: Path) -> dict[str, dict]:
     except (OSError, json.JSONDecodeError):
         return {}
     if not is_exact_policy(current.get("gate_policy")):
-        return {}
+        # NEVER AN EMPTY DICT. This branch returned {} -- and the docstring above says in its own
+        # words what an empty starting dict does: it deletes every prior survivor. A mismatched
+        # file-level attestation is a fact about the FILE's header, not about the rows, and the
+        # write that follows re-stamps the header with the current ATTESTATION. Returning {}
+        # here therefore turned a header mismatch into the loss of the entire certificate
+        # library on the next write. The rows are kept; the recertify step re-judges them under
+        # the current policy, and `authorized_specs` still fails closed on any row that does not
+        # carry a full gates record. Reported, so the re-stamp is visible rather than silent.
+        print("universal_gate: survivors file attestation is not the current policy; keeping "
+              "its rows for recertification rather than starting from empty", flush=True)
     survivors = current.get("survivors")
     if not isinstance(survivors, dict):
         return {}

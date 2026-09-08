@@ -1613,7 +1613,7 @@ def main():
         return
 
     sys.path.insert(0, str(BASE / "desks" / "mt5" / "research"))
-    from gate_policy import ATTESTATION
+    from gate_policy import ATTESTATION, all_ten_pass
 
     surv_path = REPORTS / "UNIVERSAL_SURVIVORS.json"
     survivors_all, old_doc = {}, {}
@@ -1841,6 +1841,49 @@ def main():
                 retired[key] = row
         if retired:
             print(f"purged {len(retired)} uncashable certificate(s) to retired_certificates")
+
+        # THE SAME PREDICATE, THE OTHER WAY. A certificate retired because its symbol was not
+        # tradeable is retired on a fact about the UNIVERSE, not about the certificate -- and the
+        # universe is a file that has already been measured collapsing to a 23-symbol stump
+        # (2026-09-04; `universe.json.stump-20260904` is still on the box). On that day this
+        # block found ~60 certificates on symbols the stump did not carry and retired every one,
+        # correctly by its rule; the registry was restored the same day and the certificates
+        # never were. MEASURED 2026-09-08: canon 66 rows in the repo, 5 on the box's board, 40
+        # forward clocks RETIRED_ORPHAN because "no engine enrols" a certificate that is sitting
+        # in `retired_certificates` with a reason that stopped being true four days ago.
+        #
+        # A purge with no restore turns a transient outage in one input into a permanent loss of
+        # evidence that took weeks of forward time to earn. So: every retired row is re-asked the
+        # question that retired it, on every pass, and one whose reason no longer holds goes
+        # back -- with its gates record intact, and stamped, so the round trip is visible. The
+        # recertify step re-judges the library under the CURRENT policy, so a restored row that
+        # only ever passed on an older cost model fails there, at the door, as it should.
+        # `forward_reconcile` revives an orphaned clock whose certificate returns, so the clocks
+        # follow the certificates back without a hand on anything.
+        #
+        # Only rows retired by THIS predicate are restored. A row retired for any other reason
+        # stays retired; a row without a full gates record stays retired.
+        restored: list[str] = []
+        for key, row in list(retired.items()):
+            if not isinstance(row, dict) or not all_ten_pass(row.get("gates")):
+                continue
+            why_retired = str(row.get("retired_reason") or "")
+            sym = str(row.get("sym") or "")
+            if not sym or key in survivors_all:
+                continue
+            ok_now, _why_now = symbol_is_tradeable(sym, meta)
+            if not ok_now:
+                continue
+            back = dict(row)
+            back["restored_at"] = stamp
+            back["restored_from"] = {"retired_at": back.pop("retired_at", None),
+                                     "retired_reason": back.pop("retired_reason", None)}
+            survivors_all[key] = back
+            del retired[key]
+            restored.append(f"{key} ({why_retired[:40]})")
+        if restored:
+            print(f"restored {len(restored)} certificate(s) whose retirement reason no longer "
+                  f"holds: {', '.join(restored[:8])}" + (" ..." if len(restored) > 8 else ""))
 
     doc = dict(old_doc)
     if retired:
