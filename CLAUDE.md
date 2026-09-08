@@ -64,6 +64,16 @@ vocabulary. Do not decide something the desk already decided.
   `/remote-control` over RDP. Once that session exists, `/list-agents` here shows it and
   SendMessage reaches it: hand it the box commands (install_adopt_release_task.ps1,
   check_gold_live.py, task tables) instead of handing them to the principal.
+- **The seven sleeves' clocks (traced 2026-09-08).** The four XAUUSD.asia registry rows are
+  forward clocks that all map to ONE gateway window, `gold_asia`, which places at 07:00 broker
+  (= 04:00 UTC in summer; the venue is UTC+3 in summer, the measured file's +2 is the winter
+  anchor). `gold_london_am` places at 10:00 UTC and `gold_afternoon` at 14:00 UTC. GOLD_RETIRED
+  entries are now RE-DERIVED by the promoter against the account in hand (a retirement made on
+  rows the promoter would refuse today is voided to GOLD_RETIRED_VOIDED.json and re-judged on
+  the same pass). The three promoted scalp sleeves reach the gateway only as LIVE rows in
+  data/sleeves.json; that needs a MEASURED heavy admission scan (MT5-Hourly now runs heavy when
+  the last scan is missing or >2h old) and two admitting promoter readings for a STANDBY row.
+  CLOSE_HOUR (19:30 UTC) closes the gold book only; the scalp lane runs to its own time exit.
 - **The box's state is the box's.** `Adopt-Release.ps1` keeps every state path (the
   `STATE_PREFIXES` in `libs/ops/release.py`, minus `docs/`) that the box changed since it
   diverged, adopts code and origin-only inputs, and records the merge. The next push carries the
