@@ -42,10 +42,20 @@
 
     WHAT IT WILL NOT DO
 
-    A path the incoming tree DELETES still needs a real unlink, and if that
+    A CODE path the incoming tree DELETES still needs a real unlink, and if that
     unlink fails the file stays. The script does not pretend otherwise: it
     counts those, names them, and leaves the exit code non-zero so a caller
     cannot read a partial adoption as a clean one. Nothing is force-removed.
+
+    A STATE path the incoming tree deletes is never unlinked at all (2026-09-08).
+    Origin stopped tracking it -- a4bd8663 untracked seventeen console logs and
+    three supervisor files under desks/mt5/logs/ that running hunts hold open --
+    so it leaves the INDEX only (`git rm --cached`) and stays on disk as the
+    box's untracked evidence. Deleting it could only fail (a handle without
+    FILE_SHARE_DELETE, or the damaged entry) and refuse the whole adoption on a
+    file nothing reads from git; keeping it TRACKED (the old kept-by-box branch)
+    re-published it on the next push and re-armed the very unmergeable loop the
+    upstream deletion fixed.
 
     It never runs a bare `git add -A` and never stashes: every path it stages
     was enumerated from a diff or from `git status`, and the box's own
@@ -341,7 +351,7 @@ function Test-KeptByBox {
     return $boxTouched.ContainsKey($Rel)
 }
 
-$written = 0; $added = 0; $removed = 0
+$written = 0; $added = 0; $removed = 0; $untracked = 0
 $kept      = New-Object System.Collections.ArrayList
 $unremoved = New-Object System.Collections.ArrayList
 $staged    = New-Object System.Collections.ArrayList
@@ -368,6 +378,26 @@ foreach ($rec in $records) {
     foreach ($op in $ops) {
         $rel  = $op.Path
         $full = Join-Path $RepoRoot ($rel -replace '/', '\')
+        if ($op.Kind -eq "D" -and (Test-StatePath $rel)) {
+            # ORIGIN STOPPED TRACKING A STATE PATH, so it leaves the INDEX and only the index.
+            # a4bd8663 (2026-09-06) untracked desks/mt5/logs/ -- seventeen console logs and the
+            # supervisor's pid/state/marker -- because running hunts hold them open and every
+            # merge on the box died on `unable to unlink old ... signal_gate_console.txt`. The
+            # box's HEAD still tracks them, so they arrive here as D ops, and either old branch
+            # was wrong: [System.IO.File]::Delete on an open handle throws, lands the path in
+            # $unremoved, shows up as drift and REFUSES the adoption (exit 1, nothing sealed);
+            # while a box-modified one was KEPT tracked, `-s ours` recorded the deletion as
+            # merged, and the next push re-tracked an ignored log on origin -- the loop the
+            # upstream deletion had just closed. `git rm --cached` issues no unlink: the bytes
+            # stay on disk as the box's untracked (now ignored) evidence, HEAD stops listing the
+            # path exactly as the target does, and the verify gate below sees no difference.
+            # Deliberately NOT added to $staged: a later `git add --all -- <path>` would re-add
+            # any copy .gitignore does not cover. Code deletions still take the branch below.
+            Invoke-Git @("rm", "--cached", "--quiet", "--", $rel) -AllowFail | Out-Null
+            $untracked++
+            $seen++
+            continue
+        }
         if (Test-KeptByBox $rel) {
             # The box's own measurement. Not written, not deleted, not staged: it stays
             # exactly as the organ that produced it left it, and travels to origin on the
@@ -403,7 +433,7 @@ foreach ($rec in $records) {
         }
     }
 }
-Write-Host ("  wrote {0} modified, {1} added, {2} deleted in place" -f $written, $added, $removed)
+Write-Host ("  wrote {0} modified, {1} added, {2} deleted in place; {3} state path(s) origin no longer tracks untracked here (left on disk)" -f $written, $added, $removed, $untracked)
 if ($kept.Count -gt 0) {
     Write-Host ("  kept {0} state path(s) this box wrote since it diverged (the box's evidence wins; origin's copy is reverted by the next push):" -f $kept.Count)
     $kept | Select-Object -First 12 | ForEach-Object { Write-Host ("    {0}" -f $_) }
@@ -419,13 +449,17 @@ if ($staged.Count -gt 0) {
         $addArgs = @("add", "--all", "--") + $chunk
         Invoke-Git $addArgs | Out-Null
     }
-    $pending = @(Invoke-Git @("diff", "--cached", "--name-only") |
-                 ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
-    if ($pending.Count -gt 0) {
-        Invoke-Git @("commit", "-m",
-            ("Adopt {0} in place; NTFS entry corruption blocks unlink" -f $target.Substring(0, 12))) | Out-Null
-        Write-Host ("  committed {0} path(s)" -f $pending.Count)
-    }
+}
+# THE COMMIT DOES NOT DEPEND ON $staged. The index also carries the `rm --cached` removals
+# above, and an adoption whose only change is untracking state origin dropped has nothing in
+# $staged at all -- nested here, those removals were never committed, so the verify below
+# still saw the path in HEAD and refused. `diff --cached` lists both kinds.
+$pending = @(Invoke-Git @("diff", "--cached", "--name-only") |
+             ForEach-Object { "$_" } | Where-Object { $_ -match '\S' })
+if ($pending.Count -gt 0) {
+    Invoke-Git @("commit", "-m",
+        ("Adopt {0} in place; NTFS entry corruption blocks unlink" -f $target.Substring(0, 12))) | Out-Null
+    Write-Host ("  committed {0} path(s)" -f $pending.Count)
 }
 
 # ---- 4. VERIFY BEFORE RECORDING ----------------------------------------------

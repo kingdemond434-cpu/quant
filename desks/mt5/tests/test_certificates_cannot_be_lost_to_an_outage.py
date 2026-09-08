@@ -138,7 +138,7 @@ def test_the_installer_registers_the_adoption_hourly_after_the_sync_slot() -> No
     assert 'Register-ScheduledTask -TaskName "MT5-AdoptRelease"' in blk
     assert 'scripts\\Adopt-And-Seal.ps1' in blk
     assert "-RepetitionInterval (New-TimeSpan -Hours 1)" in blk
-    assert "(Get-Date).Date.AddMinutes(20)" in blk          # after ShadowSync at :05
+    assert "(Get-Date).Date.AddMinutes(12)" in blk          # between the :05 and :20 sync slots
     assert "-ExecutionTimeLimit (New-TimeSpan -Minutes 20)" in blk
     assert "-MultipleInstances IgnoreNew" in blk
     assert "[DRY ] MT5-AdoptRelease" in blk                  # honoured in -WhatIfOnly
@@ -146,7 +146,55 @@ def test_the_installer_registers_the_adoption_hourly_after_the_sync_slot() -> No
 
 def test_the_sync_slot_really_is_before_the_adoption_slot() -> None:
     assert "(Get-Date).Date.AddMinutes(5)" in INSTALL      # ShadowSync
-    assert INSTALL.index("AddMinutes(5)") < INSTALL.index("AddMinutes(20)")
+    assert INSTALL.index("AddMinutes(5)") < INSTALL.index("AddMinutes(12)")
+
+
+def _slot_minutes(src: str, task: str) -> tuple[int, int]:
+    """(start minute, repetition interval in minutes) of `task`'s trigger in an installer."""
+    i = src.index(f'Register-ScheduledTask -TaskName "{task}"') if f'"{task}"' in src \
+        else src.index("Register-ScheduledTask -TaskName $TaskName")
+    trig = src[:i]
+    start = int(re.findall(r"\(Get-Date\)\.Date\.AddMinutes\((\d+)\)", trig)[-1])
+    rep = re.findall(r"-RepetitionInterval \(New-TimeSpan -(Minutes|Hours) (\d+)\)", trig)[-1]
+    return start, int(rep[1]) * (60 if rep[0] == "Hours" else 1)
+
+
+def test_the_adoption_minute_is_never_a_sync_slot() -> None:
+    """MEASURED 2026-09-08: MT5-ShadowSync is once-at-:05 repeating every 15 minutes -- :05,
+    :20, :35, :50 -- and MT5-AdoptRelease was registered at :20 on the comment "after the :05
+    slot". Two git writers in one repository in the same second: the sync's `git checkout --
+    <path>` reverts the adoption's in-place writes, its commit sweeps the adoption's staged code,
+    and whichever loses .git/index.lock throws -- for Adopt-Release that is exit 1 and no seal."""
+    sync_start, sync_every = _slot_minutes(INSTALL, "MT5-ShadowSync")
+    assert (sync_start, sync_every) == (5, 15)
+    for src in (INSTALL, STANDALONE):
+        adopt_start, adopt_every = _slot_minutes(src, "MT5-AdoptRelease")
+        assert adopt_every == 60
+        assert (adopt_start - sync_start) % sync_every != 0, \
+            f"minute :{adopt_start:02d} is a ShadowSync slot"
+        # and it sits after the :05 slot's ten-minute limit has run out, before the :20 slot
+        assert sync_start < adopt_start < sync_start + sync_every
+
+
+SYNC = (_DESK / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
+
+
+def test_the_sync_and_the_adoption_exclude_each_other() -> None:
+    """The minute fix covers the schedule; these guards cover a sync still inside its limit, the
+    adoption's RestartCount retries at :14/:16, and the first manual run of the installer."""
+    # the adoption waits out a running sync BEFORE invoking Adopt-Release, and gives up loudly
+    guard = ADOPT_CODE.index("Get-ScheduledTask -TaskName \"MT5-ShadowSync\"")
+    assert guard < ADOPT_CODE.index("$adoptScript")
+    assert '.State -eq "Running"' in ADOPT_CODE[guard:guard + 200]
+    assert "not adopting under it" in ADOPT_CODE and "exit 6" in ADOPT_CODE
+    # the sync yields to a running adoption before its first git operation (the pull)
+    yield_at = SYNC.index("Get-ScheduledTask -TaskName \"MT5-AdoptRelease\"")
+    assert yield_at < SYNC.index("Sync-Pull -RepoRoot $RepoRoot -Branch $branch")
+    assert yield_at < SYNC.index("function Merge-FetchHead")
+    assert "SKIP: MT5-AdoptRelease is adopting" in SYNC
+    body = SYNC[yield_at:SYNC.index("SKIP: MT5-AdoptRelease is adopting")]
+    assert '-eq "Running"' in body
+    assert "exit 0" in SYNC[yield_at:yield_at + 700]
 
 
 # ------------------------------------------- 4. the seal is taken between syncs, not never
@@ -173,7 +221,7 @@ def test_the_standalone_installer_agrees_with_the_full_one() -> None:
     register the SAME task, or the two routes would fight over its settings every install."""
     blk = _block(INSTALL, "$adoptSeal = Join-Path", "# MT5-ArtifactSync")
     for s in ("MT5-AdoptRelease", "Adopt-And-Seal.ps1",
-              "-RepetitionInterval (New-TimeSpan -Hours 1)", "(Get-Date).Date.AddMinutes(20)",
+              "-RepetitionInterval (New-TimeSpan -Hours 1)", "(Get-Date).Date.AddMinutes(12)",
               "-ExecutionTimeLimit (New-TimeSpan -Minutes 20)", "-MultipleInstances IgnoreNew",
               "-LogonType Interactive -RunLevel Limited", "-StartWhenAvailable"):
         assert s in blk, f"installer block lost {s}"

@@ -66,7 +66,20 @@ function Git-In-Repo {
     return $LASTEXITCODE
 }
 
-
+# YIELD TO AN ADOPTION IN PROGRESS (2026-09-08). MT5-AdoptRelease rewrites the tree in place and
+# commits by name; this pass would `git checkout -- <path>` its dirty incoming paths (undoing the
+# adoption's writes), race it for `.git/index.lock`, and sweep its chunk-staged code into a
+# "shadow state sync" commit. The adoption is the rarer and more consequential writer, so this
+# pass steps aside: the next slot is fifteen minutes away and nothing here is lost by waiting.
+# The adoption task has the mirror guard (it waits out a running sync before it starts).
+$adopting = $false
+try {
+    $adopting = ((Get-ScheduledTask -TaskName "MT5-AdoptRelease" -ErrorAction SilentlyContinue).State -eq "Running")
+} catch { $adopting = $false }
+if ($adopting) {
+    Write-SyncLog "SKIP: MT5-AdoptRelease is adopting; this pass yields (next slot in 15 min)"
+    exit 0
+}
 
 # PARK THE DIRTY FILES THAT BLOCK THE MERGE, MERGE, PUT THEM BACK. One function, two callers.
 #

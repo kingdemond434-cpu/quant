@@ -77,6 +77,7 @@ import json
 import math
 import sys
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -261,7 +262,53 @@ def load_sleeves() -> list[dict]:
         return []
 
 
-def load_ledger() -> list[dict]:
+def account_in_hand() -> dict:
+    """The account this promoter is judging -- MEASURED from the terminal, or UNKNOWN.
+
+    THE PROMOTER NEVER HAD ONE ON THE BOX. `load_ledger` asked `mt5.account_info()` in a process
+    that held no terminal connection: `run_gateway_loop` runs this module after `gateway.main()`
+    has already called `mt5.shutdown()` at the end of its pass (the last line of gateway.main),
+    and `daily_cycle._promote` never opens one at all. `account_info()` on a process with no
+    connection returns None, `provenance.current_account(None)` is UNKNOWN, and
+    `provenance.same_account` matches NOTHING to UNKNOWN -- so every promoter pass on the box read
+    an EMPTY ledger. The retire walk judged nothing, the provenance filter excluded the very rows
+    it exists to admit, and `load_ledger`'s own log line said "0/N rows are from the account in
+    hand" on every pass without that line being read as the defect it was.
+
+    So the promoter now measures the account the way the gateway does: `connect()` there is
+    `terminal_info()`, else `initialize(path=TERMINAL)` from the same `data/terminal_path.txt`.
+    A connection this call opened is closed again before returning, so a caller that already
+    holds one (the gateway loop mid-pass) is left exactly as it was. A terminal that cannot be
+    reached, or a host without the MetaTrader5 module, is UNKNOWN -- reported, never guessed,
+    and every reader below treats UNKNOWN as "cannot judge", not as "nothing to judge".
+    """
+    try:
+        import MetaTrader5 as mt5
+    except ImportError:
+        return provenance.current_account(None)
+    opened = False
+    try:
+        if mt5.terminal_info() is None:
+            try:
+                from mt5desk.config import terminal_path
+                path = terminal_path()
+            except Exception:
+                path = ""
+            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
+            if not opened:
+                plog(f"account in hand: terminal unreachable ({mt5.last_error()}); UNKNOWN")
+                return provenance.current_account(None)
+        return provenance.current_account(mt5.account_info())
+    except Exception as exc:
+        plog(f"account in hand: {type(exc).__name__}: {exc}; UNKNOWN")
+        return provenance.current_account(None)
+    finally:
+        if opened:
+            with suppress(Exception):
+                mt5.shutdown()
+
+
+def load_ledger(acc: dict | None = None) -> list[dict]:
     """Closed trades from the account THIS DESK IS CURRENTLY TRADING, and no others.
 
     THE FILE IS NOT ONE ACCOUNT'S HISTORY. The broker is switched by editing one line of
@@ -275,6 +322,9 @@ def load_ledger() -> list[dict]:
     Rows predating provenance match nothing and are excluded. That is a deliberate loss of
     history: the alternative is silently treating pre-switch trades as belonging to whatever
     account happens to be connected today, which is the defect itself.
+
+    `acc` is the account in hand (`account_in_hand()`), passed by `main` so the ledger and the
+    gold retirement re-derivation below are judged against ONE measurement of it.
     """
     if not LEDGER.exists():
         return []
@@ -283,11 +333,8 @@ def load_ledger() -> list[dict]:
                 if line.strip()]
     except Exception:
         return []
-    try:
-        import MetaTrader5 as mt5
-        acc = provenance.current_account(mt5.account_info())
-    except Exception:
-        acc = provenance.current_account(None)
+    if acc is None:
+        acc = account_in_hand()
     kept = [r for r in rows if provenance.same_account(r, acc)]
     if len(kept) != len(rows):
         plog(f"ledger: {len(kept)}/{len(rows)} rows are from the account in hand "
@@ -342,6 +389,76 @@ def _load_gold_retired() -> dict:
 def _save_gold_retired(rows: dict) -> None:
     GOLD_RETIRED_FILE.parent.mkdir(parents=True, exist_ok=True)
     GOLD_RETIRED_FILE.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+
+
+#: The audit of every gold retirement this module VOIDED, with the record as it stood and why.
+#: A SIBLING file, deliberately: `decision_core.roster`, `sleeve_registry.gateway_retired_keys`
+#: and `scripts/check_gold_live.py` all read EVERY key of GOLD_RETIRED.json as a retired window,
+#: so a voided entry kept inside that file under another key would still stop the window.
+GOLD_RETIRED_VOIDED_FILE = BASE / "data" / "GOLD_RETIRED_VOIDED.json"
+
+
+def _load_gold_voided() -> dict:
+    try:
+        v = json.loads(GOLD_RETIRED_VOIDED_FILE.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def retirement_void_reason(rec: dict, ledger: list[dict], name: str, acc: dict) -> str:
+    """Why a STANDING gold retirement is void on today's admissible evidence, or "" if it stands.
+
+    A RETIREMENT IS A CLAIM ABOUT EVIDENCE, AND THE CLAIM IS RE-DERIVED, NOT TRUSTED. Measured
+    2026-09-08 on this tree: data/GOLD_RETIRED.json holds gold_asia, retired 2026-09-02T23:38Z on
+    `roll20 exp -0.834R <= 0`, n=30, exp -0.842, max_dd -24.26. Two facts about that record:
+
+      * `degenerate_evidence` -- the near-constant rule written AFTER the entry -- names this very
+        retirement as the defect it exists to refuse ("about twenty-five identical -1.000s and a
+        few other values"). The 09-01 twin (thirty exact -1.000s) was undone by hand in bdbb712c;
+        the 09-02 one was never re-judged, and the live account it stops has recorded no fill
+        (gateway_state.execution.matched_fills 0).
+      * `load_ledger` admits only rows `provenance.same_account` accepts for the account in hand.
+        A retirement whose recorded n cannot be reproduced from those rows was computed from rows
+        about SOME OTHER account (a demo login, a pre-provenance file, a VPS copy) -- exactly the
+        history `load_ledger` refuses to judge a live sleeve on. Refusing it for retirement while
+        honouring a retirement already made from it is the same defect with a date on it.
+
+    THE RULE, AND WHAT IT CANNOT DO. An entry is void when the admissible ledger for `name` is
+    one the promoter would refuse to retire on today (`degenerate_evidence`), or holds fewer rows
+    than the record claims to have judged. It cannot void a retirement the thresholds would make
+    again: `main` falls through to the UNCHANGED retire rules on the same pass, so a genuinely
+    losing sleeve on admissible, dispersed evidence is re-retired before the gateway's next read.
+    No threshold, floor or size moves; the one-way door is the same door, re-derived from the
+    evidence it is entitled to use -- the correction `sleeve_registry.reconcile` already applies
+    to IDENTITY_BROKEN clocks, applied to the gold book.
+
+    UNKNOWN IS NOT EMPTY. With no account in hand there are no admissible rows, and "none" would
+    void every retirement on a visibility outage -- adding risk on a compute limit, the mirror of
+    the demotion `reconcile_capital` refuses to make on one. So an UNKNOWN account judges nothing:
+    the entry stands, and the pass says so.
+
+    This supersedes "undo is a person's act" (decision_core.roster, and the gold block below as
+    it stood): under the principal's standing order that no human decision is needed, an
+    inadmissible retirement is cleared by the organ that made it, with the audit written to
+    GOLD_RETIRED_VOIDED.json.
+    """
+    if acc.get("kind") == provenance.UNKNOWN or acc.get("login") is None:
+        return ""
+    why = degenerate_evidence(ledger, name)
+    if why:
+        return why
+    try:
+        rec_n = int(rec.get("n") or 0)
+    except (TypeError, ValueError, AttributeError):
+        rec_n = 0
+    fs = sleeve_forward_stats(ledger, name)
+    if fs["n"] < rec_n:
+        return (f"recorded n={rec_n} cannot be reproduced from admissible rows (n={fs['n']} for "
+                f"{name} on the account in hand: login={acc.get('login')} "
+                f"server={acc.get('server')} kind={acc.get('kind')}): the evidence that retired "
+                f"it is not evidence about this account")
+    return ""
 
 
 def degenerate_evidence(ledger: list[dict], name: str) -> str:
@@ -1018,7 +1135,11 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
 def main() -> None:
     shadow = load_shadow()
     sleeves = load_sleeves()
-    ledger = load_ledger()
+    # ONE MEASUREMENT OF THE ACCOUNT for the whole pass: the ledger is filtered on it and the
+    # gold retirements are re-derived on it, so the two cannot disagree about whose evidence
+    # is being read.
+    acc = account_in_hand()
+    ledger = load_ledger(acc)
     existing = {s["name"] for s in sleeves}
     gate_authority = authorized_specs(BASE)
     regrade_fails = regrade_failures()
@@ -1209,8 +1330,15 @@ def main() -> None:
     # edge died would have degraded indefinitely with no organ able to notice.
     #
     # RETIREMENT HERE DOES NOT DELETE ANYTHING. It writes the window into data/GOLD_RETIRED.json
-    # with its reason; gateway.sleeve_set() reads that file and stops emitting the window. Undo is
-    # deleting the entry, which keeps re-arming a person's act exactly as it is today.
+    # with its reason; gateway.sleeve_set() reads that file and stops emitting the window.
+    #
+    # A STANDING RETIREMENT IS RE-DERIVED, NOT TRUSTED (2026-09-08). Undo used to be "deleting
+    # the entry by hand", and the 09-02 gold_asia entry -- the one `degenerate_evidence` names as
+    # the near-constant defect -- sat for six days under a standing order that no human decision
+    # is needed, stopping the only armed window on the live account. `retirement_void_reason`
+    # states the rule and its limits; a voided entry moves to GOLD_RETIRED_VOIDED.json with why,
+    # and the name then FALLS THROUGH to the unchanged retire rules on this same pass, so a real
+    # loser on admissible evidence is retired again before the gateway reads the file.
     #
     # SAFE BEFORE THE LEDGER FILLS: sleeve_forward_stats returns n=0/max_dd=0.0 for a sleeve with
     # no rows, and every rule below requires either n >= 10 or a drawdown worse than -25R, so an
@@ -1218,7 +1346,23 @@ def main() -> None:
     gold_retired = _load_gold_retired()
     for gname in GOLD_SLEEVE_NAMES:
         if gname in gold_retired:
-            continue
+            why_void = retirement_void_reason(gold_retired[gname], ledger, gname, acc)
+            if not why_void:
+                if acc.get("kind") == provenance.UNKNOWN:
+                    plog(f"RETIREMENT STANDS UNJUDGED {gname}: no account in hand, so no row is "
+                         f"admissible and nothing can be re-derived this pass")
+                continue
+            voided = _load_gold_voided()
+            voided[gname] = {**gold_retired[gname],
+                             "voided_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                             "voided_why": why_void}
+            GOLD_RETIRED_VOIDED_FILE.parent.mkdir(parents=True, exist_ok=True)
+            GOLD_RETIRED_VOIDED_FILE.write_text(json.dumps(voided, indent=2), encoding="utf-8")
+            del gold_retired[gname]
+            _save_gold_retired(gold_retired)
+            plog(f"RETIREMENT VOID {gname}: {why_void} -- re-judged on this pass under the "
+                 f"unchanged retire rules")
+            changed = True
         why_not = degenerate_evidence(ledger, gname)
         if why_not:
             plog(f"RETIRE-REFUSED {gname}: {why_not}")
