@@ -75,6 +75,26 @@ if (-not (Test-Path $py)) {
 
 function Log([string] $m) { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: $m" }
 
+# ------------------------------------------- 0. never adopt under a ShadowSync that is running
+# TWO GIT WRITERS IN ONE REPOSITORY IN THE SAME SECOND (2026-09-08). MT5-ShadowSync repeats every
+# fifteen minutes from :05 -- :05, :20, :35, :50 -- and this task was registered at :20 on the
+# comment "after the :05 slot". In that second the sync runs `git checkout -- <path>` on every
+# dirty incoming path (REVERTING Adopt-Release's in-place writes), a probe merge and its abort, a
+# real merge, and stages its allowlist + `git commit` (which sweeps whatever Adopt-Release has
+# chunk-staged into a "shadow state sync" commit that then carries CODE); Adopt-Release meanwhile
+# runs status/add/commit/diff/cat-file/add/commit/merge. Whichever loses `.git/index.lock` throws:
+# for Adopt-Release that is Invoke-Git -> exit 1 -> this script exits without sealing, and the
+# gateway keeps refusing new risk on the old seal for another hour. The task now runs at :12; this
+# guard covers a sync still inside its ten-minute limit, and the first manual run. Get-ScheduledTask
+# is read-only and answers from a Limited token. Nine minutes: the sync's own limit is ten.
+$waited = 0
+while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContinue).State -eq "Running") {
+    if ($waited -ge 540) { Log "MT5-ShadowSync still running after 9 min; not adopting under it"; exit 6 }
+    if ($waited -eq 0) { Log "MT5-ShadowSync is running; waiting for it before adopting" }
+    Start-Sleep -Seconds 5
+    $waited += 5
+}
+
 # ---------------------------------------------------------------- 1. adopt the branch's tree
 $adoptScript = Join-Path $desk "scripts\Adopt-Release.ps1"
 if (-not (Test-Path $adoptScript)) { Log "Adopt-Release.ps1 missing at $adoptScript"; exit 2 }

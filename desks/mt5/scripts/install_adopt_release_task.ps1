@@ -7,9 +7,12 @@
 # origin and the gateway that runs them, so it gets the same single-task installer the moat
 # miner and the contract terms got: idempotent, one file, no other task touched.
 #
-# WHAT IT DOES. Registers MT5-AdoptRelease -- hourly at :20, after the :05 ShadowSync slot has
-# committed the box's state and before the research legs at the top of the next hour read code
-# -- pointing at Adopt-And-Seal.ps1, which lands the branch's tree in place (the box's own
+# WHAT IT DOES. Registers MT5-AdoptRelease -- hourly at :12, between the :05 and :20 ShadowSync
+# slots (that task repeats every FIFTEEN minutes from :05 -- :05, :20, :35, :50 -- so the :20 this
+# was first registered at was a sync slot, not a gap after one: two git writers in one repository
+# in the same second, MEASURED 2026-09-08 from the two installers) and before the research legs
+# at the top of the next hour read code -- pointing at Adopt-And-Seal.ps1, which lands the
+# branch's tree in place (the box's own
 # state kept), re-seals when HEAD is not the sealed code, commits RELEASE.json alone, and
 # restarts MT5-Gateway on the new seal. Then STARTS it, so the first adoption happens now
 # rather than at the next :20, and prints the task's state and last result so the run can be
@@ -31,7 +34,7 @@ if (-not (Test-Path $Script)) { throw "Adopt-And-Seal.ps1 missing at $Script" }
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument `
     ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $Script)
 
-$trigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(20)) `
+$trigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
     -RepetitionInterval (New-TimeSpan -Hours 1) `
     -RepetitionDuration (New-TimeSpan -Days 3650)
 
@@ -59,7 +62,9 @@ Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
 $t = Get-ScheduledTask -TaskName $TaskName
 "installed {0}: state={1} interval={2}" -f $t.TaskName, $t.State, $t.Triggers[0].Repetition.Interval
 
-# THE FIRST ADOPTION IS NOW. Waiting for :20 is another hour of the gateway on the old tree.
+# THE FIRST ADOPTION IS NOW. Waiting for :12 is another hour of the gateway on the old tree.
+# (Adopt-And-Seal itself waits out a ShadowSync pass that is still running, so starting inside
+# one is safe.)
 Start-ScheduledTask -TaskName $TaskName
 Start-Sleep -Seconds 5
 $i = Get-ScheduledTaskInfo -TaskName $TaskName

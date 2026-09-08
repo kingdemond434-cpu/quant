@@ -457,15 +457,18 @@ if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
 # gateway ran a tree that could not import `libs` and refused new risk on a stale seal for a
 # full day. Adopt-And-Seal.ps1 lands the branch's tree in place (Adopt-Release.ps1 -- survives a
 # locked or NTFS-damaged path), re-seals only when HEAD is not already the sealed code, commits
-# RELEASE.json alone, and restarts the gateway so the new seal is read. Twenty past the hour:
-# after the :05 ShadowSync slot has committed the box's state, so adoption never lands inside a
-# sync, and before the research legs at the top of the next hour read code.
+# RELEASE.json alone, and restarts the gateway so the new seal is read. Twelve past the hour:
+# between the :05 and :20 ShadowSync slots -- that task repeats every FIFTEEN minutes from :05
+# (:05, :20, :35, :50), so the :20 this was first registered at was itself a sync slot and put
+# two git writers in one repository in the same second (MEASURED 2026-09-08) -- and before the
+# research legs at the top of the next hour read code. Adopt-And-Seal also waits out a sync pass
+# that is still running, and the sync yields to a running adoption.
 $adoptSeal = Join-Path $DeskRoot "scripts\Adopt-And-Seal.ps1"
 if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
     try {
         $adoptAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
             ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $adoptSeal)
-        $adoptTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(20)) `
+        $adoptTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
             -RepetitionInterval (New-TimeSpan -Hours 1) `
             -RepetitionDuration (New-TimeSpan -Days 3650)
         $adoptSettings = New-ScheduledTaskSettingsSet `
@@ -479,7 +482,7 @@ if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
         Register-ScheduledTask -TaskName "MT5-AdoptRelease" -Action $adoptAction `
             -Trigger $adoptTrigger -Settings $adoptSettings -Principal $adoptPrincipal `
             -Description "Adopt the branch's code in place, re-seal the release, restart the gateway on the new seal." | Out-Null
-        Write-Host "  [OK  ] MT5-AdoptRelease registered (hourly at :20)"
+        Write-Host "  [OK  ] MT5-AdoptRelease registered (hourly at :12)"
     } catch {
         Write-Host ("  [FAIL] MT5-AdoptRelease {0}" -f $_.Exception.Message)
     }
