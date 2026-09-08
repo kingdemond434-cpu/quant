@@ -64,7 +64,8 @@ def _is_state(rel: str) -> bool:
     return any(rel.startswith(p) for p in STATE_PREFIXES)
 
 
-def _adopt(repo: Path, target: str, kept: list[str] | None = None) -> list[str]:
+def _adopt(repo: Path, target: str, kept: list[str] | None = None,
+           untracked: list[str] | None = None) -> list[str]:
     """The script's steps 2-5, in Python, against a real repository.
 
     Deliberately a re-implementation rather than a call: PowerShell does not exist on the CI
@@ -76,6 +77,10 @@ def _adopt(repo: Path, target: str, kept: list[str] | None = None) -> list[str]:
     THE KEEP RULE (2026-09-08), exactly as the script applies it: a state path THIS BOX changed
     since the merge base is the box's evidence and is neither written, deleted nor staged. It
     is appended to `kept` so the caller can assert on it.
+
+    THE UNTRACK RULE (2026-09-08, later the same day), checked BEFORE the keep rule as the
+    script does: a state path the target DELETES leaves the index only (`git rm --cached`),
+    is never unlinked, and is not staged. It is appended to `untracked`.
     """
     records = _git(repo, "-c", "core.quotePath=false", "diff",
                    "--name-status", "HEAD", target).splitlines()
@@ -88,6 +93,12 @@ def _adopt(repo: Path, target: str, kept: list[str] | None = None) -> list[str]:
                else [(cols[0][0], cols[1])])
         for kind, rel in ops:
             full = repo / rel
+            if kind == "D" and _is_state(rel):
+                subprocess.run(["git", "-C", str(repo), "rm", "--cached", "--quiet", "--", rel],
+                               check=False, capture_output=True)
+                if untracked is not None:
+                    untracked.append(rel)
+                continue
             if _is_state(rel) and (touched is None or rel in touched):
                 if kept is not None:
                     kept.append(rel)
@@ -109,8 +120,9 @@ def _adopt(repo: Path, target: str, kept: list[str] | None = None) -> list[str]:
             staged.append(rel)
     if staged:
         _git(repo, "add", "--all", "--", *staged)
-        if _git(repo, "diff", "--cached", "--name-only").strip():
-            _git(repo, "commit", "-q", "-m", "Adopt in place")
+    # unconditional on `staged`: the index may hold only `rm --cached` removals
+    if _git(repo, "diff", "--cached", "--name-only").strip():
+        _git(repo, "commit", "-q", "-m", "Adopt in place")
     return staged
 
 
@@ -348,6 +360,107 @@ def test_the_script_keeps_before_it_deletes_and_verifies_outside_the_kept_set() 
             < code.index('"merge-base", "HEAD", $target'))
     # and no merge base means every state path is the box's -- never "adopt everything"
     assert "if (-not $mergeBase) { return $true }" in code
+
+
+# --------------------------------------- a state path origin dropped is untracked, never unlinked
+def test_a_state_path_origin_stopped_tracking_is_untracked_not_unlinked(tmp_path: Path) -> None:
+    """The a4bd8663 shape, MEASURED 2026-09-08 from the box's own error. Origin untracked
+    desks/mt5/logs/ (console logs that running hunts hold open) and the box's HEAD still tracks
+    them; the box reported `unable to unlink old 'desks/mt5/logs/signal_gate_console.txt'`,
+    which can only come from a merge trying to delete it, so its base predates a4bd8663.
+
+    Two logs arrive as D ops: one the box appended to since the base (the old branch KEPT it
+    tracked and the next push re-tracked it upstream), one it did not (the old branch called
+    File.Delete on a held-open handle and refused the whole adoption). Both must end untracked,
+    on disk with the box's bytes, and outside `git diff HEAD target`.
+    """
+    repo = _repo(tmp_path)
+    for rel, body in (("desks/mt5/mt5desk/gateway.py", "old gateway\n"),
+                      ("desks/mt5/logs/signal_gate_console.txt", "tick 1\n"),
+                      ("desks/mt5/logs/hunt16_console.txt", "hunt 1\n"),
+                      ("desks/mt5/side_channels/dead.py", "code origin removed\n")):
+        (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+        (repo / rel).write_text(body)
+        _git(repo, "add", "--", rel)
+    _git(repo, "commit", "-q", "-m", "base")
+
+    # origin: new gateway, the logs untracked and ignored, one CODE file really deleted
+    _git(repo, "checkout", "-q", "-b", "release")
+    (repo / "desks/mt5/mt5desk/gateway.py").write_text("new gateway\n")
+    _git(repo, "rm", "-q", "--cached", "desks/mt5/logs/signal_gate_console.txt",
+         "desks/mt5/logs/hunt16_console.txt")
+    _git(repo, "rm", "-q", "desks/mt5/side_channels/dead.py")
+    (repo / ".gitignore").write_text("desks/mt5/logs/\n")
+    _git(repo, "add", "--", ".gitignore", "desks/mt5/mt5desk/gateway.py")
+    _git(repo, "commit", "-q", "-m", "release: untrack the console logs")
+    target = _git(repo, "rev-parse", "HEAD").strip()
+
+    # the box: a hunt appended to one log since the base (step 1 commits it as itself)
+    _git(repo, "checkout", "-q", "main")
+    (repo / "desks/mt5/logs/signal_gate_console.txt").write_text("tick 1\ntick 2\n")
+    (repo / "desks/mt5/logs/hunt16_console.txt").write_text("hunt 1\n")
+    _git(repo, "add", "--", "desks/mt5/logs/signal_gate_console.txt")
+    _git(repo, "commit", "-q", "-m", "Box state captured before release adoption")
+
+    kept: list[str] = []
+    untracked: list[str] = []
+    staged = _adopt(repo, target, kept, untracked)
+
+    assert sorted(untracked) == ["desks/mt5/logs/hunt16_console.txt",
+                                 "desks/mt5/logs/signal_gate_console.txt"]
+    assert kept == []                                       # the untrack rule ran first
+    assert "desks/mt5/logs/signal_gate_console.txt" not in staged
+    # on disk, the box's bytes; in git, nowhere
+    assert (repo / "desks/mt5/logs/signal_gate_console.txt").read_text() == "tick 1\ntick 2\n"
+    assert (repo / "desks/mt5/logs/hunt16_console.txt").read_text() == "hunt 1\n"
+    assert "desks/mt5/logs/" not in _git(repo, "ls-files")
+    # the code deletion still unlinks, and the code arrives
+    assert not (repo / "desks/mt5/side_channels/dead.py").exists()
+    assert (repo / "desks/mt5/mt5desk/gateway.py").read_text() == "new gateway\n"
+    # THE GATE: nothing differs from the target, so the merge may be recorded ...
+    assert _git(repo, "diff", "--name-only", "HEAD", target).strip() == ""
+    _git(repo, "merge", "-s", "ours", target, "-m", "Record the release merge")
+    assert "Already up to date" in _git(repo, "merge", target)
+    # ... and the next push carries NO re-tracked log: the ignored path stays untracked
+    assert _git(repo, "status", "--porcelain", "--", "desks/mt5/logs").strip() == ""
+
+
+def test_an_adoption_whose_only_change_is_untracking_is_still_committed(tmp_path: Path) -> None:
+    """Nested under `if ($staged.Count -gt 0)`, the commit never ran when every op was an
+    index-side removal, so HEAD still listed the path and the verify step refused."""
+    repo = _repo(tmp_path)
+    (repo / "desks/mt5/logs").mkdir(parents=True)
+    (repo / "desks/mt5/logs/supervisor_state.json").write_text("{}\n")
+    _git(repo, "add", "--", "desks/mt5/logs/supervisor_state.json")
+    _git(repo, "commit", "-q", "-m", "base")
+    _git(repo, "checkout", "-q", "-b", "release")
+    _git(repo, "rm", "-q", "--cached", "desks/mt5/logs/supervisor_state.json")
+    _git(repo, "commit", "-q", "-m", "release: untrack")
+    target = _git(repo, "rev-parse", "HEAD").strip()
+    (repo / "desks/mt5/logs/supervisor_state.json").unlink()   # main's checkout restores it
+    _git(repo, "checkout", "-q", "main")
+    untracked: list[str] = []
+    staged = _adopt(repo, target, untracked=untracked)
+    assert staged == [] and untracked == ["desks/mt5/logs/supervisor_state.json"]
+    assert (repo / "desks/mt5/logs/supervisor_state.json").exists()
+    assert _git(repo, "diff", "--name-only", "HEAD", target).strip() == ""
+
+
+def test_the_script_untracks_state_deletions_before_it_keeps_or_deletes() -> None:
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    untrack = code.index('if ($op.Kind -eq "D" -and (Test-StatePath $rel))')
+    assert untrack < code.index("if (Test-KeptByBox $rel)")
+    assert untrack < code.index("[System.IO.File]::Delete($full)")
+    branch = code[untrack:code.index("if (Test-KeptByBox $rel)")]
+    assert '"rm", "--cached", "--quiet", "--", $rel' in branch
+    assert "$staged.Add" not in branch and "Delete" not in branch and "continue" in branch
+    # the commit is not nested under the staged-count guard
+    guard = code.index("if ($staged.Count -gt 0)")
+    pending = code.index("$pending = ")
+    assert guard < pending
+    assert re.search(r"^\}\s*$", code[guard:pending], re.M), "the add block closes before $pending"
+    assert re.search(r"^\$pending = ", code, re.M), "$pending is at top level"
+    assert code.index('"commit", "-m"', pending) > pending
 
 
 def test_a_locked_file_is_retried_before_it_is_reported() -> None:
