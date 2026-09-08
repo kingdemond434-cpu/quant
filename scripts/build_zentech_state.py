@@ -702,6 +702,12 @@ def build() -> dict[str, Any]:
             # the backtest and the gauntlet run every hour, and until now the only field that
             # looked like it reported that was watching a different organ entirely.
             "cycle": _cycle_cadence(now),
+            # WHETHER THIS HOST IS RUNNING THE DESK BRANCH AT ALL (2026-09-08). The VPS's
+            # three-minute merge of the desk branch aborted silently ~960 times over two days;
+            # ops/refresh_desk_state.sh now writes web/refresh_status.json every tick (behind
+            # count, conflicting paths, consecutive-conflict streak, last time in step). Empty on
+            # the box, which has no such merge; served at the web root as its own file too.
+            "vps_refresh": _read(ROOT / "web" / "refresh_status.json"),
         },
         "equity_curve": _series(rows, start),
         "disclaimer": "Research and operator telemetry only. Missing values are UNMEASURED; shadow has zero order authority.",

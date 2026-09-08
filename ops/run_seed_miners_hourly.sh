@@ -26,10 +26,18 @@ cd /home/quant/quant-platform
 .venv/bin/python scripts/check_miner_health.py >> data/cro_ai_logs/miner_health.log 2>&1 \
     || echo "miner-health: DOWN sources -- see data/cro_ai_logs/miner_health.log"
 
+# BOTH INTELLIGENCE ROOTS (2026-09-08). The compiler reads desks/mt5/data/intelligence AND the
+# repo-root data/intelligence, and the LLM seats donate into the second one
+# (data/intelligence/deepseek/, data/intelligence/kimi/). This list carried only the first, so a
+# seat's donation stayed untracked on this host until some unrelated tracked change under data/
+# let run_deepseek_factory.sh's blanket `git add -- data/` sweep it up -- measured: zero seat
+# donation files on either branch. `git ls-files --others` below sees untracked files, so a new
+# donation is reason enough to commit.
 INTEL_PATHS=(
     desks/mt5/data/intelligence
     desks/mt5/data/hypotheses
     desks/mt5/data/research_queue.json
+    data/intelligence
     data/youtube_channels.json
 )
 if ! git diff --quiet -- "${INTEL_PATHS[@]}" 2>/dev/null \

@@ -31,8 +31,26 @@ cd "$ROOT" 2>/dev/null || { echo "no checkout at $ROOT"; exit 2; }
 git config core.editor true          # an editor opening in a timer job blocks until the timeout
 git config pull.rebase false         # merge: this host has its own commits and rebasing rewrites them
 
+# THE MERGE PUBLISHES ITS OWN STATUS (2026-09-08). "Abort so the next tick tries again" was the
+# whole failure mode: the same three conflicts aborted this merge every three minutes from
+# 2026-09-06 17:08 to 2026-09-08 21:00 -- roughly 960 times -- and nothing but a log line on this
+# host recorded it. Both machines kept committing, each believing it was deploying the other's
+# work; 57 VPS commits never reached the box's compiler and 147 desk commits never ran here.
+# So every tick now writes web/refresh_status.json -- behind count, the conflicting paths captured
+# BEFORE the abort erases them, the consecutive-conflict streak, the last time this host was
+# actually in step -- where the dashboard and any session can read it (L0292).
+STATUS="web/refresh_status.json"
 changed=0
+fetch_ok=0
+behind=0
+conflict=0
+conflict_paths=""
+merge_tail=""
+head_before="$(git rev-parse --short HEAD 2>/dev/null || echo '?')"
+fetch_head=""
 if git fetch --quiet origin "$BRANCH" 2>/dev/null; then
+  fetch_ok=1
+  fetch_head="$(git rev-parse --short FETCH_HEAD 2>/dev/null || echo '?')"
   behind="$(git rev-list --count "HEAD..FETCH_HEAD" 2>/dev/null || echo 0)"
   if [ "${behind:-0}" -gt 0 ]; then
     if out="$(git merge --no-edit FETCH_HEAD 2>&1)"; then
@@ -40,15 +58,57 @@ if git fetch --quiet origin "$BRANCH" 2>/dev/null; then
       changed=1
     else
       # A conflict is a human's problem, not a timer's. Abort so the tree stays usable and the
-      # next tick tries again -- a half-merged checkout would break every later rebuild.
+      # next tick tries again -- a half-merged checkout would break every later rebuild. But
+      # name the paths first: after the abort nothing on disk says what collided.
+      conflict=1
+      conflict_paths="$(git diff --name-only --diff-filter=U 2>/dev/null | head -20 | tr '\n' ' ')"
+      merge_tail="$(printf '%s\n' "$out" | tail -3 | tr '\n' ' ')"
       git merge --abort 2>/dev/null
       echo "MERGE CONFLICT against origin/$BRANCH -- aborted, serving the last good state"
+      echo "  conflicting: ${conflict_paths:-(unknown)}"
       printf '%s\n' "$out" | tail -3
     fi
   fi
 else
   echo "fetch failed -- rebuilding from what is already here"
 fi
+REFRESH_BRANCH="$BRANCH" REFRESH_FETCH_OK="$fetch_ok" REFRESH_BEHIND="${behind:-0}" \
+REFRESH_MERGED="$changed" REFRESH_CONFLICT="$conflict" REFRESH_CONFLICT_PATHS="$conflict_paths" \
+REFRESH_MERGE_TAIL="$merge_tail" REFRESH_HEAD_BEFORE="$head_before" REFRESH_FETCH_HEAD="$fetch_head" \
+REFRESH_HEAD_AFTER="$(git rev-parse --short HEAD 2>/dev/null || echo '?')" REFRESH_STATUS="$STATUS" \
+python3 - <<'PY' 2>/dev/null || echo "refresh status NOT written (python3 failed)"
+import json, os, pathlib
+from datetime import UTC, datetime
+p = pathlib.Path(os.environ["REFRESH_STATUS"])
+try:
+    prev = json.loads(p.read_text("utf-8"))
+except Exception:
+    prev = {}
+now = datetime.now(UTC).isoformat(timespec="seconds")
+e = os.environ
+fetch_ok, behind = e["REFRESH_FETCH_OK"] == "1", int(e["REFRESH_BEHIND"] or 0)
+merged, conflict = e["REFRESH_MERGED"] == "1", e["REFRESH_CONFLICT"] == "1"
+in_step = fetch_ok and (merged or behind == 0)
+doc = {
+    "at": now, "branch": e["REFRESH_BRANCH"], "fetch_ok": fetch_ok, "behind_before": behind,
+    "merged": merged, "conflict": conflict,
+    "conflict_paths": [x for x in e["REFRESH_CONFLICT_PATHS"].split() if x],
+    "merge_tail": e["REFRESH_MERGE_TAIL"][:400],
+    "head_before": e["REFRESH_HEAD_BEFORE"], "head_after": e["REFRESH_HEAD_AFTER"],
+    "fetch_head": e["REFRESH_FETCH_HEAD"],
+    "last_in_step_at": now if in_step else prev.get("last_in_step_at"),
+    "consecutive_conflicts": (int(prev.get("consecutive_conflicts") or 0) + 1) if conflict else 0,
+    "first_conflict_at": ((prev.get("first_conflict_at") or now) if conflict else None),
+    "note": ("in step with origin" if in_step else
+             "DIVERGED: this host is not running the desk branch; merge by hand and push the "
+             "same commit to desk-sync-clean and the desk branch" if conflict else
+             "fetch failed; serving what is here"),
+}
+p.parent.mkdir(parents=True, exist_ok=True)
+tmp = p.with_suffix(".json.tmp")
+tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+tmp.replace(p)
+PY
 
 # REBUILD EVERY TICK, EVEN WITH NOTHING NEW. The page's freshness gauges are computed at build
 # time, so a desk that stops publishing must show an age that GROWS. Rebuilding only on change
