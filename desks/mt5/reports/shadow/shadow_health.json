@@ -1,19 +1,16 @@
 {
-  "updated_at": "2026-09-07T15:08:04+00:00",
-  "configured_sleeves": 21,
-  "represented_sleeves": 21,
-  "certified_sleeves_total": 57,
-  "retired_shadow_sleeves": 72,
+  "updated_at": "2026-09-07T19:30:30+00:00",
+  "configured_sleeves": 19,
+  "represented_sleeves": 19,
+  "certified_sleeves_total": 8,
+  "retired_shadow_sleeves": 73,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 18,
+  "sleeves_with_forward_trades": 19,
   "evidence_blocked_sleeves": 0,
   "missing_sleeves": [],
   "errors": {},
-  "seconds": 441.983,
+  "seconds": 20.359,
   "gateway_armed": true,
-  "promoted_live_sleeves": [
-    "xau_m5_anti_momentum_ny",
-    "xau_m15_anti_breakout"
-  ],
+  "promoted_live_sleeves": [],
   "status": "OPERATING"
 }

@@ -1,10 +1,10 @@
 {
- "built_at": "2026-09-07T15:08:48+00:00",
+ "built_at": "2026-09-08T02:20:46+00:00",
  "window_days": 7,
  "coverage": {
   "3M": 22,
   "ACCENTURE": 22,
-  "ADAUSD": 34,
+  "ADAUSD": 35,
   "ADOBE": 22,
   "ADP": 22,
   "AIRBNB": 22,
@@ -19,9 +19,9 @@
   "APPLIEDMATERIALS": 22,
   "AT&T": 22,
   "ATLASSIAN": 22,
-  "AUDCAD": 24,
-  "AUDCHF": 24,
-  "AUDHUF": 24,
+  "AUDCAD": 25,
+  "AUDCHF": 25,
+  "AUDHUF": 25,
   "AUDJPY": 24,
   "AUDNZD": 24,
   "AUDSGD": 20,
@@ -248,5 +248,5 @@
   "XZNUSD": 22,
   "ZARJPY": 24
  },
- "newest_tape_write": "2026-09-07T14:52:35+00:00"
+ "newest_tape_write": "2026-09-08T01:58:39+00:00"
 }

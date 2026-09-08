@@ -1,18 +1,15 @@
 {
-    "free_gb":  14.4,
-    "checked_at":  "2026-09-07T15:03:32.0940818Z",
+    "free_gb":  0.5,
+    "checked_at":  "2026-09-08T02:10:42.6943055Z",
     "actions":  [
-                    "RAM-FLOOR: only 208MB free (phys 208MB / virt 21275MB) -- shed external_gauntlet.py (commit 3639MB); it resumes from cache on its next trigger"
+                    "DISK: C: was 0.5GB free -- pruned old logs + series cache -\u003e 0.5GB",
+                    "DISK CRITICAL: 0.5GB free AFTER pruning -- needs a human decision"
                 ],
-    "low_mem_strikes":  2,
+    "low_mem_strikes":  0,
     "procs":  {
-                  "qquant_gates.8608":  {
-                                            "cpu":  8.4375,
-                                            "at":  "2026-09-07T16:41:20.0164084+02:00"
-                                        },
-                  "external_gauntlet.2268":  {
-                                                 "cpu":  331.96875,
-                                                 "at":  "2026-09-07T16:41:20.0164084+02:00"
+                  "external_gauntlet.9512":  {
+                                                 "cpu":  7.234375,
+                                                 "at":  "2026-09-08T04:10:18.8832770+02:00"
                                              }
               }
 }

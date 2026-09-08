@@ -1,0 +1,37 @@
+{
+  "id": "REC-20260908-24d0da",
+  "atoms": [
+    {
+      "type": "regime",
+      "value": "all",
+      "source": "external.EURCHF.discovered.p=4cba1afa572a99cd"
+    },
+    {
+      "type": "session",
+      "value": "all",
+      "source": "external.EURCHF.discovered.p=4cba1afa572a99cd"
+    },
+    {
+      "type": "horizon",
+      "value": "intraday",
+      "source": "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}"
+    }
+  ],
+  "mechanism_class": "relative_value",
+  "expected_orthogonality": 0.8000000000000002,
+  "estimated_edge_bps": 10.0,
+  "source_strategies": [
+    "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "external.EURCHF.discovered.p=4cba1afa572a99cd"
+  ],
+  "recombination_type": "orthogonal",
+  "falsifier": "regime all disappears",
+  "metadata": {
+    "group": "regime",
+    "atom_types": [
+      "regime",
+      "session",
+      "horizon"
+    ]
+  }
+}

@@ -4,7 +4,7 @@
     "discoveries": []
   },
   "github": {
-    "count": 18,
+    "count": 15,
     "discoveries": [
       {
         "source": "github",
@@ -25,13 +25,13 @@
         "repo": "ilahuerta-IA/tradingsystem",
         "url": "https://github.com/ilahuerta-IA/tradingsystem",
         "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
-        "stars": 16,
+        "stars": 15,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "EMA"
         ],
-        "confidence": 0.16599999999999998
+        "confidence": 0.16499999999999998
       },
       {
         "source": "github",
@@ -78,27 +78,40 @@
         "repo": "Gharrr544/hyperliquid-mean-reversion-bot",
         "url": "https://github.com/Gharrr544/hyperliquid-mean-reversion-bot",
         "description": "hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot",
-        "stars": 5,
+        "stars": 8,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "RSI"
         ],
-        "confidence": 0.155
+        "confidence": 0.158
       },
       {
         "source": "github",
         "repo": "moss-site/moss-trade-bot-skills",
         "url": "https://github.com/moss-site/moss-trade-bot-skills",
         "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
-        "stars": 381,
+        "stars": 382,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "momentum",
           "RSI"
         ],
-        "confidence": 0.681
+        "confidence": 0.6819999999999999
+      },
+      {
+        "source": "github",
+        "repo": "mbordash/DRADIS",
+        "url": "https://github.com/mbordash/DRADIS",
+        "description": "Low-latency Rust prediction-market trading bot for Kalshi & Polymarket. 9 autonomous strategies (Momentum, Maker, Arbitrage, ML, etc.), real-time Next.js Control Tower, and an AI LLM Advisor that delivers optimization recommendations via Ollama (local or remote), MCP + Telegram and OpenClaw.",
+        "stars": 24,
+        "language": "Rust",
+        "symbols": [],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.174
       },
       {
         "source": "github",
@@ -125,19 +138,6 @@
           "momentum"
         ],
         "confidence": 0.251
-      },
-      {
-        "source": "github",
-        "repo": "mbordash/DRADIS",
-        "url": "https://github.com/mbordash/DRADIS",
-        "description": "Low-latency Rust prediction-market trading bot for Kalshi & Polymarket. 9 autonomous strategies (Momentum, Maker, Arbitrage, ML, etc.), real-time Next.js Control Tower, and an AI LLM Advisor that delivers optimization recommendations via Ollama (local or remote), MCP + Telegram and OpenClaw.",
-        "stars": 24,
-        "language": "Rust",
-        "symbols": [],
-        "patterns": [
-          "momentum"
-        ],
-        "confidence": 0.174
       },
       {
         "source": "github",
@@ -170,14 +170,14 @@
         "repo": "moss-site/moss-trade-bot-skills",
         "url": "https://github.com/moss-site/moss-trade-bot-skills",
         "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
-        "stars": 381,
+        "stars": 382,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "momentum",
           "RSI"
         ],
-        "confidence": 0.681
+        "confidence": 0.6819999999999999
       },
       {
         "source": "github",
@@ -208,46 +208,6 @@
           "momentum"
         ],
         "confidence": 0.316
-      },
-      {
-        "source": "github",
-        "repo": "ashikscreativemath-commits/Paldo-ALM",
-        "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
-        "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
-        "stars": 21,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "scalping",
-          "swing"
-        ],
-        "confidence": 0.321
-      },
-      {
-        "source": "github",
-        "repo": "goodie1972/algoforge",
-        "url": "https://github.com/goodie1972/algoforge",
-        "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
-        "stars": 5,
-        "language": "HTML",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.20500000000000002
-      },
-      {
-        "source": "github",
-        "repo": "xzaviourr/zerodha-algorithmic-trader",
-        "url": "https://github.com/xzaviourr/zerodha-algorithmic-trader",
-        "description": "Archived Flask trading-server prototype integrating Zerodha Kite Connect with five-EMA and Bank NIFTY short-straddle strategies; not investment advice.",
-        "stars": 8,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.158
       }
     ]
   },
@@ -305,8 +265,36 @@
     ]
   },
   "mql5_forum": {
-    "count": 0,
-    "discoveries": []
+    "count": 3,
+    "discoveries": [
+      {
+        "source": "mql5_forum",
+        "title": "GOLD, Gold and XAUUSD",
+        "url": "https://www.mql5.com/en/forum/393267",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "confidence": 0.2
+      },
+      {
+        "source": "mql5_forum",
+        "title": "GOLD, Gold and XAUUSD",
+        "url": "https://www.mql5.com/en/forum/393267",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "confidence": 0.2
+      },
+      {
+        "source": "mql5_forum",
+        "title": "GOLD, Gold and XAUUSD",
+        "url": "https://www.mql5.com/en/forum/393267",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "confidence": 0.2
+      }
+    ]
   },
   "tradingview": {
     "count": 1,
@@ -335,6 +323,30 @@
   "reddit": {
     "count": 16,
     "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Grabbed a good opportunityon XAUUSD as first trade of the week!",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "resistance"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "6 NFP mornings on gold 5m: first 15 minute ranges from $5.73 to $48.48",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
       {
         "source": "reddit",
         "subreddit": "Forex",
@@ -399,8 +411,8 @@
         "title": "I built an open-source MT5 visual replacer for backtesting \u2014 looking for honest feedback before I take it further",
         "url": "",
         "symbols": [
-          "XAUUSD",
           "EURUSD",
+          "XAUUSD",
           "GBPUSD"
         ],
         "patterns": [],
@@ -423,8 +435,8 @@
         "title": "FINAL UPDATE: Turning Around a 1$ blown account",
         "url": "",
         "symbols": [
-          "XAUUSD",
-          "DXY"
+          "DXY",
+          "XAUUSD"
         ],
         "patterns": [
           "EMA"
@@ -500,33 +512,6 @@
         ],
         "patterns": [
           "liquidity"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Waiting for the profit. Will it break volume support or not?",
-        "url": "",
-        "symbols": [
-          "EURUSD"
-        ],
-        "patterns": [
-          "support"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Gold taking support from major level",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "support",
-          "trend"
         ],
         "confidence": 0.3
       }
@@ -709,7 +694,7 @@
     ]
   },
   "sec_edgar": {
-    "count": 9,
+    "count": 10,
     "discoveries": [
       {
         "source": "sec_edgar",
@@ -722,6 +707,18 @@
         ],
         "confidence": 0.4,
         "description": "Bridgewater has recent 13F filing - check for position changes"
+      },
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Renaissance",
+        "cik": "0001037389",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Renaissance has recent 13F filing - check for position changes"
       },
       {
         "source": "sec_edgar",
@@ -860,14 +857,14 @@
         "source": "cnn_fear_greed",
         "type": "sentiment_reading",
         "reading": "neutral",
-        "score": 41.8571428571429,
+        "score": 40.9428571428571,
         "rating": "fear",
         "symbols": [
           "US500",
           "NAS100"
         ],
         "confidence": 0.3,
-        "description": "Fear & Greed: 41.8571428571429 (fear)"
+        "description": "Fear & Greed: 40.9428571428571 (fear)"
       }
     ]
   },
@@ -2240,7 +2237,7 @@
       {
         "source": "shipping",
         "type": "bdi",
-        "value": 3575,
+        "value": 3584,
         "signal": "strong_expansion",
         "symbols": [
           "US500",
@@ -2249,7 +2246,7 @@
           "NZDUSD"
         ],
         "confidence": 0.6,
-        "description": "BDI: 3575 (strong_expansion)"
+        "description": "BDI: 3584 (strong_expansion)"
       }
     ]
   },
