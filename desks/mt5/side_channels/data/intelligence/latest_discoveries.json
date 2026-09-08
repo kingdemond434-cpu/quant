@@ -321,7 +321,7 @@
     ]
   },
   "reddit": {
-    "count": 16,
+    "count": 18,
     "discoveries": [
       {
         "source": "reddit",
@@ -334,6 +334,30 @@
         "patterns": [
           "resistance"
         ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Gotta love choppy NY session XAUUSD.",
+        "url": "",
+        "symbols": [
+          "NAS100",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Account management",
+        "url": "",
+        "symbols": [
+          "NAS100",
+          "XAUUSD"
+        ],
+        "patterns": [],
         "confidence": 0.3
       },
       {
@@ -366,8 +390,8 @@
         "title": "Trade",
         "url": "",
         "symbols": [
-          "XAUUSD",
-          "GBPUSD"
+          "GBPUSD",
+          "XAUUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -412,8 +436,8 @@
         "url": "",
         "symbols": [
           "EURUSD",
-          "XAUUSD",
-          "GBPUSD"
+          "GBPUSD",
+          "XAUUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -493,25 +517,25 @@
       },
       {
         "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Me VS XAUUSD",
+        "subreddit": "wallstreetbets",
+        "title": "I think MSTR is set for a good week",
         "url": "",
         "symbols": [
-          "XAUUSD"
+          "BTCUSD"
         ],
         "patterns": [],
         "confidence": 0.3
       },
       {
         "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Looking for 1 more market to trade alongside XAUUSD",
+        "subreddit": "wallstreetbets",
+        "title": "Road to recovery 696k -> 816k",
         "url": "",
         "symbols": [
-          "XAUUSD"
+          "NAS100"
         ],
         "patterns": [
-          "liquidity"
+          "support"
         ],
         "confidence": 0.3
       }
@@ -857,14 +881,14 @@
         "source": "cnn_fear_greed",
         "type": "sentiment_reading",
         "reading": "neutral",
-        "score": 40.9428571428571,
+        "score": 41.5142857142857,
         "rating": "fear",
         "symbols": [
           "US500",
           "NAS100"
         ],
         "confidence": 0.3,
-        "description": "Fear & Greed: 40.9428571428571 (fear)"
+        "description": "Fear & Greed: 41.5142857142857 (fear)"
       }
     ]
   },
