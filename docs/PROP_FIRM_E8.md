@@ -92,3 +92,78 @@ Getting from 1 independent mechanism to 3 requires **no new research**: `overnig
 2. The first 20–30 **real fills** from the live Fusion account, so cost is measured rather than
    assumed. Re-run the simulation with those costs before paying the fee.
 3. Re-check E8's current rules at purchase — they change, and this file is a snapshot.
+
+---
+
+# 2026-09-08: THE ACTUAL OFFERS, PRICED AND SIMULATED
+
+The principal sent E8's live checkout. This section supersedes the 8%/12% recommendation above --
+not because that arithmetic was wrong, but because 8% is not what is on the counter. The
+drawdown selector's endpoints are **6%** and **14%**, and the ratio is 1.5x at both, as recorded.
+
+| offer | price (code E8) | target | dynamic DD | daily DD |
+|---|---|---|---|---|
+| $100K @ 6% | $244 (was $488) | $9,000 | $6,000 | $4,000 |
+| $200K @ 6% | $399 (was $798) | $18,000 | $12,000 | $8,000 |
+| $100K @ 14% | $440 (was $879) | $21,000 | $14,000 | $9,200 |
+
+**DYNAMIC, NOT STATIC.** The screenshots say "Dynamic Drawdown", so the floor TRAILS the high
+water mark. That is materially harder than the static bound the section above assumed, and it is
+why this simulation checks the barrier after every trade rather than at end of day.
+
+## The three findings, from 40,000 simulated paths per cell
+
+**1. $200K @ 6% STRICTLY DOMINATES $100K @ 6%.** Identical percentage rules, so identical pass
+probability -- $399 for twice the funded capital against $244 for one. $2.11 per $1k funded
+against $2.59. There is no configuration in which the $100K/6% is the better buy.
+
+**2. RISK PER TRADE IS THE DOMINANT LEVER AND IT RUNS BACKWARDS TO INTUITION.** On $100K @ 6%,
+at exp_R +0.20 with four independent sleeves:
+
+| risk/trade | P(pass) | median | E[cost to pass] |
+|---|---|---|---|
+| 0.25% | **94.3%** | 62d | $259 |
+| 0.50% | 73.3% | 26d | $333 |
+| 0.75% | 60.3% | 12d | $405 |
+| 1.50% | 47.0% | 5d | $519 |
+
+HALVING the risk from the planned 0.50% to 0.25% moves pass probability from 73% to 94%. This is
+the barrier problem stated at the top of this file, in numbers: permanent-out at the drawdown
+against merely-sooner at the target means the growth-optimal size is far above the
+pass-optimal one. E8's "Pass in as little as 1 Day" is achievable and costs roughly half the
+pass probability.
+
+**3. 14%/21% BUYS PROBABILITY WITH TIME AND MONEY.** 96.9% at 0.50% risk -- the highest of any
+config at a sane speed -- but 75 days median and $4.54 per $1k funded, the worst value on offer.
+
+## The recommendation
+
+**$200K at 6% drawdown, 0.25% risk per trade.** 94.4% pass, 51 days median, 99 days at p90,
+$2.11 per $1k funded -- best on value AND on probability. It loses only to configurations whose
+pass rate is near a coin flip.
+
+The $200K @ 14% price is not in the screenshots. If the selector offers it, it is worth pricing:
+it would pair the dominant account size with the highest-probability drawdown setting.
+
+## What the whole table rests on, and it is not yet true
+
+Every number above assumes **exp_R = +0.20 is real**. Sensitivity on $100K @ 6%, 0.50% risk:
+
+| true exp_R | P(pass) | E[cost to pass] |
+|---|---|---|
+| +0.30 | 87.5% | $279 |
+| +0.20 | 73.1% | $334 |
+| +0.10 | 51.2% | $476 |
+| +0.05 | 37.5% | $650 |
+| 0.00 | 24.5% | $996 |
+
+At +0.10 -- half the assumed edge -- this is a coin flip. The desk's evidence for +0.20 is n=7
+per sleeve.
+
+**AND THE BOOK IS NOT LIVE.** Measured off the board 2026-09-08 01:39 UTC: `live: 0`,
+`matched_fills: 0`, `certified: 5`, 15 forward clocks at n=7-8, and the two gold scalp candidates
+sitting at promotion-ready rather than LIVE. There is no four-sleeve independent book -- there is
+one mechanism on four JPY crosses plus gold, which is the rho=0.7 row, and it has never placed a
+real order. The simulation assumes the desk executes; today it does not.
+
+The gate in the section above is unchanged and unmet.
