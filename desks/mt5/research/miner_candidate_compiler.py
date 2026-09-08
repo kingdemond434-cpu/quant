@@ -77,6 +77,10 @@ def _rows(doc) -> list[dict]:
 #: that nobody ever measured is just a smaller version of the filename filter below.
 MAX_ROWS_PER_PASS = 1_000_000
 
+#: What the last intake pass left unread when the bound bound (2026-09-08). The shortfall used
+#: to be a printed line and nothing else -- research opportunity cost that no artifact carried.
+_LAST_INTAKE: dict = {"deferred_files": 0, "files_seen": 0, "bound_hit": False}
+
 #: Artifacts under the intelligence roots that are a miner's OWN BOOKKEEPING, not evidence:
 #: cursors, coverage registries, denylists, run checkpoints, population counts. They are matched
 #: by exact filename at the root of a tree, never by substring, because "state" and "coverage" are
@@ -155,31 +159,41 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
     cutoff = now - timedelta(days=WINDOW_DAYS)
     found: list[tuple[str, dict]] = []
     seen: set[str] = set()
+    _LAST_INTAKE.update({"deferred_files": 0, "files_seen": 0, "bound_hit": False})
+    all_paths: list[Path] = []
     for root in INTEL_ROOTS:
         if not root.exists():
             continue
-        paths = sorted((p for p in root.rglob("*.json")
-                        if p.is_file() and not _is_operational_state(p.relative_to(root))),
-                       key=lambda p: p.stat().st_mtime, reverse=True)
-        for path in paths:
-            try:
-                if datetime.fromtimestamp(path.stat().st_mtime, tz=UTC) < cutoff:
-                    continue
-            except OSError:
+        all_paths.extend(sorted((p for p in root.rglob("*.json")
+                                 if p.is_file()
+                                 and not _is_operational_state(p.relative_to(root))),
+                                key=lambda p: p.stat().st_mtime, reverse=True))
+    for i, path in enumerate(all_paths):
+        try:
+            if datetime.fromtimestamp(path.stat().st_mtime, tz=UTC) < cutoff:
                 continue
-            for row in _rows(_read(path)):
-                payload = json.dumps(row, sort_keys=True, default=str, separators=(",", ":"))
-                digest = hashlib.sha256(payload.encode()).hexdigest()
-                if digest in seen:
-                    continue
-                seen.add(digest)
-                source = str(row.get("source") or path.parent.name or "unknown")
-                found.append((source, row))
-                if len(found) >= MAX_ROWS_PER_PASS:
-                    print(f"compiler: MAX_ROWS_PER_PASS ({MAX_ROWS_PER_PASS:,}) reached; older "
-                          f"discoveries wait for the next pass. This is a memory bound being "
-                          f"hit, not a judgement -- raise it or shorten WINDOW_DAYS.")
-                    return found
+        except OSError:
+            continue
+        _LAST_INTAKE["files_seen"] = i + 1
+        for row in _rows(_read(path)):
+            payload = json.dumps(row, sort_keys=True, default=str, separators=(",", ":"))
+            digest = hashlib.sha256(payload.encode()).hexdigest()
+            if digest in seen:
+                continue
+            seen.add(digest)
+            source = str(row.get("source") or path.parent.name or "unknown")
+            found.append((source, row))
+            if len(found) >= MAX_ROWS_PER_PASS:
+                # THE SHORTFALL IS RECORDED, NOT ONLY PRINTED: the files this pass never opened
+                # are research the desk chose not to do this hour, and the compiled artifact
+                # carries that count (`intake.deferred_files`).
+                _LAST_INTAKE.update({"deferred_files": len(all_paths) - (i + 1),
+                                     "bound_hit": True})
+                print(f"compiler: MAX_ROWS_PER_PASS ({MAX_ROWS_PER_PASS:,}) reached; "
+                      f"{len(all_paths) - (i + 1)} file(s) wait for the next pass. This is a "
+                      f"memory bound being hit, not a judgement -- raise it or shorten "
+                      f"WINDOW_DAYS.")
+                return found
     return found
 
 
@@ -720,6 +734,12 @@ def main() -> int:
         print("families routed to DEEPENING (measured untestable at current parameters): "
               + ", ".join(sorted(untestable)))
 
+    # CROSS-ENGINE AGREEMENT (2026-09-08). Two engines proposing the SAME cell already collide
+    # on one identity here; the collision was thrown away. It is kept now as the count of
+    # distinct sources behind each candidate -- a cell the symbolic search AND the causal graph
+    # AND a crawler all name is a different object from one a single crawler named, and the
+    # trial allocator can order on it.
+    sources_by_identity: dict[str, set[str]] = {}
     for source, row in recent_rows(now):
         produced, disposition = compile_row(source, row, universe)
         stats = per_source.setdefault(source, {"rows": 0, "candidates": 0, "deepening": 0})
@@ -734,9 +754,15 @@ def main() -> int:
                                            "deepening_reason": untestable[fam]}
                     stats["deepening"] += 1
                 continue
+            sources_by_identity.setdefault(identity, set()).add(source)
             if identity not in candidates:
                 candidates[identity] = candidate
                 stats["candidates"] += 1
+    for identity, candidate in candidates.items():
+        srcs = sorted(sources_by_identity.get(identity, ()))
+        candidate["n_independent_sources"] = len(srcs)
+        if len(srcs) > 1:
+            candidate["agreeing_sources"] = srcs
         if not produced:
             compact = {
                 "source": source,
@@ -752,16 +778,29 @@ def main() -> int:
             stats["deepening"] += 1
 
     seats = seat_summary(per_source)
+    seats_dark = [s for s, st in seats.items() if not st["rows"]]
     for s, st in seats.items():
         print(f"seat {s}: {st['rows']} row(s) -> {st['candidates']} candidate(s), "
               f"{st['deepening']} deepening"
               + ("" if st["rows"] else "  (nothing donated inside the window)"))
+    if seats_dark:
+        # LOUD, because a seat on an hourly clock that donates nothing for a week is either
+        # unfunded, unrouted or broken, and every one of those has looked like "no findings".
+        print(f"SEATS DARK inside the {WINDOW_DAYS}-day window: {', '.join(seats_dark)}",
+              flush=True)
+    agreement = sum(1 for c in candidates.values() if c.get("n_independent_sources", 0) > 1)
 
     # THE GRAPH REMEMBERS WHAT WAS BURIED. Every compiled candidate is registered as BORN with
     # its miner row as parent, and every one that lands in a parameter region the gauntlet has
     # already failed carries that count on its face. It is not rejected -- the gauntlet decides
     # -- but a proposer that keeps re-proposing a dead region is now visible, and the deepening
     # queue's VOI ordering discounts it.
+    #
+    # EVERY FAILURE IN HERE IS NAMED IN THE ARTIFACT (2026-09-08). Measured on the box: 632 of
+    # 632 compiled candidates carried no premortem and no prior-failure count, and the graph
+    # held no compiler row at all -- this block was failing every hour and `except: pass` made
+    # it look like a graph with nothing to say.
+    graph_note: dict = {"updated": False, "premortem": False}
     try:
         from libs.research.hypothesis_graph import Graph, record_candidates
         g = Graph()
@@ -779,11 +818,17 @@ def main() -> int:
             if gm.n:
                 for c in candidates.values():
                     c["premortem"] = gm.premortem(c)
-        except Exception:
-            pass
+                graph_note["premortem"] = True
+            else:
+                graph_note["premortem_why"] = "graveyard model fitted on zero rows"
+        except Exception as exc:
+            graph_note["premortem_why"] = f"{type(exc).__name__}: {exc}"[:300]
+            print(f"premortem not stamped (non-fatal): {graph_note['premortem_why']}")
         record_candidates(candidates.values(), source="miner_candidate_compiler", graph=g)
+        graph_note["updated"] = True
     except Exception as exc:
-        print(f"hypothesis graph not updated (non-fatal): {type(exc).__name__}: {exc}")
+        graph_note["why"] = f"{type(exc).__name__}: {exc}"[:300]
+        print(f"hypothesis graph not updated (non-fatal): {graph_note['why']}")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
@@ -791,6 +836,10 @@ def main() -> int:
         "hypotheses": list(candidates.values()),
         "per_source": per_source,
         "seats": seats,
+        "seats_dark": seats_dark,
+        "agreement": {"candidates_with_2plus_sources": agreement},
+        "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
+        "graph": graph_note,
         "rows_accounted": sum(v["rows"] for v in per_source.values()),
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),

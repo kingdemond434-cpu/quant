@@ -1299,6 +1299,11 @@ def main() -> None:
     # the sealed release, and nothing scheduled to notice.
     ri = _costed("release_identity", lambda: _producer(
         "release_identity", "mt5desk/release_identity.py"))
+    # BURN-IN, RIGHT AFTER THE VERDICT IT RECORDS (2026-09-08). One row per pass: is the running
+    # code the sealed code, what did it do with money in the last day, how long has that been
+    # true. The review's bar for "deployment is boring" is thirty days of it with fills; this is
+    # the file that makes that a subtraction rather than a memory (reports/burn_in.json).
+    bi = _costed("burn_in", lambda: _producer("burn_in", "research/burn_in.py"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -1316,7 +1321,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "release_identity": ri, "publish_state": pub,
+                    "release_identity": ri, "burn_in": bi, "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "external_gauntlet": gt, "merge_docket": mh, "backtest": bt,

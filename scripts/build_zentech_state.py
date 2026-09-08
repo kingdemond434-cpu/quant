@@ -243,8 +243,8 @@ def _certificate_census(certs: dict[str, Any]) -> dict[str, Any]:
     """
     try:
         sys.path.insert(0, str(DESK / "research"))
-        from gate_policy import all_ten_pass          # type: ignore[import-not-found]
-    except Exception as exc:                          # noqa: BLE001 - reported, never guessed
+        from gate_policy import all_ten_pass  # type: ignore[import-not-found]
+    except Exception as exc:
         return {"basis": f"UNAVAILABLE ({type(exc).__name__}: {exc})", "certified": None,
                 "gate_failed": None, "gate_failed_names": [], "unrunnable_names": []}
     passed, failed = [], []
@@ -713,6 +713,11 @@ def build() -> dict[str, Any]:
             # count, conflicting paths, consecutive-conflict streak, last time in step). Empty on
             # the box, which has no such merge; served at the web root as its own file too.
             "vps_refresh": _read(ROOT / "web" / "refresh_status.json"),
+            # HOW LONG THE SEALED CODE HAS BEEN THE RUNNING CODE, WITH FILLS (2026-09-08).
+            # research/burn_in.py appends one row per hourly pass and keeps the streak; the
+            # review's "deployment boringness" bar is thirty days of it. Empty until the leg
+            # has run on the box; never fabricated here.
+            "burn_in": _read(DESK / "reports" / "burn_in.json"),
         },
         "equity_curve": _series(rows, start),
         "disclaimer": "Research and operator telemetry only. Missing values are UNMEASURED; shadow has zero order authority.",

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -34,8 +35,11 @@ RENDERED = ROOT / "docs" / "research" / "TIER1_PROGRAM.md"
 
 STATUSES = ("EXISTS-LIT", "EXISTS-DARK", "PARTIAL", "MISSING", "LANDED")
 GATES = ("none", "hardware", "capital", "principal", "data", "time", "box-paste")
+#: CODE and DOCUMENT paths are verified against the tree. Artifact paths (.json/.jsonl) are
+#: claims about a box's state -- most live only on the trading box or the VPS and are gitignored
+#: here -- so they are carried as evidence but never checked for existence.
 _PATH_RE = re.compile(
-    r"(?<![\w/])((?:[\w.-]+/)*[\w.-]+\.(?:py|ps1|sh|cmd|json|jsonl|md|timer|service|manifest|"
+    r"(?<![\w/])((?:[\w.-]+/)*[\w.-]+\.(?:py|ps1|sh|cmd|md|timer|service|manifest|"
     r"toml|yaml|yml))(?::(\d+))?")
 
 
@@ -45,6 +49,40 @@ def _line_count(path: Path) -> int:
             return sum(1 for _ in fh)
     except OSError:
         return 0
+
+
+_BASENAMES: dict[Path, dict[str, list[Path]]] = {}
+
+
+def _basenames(root: Path) -> dict[str, list[Path]]:
+    """basename -> every file in the tree with that name. A sweep that cites `gate_spec.yaml`
+    or `quant-deepseek.timer` by name alone is citing a real file; the ledger resolves the name
+    instead of calling a short citation a lie. Ambiguous names (two `orchestrator.py`) exist
+    but cannot be line-checked."""
+    if root not in _BASENAMES:
+        idx: dict[str, list[Path]] = {}
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in (".git", "__pycache__", "node_modules")]
+            for name in filenames:
+                idx.setdefault(name, []).append(Path(dirpath, name))
+        _BASENAMES[root] = idx
+    return _BASENAMES[root]
+
+
+def _resolve(root: Path, path: str) -> Path | None:
+    """The file a citation names, or None. A path with a directory is taken literally; a bare
+    name resolves through the tree and returns None when nothing carries it, or a directory-less
+    sentinel when several do (exists, but no single line count)."""
+    if "/" in path:
+        target = root / path
+        return target if target.exists() else None
+    hits = _basenames(root).get(path) or []
+    if not hits:
+        return None
+    return hits[0] if len(hits) == 1 else AMBIGUOUS
+
+
+AMBIGUOUS = Path("<ambiguous>")
 
 
 def _schedulers(root: Path) -> dict[str, set[str]]:
@@ -81,6 +119,7 @@ def _scheduler_known(spec: str, clocks: dict[str, set[str]]) -> bool:
 def check(ledger: dict, root: Path) -> tuple[list[str], dict]:
     """Return (problems, census). A problem is a lie the ledger tells about the repo."""
     problems: list[str] = []
+    warnings: list[str] = []
     clocks = _schedulers(root)
     by_phase: dict[str, Counter] = defaultdict(Counter)
     for it in ledger.get("items", []):
@@ -92,13 +131,20 @@ def check(ledger: dict, root: Path) -> tuple[list[str], dict]:
         if it.get("gate", "none") not in GATES:
             problems.append(f"{iid}: gate {it.get('gate')!r} is not one of {GATES}")
         by_phase[str(it.get("phase", "?"))][status] += 1
+        # A claim that something RUNS or has LANDED must be verifiable to the line; a PARTIAL,
+        # DARK or MISSING entry's citations are evidence of absence and are checked as warnings
+        # (a sweep may cite a file by its short name), never as the gate.
+        sink = problems if status in ("EXISTS-LIT", "LANDED") else warnings
         for ev in it.get("evidence") or []:
             for path, line in _PATH_RE.findall(str(ev)):
-                target = root / path
-                if not target.exists():
-                    problems.append(f"{iid}: cites {path} which does not exist")
+                target = _resolve(root, path)
+                if target is None:
+                    sink.append(f"{iid}: cites {path} which does not exist")
+                elif target is AMBIGUOUS:
+                    warnings.append(f"{iid}: cites {path} by name alone and the tree holds "
+                                    f"several; line not checked")
                 elif line and int(line) > _line_count(target):
-                    problems.append(f"{iid}: cites {path}:{line} beyond its {_line_count(target)} lines")
+                    sink.append(f"{iid}: cites {path}:{line} beyond its {_line_count(target)} lines")
         if status in ("EXISTS-LIT", "LANDED"):
             if not (it.get("evidence") or []):
                 problems.append(f"{iid}: {status} with no evidence")
@@ -117,7 +163,8 @@ def check(ledger: dict, root: Path) -> tuple[list[str], dict]:
     for c in by_phase.values():
         total.update(c)
     return problems, {"by_phase": {k: dict(v) for k, v in sorted(by_phase.items())},
-                      "total": dict(total), "n_items": len(ledger.get("items", []))}
+                      "total": dict(total), "n_items": len(ledger.get("items", [])),
+                      "warnings": warnings}
 
 
 def render(ledger: dict, census: dict) -> str:
@@ -183,6 +230,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  phase {phase}: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
     for p in problems:
         print(f"  LIE: {p}")
+    if census["warnings"]:
+        print(f"  {len(census['warnings'])} unresolved citation(s) on non-lit entries "
+              f"(warnings, not lies); first: {census['warnings'][0]}")
     if args.render:
         args.out.write_text(render(ledger, census), "utf-8")
         print(f"rendered {args.out}")

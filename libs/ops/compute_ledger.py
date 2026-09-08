@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -70,13 +71,19 @@ def _cpu_seconds() -> float:
 
 
 def _append(row: dict[str, Any]) -> None:
-    """One line, best effort. A ledger write must never take down the work it is measuring."""
+    """One line, best effort. A ledger write must never take down the work it is measuring --
+    but it must SAY when it failed. MEASURED 2026-09-08: the ledger held four rows against
+    fifty-nine costed legs an hour, and a silent `except OSError: pass` is one of the two ways
+    that happens (the other, an import path, is fixed at the caller). A denominator that fails
+    silently is a scaling law nobody can draw."""
     try:
         LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with open(LEDGER, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, default=str) + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        print(f"compute_ledger: row for {row.get('run')!r} NOT written "
+              f"({type(exc).__name__}: {exc}) -- this hour's cost is unrecorded",
+              file=sys.stderr, flush=True)
 
 
 def open_run(name: str, kind: str = "research", **meta: Any) -> Run:

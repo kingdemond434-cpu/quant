@@ -48,6 +48,29 @@ def test_a_missing_file_is_a_lie(tmp_path: Path) -> None:
     assert any("does not exist" in p for p in problems)
 
 
+def test_a_missing_file_on_a_partial_entry_is_a_warning_not_a_lie(tmp_path: Path) -> None:
+    """A PARTIAL entry's citation is evidence of absence; a sweep may cite a short name. Only a
+    claim that something RUNS or has LANDED must be verifiable to the line."""
+    problems, census = ck.check(_ledger(status="PARTIAL", gap="half of it",
+                                        evidence=["libs/nope.py:1 — x"]), _repo(tmp_path))
+    assert problems == [] and any("does not exist" in w for w in census["warnings"])
+
+
+def test_a_bare_name_resolves_through_the_tree(tmp_path: Path) -> None:
+    """A sweep that cites `thing.py:2` by name alone is citing a real file; a name nothing in
+    the tree carries is still a lie; a name several files carry exists but is not line-checked."""
+    repo = _repo(tmp_path)
+    (repo / "desks" / "mt5" / "research" / "thing.py").write_text("a\n", "utf-8")
+    ck._BASENAMES.clear()
+    assert ck.check(_ledger(evidence=["quant-x.timer — it (MEASURED)"]), repo)[0] == []
+    assert ck.check(_ledger(evidence=["box_tasks.manifest — it (MEASURED)"]), repo)[0] == []
+    problems, _ = ck.check(_ledger(evidence=["ghost.py:1 — x"]), repo)
+    assert any("does not exist" in p for p in problems)
+    problems, census = ck.check(_ledger(evidence=["thing.py:40 — x"]), repo)
+    assert problems == [] and any("several" in w for w in census["warnings"])
+    ck._BASENAMES.clear()
+
+
 def test_a_line_beyond_the_file_is_a_lie(tmp_path: Path) -> None:
     problems, _ = ck.check(_ledger(evidence=["libs/thing.py:40 — x"]), _repo(tmp_path))
     assert any("beyond" in p for p in problems)
