@@ -43,6 +43,9 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "data" / "sleeves.json")
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
+    # The gold retirement record too: since 2026-09-08 `main` re-derives it and WRITES (a void
+    # audit, a re-stamp), so a promoter pointed at tmp_path must be pointed at it entirely.
+    monkeypatch.setattr(promoter, "GOLD_RETIRED_FILE", tmp_path / "data" / "GOLD_RETIRED.json")
     monkeypatch.setattr(promoter.provenance, "current_account", lambda _acc: _ACC)
     monkeypatch.setattr(promoter, "authorized_specs", lambda _base: {
         (sym, "asia", state, "session_range_breakout", False)

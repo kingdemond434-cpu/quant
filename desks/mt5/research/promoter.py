@@ -398,9 +398,23 @@ def _save_gold_retired(rows: dict) -> None:
 GOLD_RETIRED_VOIDED_FILE = BASE / "data" / "GOLD_RETIRED_VOIDED.json"
 
 
+def _gold_voided_file() -> Path:
+    """The audit file, ALWAYS beside whatever GOLD_RETIRED_FILE currently points at.
+
+    MEASURED 2026-09-08, the first suite run after the void path landed: five older promoter
+    tests redirect GOLD_RETIRED_FILE (or nothing at all) to tmp_path and call `main()`; the void
+    path wrote its audit through the module constant, so a test's fake account voided and
+    re-stamped the REPOSITORY's real GOLD_RETIRED.json and left a real GOLD_RETIRED_VOIDED.json
+    behind. Deriving the sibling from the retired file's own location means a test that moves
+    one moves both; the constant stays for callers that set it explicitly."""
+    if GOLD_RETIRED_VOIDED_FILE != BASE / "data" / "GOLD_RETIRED_VOIDED.json":
+        return GOLD_RETIRED_VOIDED_FILE
+    return GOLD_RETIRED_FILE.with_name("GOLD_RETIRED_VOIDED.json")
+
+
 def _load_gold_voided() -> dict:
     try:
-        v = json.loads(GOLD_RETIRED_VOIDED_FILE.read_text(encoding="utf-8"))
+        v = json.loads(_gold_voided_file().read_text(encoding="utf-8"))
         return v if isinstance(v, dict) else {}
     except (OSError, ValueError):
         return {}
@@ -1356,8 +1370,8 @@ def main() -> None:
             voided[gname] = {**gold_retired[gname],
                              "voided_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                              "voided_why": why_void}
-            GOLD_RETIRED_VOIDED_FILE.parent.mkdir(parents=True, exist_ok=True)
-            GOLD_RETIRED_VOIDED_FILE.write_text(json.dumps(voided, indent=2), encoding="utf-8")
+            _gold_voided_file().parent.mkdir(parents=True, exist_ok=True)
+            _gold_voided_file().write_text(json.dumps(voided, indent=2), encoding="utf-8")
             del gold_retired[gname]
             _save_gold_retired(gold_retired)
             plog(f"RETIREMENT VOID {gname}: {why_void} -- re-judged on this pass under the "
