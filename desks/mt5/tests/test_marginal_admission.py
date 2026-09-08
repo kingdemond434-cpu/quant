@@ -305,6 +305,8 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
     monkeypatch.setattr(promoter, "GOLD_RETIRED_FILE", tmp_path / "data" / "GOLD_RETIRED.json")
+    monkeypatch.setattr(promoter, "GOLD_RETIRED_VOIDED_FILE",
+                        tmp_path / "data" / "GOLD_RETIRED_VOIDED.json")
     monkeypatch.setattr(promoter, "ALLOCATION", alloc)
     monkeypatch.setattr(promoter, "clock_identities", lambda: {})
     monkeypatch.setattr(promoter, "regrade_failures", lambda now=None: {})
