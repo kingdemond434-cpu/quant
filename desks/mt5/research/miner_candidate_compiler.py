@@ -28,6 +28,11 @@ INTEL_ROOTS = (BASE / "data" / "intelligence", ROOT / "data" / "intelligence")
 OUT = BASE / "data" / "hypotheses" / "miner_candidates.json"
 DEEPEN = BASE / "data" / "hypotheses" / "miner_deepening_queue.json"
 WINDOW_DAYS = 7
+#: The LLM seats' source names as they appear on their donated rows (`libs/ops/deepseek_cycle.py`
+#: `_donate`, `scripts/kimi_hunter.py` `_donate`). Reported as one block in the compiled artifact
+#: so "what did the seats put in the docket" is a field, not a grep -- and a seat that donated
+#: nothing in the window is reported with zeros, because that is the measurement, not an absence.
+SEAT_SOURCES = frozenset({"deepseek", "kimi_k3_deep_forest"})
 
 
 def _read(path: Path):
@@ -265,7 +270,8 @@ def _registered_family(name: str) -> bool:
 
 _OPERATIONAL_KINDS = frozenset({"walled", "fetch_error", "stub", "probe", "error", "skipped"})
 _TEXT_FIELDS = ("title", "text", "summary", "description", "abstract", "body", "content",
-                "snippet", "headline", "claim", "hypothesis", "mechanism", "notes")
+                "snippet", "headline", "claim", "hypothesis", "mechanism", "notes",
+                "testable_claim")
 _TEXT_LIST_FIELDS = ("trading_terms", "mechanism_tags", "policy_signals", "tags", "keywords")
 _MAX_TEXT_CHARS = 20_000
 _MAX_TEXT_SYMBOLS = 4
@@ -401,6 +407,26 @@ def _row_text(row: dict) -> str:
     return " ".join(parts)[:_MAX_TEXT_CHARS].lower()
 
 
+def _declared_symbols(row: dict, universe: set[str]) -> list[str]:
+    """Instruments the row DECLARES in a structured field, registry-priced, exact codes only.
+
+    `resolve_symbols` is the structured miners' rule and expands a bare currency to its pairs,
+    which is right for a CPI print and wrong for a paragraph or a seat's hypothesis. This is the
+    narrower reading the prose path and a seat's row share: what the row itself named, if the
+    desk can price it, and nothing minted from a three-letter code.
+    """
+    raw: list = [row["symbol"]] if row.get("symbol") else []
+    for key in ("symbols", "instruments"):
+        if isinstance(row.get(key), list):
+            raw.extend(row[key])
+    out: list[str] = []
+    for value in raw:
+        token = str(value).upper().replace("/", "").replace("-", "").strip()
+        if token in universe and token not in out:
+            out.append(token)
+    return out
+
+
 def text_symbols(text: str, universe: set[str]) -> list[str]:
     """Instruments the prose names that the registry can price. Exact six-letter codes,
     slash/dash pairs, and aliases; never a bare three-letter currency expanded to its pairs."""
@@ -471,7 +497,15 @@ def compile_from_text(source: str, row: dict, universe: set[str]) -> tuple[list[
     text = _row_text(row)
     if not text:
         return [], "NEEDS_SYMBOL_EXTRACTION"
-    symbols = text_symbols(text, universe)
+    # THE ROW'S OWN DECLARED INSTRUMENTS COME FIRST (2026-09-08). A seat writes
+    # `symbols: ["USDJPY"]` and prose that says "the yen"; reading the prose alone lost the
+    # instrument the row had already stated and sent a row carrying both a family phrase and a
+    # priced instrument to deepening. Declared first, prose after, the same four-instrument bound.
+    symbols = _declared_symbols(row, universe)
+    for s in text_symbols(text, universe):
+        if s not in symbols:
+            symbols.append(s)
+    symbols = symbols[:_MAX_TEXT_SYMBOLS]
     if not symbols:
         return [], "NEEDS_SYMBOL_EXTRACTION"
     families = text_families(text)
@@ -596,6 +630,29 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
                             "monthly seasonality")
                  for s in symbols], "STRUCTURED_CALENDAR")
 
+    # A SEAT'S HYPOTHESIS NAMES ITS FAMILY OUTRIGHT (2026-09-08). The DeepSeek seat donates
+    # `{"kind": "hypothesis", "family": "overnight_gap_decay", "symbols": ["USDJPY"], ...}`
+    # (libs/ops/deepseek_cycle.py `_donate`) and the desk's own generators can write the same
+    # shape. MEASURED: such a row has no `params`, so it missed EXACT_RECIPE, and the prose path
+    # below re-derived the family from the text alone -- a row whose prose did not happen to
+    # repeat a vocabulary phrase went to deepening WITH its family and instrument already on it.
+    # The prose path admits a family from a matched phrase with the family's defaults; a row that
+    # states the registered family is at least that explicit, and is held to the same bounds:
+    # price-only families (`_FAMILY_VOCAB` -- nothing that needs a swap table or a peer) and
+    # whatever parameters the text names (`_text_params`, so a calendar_month with no month is
+    # still not a recipe). Declared instruments only: a seat saying "EUR" is not a CPI print.
+    if kind == "hypothesis" and isinstance(family, str) and family in _FAMILY_VOCAB \
+            and _registered_cached(family):
+        declared = _declared_symbols(row, universe)[:_MAX_TEXT_SYMBOLS]
+        params = _text_params(family, _row_text(row)) if declared else None
+        if params is not None:
+            return ([_candidate(s, family, dict(params), source, row,
+                                f"seat hypothesis: the row names {family} on {s} outright; "
+                                + ("session/month taken from the text" if params
+                                   else "family defaults")
+                                + " -- a hypothesis for the ten gates, not a claim")
+                     for s in declared], "STRUCTURED_HYPOTHESIS")
+
     # PROSE, LAST. Every structured shape above is exact and wins; only a row none of them
     # claims is read as text. Before this line the prose miners converted at zero.
     text_cands, text_disp = compile_from_text(source, row, universe)
@@ -603,7 +660,11 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
         return text_cands, text_disp
     if not symbols and text_disp == "OPERATIONAL_ROW":
         return [], text_disp
-    if not symbols:
+    # THE LABEL SAYS WHAT IS ACTUALLY MISSING. A row with no structured instrument whose prose
+    # DID name one (the seats' rows: "gold basis pressure") was labelled NEEDS_SYMBOL_EXTRACTION
+    # here, overriding the prose path's own finding; the deepening worker then spent its call
+    # recovering an instrument the row already had, not the rule it lacked.
+    if not symbols and text_disp != "NEEDS_EXACT_RULE_EXTRACTION":
         return [], "NEEDS_SYMBOL_EXTRACTION"
     return [], "NEEDS_EXACT_RULE_EXTRACTION"
 
@@ -635,6 +696,17 @@ def structurally_untestable_families() -> dict[str, str]:
     return {fam: (f"last sweep built {n} cell(s), judged 0 -- every one under the 60 trading "
                   f"days the gates need; parameters need DEEPENING before judgment is possible")
             for fam, (n, unm) in per_fam.items() if n >= 5 and unm == n}
+
+
+def seat_summary(per_source: dict[str, dict[str, int]]) -> dict[str, dict[str, int]]:
+    """Per-seat conversion for the compiled artifact: rows seen, candidates, deepening tasks.
+
+    A seat absent from `per_source` is reported with zeros rather than omitted: "the seat donated
+    nothing inside the window" is the measurement the desk most needs to see, and a missing key
+    reads as "not tracked".
+    """
+    return {s: dict(per_source.get(s) or {"rows": 0, "candidates": 0, "deepening": 0})
+            for s in sorted(SEAT_SOURCES)}
 
 
 def main() -> int:
@@ -679,6 +751,12 @@ def main() -> int:
             deepening[key] = compact
             stats["deepening"] += 1
 
+    seats = seat_summary(per_source)
+    for s, st in seats.items():
+        print(f"seat {s}: {st['rows']} row(s) -> {st['candidates']} candidate(s), "
+              f"{st['deepening']} deepening"
+              + ("" if st["rows"] else "  (nothing donated inside the window)"))
+
     # THE GRAPH REMEMBERS WHAT WAS BURIED. Every compiled candidate is registered as BORN with
     # its miner row as parent, and every one that lands in a parameter region the gauntlet has
     # already failed carries that count on its face. It is not rejected -- the gauntlet decides
@@ -712,6 +790,7 @@ def main() -> int:
         "compiled_at": now.isoformat(timespec="seconds"),
         "hypotheses": list(candidates.values()),
         "per_source": per_source,
+        "seats": seats,
         "rows_accounted": sum(v["rows"] for v in per_source.values()),
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),

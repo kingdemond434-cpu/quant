@@ -183,7 +183,9 @@ class TestPartialWorkIsKept:
         the next run re-hunted the same forest -- the 45-day vector cooldown silently defeated by
         its own failure path."""
         body = ast.unparse(_wave_loop())
-        assert "_COVERAGE.write_text" in body, (
+        # The write moved behind `hunt_frontier.save` when coverage became a VectorState; the
+        # property pinned is unchanged -- the save happens INSIDE the loop.
+        assert "hf.save(state, _COVERAGE)" in body, (
             "coverage must be persisted INSIDE the wave loop, not only after the last wave")
 
     def test_a_dead_wave_breaks_rather_than_exits(self) -> None:
@@ -224,6 +226,7 @@ class TestTheDepthReadoutIsRealRatherThanObfuscated:
         check whether depth is accruing at all."""
         code = _code()
         assert "chr(34)" not in code, "the obfuscated (and wrong) coverage lookup came back"
-        assert 'cov.get("vectors", {})' in code
-        assert K._load_coverage().get("vectors") == {} or isinstance(
-            K._load_coverage()["vectors"], dict)
+        # Coverage is a `hunt_frontier.VectorState` now; the readout counts its `vectors`.
+        assert "n_terr = len(state.vectors)" in code
+        from libs.research import hunt_frontier as hf
+        assert isinstance(hf.load(Path("definitely/absent/coverage.json")).vectors, dict)

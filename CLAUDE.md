@@ -81,6 +81,28 @@ vocabulary. Do not decide something the desk already decided.
   diverged, adopts code and origin-only inputs, and records the merge. The next push carries the
   box's state up and REVERTS any origin edit to a state path both sides changed — so never fix
   the box by editing a ledger/registry/docket on origin; fix the organ that writes it.
+- **TWO BRANCHES, ONE SILENT ABORT (measured 2026-09-08).** The VPS checks out and commits to
+  `desk-sync-clean` (author "Codex"; `ops/run_seed_miners_hourly.sh` rebase-pulls and pushes it
+  at :22, `ops/run_deepseek_factory.sh` at :20). `quant-desk-refresh` merges the desk branch
+  INTO it every 3 min (`ops/refresh_desk_state.sh`) and ABORTS on conflict with no artifact.
+  The two diverged 2026-09-06 17:08 → 2026-09-08 21:00 on three paths (two box-written state
+  stumps the VPS only holds as scp copies from `ops/pull_desk_state.sh`, and hourly_cycle.py);
+  ~960 silent aborts, 57 VPS commits (4,822 intelligence artifacts) never reached the box's
+  compiler, 147 desk commits never ran on the VPS. Converged in 7264e420. RULE: after any commit
+  that touches a path both machines write, run `git merge-base --is-ancestor origin/<desk>
+  origin/desk-sync-clean`; if false, merge here (desk first-parent, box versions of box-written
+  state) and push the SAME commit to `desk-sync-clean`, the desk branch and seats-and-chain.
+  `quant-unit-health` (every 10 min) copies `ops/quant-*.{service,timer}` into the VPS's
+  systemd user dir and daemon-reloads, so a pushed timer change is live within the hour of the
+  VPS taking the commit; it never enables or disables units.
+- **SEAT OUTPUT GOES THROUGH `data/intelligence/<seat>/` (2026-09-08).** The compiler reads
+  `data/intelligence/**` (both roots) and nothing else; `data/suggestion_ledger.jsonl` and
+  `data/kimi_hunt.json` are gitignored audit trails read by no scheduled organ. kimi donates to
+  `data/intelligence/kimi/discoveries_*.json`, DeepSeek to `data/intelligence/deepseek/`. A
+  `{"kind":"hypothesis","family":<registered price-only>,"symbols":[...]}` row compiles as
+  STRUCTURED_HYPOTHESIS with the family defaults; declared instruments are read before the
+  prose. `miner_candidates.json["seats"]` is the seats' measured conversion — a seat that
+  donated nothing in the window shows zeros there, which is the measurement, not an absence.
 
 ## Laws a fresh session most often violates (full set: LAWS §6)
 
@@ -195,6 +217,14 @@ growth free above it to the 30% ceiling; the resolved heat is filled, never repo
 gateway deploys the allocator's fractions un-re-shrunk and falls back to the best baseline at
 the floor when the proof is stale.** Research is anti-timid (weak public claims are hypotheses,
 never privileged); capital is evidence-hard (nothing gets authority for sounding institutional).
+- **NEVER REDUCE AGGRESSIVENESS (2026-09-08, principal's standing order, given three times).**
+  No session lowers risk by fiat: the 20% heat floor, the 0.02-lot gold floor, the daily-loss
+  and size parameters and the allocator's fractions stay as they are. Dynamic sizing the
+  allocator DERIVES from evidence is fine; a cap, shrink, veto or "conditional exception" added
+  because a reviewer called the book aggressive is not (Rule 1: prove robust forward E[log W]
+  rises, or leave it). The external review's "drop the 0.02 exception / conditional-on-ruin"
+  item is REFUSED, not deferred. Tier-1 means MORE independent positive-Elog bets inside the
+  same heat, never a smaller book.
 - **DEEP-FOREST MINING (2026-09-04, principal standing order)** — the deep Chinese web is worth
   mining to exhaustion: competition records (期货日报实盘大赛, 蓝海密剑), 七禾网/私募排排网 trader
   interviews, 聚宽/优矿/米筐/BigQuant communities, 知乎/CSDN/雪球, Gitee, Bilibili transcripts,

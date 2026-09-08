@@ -28,6 +28,7 @@ public sources only -- no paid data APIs, no institutional terminals.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import ssl
@@ -51,6 +52,18 @@ BSTATE = ROOT / "data/panel_budget_state.json"
 LEDGER = ROOT / "data/suggestion_ledger.jsonl"
 MECHB = ROOT / "data/mechanism_board.json"
 OUT = ROOT / "data/kimi_hunt.json"
+#: WHERE A FINDING HAS TO GO TO BE READ (2026-09-08). `LEDGER` and `OUT` live under `data/`,
+#: which `.gitignore:11` ignores, and the ledger's only readers -- scripts/research_exchange.py
+#: and scripts/meta_architect.py -- are on no timer and in no manifest row. So every finding this
+#: hunter ever admitted stayed on the VPS in a file no scheduled organ opens: the protocol ran,
+#: the gate ran, and the candidate compiler (desks/mt5/research/miner_candidate_compiler.py)
+#: never saw a row, because it walks `data/intelligence/**` and nothing else. The ledger is KEPT
+#: as the audit trail; each finding is ALSO written here in the miner discovery contract -- the
+#: same door libs/ops/deepseek_cycle.py opened for the second brain: allowlisted in git, read by
+#: the compiler on its next pass, judged by the same ten gates as every other miner's row. No
+#: new admission path: a seat's finding is a hypothesis with the family defaults, exactly as a
+#: crawler's prose is, and "ZERO PROMOTION AUTHORITY" never meant zero path to the gauntlet.
+DONATE_DIR = ROOT / "data/intelligence/kimi"
 CTX = ssl.create_default_context()
 
 MODEL = "moonshotai/kimi-k3"          # seated model; swarm-max reserved for quarterly deep dives
@@ -501,6 +514,48 @@ def _mock() -> int:
     return 0
 
 
+def _donate(findings: list[dict]) -> Path | None:
+    """Publish this run's admitted findings where the compiler reads. Returns the file, or None.
+
+    Mock rows (`mock: true`) never leave the ledger: a synthetic finding in the intelligence
+    tree would be compiled, deepened and billed like evidence about the world. The row shape is
+    the compiler's own contract -- `title`/`text` prose it extracts instruments and families
+    from, `kind: hypothesis`, an empty `symbols` list (the charter names mechanisms, not
+    tickers; the compiler's alias table turns "gold" into XAUUSD) and a deterministic `url` so
+    the same finding donated twice is one docket row.
+    """
+    rows = [f for f in findings if isinstance(f, dict) and not f.get("mock")]
+    if not rows:
+        return None
+    DONATE_DIR.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(tz=UTC)
+    path = DONATE_DIR / f"discoveries_{now.strftime('%Y%m%d_%H%M%S')}.json"
+    discoveries = []
+    for f in rows:
+        problem = str(f.get("problem") or "").strip()
+        digest = hashlib.sha256(problem.encode("utf-8")).hexdigest()[:12]
+        prose = " | ".join(str(f[k]) for k in ("evidence", "benefit", "dependencies",
+                                              "success_metric", "kill_condition") if f.get(k))
+        discoveries.append({
+            "source": "kimi_k3_deep_forest",
+            "kind": "hypothesis",
+            "title": problem[:300],
+            "text": prose,
+            "claim_class": f.get("claim_class"),
+            "wave": f.get("wave"),
+            "model": f.get("model"),
+            "date": f.get("date"),
+            "symbols": [],
+            "url": f"kimi://{f.get('date')}/wave{f.get('wave')}/{digest}",
+        })
+    path.write_text(json.dumps({
+        "source": "kimi_k3_deep_forest",
+        "generated_at": now.isoformat(),
+        "discoveries": discoveries,
+    }, indent=1), "utf-8")
+    return path
+
+
 def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
     """Record a hunt that could not run, as an ARTIFACT rather than as a log line and an exit code.
 
@@ -625,8 +680,11 @@ def main() -> None:
                 dropped.append({"wave": w, "reason": reason, "line": ln[:120]})
             if not keep:
                 continue
+            # `model` is the attribution this file's own chain doctrine promises ("every finding
+            # carries the model that produced it") and, until 2026-09-08, never wrote.
             findings.append({"date": datetime.now(tz=UTC).date().isoformat(),
-                             "source": "kimi_k3_deep_forest", "wave": w, "claim_class": cls,
+                             "source": "kimi_k3_deep_forest", "wave": w, "model": used,
+                             "claim_class": cls,
                              "problem": parts[0][:220], "evidence": parts[1][:220],
                              "benefit": parts[2][:180], "cost": parts[3][:140],
                              "dependencies": parts[4][:140], "success_metric": parts[5][:180],
@@ -635,11 +693,15 @@ def main() -> None:
     print(f"\n  {len(findings)} charter-complete findings, {len(dropped)} dropped")
     for d in dropped:
         print(f"    dropped (wave {d['wave']}): {d['reason']}")
+    donated = None
     if findings:
         with LEDGER.open("a", encoding="utf-8") as fh:
             for f in findings:
                 fh.write(json.dumps(f) + "\n")
-        print(f"  -> {LEDGER}  (enters the SAME gate as every other contributor)")
+        print(f"  -> {LEDGER}  (audit trail)")
+        donated = _donate(findings)
+        print(f"  -> {donated}  (the compiler's tree: a docket row or a deepening task on its "
+              "next pass, through the same gate as every other contributor)")
     print("\n  ZERO PROMOTION AUTHORITY. These are raw ore. Next stops: mechanism board "
           "(family-kill rejection), measurement gate, Stage-A screening, forward clock.")
     # OUTCOME ATTRIBUTION. A territory hunted in wave 2/3 is YIELDED if this run produced any
@@ -673,6 +735,7 @@ def main() -> None:
                                "waves_completed": sorted(transcript),
                                "attempts": attempts,
                                "territories_hunted": n_terr,
+                               "donated_to": str(donated) if donated else None,
                                "waves": {str(k): v[:4000] for k, v in transcript.items()},
                                "findings": findings, "dropped": dropped}, indent=1), "utf-8")
     print(f"  status {status} | waves {sorted(transcript)} | models {models_used}")
