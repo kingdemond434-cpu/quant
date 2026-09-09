@@ -668,6 +668,50 @@ def _box_liveness(now: datetime) -> dict[str, Any]:
             "per_report": ages, "why": why}
 
 
+#: How much of the refusal reason travels. The reason names every path that drifted and can run
+#: to thousands of characters; the dashboard needs the sentence, not the inventory.
+RELEASE_REASON_CHARS = 400
+
+
+def _release_block() -> dict[str, Any]:
+    """WHICH CODE THE BOX IS ACTUALLY RUNNING, AND WHETHER IT MAY TRADE ON IT.
+
+    MEASURED 2026-09-09. Asked "is the new code live?", the dashboard could not answer: it
+    published account, research, health and stall figures and not one field naming the commit
+    they came from. So a box that had silently failed to adopt for a day looked exactly like a
+    box that had adopted at :12 -- both render identical tiles, which is the same shape of defect
+    as the ten-day-old numbers this file already fixed once (`_box_clock`). Worse here, because
+    the gateway's own answer already existed on disk: `release_identity.verdict()` writes its
+    verdict every pass, and nothing carried it the last two feet to a page a person can open.
+
+    The block is a READ, never a computation: whatever the gateway last decided is what shows.
+    An absent file is UNMEASURED and says so -- a dashboard that reported OK because it could
+    not find the verdict would be the failure it is here to expose.
+    """
+    ident = _read(DESK / "data" / "release_identity.json")
+    if not ident:
+        return {"verdict": "UNMEASURED", "allows_new_risk": False,
+                "why": "no release verdict on disk -- the gateway has not run since this tree "
+                       "was adopted, so the code it is running is unknown"}
+    running, sealed = ident.get("running_sha"), ident.get("release_sha")
+    reason = str(ident.get("reason") or "")
+    if len(reason) > RELEASE_REASON_CHARS:
+        reason = reason[:RELEASE_REASON_CHARS].rstrip() + " [...]"
+    return {
+        "verdict": ident.get("verdict", "UNMEASURED"),
+        # THE ONE FIELD THAT DECIDES WHETHER ANY SLEEVE MAY OPEN. Republished verbatim from the
+        # gateway's own verdict so the page and the money path cannot disagree.
+        "allows_new_risk": bool(ident.get("allows_new_risk")),
+        "running_sha": (running or "")[:12] or None,
+        "sealed_sha": (sealed or "")[:12] or None,
+        "adopted": bool(running and sealed and running == sealed),
+        "age_h": ident.get("age_h"),
+        "stale": bool(ident.get("stale")),
+        "measured_at": ident.get("at") or None,
+        "why": reason or "no reason recorded",
+    }
+
+
 def build() -> dict[str, Any]:
     gateway = _read(DESK / "data" / "gateway_state.json")
     # NEVER FALL BACK TO gateway_state FOR THE ACCOUNT (2026-09-04). On a box with no MT5
@@ -834,6 +878,7 @@ def build() -> dict[str, Any]:
     payload["stall_watch"] = _read(DESK / "data" / "stall_watch.json")
     payload["readiness"] = _read(ROOT / "data" / "live_readiness.json") or {
         "status": "UNMEASURED", "blocking": ["readiness has not been assessed"]}
+    payload["release"] = _release_block()
     payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}
     payload["stats"] = _ledger_stats(rows)
     payload["stats"]["today_pnl"] = payload["account"]["today_pnl"]
