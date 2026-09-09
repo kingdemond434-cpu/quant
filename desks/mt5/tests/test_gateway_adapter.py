@@ -391,6 +391,124 @@ def test_armed_the_family_executor_sends_the_signals_levels_once_per_bar(tmp_pat
     assert len(mt5.sent) == 1
 
 
+# ------------------------------------------------------------- the bracket lane's theoretical book
+
+class _BracketTerminal:
+    """Positions and deal history only. There is deliberately NO order_send here: the bracket
+    book is read-only against the venue, and a send would fail loudly as an AttributeError."""
+    DEAL_ENTRY_OUT = 1
+
+    def __init__(self):
+        self.positions: list = []
+        self.history: dict[int, list] = {}
+
+    def positions_get(self, symbol=None):
+        return [p for p in self.positions if symbol is None or p.symbol == symbol]
+
+    def history_deals_get(self, position=None):
+        return list(self.history.get(position, []))
+
+
+def _bracket_book_ns(tmp_path: Path, term: _BracketTerminal) -> dict:
+    from mt5desk import netting
+
+    book = netting.TheoreticalBook(tmp_path / "theoretical_positions.jsonl")
+    logs: list[str] = []
+    ns = _exec(("_book_bracket_lane", "_closing_fill", "_sleeve_positions", "_book_target",
+                "_book_fill"),
+               {"mt5": term, "log": logs.append, "_netting_book": lambda: book})
+    ns["_book"], ns["_logs"], ns["netting"] = book, logs, netting
+    return ns
+
+
+def _open_position(ticket: int, kind: int, volume: float, price: float, sleeve: str):
+    return SimpleNamespace(ticket=ticket, type=kind, volume=volume, price_open=price,
+                           symbol="XAUUSD", comment=f"DW{sleeve}")
+
+
+def test_the_bracket_lane_books_a_fill_once_and_its_exit_from_the_closing_deal(tmp_path):
+    term = _BracketTerminal()
+    ns = _bracket_book_ns(tmp_path, term)
+    book, ledger = ns["_book"], tmp_path / "theoretical_positions.jsonl"
+    sleeves = [{"name": "gold_asia", "symbol": "XAUUSD", "lot": "auto"},
+               {"name": "fam", "symbol": "EURUSD", "exec": "family_market"},
+               {"name": "sc", "symbol": "XAUUSD", "exec": "scalp_market"}]
+    st: dict = {"armed": True}
+
+    # Nothing open: a flat bracket sleeve is not a position and the ledger stays unwritten.
+    ns["_book_bracket_lane"](st, sleeves)
+    assert not ledger.exists() and st["netting_booked"] == {}
+
+    # A filled sell stop: -0.06 at the venue's own open, booked as target AND fill, once.
+    term.positions = [_open_position(7, 1, 0.06, 1995.0, "gold_asia")]
+    ns["_book_bracket_lane"](st, sleeves)
+    rows = [json.loads(ln) for ln in ledger.read_text("utf-8").splitlines()]
+    assert [(r["kind"], r["sleeve"], r["lots"], r.get("price"), r.get("reason")) for r in rows] == [
+        ("fill", "gold_asia", -0.06, 1995.0, None),
+        ("target", "gold_asia", -0.06, 1995.0, "bracket_fill")]
+    assert st["netting_booked"] == {"7": {"sleeve": "gold_asia", "symbol": "XAUUSD",
+                                          "lots": -0.06}}
+    assert book.delta("XAUUSD") == 0.0, "target and fill agree: nothing outstanding to route"
+    ns["_book_bracket_lane"](st, sleeves)                          # the same pass again
+    assert book.rows == 2, "re-asserting an unchanged book appends nothing"
+
+    # Closed at the broker with no closing deal recorded yet: the ticket stays booked, the
+    # target stays where it was, no exit is invented, and the route carries no phantom order.
+    term.positions = []
+    ns["_book_bracket_lane"](st, sleeves)
+    assert "7" in st["netting_booked"] and book.rows == 2
+    assert book.delta("XAUUSD") == 0.0 and book.theoretical("XAUUSD") == {"gold_asia": -0.06}
+    assert any("no closing deal yet" in x for x in ns["_logs"])
+
+    # The closing deal appears (two partial OUT deals): the exit is booked at their VWAP and
+    # the sleeve's target goes flat; the route then has nothing to send.
+    term.history[7] = [SimpleNamespace(entry=0, volume=0.06, price=1995.0),
+                       SimpleNamespace(entry=1, volume=0.04, price=1980.0),
+                       SimpleNamespace(entry=1, volume=0.02, price=1971.0)]
+    ns["_book_bracket_lane"](st, sleeves)
+    rows = [json.loads(ln) for ln in ledger.read_text("utf-8").splitlines()]
+    assert rows[2]["kind"] == "fill" and rows[2]["lots"] == 0.06
+    assert rows[2]["price"] == pytest.approx(1977.0)
+    assert rows[3] == {**rows[3], "kind": "target", "lots": 0.0, "reason": "bracket_flat"}
+    assert st["netting_booked"] == {} and book.account_position("XAUUSD") == 0.0
+    r = ns["netting"].route(book, "XAUUSD", 1975.0)
+    assert r["side"] == "flat" and r["lots"] == 0.0
+    # The family and scalp lanes are never asserted here: their own executors own them.
+    assert {r["sleeve"] for r in rows} == {"gold_asia"}
+    assert not [x for x in ns["_logs"] if "unmeasured" in x]
+
+
+def test_the_bracket_book_survives_a_terminal_fault_and_costs_only_its_measurement(tmp_path):
+    term = _BracketTerminal()
+    ns = _bracket_book_ns(tmp_path, term)
+
+    def _boom(symbol=None):
+        raise RuntimeError("terminal gone")
+
+    term.positions_get = _boom
+    st = {"netting_booked": {"9": {"sleeve": "gold_asia", "symbol": "XAUUSD", "lots": 0.06}}}
+    ns["_book_bracket_lane"](st, [{"name": "gold_asia", "symbol": "XAUUSD"}])
+    assert any("bracket book unmeasured" in x for x in ns["_logs"])
+    assert st["netting_booked"] == {"9": {"sleeve": "gold_asia", "symbol": "XAUUSD",
+                                          "lots": 0.06}}, "a fault never drops a booked ticket"
+
+
+def test_main_routes_every_sleeves_symbol_with_the_bracket_book_asserted_first() -> None:
+    """The set handed to `_net_routes` carries no lane filter, and the bracket lane's book is
+    asserted before it -- pinned on the AST, so a re-added `exec` filter fails here."""
+    main = next(n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+    calls = [n for n in ast.walk(main) if isinstance(n, ast.Call)
+             and isinstance(n.func, ast.Name)
+             and n.func.id in ("_net_routes", "_book_bracket_lane")]
+    order = [c.func.id for c in sorted(calls, key=lambda c: c.lineno)]
+    assert order == ["_book_bracket_lane", "_net_routes"], order
+    (route,) = [c for c in calls if c.func.id == "_net_routes"]
+    (arg,) = route.args
+    assert isinstance(arg, ast.SetComp) and all(g.ifs == [] for g in arg.generators), (
+        "the symbol set handed to _net_routes is filtered again; the bracket book, the only "
+        "book that has ever traded, would drop out of the netting measurement")
+
+
 def test_the_family_intent_carries_the_sleeves_certificate_and_id_when_the_row_has_them(
         tmp_path, monkeypatch) -> None:
     """Read with .get, never required: the promoter writes `certificate` and `sleeve_id` onto

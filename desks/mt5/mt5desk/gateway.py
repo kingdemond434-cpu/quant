@@ -1498,6 +1498,96 @@ def _net_routes(symbols: set[str]) -> None:
         except Exception as exc:                                # noqa: BLE001
             log(f"[netting] {symbol} route unmeasured ({type(exc).__name__}: {exc})")
 
+
+def _closing_fill(ticket: int) -> tuple[float, float] | None:
+    """(lots closed, volume-weighted close price) from the position's DEAL_ENTRY_OUT deals, or
+    None while the terminal has not recorded one. Read-only history, the same call
+    `_position_entry` makes; never raises past its caller's guard."""
+    lots = notional = 0.0
+    for x in (mt5.history_deals_get(position=ticket) or ()):
+        if getattr(x, "entry", None) == mt5.DEAL_ENTRY_OUT:
+            v = float(getattr(x, "volume", 0.0) or 0.0)
+            lots += v
+            notional += v * float(getattr(x, "price", 0.0) or 0.0)
+    return (lots, notional / lots) if lots > 0 else None
+
+
+def _book_bracket_lane(st: dict, sleeves: list[dict]) -> None:
+    """The bracket sleeves' theoretical positions, asserted from the terminal's own positions
+    every pass, so data/theoretical_positions.jsonl records the one book that has ever traded.
+
+    THE GAP THIS CLOSES (2026-09-08). `_book_target` ran on the family and scalp lanes only, and
+    neither has ever been armed; the gold brackets -- the only sleeves that have placed a live
+    order -- never reached the book, so the theoretical ledger had never been written and
+    `netting.book_savings` had nothing to measure. A bracket is two-sided until a leg fills, so
+    its theoretical position is what the venue shows for it (netting.py: the bracket sleeves
+    "resolve their direction only on a fill"): +lots on a filled buy stop, -lots on a filled
+    sell stop, flat otherwise.
+
+    IDEMPOTENT PER PASS AND MEASUREMENT ONLY. `set_target` appends on change alone; a fill is
+    booked once per position ticket and its broker-side exit once, from the position's own
+    closing deals, with the tickets the book holds carried in the pass state so a restart does
+    not book a fill twice. Read-only against the terminal -- positions and deal history --
+    and it sends nothing; a ledger fault costs this measurement and never the pass.
+    """
+    if _netting_book() is None:
+        return
+    booked: dict = dict(st.get("netting_booked") or {})
+    open_now: set[str] = set()
+    wanted: dict[str, tuple[str, float, float | None]] = {}     # sleeve -> (symbol, lots, mark)
+    for s in sleeves:
+        if s.get("exec") in ("family_market", "scalp_market"):
+            continue
+        name, symbol = s["name"], s["symbol"]
+        try:
+            positions = _sleeve_positions(symbol, name)
+        except Exception as exc:
+            log(f"[netting] {name} bracket book unmeasured ({type(exc).__name__}: {exc})")
+            continue
+        lots, mark = 0.0, None
+        for p in positions:
+            sgn = 1.0 if int(getattr(p, "type", 0)) == 0 else -1.0
+            vol = sgn * float(getattr(p, "volume", 0.0) or 0.0)
+            px = float(getattr(p, "price_open", 0.0) or 0.0)
+            ticket = str(getattr(p, "ticket", "") or "")
+            lots += vol
+            mark = px or mark
+            if ticket:
+                open_now.add(ticket)
+                if ticket not in booked and vol:
+                    _book_fill(name, symbol, vol, px)
+                    booked[ticket] = {"sleeve": name, "symbol": symbol, "lots": vol}
+        wanted[name] = (symbol, lots, mark)
+    # A ticket the book holds and the terminal no longer shows was closed at the broker (stop,
+    # target, the day's force-close): its closing deal is the exit fill. Until the terminal has
+    # recorded that deal the ticket stays booked, the sleeve's target stays where it was, and
+    # both are asked again next pass -- so the book's delta never carries a phantom order for
+    # an exit the venue already made, and the ledger lags the venue rather than inventing it.
+    unresolved: set[str] = set()
+    for ticket, rec in list(booked.items()):
+        if ticket in open_now:
+            continue
+        try:
+            closed = _closing_fill(int(ticket))
+        except Exception as exc:
+            log(f"[netting] {rec.get('sleeve')} exit fill unmeasured "
+                f"({type(exc).__name__}: {exc}); retried next pass")
+            closed = None
+        if closed is None:
+            log(f"[netting] {rec.get('sleeve')} position {ticket} gone from the terminal with "
+                f"no closing deal yet; exit fill retried next pass")
+            unresolved.add(str(rec.get("sleeve")))
+            continue
+        _lots, px = closed
+        _book_fill(str(rec.get("sleeve")), str(rec.get("symbol")),
+                   -float(rec.get("lots") or 0.0), px)
+        booked.pop(ticket, None)
+    for name, (symbol, lots, mark) in wanted.items():
+        if name in unresolved:
+            continue
+        _book_target(name, symbol, lots, "bracket_fill" if lots else "bracket_flat", price=mark)
+    st["netting_booked"] = booked
+
 #: Bars an H1 family read has always fetched. DERIVED BY PRESERVATION, not chosen: 400 is the
 #: literal every `family_market` path in this file passed to `copy_rates_from_pos` before the
 #: ladder landed, so an H1 certificate resolves to exactly the read it has always had and no
@@ -2209,9 +2299,17 @@ def main() -> None:
         log(f"SCALP-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
     # The net order per symbol across every sleeve's theoretical position -- measured, never
     # sent: the ledger's answer to "what would the venue see if the sleeves were netted".
+    # EVERY SLEEVE'S SYMBOL, THE BRACKET BOOK INCLUDED (2026-09-08). The set was filtered to the
+    # family and scalp lanes, which have never been armed, so NET WOULD SEND was measured on
+    # everything except the one book that has ever traded. The bracket lane's theoretical
+    # positions are asserted first, from the terminal's own positions, so the route below has
+    # a book to read; both are measurement and the log line stays a log line.
     try:
-        _net_routes({s["symbol"] for s in sleeves
-                     if s.get("exec") in ("family_market", "scalp_market")})
+        _book_bracket_lane(st, sleeves)
+    except Exception as exc:
+        log(f"bracket book measurement FAILED (trading unaffected): {type(exc).__name__}: {exc}")
+    try:
+        _net_routes({s["symbol"] for s in sleeves})
     except Exception as exc:
         log(f"netting measurement FAILED (trading unaffected): {type(exc).__name__}: {exc}")
     save_state(st)
