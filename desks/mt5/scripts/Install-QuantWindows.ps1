@@ -238,6 +238,22 @@ $tasks = @(
        # correct watchdog for a process whose failure mode is "died quietly at 02:00".
        TimeLimit = (New-TimeSpan -Days 3650)
        Desc = "The permanent Fusion tick tape -- restarts itself within 10 minutes of any death." },
+    # ---- THE MT5 DEADMAN, DRY-RUN ONLY ---------------------------------------------------------
+    # MEASURED 2026-09-08: the only deadman on this desk (scripts/run_deadman_switch.py, Tier-3,
+    # untouched) polls pinned Binance testnet endpoints and protects no live MT5 risk, and the
+    # drafted MT5 rail (proposals/fusion_deadman.py) had sat complete and unscheduled since
+    # 2026-08-26. This row runs it on its DEFAULT -- dry-run: it reads gateway_state.json, the
+    # live and intent ledgers, evaluates every rail and writes data/fusion_deadman_state.json
+    # saying what it WOULD do. It writes no pause file and sends nothing. There is deliberately
+    # no `Args` here: `--live` is the arming switch and arming is the principal's decision, taken
+    # after the dry-run stamps have proved the readings against the box for a period.
+    # test_fusion_deadman_dry_run pins that this registration carries no `--live`.
+    @{ Name = "MT5-FusionDeadmanDryRun"
+       Script = "proposals\\fusion_deadman.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 5) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       Desc = "MT5 ruin rail in DRY-RUN: evaluates every rail every 5 minutes and stamps what it would do; arms nothing." },
     # ---- THE DAILY CYCLE, TWO LANES TWELVE HOURS APART --------------------------------------
     # Both execute docs\DESK_CYCLE_PROMPT.md; the lane decides which half they own. The split is
     # what stops two agents editing the same files twelve hours apart and calling it progress:

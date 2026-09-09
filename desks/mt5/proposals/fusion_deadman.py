@@ -30,6 +30,10 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent          # desks/mt5
 STATE = BASE / "data" / "gateway_state.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
+#: The intent ledger: the lot the desk's own sizer sent, per order ticket. For a pending stop the
+#: position id IS that ticket (gateway `_position_entry`'s key chain), so the size guard reads a
+#: position's expected lot straight off it. Read-only here.
+INTENTS = BASE / "data" / "order_intents.jsonl"
 PAUSED = BASE / "data" / "GATEWAY_PAUSED"              # the gateway ALREADY honours this file
 BREACH_LOG = BASE / "logs" / "fusion_deadman.log"
 STAMP = BASE / "data" / "fusion_deadman_state.json"
@@ -161,9 +165,77 @@ def realised_pl_since(rows: list[dict], since: datetime) -> float:
     return total
 
 
+def intent_rows(path: Path | None = None) -> list[dict]:
+    p = INTENTS if path is None else path
+    if not p.exists():
+        return []
+    out = []
+    for line in p.read_text("utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(r, dict):
+            out.append(r)
+    return out
+
+
+def expected_lots(intents: list[dict]) -> dict[int, float]:
+    """Order ticket -> the lot the desk's own sizer sent, from the intent ledger. A ticket with
+    no lot, or no ticket at all, is not a reading and is left out."""
+    out: dict[int, float] = {}
+    for r in intents:
+        try:
+            ticket = int(r.get("ticket"))
+            lot = float(r.get("lot"))
+        except (TypeError, ValueError):
+            continue
+        if ticket and lot > 0:
+            out[ticket] = lot
+    return out
+
+
+def size_guard(positions: list[dict], expected: dict[int, float] | None
+               ) -> tuple[list[tuple[str, str]], dict[str, int]]:
+    """THE SIZING BUG-CATCHER, measured against what the sizer actually sent.
+
+    A position more than MAX_SIZE_MULTIPLE x the lot on its own intent is a defect, not a
+    decision. A position whose ticket has no intent row cannot be judged and is counted as
+    UNMEASURED rather than assumed right or wrong -- an absent ledger is never a clean bill.
+    """
+    breaches: list[tuple[str, str]] = []
+    judged = unmeasured = 0
+    for p in positions:
+        try:
+            ticket = int(p.get("ticket"))
+            vol = float(p.get("volume") or 0.0)
+        except (TypeError, ValueError):
+            unmeasured += 1
+            continue
+        exp = (expected or {}).get(ticket)
+        if exp is None or exp <= 0:
+            unmeasured += 1
+            continue
+        judged += 1
+        if vol > MAX_SIZE_MULTIPLE * exp:
+            breaches.append(("SIZE_GUARD",
+                             f"SIZE GUARD: position {ticket} holds {vol:g} lots, over "
+                             f"{MAX_SIZE_MULTIPLE:g}x the {exp:g} its intent sized -- a defect, "
+                             f"not a decision"))
+    return breaches, {"judged": judged, "unmeasured": unmeasured}
+
+
 def evaluate(account: dict, positions: list[dict], rows: list[dict],
-             peak_equity: float, halt_codes: tuple = ()) -> list[tuple[str, str]]:
-    """Pure function: state in, breach reasons out. Testable without MT5 attached."""
+             peak_equity: float, halt_codes: tuple = (),
+             expected: dict[int, float] | None = None) -> list[tuple[str, str]]:
+    """Pure function: state in, breach reasons out. Testable without MT5 attached.
+
+    `expected` (order ticket -> the lot the sizer sent, see `expected_lots`) arms the size guard;
+    without it no position is judged on size and none is assumed right.
+    """
     breaches: list[tuple[str, str]] = []
     equity = float(account.get("equity", 0.0) or 0.0)
     now = datetime.now(tz=UTC)
@@ -211,6 +283,8 @@ def evaluate(account: dict, positions: list[dict], rows: list[dict],
         except ValueError:
             breaches.append(("STALE_GATEWAY",
                              "STALE GATEWAY: last_reconcile unparseable -- treated as stale"))
+
+    breaches += size_guard(positions, expected)[0]
     return breaches
 
 
@@ -275,16 +349,21 @@ def try_rearm(stamp: dict, dry_run: bool) -> bool:
       3. the backoff window has elapsed since the condition last cleared, where the window
          DOUBLES per re-arm of the same code in the last 24h (30/60/120/240... to the cap).
     """
+    # Every exit names its verdict on the stamp, so a dry-run pass can STATE what it would do
+    # rather than only log it.
     if not halted_by_us():
+        stamp["rearm_verdict"] = "no halt of ours to lift"
         return False
     codes = list(stamp.get("halt_codes") or [])
     if not codes:
+        stamp["rearm_verdict"] = "halt is ours but names no codes; held"
         return False
     unknown = [c for c in codes if c not in AUTO_REARM]
     if unknown:
         # A code with no declared clear condition cannot be measured as fixed, so it holds --
         # this is the fail-closed direction, not a request for a human.
         log(f"re-arm HELD -- no declared clear condition for {unknown}")
+        stamp["rearm_verdict"] = f"HELD: no declared clear condition for {unknown}"
         return False
 
     now = datetime.now(tz=UTC)
@@ -300,16 +379,21 @@ def try_rearm(stamp: dict, dry_run: bool) -> bool:
         stamp["cleared_at"] = now.isoformat(timespec="seconds")
         log(f"breach cleared; backoff {wait_min:.0f}min before re-arm "
             f"(repeat #{repeats + 1} in 24h)")
+        stamp["rearm_verdict"] = (f"cleared; backoff {wait_min:.0f}min before re-arm "
+                                  f"(repeat #{repeats + 1} in 24h)")
         return False
     waited = (now - datetime.fromisoformat(cleared_at)).total_seconds() / 60
     if waited < wait_min:
         log(f"backoff {waited:.0f}/{wait_min:.0f}min (repeat #{repeats + 1})")
+        stamp["rearm_verdict"] = f"backoff {waited:.0f}/{wait_min:.0f}min (repeat #{repeats + 1})"
         return False
 
     why = "; ".join(AUTO_REARM[c] for c in codes)
     if dry_run:
         log(f"DRY-RUN would AUTO RE-ARM ({codes}): {why}")
+        stamp["rearm_verdict"] = f"WOULD RE-ARM ({codes}): {why}"
         return False
+    stamp["rearm_verdict"] = f"RE-ARMED ({codes}): {why}"
     PAUSED.unlink(missing_ok=True)
     for c in codes:
         hist.setdefault(c, []).append(now.isoformat(timespec="seconds"))
@@ -321,8 +405,23 @@ def try_rearm(stamp: dict, dry_run: bool) -> bool:
     return True
 
 
+#: The rails as this pass measured against them, written onto every stamp so a reading can be
+#: checked against the number it was judged by rather than against whatever the file says later.
+def rails() -> dict:
+    return {"DAILY_LOSS_PCT": DAILY_LOSS_PCT, "EQUITY_FLOOR_EUR": EQUITY_FLOOR_EUR,
+            "WEEKLY_LOSS_PCT": WEEKLY_LOSS_PCT, "MAX_OPEN_POSITIONS": MAX_OPEN_POSITIONS,
+            "MIN_FREE_MARGIN_FRAC": MIN_FREE_MARGIN_FRAC, "MAX_SIZE_MULTIPLE": MAX_SIZE_MULTIPLE,
+            "STALE_HEARTBEAT_MIN": STALE_HEARTBEAT_MIN, "CONFIRM_READS": CONFIRM_READS}
+
+
 def main(dry_run: bool = True) -> int:
-    """Default DRY-RUN. A rail that arms itself on first execution is not reviewable."""
+    """Default DRY-RUN. A rail that arms itself on first execution is not reviewable.
+
+    EVERY PASS WRITES THE STAMP AND THE STAMP SAYS WHAT THIS PASS WOULD DO (`would.action`):
+    HALT_AND_FLATTEN, WAIT_FOR_CONFIRMATION, RE-ARM, HOLD_HALT or NOTHING -- with the readings
+    it judged and the rails it judged them by. In dry-run `would.executed` is false and no file
+    but the stamp and the log is touched; arming (`--live`) is the principal's decision.
+    """
     st = _read(STATE, {})
     account = {"equity": st.get("equity", 0.0), "margin_free": st.get("margin_free", 0.0),
                "last_reconcile": st.get("last_reconcile")}
@@ -330,12 +429,14 @@ def main(dry_run: bool = True) -> int:
     stamp = _read(STAMP, {"peak_equity": 0.0, "consecutive": 0, "halt_codes": [],
                           "rearm_history": {}, "escalated": [], "cleared_at": None})
     peak = max(float(stamp.get("peak_equity", 0.0)), float(account["equity"] or 0.0))
+    expected = expected_lots(intent_rows())
 
     breaches = evaluate(account, positions, ledger_rows(), peak,
-                        tuple(stamp.get('halt_codes') or ()))
+                        tuple(stamp.get('halt_codes') or ()), expected=expected)
     codes = [c for c, _ in breaches]
     messages = [m for _, m in breaches]
     stamp["peak_equity"] = peak
+    stamp.pop("rearm_verdict", None)
 
     if breaches:
         stamp["consecutive"] = int(stamp.get("consecutive", 0)) + 1
@@ -344,11 +445,32 @@ def main(dry_run: bool = True) -> int:
         if stamp["consecutive"] >= CONFIRM_READS:
             flatten_and_halt(messages, dry_run=dry_run)
             stamp["halt_codes"] = sorted(set(stamp.get("halt_codes", [])) | set(codes))
+            action = "HALT_AND_FLATTEN"
+        else:
+            action = "WAIT_FOR_CONFIRMATION"
     else:
         stamp["consecutive"] = 0
-        try_rearm(stamp, dry_run=dry_run)
+        rearmed = try_rearm(stamp, dry_run=dry_run)
+        verdict = str(stamp.get("rearm_verdict") or "")
+        if rearmed or verdict.startswith("WOULD RE-ARM"):
+            action = "RE-ARM"
+        elif halted_by_us():
+            action = "HOLD_HALT"
+        else:
+            action = "NOTHING"
 
+    stamp["mode"] = "DRY-RUN" if dry_run else "LIVE"
     stamp["checked_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    stamp["readings"] = {"equity": account["equity"], "margin_free": account["margin_free"],
+                         "last_reconcile": account["last_reconcile"],
+                         "open_positions": len(positions), "peak_equity": peak,
+                         "size_guard": size_guard(positions, expected)[1]}
+    stamp["rails"] = rails()
+    stamp["breaches"] = codes
+    stamp["would"] = {"action": action, "executed": not dry_run, "reasons": messages,
+                      "confirm": f"{stamp['consecutive']}/{CONFIRM_READS}",
+                      "rearm": stamp.get("rearm_verdict")}
+    STAMP.parent.mkdir(parents=True, exist_ok=True)
     STAMP.write_text(json.dumps(stamp, indent=1), "utf-8")
     return 1 if breaches else 0
 

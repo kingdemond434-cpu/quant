@@ -46,6 +46,12 @@
 # ---------------------------------------------------------------- money path (never research)
 TASK name="MT5-Gateway"            trigger="continuous loop"      runs="desks/mt5/research/run_gateway_loop.py" installer="NONE" lane="money"
 TASK name="MT5-FusionDeadman"      trigger="UNDECLARED"           runs="scripts/run_deadman_switch.py"         installer="NONE" lane="money"
+# THE MT5 RAIL, DRY-RUN ONLY (2026-09-08). A separate task from MT5-FusionDeadman above, which runs
+# the Tier-3 crypto rail and is not touched. This one evaluates the live MT5 account's rails every
+# five minutes and writes data/fusion_deadman_state.json saying what it WOULD do; it arms nothing
+# (no `--live`), so its failure costs a measurement, which is why the lane is ops. Arming is the
+# principal's decision.
+TASK name="MT5-FusionDeadmanDryRun" trigger="every 5 minutes"     runs="desks/mt5/proposals/fusion_deadman.py"  installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
 TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal64.exe"                        installer="NONE" lane="money"
 
 # ---------------------------------------------------------------------------- the research lane
