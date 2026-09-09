@@ -1916,6 +1916,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # return matrix can be asked. The calibration RATCHETS ONLY UPWARD: a quiet sample never
     # licenses modelling crises as gentler than the standing assumption, because that is how a
     # book finds out its real correlations at the worst possible moment.
+    #
+    # PER FACTOR BLOCK, UNDER THAT SCALAR (2026-09-09). The scalar fused every sleeve onto one
+    # common factor at the same loading, so a gold sleeve was stressed for a USD co-explosion it
+    # does not share with EURUSD. The calibration now also measures the stress-regime correlation
+    # INSIDE each block `libs/risk/fx_factors` can name (USD leg, JPY leg, metals) and hands each
+    # sleeve its block's share -- with the ratcheted scalar as the CEILING, so a block measured
+    # less fused keeps that independence in crisis worlds and nothing is ever stressed harder.
     cov_cal = None
     try:
         from libs.portfolio.conditional_covariance import calibrate as _calibrate_cov
@@ -1923,7 +1930,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         _hist = daily.to_numpy(dtype=float)
         cov_cal = _calibrate_cov(_hist, labels or None,
                                  standing_share=_base.crisis_common_share,
-                                 standing_vol_mult=_base.crisis_vol_mult)
+                                 standing_vol_mult=_base.crisis_vol_mult,
+                                 symbols={e.name: e.symbol for e in ev},
+                                 names=[str(c) for c in daily.columns])
         _log(f"crisis calibration: common_share={cov_cal.crisis_common_share:.3f} "
              f"vol_mult={cov_cal.crisis_vol_mult:.2f} ({cov_cal.note})")
     except Exception as exc:
@@ -2656,6 +2665,23 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                               "mean_vol": round(v.mean_vol, 6),
                               "diversification_ratio": round(v.diversification_ratio, 4)}
                           for k, v in cov_cal.by_regime.items()},
+            # THE SHARE PER FACTOR BLOCK, measured on the stress pool and applied UNDER the
+            # scalar. `share_by_sleeve` lists only the sleeves relieved below the scalar; every
+            # other sleeve is stressed exactly as the scalar stresses it.
+            "by_block": {k: {"status": v.status, "n_sleeves": v.n_sleeves, "n_days": v.n_days,
+                             "mean_corr": (None if not math.isfinite(v.mean_corr)
+                                           else round(v.mean_corr, 4)),
+                             "shrunk_share": round(v.shrunk_share, 4),
+                             "applied_share": round(v.applied_share, 4), "why": v.why}
+                         for k, v in cov_cal.by_block.items()},
+            "share_by_sleeve": dict(sorted(cov_cal.share_by_sleeve.items())),
+            "n_sleeves_relieved": len(cov_cal.share_by_sleeve),
+            "blocks_by_sleeve": {k: list(v) for k, v in cov_cal.blocks_by_sleeve.items() if v},
+            "block_rule": ("crisis share per factor block (USD leg, JPY leg, metals) measured "
+                           "on the stress regime's own rows; the ratcheted book-wide scalar is "
+                           "the ceiling for every block, so a block can only be LESS fused than "
+                           "the book, never more; a sleeve in two blocks takes the higher share; "
+                           "a block under 3 live sleeves carries the scalar"),
         } if cov_cal else {"note": "calibration unavailable; standing constants used"}),
         "evidence": {
             "sleeves": len(ev), "rows": int(daily.shape[0]),
