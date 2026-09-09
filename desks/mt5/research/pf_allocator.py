@@ -1450,11 +1450,25 @@ def state_growth_curves(ev: list[SleeveEvidence], worlds: Worlds, book: dict[str
 # ADMISSION -- dE[log W] AGAINST THE BOOK THE DESK IS ACTUALLY HOLDING
 # ---------------------------------------------------------------------------------------
 
-#: Wall clock the admission scan may spend, in seconds. A candidate re-solve is ~1.2 s warm-started
-#: on the desk's 110-sleeve population, so this measures ~150 of them on the hourly heavy pass.
-#: The budget exists so a widening library DEGRADES the scan honestly (unreached candidates are
-#: NAMED and refused) instead of silently stretching the pass that sizes the live book.
-ADMISSION_BUDGET_S = 180.0
+#: Wall clock ONE candidate's warm-started re-solve may spend, in seconds. Until 2026-09-09 this
+#: was a 180 s budget for the WHOLE scan: ~150 candidates an hour, and everything past the cut
+#: left `unscored` -- named, refused, and refused again next hour if the rotation did not reach
+#: it. A compute limit hardening into a verdict. The budget is now PER CANDIDATE and the scan
+#: runs over EVERY candidate on every heavy pass; a re-solve that hits its own budget is not
+#: refused, it is carried forward WARM-STARTED from the exact point it stopped and continues on
+#: the next pass (`optimise(..., deadline=)`, `AllocationResult.budget_hit`). A warm-started
+#: candidate re-solve is ~1.2 s on the desk's 110-sleeve population; 8 s is headroom for one
+#: that starts far from the incumbent, not a cap on the scan. Zero or negative means unbounded.
+ADMISSION_CANDIDATE_BUDGET_S = 8.0
+#: Share of the book's TOTAL heat that may be lent to exploration among candidates whose
+#: dE[log W] sits INSIDE the admission margin -- the ambiguous ones, which the criterion could
+#: neither admit nor refuse on evidence and which were parked at zero for ever. Lent from
+#: WITHIN the total (incumbents scaled proportionally; the total is unchanged by construction),
+#: Thompson-sampled so an ambiguous candidate is funded in proportion to how often a draw from
+#: its own noise says it wins, and billed as the `explore_thompson` rail. Five percent of the
+#: book is one percent of account heat on the 20% floor: enough to accrue a forward record,
+#: small enough that the growth it can cost is inside the margin by construction.
+EXPLORE_SHARE = 0.05
 #: Iterations a candidate's re-solve gets, warm-started from the incumbent's own optimum. One
 #: sleeve added to a solved book is a small perturbation; a cold solve of the same problem
 #: converged in 104 iterations, so this is headroom, and `converged` is recorded either way.
@@ -1536,9 +1550,12 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                        total_heat: float,
                        order: dict[str, float] | None = None,
                        prefer: set[str] | None = None,
-                       budget_s: float = ADMISSION_BUDGET_S,
+                       budget_s: float = ADMISSION_CANDIDATE_BUDGET_S,
                        iterations: int = ADMISSION_ITERATIONS,
-                       margin_frac: float = ADMISSION_MARGIN_FRAC) -> dict[str, Any]:
+                       margin_frac: float = ADMISSION_MARGIN_FRAC,
+                       warm: dict[str, dict[str, float]] | None = None,
+                       explore_share: float = EXPLORE_SHARE,
+                       explore_seed: int | None = None) -> dict[str, Any]:
     """dE[log W]_i = E[log W | book + i] - E[log W | book], on ONE world population.
 
         "Don't rank candidates primarily by Sharpe. Rank by dE[log W] after adding the candidate
@@ -1569,10 +1586,18 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     admitting on it is admitting on luck; the bar is `margin_frac` of the incumbent book's own
     growth rate, the same fraction the proof certificate demands of the allocator itself.
 
+    THE BUDGET IS PER CANDIDATE AND THE SCAN RUNS TO COMPLETION (2026-09-09). `budget_s` bounds
+    ONE re-solve, not the pass; every candidate is re-solved every heavy pass, in the `prefer`
+    rotation's order. A re-solve that hits its own budget before converging is not a verdict:
+    it is written to `unscored` with the partial reading beside it (`partial`), and its book is
+    carried in `warm` so the NEXT pass warm-starts that candidate from where this one stopped
+    rather than from the incumbent again. Nothing is refused for compute; a candidate the
+    solver has not finished with is one the solver continues.
+
     Returns the artifact block. Every candidate is either SCORED (with its delta, the heat the
     re-solve gave it, what it displaced, and -- reported beside, never ranked on -- its standalone
-    Sharpe and its correlation to the held book) or NAMED as unscored with the reason. A candidate
-    the budget did not reach is not admitted: absence is never permission.
+    Sharpe and its correlation to the held book) or NAMED as unscored with the reason. A partial
+    reading is not admitted: absence is never permission, and neither is half a solve.
     """
     t0 = time.time()
     by_name = {e.name: e for e in ev}
@@ -1597,6 +1622,12 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
         "measured_utc": datetime.now(UTC).isoformat(),
         "basis": basis, "total_heat": round(float(total_heat), 6),
         "margin_frac": margin_frac, "budget_s": budget_s,
+        "budget": {"per_candidate_s": budget_s, "iterations": iterations,
+                   "scope": ("per candidate; the scan re-solves EVERY candidate each pass and a "
+                             "re-solve that hits its budget is carried forward warm-started, "
+                             "never refused for compute")},
+        # PARTIAL SOLVES, carried to the next pass: candidate -> the book the solver reached.
+        "warm": {}, "partial": {},
         # THE SCAN CARRIES ITS OWN EXPIRY, like the proof certificate does. `promoter` refuses to
         # price capital from a scan older than this -- stated here so the rule travels with the
         # measurement instead of living only in the reader.
@@ -1656,12 +1687,9 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                     if pref else "ranked by the free solve's marginal at the current book")
     doc["n_carried_from_last_unreached"] = len(pref & set(cand_names))
 
+    warm_in = {str(k): v for k, v in (warm or {}).items() if isinstance(v, dict) and v}
+    solve_s: list[float] = []
     for name in cand_names:
-        if time.time() - t0 > budget_s:
-            doc["unscored"][name] = (f"the {budget_s:.0f}s admission budget was spent before this "
-                                     f"candidate was reached; NOT admitted -- an unmeasured "
-                                     f"marginal is not a positive one")
-            continue
         e = by_name[name]
         sharpe = _annual_sharpe(e.daily_r)
         corr = _corr_to_book(e.daily_r, held, by_name)
@@ -1671,14 +1699,25 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
             "family": e.family, "symbol": e.symbol, "selector": _selector_of(e),
             "forward_days": int(e.forward_days), "live_days": int(e.live_days),
         }
+        # WHERE THIS SOLVE STARTS: the point the last pass's solve stopped at, when it hit its
+        # budget, else the incumbent's own optimum with the candidate at zero. The projection
+        # inside `optimise` re-fits a carried point to THIS pass's bounds and cap.
+        carried = warm_in.get(name)
+        ws = ({str(k): float(v) for k, v in carried.items()} if carried
+              else {**base_heat, name: 0.0})
+        deadline = (time.time() + float(budget_s)) if budget_s and budget_s > 0 else None
+        t_c = time.time()
         try:
             ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
                            max_per_sleeve=_ub(allowed_base | {name}),
-                           warm_start={**base_heat, name: 0.0},
-                           iterations=iterations)
+                           warm_start=ws, iterations=iterations, deadline=deadline)
         except ValueError as exc:
             doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
             continue
+        solve_s.append(time.time() - t_c)
+        row.update({"solve_s": round(solve_s[-1], 3), "iterations": int(ext.iterations),
+                    "budget_hit": bool(ext.budget_hit),
+                    "warm_started_from_last_pass": bool(carried)})
         got = float(ext.heat.get(name, 0.0))
         g_ext = float(ext.mean_log_growth)
         if not math.isfinite(g_ext):
@@ -1695,6 +1734,20 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                      for k, v in base_heat.items()
                      if k != name and abs(float(ext.heat.get(k, 0.0)) - v) > 1e-5}
         admit = bool(delta > bar and got > 1e-5)
+        if ext.budget_hit and not ext.converged and not admit:
+            # A PARTIAL SOLVE IS NOT A REFUSAL AND NOT A VERDICT. The reading is written beside
+            # the name so a reader can see how far it got, the book it reached is carried, and
+            # the next pass continues from there. It is not admitted on half a solve either.
+            doc["unscored"][name] = (
+                f"per-candidate budget ({float(budget_s):.1f}s) hit after {ext.iterations} "
+                f"iteration(s) without convergence; NOT admitted on a partial reading "
+                f"(dE {delta:+.6f}/day so far) -- carried forward warm-started, so the next "
+                f"pass continues this solve instead of restarting it")
+            doc["warm"][name] = {k: round(float(v), 8) for k, v in ext.heat.items()
+                                 if float(v) > 0.0}
+            doc["partial"][name] = {**row, "delta_elogw_per_day": round(delta, 10),
+                                    "heat_earned": round(got, 6)}
+            continue
         sr, rho = row["sharpe_standalone_annual"], row["corr_to_book"]
         shape = (f"standalone Sharpe {sr:.2f}" if sr is not None else "Sharpe unmeasured")
         shape += (f" at correlation {rho:+.2f} to the held book" if rho is not None
@@ -1724,9 +1777,21 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     doc["admitted"].sort(key=lambda n: -(doc["candidates"][n].get("delta_elogw_per_day") or 0.0))
     doc["refused"].sort(key=lambda n: -(doc["candidates"][n].get("delta_elogw_per_day") or -1e9))
     doc["n_scored"] = len(doc["candidates"])
+    doc["priced"] = doc["n_scored"]
     doc["n_admitted"] = len(doc["admitted"])
+    doc["n_unscored"] = len(doc["unscored"])
+    doc["n_partial"] = len(doc["partial"])
     doc["elapsed_s"] = round(time.time() - t0, 1)
+    doc["per_candidate_s"] = (round(float(np.mean(solve_s)), 3) if solve_s else None)
+    doc["max_candidate_s"] = (round(float(max(solve_s)), 3) if solve_s else None)
     doc["status"] = "MEASURED"
+    # EXPLORATION INSIDE THE MARGIN: the ambiguous candidates, funded a little from within the
+    # book so they accrue a forward record instead of standing at zero for ever. Computed here
+    # because it needs every row's delta against THIS bar; applied (or not) by the caller, which
+    # is where the published book lives, and billed by the `explore_thompson` rail.
+    doc["explore"] = thompson_explore(doc["candidates"], held, bounds, bar=bar,
+                                      total_heat=float(total_heat), basis=basis,
+                                      share=explore_share, seed=explore_seed)
     # THE RENT LINE (AGENTS.md): what this criterion is worth is the growth the admitted set adds
     # to the held book, measured the same way each candidate was. It is a SUM OF SEPARATE
     # marginals, not the delta of admitting them together -- said here so nobody reads it as the
@@ -1741,6 +1806,151 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                  "them at once is a different and smaller number"),
     }
     return doc
+
+
+def thompson_explore(rows: dict[str, dict[str, Any]], held: dict[str, float],
+                     bounds: dict[str, float], *, bar: float, total_heat: float, basis: str,
+                     share: float = EXPLORE_SHARE, seed: int | None = None) -> dict[str, Any]:
+    """A small Thompson-sampled heat for the candidates the criterion could not decide.
+
+    THE HOLE. A candidate whose dE[log W] lands inside the noise margin is refused -- correctly,
+    a hair's-breadth win is luck -- and refused again next hour, and the hour after: nothing
+    ever resolves the ambiguity because a sleeve at zero heat accrues no forward record. The
+    research bandit explores among research DIRECTIONS; nothing explored among validated sleeves
+    for capital.
+
+    THE DRAW. For each candidate in the band |dE| <= bar (and which the re-solve wanted at some
+    size), one draw z ~ N(dE, bar): the margin IS the declared noise scale of the estimate, so a
+    candidate is funded in proportion to how often its own noise says it wins. Draws at or below
+    zero fund nothing this pass. Winners share `share x total heat`, each capped at the heat the
+    equal-heat re-solve gave it and at its per-sleeve bound.
+
+    FROM WITHIN THE TOTAL, OR NOT AT ALL. The heat is lent by the incumbents pro rata (see
+    `apply_explore`): the total is unchanged by construction, no incumbent goes below zero or
+    above its bound (they only scale down), and when that cannot be satisfied for a pass --
+    nothing held, the free basis, or a lent share the incumbents cannot fund -- the block says
+    so and funds nothing. `seed` fixed per UTC day by the caller keeps the explored set stable
+    within a day rather than re-drawn every pass, which is the churn control.
+    """
+    out: dict[str, Any] = {
+        "status": "NONE", "applied": False, "share": float(share), "bar": float(bar),
+        "rule": ("Thompson draw z ~ N(dE[log W], margin) per candidate inside |dE| <= margin; "
+                 "positive draws share EXPLORE_SHARE of total heat, each capped at the heat the "
+                 "re-solve gave the candidate and at its bound; lent by incumbents pro rata, "
+                 "total unchanged; billed by the explore_thompson rail")}
+    if basis != "equal_heat" or not held:
+        return {**out, "why": "no held book to fund exploration from (free basis)"}
+    band: dict[str, dict[str, Any]] = {}
+    for name, row in rows.items():
+        d = row.get("delta_elogw_per_day")
+        got = float(row.get("heat_earned") or 0.0)
+        if d is None or row.get("admit") or got <= 1e-5 or abs(float(d)) > float(bar):
+            continue
+        band[name] = {"delta_elogw_per_day": float(d), "heat_earned_in_resolve": got}
+    out["n_band"] = len(band)
+    if not band:
+        return {**out, "why": ("no candidate inside the margin that the re-solve wanted at any "
+                               "size; nothing is ambiguous this pass")}
+    try:
+        from libs.portfolio.rails import rail_multiplier as _rail_mult
+        mult = float(_rail_mult("explore_thompson"))
+    except Exception:
+        mult = 1.0
+    budget = float(share) * mult * float(total_heat)
+    out.update({"rail_multiplier": round(mult, 4), "budget_heat": round(budget, 6),
+                "seed": seed})
+    if budget <= 1e-9:
+        return {**out, "why": "the exploration budget is zero (share, rail multiplier or total)"}
+    rng = np.random.default_rng(seed)
+    sigma = max(float(bar), 0.0)
+    for b in band.values():
+        b["z_draw"] = float(rng.normal(b["delta_elogw_per_day"], sigma)) if sigma > 0 \
+            else b["delta_elogw_per_day"]
+    winners = {n: b["z_draw"] for n, b in band.items() if b["z_draw"] > 0.0}
+    if not winners:
+        out["band"] = {n: {k: round(v, 10) for k, v in b.items()} for n, b in band.items()}
+        return {**out, "why": ("every ambiguous candidate's draw came out at or below zero this "
+                               "pass; nothing funded, the band is listed")}
+    z_sum = float(sum(winners.values()))
+    heats: dict[str, float] = {}
+    for name, z in winners.items():
+        cap_n = min(float(bounds.get(name, total_heat)), band[name]["heat_earned_in_resolve"])
+        x = min(budget * z / z_sum, cap_n)
+        if x > 1e-6:
+            heats[name] = x
+    for name in band:
+        band[name]["explore_heat"] = round(heats.get(name, 0.0), 6)
+    out["band"] = {n: {k: (round(v, 10) if isinstance(v, float) else v) for k, v in b.items()}
+                   for n, b in band.items()}
+    x_total = float(sum(heats.values()))
+    if x_total <= 1e-9:
+        return {**out, "why": "every positive draw capped to nothing (bound or re-solve heat)"}
+    inc_total = float(sum(held.values()))
+    if x_total >= inc_total - 1e-9:
+        return {**out, "why": (f"the lent share {x_total:.4%} is not fundable from within the "
+                               f"{inc_total:.4%} the incumbents hold; nothing funded")}
+    out.update({"status": "FUNDED", "explore_heat": {k: round(v, 6) for k, v in heats.items()},
+                "explore_heat_total": round(x_total, 6),
+                "why": (f"{len(heats)} of {len(band)} ambiguous candidate(s) drew positive; "
+                        f"{x_total:.4%} of heat lent from within the book's "
+                        f"{inc_total:.4%}")})
+    return out
+
+
+def apply_explore(funded: dict[str, float], heats: dict[str, float],
+                  bounds: dict[str, float]) -> tuple[dict[str, float], str]:
+    """The published book with the exploration heat lent from within it, or the book unchanged.
+
+    Incumbents scale by one common factor so the total is preserved exactly; a candidate already
+    in the book is SET to its exploration heat, never topped up. Returns (book, why) and refuses
+    -- returning the input book -- whenever the rule cannot be honoured: nothing held, a lent
+    share the incumbents cannot fund, an incumbent that would have to GROW past its bound to
+    keep the total (a held book already carrying more exploration than this draw), or a total
+    that would move. Each refusal is the reason string, never a silent no-op.
+    """
+    base = {k: float(v) for k, v in funded.items() if float(v) > 0.0}
+    lend = {k: float(v) for k, v in (heats or {}).items() if float(v) > 1e-9}
+    if not lend:
+        return dict(base), "no exploration heat to apply"
+    total = float(sum(base.values()))
+    if total <= 1e-9:
+        return dict(base), "no held book to lend from"
+    incumbents = {k: v for k, v in base.items() if k not in lend}
+    inc_sum = float(sum(incumbents.values()))
+    x_total = float(sum(lend.values()))
+    if inc_sum <= 1e-9 or x_total >= total - 1e-9:
+        return dict(base), (f"the lent {x_total:.4%} is not fundable from the {inc_sum:.4%} "
+                            "the incumbents hold")
+    scale = (total - x_total) / inc_sum
+    if scale > 1.0 + 1e-9:
+        return dict(base), ("the held book already carries more exploration heat than this "
+                            "draw; incumbents would have to grow to keep the total, so the "
+                            "book stands as held")
+    for k, v in lend.items():
+        if v > float(bounds.get(k, total)) + 1e-9:
+            return dict(base), f"{k}: exploration heat {v:.4%} exceeds its bound"
+    book = {k: v * scale for k, v in incumbents.items()}
+    book.update(lend)
+    if abs(sum(book.values()) - total) > 1e-6:
+        return dict(base), "the explored book would not sum to the held total"
+    return book, (f"{x_total:.4%} lent to {len(lend)} candidate(s); incumbents scaled by "
+                 f"{scale:.4f}; total {total:.4%} unchanged")
+
+
+def without_explore(book: dict[str, float], lend: dict[str, float]) -> dict[str, float]:
+    """The explored book with the lent heat handed back: incumbents scaled up to the total.
+
+    A counterfactual for SCORING (the rail's `growth_without`), never published -- scaling the
+    incumbents back up can put one a hair over its bound, which is fine for a comparison on the
+    same worlds and not fine for a book the gateway sizes from. Empty when there is no incumbent
+    to hand the heat back to.
+    """
+    inc = {k: float(v) for k, v in book.items() if k not in lend and float(v) > 0.0}
+    x = float(sum(float(book.get(k, 0.0)) for k in lend))
+    s = float(sum(inc.values()))
+    if s <= 1e-12:
+        return {}
+    return {k: v * (s + x) / s for k, v in inc.items()}
 
 
 def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
@@ -2374,6 +2584,133 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     book, funded = bind_verdict(nt, prev_book, held, book, funded)
     opp = opportunity(free, funded, HEAT_TARGET)
 
+    # ------------------------------------------------- ADMISSION BY dE[log W], NOT BY SHARPE
+    # THE CRITERION, NOT A REPORT (principal, 2026-09-05). Every priced sleeve the published book
+    # does NOT hold is re-solved INTO that book at the same total heat on these same worlds, and
+    # what it is worth is the growth it adds. `promoter.py` reads this block and gives capital to
+    # nothing that fails it, however good its standalone Sharpe -- which is on every row, beside
+    # the correlation to the held book, so the disagreement between the two orderings is legible
+    # rather than asserted.
+    #
+    # HEAVY CLOCK ONLY, AND CARRIED WITH ITS AGE. A candidate re-solve is a full optimisation; a
+    # hundred of them do not fit in a five-minute clock. The heavy pass runs hourly, and the
+    # short clocks carry its answer forward stamped with when it was taken, so a reader (and the
+    # promoter's freshness check) can tell a measurement from an inheritance.
+    #
+    # MOVED AHEAD OF THE PROOF (2026-09-09), because the scan's `explore` block may now lend a
+    # slice of the book to ambiguous candidates, and the book the contest certifies must be the
+    # book that is published.
+    admission: dict[str, Any]
+    adm_bounds = per_sleeve_bounds(dd, max(book.total_heat, HEAT_TARGET))
+    prev_admission: dict[str, Any] = {}
+    try:
+        _prev_art = json.loads(OUT.read_text("utf-8")).get("admission")
+        prev_admission = _prev_art if isinstance(_prev_art, dict) else {}
+    except (OSError, ValueError, AttributeError):
+        prev_admission = {}
+    if heavy and funded:
+        admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
+                                       total_heat=book.total_heat, order=free.marginal,
+                                       # Whatever the last scan could not finish goes first, and
+                                       # continues from the book its solve had reached.
+                                       prefer=set(prev_admission.get("unscored") or {}),
+                                       warm=prev_admission.get("warm") or {},
+                                       # One draw per UTC day: the explored set is stable across
+                                       # the hourly passes of a day instead of re-drawn hourly.
+                                       explore_seed=int(seed) + int(datetime.now(UTC)
+                                                                    .strftime("%Y%m%d")))
+        _log(f"admission: {admission.get('status')} -- {admission.get('n_admitted', 0)}/"
+             f"{admission.get('priced', 0)} priced candidate(s) raise robust growth "
+             f"(basis={admission.get('basis')}, {admission.get('elapsed_s', 0)}s, "
+             f"{admission.get('per_candidate_s')}s/candidate, "
+             f"{admission.get('n_unscored', 0)} unscored of which "
+             f"{admission.get('n_partial', 0)} partial and carried, "
+             f"{admission.get('n_carried_from_last_unreached', 0)} continued from last pass)")
+    else:
+        admission = {"status": "not measured on this clock", "candidates": {},
+                     "admitted": [], "refused": [], "unscored": {}, "warm": {}, "partial": {}}
+        if prev_admission.get("status") == "MEASURED":
+            admission = {**prev_admission,
+                         "carried_from": prev_admission.get("measured_utc"),
+                         "carried_by": mode}
+
+    # EXPLORATION APPLIED TO THE PUBLISHED BOOK. On a heavy pass the draw was just made; on a
+    # short clock the carried draw is re-applied to THIS pass's book so the explored set keeps
+    # its heat for the day. Candidates the main solve has since funded on its own are dropped
+    # from the lent set (they are no longer ambiguous). The total never moves; the explored book
+    # and the un-explored one are both scored on these worlds so the rail can be billed.
+    explore = admission.get("explore") if isinstance(admission.get("explore"), dict) else None
+    if explore is not None:
+        explore = dict(explore)
+        explore["applied"] = False
+        lend = {k: float(v) for k, v in (explore.get("explore_heat") or {}).items()
+                if float(v) > 1e-9}
+        # A drawn candidate the main solve now funds ABOVE its lent heat is no longer ambiguous
+        # and is dropped from the lent set; one held AT its lent heat is the held book carrying
+        # last pass's draw, and stays.
+        lend = {k: v for k, v in lend.items() if float(funded.get(k, 0.0)) <= v + 1e-6}
+        if explore.get("status") == "FUNDED" and lend and funded:
+            base_now = {k: float(v) for k, v in funded.items() if float(v) > 0.0}
+            explored, e_why = apply_explore(base_now, lend, adm_bounds)
+            changed = any(abs(explored.get(k, 0.0) - base_now.get(k, 0.0)) > 1e-9
+                          for k in set(explored) | set(base_now))
+            held_already = all(abs(base_now.get(k, 0.0) - v) <= 1e-6 for k, v in lend.items())
+            if changed or held_already:
+                without = without_explore(explored, lend)
+                sc_with = score_book(ev, explored, cfg=cfg, worlds=worlds)
+                sc_without = (score_book(ev, without, cfg=cfg, worlds=worlds) if without
+                              else {"mean_log_growth": float("nan")})
+                if math.isfinite(sc_with["mean_log_growth"]):
+                    explore.update({
+                        "applied": True,
+                        "applied_via": ("heavy" if heavy else ("carried" if changed else "held")),
+                        "applied_why": (e_why if changed else
+                                        "the held book already carries this draw's heat"),
+                        "growth_with": round(float(sc_with["mean_log_growth"]), 10),
+                        "growth_without": (round(float(sc_without["mean_log_growth"]), 10)
+                                           if math.isfinite(sc_without["mean_log_growth"])
+                                           else None),
+                        "book": {k: round(v, 6) for k, v in explored.items() if v > 1e-6},
+                        "paid_by": {k: round(explored.get(k, 0.0) - v, 6)
+                                    for k, v in base_now.items()
+                                    if k not in lend and abs(explored.get(k, 0.0) - v) > 1e-6},
+                        "without_basis": ("the same book with the lent heat removed and the "
+                                          "incumbents scaled back to the total; scored, not "
+                                          "published"),
+                    })
+                    if changed:
+                        book = AllocationResult(
+                            heat={k: v for k, v in explored.items() if v > 1e-6},
+                            total_heat=float(sum(explored.values())),
+                            robust_score=float(sc_with["robust_score"]),
+                            mean_log_growth=float(sc_with["mean_log_growth"]),
+                            cvar_log_growth=float(sc_with["cvar_log_growth"]),
+                            annual_growth_pct=float(sc_with["annual_growth_pct"]),
+                            prob_annual_loss=float(sc_with["prob_annual_loss"]),
+                            marginal=dict(book.marginal), iterations=book.iterations,
+                            converged=book.converged,
+                            note=(f"{book.note}; explore: {e_why}").strip("; "))
+                        funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+                    _log(f"explore ({explore['applied_via']}): {explore['applied_why']} -> "
+                         f"growth {explore['growth_with']:+.6f} vs "
+                         f"{explore['growth_without']} log/day un-explored")
+                else:
+                    explore["applied_why"] = ("explored book is wiped out in a sampled world; "
+                                              "nothing lent")
+            else:
+                explore["applied_why"] = e_why
+        elif explore.get("status") == "FUNDED":
+            explore["applied_why"] = ("nothing left to lend: every drawn candidate is funded by "
+                                      "the main solve on its own, or no book is held")
+        admission["explore"] = explore
+    # SLEEVES THIS SOLVE ZEROED, NAMED so the answer can actually BE zero. Without this list the
+    # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
+    # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
+    zeroed = zeroed_live(ev, funded, extra=prev_book)
+    if zeroed:
+        _log(f"zeroed but NOT retired: {len(zeroed)} rostered sleeve(s) earn 0% this pass "
+             f"({', '.join(sorted(zeroed)[:6])})")
+
     # ------------------------------------------------------ THE BASELINE CONTEST, EVERY PASS
     # A dynamic allocator sits above every edge and reallocates, so it can destroy compounding
     # faster than any single sleeve can. It therefore has to beat the answers anyone could have
@@ -2514,53 +2851,6 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                  "capital at work); the CEILING counts max(covariance, factor, tail), because "
                  "hidden concentration bites at the top of the band and nowhere else"),
     }
-    # ------------------------------------------------- ADMISSION BY dE[log W], NOT BY SHARPE
-    # THE CRITERION, NOT A REPORT (principal, 2026-09-05). Every priced sleeve the published book
-    # does NOT hold is re-solved INTO that book at the same total heat on these same worlds, and
-    # what it is worth is the growth it adds. `promoter.py` reads this block and gives capital to
-    # nothing that fails it, however good its standalone Sharpe -- which is on every row, beside
-    # the correlation to the held book, so the disagreement between the two orderings is legible
-    # rather than asserted.
-    #
-    # HEAVY CLOCK ONLY, AND CARRIED WITH ITS AGE. A candidate re-solve is a full optimisation; a
-    # hundred of them do not fit in a five-minute clock. The heavy pass runs hourly, and the
-    # short clocks carry its answer forward stamped with when it was taken, so a reader (and the
-    # promoter's freshness check) can tell a measurement from an inheritance.
-    admission: dict[str, Any]
-    adm_bounds = per_sleeve_bounds(dd, max(book.total_heat, HEAT_TARGET))
-    prev_admission: dict[str, Any] = {}
-    try:
-        _prev_art = json.loads(OUT.read_text("utf-8")).get("admission")
-        prev_admission = _prev_art if isinstance(_prev_art, dict) else {}
-    except (OSError, ValueError, AttributeError):
-        prev_admission = {}
-    if heavy and funded:
-        admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
-                                       total_heat=book.total_heat, order=free.marginal,
-                                       # Whatever the last scan's budget could not reach goes
-                                       # first, so a candidate below the cut is measured within a
-                                       # few passes instead of never.
-                                       prefer=set(prev_admission.get("unscored") or {}))
-        _log(f"admission: {admission.get('status')} -- {admission.get('n_admitted', 0)}/"
-             f"{admission.get('n_scored', 0)} scored candidate(s) raise robust growth "
-             f"(basis={admission.get('basis')}, {admission.get('elapsed_s', 0)}s, "
-             f"{len(admission.get('unscored') or {})} unreached, "
-             f"{admission.get('n_carried_from_last_unreached', 0)} carried from last pass)")
-    else:
-        admission = {"status": "not measured on this clock", "candidates": {},
-                     "admitted": [], "refused": [], "unscored": {}}
-        if prev_admission.get("status") == "MEASURED":
-            admission = {**prev_admission,
-                         "carried_from": prev_admission.get("measured_utc"),
-                         "carried_by": mode}
-    # SLEEVES THIS SOLVE ZEROED, NAMED so the answer can actually BE zero. Without this list the
-    # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
-    # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
-    zeroed = zeroed_live(ev, funded, extra=prev_book)
-    if zeroed:
-        _log(f"zeroed but NOT retired: {len(zeroed)} rostered sleeve(s) earn 0% this pass "
-             f"({', '.join(sorted(zeroed)[:6])})")
-
     # WHAT THE PER-SLEEVE DECAY POSTERIOR IS WORTH, billed on the PUBLISHED book. The same book
     # scored on its own worlds and on a population drawn identically except that every sleeve
     # carries the blanket -- the random stream is shared, so the two differ only in which
