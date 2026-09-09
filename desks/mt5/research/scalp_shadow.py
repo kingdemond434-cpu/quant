@@ -277,8 +277,12 @@ def run(now: datetime | None = None) -> dict:
         # forward record is independent evidence. They inform; the canon bar above decides.
         try:
             fv = forward_verdict.verdict(rs, days)
+            # `e_*` is the kill-direction e-process (forward_verdict.e_process): advisory,
+            # and only ever in the direction of an earlier kill.
             diagnostics = {k: fv.get(k) for k in ("n_eff", "n_eff_basis", "seq_lower_bound",
-                                                  "significant", "independent", "reason")}
+                                                  "significant", "independent", "reason",
+                                                  "e_value", "e_crossed_at", "e_n",
+                                                  "e_kill_supported", "e_status")}
         except Exception as exc:                                  # a diagnostic never fails a clock
             diagnostics = {"error": f"{type(exc).__name__}: {exc}"}
         if last_bar < SHADOW_START:

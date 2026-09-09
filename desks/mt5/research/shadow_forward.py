@@ -922,6 +922,19 @@ def main() -> None:
                 if _var > 0:
                     t_stat = _mean / ((_var / len(_rs)) ** 0.5)
             st["forward_t"] = round(t_stat, 3)
+            # THE KILL-DIRECTION E-PROCESS RIDES ON THE ROW (2026-09-08). `forward_verdict.
+            # e_process` runs the anytime-valid e-value on the NEGATED ledger, so `e_value` grows
+            # only as evidence the sleeve LOSES and `e_crossed_at` is the trade at which that
+            # became a valid stop. It DECIDES NOTHING HERE: the promotion clause below is
+            # byte-identical, and this number may only ever support an EARLIER KILL. Below the
+            # e-process's own floor the row says UNMEASURED with the count.
+            try:
+                import forward_verdict as _fv
+                st.update(_fv.e_process([t.r_multiple for t in trades],
+                                        stamps=[t.entry_time for t in trades]))
+            except Exception as exc:  # a diagnostic never blocks a clock
+                st.update({"e_value": "UNMEASURED", "e_crossed_at": None, "e_n": st["n"],
+                           "e_status": f"UNAVAILABLE: {type(exc).__name__}: {exc}"})
             enough = (st["n"] >= VERDICT_MIN_TRADES
                       or (st["n"] >= SEQ_MIN_TRADES and t_stat >= SEQ_MIN_T))
             # AND, never OR: gate_spec.yaml has always said `n >= 50, days >= 14` together, but this
