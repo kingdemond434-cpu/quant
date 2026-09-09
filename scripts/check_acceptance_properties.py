@@ -40,8 +40,8 @@ REPORT = DESK / "reports" / "acceptance_properties.json"
 WEEK = timedelta(days=7)
 
 #: Missions have no single home yet (wave W5b writes them); every candidate path is read.
-MISSION_PATHS = ("reports/research_missions.json", "data/research_missions.json",
-                 "reports/missions.json", "data/missions.json")
+MISSION_PATHS = ("reports/RESEARCH_MISSIONS.json", "reports/research_missions.json",
+                 "data/research_missions.json", "reports/missions.json", "data/missions.json")
 
 
 def _read(path: Path) -> Any:
@@ -156,8 +156,9 @@ def ap4(desk: Path, now: datetime) -> dict[str, Any]:
             found = rel
             break
     compiled = _read(desk / "data" / "hypotheses" / "miner_candidates.json") or {}
-    cands = compiled.get("candidates") or []
-    tagged = sum(1 for c in cands if isinstance(c, dict) and c.get("mission"))
+    cands = compiled.get("hypotheses") or compiled.get("candidates") or []
+    tagged = sum(1 for c in cands if isinstance(c, dict)
+                 and (c.get("mission_id") or c.get("mission")))
     if doc is None:
         return {"status": "MISSING", "measured": False, "candidates_tagged": tagged,
                 "why": f"no missions artifact at any of {MISSION_PATHS}"}

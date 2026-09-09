@@ -55,6 +55,7 @@ LEG_LAYER: dict[str, str] = {
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
+    "opportunity_forecast": "prediction", "edge_reliability": "prediction",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
     "rebalance_trigger": "timing",

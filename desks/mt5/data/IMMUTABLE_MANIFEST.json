@@ -1,5 +1,5 @@
 {
- "signed_utc": "2026-09-09T00:25:36.968540+00:00",
+ "signed_utc": "2026-09-09T00:31:16.825722+00:00",
  "signed_by": "principal",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "f317044dffb4c077",
@@ -7,7 +7,7 @@
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "830723c7f399411c",
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
-  "desks/mt5/research/promoter.py": "0a7eff2c699020d7",
+  "desks/mt5/research/promoter.py": "b74260353e989b59",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
   "libs/portfolio/allocator_proof.py": "ab3cdbd00048bb78",
   "libs/portfolio/rails.py": "f17e8ae9c8a261dd",

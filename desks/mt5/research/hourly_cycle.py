@@ -612,11 +612,25 @@ def _costed(name: str, fn):
         if close_run and run is not None:
             close_run(run, outcome=detail[:200])
         print(f"  LEG FAILED {name}: {detail}", flush=True)
+        _emit_leg(name, detail[:200])
         return {"error": detail[:300], "status": "LEG_FAILED",
                 "at": datetime.now(UTC).isoformat()}
     if close_run and run is not None:
         close_run(run, outcome="ok")
+    _emit_leg(name, "ok")
     return out
+
+
+def _emit_leg(name: str, outcome: str) -> None:
+    """THE EVENT LOG (Tier-1 item I2, 2026-09-09): every leg's end is an event, and the legs
+    that mark a domain transition (DATA_UPDATED, GAUNTLET_SWEPT, ALLOCATION_DECIDED, ...)
+    emit that transition too, so a consumer can ask what happened since it last looked instead
+    of inferring it from the clock. Never fails the leg; an absent `libs` means no event."""
+    try:
+        from libs.ops.events import leg_events
+        leg_events(name, outcome)
+    except Exception as exc:                                            # noqa: BLE001
+        print(f"  event for {name} not recorded: {type(exc).__name__}: {exc}", flush=True)
 
 
 #: Wall clock a search leg may spend inside the cycle. The two searches are the desk's own
@@ -1319,6 +1333,13 @@ def main() -> None:
         "opportunity_cost", "research/opportunity_cost.py"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # TWO FORECASTS THE DESK NEVER MADE (Tier-1 P15, P6; 2026-09-09), both reports:
+    #   opportunity_forecast  where alpha is likely to EMERGE next, the graph read forward
+    #   edge_reliability      P(this sleeve works now), one fused column per sleeve
+    ofc = _costed("opportunity_forecast", lambda: _producer(
+        "opportunity_forecast", "research/opportunity_forecast.py"))
+    erl = _costed("edge_reliability", lambda: _producer(
+        "edge_reliability", "research/edge_reliability.py"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -1337,7 +1358,8 @@ def main() -> None:
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
-                    "opportunity_cost": oc, "acceptance": ac, "publish_state": pub,
+                    "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "edge_reliability": erl, "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "external_gauntlet": gt, "falsifier_run": fz, "merge_docket": mh,

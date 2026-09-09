@@ -245,6 +245,11 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         "source_title": str(row.get("title") or row.get("description") or "")[:300],
         "mechanism_status": "NAMED",
         "mechanism_note": mechanism,
+        # THE MISSION THAT CAUSED THIS ROW RIDES ONTO THE CANDIDATE (Tier-1 P17 / AP4). The
+        # portfolio's missions are queue rows keyed by mission_id; a candidate that does not
+        # carry the id cannot be counted as the mission's yield, and the acceptance property
+        # "the portfolio creates research missions" is measured on exactly that count.
+        **({"mission_id": row["mission_id"]} if row.get("mission_id") else {}),
     }
 
 

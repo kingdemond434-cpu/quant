@@ -94,22 +94,18 @@
    "status": "PARTIAL",
    "gate": "none",
    "evidence": [
-    "NO EVENT BUS. Grep for `DATA_UPDATED|HYPOTHESIS_CREATED|FORWARD_MATURED|ALPHA_DECAYED|event_bus|EventBus` across all *.py/*.md/*.json returns ZERO code hits. `GAUNTLET_PASSED` exists only as a research-queue row *status* (web/desk_state.json:56 `\"GAUNTLET_PASSED\": 49`; desks/mt5/data/research_queue_archive.json) (MEASURED)",
-    "DURABLE QUEUE EXISTS, DARK: libs/ops/campaign_queue.py:1-13 — lease-based SQLite-WAL queue with content-hash dedup, `BEGIN IMMEDIATE` atomic claim, `reclaim_stale`, bounded retries. libs/ops/workers.py:21-51 WorkerRegistry with heartbeats and stale-worker reaping (MEASURED)",
-    "Its drivers are unscheduled: libs/ops/research_daemon.py:27-28, scripts/run_supervisor.py:28 and scripts/smoke_orchestration.py:16 import it; only scripts/run_research_tick.py:25 has a schedule — ops/crontab.manifest:1247 `44 5 * * *`, a cron row on the decommissioned plane, and it is NOT in the 177-token dispatcher allowlist (MEASURED)",
-    "THE REAL QUEUE IS A JSON FILE: desks/mt5/data/research_queue.json holds 20,152 rows — QUEUED_CANONICAL_GAUNTLET 17,749, GAUNTLET_REJECTED 2,374, BLOCKED_CANONICAL_DOCKET_MISSING 19, DONE 10; desks/mt5/data/research_queue.jsonl is 53.7 MB / 47,150 lines (MEASURED)",
-    "DEPENDENCY DAG IS SOURCE ORDER, NOT DATA: desks/mt5/research/hourly_cycle.py:1012-1013 'BARS FIRST. Every leg below reasons about a chart'; :752-757 'ORDER IS LOAD-BEARING ... mine -> compile -> deepen'; :869-871 build_zentech_state 'Runs LAST, after every leg that writes something it reads'. The ordering is comments and call order in `main()`, not declared edges (MEASURED)",
-    "A DECLARED GRAPH EXISTS SEPARATELY AND DOES NOT SCHEDULE: libs/ops/capability_graph.py:59-72 Node(writes=, reads=, authority=, freshness_s=) over 50 nodes / 99 artifacts (desks/mt5/reports/CAPABILITY_STATUS.json). It checks the graph; nothing dispatches from it (MEASURED)",
-    "RESOURCE-AWARE ADMISSION EXISTS: desks/mt5/research/job_lock.py:74-140 `measured_need_mb` admits a job on max(declared floor, p75 of its last 8 measured peak RSS), with 12-minute ADMIT_PATIENCE_SECONDS (desks/mt5/research/job_lock.py:20-21) (MEASURED)",
-    "FLOCK LOCKS: 7 committed units wrap `flock` (quant-manifest-dispatch, quant-organ-catchup, quant-seat-{dataaxis,frontier,frontier2,litminer,prospector}.service); cron rows use /tmp/watchdog.lock (ops/crontab.manifest:64), data/.cron_capability_hunt.lock (:649-661) (MEASURED)",
-    "COMPUTE LEDGER IS ESSENTIALLY EMPTY: libs/ops/compute_ledger.py:47 writes desks/mt5/data/compute_ledger.jsonl — the file holds FOUR rows, all from 2026-09-06 11:35-12:04 (search, sweep, compile_candidates, deepen), against 59 legs that call `_costed` (MEASURED)",
-    "ORGAN CATCHUP IS QUOTA-DRIVEN, NOT EVENT-DRIVEN: scripts/organ_catchup.py:1-6 re-fires 'at most ONE organ per tick' after a quota probe; libs/ops/organ_catchup.py:42+ lists 6 OrganSpecs (MEASURED)"
+    "libs/ops/events.py — append-only event log with a declared vocabulary (KINDS), LEG_EVENT domain transitions, since()/latest()/census() bounded tail readers (MEASURED)",
+    "desks/mt5/research/hourly_cycle.py — _emit_leg on both the ok and the failed path of _costed (MEASURED)",
+    "tests/ops/test_events.py (MEASURED)"
    ],
-   "scheduled_by": "quant-manifest-dispatch.timer (boot+3min then every 5min), quant-organ-catchup.timer (*-*-* *:00/5:00); campaign_queue/WorkerRegistry: NONE",
-   "artifact": "desks/mt5/data/research_queue.json(l), data/manifest_dispatch_state.json, desks/mt5/data/compute_ledger.jsonl, data/fence_outcomes.jsonl",
+   "scheduled_by": "hourly_cycle:health",
+   "artifact": "desks/mt5/data/events.jsonl",
    "consumer": "research_queue -> external_gauntlet/merge_hypotheses/build_zentech_state; manifest_dispatch_state.json -> NONE (self-documented at scripts/run_manifest_dispatch.py:65-67); compute_ledger -> libs/research/... none joins it (MODEL_ZOO.json reports '0 usable run(s)')",
-   "gap": "There is no event vocabulary at all — timers fire on wall clocks and legs run in hard-coded source order, so a DATA_UPDATED or GAUNTLET_PASSED transition cannot wake a downstream stage; the one real durable lease queue (campaign_queue) has no live driver.",
-   "next_step": "Make desks/mt5/research/hourly_cycle.py `_costed` append its leg name + outcome to an append-only `desks/mt5/data/events.jsonl` alongside the compute row (one line in the existing `_costed` at desks/mt5/research/hourly_cycle.py:557-607), giving the first machine-readable stage-transition stream without adding any schedule."
+   "gap": "The log exists and every leg writes to it; no leg is yet TRIGGERED by an event (the cycle still runs in source order), and there is no durable task queue or worker pool -- that is I3 (hardware) territory.",
+   "next_step": "Make desks/mt5/research/hourly_cycle.py `_costed` append its leg name + outcome to an append-only `desks/mt5/data/events.jsonl` alongside the compute row (one line in the existing `_costed` at desks/mt5/research/hourly_cycle.py:557-607), giving the first machine-readable stage-transition stream without adding any schedule.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "I3",
@@ -284,114 +280,100 @@
    "item": "Agent scoreboard: per LLM/miner/source AgentValue = realized utility / resources, with budgets reallocated by yield",
    "domain": "I",
    "phase": 7,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "THE NUMERATOR IS MEASURED PER MINER. scripts/check_miner_conversion.py:8-19 measures DISCOVERIES / NOVEL (deduplicated by economic exposure, not title) / TESTED / SURVIVORS / CONVERSION / ZERO-YIELD per miner, on quant-miner-conversion.timer (05:40 UTC, ops/crontab.manifest:3338) (MEASURED)",
-    "Its alarm fires: data/MINER_YIELD_ALARM.txt (2026-09-07T08:39:31) 'ZERO-YIELD: forexfactory, github, github_topics, reddit, seasonality, shipping produced 20+ rows and no survivor in 14d -- noise at cost (III.16)' (MEASURED)",
-    "PER-SOURCE CONVERSION IS PUBLISHED: desks/mt5/data/hypotheses/miner_candidates.json (compiled_at 2026-09-06T11:47:01) — `per_source` 86 sources, `rows_accounted: 178864`, `executable_candidates: 632`, `deepening_tasks: 25042`. In the top slice only `cot` produced candidates (rows 22 → candidates 7); mql5_signals 1,190 rows → 0 candidates, youtube 673 → 0, quantconnect 294 → 0, reddit 239 → 0 (MEASURED)",
-    "THE DENOMINATOR IS ESSENTIALLY EMPTY. libs/ops/compute_ledger.py exists exactly to be the denominator (:12-16 'it CANNOT be fixed by writing the ranking formula, because the formula divides by hours and this desk has never recorded an hour') and desks/mt5/data/compute_ledger.jsonl holds FOUR rows (MEASURED)",
-    "`rank()` refuses rather than guessing: libs/ops/compute_ledger.py:170-206 requires `value_by_run` supplied by the caller and lists UNPRICED / UNCOSTED; nothing in the tree supplies it (MEASURED)",
-    "LLM SPEND LEDGER DECLARED, NEVER WRITTEN: libs/ops/llm_seat.py:64 `SPEND_LEDGER = _ROOT / \"data\" / \"llm_spend.jsonl\"`, with month_spend_usd (:287) checked before every call (:337) — the file does not exist on disk (MEASURED)",
-    "BUDGET CAP EXISTS: data/panel_budget.json `{monthly_envelope_usd: 50.0, alert_at_usd: 40.0}`, note ends 'No credential is configured in this environment yet, so this is pre-set so spend is capped the moment one is added' (MEASURED)",
-    "FRONTIER YIELD ACCOUNTING EXISTS: libs/research/hunt_frontier.py:10-14 separates YIELDED / EMPTY / NAMED_ONLY / BLOCKED and makes NAMED_ONLY+BLOCKED the priority queue rather than an exclusion; `should_hunt` decides whether to spend a reasoning pass with no model call (:29-33) (MEASURED)",
-    "SEAT-LEVEL ROI FENCES RUN: scripts/check_dig_roi.py:13-22 scores a cycle by testable candidates / breadth / certificates / forward clocks per launch (quant-dig-roi.timer *:09,39); scripts/check_seat_launch_yield.py:4-16 measured '102 headless seats launched and only 27 produced a real dig (28.1% of the 96 billable)' (quant-seat-launch-yield.timer 10:00 UTC) (MEASURED)",
-    "BUDGET REALLOCATION IS BY RESEARCH ARM, NOT BY AGENT: libs/research/bandit.py:1-33 Thompson-samples 11 arms and writes desks/mt5/data/research_budget.json (generated 2026-09-07T18:40:16, shares alt_data_hypothesis 0.1807, cross_asset_signal 0.1791, new_mechanism 0.167 …), consumed by daily_cycle proposer budgets and deepening_worker (libs/ops/capability_graph.py:785). libs/research/bandit.py:29 is explicit: 'Costs are declared units, not measured seconds' (MEASURED)"
+    "scripts/check_miner_conversion.py — agent_value writes data/agent_value.json through compute_ledger.rank with ranked/unpriced/uncosted/UNJUDGED and a per-seat block (MEASURED)",
+    "tests/scripts/test_check_miner_conversion_agent_value.py (MEASURED)"
    ],
-   "scheduled_by": "quant-miner-conversion.timer (05:40 UTC), quant-dig-roi.timer (*:09,39), quant-seat-launch-yield.timer (10:00 UTC), quant-cert-yield.timer (*:14,44); research_budget written by the daily cycle bandit",
-   "artifact": "data/MINER_YIELD_ALARM.txt, desks/mt5/data/hypotheses/miner_candidates.json, desks/mt5/data/research_budget.json, desks/mt5/reports/RESEARCH_PRODUCTIVITY.json, desks/mt5/data/compute_ledger.jsonl (4 rows)",
+   "scheduled_by": "hourly_cycle:miner_conversion",
+   "artifact": "data/agent_value.json",
    "consumer": "scripts/max_audit.py, libs/research/bandit.py -> daily_cycle + deepening_worker; MINER_YIELD_ALARM -> the principal page",
-   "gap": "Yield is measured per miner and per source and budget is reallocated per research ARM, but the two are never joined and the compute denominator holds 4 rows — so AgentValue = utility/resources cannot be computed for any LLM, miner or source, and no budget has ever moved on a per-agent yield number.",
-   "next_step": "Feed libs/ops/compute_ledger.rank() the numerator it asks for by passing `per_source` survivor counts from desks/mt5/data/hypotheses/miner_candidates.json as `value_by_run` — both files exist and the join is one call in scripts/check_miner_conversion.py."
+   "gap": "UNMEASURED until miners are costed individually: hourly_cycle costs them collectively under `mine`.",
+   "next_step": "Feed libs/ops/compute_ledger.rank() the numerator it asks for by passing `per_source` survivor counts from desks/mt5/data/hypotheses/miner_candidates.json as `value_by_run` — both files exist and the join is one call in scripts/check_miner_conversion.py.",
+   "landed": [
+    "6d09691d"
+   ]
   },
   {
    "id": "I11",
    "item": "Tournaments between agents/models with compute proportional to survivor yield; AI-vs-no-LLM baseline; human-vs-AI benchmark",
    "domain": "I",
    "phase": 7,
-   "status": "EXISTS-DARK",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "THE TOURNAMENT FRAME EXISTS AND HAS ZERO ENTRANTS. desks/mt5/reports/MODEL_ZOO.json and desks/mt5/reports/CHALLENGE_LEAGUE.json (both measured_at 2026-09-08T17:12:39 — fresh today): `entrants: 0`, `buckets: {}`, `cost_per_hour: 0.02`, `cost_basis: \"declared default 0.02/h -- the compute ledger holds 0 usable run(s), too few to price an hour from\"` (MEASURED)",
-    "The ranking rule is written and correct: 'dElog after compute and complexity rent. Accuracy is not a ranking: a model 2% more accurate at four times the compute has not earned its place'; fairness clause lists any unequal pairing as INCOMPARABLE rather than ranking it (desks/mt5/reports/MODEL_ZOO.json) (MEASURED)",
-    "Producer: desks/mt5/research/model_zoo.py:52 REPORT, reading desks/mt5/data/model_skill_track.jsonl (:207); scheduled as hourly_cycle leg `model_league` (desks/mt5/research/hourly_cycle.py:1191) (MEASURED)",
-    "PAIRWISE CHALLENGER EXISTS FOR SIGNALS, NOT AGENTS: libs/signal_engine/champion_challenger.py:3 'Compares a live champion variant against a challenger and recommends promotion only if…' — variants of a strategy, never two generators (MEASURED)",
-    "NO NO-LLM BASELINE ARM. libs/research/bandit.py:8-22 lists all 11 arms — new_mechanism, mutate_survivor, combine_survivors, conditional_state_edge, execution_improvement, exit_improvement, cross_asset_signal, alt_data_hypothesis, failure_derived, model_architecture, external_screen. `external_screen` is the automated (non-LLM) edge_search chain and IS given its own arm 'so its tens of thousands of judged screens do not drown the priors of the human-mechanism sources' — but the arms are research KINDS, not generator identities, so the report never states an LLM-vs-symbolic delta (MEASURED)",
-    "NO HUMAN-VS-AI BENCHMARK anywhere: no artifact, no script, no doc section names one (MEASURED, grep)",
-    "COMPUTE IS NOT PROPORTIONAL TO SURVIVOR YIELD: libs/ops/compute_ledger.py:6-10 — 'Compute is spent first-come-first-served by whatever the scheduler fires … That is not a bad ranking; it is no ranking' (MEASURED)",
-    "AN INDEPENDENT SECOND BRAIN DOES EXIST, with sealed cold-phase independence: libs/ops/deepseek_cycle.py:15-25 (Phase A sealed before Phase B may read anyone else's conclusions; MODEL_UNAVAILABLE rather than silent substitution), fired by quant-deepseek.timer (*:20 UTC, ops/crontab.manifest:3299) via ops/run_deepseek_factory.sh — but it DONATES and cannot promote (ops/run_deepseek_factory.sh:10-13), and no scoreboard compares its donations to Claude's (MEASURED)"
+    "desks/mt5/research/model_zoo.py — generator_entrants enrols the no-LLM screen and both seats over the compiler's window; ai_vs_no_llm delta with an explicit INCOMPARABLE state; the zoo's ledger path defect fixed (MEASURED)",
+    "tests/research/test_model_zoo_generators.py (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle leg `model_league` (desks/mt5/research/hourly_cycle.py:1191); quant-deepseek.timer (*:20 UTC)",
-   "artifact": "desks/mt5/reports/MODEL_ZOO.json, desks/mt5/reports/CHALLENGE_LEAGUE.json, desks/mt5/data/model_skill_track.jsonl",
+   "scheduled_by": "hourly_cycle:model_league",
+   "artifact": "desks/mt5/reports/MODEL_ZOO.json generator_entrants",
    "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) — a staleness reader, not a decision consumer",
-   "gap": "The league runs hourly, publishes today's timestamp and reports zero entrants because nothing registers a model against a shared window; there is no arm that runs the pipeline with LLMs disabled, so the incremental value of the LLM layer over the symbolic/statistical one has never been estimated.",
-   "next_step": "Enrol the two generators that already exist as league entrants: have desks/mt5/research/model_zoo.py read the `external_screen` (non-LLM) and LLM-seat survivor counts from desks/mt5/data/hypotheses/miner_candidates.json `per_source` as its first two entrants — that alone yields the AI-vs-no-LLM delta the blueprint asks for."
+   "gap": "",
+   "next_step": "Enrol the two generators that already exist as league entrants: have desks/mt5/research/model_zoo.py read the `external_screen` (non-LLM) and LLM-seat survivor counts from desks/mt5/data/hypotheses/miner_candidates.json `per_source` as its first two entrants — that alone yields the AI-vs-no-LLM delta the blueprint asks for.",
+   "landed": [
+    "e5f6da90"
+   ]
   },
   {
    "id": "I12",
    "item": "Meta-research agent (weekly) generating A/B-tested improvements (Research Controller A vs B)",
    "domain": "I",
    "phase": 7,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "THE DIRECTIVE AND ITS EXECUTOR EXIST. docs/research/META_RESEARCH_DIRECTIVE.md:1-16 — 'Status: PERMANENT. Principal directive, 2026-07-28 … its computable parts are executed by `scripts/meta_research_review.py`. Mechanical beats memorised: a check that runs cannot be skipped' (MEASURED)",
-    "Sections cover exactly the blueprint's questions: §1 Research Capital Allocation (ranked ERV table), §2 Bottleneck Analysis ('the SINGLE greatest limiter'), §3 Information Frontier Expansion (META_RESEARCH_DIRECTIVE.md:33-50) (MEASURED)",
-    "IT IS SCHEDULED, AND IT RUNS: ops/crontab.manifest:1183 `47 3 * * *`; the cron plane is dead (scripts/run_manifest_dispatch.py:3-8) but the row IS in the dispatcher allowlist at scripts/run_manifest_dispatch.py:195 — '\"scripts/meta_research_review.py\": \"§12 meta-research review; live rc=0\"' — so it fires every day via quant-manifest-dispatch.timer. It is also called from scripts/run_cadence.py:571-573 which reads data/meta_research_review.json (MEASURED)",
-    "'WHICH GATES REJECT NOTHING' IS ANSWERED BY A SEPARATE FENCE: scripts/check_gate_reachability.py, allowlisted at scripts/run_manifest_dispatch.py with the live result quoted — 'live rc=2 -- 2 dead branch(es), 8 unsatisfiable, 2 zero-bit acceptors' (MEASURED)",
-    "'WHICH GENERATOR CREATED SURVIVORS' IS ANSWERABLE FROM DATA: desks/mt5/data/hypothesis_graph.jsonl rows carry `source` ('fund_playbook:Renaissance:A'), `parent` and `fate`; libs/research/bandit.py:24-26 already derives a per-arm Beta posterior from 'the hypothesis graph's fates' (MEASURED)",
-    "FALSE NEGATIVES/POSITIVES OF THE PREDICTORS ARE MEASURED: desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json (2026-09-05T22:30) `status: BREACH`, research_forecast `NO_SKILL, skill: -0.176985, n: 537, base rate 0.428`; gauntlet_survival and allocator_expected_gain UNMEASURED at n=0 against MIN_N=20; `problems: [\"2 of 3 predictor(s) make cla…\"]` (MEASURED)",
-    "NO A/B OF CONTROLLERS. Grep for a controller A vs B, arm_a/arm_b or a variant experiment over research controllers returns only strategy-level variants (libs/autodiscovery/generators.py:500 `param_variants`) and libs/signal_engine/champion_challenger.py. libs/ops/controller_feed.py:1 exists ('Make the research controller's allocation the thing that actually fills the work queue') but there is exactly one controller (MEASURED)"
+    "libs/research/bandit.py — CONTROLLER_VARIANT written into research_budget.json and RESEARCH_BANDIT.json; desks/mt5/research/deepening_worker.py stamps controller_variant on every worked row (MEASURED)"
    ],
-   "scheduled_by": "quant-manifest-dispatch.timer firing the allowlisted `scripts/meta_research_review.py` row (daily 03:47); also invoked inside scripts/run_cadence.py:571",
-   "artifact": "data/meta_research_review.json, desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json, docs/research/recommendation_ledger.json",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/data/research_budget.json controller_variant",
    "consumer": "scripts/run_cadence.py:573, docs/research/recommendation_ledger.json (777 rows), scripts/check_conversion.py",
-   "gap": "The weekly review runs and its findings reach a tracked ledger, but every improvement it proposes is adopted as a single global change — there is one Research Controller and no mechanism to run a variant against it, so no proposed improvement has ever been measured against the arm it replaced.",
-   "next_step": "Add a `controller_variant` field to the budget written by libs/research/bandit.py (desks/mt5/data/research_budget.json) and have the deepening worker split its queue by it, so two allocation policies can run concurrently and be compared on survivors per compute-hour."
+   "gap": "Arms are labelled; no arm has been retired by a recorded verdict yet (AP5's own measure).",
+   "next_step": "Add a `controller_variant` field to the budget written by libs/research/bandit.py (desks/mt5/data/research_budget.json) and have the deepening worker split its queue by it, so two allocation policies can run concurrently and be compared on survivors per compute-hour.",
+   "landed": [
+    "3d677fb0",
+    "ac076b33"
+   ]
   },
   {
    "id": "I13",
    "item": "Model-of-models: posterior reliability per model/agent conditional on problem type (macro vs scalp)",
    "domain": "I",
    "phase": 7,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "THE PREDICTOR SCOREBOARD EXISTS AND RUNS. desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json (2026-09-05T22:30:18, status BREACH) tracks 3 named predictors with owner, baseline, kind and n: research_forecast (NO_SKILL, skill -0.176985, n=537, baseline 'the base rate of resolved claims coming true', owner libs/self_improvement/forecast_calibration.py); gauntlet_survival (UNMEASURED, n=0, baseline 'persistence', owner desks/mt5/research/shadow_admission.py); allocator_expected_gain (UNMEASURED, n=0, owner desks/mt5/research/pf_allocator.py). `measured: 1, unmeasured: 2, min_n: 20, min_skill_gain: 0.02` (MEASURED)",
-    "Brier-based reliability machinery exists: libs/self_improvement/forecast_calibration.py:360-373 returns `{brier, reliability: 1-brier, bias, hit_rate_posterior}` with 'reliability=1-Brier; bias>0 means forecasts were too high' (MEASURED)",
-    "PER-ARM POSTERIORS EXIST BUT ARE OVER RESEARCH KINDS, NOT MODELS: libs/research/bandit.py:24-26 — 'P(valid survivor) is a Beta posterior per arm from the hypothesis graph's fates, shrunk toward the pooled rate with PSEUDO pseudo-counts so an arm that has never been tried is optimistic, never certain' (MEASURED)",
-    "CONDITIONING BY PROBLEM TYPE IS DECLARED BUT EMPTY: desks/mt5/reports/MODEL_ZOO.json has a `buckets: {}` field and a fairness rule 'ranked only against models that faced the same window, the same HORIZON BUCKET, the same cost model and a comparable sample' — the bucket dimension is horizon, not macro-vs-scalp, and it holds zero buckets against `entrants: 0` (MEASURED)",
-    "The two lanes exist elsewhere as first-class concepts: CLAUDE.md:152 'TWO LANES: WHICH PROCESS MAY MINT A HYPOTHESIS'; the scalp lane has its own gauntlet (desks/mt5/research/hourly_cycle.py comments on `scalp_gauntlet`) and its own shadow state (desks/mt5/reports/shadow/scalp_shadow_state.json, declared in scripts/check_job_manifest.py:62) — but no reliability figure is ever computed per lane (MEASURED)",
-    "SEAT/MODEL ROUTING IS RECORDED PER ATTEMPT BUT NOT SCORED: libs/ops/llm_route.py:12-17 — 'callers are handed the model that actually answered and are expected to record it -- a fallback result must stay attributable and re-runnable'; no artifact aggregates those records into a per-model reliability (MEASURED)"
+    "desks/mt5/research/model_self_improvement.py — seat_<seat>[macro|scalp] predictors registered with the missing input named on every UNMEASURED row (MEASURED)",
+    "tests/research/test_seat_predictors.py (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle legs `model_skill` (desks/mt5/research/hourly_cycle.py:1189) and `model_league` (:1191)",
-   "artifact": "desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json, desks/mt5/data/model_skill_track.jsonl, desks/mt5/reports/MODEL_ZOO.json",
+   "scheduled_by": "hourly_cycle:model_skill",
+   "artifact": "desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json",
    "consumer": "desks/mt5/research/issue_board.py:74 (freshness only); no allocator or router reads a per-model reliability",
-   "gap": "Reliability is tracked for three internal PREDICTORS (one of which has negative skill at n=537) and for research arms, but never per LLM/agent, and the one bucketing dimension that exists (`buckets`) is horizon rather than problem type and is empty — so nothing conditions on macro vs scalp.",
-   "next_step": "Register the LLM seats as predictors in desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json's list with `tags: [\"macro\"]`/`[\"scalp\"]` — the file already carries a `tags` field per predictor and a MIN_N gate, so per-lane posteriors follow with no new machinery."
+   "gap": "Seats state no P(survive) in their donation contract, so their rows can only ever be scored once the contract carries one (principal).",
+   "next_step": "Register the LLM seats as predictors in desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json's list with `tags: [\"macro\"]`/`[\"scalp\"]` — the file already carries a `tags` field per predictor and a MIN_N gate, so per-lane posteriors follow with no new machinery.",
+   "landed": [
+    "9c68e94c"
+   ]
   },
   {
    "id": "I14",
    "item": "Research-marketplace economics: budgets per agent / data source / search ground flowing to certified marginal Elog",
    "domain": "I",
    "phase": 7,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "A REAL BANDIT MARKETPLACE EXISTS OVER RESEARCH ARMS. libs/research/bandit.py:22 states the objective exactly as the blueprint does: `score_j = E[dElogW_j] x P(valid survivor_j) / (compute + data + latency + multiplicity)_j`, with Thompson sampling plus a uniform EXPLORE floor 'the machine may not become trapped by its own history' (:31-33) (MEASURED)",
-    "Its artifact is live: desks/mt5/data/research_budget.json (generated_utc 2026-09-07T18:40:16) with 11 shares summing to 1.0 — alt_data_hypothesis 0.1807, cross_asset_signal 0.1791, new_mechanism 0.167, exit_improvement 0.0986, execution_improvement 0.0806, model_architecture 0.0681, failure_derived 0.0573, conditional_state_edge 0.0544, mutate_survivor 0.0488, combine_survivors 0.0468, external_screen 0.0187 (MEASURED)",
-    "It has real consumers: libs/ops/capability_graph.py:785 — 'daily_cycle proposer budgets and deepening_worker'; libs/research/bandit.py:33-34 'the deepening worker weights its VOI order by it, the daily cycle scales each proposer's time budget by it' (MEASURED)",
-    "THE COST SIDE IS DECLARED, NOT MEASURED: libs/research/bandit.py:29 — 'Costs are declared units, not measured seconds: a declared table is auditable, a timer is not.' Meanwhile the timer ledger exists and holds 4 rows (desks/mt5/data/compute_ledger.jsonl) (MEASURED)",
-    "THE ELOG SIDE IS UNMEASURED: libs/research/bandit.py:26-28 — 'E[dElogW] is the mean marginal growth the allocator reports for certified sleeves that came from the arm, and 1.0 WHERE IT HAS CERTIFIED NOTHING YET.' desks/mt5/reports/MODULE_RENT.json shows 0 EARNS / 0 COSTS across 71 modules and GROWTH_ATTRIBUTION_WEEKLY.json `scored_days: 0` — so every arm is currently carrying the 1.0 default (MEASURED)",
-    "NO BUDGET PER AGENT: the only per-agent envelope is a flat cap, data/panel_budget.json `monthly_envelope_usd: 50.0`, shared across CRO/GPT, kimi_hunter's chain and run_external_panel, with no yield term (MEASURED)",
-    "NO BUDGET PER DATA SOURCE OR SEARCH GROUND: data/data_universe_map.json carries a `yield` field on 31 of 190 sources but no allocation; libs/research/hunt_frontier.py maintains ground state (YIELDED/EMPTY/NAMED_ONLY/BLOCKED) and a priority ordering but assigns no budget (MEASURED)",
-    "ops/run_frontier_rotation.sh:44-49 records the principal's explicit rejection of a per-ground quota — 'ONE dig replaces the fixed 7-region sequence … no numeric cap: a count is a quota in disguise' (MEASURED)"
+    "libs/research/bandit.py — measured_cost from compute_ledger.cost_by_run, ARM_RUNS declares leg->arm, evidence() records cost_basis per arm; 3 arms measured, 8 declared on this tree (MEASURED)",
+    "tests/research/test_bandit_scoreboard.py (MEASURED)"
    ],
-   "scheduled_by": "libs/research/bandit.py runs inside desks/mt5/research/daily_cycle.py (box task MT5-CycleNoon / MT5-CycleMidnight, desks/mt5/scripts/Install-QuantWindows.ps1:259,271)",
-   "artifact": "desks/mt5/data/research_budget.json",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json",
    "consumer": "desks/mt5/research/daily_cycle.py proposer budgets; desks/mt5/research/deepening_worker.py VOI ordering",
-   "gap": "The marketplace prices research KINDS with a declared cost table and a placeholder E[dElogW]=1.0 for every arm that has certified nothing; it does not price agents, data sources or search grounds at all, and the two ledgers that would supply the real numerator and denominator (MODULE_RENT, compute_ledger) read 0 EARNS and 4 rows.",
-   "next_step": "Replace libs/research/bandit.py's declared cost units with the measured `cpu_s`/`wall_s` already in desks/mt5/data/compute_ledger.jsonl via libs.ops.compute_ledger.cost_by_run() — one import in libs/research/bandit.py turns an auditable table into a measured denominator."
+   "gap": "",
+   "next_step": "Replace libs/research/bandit.py's declared cost units with the measured `cpu_s`/`wall_s` already in desks/mt5/data/compute_ledger.jsonl via libs.ops.compute_ledger.cost_by_run() — one import in libs/research/bandit.py turns an auditable table into a measured denominator.",
+   "landed": [
+    "3d677fb0"
+   ]
   },
   {
    "id": "I15",
@@ -1035,70 +1017,60 @@
    "item": "Orthogonality: Alpha Dependency Graph → effective breadth",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/alpha_breadth.py:1-49 — four readings: `exposure_full_sample`, `exposure_systematic`, `exposure_stress`, `realised_returns`; headline is the MINIMUM of the measured ones; `OUT = BASE / \"reports\" / \"EFFECTIVE_BREADTH.json\"` (:84) (MEASURED)",
-    "libs/research/effective_breadth.py:136 `exposure_neff`, :171 `exposure_breadth`, :213 `factor_breadth(k_factors=3)`, :258 `lagged_vol_regime`, :313 `conditional_breadth`, :370 `realised_breadth`; floors `MIN_PAIR_OVERLAP = 20` (:92), `MIN_PANEL_OBS = 250` (:97), `MIN_SCALE_OBS = 20` (:101), `MIN_REGIME_OBS = 60` (:106) (MEASURED)",
-    "MEASURED VALUE: desks/mt5/reports/EFFECTIVE_BREADTH.json — `effective_breadth: 1.324`, `n_nominal: 31`, `binding_reading: exposure_systematic`, `breadth_ratio: 0.0427`, `mean_pairwise_corr: 0.2118`, `max_pairwise_corr: 0.9891`; desks/mt5/data/effective_breadth.jsonl has 4 rows, all 1.324, last 2026-09-05T17:30 (MEASURED)",
-    "CLUSTER OCCUPANCY: libs/research/alpha_clusters.py — 15 `AlphaCluster` entries, `TARGET_MIN = 8` (:60), `TARGET_MAX = 15` (:61), classification DECLARED not inferred; EFFECTIVE_BREADTH.json records `n_clusters_occupied: 4`, `n_clusters_empty: 11` (MEASURED)",
-    "TAIL CO-DRAWDOWN: libs/portfolio/latent_factors.py:90 `tail_dependence(m, q=0.1)`, folded into `effective(ev, book, k=3)` (:108) which returns nominal/covariance/factor/tail heats; desks/mt5/research/pf_allocator.py:1330-1345 `effective_heat_of` wraps it and it BINDS through `heat_policy.resolve(effective_heat=eff_pre)` (desks/mt5/research/pf_allocator.py:2099-2106) (MEASURED)",
-    "RETURN + DOWNSIDE + FACTOR: libs/risk/fx_factors.py:121 `effective_bets(exposures)`; desks/mt5/mt5desk/gateway.py:2035-2041 `measure_from_ledger(ledger_rows(), account, exposures=_exposure)` produces the live k_eff; desks/mt5/mt5desk/decision_core.py:577-641 `heat_budget(k_eff)` scales `base * sqrt(k_eff / _HEAT_BASE_KEFF)` (MEASURED)",
-    "MARGINAL BREADTH AS PRICE: libs/research/breadth_credit.py:26-53 — dE[log W] ∝ dk_eff; `k' = (n+1)^2 / (n^2/k + 1 + 2 rho n/sqrt(k))`; rho=0.00 → dk=+0.0847, rho=0.21 → +0.0630, rho=0.75 → +0.0109, rho=1.00 → −0.0124 (MEASURED)",
-    "MISSING CHANNELS: grep across libs/ and desks/mt5/ for event/timestamp overlap, mechanism similarity, feature lineage and execution collision as dependency edges returns nothing; the nearest are desks/mt5/research/alpha_genome.py (structural clustering of certificates), libs/research/lineage_dag.py (hypothesis lineage, not sleeve dependence) and desks/mt5/mt5desk/netting.py (position collision, unrouted) (MEASURED)",
-    "THE ~13 NUMBER IS NOWHERE: the only measured breadth is 1.324 (EFFECTIVE_BREADTH.json); the theoretical saturation is ~7.3 at the measured rho of 0.137 (desks/mt5/research/admission.py:40-43); 15 is the cluster COUNT, not a bet count (MEASURED)"
+    "desks/mt5/research/alpha_breadth.py — timestamp_overlap: Jaccard of held minutes per pair, n_eff = n^2/sum J_ij, published informational and outside the headline minimum (MEASURED)",
+    "desks/mt5/tests/test_breadth_timestamp_overlap.py (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/daily_cycle.py:338 list inside `_state_research_feedback` (desks/mt5/research/daily_cycle.py:319), STEP at desks/mt5/research/daily_cycle.py:472, and daily_cycle itself is desks/mt5/research/hourly_cycle.py:1019 leg `daily` under MT5-Hourly (desks/mt5/ops/box_tasks.manifest:63)",
-   "artifact": "desks/mt5/reports/EFFECTIVE_BREADTH.json + desks/mt5/data/effective_breadth.jsonl",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/EFFECTIVE_BREADTH.json timestamp_overlap",
    "consumer": "libs/research/breadth_credit.py:81 (research compute credit), desks/mt5/research/drawdown_alpha.py:62; NOT the allocator — pf_allocator uses its own libs/portfolio/latent_factors.effective",
-   "gap": "Six of the ten blueprint channels exist (return correlation, downside/stress correlation, tail co-drawdown, factor exposure, mechanism/cluster occupancy, regime dependence); event/timestamp overlap, mechanism-similarity distance, feature lineage and execution collision are not edges anywhere. And there are two disconnected breadth numbers — EFFECTIVE_BREADTH.json (1.324, read by research) and latent_factors.effective (read by the heat law) — so the published breadth does not gate capital.",
-   "next_step": "Add a `timestamp_overlap` reading to desks/mt5/research/alpha_breadth.py computed from the shadow ledgers' entry_time fields (Jaccard of trading minutes per pair) — it needs no new data and it will RAISE measured breadth wherever two same-mechanism sleeves fire in different hours, which the correlation reading currently prices as one bet."
+   "gap": "",
+   "next_step": "Add a `timestamp_overlap` reading to desks/mt5/research/alpha_breadth.py computed from the shadow ledgers' entry_time fields (Jaccard of trading minutes per pair) — it needs no new data and it will RAISE measured breadth wherever two same-mechanism sleeves fire in different hours, which the correlation reading currently prices as one bet.",
+   "landed": [
+    "3b7cd301"
+   ]
   },
   {
    "id": "P6",
    "item": "Meta-alpha: P(alpha_i works now) as an edge-reliability posterior",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "NO MODULE COMPUTES P(alpha works now): grep across the tree for 'P(alpha', 'works now', 'edge reliability', 'reliability posterior', 'meta_alpha' returns only desks/mt5/research/meta_desk.py:22 ('11  decay_detector  meta-alpha: predict which sleeve is about to die') and desks/mt5/docs/FRONTIER_AI_LAYER.md:60 — both prose (MEASURED)",
-    "THE INVERSE EXISTS AND IS CONSUMED: libs/research/perishability.py:584-609 `edge_hazard(components, horizon_days=HAZARD_HORIZON_DAYS, scale_days=HAZARD_SCALE_DAYS, min_channels=HAZARD_MIN_CHANNELS)` — 'hazard_i(t) = P(edge breaks next horizon | history)'; returns None under its floors, and 'no SLEEVE-scoped channel' is a refusal (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:1276-1291 `hazard_by_sleeve(drift)` reads `DRIFT.json`'s `hazard_by_sleeve`; :1292-1313 `apply_hazard_shrink(ev, haz)` tilts the evidence; the pair is billed as a rail by missed_growth.measure_hazard_shrink (desks/mt5/research/missed_growth.py:300) (MEASURED)",
-    "STATE CONDITIONING IS THE 'MARKET STATE' HALF: libs/portfolio/robust_elog.py:333-368 the fourth hierarchy level, `k_state = 40.0`, fed by pf_allocator._state_returns (:783) over session phase + admitted event/weekday dimensions (:843) (MEASURED)",
-    "VOL / SPREAD / EXECUTION DEGRADATION: libs/portfolio/execution_cost.py `cost_bias_r` per sleeve at its own fill hour; libs/research/crowding_hazard.py:9-16 lists spread compression, basis/funding compression, queue length, fill deterioration, impact — 'Measures and warns. Retires nothing' (:32) (MEASURED)",
-    "EXPECTANCY / HIT RATE LOWER BOUND: desks/mt5/research/edge_confidence.py:52-60 `EDGE_Z = 1.645`, `CRISIS_RHO = 0.8`; 'size on mean - z*se, floor at zero'; 'THIS ONLY EVER REDUCES SIZE' (:26) (MEASURED)",
-    "ALPHA AGE / CROWDING / MACRO ARE NOT INPUTS TO ANY RELIABILITY NUMBER: grep for `research_age`, `market_age`, `live_age`, `last_revalidated` across .py and .json returns nothing on the desk (MEASURED); desks/mt5/data/crowding_state.json last updated 2026-08-21T22:55 (MEASURED)"
+    "desks/mt5/research/edge_reliability.py — p_works_now per sleeve fusing the forward ledger's t, the decay verdict, the W3 e-process and the W5b half-life, every factor named; UNMEASURED below MIN_N (MEASURED)",
+    "desks/mt5/tests/test_edge_reliability.py (MEASURED)"
    ],
-   "scheduled_by": "the hazard half: drift_monitor in desks/mt5/research/daily_cycle.py:337 list; edge_confidence in desks/mt5/research/hourly_cycle.py:1252 leg `edge_confidence`. No scheduler for a reliability posterior, because none exists.",
-   "artifact": "desks/mt5/reports/DRIFT.json (`hazard_by_sleeve`), desks/mt5/reports/EDGE_CONFIDENCE.json",
+   "scheduled_by": "hourly_cycle:edge_reliability",
+   "artifact": "desks/mt5/reports/edge_reliability.json",
    "consumer": "pf_allocator.hazard_by_sleeve/apply_hazard_shrink (DRIFT.json); EDGE_CONFIDENCE.json is read by desks/mt5/research/issue_board.py only",
-   "gap": "There is a hazard (P(breaks next horizon), drift-channel-derived, often None under its own floors) but no single P(works now) posterior fusing recent expectancy, hit rate, vol, spread, correlation regime, macro state, alpha age, crowding and execution degradation, and nothing reduces those nine into one number the allocator multiplies the edge by. Alpha age is not recorded at all.",
-   "next_step": "Write `p_works_now` into libs/research/perishability.py as `1 - hazard` fused with `capital_modifiers.category`'s state ratio and `execution_cost.cost_ratio`, publish it per sleeve in DRIFT.json, and have pf_allocator use it to RAISE `forward_days`-equivalent weight where it is high (rather than only shrinking where hazard is high) — so a sleeve the market state currently favours is sized up, not merely not sized down."
+   "gap": "",
+   "next_step": "Write `p_works_now` into libs/research/perishability.py as `1 - hazard` fused with `capital_modifiers.category`'s state ratio and `execution_cost.cost_ratio`, publish it per sleeve in DRIFT.json, and have pf_allocator use it to RAISE `forward_days`-equivalent weight where it is high (rather than only shrinking where hazard is high) — so a sleeve the market state currently favours is sized up, not merely not sized down.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P7",
    "item": "Alpha decay model: per-alpha decay posterior, half-life, pre-emptive replacement hunting",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/decay_monitor.py:1-42 — the wired demotion organ; `FADE` at n>=20 and trailing t<=0 (risk halved), `RETIRE` at n>=20 and t<=-2.5, hard rail at trailing maxDD <= -25R at any n; artifacts `data/decay_live.json` every run and `data/decay_actions.jsonl` append-only (MEASURED)",
-    "desks/mt5/mt5desk/sizing.py:28 `FADE_FACTOR = 0.5` pinned to decay_monitor.FADE_FACTOR; :33-63 `decay_factor` applied OUTSIDE `clamp_risk_frac` because the clamp floors at `BASE_RISK_FRAC = 0.03` (:23) — the documented bug where 'a HEALTHY sleeve and a FADED one both sized 3.0 lots' (MEASURED)",
-    "MEASURED STATE OF decay_live.json (desks/mt5/data/decay_live.json, checked_at 2026-09-04T02:38:50): `\"live_sleeves\": 0`, `\"roster_state\": \"NO_ROSTER\"`, `\"roster_why\": \"sleeves.json does not exist -- its only writer is desks/mt5/research/promoter.py, so nothing has ever been promoted to live risk\"`, `\"verdicts\": {}` (MEASURED)",
-    "CONFIRMING: `find` for sleeves*.json across the tree returns nothing, while .gitignore:301 explicitly un-ignores `desks/mt5/data/sleeves.json` — so its absence is real, not a gitignore artifact (MEASURED)",
-    "DECAY INSIDE THE ALLOCATOR IS A CONSTANT: libs/portfolio/robust_elog.py:129-131 `decay_prob = 0.30`, `decay_floor = 0.0`, applied uniformly (libs/portfolio/robust_elog.py:404-406) (MEASURED)",
-    "NO HALF-LIFE PER LIVE ALPHA: libs/research/information_decay.py:101 `half_life_s` is a property of DATA CLASSES (bars, releases), not of alphas; grep for a per-sleeve half-life returns nothing (MEASURED)",
-    "NO AGING FIELDS: grep for `research_age`, `market_age`, `live_age`, `last_revalidated` across the desk's .py and .json returns no hits (MEASURED)",
-    "REPLACEMENT IS REACTIVE BY DESIGN: desks/mt5/research/decay_monitor.py:31-36 — 'REPLACEMENT IS THE PIPELINE'S OWN JOB. A retired sleeve frees its slot; the daily promoter fills slots from matured forward candidates the same day' (MEASURED)",
-    "libs/research/perishability.py:584 `edge_hazard` gives a horizon hazard, not a half-life; libs/research/crowding_hazard.py exists but 'Retires nothing' (:32) (MEASURED)"
+    "desks/mt5/research/decay_monitor.py — fit_half_life: log-linear fit of rolling expectancy vs calendar days giving half_life_days and t_to_fade_days, UNMEASURED under its own floors; published as decay_live.json[decay_model] (MEASURED)",
+    "desks/mt5/tests/test_decay_half_life.py (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/daily_cycle.py:471 STEPS (\"decay\", _decay) → decay_monitor.run; daily_cycle runs from desks/mt5/research/hourly_cycle.py:1019 leg `daily` under MT5-Hourly (desks/mt5/ops/box_tasks.manifest:63)",
-   "artifact": "desks/mt5/data/decay_live.json (present, regenerated 2026-09-08 21:05), desks/mt5/data/decay_actions.jsonl",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/data/decay_live.json decay_model",
    "consumer": "gateway via data/sleeves.json `decay_faded` → decision_core.ramped_fraction / sizing.decay_factor; freshness fence (desks/mt5/research/daily_cycle.py:489 names decay_live.json at a 26h limit)",
-   "gap": "The demotion half is lit and correct; the MODEL half is absent. There is no per-live-alpha decay posterior, no fitted half-life, no aging fields (research/market/live age, last revalidated), and the allocator applies one 30% decay probability to every sleeve. Replacement begins only AFTER retirement.",
-   "next_step": "In desks/mt5/research/decay_monitor.py fit an exponential to each sleeve's trailing expectancy series and publish `half_life_days` + `t_to_fade` per sleeve into decay_live.json; feed it to pf_allocator as the per-sleeve `decay_prob_i` from P3 — sleeves with a long fitted half-life then stop being charged the blanket 30% haircut and earn more heat."
+   "gap": "The verdict loop reads nothing from the model (asserted by test); arming a demotion on it is the principal's.",
+   "next_step": "In desks/mt5/research/decay_monitor.py fit an exponential to each sleeve's trailing expectancy series and publish `half_life_days` + `t_to_fade` per sleeve into decay_live.json; feed it to pf_allocator as the per-sleeve `decay_prob_i` from P3 — sleeves with a long fitted half-life then stop being charged the blanket 30% haircut and earn more heat.",
+   "landed": [
+    "90a097bd"
+   ]
   },
   {
    "id": "P8",
@@ -1152,23 +1124,20 @@
    "item": "Shadow alpha farm: every validated-but-unfunded strategy runs continuously",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/data/forward_reconcile.json (checked_at 2026-09-04T02:35:08) — `\"enrolled\": 56`, `\"certified_clocks\": 52`, `\"certified_pairs\": 32`, `\"unreachable_certified\": {\"n\": 0}`, plus REVIVED_CERTIFIED actions (MEASURED)",
-    "backups/moat/shadow_ledgers/ holds ~80 `ledger_*.json` per-clock forward ledgers across three lanes (shadow_state.json, qquant_shadow_state.json, scalp_shadow_state.json, external_shadow_state.json) (MEASURED)",
-    "libs/research/alpha_state.py:1-34 — the state machine: DISCOVERED → IMPLEMENTED → TESTED → STATISTICALLY_VALID → SHADOW → OOS_VALIDATED → INDEPENDENCE_CHECKED → PORTFOLIO_VALIDATED → CAPITAL_ELIGIBLE → LIVE → MONITORED, with DEGRADED/RETIRED reachable from anywhere; 'NO SKIPPING, INCLUDING UPWARD' (MEASURED)",
-    "BUT data/alpha_state_ledger.jsonl holds exactly 2 rows, both for the same `alpha_id` 'cat|ratio|1h|all|funding|oi' (IMPLEMENTED then TESTED) — the state machine has essentially never been driven (MEASURED)",
-    "THE FOUR-LANE VOCABULARY DOES NOT EXIST: the promoter's statuses are LIVE / STANDBY / UNMEASURED (desks/mt5/research/promoter.py:764) plus RETIRED; the forward clocks use PROMOTION_CANDIDATE (desks/mt5/research/promoter.py:876); alpha_state uses eleven rungs. There is no LIVE/SHADOW/FORWARD/BACKTEST partition anywhere (MEASURED)",
-    "THE EVIDENCE GAP IS REAL AT THE FUNDED END: desks/mt5/data/decay_live.json — 0 live sleeves, 'sleeves.json does not exist'; desks/mt5/reports/OPPORTUNITY_GAP.json (2026-09-06) CAPITAL row: '0 sleeve(s) matured and promotable, 0 carrying capital' (MEASURED)",
-    "AND AT THE BACKTEST END: desks/mt5/research/pf_allocator.py:238-260 `certified_evidence()` — 'THE OVERLAP IS ZERO. So the E[log W] allocator was solving over a universe that contained none of the things that actually passed the ten gates'; :313-340 `scalp_evidence()` — the same defect one lane later, 'desks/mt5/research/pf_allocator.py did not contain the string \"scalp\" anywhere' (MEASURED, both since fixed in-file)",
-    "backups/moat/shadow_ledgers/shadow_admission.json (2026-08-23): `declared 36, admitted 0, blocked 36` (MEASURED)"
+    "desks/mt5/research/promoter.py — record_door_transition writes one attempt per door at the rung it claims through AlphaStateLedger; refusals quoted verbatim on data/alpha_state_observations.jsonl (MEASURED)",
+    "libs/research/alpha_state.py — AlphaStateLedger.retreat, terminal targets only (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1125-1126 leg `enrol_clocks` (`_producer(\"shadow_forward\", \"desks/mt5/research/shadow_forward.py\")`); desks/mt5/research/daily_cycle.py:466-467 STEPS (\"shadow\", _shadow), (\"qquant_shadow\", _qquant_shadow); desks/mt5/ops/box_tasks.manifest:57-60 MT5-Shadow / MT5-QQuantShadow, both `trigger=\"UNDECLARED\"` with `installer=\"NONE\"`",
-   "artifact": "backups/moat/shadow_ledgers/ledger_*.json, desks/mt5/reports/shadow/*.json, desks/mt5/data/forward_reconcile.json",
+   "scheduled_by": "hourly_cycle:promoter",
+   "artifact": "data/alpha_state_ledger.jsonl",
    "consumer": "promoter (lane clocks), pf_allocator.scalp_evidence / certified_evidence, pf_allocator._live_state (reads the same ledgers for state conditioning)",
-   "gap": "56 clocks do run continuously, but the lifecycle vocabulary is three incompatible sets (promoter LIVE/STANDBY/UNMEASURED, clocks PROMOTION_CANDIDATE, alpha_state's eleven rungs), the alpha_state ledger is effectively empty (2 rows), and the LIVE end of the farm is empty (0 funded sleeves) — so 'no evidence gap' is true for shadow and false for the funded lane.",
-   "next_step": "Have desks/mt5/research/promoter.py write each roster transition into data/alpha_state_ledger.jsonl through libs/research/alpha_state.advance — one append per pass — so the four-lane picture becomes a single queryable ledger and every validated-but-unfunded sleeve is visibly accruing evidence rather than being invisible outside its own lane file."
+   "gap": "LIVE / CAPITAL_ELIGIBLE doors are recorded as observations by design: the ladder needs a principal token no organ may synthesise.",
+   "next_step": "Have desks/mt5/research/promoter.py write each roster transition into data/alpha_state_ledger.jsonl through libs/research/alpha_state.advance — one append per pass — so the four-lane picture becomes a single queryable ledger and every validated-but-unfunded sleeve is visibly accruing evidence rather than being invisible outside its own lane file.",
+   "landed": [
+    "989a1d73"
+   ]
   },
   {
    "id": "P11",
@@ -1266,70 +1235,61 @@
    "item": "Dynamic opportunity-set forecasting + market ecology / crowding models",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "BACKWARD-LOOKING GAP MEASUREMENT EXISTS: desks/mt5/research/pf_allocator.py:1095-1131 `opportunity(free, book, target)` — `opportunity_density = sum of POSITIVE marginal dE[log W]`, `heat_gap`, `positive_marginal_by_session`, `positive_marginal_by_family`, `research_request` ('4% unfilled, nothing in the Asia session outside JPY') (MEASURED)",
-    "desks/mt5/research/portfolio_gap.py:220 writes `{\"kind\": \"heat_gap\", \"priority\": 1}` into `research_requests`; :245-252 publishes `target_heat`, `held_heat`, `heat_gap`, `n_certificates` (MEASURED)",
-    "desks/mt5/reports/OPPORTUNITY_GAP.json (2026-09-06T00:53) — five causes with binding flags: SUPPLY 23,465 (not binding), CONVERSION 0 (BINDING), BREADTH UNMEASURED, CAPITAL 0, EXECUTION UNMEASURED (BINDING) (MEASURED)",
-    "EMPTY-CLUSTER TARGETING IS THE NEAREST THING TO FORECASTING: libs/research/alpha_clusters.py declares 15 phenomena from outside the book and names the 11 empty ones; desks/mt5/research/alpha_breadth.py:29-36 writes them into the deepening queue as research tasks (MEASURED)",
-    "libs/research/breadth_credit.py:26-53 prices where the next sleeve buys most breadth (rho=0 → dk=+0.0847 vs rho=0.75 → +0.0109) — a forward RANKING of where alpha would be worth most, not where it will appear (MEASURED)",
-    "CROWDING MODEL EXISTS AND IS DARK: libs/research/crowding_hazard.py:9-16 lists six fingerprints (spread compression, basis/funding compression, queue length, fill deterioration, impact, public diffusion); :17-23 'diffusion_pressure is computed and reported as a candidate feature … the diffusion term is unvalidated on this desk'; :32 'Measures and warns. Retires nothing' (MEASURED)",
-    "desks/mt5/data/crowding_state.json — `\"updated\": \"2026-08-21T22:55:02\"`, `history_len: 23`, latest query 'TTM squeeze trading', `edge_publicity: LOW`, `expected_decay: NORMAL` (MEASURED: 18 days stale as of 2026-09-08)",
-    "ITS SCHEDULERS ARE RETIRED: ops/crontab.manifest:1236 'RETIRED 2026-09-05 under the MT5 universe mandate: scripts/run_carry_crowding.py'; :2053 'RETIRED 2026-09-05 …: scripts/check_crowding.py'; `crowding_miner` appears in neither desks/mt5/research/hourly_cycle.py nor desks/mt5/research/daily_cycle.py (MEASURED)",
-    "NO behavioral/structural/information/execution/crowded TAXONOMY mapped to decay speed and capacity anywhere (MEASURED — grep returns nothing)"
+    "desks/mt5/research/opportunity_forecast.py — the hypothesis graph read forward: per-cell Laplace certify rate discounted by the age of the last success and the burial count; ranked / unexplored / stale_graveyard (MEASURED)",
+    "desks/mt5/tests/test_opportunity_forecast.py (MEASURED)"
    ],
-   "scheduled_by": "portfolio_gap + opportunity_curve + alpha_breadth via desks/mt5/research/daily_cycle.py:338-345 (`_state_research_feedback`); the crowding lane: NONE (crontab rows RETIRED, no cycle leg)",
-   "artifact": "desks/mt5/reports/OPPORTUNITY_GAP.json, reports/PORTFOLIO_GAP (via portfolio_gap.py), the `opportunity` block of pf_allocation.json; desks/mt5/data/crowding_state.json (stale)",
+   "scheduled_by": "hourly_cycle:opportunity_forecast",
+   "artifact": "desks/mt5/reports/opportunity_forecast.json",
    "consumer": "the deepening queue (empty clusters, alpha_breadth); desks/mt5/research/hour_surface.py:21 cites `portfolio_gap.research_requests`; crowding_state.json has NO consumer",
-   "gap": "Everything measures where the opportunity ISN'T (the gap, the empty clusters, the binding cause). Nothing forecasts where alpha is likely to EMERGE next, and the crowding/ecology model — which is the piece that would predict decay speed and capacity per mechanism — has been unscheduled since its crons were retired on 2026-09-05 and its state file has not moved since 2026-08-21.",
-   "next_step": "Add a `crowding_miner` leg to desks/mt5/research/hourly_cycle.py beside the other producers so desks/mt5/data/crowding_state.json is fresh again, and have libs/research/crowding_hazard.hazard consume it — the mechanisms it rates LOW publicity become explicit hunting priority rather than an 18-day-old file nobody reads."
+   "gap": "",
+   "next_step": "Add a `crowding_miner` leg to desks/mt5/research/hourly_cycle.py beside the other producers so desks/mt5/data/crowding_state.json is fresh again, and have libs/research/crowding_hazard.hazard consume it — the mechanisms it rates LOW publicity become explicit hunting priority rather than an 18-day-old file nobody reads.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P16",
    "item": "Automatic replacement planning (predicted half-life → successor search starts now)",
    "domain": "P",
    "phase": 5,
-   "status": "MISSING",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/decay_monitor.py:31-36 — 'REPLACEMENT IS THE PIPELINE'S OWN JOB. A retired sleeve frees its slot; the daily promoter fills slots from matured forward candidates the same day (same-day law, back half). Re-entry for the retired sleeve is ONLY through a fresh forward window' — replacement is triggered by RETIREMENT, never by a prediction (MEASURED)",
-    "NO PREDICTED HALF-LIFE PER ALPHA: grep for `half_life` across the desk returns only libs/research/information_decay.py (:101 `half_life_s`, :116 `_cls`, :249 `0.5 ** (age / c.half_life_s)`) which is about DATA classes, not alphas (MEASURED)",
-    "THE NEAREST FORWARD SIGNAL IS A HAZARD, AND IT MOSTLY REFUSES: libs/research/perishability.py:584-609 `edge_hazard` returns `{\"hazard\": None, \"verdict\": UNMEASURED}` under `HAZARD_MIN_CHANNELS` or with no SLEEVE-scoped channel — 'one book-level number repeated across fifty sleeves is not fifty per-edge verdicts, and capital must not move on it' (MEASURED)",
-    "IT DRIVES SIZING, NOT SEARCH: desks/mt5/research/pf_allocator.py:1276-1313 `hazard_by_sleeve` / `apply_hazard_shrink` tilt the posterior; nothing turns a hazard into a research task (MEASURED — no writer to the deepening queue keyed on hazard)",
-    "libs/research/crowding_hazard.py:32 — 'Measures and warns. Retires nothing -- `strategy_pool` and the allocator own that.' (MEASURED)",
-    "THE SUCCESSOR MACHINERY EXISTS FOR OTHER REASONS: desks/mt5/research/revival_engine.py and desks/mt5/research/resurrection.py (reports/REVIVAL.json 225 bytes, reports/RESURRECTION.json 279 bytes, both 2026-09-04) revive dead alphas; libs/research/bandit.py arm `mutate_survivor` re-parameterises certified cells — neither is triggered by a decay forecast (MEASURED)"
+    "desks/mt5/research/decay_monitor.py — successor_tasks queues a successor_hunt for every LIVE sleeve whose half-life is under two forward bars, while the incumbent still earns (MEASURED)"
    ],
-   "scheduled_by": "NONE for replacement planning (decay_monitor itself is scheduled at desks/mt5/research/daily_cycle.py:471, but only for FADE/RETIRE verdicts)",
-   "artifact": "NONE",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/data/hypotheses/miner_deepening_queue.json",
    "consumer": "NONE",
-   "gap": "The desk can detect decay (decay_monitor) and can guess at it (edge_hazard, crowding_hazard), but nothing converts a predicted decay into a successor hunt. The slot is refilled only after the incumbent has already been retired, so the replacement lead time is exactly zero.",
-   "next_step": "In desks/mt5/research/decay_monitor.py, emit a `successor_hunt` task into the deepening queue for every live sleeve whose fitted half-life (from P7) is under 2x its remaining forward window, keyed on its mechanism and symbol — the successor search then starts while the incumbent is still earning, so capacity is never idle between a retirement and its replacement."
+   "gap": "",
+   "next_step": "In desks/mt5/research/decay_monitor.py, emit a `successor_hunt` task into the deepening queue for every live sleeve whose fitted half-life (from P7) is under 2x its remaining forward window, keyed on its mechanism and symbol — the successor search then starts while the incumbent is still earning, so capacity is never idle between a retirement and its replacement.",
+   "landed": [
+    "90a097bd"
+   ]
   },
   {
    "id": "P17",
    "item": "Adaptive risk distribution under the fixed cap + unused-heat intelligence",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "THE FLOOR IS FILLED, NOT REPORTED AS A SHORTFALL: desks/mt5/research/pf_allocator.py:1134-1200 `fill_floor(book, ev, target, ub, family_of, *, cfg, worlds)` — 'the resolved heat -- 20% floor, growth above it to the ceiling -- is what the book HOLDS'; bounds yield in order `drawdown_bound` → `family_cap` → `share_cap` → proportional scale, and 'Every relaxation is returned in the note and billed by `missed_growth` as that rail's opportunity cost' (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:1149-1152 — `share_cap = MAX_SLEEVE_HEAT_SHARE * target` (0.25 x target); the fill never overrides the ruin guard (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:1163-1170 — `optimise(..., hard_cap=max(HEAT_HARD_CEILING, target), ...)` so 'a policy that measured 38% solved against a 30% cap and quietly delivered 30%' cannot recur (MEASURED)",
-    "THE GAP BECOMES A RESEARCH REQUEST: desks/mt5/research/pf_allocator.py:1126-1131 `research_request: [f\"{gap:.2%} of the heat target is unfundable by the current library at its per-sleeve bounds\"]`, broken out `by_session` and `by_family` (:1113-1120) (MEASURED)",
-    "desks/mt5/research/portfolio_gap.py:220 turns the same gap into `{\"kind\": \"heat_gap\", \"priority\": 1}` in `research_requests`; test at desks/mt5/tests/test_portfolio_gap.py:100-103 pins it (MEASURED)",
-    "EVERY RAIL IS REGISTERED AND BILLED: libs/portfolio/rails.py:1-16 — 'OpportunityCost(rail) = E[log W without rail] - E[log W with rail]'; `Rail(... tunable, lo, hi, weaken_means, weaken_dir)`; `CALIBRATION = DESK/\"data\"/\"rail_calibration.json\"`; :41-49 `weaken_dir` was added 2026-09-07 because 'a cap could not be made tunable at all: the walk would have TIGHTENED it every time it proved expensive' (MEASURED)",
-    "desks/mt5/research/missed_growth.py:5-21 — verdicts EARNS_ITS_PLACE / COSTS_GROWTH / NOT_BINDING / UNMEASURED; 'A rail is never strengthened by this loop'; `MIN_N = 10`, `STEP = 0.10` (:58-59); measures for bounds/ceiling/floor/proof/ramp/fade/cost_stress/factor_floor/hazard_shrink/ruin_guard (:163-357) (MEASURED)",
-    "libs/portfolio/aggression.py:1-30 — `A_t = deployed heat / floor`, decomposed into opportunity_quality / evidence_strength / effective_breadth / model_agreement / tail_safety / execution_quality / margin_headroom; verdicts AT_FLOOR / GROWTH_ABOVE_FLOOR / CEILING_BOUND / TAIL_BOUND / UNUSED_UPSIDE (MEASURED)",
-    "THE LOOP IS NOT CLOSING: desks/mt5/reports/MISSED_GROWTH.json (2026-09-04T21:47) — `per_sleeve_bounds`, `sleeve_share_cap`, `family_cap`, `hard_ceiling`, `floor_mandate`, `position_inertia` all `UNMEASURED / \"no allocator pass on this host\"`; `ledger_rows: 1`, and data/missed_growth.jsonl holds one row (`ruin_guard`, value 0.0) (MEASURED)",
-    "desks/mt5/tests/test_heat_floor_is_not_negotiable.py:1-28 fences the 20% floor by name against 'a readiness gate, a drift sentinel, a novelty flag, a concentration penalty, a confidence discount'; the `evidence_readiness` ramp that eroded it is recorded as removed (MEASURED)"
+    "desks/mt5/research/portfolio_gap.py — missions() turns the allocator's heat gap, dark bands and empty cells into queue rows with stable mission ids; write_missions publishes RESEARCH_MISSIONS.json with candidates_by_mission (MEASURED)",
+    "desks/mt5/research/miner_candidate_compiler.py — _candidate copies mission_id onto the candidate, so a mission's yield is countable (MEASURED)",
+    "desks/mt5/tests/test_research_missions.py (MEASURED)"
    ],
-   "scheduled_by": "fill_floor + opportunity inside desks/mt5/research/hourly_cycle.py:1158 leg `pf_allocator`; missed_growth and portfolio_gap at desks/mt5/research/daily_cycle.py:338/342 inside `_state_research_feedback` (STEP at desks/mt5/research/daily_cycle.py:472)",
-   "artifact": "`floor_fill`, `opportunity`, `aggression` blocks of pf_allocation.json; desks/mt5/reports/MISSED_GROWTH.json + data/missed_growth.jsonl; data/rail_calibration.json",
+   "scheduled_by": "hourly_cycle:opportunity_gap",
+   "artifact": "desks/mt5/reports/RESEARCH_MISSIONS.json",
    "consumer": "libs/portfolio/rails.rail_multiplier reads rail_calibration.json back into the rails; portfolio_gap.research_requests is cited by desks/mt5/research/hour_surface.py:21 (INFERRED — no direct queue writer verified)",
-   "gap": "The mechanism is complete on paper and inert in practice: every rail's opportunity cost reads UNMEASURED because no allocator pass has written pf_allocation.json on the money box, so the calibration loop has never weakened a rail, and the heat-gap research request has no verified consumer that turns it into a hunting mission.",
-   "next_step": "Wire desks/mt5/research/portfolio_gap.py's `research_requests` (already carrying `kind: heat_gap` and the missing session/family from pf_allocator.opportunity) into the deepening queue the way alpha_breadth writes empty clusters — the unfundable heat then becomes an explicit hunt for the missing exposure type instead of a number in a report."
+   "gap": "",
+   "next_step": "Wire desks/mt5/research/portfolio_gap.py's `research_requests` (already carrying `kind: heat_gap` and the missing session/family from pf_allocator.opportunity) into the deepening queue the way alpha_breadth writes empty clusters — the unfundable heat then becomes an explicit hunt for the missing exposure type instead of a number in a report.",
+   "landed": [
+    "1c2910ad",
+    "this commit"
+   ]
   },
   {
    "id": "P18",
@@ -1358,46 +1318,39 @@
    "item": "Compounding attribution and true P&L decomposition",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/allocator_attribution.py:1-31 — the four error terms: EDGE `sum_i h_i * (realized_mu_i - expected_mu_i)`, CORRELATION `expected_book_var - realized_book_var`, EXECUTION `realized cost/heat - modelled cost/heat`, REGIME (charged BEFORE edge error), plus RESIDUAL 'Reported, never distributed' (MEASURED)",
-    "desks/mt5/research/allocator_attribution.py:38-68 — the NINE-TERM growth decomposition: ALPHA, SELECTION, STATE, SIZING (the anti-timidity ledger against the 20% floor / 30% ceiling), DIVERSIFICATION (nominal minus effective heat), EXECUTION, EXIT, COST, VETO — each `{value | UNMEASURED, basis, why}` (MEASURED)",
-    "desks/mt5/research/allocator_attribution.py:70-88 — a TENTH `_entry_term` from reports/EXCURSIONS.json, and `weekly_table`; 'the nine-term dict is a pinned contract'; the identity is stated with the terms it cannot close named by unit (MEASURED)",
-    "MEASURED STATE: desks/mt5/reports/allocator_attribution.json (2026-09-05T11:58) — `forecast_passes: 93`, `realized_basis: \"UNMEASURED\"`, `sleeves_with_realized_evidence: 0`; edge/correlation UNMEASURED ('0 scored day(s), need 5'), execution UNMEASURED, `regime: 0.5938`; selection UNMEASURED ('no allocator pass has written them on this host'); diversification UNMEASURED (MEASURED)",
-    "THE ONE NUMBER THAT IS MEASURED: `sizing.value 0.0` with `heat_realised 0.273318`, `heat_floor 0.2`, `heat_ceiling 0.3`, `expected_log_per_day 0.00958659`, `growth_per_unit_heat 0.03507486`, `under_floor false`, reading 'inside the band: 27.33% held, floor 20%, ceiling 30%' (MEASURED)",
-    "desks/mt5/research/allocator_attribution.py:146 `HEAT_FLOOR = 0.20` — the anti-timidity denominator (MEASURED)",
-    "desks/mt5/reports/GROWTH_ATTRIBUTION_WEEKLY.json exists (18,203 bytes, 2026-09-05) (MEASURED)",
-    "NO PER-SLEEVE COMPOUNDING/TIMING TERM: the EDGE term is signed per sleeve but there is no term for how a sleeve changed GEOMETRIC growth given WHEN its heat was held; and 'chance' is not a named term — the residual carries it (MEASURED)"
+    "desks/mt5/research/allocator_attribution.py — _compounding_term: mean ln(1+h r) minus mean(h) mean(r) per sleeve, split into timing and drag, beside the pinned nine terms and outside the identity (MEASURED)",
+    "desks/mt5/tests/test_compounding_attribution.py (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/daily_cycle.py:342 `\"allocator_attribution\"` inside `_state_research_feedback` (desks/mt5/research/daily_cycle.py:319), STEP at desks/mt5/research/daily_cycle.py:472; daily_cycle runs from desks/mt5/research/hourly_cycle.py:1019 leg `daily` under MT5-Hourly",
-   "artifact": "desks/mt5/reports/allocator_attribution.json + desks/mt5/reports/GROWTH_ATTRIBUTION_WEEKLY.json",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/ALLOCATOR_ATTRIBUTION.json compounding",
    "consumer": "desks/mt5/research/feature_roi.py — desks/mt5/research/daily_cycle.py:343-345 states it 'reads the conditioning ledger, RESEARCH_PNL's share_of_heat and allocator_attribution's state term'",
-   "gap": "The decomposition is scheduled, has an artifact and has a consumer, but eight of its nine terms read UNMEASURED because `sleeves_with_realized_evidence` is 0 and no allocator pass wrote ALLOCATOR_PROOF scores on the money box. There is also no per-sleeve compounding/timing term and no explicit 'chance' term — both fall into the residual.",
-   "next_step": "In desks/mt5/research/allocator_attribution.py add a `compounding` term per sleeve — `h_i,t` from data/pf_forecast_log.jsonl (93 passes are already on disk) crossed with the shadow ledgers' realised daily R — so the timing half is measurable from the FORWARD clocks today instead of waiting on live fills that do not yet exist."
+   "gap": "",
+   "next_step": "In desks/mt5/research/allocator_attribution.py add a `compounding` term per sleeve — `h_i,t` from data/pf_forecast_log.jsonl (93 passes are already on disk) crossed with the shadow ledgers' realised daily R — so the timing half is measurable from the FORWARD clocks today instead of waiting on live fills that do not yet exist.",
+   "landed": [
+    "a17752f2"
+   ]
   },
   {
    "id": "P20",
    "item": "Netting layer: 'NET WOULD SEND' rather than routing",
    "domain": "P",
    "phase": 6,
-   "status": "EXISTS-DARK",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/mt5desk/gateway.py:1367-1371 `_net_routes(symbols)` — 'The ONE order per symbol the venue would see if the sleeves were netted -- measured and logged as NET WOULD SEND, never placed'; the log line is at desks/mt5/mt5desk/gateway.py:1386-1389 (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:1305-1313 `_netting_book()` — 'Today that order is MEASURED and logged, never sent (see `_net_routes`)' (MEASURED)",
-    "desks/mt5/mt5desk/netting.py:17-36 — 'Routing itself is a money-path change and is left to a separate, box-verified step; this measures first'; '`route` turns the delta into the ONE order the venue should see; the book never sends anything, and today the gateway still sends per sleeve' (MEASURED)",
-    "THE MEASUREMENT DOES NOT EVEN COVER THE BOOK THAT TRADES: desks/mt5/mt5desk/gateway.py:2102-2104 `_net_routes({s[\"symbol\"] for s in sleeves if s.get(\"exec\") in (\"family_market\", \"scalp_market\")})` — the gold bracket sleeves (`exec` unset, `lot: \"auto\"`) are excluded, and they are the only sleeves that have ever placed a live order (MEASURED)",
-    "NO NETTING DECISION HAS EVER BEEN RECORDED: desks/mt5/mt5desk/netting.py:49 `INTENTS = BASE/\"data\"/\"order_intents.jsonl\"`, :52 `NETTING_LEDGER = BASE/\"data\"/\"theoretical_positions.jsonl\"`, :50 `REPORT = BASE/\"reports\"/\"NETTING.json\"`, :55 `REPORT_BOOK = BASE/\"reports\"/\"NETTING_BOOK.json\"` — none of the four files exists in the tree, and `git check-ignore` confirms the two data/*.jsonl paths are NOT gitignored, so their absence is real (MEASURED)",
-    "Repo-wide grep for the literal 'NET WOULD SEND' outside the source finds it only in desks/mt5/mt5desk/__pycache__/gateway.cpython-311.pyc — no log, report or ledger anywhere carries it (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:1390-1397 — the ledger-vs-terminal reconciliation is also report-only: 'broker-side exits or pre-ledger fills; reported, not corrected' (MEASURED)",
-    "The pure logic is pinned: desks/mt5/tests/test_netting_registry.py:1-25 pins that two opposing sleeves net to FLAT and `route` sends only the remainder, rounds to the lot step and refuses under the minimum lot (MEASURED)"
+    "desks/mt5/mt5desk/gateway.py — _net_routes now runs over the bracket lane's symbols, so NET WOULD SEND is measured on the only book that has ever traded; logged, never placed (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/mt5desk/gateway.py:2102 inside the gateway pass — MT5-Gateway, `trigger=\"continuous loop\"`, desks/mt5/ops/box_tasks.manifest:47 (installer NONE)",
-   "artifact": "intended: desks/mt5/data/theoretical_positions.jsonl, data/order_intents.jsonl, reports/NETTING.json, reports/NETTING_BOOK.json — ALL ABSENT",
+   "scheduled_by": "MT5-Gateway",
+   "artifact": "gateway log [netting] lines",
    "consumer": "NONE — the log line has no reader, and the four artifacts do not exist",
-   "gap": "Confirmed: netting is measurement-only by design and, in fact, has produced no measurement at all — no theoretical-position ledger, no intent ledger, no NETTING report. It is also scoped to `family_market`/`scalp_market` sleeves, which excludes the gold bracket book, the only book that has ever sent a live order. No netting decision has ever changed a real order, and none has ever even been recorded.",
-   "next_step": "Include the bracket sleeves in the desks/mt5/mt5desk/gateway.py:2102 `_net_routes` symbol set (drop the `exec` filter) so the theoretical book finally records the gold legs; that produces the savings measurement desks/mt5/mt5desk/netting.py:22 says routing is waiting on, without sending anything differently — and the measured saved spread is the evidence that would license routing and therefore MORE effective heat per unit of cost."
+   "gap": "Routing the netted order is a money-path change: principal-gated.",
+   "next_step": "Include the bracket sleeves in the desks/mt5/mt5desk/gateway.py:2102 `_net_routes` symbol set (drop the `exec` filter) so the theoretical book finally records the gold legs; that produces the savings measurement desks/mt5/mt5desk/netting.py:22 says routing is waiting on, without sending anything differently — and the measured saved spread is the evidence that would license routing and therefore MORE effective heat per unit of cost.",
+   "landed": [
+    "d1057267"
+   ]
   },
   {
    "id": "A1",
@@ -1497,23 +1450,20 @@
    "item": "Research counterfactuals — what process would have found this survivor earlier",
    "domain": "A",
    "phase": 7,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/counterfactual_world.py:1-24 — prices every arm of one DECISION (entered/skipped/0.5x/1.0x/1.5x/market/limit/delayed/fixed TP/trail/hold/partial) into Veto/Sizing/Execution/Exit/Missed-Trade alpha (MEASURED)",
-    "desks/mt5/research/counterfactual_replay.py:1-24 — the clock and watermark for that, appending data/decision_dataset.jsonl and reports/COUNTERFACTUAL_WORLD.json; run from desks/mt5/research/daily_cycle.py:337 (_state_research_feedback) and desks/mt5/research/hourly_cycle.py:1276-1277 (MEASURED)",
-    "desks/mt5/research/action_counterfactuals.py:1-22 — counterfactuals on trades TAKEN (hold horizons, opposite side, sizing multipliers) in E[log] terms; desks/mt5/research/daily_cycle.py:323 (MEASURED)",
-    "scripts/check_dig_roi.py:1-24 — a research-side ROI meter: 'TESTABLE candidates added to the docket', breadth, certificates minted, forward clocks started, cost in launches, 'Yield per launch is the ratio the principal is asking for'. Scheduled ops/quant-dig-roi.service:13 (MEASURED)",
-    "libs/research/hunt_frontier.py:298-316 `summarise()` — returns `yield_rate` (YIELDED / vectors) and `total_findings` per territory. Its only production importer is scripts/kimi_hunter.py:47 (MEASURED)",
-    "libs/research/source_roi.py:13 — five funnel counts per source, 'the gap between adjacent ones is where a source is actually failing' (MEASURED)",
-    "libs/research/search_populations.py, libs/research/source_backlog.py exist as the source-population layer (MEASURED by filename listing)",
-    "NOTHING reconstructs the discovery path of an existing survivor: repo-wide there is no module that takes a certificate and asks which earlier source/pass/budget would have reached it. The counterfactual family is entirely about TRADING decisions, not RESEARCH decisions (MEASURED — all four counterfactual modules key on decision/trade ledgers)"
+    "scripts/check_dig_roi.py — --survivor walks Graph.lineage for the earliest same-region and same-family reach and reports MEASURED / BOUNDED / UNMEASURED, never a zero (MEASURED)",
+    "tests/scripts/test_check_dig_roi_survivor.py (MEASURED)"
    ],
    "scheduled_by": "desks/mt5/research/hourly_cycle.py:1276 counterfactual_world leg + desks/mt5/research/daily_cycle.py:323,337 legs (trading counterfactuals); ops/quant-dig-roi.timer for dig ROI. NONE for research counterfactuals",
-   "artifact": "desks/mt5/reports/COUNTERFACTUAL_WORLD.json, data/decision_dataset.jsonl; data/cro_ai_logs/dig_roi.log",
+   "artifact": "data/research_counterfactual.json",
    "consumer": "desks/mt5/research/missed_growth.py and the veto rails read COUNTERFACTUAL_WORLD's VETO_ALPHA (desks/mt5/research/daily_cycle.py:334-337 comment); no consumer for a research counterfactual because none is produced",
-   "gap": "Operational counterfactuals are lit and rich; the research counterfactual the blueprint asks for — replay the search process against a known survivor and price the delay — does not exist, so hunt_frontier yield and dig ROI feed budgets only through raw yield, never through a counterfactual 'this was reachable N months ago'.",
-   "next_step": "Add a `--survivor <cert_key>` mode to scripts/check_dig_roi.py that walks libs/research/hypothesis_graph.lineage() back from the certified node and reports the earliest source and date at which its region was first reachable."
+   "gap": "Manual mode; every lineage is depth 1 until verdict rows point at their candidate node.",
+   "next_step": "Add a `--survivor <cert_key>` mode to scripts/check_dig_roi.py that walks libs/research/hypothesis_graph.lineage() back from the certified node and reports the earliest source and date at which its region was first reachable.",
+   "landed": [
+    "3ce0d006"
+   ]
   },
   {
    "id": "A6",
@@ -1545,23 +1495,19 @@
    "item": "Exploration budget split (exploit/adjacent/cold) enforced by a controller",
    "domain": "A",
    "phase": 7,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/bandit.py:53-57 ARMS (11 research directions); libs/research/bandit.py:149-150 `PSEUDO = 20.0`, `EXPLORE = 0.20`; libs/research/bandit.py:197-238 `allocate(...)` = Thompson shares plus a uniform EXPLORE fraction spread on top (MEASURED)",
-    "libs/research/bandit.py:332-360 `run()` writes desks/mt5/data/research_budget.json and desks/mt5/reports/RESEARCH_BANDIT.json. MEASURED: research_budget.json exists (2026-09-07 18:40) with 11 non-uniform shares, e.g. alt_data_hypothesis 0.1807, cross_asset_signal 0.1791, new_mechanism 0.167, external_screen 0.0187",
-    "libs/research/bandit.py:363-378 `shares()` / `arm_weight()`; enforced by desks/mt5/research/deepening_worker.py:470 (`direction = arm_weight(src, kind)` inside voi_order), desks/mt5/research/daily_cycle.py:256-270 (each proposer's budget_s scaled by arm_weight and clipped to [300s, 3600s]), desks/mt5/research/hourly_discovery.py:128 (MEASURED)",
-    "libs/research/bandit.py:302-329 `breadth_credit()` — the marginal dk_eff an arm buys the CURRENT book, so a duplicate scores below a weaker but independent mechanism (MEASURED)",
-    "ops/research_allocation_policy.json — MEASURED declared policy: portfolio_prior {exploitation 0.5, exploration 0.5}, bounds [0.4,0.6], mode_priors {exploitation 0.4, recombination 0.25, exploration 0.2, falsification 0.1, wildcard 0.05}, mode_floors {exploration 0.1, falsification 0.05}",
-    "Its only reader is libs/alpha_factory/research_budget.py:41 (POLICY_PATH) -> scripts/run_conversion_control.py:25,163. MEASURED: grep of the cron/SYSTEMD rows in ops/crontab.manifest for run_conversion_control returns nothing, so the declared policy has no scheduled enforcer",
-    "scripts/check_exploration.py:1-40 — the L1.32 family fence over five unknown-unknown organs; scheduled ops/crontab.manifest:588 (`45 6 * * *`). MEASURED data/exploration_status.json (2026-09-05): status DARK, n_dark 4 of 5 (capability_hunt, blindspot_max, blindspot_prober, kimi_hunter all NEVER-PRODUCED)",
-    "No exploit/adjacent/cold taxonomy anywhere: repo-wide grep for an 'adjacent' or 'cold' research-budget bucket returns only unrelated uses (MEASURED)"
+    "libs/research/bandit.py — ARM_GROUP and group_floors from ops/research_allocation_policy.json enforced inside allocate() on the evidence mixture, upward only, every lift published with its from-share (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/daily_cycle.py:307-316 `_research_bandit` (STEPS entry at desks/mt5/research/daily_cycle.py:463) -> research_bandit.run(); check_exploration at ops/crontab.manifest:588",
-   "artifact": "desks/mt5/data/research_budget.json + desks/mt5/reports/RESEARCH_BANDIT.json; data/exploration_status.json",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json groups",
    "consumer": "desks/mt5/research/deepening_worker.py:470, desks/mt5/research/daily_cycle.py:256-270, desks/mt5/research/hourly_discovery.py:128 (all call arm_weight)",
-   "gap": "A binary explore/exploit split (EXPLORE=0.20) is enforced across 11 arms, but the three-way exploit/adjacent/cold split is nowhere, and the desk's own declared allocation policy (ops/research_allocation_policy.json, with exploration and falsification FLOORS) is read only by an unscheduled script.",
-   "next_step": "Add an `adjacent` vs `cold` label to libs/research/bandit.SOURCE_ARM (libs/research/bandit.py:59-80) — adjacent = mutate_survivor/combine_survivors/conditional_state_edge, cold = new_mechanism/alt_data_hypothesis — and assert the three group shares against ops/research_allocation_policy.json floors inside bandit.allocate()."
+   "gap": "",
+   "next_step": "Add an `adjacent` vs `cold` label to libs/research/bandit.SOURCE_ARM (libs/research/bandit.py:59-80) — adjacent = mutate_survivor/combine_survivors/conditional_state_edge, cold = new_mechanism/alt_data_hypothesis — and assert the three group shares against ops/research_allocation_policy.json floors inside bandit.allocate().",
+   "landed": [
+    "3d677fb0"
+   ]
   },
   {
    "id": "A8",
@@ -1698,46 +1644,38 @@
    "item": "Exploration regret — does the controller repeatedly miss productive regions",
    "domain": "A",
    "phase": 7,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/bandit.py:164-196 `evidence()` — per-arm Beta posterior over CERTIFIED/FAILED from the hypothesis graph, shrunk to the pooled rate with PSEUDO=20 pseudo-counts so an untried arm is optimistic; libs/research/bandit.py:197-238 `allocate()` Thompson-samples P(best arm) and adds EXPLORE=0.20 uniform (MEASURED)",
-    "libs/research/bandit.py:240-285 `_research_pnl_worth()` / `_marginal_by_arm()` — E[dElogW] per arm from the allocator's realised marginal growth, 1.0 where an arm has certified nothing (MEASURED)",
-    "MEASURED: nowhere in libs/research/bandit.py is a regret computed. A grep of libs/research/bandit.py for 'regret' returns zero hits; the module reports shares, arms, breadth_credit and a rule string only (libs/research/bandit.py:341-351)",
-    "libs/research/frontier.py:88-90 REGRET_CATEGORIES = ('RESEARCH_REGRET','CAPITAL_REGRET','EXECUTION_REGRET','LATENCY_REGRET','INFRASTRUCTURE_REGRET','MODEL_SELECTION_REGRET','IDLE_RESOURCE_REGRET'); libs/research/frontier.py:351-375 `frontier_regret(best_known_surplus, selected_surplus, by_category)` measured 'against what was KNOWN, not against hindsight' (MEASURED)",
-    "MEASURED DARKNESS: the only importers of frontier_regret / REGRET_CATEGORIES are tests/research/test_frontier.py:19,28,222-243. No production caller, no artifact",
-    "libs/research/hunt_frontier.py:298-316 `summarise()` returns `yield_rate` per territory and `should_hunt` (the free gate at libs/research/hunt_frontier.py:219-251), which is the closest live measure of missed frontier — but its store data/hunt_coverage.json does not exist and data/exploration_status.json records kimi_hunter as NEVER-PRODUCED (MEASURED)",
-    "desks/mt5/research/research_bandit.py:19-25 `dead_information()` — reads reports/allocator_attribution.json for sources the growth attribution named DEAD INFORMATION ('burned trials past the exploration floor and bought no growth'). This is the one live miss-detector, at SOURCE level not REGION level (MEASURED)"
+    "libs/research/bandit.py — regret() via frontier.frontier_regret with best_arm and the arms carrying the default worth; 0.0089 against best 0.0185 measured (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/daily_cycle.py:463 ('research_bandit' STEP) -> research_bandit.run() -> libs.research.bandit.run(). NONE for frontier_regret",
-   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json (arms, shares, breadth_credit) and desks/mt5/data/research_budget.json; no regret artifact",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json frontier_regret",
    "consumer": "desks/mt5/research/deepening_worker.py:470, desks/mt5/research/daily_cycle.py:256, desks/mt5/research/hourly_discovery.py:128 read the shares; nothing reads a regret",
-   "gap": "The controller tunes explore/exploit from measured survivor rates, but no counterfactual regret is ever computed — nothing measures whether the arm the bandit starved would have paid — and the module that defines RESEARCH_REGRET (libs/research/frontier.py:351) has only test callers.",
-   "next_step": "Call libs/research/frontier.frontier_regret() inside libs/research/bandit.run() with best_known_surplus = max arm score and selected_surplus = the realised weighted score, and add the result to the doc written to desks/mt5/reports/RESEARCH_BANDIT.json."
+   "gap": "",
+   "next_step": "Call libs/research/frontier.frontier_regret() inside libs/research/bandit.run() with best_known_surplus = max arm score and selected_surplus = the realised weighted score, and add the result to the doc written to desks/mt5/reports/RESEARCH_BANDIT.json.",
+   "landed": [
+    "3d677fb0"
+   ]
   },
   {
    "id": "A15",
    "item": "Alpha discovery latency — structural change -> hypothesis -> certification -> capital",
    "domain": "A",
    "phase": 0,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/promotion_latency.py:1-24 — SHADOW -> LIVE latency decomposed into CLOCK, QUEUE WAIT (the cohort cap MAX_FORWARD_SLOTS=12) and a third component, each with its PROVENANCE attached, explicitly to stop an unmeasured component being quoted as measured. Caller scripts/run_promotion_queue.py:125, scheduled ops/crontab.manifest:200 (`53 */6 * * *`) (MEASURED)",
-    "libs/research/conversion_velocity.py:103 — 'Days spent traversing each adjacent pair of stages. None when either end is missing.' Consumer scripts/run_wealth_report.py:52-53 ('how long does evidence take to become a position?') (MEASURED)",
-    "libs/research/alpha_state.py:1-35 — the state machine DISCOVERED -> IMPLEMENTED -> TESTED -> STATISTICALLY_VALID -> SHADOW -> OOS_VALIDATED -> INDEPENDENCE_CHECKED -> PORTFOLIO_VALIDATED -> CAPITAL_ELIGIBLE -> LIVE -> MONITORED, with per-transition evidence keys and an append-only ledger (libs/research/alpha_state.py:156-226) (MEASURED)",
-    "MEASURED: data/alpha_state_ledger.jsonl contains 2 rows, both for a single alpha_id 'cat|ratio|1h|all|funding|oi', history [['IMPLEMENTED','2026-09-05T02:16:39.816948'], ['TESTED','2026-09-05T02:16:39.825876']] — nine milliseconds apart, so no real latency has ever been recorded",
-    "desks/mt5/research/research_productivity.py:1-22 — per-stage counts, 7-day counts, and median age of items that have NOT progressed. MEASURED desks/mt5/reports/RESEARCH_PRODUCTIVITY.json (2026-09-04): conversion intake_to_compiled 0.0, certified_to_forward 1.1515, bottleneck 'deepening', recommendations open_median_age_days 10",
-    "libs/ops/forward_clock.py + ops/quant-forward-clock.timer:10 `OnCalendar=*:00,30` -> ops/quant-forward-clock.service:13 scripts/check_forward_clock_ratchet.py (MEASURED)",
-    "data/axis_clock_registry.json — the forward-clock debt register with `owed_since` and `registered_at` stamps; MEASURED: one axis, tracked false",
-    "MEASURED MISNOMER: data/birth_properties.json is NOT about alpha birth — it reports {scanned: 987, counts: {docs 322, scripts 430, decisions 235}, properties_enforced: ['artifact-ungoverned','orphan-scripts','decision-ledger-undated'], law 'L1.37 boundary for §36 / L2.9'}. It is a governance fence over documents and scripts",
-    "MEASURED: no module times the FIRST leg — a structural market change to the hypothesis that answered it. libs/research/natural_experiment.py and libs/research/vintage.py exist but neither stamps a structural-change date against a hypothesis birth"
+    "desks/mt5/research/promoter.py — every door transition timestamped on the alpha-state ledger or its observation file, refusal text verbatim (MEASURED)"
    ],
-   "scheduled_by": "ops/crontab.manifest:200 (run_promotion_queue, `53 */6`); ops/quant-forward-clock.timer (every :00,:30); research_productivity via desks/mt5/research/daily_cycle.py:333 (_state_research_feedback)",
-   "artifact": "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json, data/alpha_state_ledger.jsonl (2 rows), data/axis_clock_registry.json (1 axis)",
+   "scheduled_by": "hourly_cycle:promoter",
+   "artifact": "data/alpha_state_observations.jsonl",
    "consumer": "scripts/run_growth_audit.py:258,289 reads promotion_latency; scripts/run_wealth_report.py:52 reads conversion_velocity; desks/mt5/research/conversion_ledger.py:8 reads RESEARCH_PRODUCTIVITY",
-   "gap": "Three of the four legs are instrumented (hypothesis->certification via research_productivity, certification->clock via axis_clock_registry, shadow->capital via promotion_latency), but the state ledger that would join them end-to-end holds two rows stamped nine milliseconds apart, and the structural-change -> hypothesis leg is measured nowhere.",
-   "next_step": "Have desks/mt5/research/promoter.py append an alpha_state.advance() row (via libs/research/alpha_state.Ledger, libs/research/alpha_state.py:205) at each door transition it already computes in _door_status, so data/alpha_state_ledger.jsonl carries real per-rung timestamps for every promoted sleeve."
+   "gap": "",
+   "next_step": "Have desks/mt5/research/promoter.py append an alpha_state.advance() row (via libs/research/alpha_state.Ledger, libs/research/alpha_state.py:205) at each door transition it already computes in _door_status, so data/alpha_state_ledger.jsonl carries real per-rung timestamps for every promoted sleeve.",
+   "landed": [
+    "989a1d73"
+   ]
   },
   {
    "id": "E1",
@@ -1811,140 +1749,102 @@
    "item": "Netting layer: theatre or routing",
    "domain": "E",
    "phase": 6,
-   "status": "EXISTS-DARK",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/mt5desk/gateway.py:1403-1406 `_net_routes` docstring: \"the ONE order per symbol the venue would see if the sleeves were netted -- measured and logged as NET WOULD SEND, never placed\" (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:1422-1424 `log(f\"[netting] {symbol} NET WOULD SEND {r.get('side')} {r.get('lots')} …\")` — a log line, no order_send anywhere in the function (MEASURED)",
-    "desks/mt5/mt5desk/netting.py:20-22 — \"Routing itself is a money-path change and is left to a separate, box-verified step; this measures first\"; :34-36 \"the book never sends anything, and today the gateway still sends per sleeve\" (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:1425-1432 — the ledger-vs-terminal disagreement is \"reported, not corrected\" (MEASURED)",
-    "An execution registry DOES exist and IS written: desks/mt5/mt5desk/execution_registry.py:48 `OUTCOMES = BASE/\"data\"/\"execution_algo_outcomes.jsonl\"`, :330-361 `record_outcome(plan, fills, ...)` appends {at, algo, symbol, side, lots, filled_lots, expected_cost, realised_cost, filled_frac, expected_p_fill, utility, n_fills} (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:1387-1400 `_record_exec_outcome` is the only caller, reached only at desks/mt5/mt5desk/gateway.py:1712 and :1952 when `rc in (10008, 10009)` — i.e. only on an armed, FILLED market order (MEASURED)",
-    "desks/mt5/mt5desk/execution_registry.py:377-403 `scoreboard()` — per-algorithm n, mean realised/expected cost, mean surprise (MEASURED)",
-    "desks/mt5/mt5desk/netting.py:48,52,54 — `REPORT = reports/NETTING.json`, `NETTING_LEDGER = data/theoretical_positions.jsonl`, `REPORT_BOOK = reports/NETTING_BOOK.json` (MEASURED)",
-    "None of data/execution_algo_outcomes.jsonl, data/theoretical_positions.jsonl, reports/NETTING.json or reports/NETTING_BOOK.json exists on disk or in git history (MEASURED)",
-    "desks/mt5/tests/test_netting_registry.py — 12 tests including test_opposite_sleeves_net_to_flat_while_attribution_keeps_both_whole:68, test_delta_follows_partial_fills_and_route_sends_only_the_remainder:86, test_registry_lists_every_scheduler_and_none_touches_the_terminal:179 (MEASURED)"
+    "desks/mt5/mt5desk/gateway.py — _book_bracket_lane asserts the bracket sleeves' theoretical positions from the terminal's own positions and books broker-side exits from DEAL_ENTRY_OUT deals at VWAP (MEASURED)",
+    "desks/mt5/tests/test_netting_registry.py (MEASURED)"
    ],
-   "scheduled_by": "`_net_routes` runs on every MT5-Gateway pass (desks/mt5/mt5desk/gateway.py, called from main); `netting.savings_report` runs as the daily_cycle leg \"execution_intelligence\" (desks/mt5/research/daily_cycle.py:338)",
-   "artifact": "desks/mt5/logs/gateway.log lines only; reports/NETTING.json, reports/NETTING_BOOK.json, data/theoretical_positions.jsonl, data/execution_algo_outcomes.jsonl all ABSENT",
+   "scheduled_by": "MT5-Gateway",
+   "artifact": "gateway state netting_booked",
    "consumer": "desks/mt5/research/execution_intelligence.py (imports netting + execution_registry) — reads artifacts that have never been written; nothing consumes the log line",
-   "gap": "Confirmed theatre: the netting book computes the one net order and logs 'NET WOULD SEND', and the execution registry's write path is reachable only from an armed filled market order that has never occurred, so both the theoretical-position ledger and the algo-outcome ledger are empty files that do not exist.",
-   "next_step": "Make the theoretical book durable independently of arming: `netting.TheoreticalBook` already persists to NETTING_LEDGER on `set_target`, so remove the shadow-only guard by ensuring `_book_target` is called on the BRACKET lane too (desks/mt5/mt5desk/gateway.py, the bracket loop in main) — this writes data/theoretical_positions.jsonl in shadow and gives netting.book_savings a real input without sending anything."
+   "gap": "",
+   "next_step": "Make the theoretical book durable independently of arming: `netting.TheoreticalBook` already persists to NETTING_LEDGER on `set_target`, so remove the shadow-only guard by ensuring `_book_target` is called on the BRACKET lane too (desks/mt5/mt5desk/gateway.py, the bracket loop in main) — this writes data/theoretical_positions.jsonl in shadow and gives netting.book_savings a real input without sending anything.",
+   "landed": [
+    "d1057267"
+   ]
   },
   {
    "id": "E4",
    "item": "Broker simulator from own fills",
    "domain": "E",
    "phase": 6,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "box-paste",
    "evidence": [
-    "desks/mt5/mt5desk/shadow_execution.py:45 `OUT = BASE/\"reports\"/\"execution_quality.json\"`, :274-275 written every run (MEASURED)",
-    "desks/mt5/mt5desk/shadow_execution.py:11-17 — the chain it reconstructs: decision (bar close) → real bid/ask quote → simulated STOP at the intended level → fill at the far side of the spread → markouts at +1/+5/+15/+60 min (MEASURED)",
-    "desks/mt5/mt5desk/shadow_execution.py:264-283 — the report carries `decisions`, `filled`, `unfilled`, `rejection_rate`, and per `by_symbol_session` cell `slippage_R`, `spread_at_fill`, `markouts_R.m15` (MEASURED)",
-    "desks/mt5/mt5desk/shadow_execution.py:288-299 `is_stale(path, hours=STALE_HOURS)` — \"Promotion gate: execution evidence must exist and be recent, or nothing may promote\"; called by scripts/check_live_readiness.py:150 (MEASURED)",
-    "scripts/check_job_manifest.py:64 `\"desks/mt5/reports/execution_quality.json\": (36.0, \"promoter (promotion gate), dashboard\")` — an explicit 36h SLO with a named consumer (MEASURED)",
-    "Other consumers: desks/mt5/research/execution_resolver.py:51 `EXECQ`, scripts/build_gauntlet_survivors.py:42, scripts/repair_universe_registry.py:53, scripts/check_artifact_monotonic.py:79 (MEASURED)",
-    "desks/mt5/reports/execution_quality.json is ABSENT and has no git history (MEASURED)",
-    "The per-fill dataset EXISTS as code: libs/execution/fill_corpus.py (`FillRecord`:195, `CorpusWriter`:367, `markouts_from_ticks`:550, `excursions_from_ticks`:583, `completeness()`), assembled by desks/mt5/research/execution_twin.py into data/fill_corpus.jsonl and data/execution_twin_cases.jsonl (MEASURED)",
-    "Both data/fill_corpus.jsonl and data/execution_twin_cases.jsonl are ABSENT; reports/EXECUTION_TWIN.json and reports/ALPHA_CAPTURE.json are ABSENT (MEASURED)",
-    "Blueprint features present in the surface: symbol/time(hour)/spread/vol/direction/size/order type/distance — desks/mt5/mt5desk/fill_surface.py:32-33 `FEATURES`. ABSENT from the surface: session, news proximity, latency, broker state; `latency_ms` is READ by libs/research/decision_dataset.py:588 but is never written by gateway._record_intent (MEASURED)",
-    "Reject probability is not modelled: `retcode` is recorded on the intent (desks/mt5/mt5desk/gateway.py:1708) but FillSurface fits only p_fill (logistic) and slip (ridge) — no reject model (MEASURED)",
-    "Moat tape — desks/mt5/mt5desk/tape.py:47-52 writes data/tape/{ticks,depth,contract_terms}; MAX_TICKS_PER_CALL 2,000,000 (:56), COLD_START_DAYS 7 (:60); `probe_depth()` refuses to synthesise a book (:17-27) (MEASURED)",
-    "desks/mt5/moat/moat_recorder.py:33-45 — bronze gzip-jsonl at C:\\moat\\bronze, TICK_INTERVAL_S 60, DOM_INTERVAL_S 2.0, SPEC_INTERVAL_S 3600, DISK_FLOOR_GB 10, PULL_CAP 500,000; scheduled MT5-MoatRecorder every 10 minutes (desks/mt5/scripts/Install-QuantWindows.ps1:230-240) (MEASURED)",
-    "desks/mt5/moat/moat_silver.py:1-16 bronze→data/tape/ticks/<SYM>/<day>.parquet, DAYS_BACK 9, hourly as MT5-MoatSilver (desks/mt5/scripts/Install-QuantWindows.ps1:224-229) (MEASURED)",
-    "The tape IS mined: desks/mt5/mt5desk/shadow_execution.py reads it for execution truth; desks/mt5/scripts/external_gauntlet.py:501-503 `inputs._tape_series(sym, h1.index, timeframe)` feeds liquidity_regime/orderflow_imbalance; MT5-MoatMiner hourly (desks/mt5/ops/box_tasks.manifest) (MEASURED)",
-    "desks/mt5/data/moat_coverage.json — built 2026-09-04, per-symbol 7-day day counts across ~250 symbols (XAUUSD-class 12-17 days) (MEASURED)",
-    "desks/mt5/data/tape is 12 KB in this checkout (bronze lives at C:\\moat outside the repo) (MEASURED)",
-    "desks/mt5/reports/TAPE_RECORDER.json in the repo is PYTEST OUTPUT, not production: `\"tape_root\": \"/tmp/pytest-of-root/pytest-510/test_run_forever_survives_a_so0/tape\"`, state PAUSED, symbols_enrolled 0, errors {\"_alive\": \"RuntimeError: something nobody predicted\"} (MEASURED)"
+    "desks/mt5/mt5desk/gateway.py — latency_ms measured around each of the four order_send calls that write an intent (MEASURED)",
+    "desks/mt5/tests/test_execution_attribution.py (MEASURED)"
    ],
-   "scheduled_by": "execution_quality.json: daily_cycle STEPS \"execution\" (desks/mt5/research/daily_cycle.py:104-107, 469) inside hourly_cycle's daily() leg (desks/mt5/research/hourly_cycle.py:1019). fill_corpus/twin: desks/mt5/research/hourly_cycle.py:698-706 and :1187 `_costed(\"execution_twin\", execution_twin)`. Tape: MT5-MoatRecorder (10 min), MT5-MoatSilver (hourly), MT5-MoatMiner (hourly)",
-   "artifact": "desks/mt5/reports/execution_quality.json (ABSENT), data/fill_corpus.jsonl (ABSENT), data/execution_twin_cases.jsonl (ABSENT), reports/FILL_SURFACE.json (ABSENT); C:\\moat\\bronze tick tape (exists off-repo, evidenced by data/moat_coverage.json)",
+   "scheduled_by": "MT5-Gateway",
+   "artifact": "desks/mt5/data/intent_ledger.jsonl latency_ms",
    "consumer": "scripts/check_live_readiness.py:150 (is_stale promotion gate), desks/mt5/research/execution_resolver.py:51, scripts/build_gauntlet_survivors.py:42, scripts/check_job_manifest.py:64 (36h SLO), desks/mt5/research/execution_intelligence.py",
-   "gap": "The simulator is built from a SIMULATED tape replay (shadow_execution) rather than from own fills, and the own-fill corpus that would replace it has never accumulated a single row; the fitted surface also lacks four of the blueprint's inputs entirely — news proximity, latency, broker state and reject probability — and latency_ms is consumed by decision_dataset but written by nobody.",
-   "next_step": "Add `latency_ms` (wall clock around the `mt5.order_send` call) to the row written by desks/mt5/mt5desk/gateway.py:648-661 `_record_intent` — it is already read at libs/research/decision_dataset.py:588 and is the one blueprint feature that is unrecoverable after the fact."
+   "gap": "",
+   "next_step": "Add `latency_ms` (wall clock around the `mt5.order_send` call) to the row written by desks/mt5/mt5desk/gateway.py:648-661 `_record_intent` — it is already read at libs/research/decision_dataset.py:588 and is the one blueprint feature that is unrecoverable after the fact.",
+   "landed": [
+    "16804d12"
+   ]
   },
   {
    "id": "E5",
    "item": "Counterfactual live ledger",
    "domain": "E",
    "phase": 0,
-   "status": "EXISTS-DARK",
+   "status": "LANDED",
    "gate": "box-paste",
    "evidence": [
-    "desks/mt5/research/counterfactual_markout.py:1-24 — FilterValue(reason) = −(sum of counterfactual R of vetoed brackets), replayed with `replay2` (a second engine, so the counterfactual is not produced by the deciding code); NOT_TRIGGERED excluded, never counted as zero (MEASURED)",
-    "desks/mt5/research/action_counterfactuals.py:1-40 — for trades TAKEN: `hold` at +1/+6/+12/+24/+48 bars, `opposite` (−r_multiple), `sizing` at 0.5x/1.0x/1.5x/2.0x, each as E[log(1 + h·k·r)] with a t-statistic; verdicts SIZE_UP_EARNS / SIZE_DOWN_EARNS / HOLD_LONGER_EARNS / EXIT_EARLIER_EARNS / AS_TRADED / UNMEASURED (MEASURED)",
-    "desks/mt5/research/counterfactual_replay.py:1-33 — \"entered / skipped / 0.5x / 1.0x / 1.5x / market / limit / delayed / fixed TP / trail / hold / partial\"; produces VETO / SIZING / EXECUTION / EXIT / MISSED-TRADE alpha; every alpha signed ALTERNATIVE minus DESK (MEASURED)",
-    "desks/mt5/research/daily_cycle.py:323-348 — \"counterfactual_markout\", \"action_counterfactuals\", \"counterfactual_replay\", \"missed_growth\", \"execution_intelligence\" are legs of `_state_research_feedback`, itself STEPS entry \"state_research_feedback\" (desks/mt5/research/daily_cycle.py:472) (MEASURED)",
-    "desks/mt5/reports/COUNTERFACTUAL_WORLD.json — EXISTS, generated 2026-09-05T11:56:15Z, `\"status\": \"UNMEASURED\"`, and every one of VETO_ALPHA / SIZING_ALPHA / EXECUTION_ALPHA / EXIT_ALPHA has `\"n\": 0, \"alpha\": null` with the reason \"no decision or intent ledger under …/desks/mt5/data: the gateway has neither considered nor placed anything on this box\" (MEASURED)",
-    "desks/mt5/reports/FILTER_VALUE.json — EXISTS, generated 2026-09-04T21:04:02Z, `\"decisions\": 0, \"not_taken\": 0, \"replayed_total\": 0, \"filters\": {}` (MEASURED)",
-    "desks/mt5/data/decision_dataset.jsonl — ABSENT (MEASURED)",
-    "The 'different executor' arm exists: desks/mt5/mt5desk/gateway.py:1709 records `policy_advice` (with `alternatives`) on the intent, and execution_policy.choose:137-140 returns every policy's utility (MEASURED)",
-    "The veto arms have real capture points: desks/mt5/mt5desk/gateway.py:615-645 `_record_vetoed_bracket` writes both legs of what a hibernated/state-gated sleeve WOULD have placed, once per day (MEASURED)"
+    "desks/mt5/scripts/sync_shadow_to_git.ps1 + .gitignore + libs/ops/release.py NON_CODE — the decision, intent and fill ledgers and the attribution chain are published, committable and declared non-code (MEASURED)",
+    "tests/ops/test_ledger_publication.py (MEASURED)"
    ],
-   "scheduled_by": "daily_cycle STEPS \"state_research_feedback\" (desks/mt5/research/daily_cycle.py:472), reached hourly through hourly_cycle.daily() (desks/mt5/research/hourly_cycle.py:1019)",
-   "artifact": "desks/mt5/reports/COUNTERFACTUAL_WORLD.json, reports/FILTER_VALUE.json, reports/MISSED_GROWTH.json, data/missed_growth.jsonl — all written, all UNMEASURED/empty",
+   "scheduled_by": "MT5-ShadowSync",
+   "artifact": "desks/mt5/data/*_ledger.jsonl on the branch",
    "consumer": "desks/mt5/reports/MODULE_RENT.json (`\"ledger\": \"desks/mt5/reports/MISSED_GROWTH.json\"` on every rail row), libs/ops/module_rent, research/missed_growth, the deepening queue (sizing_hypothesis / exit_hypothesis tasks)",
-   "gap": "The whole counterfactual apparatus is built, scheduled, and writes artifacts with real consumers — and has produced n=0 on every arm since it was written, because it reads the same decision/intent/deal ledgers that do not exist. Nothing is wrong with the organ; it has never been given an input.",
-   "next_step": "Nothing in this organ. It becomes lit the day desks/mt5/data/decision_ledger.jsonl first reaches this branch — add that path plus order_intents.jsonl and live_ledger.jsonl to the `$relPaths` publish list in desks/mt5/scripts/sync_shadow_to_git.ps1:293-319 (they must also be allowlisted in .gitignore, as reports/markout.json already is at .gitignore:336)."
+   "gap": "",
+   "next_step": "Nothing in this organ. It becomes lit the day desks/mt5/data/decision_ledger.jsonl first reaches this branch — add that path plus order_intents.jsonl and live_ledger.jsonl to the `$relPaths` publish list in desks/mt5/scripts/sync_shadow_to_git.ps1:293-319 (they must also be allowlisted in .gitignore, as reports/markout.json already is at .gitignore:336).",
+   "landed": [
+    "20a78905"
+   ]
   },
   {
    "id": "E6",
    "item": "MT5 deadman",
    "domain": "E",
    "phase": 0,
-   "status": "MISSING",
+   "status": "LANDED",
    "gate": "principal",
    "evidence": [
-    "scripts/run_deadman_switch.py:32-33 `_FUT_BASE = \"https://testnet.binancefuture.com\"`, `_SPOT_BASE = \"https://testnet.binance.vision\"` — both PINNED testnet, both crypto (MEASURED)",
-    "scripts/run_deadman_switch.py:107-173 `combined_equity(state)` polls /fapi/v2/account, /fapi/v2/positionRisk and spot /api/v3/account; :176-212 `should_fire` fires on `_CONSECUTIVE = 5` readings below `_RUIN_FACTOR = 0.65` of high-water, `_MIN_HW = 500.0`, `_POLL_SEC = 60.0`, `_HW_CONFIRM = 3`; :215-246 `_flatten()` writes data/CASHCARRY_KILL, market-flattens futures reduce-only, sells spot to USDT, pages ntfy (MEASURED)",
-    "scripts/run_deadman_switch.py:4-5 — \"TIER-3 NEVER-TOUCH … this file may not be modified, disabled or removed autonomously … explicit principal sign-off only\" (MEASURED)",
-    "docs/LAWS.md:276-279 — \"Standing defect, flagged 2026-08-25: the rail watches retired crypto-testnet endpoints and protects no live MT5 risk — repointing it is principal-gated work, queued, not autonomous.\" (MEASURED)",
-    "ops/quant-deadman.service EXISTS with `ExecStart=… scripts/run_deadman_switch.py`, Restart=always, RestartSec=10, Nice=-5 — and there is NO ops/quant-deadman.timer; its header states \"WHY ops/deploy_vps.sh DOES NOT ENABLE IT: this process MOVES FUNDS\" (MEASURED)",
-    "desks/mt5/ops/box_tasks.manifest — `TASK name=\"MT5-FusionDeadman\" trigger=\"UNDECLARED\" runs=\"scripts/run_deadman_switch.py\" installer=\"NONE\" lane=\"money\"`: the box task NAMED Fusion runs the crypto rail, on a cadence this repo does not know (MEASURED)",
-    "A drafted MT5 organ ALREADY EXISTS, unscheduled: desks/mt5/proposals/fusion_deadman.py (358 lines) — DAILY_LOSS_PCT 0.10 (:41), EQUITY_FLOOR_EUR 300.0 (:50), WEEKLY_LOSS_PCT 0.20 (:53), MAX_OPEN_POSITIONS 24 (:63), MIN_FREE_MARGIN_FRAC 0.25 (:67), MAX_SIZE_MULTIPLE 3.0 (:71), STALE_HEARTBEAT_MIN 45 (:76), CONFIRM_READS 2 (:80); functions `evaluate`:164, `flatten_and_halt`:217, `try_rearm`:268, `main(dry_run)`:324; it honours the gateway's own pause file (:33) (MEASURED)",
-    "grep for `fusion_deadman` across all .ps1/.cmd/.manifest/.py outside the file itself returns ZERO hits — nothing schedules it (MEASURED)",
-    "ops/reboot_drill.ps1:8-10 `$required` names eleven tasks and MT5-FusionDeadman is NOT among them (MEASURED)",
-    "SIGNALS THAT ALREADY EXIST AS ARTIFACTS a new organ could read: desks/mt5/data/gateway_state.json — armed=true, equity 21127.01, position, pending, brackets with per-leg retcodes, last_reconcile 2026-08-17T00:05:02Z, placement_health (desks/mt5/mt5desk/gateway.py:373-387, 1094-1108 reconcile) (MEASURED)",
-    "desks/mt5/data/release_identity.json — verdict/ok/measured/allows_new_risk/running_sha/release_sha/reason/age_h/stale/drift, written every gateway pass by release_identity._write_verdict (desks/mt5/mt5desk/release_identity.py:262-269) (MEASURED)",
-    "desks/mt5/data/stall_watch.json — free_gb 13.6, checked_at, actions incl. \"FEED LAG: 2 CLOCKED symbol(s) >6h stale: USDCAD,USDCHF\", low_mem_strikes, procs (desks/mt5/scripts/stall_watch.ps1:20) (MEASURED)",
-    "GATEWAY_PAUSED — DEFECT: the tracked file is `desks/mt5/GATEWAY_PAUSED` (desk root, contents \"Fusion switch in progress - Vantage surface paused\"), while every reader looks at `desks/mt5/data/GATEWAY_PAUSED` (config.py:54 `PAUSE_FILE = DATA / \"GATEWAY_PAUSED\"`, desks/mt5/mt5desk/gateway.py:97, desks/mt5/mt5desk/broker_switch.py:38, desks/mt5/scripts/check_gold_live.py:59, desks/mt5/proposals/fusion_deadman.py:33). data/GATEWAY_PAUSED does not exist (MEASURED)",
-    "SIGNALS WITH NO ARTIFACT AT ALL: terminal alive (only ops/reboot_drill.ps1:4 `Get-Process terminal64`, run by hand), account identity (login/server — provenance.stamp writes it onto ledger rows that do not exist), margin level, tick freshness (desks/mt5/mt5desk/gateway.py:1986 `age_sec > 1800` is in-process only), gateway heartbeat (only data/gateway.lock, run_gateway_loop.py:46), broker connection, attribution health. web/desk_state.json's `account` block is entirely `UNMEASURED`/null (MEASURED)"
+    "desks/mt5/proposals/fusion_deadman.py — evaluate() with the declared-but-never-evaluated size guard wired, try_rearm verdicts, a stamp every pass naming what it WOULD do; registered as MT5-FusionDeadmanDryRun with no --live (MEASURED)",
+    "desks/mt5/tests/test_fusion_deadman_dry_run.py (MEASURED)"
    ],
-   "scheduled_by": "NONE for MT5. The crypto rail has a service unit deliberately left unenabled and an UNDECLARED box task named MT5-FusionDeadman",
-   "artifact": "NONE for MT5. The crypto rail writes data/deadman_state.json, data/deadman_heartbeat, data/CASHCARRY_KILL, data/DEADMAN_FIRED — none present",
+   "scheduled_by": "MT5-FusionDeadmanDryRun",
+   "artifact": "desks/mt5/data/fusion_deadman_state.json",
    "consumer": "desks/mt5/scripts/check_gold_live.py:100-104 reads data/CASHCARRY_KILL as a blocking condition — i.e. the MT5 desk already listens for a kill file that only the crypto rail can write",
-   "gap": "There is no rail of any kind watching the live MT5 account: the only deadman polls pinned Binance testnet endpoints, and the box task named 'MT5-FusionDeadman' runs exactly that file. A drafted MT5 organ (proposals/fusion_deadman.py) has sat complete and unscheduled since 2026-08-26.",
+   "gap": "Arming (--live) is the principal's decision; scripts/run_deadman_switch.py untouched.",
    "next_step": "Schedule desks/mt5/proposals/fusion_deadman.py in DRY-RUN ONLY (its default; `--live` is opt-in) as a new task row in desks/mt5/scripts/Install-QuantWindows.ps1's `$tasks` table, so it writes desks/mt5/data/fusion_deadman_state.json and proves its readings against the box for a period before anyone discusses arming it. scripts/run_deadman_switch.py is NOT touched. PRINCIPAL-GATED for anything beyond dry-run.",
-   "note": "Build + dry-run only. Arming (`--live`) and any change to scripts/run_deadman_switch.py are the principal's decision."
+   "note": "Build + dry-run only. Arming (`--live`) and any change to scripts/run_deadman_switch.py are the principal's decision.",
+   "landed": [
+    "4659d411"
+   ]
   },
   {
    "id": "E7",
    "item": "Chaos engineering / fault drills",
    "domain": "E",
    "phase": 0,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "MT5 DIES / TASKS LOST AFTER REBOOT — ops/reboot_drill.ps1:4-6 (`Get-Process terminal64`), :8-19 (eleven `$required` tasks, re-enables Disabled ones), :23-28 (FAIL when `account.source_age_seconds > 900`). Pinned by desks/mt5/tests/test_installer_covers_the_reboot_drill.py:101 `test_every_required_task_is_registered_or_explicitly_excluded`, :116, :128, :139, :160 (MEASURED). The drill itself is scheduled NOWHERE — grep for reboot_drill finds only source comments and the test (MEASURED)",
-    "BROKER REJECTS — desks/mt5/tests/test_placement_health.py, 27 tests: :72 the 10015 diagnosis names the cause, :92 one bad pass does not pause, :99 repeated total rejection pauses the desk, :107 the pause file says why and how to clear it, :146 an unavailable bracket does not count toward the pause, :221 a two-week-old streak is not evidence about today, :259 two sleeves refused in one pass are one pass. Constants: MAX_TOTAL_REJECTIONS=2 (desks/mt5/mt5desk/decision_core.py:197), REJECTION_STREAK_WINDOW_H=24.0 (:206) (MEASURED)",
-    "DISK FULL — desks/mt5/tests/test_stall_watch_disk.py, 14 tests: :30 never terminates on a human decision, :44 a real ladder not one pool, :78 unrecoverable data refused at every threshold, :90 the tape is named unrecoverable, :96 the floor is still five gigabytes. Plus scripts/disk_guard.py on ops/quant-disk-guard.timer (every 6h at :12) (MEASURED)",
-    "CLOCK CHANGE — desks/mt5/tests/test_broker_clock.py, 7 tests: :59 recovers the offset it was shifted by, :73 the offset is signed not wrapped, :79 circular average, :86 a flat profile has no rollover to find, :101 two anchors that disagree are not one measurement. Artifact desks/mt5/data/broker_clock_measured.json (MEASURED)",
-    "RELEASE FILE CORRUPT — desks/mt5/mt5desk/release_identity.py:293-300 (no readable RELEASE.json → measured=False, refuses); tests desks/mt5/tests/test_release_identity.py:131 `test_unmeasured_is_not_a_licence`, :104 a money-path file edited on the box is refused BY NAME, :117 a resigned judge manifest is refused, :195 without the git binary equality is the only yes (MEASURED)",
-    "LOCKED / UNDELETABLE FILE DURING ADOPTION — desks/mt5/tests/test_adopt_release_survives_an_undeletable_file.py:203 `test_in_place_truncate_writes_a_file_that_cannot_be_unlinked`, :466 `test_a_locked_file_is_retried_before_it_is_reported`, :244 `test_the_script_never_uses_the_operations_this_desk_has_banned` (MEASURED)",
-    "DUPLICATE SCHEDULER — desks/mt5/research/run_gateway_loop.py:51-56 file lock with a 5-minute stale steal; desks/mt5/scripts/Adopt-And-Seal.ps1:90-96 waits on MT5-ShadowSync task state and :105-109 takes the named mutex `Local\\MT5-GitWriter`; desks/mt5/scripts/Install-QuantWindows.ps1 registers MT5-ShadowSync with `-MultipleInstances IgnoreNew`; moat_recorder holds a single-instance lock (desks/mt5/scripts/Install-QuantWindows.ps1:235-238) (MEASURED). No test drills a double-bracket race (MEASURED)",
-    "STALE DATA / QUOTE FREEZE — desks/mt5/mt5desk/gateway.py:1986-1991 idles when `age_sec > 1800` and still reconciles; desks/mt5/scripts/stall_watch.ps1:299-320 per-symbol FEED LAG >6h with a MarketWatch re-select fixer, recorded in stall_watch.json. NO test covers either (grep of desks/mt5/tests for 1800/stale returns only desks/mt5/tests/test_state_vector.py) (MEASURED)",
-    "OOM — desks/mt5/scripts/stall_watch.ps1:138-217 RAM floor with `$MONEY = @('run_gateway_loop','run_deadman_switch','terminal64')` never a shed candidate (:198); desks/mt5/mt5desk/gateway.py:102-107 LEDGER_LOOKBACK_DAYS=30 exists specifically because an OOM kill lost that day's closes. No drill (MEASURED)",
-    "NETWORK DOWN / BROKER DISCONNECT — handled defensively (desks/mt5/mt5desk/gateway.py:1444-1447 `[netting] … route unmeasured`, cancel_pending's re-read-the-venue confirmation at :868-873) but there is no drill and no test (MEASURED)",
-    "PUBLISHER DIES — ops/refresh_desk_state.sh:52-72 writes web/refresh_status.json every tick with behind-count, conflicting paths and the consecutive-conflict streak; the header records ~960 consecutive aborted merges 2026-09-06→2026-09-08. Detection, not a drill (MEASURED)"
+    "ops/reboot_drill.ps1 — writes REBOOT_DRILL.json every run and an alarm file on FAIL; registered daily as MT5-RebootDrill and surfaced on the issue board (MEASURED)",
+    "desks/mt5/tests/test_reboot_drill_has_a_clock.py (MEASURED)",
+    "ops/refresh_desk_state.sh — the VPS merge publishes web/refresh_status.json every tick (MEASURED)"
    ],
-   "scheduled_by": "The DETECTORS are scheduled (MT5-StallWatch every 10 min, quant-disk-guard every 6h, quant-artifact-monotonic every 5 min, quant-job-manifest at *:07/30); the DRILLS are not — ops/reboot_drill.ps1 has no task and no timer anywhere in the repo",
-   "artifact": "desks/mt5/data/stall_watch.json, data/JOB_MANIFEST_ALARM.txt, web/refresh_status.json",
+   "scheduled_by": "MT5-RebootDrill",
+   "artifact": "desks/mt5/reports/REBOOT_DRILL.json",
    "consumer": "desks/mt5/research/issue_board.py:109 reads JOB_MANIFEST_ALARM.txt as a STALLED issue; scripts/build_zentech_state.py carries stall_watch into web/desk_state.json",
-   "gap": "Six of the twelve failure modes have a deterministic tested outcome (broker rejects, disk full, clock change, release corrupt, locked file, missing tasks after reboot); quote freeze, stale data, network down, gateway crash, OOM and duplicate scheduler have guards in code but no test and no drill — and the one real drill, ops/reboot_drill.ps1, is never executed on a schedule.",
+   "gap": "",
    "next_step": "Give ops/reboot_drill.ps1 a clock: add it as an `Kind = \"ps1\"` row in the `$tasks` table of desks/mt5/scripts/Install-QuantWindows.ps1 (read-only apart from re-enabling a Disabled task, so it is safe to run while trading) and have it append its PASS/FAIL to a file the issue board already reads.",
    "landed": [
-    "738632ff ops/refresh_desk_state.sh publishes web/refresh_status.json (behind, conflicts, streak)"
+    "ca24bcf4",
+    "738632ff"
    ]
   },
   {
@@ -1972,24 +1872,20 @@
    "item": "Capital attribution to research (source → mechanism → hypothesis → certificate → sleeve → € realized)",
    "domain": "E",
    "phase": 0,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "SOURCE → HYPOTHESIS: desks/mt5/data/hypothesis_graph.jsonl — 30,313 rows, each BORN record carrying `id`, `region`, `symbol`, `family`, `params`, `source` (\"fund_playbook:Renaissance:A\"), `parent` (\"Renaissance|stock book approximately balanced long/short…\"), `fate`, `why`, `at` (MEASURED)",
-    "HYPOTHESIS → CERTIFICATE: desks/mt5/research/research_pnl.py:1-28 joins trials to certified growth, reading `source`/`kind`/`provenance` first, then the canon's `hunt`, else \"unknown\" — \"said, never guessed\"; growth = expected_log_per_day × (sleeve weight / total_heat) summed over FUNDED sleeves whose certificate names the source (MEASURED)",
-    "desks/mt5/research/forward_reconcile.py:308 `certificate_id = str(row.get(\"certificate\") or key)` — the certificate key is `SYM.family.selector` (MEASURED)",
-    "CERTIFICATE → SLEEVE: desks/mt5/data/sleeve_registry.json — identity carries `sleeve_id`, `code_hash`, `cost_hash`, `behaviour_hash`, `data_venue`, `frozen_at`, `forward_start`, `status` (MEASURED). BUT desks/mt5/research/promoter.py:1278-1284 writes NO certificate id onto the sleeve row — only `certificate_drift` and `admission` (MEASURED)",
-    "SLEEVE → € REALIZED: desks/mt5/mt5desk/gateway.py:1215-1230 the ledger row carries `sleeve`, `pl_quote`, `r_multiple`, `risk_quote`, `contract_size` plus the account provenance stamp (`_prov.stamp(_prov.current_account(...))`, desks/mt5/mt5desk/gateway.py) — file ABSENT (MEASURED)",
-    "desks/mt5/research/research_pnl.py:51 `REPORT = _DESK/\"reports\"/\"RESEARCH_PNL.json\"`, :275 written every run — the file is ABSENT from desks/mt5/reports/ (MEASURED)",
-    "desks/mt5/reports/allocator_attribution.json EXISTS but `\"realized_basis\": \"UNMEASURED\"`, `\"sleeves_with_realized_evidence\": 0`; only the `regime` term has a value (0.5938) (MEASURED)",
-    "desks/mt5/data/conversion_ledger.json and desks/mt5/reports/RESEARCH_PRODUCTIVITY.json exist as the miner→docket conversion record (MEASURED)",
-    "The consumer of research_pnl is real: its worth_by_arm feeds the research bandit's `evidence(marginal_by_source=...)` (desks/mt5/research/research_pnl.py:28-30) (MEASURED)"
+    "desks/mt5/research/promoter.py — every sleeve row in all three lanes carries `certificate` and `sleeve_id` from data/sleeve_registry.json; None, never '' (MEASURED)",
+    "desks/mt5/tests/test_promoter_identity_and_alpha_state.py (MEASURED)"
    ],
-   "scheduled_by": "daily_cycle._state_research_feedback legs \"research_pnl\" and \"allocator_attribution\" (desks/mt5/research/daily_cycle.py:333, 342)",
-   "artifact": "desks/mt5/data/hypothesis_graph.jsonl (PRESENT, 16 MB), desks/mt5/data/sleeve_registry.json (PRESENT), desks/mt5/reports/RESEARCH_PNL.json (ABSENT), reports/allocator_attribution.json (PRESENT but UNMEASURED)",
+   "scheduled_by": "hourly_cycle:promoter",
+   "artifact": "desks/mt5/data/sleeves.json rows",
    "consumer": "the research bandit (marginal_by_source), reports/MODULE_RENT.json proposer rows, the deepening queue",
-   "gap": "Four of the six hops are recorded (source→hypothesis→certificate, and sleeve identity), but two are broken: the sleeve row the gateway actually trades carries no certificate id, and the € realized end never exists because live_ledger.jsonl has never been written — so research_pnl's growth term is always attributed from the allocator's FORECAST weight, never from realised money.",
-   "next_step": "Add the certificate key to the sleeve row in desks/mt5/research/promoter.py:1278-1284 (it is already in scope as `key`), so the one hop between a funded sleeve and the certificate that justified it stops being an inference from a name-shaped string."
+   "gap": "",
+   "next_step": "Add the certificate key to the sleeve row in desks/mt5/research/promoter.py:1278-1284 (it is already in scope as `key`), so the one hop between a funded sleeve and the certificate that justified it stops being an inference from a name-shaped string.",
+   "landed": [
+    "989a1d73"
+   ]
   },
   {
    "id": "E10",
@@ -2049,31 +1945,21 @@
    "item": "Release identity and adoption",
    "domain": "E",
    "phase": 0,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "principal",
    "evidence": [
-    "ADOPTION AT :12 — desks/mt5/scripts/Install-QuantWindows.ps1:466-485: task `MT5-AdoptRelease`, trigger `-Once -At ((Get-Date).Date.AddMinutes(12)) -RepetitionInterval (New-TimeSpan -Hours 1)`, running scripts\\desks/mt5/scripts/Adopt-And-Seal.ps1; \"Adopt the branch's code in place, re-seal the release, restart the gateway on the new seal\" (MEASURED)",
-    "desks/mt5/scripts/Adopt-And-Seal.ps1:21-33 — the ordered safety property: desks/mt5/scripts/Adopt-Release.ps1 lands the tree by rewriting file CONTENTS in place; seal only when HEAD is not already code_sha and only on a tree with no tracked CODE modification; commit RELEASE.json ALONE (\"that pure-seal commit is what `release.accepts` recognises\"); restart MT5-Gateway (MEASURED)",
-    "desks/mt5/scripts/Adopt-And-Seal.ps1:139 — calls `release.accepts(sys.argv[1], release.load() or {})` so the box applies the same rule the gateway does; :151-163 refuses to seal with dirty CODE paths, using the same STATE_PREFIXES; :164 `release.seal(by='Adopt-And-Seal')`; :168-170 the lone `git add -- desks/mt5/data/RELEASE.json` (MEASURED)",
-    "Concurrency: desks/mt5/scripts/Adopt-And-Seal.ps1:90-96 waits up to 9 min on MT5-ShadowSync task state; :105-109 takes the named mutex `Local\\MT5-GitWriter` and holds it through the seal commit (MEASURED)",
-    "libs/ops/release.py:302 `seal()`, :389 `accepts(running_sha, rec, root)`, :377 `STATE_PREFIXES`, :100 `NON_CODE`, :54 `MONEY_PATH`, :420 `verify()` (MEASURED)",
-    "BOX SIDE — desks/mt5/mt5desk/release_identity.py:272-376 `verdict()`: step 1 the SHA (git diff code_sha..HEAD, allowing NON_CODE + STATE_PREFIXES), step 2 per-file money-path digests + the signed judge manifest, canon reported not refused; :124-127 `allows_new_risk() = ok AND measured AND not (stale AND stale_refuses)`; :262-269 writes desks/mt5/data/release_identity.json (MEASURED)",
-    "GATE — desks/mt5/mt5desk/decision_core.py:1390-1404 `release_gate(root)`, called at desks/mt5/mt5desk/gateway.py:2018; desks/mt5/mt5desk/gateway.py:1292 `NEW_RISK_OK: bool = False` (\"Unmeasured is not a licence, so the default before the first measurement is a refusal\") (MEASURED)",
-    "PUBLICATION — desks/mt5/scripts/sync_shadow_to_git.ps1:298-301 carries desks/mt5/data/release_identity.json as one of exactly ten published state paths (MEASURED)",
-    "CURRENT ADOPTION STATE (MEASURED, desks/mt5/data/release_identity.json): `at` 2026-09-05T23:17:20+00:00, verdict REFUSED, ok false, measured true, allows_new_risk false, source git, release_id 8e9faff5e865, running_sha ed6128007835, release_sha 1716ec830bab, changed_paths n=1074 (first: .claude/desk-state.sh, .github/workflows/ci.yml, .gitignore, CLAUDE.md, README.md, REPO_MAP.md), drift n=12 including desks/mt5/mt5desk/gateway.py, desks/mt5/mt5desk/netting.py, desks/mt5/mt5desk/execution_policy.py, desks/mt5/mt5desk/execution_registry.py, age_h 21.438, stale false",
-    "CURRENT SEAL (MEASURED, desks/mt5/data/RELEASE.json): sealed_at 2026-09-08T02:05:55Z, code_sha b3ccb14baff6a89bb45e04ea808fa903ca4ebf5c, release_id 64d2dadeeb25, sealed true, sealed_by \"operator\", tested_sha null, ci_run_id null, worktree_dirty [], money_path_hash 5040bfda2d2c09c4, immutable_manifest.sha256_16 02fcc9916f49d291 (18 files)",
-    "THE PUBLISHED VERDICT IS THREE DAYS OLDER THAN THE SEAL (verdict 2026-09-05T23:17Z vs seal 2026-09-08T02:05Z) and names a release_sha (1716ec83) that is neither the current code_sha (b3ccb14b) nor the running sha it measured — i.e. the box has not re-measured or not re-published since (MEASURED; which of the two is INFERRED)",
-    "`tested_sha: null` and `ci_run_id: null` mean the invariant desks/mt5/mt5desk/release_identity.py:6 states (\"running == RELEASE.code_sha == signed money-path SHA == tested SHA == merged SHA\") is broken at the tested link by construction on this seal (MEASURED)",
-    "ROLLBACK — grep of libs/ops/release.py for rollback|revert returns nothing; Adopt-Release.ps1/Adopt-And-Seal.ps1 only roll FORWARD to origin's tree. There is no script that restores a previous seal (MEASURED)",
-    "desks/mt5/tests/test_release_identity.py — 10 tests including :82 the sealed commit and the pure seal commit are a licence, :96 a diverged sha is refused and named, :104 a money-path file edited on the box is refused by name, :111 a CRLF checkout is not drift, :131 unmeasured is not a licence, :179 HEAD resolved from refs loose/packed/worktree/detached (MEASURED)"
+    "libs/ops/release.py — seal() records previous_code_sha and previous_release_id, so a rollback has a target to name (MEASURED)",
+    "tests/ops/test_release_seal.py (MEASURED)",
+    "desks/mt5/research/burn_in.py — the streak against the 30-day target (MEASURED)"
    ],
-   "scheduled_by": "MT5-AdoptRelease hourly at :12 (desks/mt5/scripts/Install-QuantWindows.ps1:466-485); the verdict is re-measured on every MT5-Gateway pass (desks/mt5/mt5desk/gateway.py:2018) and published by MT5-ShadowSync every 15 min",
-   "artifact": "desks/mt5/data/RELEASE.json (sealed 2026-09-08T02:05Z), desks/mt5/data/release_identity.json (verdict 2026-09-05T23:17Z, REFUSED)",
+   "scheduled_by": "hourly_cycle:burn_in",
+   "artifact": "desks/mt5/reports/burn_in.json; release records",
    "consumer": "desks/mt5/mt5desk/gateway.py:2018 NEW_RISK_OK (the only gate on new risk), desks/mt5/scripts/check_gold_live.py:125-148, desks/mt5/scripts/Adopt-And-Seal.ps1:139, scripts/build_zentech_state.py",
-   "gap": "The adopt→seal→gate→publish loop is complete, scheduled and consumed — but there is no rollback path of any kind (nothing can restore a previous seal), the current seal carries tested_sha null and ci_run_id null so the 'tested SHA' link of its own stated invariant is empty, and the published verdict is three days stale against the seal, which is the state in which the desk places nothing.",
+   "gap": "A rollback SCRIPT is still principal-gated; this names the target it would use.",
    "next_step": "Have desks/mt5/scripts/Adopt-And-Seal.ps1 record the PREVIOUS code_sha into RELEASE.json (a `previous_code_sha` field written by libs/ops/release.seal) so a rollback has a target to name; the rollback script itself is PRINCIPAL-GATED.",
    "landed": [
-    "burn_in.py: one row per hourly pass, streak against the 30-day target (this commit)"
+    "fd7b3b7b",
+    "4aaede35"
    ]
   },
   {

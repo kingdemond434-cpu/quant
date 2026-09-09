@@ -58,12 +58,17 @@ def test_ap3_is_the_attribution_share(tmp_path: Path) -> None:
 
 def test_ap4_needs_missions_issued_and_candidates_tagged(tmp_path: Path) -> None:
     desk = _desk(tmp_path)
-    (desk / "reports" / "research_missions.json").write_text(json.dumps({"missions": [
-        {"id": "m1", "at": (NOW - timedelta(days=1)).isoformat()}]}), "utf-8")
+    (desk / "reports" / "RESEARCH_MISSIONS.json").write_text(json.dumps({"missions": [
+        {"mission_id": "mission:heat_gap:asia:x",
+         "issued_at": (NOW - timedelta(days=1)).isoformat()},
+        {"mission_id": "mission:dark:ny:y", "issued_at": (NOW - timedelta(days=30)).isoformat()}]}),
+        "utf-8")
     (desk / "data" / "hypotheses" / "miner_candidates.json").write_text(json.dumps({
-        "candidates": [{"symbol": "XAUUSD", "mission": "m1"}, {"symbol": "EURUSD"}]}), "utf-8")
+        "hypotheses": [{"symbol": "XAUUSD", "mission_id": "mission:heat_gap:asia:x"},
+                       {"symbol": "EURUSD"}]}), "utf-8")
     p = cap.ap4(desk, NOW)
     assert p["status"] == "MET" and p["issued_7d"] == 1 and p["candidates_tagged"] == 1
+    assert p["source"] == "reports/RESEARCH_MISSIONS.json" and p["missions"] == 2
 
 
 def test_ap5_counts_arms_with_a_verdict_and_rent_retirements(tmp_path: Path) -> None:
