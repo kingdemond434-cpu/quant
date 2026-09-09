@@ -66,6 +66,25 @@ if str(ROOT) not in sys.path:
 
 REPORT = BASE / "reports" / "MODEL_SELF_IMPROVEMENT.json"
 TRACK = BASE / "data" / "model_skill_track.jsonl"
+#: Where a seat's claims meet their verdicts: every hypothesis the compiler admitted carries the
+#: seat's name as its source, and the gauntlet's fate is the outcome.
+GRAPH = BASE / "data" / "hypothesis_graph.jsonl"
+
+#: THE LLM SEATS ARE PREDICTORS (2026-09-09, inventory I13). A seat that donates a hypothesis is
+#: claiming it will survive the gauntlet; the graph records whether it did. Each seat is
+#: registered once per LANE -- macro and scalp -- so the per-lane posterior follows the same
+#: MIN_N gate as every other predictor, and a seat that is skilled on daily mechanisms and
+#: worthless on M5 ones is reported as exactly that rather than as one blended number.
+#: Names mirror `miner_candidate_compiler.SEAT_SOURCES` and the seats' own `_donate` writers.
+SEATS: tuple[tuple[str, str], ...] = (
+    ("deepseek", "libs/ops/deepseek_cycle.py"),
+    ("kimi_k3_deep_forest", "scripts/kimi_hunter.py"),
+)
+LANES: tuple[str, ...] = ("macro", "scalp")
+#: DECLARED lane rule. The scalp lane is the M1/M5/M15 lane (`mt5desk.scalp_families`
+#: SWEPT_TIMEFRAMES) and its families are the scalp expansion's; everything else the seats
+#: donate is a session-or-slower mechanism, which is the macro lane.
+SCALP_TIMEFRAMES: tuple[str, ...] = ("M1", "M5", "M15")
 
 #: (predicted, actual) in TIME ORDER. The order is load-bearing: `_split` is positional, so a
 #: shuffled series would train a challenger on outcomes resolved after the ones it is graded on.
@@ -149,9 +168,13 @@ def score(p: Predictor) -> dict[str, Any]:
         pairs = [(float(a), float(b)) for a, b in p.pairs()
                  if math.isfinite(float(a)) and math.isfinite(float(b))]
     except Exception as exc:
-        return {"name": p.name, "status": "UNMEASURED", "skill": None,
+        # THE TAGS SURVIVE THE FAILED JOIN. A predictor whose claims cannot reach their outcomes
+        # is still a predictor of a named lane; dropping `tags` here would make the per-lane
+        # scoreboard lose exactly the rows it most needs to show as unscored.
+        return {"name": p.name, "status": "UNMEASURED", "skill": None, "n": 0,
                 "why": f"claims could not be joined to outcomes ({type(exc).__name__}: {exc})",
-                "predicts": p.predicts, "baseline": p.baseline}
+                "predicts": p.predicts, "baseline": p.baseline,
+                "kind": p.kind, "owner": p.owner, "tags": list(p.tags)}
     fn = brier_skill if p.kind == "probability" else mae_skill
     skill, why = fn(pairs)
     status = "UNMEASURED" if skill is None else ("SKILLED" if skill > 0 else "NO_SKILL")
@@ -369,6 +392,115 @@ def _allocator_gain_pairs() -> list[tuple[float, float]]:
             and r.get("realised") is not None]
 
 
+def _seat_of(source: Any) -> str | None:
+    """The seat named by a graph row's source (`deepseek`, or `miner:deepseek` once compiled)."""
+    text = str(source or "")
+    head, _, tail = text.partition(":")
+    names = {s for s, _ in SEATS}
+    if head in names:
+        return head
+    seat = tail.split(":")[0]
+    return seat if head == "miner" and seat in names else None
+
+
+_SCALP_FAMILIES: dict[str, frozenset[str]] = {}
+
+
+def _scalp_families() -> frozenset[str]:
+    """The scalp expansion's family names, read once from the code that defines them; empty
+    when that code cannot be imported here, in which case only the timeframe rule applies."""
+    if "names" not in _SCALP_FAMILIES:
+        try:
+            if str(BASE) not in sys.path:
+                sys.path.insert(0, str(BASE))
+            from mt5desk.scalp_families import _family_names
+            _SCALP_FAMILIES["names"] = frozenset(_family_names())
+        except Exception:
+            _SCALP_FAMILIES["names"] = frozenset()
+    return _SCALP_FAMILIES["names"]
+
+
+def _lane_of(row: dict[str, Any]) -> str:
+    params = row.get("params") if isinstance(row.get("params"), dict) else {}
+    tf = str(params.get("timeframe") or params.get("tf") or "").upper()
+    if tf in SCALP_TIMEFRAMES:
+        return "scalp"
+    fam = str(row.get("family") or "")
+    if fam.startswith("scalp") or fam in _scalp_families():
+        return "scalp"
+    return "macro"
+
+
+def _stated_probability(row: dict[str, Any]) -> float | None:
+    """The P(survive) the seat stated on this hypothesis, if it stated one at all."""
+    for key in ("confidence", "p_survive", "p"):
+        v = row.get(key)
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and 0.0 <= float(v) <= 1.0:
+            return float(v)
+    return None
+
+
+def _seat_pairs(seat: str, lane: str) -> Callable[[], list[tuple[float, float]]]:
+    """(stated P(survive), 1 if CERTIFIED else 0) for the seat's judged hypotheses in `lane`,
+    OLDEST FIRST. Raises with the missing input named when the pair cannot be formed, so the
+    scoreboard reads UNMEASURED with the reason rather than n=0."""
+
+    def pairs() -> list[tuple[float, float]]:
+        if not GRAPH.exists():
+            raise FileNotFoundError(
+                f"{GRAPH.name} absent -- no hypothesis has been registered on this host, so "
+                f"the {seat} seat's claims cannot be joined to a verdict")
+        latest: dict[str, dict[str, Any]] = {}
+        for line in GRAPH.read_text("utf-8").splitlines():
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(row, dict) and row.get("id") and _seat_of(row.get("source")) == seat:
+                latest[str(row["id"])] = row               # appended in time order: last wins
+        if not latest:
+            raise LookupError(
+                f"no hypothesis_graph node names source miner:{seat} -- the seat has donated "
+                f"nothing the compiler admitted, or the compiler ran before the seat did")
+        in_lane = [r for r in latest.values() if _lane_of(r) == lane]
+        if not in_lane:
+            raise LookupError(
+                f"{seat}/{lane}: none of the seat's {len(latest)} hypothesis(es) is in the "
+                f"{lane} lane (lane by params.timeframe in {SCALP_TIMEFRAMES} or a scalp family)")
+        judged = sorted((r for r in in_lane if r.get("fate") in ("CERTIFIED", "FAILED", "BURIED")),
+                        key=lambda r: str(r.get("at") or ""))
+        out: list[tuple[float, float]] = []
+        for r in judged:
+            p = _stated_probability(r)
+            if p is not None:
+                out.append((p, 1.0 if r.get("fate") == "CERTIFIED" else 0.0))
+        if not out:
+            certified = sum(1 for r in judged if r.get("fate") == "CERTIFIED")
+            raise LookupError(
+                f"{seat}/{lane}: {len(in_lane)} donated hypothesis(es), {len(judged)} judged "
+                f"({certified} certified, {len(judged) - certified} failed), none states "
+                f"P(survive) -- the seat's donation contract carries no confidence and "
+                f"hypothesis_graph.Node has no field for one, so Brier skill cannot be scored")
+        return out
+
+    return pairs
+
+
+def _seat_predictors() -> tuple[Predictor, ...]:
+    return tuple(
+        Predictor(
+            name=f"seat_{seat}[{lane}]",
+            predicts=(f"whether a hypothesis the {seat} seat donates in the {lane} lane "
+                      f"survives the gauntlet"),
+            kind="probability",
+            baseline="the base rate of the seat's judged hypotheses in this lane certifying",
+            pairs=_seat_pairs(seat, lane),
+            owner=owner,
+            tags=("llm_seat", lane),
+        )
+        for seat, owner in SEATS for lane in LANES)
+
+
 REGISTRY: tuple[Predictor, ...] = (
     Predictor(
         name="research_forecast",
@@ -397,6 +529,7 @@ REGISTRY: tuple[Predictor, ...] = (
         owner="desks/mt5/research/pf_allocator.py",
         tags=("capital", "allocation"),
     ),
+    *_seat_predictors(),
 )
 
 
