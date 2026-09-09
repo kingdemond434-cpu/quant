@@ -20,7 +20,7 @@
    "measure": "A new asset, mechanism, feature, dataset, language, model class, execution idea or research method reaches the docket without a code change: count of frontier cells opened per week by the system itself (hunt_frontier vectors, universe registry additions, data_universe_map entries, new families registered) vs by a human session.",
    "status": "MET",
    "evidence": [
-    "2026-09-09T01:14:57+00:00 MEASURED: {\"cells_opened_7d\": 248, \"frontier_vectors\": 0, \"frontier_vectors_new_7d\": 0, \"frontier_vectors_hunted\": 0, \"universe_symbols\": 251, \"universe_symbols_new_7d\": 248, \"data_universe_map_entries\": null, \"registered_families\": 31} -- frontier vectors are named by the hunters themselves and universe rows by the bar refresh -- both open without a code change; families still need one"
+    "2026-09-09T01:59:16+00:00 MEASURED: {\"cells_opened_7d\": 248, \"frontier_vectors\": 0, \"frontier_vectors_new_7d\": 0, \"frontier_vectors_hunted\": 0, \"universe_symbols\": 251, \"universe_symbols_new_7d\": 248, \"data_universe_map_entries\": null, \"registered_families\": 34} -- frontier vectors are named by the hunters themselves and universe rows by the bar refresh -- both open without a code change; families still need one"
    ]
   },
   {
@@ -29,7 +29,7 @@
    "measure": "Every LLM seat, miner, dataset, generator and infrastructure change has a row with incremental survivors and incremental robust E[log W] attributed to it (compiled artifact per_source/seats, hunt_frontier yield, compute_ledger cost); anything without a row is EXISTS-DARK by definition.",
    "status": "PARTIAL",
    "evidence": [
-    "2026-09-09T01:14:57+00:00 MEASURED: {\"sources_with_yield_row\": 86, \"seats\": [], \"seats_dark\": [], \"modules\": 71, \"modules_measured\": 1, \"modules_unmeasured\": [\"ai_capital_modifier\", \"alpha_breadth\", \"alpha_evolution\", \"alt_data_hypothesis\", \"authority_ramp\", \"combine_survivors\", \"conditional_state_edge\", \"cost_stress\", \"cross_asset_signal\", \"data_source:broker_clock\", \"data_source:data_prospector\", \"data_source:event_calendar\", \"dat -- MET needs every seat donating, every module with a rent verdict and every leg with a cost row; the lists name what is dark"
+    "2026-09-09T01:59:16+00:00 MEASURED: {\"sources_with_yield_row\": 86, \"seats\": [], \"seats_dark\": [], \"modules\": 71, \"modules_measured\": 1, \"modules_unmeasured\": [\"ai_capital_modifier\", \"alpha_breadth\", \"alpha_evolution\", \"alt_data_hypothesis\", \"authority_ramp\", \"combine_survivors\", \"conditional_state_edge\", \"cost_stress\", \"cross_asset_signal\", \"data_source:broker_clock\", \"data_source:data_prospector\", \"data_source:event_calendar\", \"dat -- MET needs every seat donating, every module with a rent verdict and every leg with a cost row; the lists name what is dark"
    ]
   },
   {
@@ -38,7 +38,7 @@
    "measure": "A hypothesis id can be followed deterministically source -> compiler row -> gauntlet cell -> certificate -> forward clock -> allocation fraction -> intent -> broker order -> position -> deal -> realized R -> lesson/graph update; measured as the share of closed strategy deals with a complete chain (target 100%).",
    "status": "MISSING",
    "evidence": [
-    "2026-09-09T01:14:57+00:00 UNMEASURED: {} -- reports/attribution_chain.json absent -- the daily cycle has not run the attribution join on this host"
+    "2026-09-09T01:59:16+00:00 UNMEASURED: {} -- reports/attribution_chain.json absent -- the daily cycle has not run the attribution join on this host"
    ]
   },
   {
@@ -47,7 +47,7 @@
    "measure": "The allocator's unfilled heat and the book's missing exposures (session, regime, factor beta, horizon, drawdown states) are written as missions that generators consume; measured as missions issued per week and candidates tagged with the mission that caused them.",
    "status": "MISSING",
    "evidence": [
-    "2026-09-09T01:14:57+00:00 UNMEASURED: {\"candidates_tagged\": 0} -- no missions artifact at any of ('reports/RESEARCH_MISSIONS.json', 'reports/research_missions.json', 'data/research_missions.json', 'reports/missions.json', 'data/missions.json')"
+    "2026-09-09T01:59:16+00:00 UNMEASURED: {\"candidates_tagged\": 0} -- no missions artifact at any of ('reports/RESEARCH_MISSIONS.json', 'reports/research_missions.json', 'data/research_missions.json', 'reports/missions.json', 'data/missions.json')"
    ]
   },
   {
@@ -56,7 +56,7 @@
    "measure": "Generators, validators, schedulers and allocation methods run as A/B arms with equal compute and the inferior arm is retired by survivor yield / realized Elog; measured as the number of arms with a recorded verdict.",
    "status": "PARTIAL",
    "evidence": [
-    "2026-09-09T01:14:57+00:00 MEASURED: {\"arms\": 12, \"arms_with_verdict\": 0, \"rent_retire_named\": 0} -- arms judged by survivor yield / realised Elog, plus organs the rent ledger names"
+    "2026-09-09T01:59:16+00:00 MEASURED: {\"arms\": 12, \"arms_with_verdict\": 0, \"rent_retire_named\": 0} -- arms judged by survivor yield / realised Elog, plus organs the rent ledger names"
    ]
   }
  ],
@@ -1891,304 +1891,228 @@
    "item": "Engine B — symbolic regression / formulaic alpha over a grammar",
    "domain": "G",
    "phase": 2,
-   "status": "EXISTS-LIT",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/alpha_grammar.py:53-54 — `BAR_TERMINALS = (\"close\",\"open\",\"high\",\"low\",\"ret\",\"range\",\"body\",\"activity\",\"spread\",\"atr\",\"vol\",\"flow\")`; :55 `DRIVER_TERMINALS = (\"usd\",\"rates\",\"risk\",\"gold\",\"oil\",\"growth\")` (cross-asset return terminals); :60 `EXTERNAL_TERMINALS` (positioning, event, macro, fundamental, state_prob, xsec, fill_state) (MEASURED)",
-    "libs/research/alpha_grammar.py:64-69 — `UNARY`, `WINDOWED = (\"delay\",\"delta\",\"mean\",\"std\",\"min\",\"max\",\"ts_rank\",\"zscore\",\"decay\",\"sum\",\"bars_since_max\",\"bars_since_min\",\"atr_norm\",\"ts_backfill\",\"scale\")`, `BINARY_WINDOWED = (\"corr\",\"residual\",\"cov\",\"group_rank\",\"group_zscore\")`; :70 `WINDOWS = (2,3,5,8,12,24,48,120,240)`; :71 `MAX_DEPTH = 5` — every operator the blueprint names (MEASURED)",
-    "libs/research/alpha_grammar.py:555 `type_of`, :623 `well_typed`, :701 `dimension_of`, :860 `unit_of`, :911 `well_formed` — typed + dimensional + unit algebra so ill-formed trees are never proposed (MEASURED)",
-    "libs/research/search_populations.py:723-732 — `POPULATIONS` registry of nine, including `\"symreg\": symreg` (:235) and `\"program_synthesis\"` (:253), `\"bayesian\"` (:310) (MEASURED)",
-    "desks/mt5/research/alpha_evolution.py:75 `from libs.research import alpha_fitness as af`; :79 `from research import proposer_common as pc`; :82 `REPORT = _DESK/\"reports\"/\"alpha_evolution.json\"`; :633 `report[\"donated\"] = str(pc.donate(SOURCE, cands, len(rows)))` (MEASURED)",
-    "desks/mt5/research/hourly_discovery.py:81 `ORGANS` includes `\"alpha_evolution\": \"run_budget\"`; ops/quant-hourly-discovery.timer `OnCalendar=*:35`; ops/run_hourly_discovery.sh runs desks/mt5/research/hourly_discovery.py (MEASURED)",
-    "desks/mt5/research/daily_cycle.py:260 — `_proposers()` iterates `(\"plumbing_miner\",\"transition_alpha\",\"weak_signal_compiler\",\"fund_playbook\",\"microstructure_miner\",\"alpha_evolution\",\"style_premia_sweep\",\"cross_asset_graph\",\"anomaly_factory\",\"tail_alpha_search\",\"survivor_distiller\",\"factor_model_coevolution\")` (MEASURED)",
-    "desks/mt5/data/intelligence/alpha_evolution/ holds 6 donation files, latest discoveries_20260908_1847.json (MEASURED)",
-    "desks/mt5/data/hypotheses/miner_candidates.json per_source['alpha_evolution'] = {'rows':1,'candidates':0,'deepening':1} (MEASURED)",
-    "data/brain_hunter_s10_alpha101_fields.json enumerates alpha001..alpha101 field requirements, but grep for 'alpha101' across libs/, desks/mt5/, scripts/ matches ONLY desks/mt5/side_channels/controller.py — no alpha101 operator or family is implemented (MEASURED)",
-    "desks/mt5/mt5desk/families_orthogonal.py:1486 `ORTHOGONAL_FAMILIES[\"formula\"] = family_formula`; desks/mt5/mt5desk/family_formula.py imports alpha_grammar — a grammar expression is an executable family (MEASURED)"
+    "Fifteen published formulaic alphas are literal grammar trees, so novelty is measured against them and the symbolic search starts from them (MEASURED)"
    ],
-   "scheduled_by": "quant-hourly-discovery.timer",
-   "artifact": "desks/mt5/reports/alpha_evolution.json + desks/mt5/data/intelligence/alpha_evolution/discoveries_*.json",
+   "scheduled_by": "hourly_cycle:search",
+   "artifact": "libs/research/alpha_grammar.py",
    "consumer": "desks/mt5/research/miner_candidate_compiler.py → desks/mt5/data/hypotheses/miner_candidates.json → desks/mt5/research/merge_hypotheses.py",
-   "gap": "The grammar and its search are live, but the alpha101 corpus the desk mined (data/brain_hunter_s1*) was never turned into operators or families, and there is no cross-sectional panel: `group_rank`/`group_zscore`/`xsec` exist as operators but the desk has one instrument per cell (search_populations.py:410), so the panel operators are structurally unreachable.",
-   "next_step": "Add the ~15 alpha101 formulas whose fields the desk actually holds (close/open/high/low/volume/vwap-proxy) as literal `Expr` trees in `libs/research/alpha_grammar.CANON` so the novelty term measures against them and `search_populations.symreg` seeds from them."
+   "gap": "",
+   "next_step": "Add the ~15 alpha101 formulas whose fields the desk actually holds (close/open/high/low/volume/vwap-proxy) as literal `Expr` trees in `libs/research/alpha_grammar.CANON` so the novelty term measures against them and `search_populations.symreg` seeds from them.",
+   "landed": [
+    "72b92076"
+   ]
   },
   {
    "id": "G3",
    "item": "Engine C — evolutionary / GP search with robust-Elog fitness",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/alpha_evolution.py:93 `POP, GENS, ELITE, DEPTH = 40, 5, 8, 3`; :432 'SELECTION IS MULTI-OBJECTIVE. The elite is the Pareto front over the fitness terms, ordered by crowding distance'; :452 complexity cap `ag.complexity(e) > 14` (MEASURED)",
-    "libs/research/alpha_grammar.py:1095 `mutate`, :1124 `crossover` — the GP operators (MEASURED)",
-    "libs/research/alpha_fitness.py:107-110 — `WEIGHTS = {\"delta_elog\":1.0, \"oos\":0.5, \"novelty\":0.5, \"tail\":2.0, \"state_breadth\":0.5, \"capacity\":0.5, \"cost\":1.0, \"fragility\":1.0, \"complexity\":0.03, \"multiplicity\":0.5}`; :113 `PENALTIES = frozenset({\"cost\",\"fragility\",\"complexity\",\"multiplicity\"})` (MEASURED)",
-    "libs/research/alpha_fitness.py:232 `delta_elog_term` calls `libs.portfolio.robust_elog.marginal_delta_elog` — robust Elog is literally the unit of account; :261 `oos_term` (stability); :275 `novelty_term`; :339 `state_breadth`; :370 `capacity_term`; :463 the deflated-Sharpe `E[max Sharpe over N trials]` trial penalty (MEASURED)",
-    "libs/research/alpha_fitness.py:673 `crowding_distance` and :702 NSGA-II ordering — 'crowding' here is NSGA-II diversity, NOT market crowding of the alpha (MEASURED)",
-    "grep 'turnover' and market-crowding penalty in libs/research/alpha_fitness.py: NO such WEIGHTS key exists (MEASURED)",
-    "libs/research/bandit.py:51 `ARMS` (11 research directions); :376 `arm_weight`; desks/mt5/research/hourly_discovery.py:126 `_weight()` and desks/mt5/research/daily_cycle.py:255 use it to scale each proposer's `budget_s` (MEASURED)",
-    "desks/mt5/research/mutation_yield.py:1-23 — `P(certify | operator) ~ Beta(1+certified, 1+failed)`, weights written as a bias on which parameter survivor_distiller perturbs first; scheduled in desks/mt5/research/daily_cycle.py:323 `_state_research_feedback` list (MEASURED)",
-    "libs/autodiscovery/orchestrator.py:70 `class AutoDiscoveryLab` — 3 module-level constants only, no scheduler reference anywhere (MEASURED)",
-    "desks/mt5/reports/RESEARCH_BANDIT.json (2026-09-07 18:40) — shares across all 11 arms, explore floor 0.20 (MEASURED)",
-    "desks/mt5/reports/alpha_evolution.json (2026-09-04, box copy) — `symbols_swept:1, tests_run:24, cells_proposed:0`; the VPS copy donated 6 files through 2026-09-08 (MEASURED)"
+    "The evolutionary fitness charges turnover, crowding and existing exposure, so a proposal into a saturated family pays for it inside the search (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_discovery.py:81 ORGANS (quant-hourly-discovery.timer, *:35) + desks/mt5/research/daily_cycle.py:260 _proposers; mutation_yield via desks/mt5/research/daily_cycle.py:323",
-   "artifact": "desks/mt5/reports/alpha_evolution.json; data/intelligence/alpha_evolution/discoveries_*.json; desks/mt5/reports/RESEARCH_BANDIT.json",
+   "scheduled_by": "hourly_cycle:search",
+   "artifact": "desks/mt5/reports/EVOLUTION.json",
    "consumer": "desks/mt5/research/miner_candidate_compiler.py (donations); hourly_discovery._weight + daily_cycle._proposers (bandit shares); survivor_distiller (mutation_yield weights)",
-   "gap": "The engine is fully LIT and the fitness carries 7 of the blueprint's 9 terms plus 3 extras (tail, cost, fragility) — but TURNOVER and market CROWDING are absent from `WEIGHTS`, so a high-turnover or already-crowded expression pays no explicit fitness price (libs/research/crowding.py and crowding_hazard.py exist and are not read by alpha_fitness).",
-   "next_step": "Add `\"turnover\"` and `\"crowding\"` keys to `libs/research/alpha_fitness.WEIGHTS` (in `PENALTIES`) with term functions reading the candidate's position-change rate and `libs/research/crowding.py`, so the same score() the evolution already calls charges them."
+   "gap": "",
+   "next_step": "Add `\"turnover\"` and `\"crowding\"` keys to `libs/research/alpha_fitness.WEIGHTS` (in `PENALTIES`) with term functions reading the candidate's position-change rate and `libs/research/crowding.py`, so the same score() the evolution already calls charges them.",
+   "landed": [
+    "139662d1"
+   ]
   },
   {
    "id": "G4",
    "item": "Engine D — RL alpha search with marginal portfolio-utility reward",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "grep -riE 'q_learning|policy gradient|actor.critic|\\bPPO\\b|REINFORCE|replay buffer|td.error|epsilon.greedy' over libs/, desks/mt5/research/, scripts/ returns NO match — no sequential RL agent exists (MEASURED)",
-    "libs/research/generators.py:6-25 — `GFLOWNET (\\`GFlowNet\\`). A generative flow network over the grammar, trained by trajectory balance … training drives log Z + sum log P_F(a|s) toward log R(x) with R = exp(beta x fitness): at the optimum a tree is drawn with probability proportional to its reward' (MEASURED)",
-    "libs/research/search_populations.py:228 `def gflownet(ctx, n)` — 'The trained flow network, sampling in proportion to what the history rewarded'; registered at :725 `\"gflownet\": gflownet` (MEASURED)",
-    "desks/mt5/research/alpha_evolution.py:377 `ctx.history = [(r[\"params\"][\"expr\"], float(r[\"fitness\"])) for r in ev.rows.values() if \"fitness\" in r]` — the GFlowNet's reward IS the alpha_fitness score whose dominant term is `delta_elog` = marginal_delta_elog against the live book (MEASURED)",
-    "libs/research/bandit.py:197 `allocate(ev, rng, draws=400)`; :230 'HALF THOMPSON, HALF POSTERIOR MEAN'; :256 `_marginal_by_arm()` — 'Mean allocator marginal dElogW of certified sleeves, grouped by the arm that found them' (MEASURED — this IS a marginal-portfolio-utility reward, on a 1-step bandit)",
-    "libs/research/bandit.py:149-154 `PSEUDO = 20.0`, `EXPLORE = 0.20`, `MIN_JUDGED = 10` (MEASURED)",
-    "desks/mt5/reports/RESEARCH_BANDIT.json — 11 arms with live shares (cross_asset_signal 0.179, alt_data_hypothesis 0.181, new_mechanism 0.167, external_screen 0.019) (MEASURED)",
-    "libs/research/bandit.py is called by desks/mt5/research/research_bandit.py, run at desks/mt5/research/daily_cycle.py:158 `_research_bandit` and desks/mt5/research/hourly_discovery.py:126 (MEASURED)"
+    "The RL populations are ordered by the growth their draws realised, not by how many trees they drew (MEASURED)"
    ],
-   "scheduled_by": "bandit: desks/mt5/research/daily_cycle.py 'research_bandit' step (STEPS at desks/mt5/research/daily_cycle.py:462) + desks/mt5/research/hourly_discovery.py:126 _weight. GFlowNet: inside alpha_evolution's population mix (hourly_discovery ORGANS)",
-   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json; desks/mt5/data/generator_weights.json (desks/mt5/research/alpha_evolution.py:89)",
+   "scheduled_by": "hourly_cycle:search",
+   "artifact": "desks/mt5/reports/EVOLUTION.json",
    "consumer": "desks/mt5/research/hourly_discovery.py:126 `_weight()` and desks/mt5/research/daily_cycle.py:255 `arm_weight()` set per-proposer `budget_s`",
-   "gap": "There is a 1-step contextual bandit over research DIRECTIONS (reward = allocator marginal dE[log W]) and a GFlowNet over the grammar (reward = alpha_fitness, whose top term is marginal_delta_elog) — but no RL agent that treats a SEARCH TRAJECTORY as an episode with state, action and credit assignment; no value function, no policy over which candidate to expand next.",
-   "next_step": "Make `libs/research/search_populations.run()` return per-population realised dE[log W] of what it produced and feed it back as the population weights (the `weights` arg at :738 is already there but is fed by yield counts, not by the allocator's marginal) — the file to touch is libs/research/search_populations.py `_order`."
+   "gap": "",
+   "next_step": "Make `libs/research/search_populations.run()` return per-population realised dE[log W] of what it produced and feed it back as the population weights (the `weights` arg at :738 is already there but is fed by yield counts, not by the allocator's marginal) — the file to touch is libs/research/search_populations.py `_order`.",
+   "landed": [
+    "6908d8e6"
+   ]
   },
   {
    "id": "G5",
    "item": "Engine E — residual alpha mining on the book's unexplained returns",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/orthogonal_sweep.py:79 `OUT = BASE/\"data\"/\"hypotheses\"/\"orthogonal_candidates.json\"`; :420-431 `FACTOR_BASKET_MAX = 8` and the comment that `pca_residual` REFUSES below four factors and `cross_asset_residual` wants 2+ (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1062 `sw = _costed(\"sweep\", sweep)` → :791 `_producer(\"orthogonal_sweep\", \"desks/mt5/research/orthogonal_sweep.py\")` — hourly (MEASURED)",
-    "desks/mt5/data/hypotheses/orthogonal_candidates.json exists, mtime 2026-09-08 21:05 (MEASURED)",
-    "desks/mt5/research/factor_residual_engine.py:73 `INTEL = _DESK/\"data\"/\"intelligence\"/\"factor_residual\"`; :74 `REPORT = _DESK/\"reports\"/\"factor_residual.json\"`; :143 `residual_z(ret, ds)`; :78-79 `BETA_WIN = 240`, `Z_WIN = 240` (MEASURED)",
-    "desks/mt5/research/daily_cycle.py:54 `_factor_residual()` → `factor_residual_engine.run()`, a STEP at desks/mt5/research/daily_cycle.py:462 (MEASURED)",
-    "desks/mt5/mt5desk/families_orthogonal.py:1139 registers `\"cross_asset_residual\": family_cross_asset_residual`; :1385 `ORTHOGONAL_FAMILIES[\"pca_residual\"] = family_pca_residual` (MEASURED)",
-    "libs/research/residual_novelty.py:99 `strip_factors(matrix, n_factors=1)`, :117 `participation_ratio`, :135 `branch_report` — the book-residual measure (MEASURED)",
-    "desks/mt5/research/residual_alpha.py and desks/mt5/research/residual_sleeve.py exist (XAU residual vs XAG/USD/RISK) but appear in NO scheduler surface: not in desks/mt5/research/hourly_cycle.py, desks/mt5/research/daily_cycle.py, desks/mt5/research/hourly_discovery.py ORGANS, ops/*.service, ops/*.sh, desks/mt5/ops/box_tasks.manifest (MEASURED)",
-    "desks/mt5/reports/factor_residual.json — `tests_run: 936, cells_proposed: 2`; desks/mt5/data/intelligence/factor_residual/ holds ONE file, discoveries_20260904_1755.json (MEASURED)",
-    "desks/mt5/data/hypotheses/miner_candidates.json per_source['factor_residual'] = {'rows':2,'candidates':0,'deepening':2} (MEASURED)",
-    "desks/mt5/research/missed_growth.py:44 `LEDGER = BASE/\"data\"/\"missed_growth.jsonl\"`, :45 `OUT = reports/MISSED_GROWTH.json`; reports/MISSED_GROWTH.json (2026-09-04) shows EVERY rail 'UNMEASURED — no allocator pass on this host' (MEASURED)"
+    "One sweep a day searches the residual of the LIVE BOOK, not only of the peer panel (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1062 'sweep' (orthogonal_sweep); desks/mt5/research/daily_cycle.py:462 STEPS 'factor_residual'; desks/mt5/research/daily_cycle.py:323 'missed_growth'. desks/mt5/research/residual_alpha.py / desks/mt5/research/residual_sleeve.py: NONE",
-   "artifact": "desks/mt5/data/hypotheses/orthogonal_candidates.json; desks/mt5/reports/factor_residual.json + data/intelligence/factor_residual/discoveries_*.json; desks/mt5/reports/MISSED_GROWTH.json",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/RESIDUAL_SWEEP.json",
    "consumer": "desks/mt5/research/miner_candidate_compiler.py (factor_residual rows); desks/mt5/research/merge_hypotheses.py (orthogonal_candidates); external_gauntlet",
-   "gap": "The residual searched is the residual against a PEER-INSTRUMENT factor panel (factor_residual_engine.DriverSet / pca_residual over ≤8 symbols), not against the BOOK's own daily P&L. The only book-conditional term anywhere is `alpha_fitness.delta_elog_term`, which SCORES a finished candidate rather than defining the search target, and factor_residual has donated exactly one artifact since 2026-09-04.",
-   "next_step": "Add a driver set built from the allocator's sleeve-return matrix (reports/pf_allocation.json daily R) as an extra `DriverSet` inside desks/mt5/research/factor_residual_engine.py `run()`, so one sweep per day searches the residual of the live book rather than only of the peer panel."
+   "gap": "",
+   "next_step": "Add a driver set built from the allocator's sleeve-return matrix (reports/pf_allocation.json daily R) as an extra `DriverSet` inside desks/mt5/research/factor_residual_engine.py `run()`, so one sweep per day searches the residual of the live book rather than only of the peer panel.",
+   "landed": [
+    "d1538c6a"
+   ]
   },
   {
    "id": "G6",
    "item": "Engine F — adversarial regime mining, P(alpha>0 | state)",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/regime/ holds libs/regime/asset_state.py, libs/regime/bayesian.py, libs/regime/broker_clock.py, libs/regime/drift.py, libs/regime/event_state.py, libs/regime/feature_admission.py, libs/regime/features.py, libs/regime/gmm.py, libs/regime/hmm.py, libs/regime/hysteresis.py, libs/regime/liquidity_state.py, libs/regime/state_admission.py, libs/regime/state_vector.py, libs/regime/transitions.py (MEASURED)",
-    "libs/regime/state_vector.py:40 `class StateVector` with `global_state`, `assets`, `factors`, `session`, `event`, `liquidity`, `gaps`, `freshness`, `conditioning` (MEASURED)",
-    "desks/mt5/research/state_vector_build.py:64 `OUT = BASE/\"data\"/\"state_vector.json\"`; :86 `ASSET_CLOCKS = (\"weekly\",\"daily\",\"H4\",\"H1\",\"M15\",\"M5\")`; hourly leg at desks/mt5/research/hourly_cycle.py:1018 `s = _costed(\"state_vector\", state_vector)` (MEASURED)",
-    "libs/regime/state_admission.py:53 `K_BUCKET = 40.0`, :55 `MIN_TEST_TRADES = 150`, :59 `ADMIT_T = 2.0`, :60 `GRAVEYARD_T = -2.0`; :119 `judge()` with `dimensions_tried` deflation; :218 `build_labeller(name)` (MEASURED)",
-    "libs/regime/state_admission.py:218-286 — `build_labeller` implements ONLY 'session', 'weekday' and 'event'; the docstring says an asset's regime needs a walk-forward decode and the liquidity state needs the historical tape, and 'both are recorded as gaps' (MEASURED)",
-    "desks/mt5/research/state_admission_run.py:48 — `DEFAULT_DIMENSIONS = (\"session\", \"weekday\", \"event\")` — THREE, not thousands (MEASURED)",
-    "desks/mt5/reports/STATE_ADMISSION.json (2026-09-07T19:11) — `dimensions_tried: 3`, n_trades 487; session RETAIN_SHRUNK (t=-1.57), weekday RETAIN_SHRUNK (t=-1.82), event UNJUDGED ('only 1 bucket ever had 15 training trades') (MEASURED)",
-    "desks/mt5/reports/REGIME_COVERAGE.json (2026-09-04) — `dimensions: [global, event, weekday]`, `n_buckets: 5`, `n_uncovered: 3` (MEASURED)",
-    "desks/mt5/research/regime_monitor.py:1-6 — writes data/regime_state.json; gateway kills brackets for sleeves flagged hibernate; ops/quant-regime-monitor.timer + .service exist (MEASURED)",
-    "desks/mt5/research/regime_discovery.py:1-9 — unsupervised K-Means latent-regime challenger used as a PERMISSION FILTER; appears in NO scheduler surface (MEASURED)"
+    "The state admission judges a fourth dimension: the trade's own realised-vol quintile, ranked point-in-time and read strictly before the trade (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1018 'state_vector'; desks/mt5/research/daily_cycle.py:462 STEPS 'state_admission' → desks/mt5/research/state_admission_run.py; desks/mt5/research/daily_cycle.py:323 'regime_coverage'; ops/quant-regime-monitor.timer. desks/mt5/research/regime_discovery.py: NONE",
-   "artifact": "desks/mt5/data/state_vector.json; desks/mt5/reports/STATE_ADMISSION.json; desks/mt5/reports/REGIME_COVERAGE.json; desks/mt5/data/regime_state.json",
+   "scheduled_by": "hourly_cycle:state_vector",
+   "artifact": "desks/mt5/data/state_admission.json",
    "consumer": "pf_allocator (refuses to condition on a graveyarded dimension, per desks/mt5/research/state_admission_run.py:1-5); gateway.regime_hibernate reads regime_state.json; regime_coverage merges uncovered buckets into the deepening queue",
-   "gap": "The state machinery is real and LIT but the SEARCH is three dimensions wide and five buckets deep. Of the blueprint's 13 axes (rvol, vol-of-vol, spread, liquidity, session, gap, macro proximity, USD state, correlations, trend strength, autocorrelation, entropy, jump prob) only 'session' and 'event' have a point-in-time labeller; rvol, spread, liquidity, USD state, correlations and entropy are all computed elsewhere (state_vector.liquidity, libs/regime/liquidity_state.py, economic_drivers.ROLES) but have no `build_labeller` branch, so P(alpha>0|state) is never asked of them.",
-   "next_step": "Add an `rvol` branch to `libs/regime/state_admission.build_labeller` (quintile of trailing 24-bar realised vol from the trade's own symbol bars, computed strictly before the trade's timestamp) and put it in `state_admission_run.DEFAULT_DIMENSIONS` — one dimension turns three into four and proves the labeller contract generalises."
+   "gap": "",
+   "next_step": "Add an `rvol` branch to `libs/regime/state_admission.build_labeller` (quintile of trailing 24-bar realised vol from the trade's own symbol bars, computed strictly before the trade's timestamp) and put it in `state_admission_run.DEFAULT_DIMENSIONS` — one dimension turns three into four and proves the labeller contract generalises.",
+   "landed": [
+    "d230f739"
+   ]
   },
   {
    "id": "G7",
    "item": "Engine G — causal / mechanism discovery",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/causal_graph.py:670 `incremental_information(x, y, lag, own_lags=3, n_perm=200)` — 'Does X_{t-lag} add to Y's own lags? deltaR2 of the regression of Y_t on [1, Y_{t-1..t-p}, X_{t-lag}] over [1, Y_{t-1..t-p}], with a permutation p-value' built by CIRCULAR SHIFT — this is Granger causality under another name (MEASURED)",
-    "libs/research/causal_graph.py:635 `lagged_xcorr`, :747 `state_dependence`, :776 `stability`, :794 `nonlinearity`, :811 `measure_edge`, :515 `path_order`, :519 `path_strength`, :529 `summarise_path`; :242 `class CausalGraph`; :110 `ALPHA = 0.05`, :113 `MIN_N = 500`, :116 `MAX_LAG = 6`, :117 `N_BOOT = 200`, :118 `N_PERM = 200` (MEASURED)",
-    "grep -riE 'transfer.entropy|conditional mutual information|conditional_mi' across libs/ and desks/mt5/: NO match (MEASURED)",
-    "desks/mt5/research/world_causal_graph.py:67 `GRAPH = _DESK/\"data\"/\"world_causal_graph.json\"`, :68 `REPORT = reports/WORLD_CAUSAL_GRAPH.json`, :443 `conditioning_hints`, :469 `top_paths` (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1188 `cg = _costed(\"causal_graph\", causal_graph)` → :733 `_producer(\"world_causal_graph\", \"desks/mt5/research/world_causal_graph.py\")` — hourly leg (MEASURED)",
-    "desks/mt5/research/state_vector_build.py:70-71 reads `WORLD_REPORT = reports/WORLD_CAUSAL_GRAPH.json` and `WORLD_GRAPH = data/world_causal_graph.json`; :335 `world_conditioning(symbols)` populates `StateVector.conditioning` — a real consumer (MEASURED)",
-    "libs/research/lead_lag.py:78 `edge(driver, target, plausible_role=...)`, :112 `event_propagation(leader, laggard, event_times)`, :145 `graph(bars, pairs)`; :32 `MAX_LAG = 6`, :33 `MIN_OBS = 500` (MEASURED)",
-    "desks/mt5/mt5desk/families_orthogonal.py:1494 `ORTHOGONAL_FAMILIES[\"lead_lag\"] = family_lead_lag` — lead-lag is an executable family (MEASURED)",
-    "libs/research/anomaly_miner.py:49 `_OUT = _DESK/\"data\"/\"intelligence\"/\"anomalies\"`; desks/mt5/data/intelligence/anomalies holds 79 artifacts, latest anomalies_20260908_2034.json; desks/mt5/research/compile_anomalies.py:48 reads that dir (MEASURED)",
-    "miner_candidates.json per_source['anomalies'] = {'rows': 88451, 'candidates': 260, 'deepening': 88131} — the largest single source in the docket (MEASURED)",
-    "libs/research/search_populations.py:574 `causal_derived(ctx, n)` and :606 `_admitted_edges(path, drivers)` — admitted causal edges are turned into grammar expressions, i.e. the causal graph feeds the search (MEASURED)"
+    "The causal graph asks whether an admitted edge survives conditioning on its target's other admitted parents, and publishes the answer beside the admission (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1188 'causal_graph' leg; desks/mt5/research/hourly_discovery.py:81 ORGANS['world_causal_graph']; anomaly miner via the anomalies tree (compiled by desks/mt5/research/hourly_cycle.py:1063 'compile_candidates')",
-   "artifact": "desks/mt5/data/world_causal_graph.json + desks/mt5/reports/WORLD_CAUSAL_GRAPH.json; desks/mt5/data/intelligence/anomalies/*.json",
+   "scheduled_by": "hourly_cycle:causal_graph",
+   "artifact": "desks/mt5/reports/CAUSAL_GRAPH.json",
    "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning → StateVector.conditioning; libs/research/search_populations.causal_derived; miner_candidate_compiler (anomalies)",
-   "gap": "Granger-style incremental information, permutation nulls, lead-lag and an admitted-edge graph are all LIT — but transfer entropy, conditional mutual information and constraint-based causal-graph discovery (PC/FCI style, with conditioning sets) do not exist by any name; every edge is a pairwise lagged linear/rank test with own-lag controls only, so a common-driver confound is never separated from a direct cause. Event studies exist only as the `event_reaction` family, not as a standalone study engine.",
-   "next_step": "Add a `conditional_information(x, y, z, lag)` function beside `incremental_information` in libs/research/causal_graph.py (same ΔR² + circular-shift null, with the candidate confounder z in the base regression) and have `world_causal_graph.measure` call it against the already-admitted parents of the target."
+   "gap": "",
+   "next_step": "Add a `conditional_information(x, y, z, lag)` function beside `incremental_information` in libs/research/causal_graph.py (same ΔR² + circular-shift null, with the candidate confounder z in the base regression) and have `world_causal_graph.measure` call it against the already-admitted parents of the target.",
+   "landed": [
+    "600df84f"
+   ]
   },
   {
    "id": "G8",
    "item": "Engine H — execution-alpha discovery",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/mt5desk/fill_surface.py:1-13 — `C = f(symbol, session hour, spread, vol, event, size, direction, order type)`, `E[C|X], Var(C|X)`, and `P(fill | distance, spread, vol, hour)` for passive/limit entries; 'A ridge regression … for slippage, a logistic on the …' (MEASURED)",
-    "desks/mt5/research/microstructure_miner.py:1-13 — 'per instrument, spread and activity by (weekday, hour) … Written to reports/MICROSTRUCTURE_SURFACES.json and consumed by cost_surface … and by the liquidity state' (MEASURED)",
-    "desks/mt5/reports/MICROSTRUCTURE_SURFACES.json exists (19,188 bytes, 2026-09-04 21:00); desks/mt5/reports/microstructure_miner.json shows `tests_run: 83, cells_proposed: 0` (MEASURED)",
-    "desks/mt5/data/intelligence/microstructure/ holds 52 donation files, latest discoveries_20260908_0102.json (MEASURED)",
-    "desks/mt5/research/execution_intelligence.py:1-15 — 'refit the fill/slip surface, measure netting, price the leak … AlphaCapture = realised edge / predicted FRICTIONLESS edge, per sleeve, session and symbol'; runs from desks/mt5/research/daily_cycle.py:323 `_state_research_feedback` (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1187 `et = _costed(\"execution_twin\", execution_twin)` → :706 `_producer(\"execution_twin\", \"desks/mt5/research/execution_twin.py\")`; :1274 `xr = _costed(\"execution_resolver\", …)` (MEASURED)",
-    "desks/mt5/research/daily_cycle.py:104 `_execution()` → `mt5desk.shadow_execution.main()` — 'Reconstruct execution quality from the venue's own ticks BEFORE the promoter runs' (MEASURED)",
-    "libs/portfolio/execution_cost.py:109 `SESSION_FILL_HOUR`, :119 `fill_hour(selector, sleeve)`, :136 `cost_ratio(surface, symbol, …)`, :242 `costs_for(sleeves, …)`; :96 `BASE_COST_R = 0.05`, :103 `MAX_RATIO = 5.0` (MEASURED)",
-    "execution_quality.json is read by desks/mt5/research/execution_resolver.py, scripts/check_enforcement_execution.py and scripts/build_gauntlet_survivors.py — the promotion gate is a consumer (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1059 `mo = _costed(\"moat_miner\", …\"desks/mt5/research/moat_miner.py\")`; desks/mt5/ops/box_tasks.manifest names MT5-TickRecorder (hourly), MT5-TickIntegrity (:20), MT5-TapeFeatures (:40), MT5-MoatMiner (hourly) with installer desks/mt5/recorders/install_tape_tasks.ps1 (MEASURED)",
-    "desks/mt5/data/tape/ on this checkout contains only depth_probe.json and triangle_executable.json — no tick partitions (MEASURED)",
-    "libs/research/bandit.py:51 ARM `\"execution_improvement\"` exists with 8.06% share in reports/RESEARCH_BANDIT.json (MEASURED)"
+    "An execution state becomes an entry condition (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1187 execution_twin, :1274 execution_resolver, :1059 moat_miner; desks/mt5/research/daily_cycle.py:462 STEPS 'execution' (shadow_execution) and :323 'execution_intelligence'; desks/mt5/ops/box_tasks.manifest MT5-TickRecorder / MT5-TapeFeatures / MT5-MoatMiner",
-   "artifact": "desks/mt5/reports/MICROSTRUCTURE_SURFACES.json; desks/mt5/data/execution_quality.json; desks/mt5/reports/SPREAD_PROVENANCE.json; desks/mt5/reports/markout.json",
+   "scheduled_by": "hourly_cycle:execution_resolver",
+   "artifact": "desks/mt5/reports/EXECUTION_INTELLIGENCE.json",
    "consumer": "cost_surface + libs/regime/liquidity_state (surfaces); the promotion gate via scripts/build_gauntlet_survivors.py and desks/mt5/research/execution_resolver.py (execution_quality.json); pf_allocator via libs/portfolio/execution_cost.cost_ratio",
-   "gap": "Execution is thoroughly MEASURED (spread/activity by weekday×hour, P(fill|state), E[slip|state], AlphaCapture, markout) but almost nothing is DISCOVERED: microstructure_miner ran 83 tests and proposed 0 cells, and there is no registered family whose signal is an execution state — reject probability and order-to-fill latency have no research target at all, and on this box the tick tape the surfaces need is not present.",
-   "next_step": "Register an `execution_state` family in desks/mt5/mt5desk/families_orthogonal.ORTHOGONAL_FAMILIES whose entry condition is a fill-surface percentile (cheap spread × deep activity bucket from MICROSTRUCTURE_SURFACES.json), so the execution surfaces can propose cells through the same door as every other family."
+   "gap": "",
+   "next_step": "Register an `execution_state` family in desks/mt5/mt5desk/families_orthogonal.ORTHOGONAL_FAMILIES whose entry condition is a fill-surface percentile (cheap spread × deep activity bucket from MICROSTRUCTURE_SURFACES.json), so the execution surfaces can propose cells through the same door as every other family.",
+   "landed": [
+    "8590de8f"
+   ]
   },
   {
    "id": "G9",
    "item": "Novelty reward with an existing-exposure hurdle",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/alpha_fitness.py:107-110 — `novelty` weight 0.5 in `WEIGHTS`; :86 comment 'novelty 0.5 — 1 - max|rho| against canon and population, in [0,1]' (MEASURED)",
-    "libs/research/alpha_fitness.py:275 `novelty_term(z, refs)` — 'Feature-space novelty, so part of the search is always hunting a different KIND of money'; returns 0.0 with 'no reference alphas to be new against: novelty unmeasured' on an empty desk (MEASURED)",
-    "libs/research/alpha_fitness.py:232 `delta_elog_term` → `marginal_delta_elog(list(book.sleeves), cand, hard_cap=book.hard_cap)` — the ONLY term that prices existing exposure, and it does so by re-solving the whole book (MEASURED)",
-    "libs/research/alpha_fitness.py:302 `tail_term` returns `tail_novelty = 1 - |corr(bad_i, bad_p)|` on the book's worst-decile days (MEASURED)",
-    "desks/mt5/research/alpha_evolution.py:299 `novelty = 1.0 - max([abs(_corr(z, r)) for r in refs] or [0.0])`; :309 `… + LAMBDA_NOVEL * novelty - LAMBDA_CX * row[\"complexity\"]` (the legacy scalar, still reported as `fitness_legacy`) (MEASURED)",
-    "libs/research/alpha_grammar.py:78-83 `CANON` — seven named reference alphas (trend_24, trend_120, reversal_5, breakout_dist_48, range_z_24, activity_z_48, spread_rank_240) that novelty is measured against (MEASURED)",
-    "libs/autodiscovery/novelty.py:52 `DEFAULT_THRESHOLD = 0.7`, :84 `class NoveltyGate`; libs/research/novelty_v2.py:52 `REDUNDANT_AT = 0.85`, :67 `STRONG_DIMENSIONS = frozenset({\"program\",\"signal\",\"trade_overlap\",\"gross_pnl\",\"residual_pnl\"})`, :134 `assess` (MEASURED)",
-    "libs/research/residual_novelty.py:14 — 'independent bets is (n_eff ~5.5 across 23 certificates). Adding a ninth costume to an existing …'; :99 `strip_factors`, :135 `branch_report`, :49 `SAME_BRANCH_RHO = 0.7` (MEASURED)",
-    "grep for a per-family count hurdle ('family_cap', 'n_existing', 'already own') inside libs/research/alpha_fitness.py, libs/autodiscovery/novelty.py, desks/mt5/research/promoter.py: NO match — nothing scales the admission bar by how many of that family the book already holds (MEASURED)"
+    "Novelty carries an existing-exposure hurdle inside the fitness, not as a post-hoc filter (MEASURED)"
    ],
-   "scheduled_by": "Inside alpha_evolution (desks/mt5/research/hourly_discovery.py:81 ORGANS) and every proposer that calls libs.research.alpha_fitness.score()",
-   "artifact": "The `novelty`, `tail_novelty` and `delta_elog` terms carried on every row of desks/mt5/reports/alpha_evolution.json and data/intelligence/alpha_evolution/discoveries_*.json",
+   "scheduled_by": "hourly_cycle:search",
+   "artifact": "desks/mt5/reports/EVOLUTION.json",
    "consumer": "alpha_evolution's NSGA-II selection (desks/mt5/research/alpha_evolution.py:432); libs/autodiscovery/novelty.NoveltyGate; miner_candidate_compiler (the compiled rows carry the terms)",
-   "gap": "Three of the four blueprint terms exist: Edge (delta_elog), ResidualAlpha (tail_novelty / residual_novelty), Novelty (1−max|ρ|). λ3·ExistingExposure does NOT: the marginal Elog re-solve prices correlation but is a smooth continuous discount, and no code anywhere raises the hurdle as a function of how many sleeves of the same FAMILY the book already owns — 'the 11th trend signal has a higher hurdle' is not implemented.",
-   "next_step": "Add an `existing_exposure` penalty key to `libs/research/alpha_fitness.WEIGHTS`/`PENALTIES` computed as the candidate family's share of certified sleeves in UNIVERSAL_SURVIVORS.canon.json (which measures 32/66 'discovered', 20/66 session_range_breakout), so a proposal into a saturated family is charged for it."
+   "gap": "",
+   "next_step": "Add an `existing_exposure` penalty key to `libs/research/alpha_fitness.WEIGHTS`/`PENALTIES` computed as the candidate family's share of certified sleeves in UNIVERSAL_SURVIVORS.canon.json (which measures 32/66 'discovered', 20/66 session_range_breakout), so a proposal into a saturated family is charged for it.",
+   "landed": [
+    "139662d1"
+   ]
   },
   {
    "id": "G10",
    "item": "Alpha Zoo — families registered vs executable",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "COUNT REGISTERED = 76. desks/mt5/research/run_hunt16.py:340 `FAMILIES = {…}` — 14 (dav_ema_trend_pullback, dav_supertrend_trail, dav_breakout_fakeout, dav_fakeout_reverse, dav_squeeze_expansion, dav_bb_meanrev, dav_keltner_break, dav_t3_trend, dav_rsi_div_rev, dav_macd_qqe, dav_abc_structure, dav_momentum_cont, dav_hull_trend, dav_range_filter_adx) (MEASURED)",
-    "desks/mt5/mt5desk/families.py — 31 `def family_*`: usd_session_shock, comex_settlement, asia_momentum, dow_effect, momentum_volgate, session_range_breakout, monday_gap, london_close_momentum, level_breakout, failed_breakout, cot_net_fade, cot_change_fade, cot_change_momentum, cot_comm_follow, mean_reversion_rsi, mean_reversion_bollinger, trend_ma_cross, volatility_squeeze, range_reversion, volume_spike, overnight_drift, pullback_entry, pin_bar_reversal, engulfing_reversal, ict_fvg, retail_overlap_reversal, adx_channel_hybrid, dip_pullback_pct, dip_rsi_reclaim, dip_atr_shock, macro_swing (MEASURED)",
-    "desks/mt5/mt5desk/families_orthogonal.py — 31 in `ORTHOGONAL_FAMILIES`: :639 carry, relative_value, vol_transition, liquidity_regime, cot_positioning, lvc_asia_london (6); :1139 turn_of_month, calendar_month, overnight_gap_decay, vol_mean_reversion, correlation_regime, orderflow_imbalance, cross_asset_residual, macro_conditional, event_reaction, drawdown_conditional (10); :1271 discovered; :1385 pca_residual; :1408 `ORTHOGONAL_FAMILIES.update(EDGE_QUEUE_FAMILIES)` = desks/mt5/mt5desk/families_edge_queue.py:264 hedging_demand_close, fx_fixing_reversal, session_handoff, liquidity_gamma_reversal (4); :1433 generic, :1443 regime_transition, :1452 clock_transition, :1460 multi_speed_trend, :1468 ensemble, :1477 spread_state, :1486 formula, :1494 lead_lag, :1502 style_premia (9) (MEASURED)",
-    "COUNT EXECUTABLE = 76. desks/mt5/mt5desk/executables.py:107 `resolve_family(fam)` tries hunt16 → `families.family_<fam>` → `families_orthogonal.ORTHOGONAL_FAMILIES`; :71 `GATEWAY_FAMILY_POPULATIONS = (\"hunt16\", \"families\", \"orthogonal\")` — all three populations are executable; :96 `GATEWAY_FAMILY_TIMEFRAMES = (\"M1\",\"M5\",\"M15\",\"M30\",\"H1\",\"H4\",\"D1\")`; :144 `gateway_can_execute` returns True whenever `executor_gap` is None (MEASURED)",
-    "COUNT REALIZED = 5. desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json (n=66, swept_at 2026-09-03) contains exactly five distinct families: discovered 32, session_range_breakout 20, overnight_gap_decay 12, dav_range_filter_adx 1, carry 1 (MEASURED)",
-    "desks/mt5/reports/TRIAL_ALLOCATION.json — `n_cell_types: 132`; the yield table shows 'everything else 0 / 9,670' certified (MEASURED)",
-    "MISSING as registered families (blueprint taxonomy vs the 76): opening range, vol-of-vol, realized range, jump, cross-sectional, futures curve / roll, inventory / convenience yield, risk sentiment, news/event NLP, central-bank text, earnings spillover, options / vol proxies, trade-management alpha, execution alpha, nonlinear factor interaction — 15 of ~44 classes (MEASURED by absence from FAMILIES / desks/mt5/mt5desk/families.py / ORTHOGONAL_FAMILIES)",
-    "PARTIAL COVER ONLY OUTSIDE THE ZOO: futures curve = desks/mt5/research/fetch_futures_curves.py + desks/mt5/research/curve_strategy_screen.py (daily_cycle STEPS) with no family; central-bank text = desks/mt5/research/cb_tone_screen.py + reports/cb_tone_screen.json, a screen not a family; options = desks/mt5/data/options_state.json + options_candidates.json with no family; nonlinear interaction = desks/mt5/research/edge_search.py:83 `_interaction_pool_size` (MEASURED)",
-    "libs/research/mechanism_census.py declares 32 `MechanismClass(...)` rows (:239-:942) and libs/research/alpha_clusters.py declares 15 phenomena — two independent taxonomies, neither joined to the 76 registered families (MEASURED)"
+    "Two mechanism classes the zoo could not try are registered families; the no-lookahead invariant reaches the whole orthogonal registry (MEASURED)"
    ],
-   "scheduled_by": "The zoo is swept by desks/mt5/research/hourly_cycle.py:1062 'sweep' (desks/mt5/research/orthogonal_sweep.py) and run_hunt16/run_hunt* from desks/mt5/research/research_supervisor.py (desks/mt5/ops/box_tasks.manifest TASK MT5-ResearchSupervisor, trigger=UNDECLARED)",
-   "artifact": "desks/mt5/data/hypotheses/orthogonal_candidates.json; desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json; desks/mt5/reports/TRIAL_ALLOCATION.json",
+   "scheduled_by": "hourly_cycle:sweep",
+   "artifact": "desks/mt5/mt5desk/families_orthogonal.py",
    "consumer": "desks/mt5/mt5desk/gateway.py + desks/mt5/research/promoter.py via executables.gateway_can_execute; desks/mt5/research/trial_allocator.py",
-   "gap": "76 registered = 76 executable (no dead registrations), but only 5 families have ever produced a certificate, and 15 of the blueprint's ~44 mechanism classes have no registered family at all — most importantly opening range, jump, vol-of-vol, realized range, cross-sectional, futures-curve, options and any exit/execution family, so those classes cannot even be TRIED.",
-   "next_step": "Register `family_opening_range` and `family_jump` in desks/mt5/mt5desk/families_orthogonal.ORTHOGONAL_FAMILIES (both are price-only, need no new data, and orthogonal_sweep will enumerate them the next hour) — the file to touch is desks/mt5/mt5desk/families_orthogonal.py."
+   "gap": "",
+   "next_step": "Register `family_opening_range` and `family_jump` in desks/mt5/mt5desk/families_orthogonal.ORTHOGONAL_FAMILIES (both are price-only, need no new data, and orthogonal_sweep will enumerate them the next hour) — the file to touch is desks/mt5/mt5desk/families_orthogonal.py.",
+   "landed": [
+    "4227b566"
+   ]
   },
   {
    "id": "G11",
    "item": "Exit research as first-class trials",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/exit_study.py:1-11 — 'Tests exit-management variants … TTL-only (baseline), breakeven trail after +1R, trail after +0.5R, and TP2 (partial close at +1R, rest to target/TTL)'; :105 writes `reports/exit_study.json` (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1284 `xs = _costed(\"exit_study\", lambda: _producer(\"exit_study\", \"desks/mt5/research/exit_study.py\"))` — an hourly leg since the 2026-09-06 'TWELVE THAT NOTHING RAN' block (MEASURED)",
-    "desks/mt5/research/exit_sweep.py:1-30 — the three-stage exit machine (target rr → bank `bank_frac` → `bank_protect_k` → `runner_trail_k` → ttl), 'MATCHED DRAWDOWN. Every arm is solved to the same 35% budget', 'THE TRIAL COUNT IS PRINTED. 216 exits per sleeve is 216 chances to find a lucky one'; :56 `OUT = _DESK/\"reports\"/\"exit_sweep.json\"` (MEASURED)",
-    "desks/mt5/research/exit_accounts.py:1-12 — captured / left_on_table / adverse_survived per sleeve and per exit reason; :64 `REPORT = _DESK/\"reports\"/\"EXIT_ACCOUNTS.json\"`; runs from desks/mt5/research/daily_cycle.py:323 (MEASURED)",
-    "desks/mt5/research/excursions.py:37 `OUT = BASE/\"data\"/\"excursions.jsonl\"`, :38 `REPORT = reports/EXCURSIONS.json`; in desks/mt5/research/daily_cycle.py:323 list (MEASURED)",
-    "libs/research/bandit.py:51 `ARMS` contains `\"exit_improvement\"`; SOURCE_ARM maps `excursions` and `exit_accounts` to it; reports/RESEARCH_BANDIT.json gives exit_improvement a 9.86% share (MEASURED)",
-    "ON-DISK MEASUREMENT: desks/mt5/reports/ holds 84 files; EXCURSIONS.json is present (2026-09-04 21:09) but exit_study.json, exit_sweep.json and EXIT_ACCOUNTS.json ARE ALL ABSENT — the hourly exit_study leg has never written an artifact on this box (MEASURED)",
-    "desks/mt5/research/exit_sweep.py appears in NO scheduler surface (not desks/mt5/research/hourly_cycle.py, desks/mt5/research/daily_cycle.py, desks/mt5/research/hourly_discovery.py ORGANS, ops/*.service, ops/*.sh, desks/mt5/ops/box_tasks.manifest); the only ops/crontab.manifest mention is a prose line at :3157 about duplicate copies (MEASURED)",
-    "desks/mt5/reports/TRIAL_ALLOCATION.json — the trial ledger is keyed on (family × asset_class) only, `n_cell_types: 132`; there is no exit axis, so 216 exit variants per sleeve are never counted against the docket's multiplicity budget (MEASURED)",
-    "desks/mt5/research/multiplicity.py:26 `expected_max_z(n_tests)`, :35 `deflate_t(t_obs, n_tests)`, :39 `annotate_report(path)` — deflation is per-report, not a global trial ledger (MEASURED)"
+    "The exit is the third key of a cell type, so a 216-arm exit sweep stops being invisible in the yield table (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1284 'exit_study'; desks/mt5/research/daily_cycle.py:323 'excursions' and 'exit_accounts'. desks/mt5/research/exit_sweep.py: NONE",
-   "artifact": "desks/mt5/reports/EXCURSIONS.json (present); reports/exit_study.json, reports/exit_sweep.json and reports/EXIT_ACCOUNTS.json (all ABSENT on disk)",
+   "scheduled_by": "hourly_cycle:exit_study",
+   "artifact": "desks/mt5/reports/MUTATION_YIELD.json",
    "consumer": "libs/research/bandit SOURCE_ARM → exit_improvement budget share; nothing reads exit_study.json / exit_sweep.json / EXIT_ACCOUNTS.json anywhere",
-   "gap": "Exit research exists as three separate engines and a bandit arm, but exit variants are not counted as TRIALS: `trial_allocator` and `multiplicity` key on (family × asset_class) with no exit dimension, so a 216-arm exit sweep costs the docket's deflation budget nothing. Of the ten exit types the blueprint lists, only fixed TP/SL, ATR, time (ttl), trailing, break-even and partial are searched — vol-scaled, regime-change, cross-asset and decay exits have no arm.",
-   "next_step": "Add `exit_rule` as a third key in `desks/mt5/research/trial_allocator.py`'s cell-type tuple so exit variants enter the same certified/tried yield table as families, and the deflation the gauntlet charges includes them."
+   "gap": "",
+   "next_step": "Add `exit_rule` as a third key in `desks/mt5/research/trial_allocator.py`'s cell-type tuple so exit variants enter the same certified/tried yield table as families, and the deflation the gauntlet charges includes them.",
+   "landed": [
+    "9fd8fc66"
+   ]
   },
   {
    "id": "G12",
    "item": "Portfolio-combination search and portfolio alpha synthesis",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/alpha_grammar.py:67 — `BINARY = (\"add\",\"sub\",\"mul\",\"div\",\"max2\",\"min2\",\"trade_when\")`; `trade_when(condition, signal)` IS 'A conditioned on B' and is inside the searched space (MEASURED)",
-    "libs/alpha_factory/wq_operators.py:223 `def trade_when(condition: pd.Series, signal: pd.Series)` (MEASURED)",
-    "desks/mt5/mt5desk/family_ensemble.py:1-17 — 'A weighted vote over MEMBER cells … the members' individual results are irrelevant; only the combination faces the gauntlet, as ONE candidate with ONE certificate'; registered at desks/mt5/mt5desk/families_orthogonal.py:1468 `ORTHOGONAL_FAMILIES[\"ensemble\"]` (MEASURED)",
-    "desks/mt5/research/weak_signal_compiler.py:1-20 — members are 'validity-passing, power-deficient cells', frozen combination judged out of sample, 'propose only if … beats its strongest single member out of sample'; :45 `SOURCE = \"weak_signal_ensemble\"`, :46 `REPORT = reports/weak_signal_compiler.json` (MEASURED)",
-    "MEASURED YIELD: desks/mt5/reports/weak_signal_compiler.json = `tests_run: 0, cells_proposed: 0`; there is no data/intelligence/weak_signal_ensemble donation dir (MEASURED)",
-    "libs/alpha_factory/combination_engine.py:180 `enumerate_space(...)`, :240 `space_size`, :269 `as_hypotheses`, :300 `novel_only`, :337 `iter_batches`; :93 declares `all` as the mandatory unconditional regime cell (MEASURED)",
-    "combination_engine's only importers are libs/alpha_factory/evaluator.py, libs/alpha_factory/wq_operators.py, libs/research/alpha_schema.py, scripts/run_research_review.py and tests — and scripts/run_research_review.py is invoked only from ops/run_research_cycle.sh:88, which has no timer row in ops/crontab.research.manifest (MEASURED)",
-    "desks/mt5/side_channels/alpha_recombination.py:217 `class RecombinationEngine`, :224 `generate_orthogonal_recombinants(...)`, :253 filter on `expected_orthogonality >= min_orthogonality`; hourly_controller.py:42 imports `run_recombination_pipeline`, :180/:333 `_phase_recombine()`; ops/hourly-controller.timer `OnCalendar=hourly` → ops/hourly-controller.service `ExecStart=… hourly_controller.py --once` (MEASURED)",
-    "desks/mt5/data/intelligence/recombinants/ holds 60 REC-*.json (latest REC-20260906-24d0da.json); each carries `atoms`, `mechanism_class`, `expected_orthogonality`, `source_strategies`, `falsifier` (MEASURED)",
-    "NO CONSUMER FOR RECOMBINANTS: desks/mt5/research/miner_candidate_compiler.py:49-62 `_rows()` takes `doc[\"discoveries\"]` or any list value — for a REC file it extracts the `atoms` list, so per_source keys become the source CELL NAMES ('qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY', 'external.EURJPY.session_range_breakout.rr=2.0_wb=12', …4 such keys) and the recombination itself is never compiled into a candidate (MEASURED)",
-    "libs/research/alpha_fitness.py:232 `delta_elog_term` scores a candidate by `marginal_delta_elog` against the current book — the only mechanism by which a contribution with no standalone value can score (MEASURED)",
-    "No construct anywhere for 'A entry + B exit': grep across desks/mt5/mt5desk/families*.py and libs/ finds no cross-family entry/exit composition (MEASURED)"
+    "The recombination engine writes its recombinants in the miner contract, so the compiler compiles the recombinant instead of its atoms (MEASURED)"
    ],
-   "scheduled_by": "`trade_when` inside alpha_evolution (desks/mt5/research/hourly_discovery.py:81); weak_signal_compiler in desks/mt5/research/daily_cycle.py:260 _proposers and hourly_discovery ORGANS; alpha_recombination via ops/hourly-controller.timer. combination_engine: NONE",
-   "artifact": "desks/mt5/data/intelligence/recombinants/REC-*.json (60); desks/mt5/reports/weak_signal_compiler.json (0 tests)",
+   "scheduled_by": "hourly_cycle:compile_candidates",
+   "artifact": "desks/mt5/data/hypotheses/miner_candidates.json",
    "consumer": "family_ensemble certificates go through the gateway (executables.resolve_family). RECOMBINANTS: NONE — the compiler mis-parses them into atom rows.",
-   "gap": "'A conditioned on B' exists as the `trade_when` grammar operator and 'many weak signals combined' exists as `family_ensemble` + `weak_signal_compiler`, but weak_signal_compiler has run 0 tests, the general combination enumerator (libs/alpha_factory/combination_engine.py) has no scheduled caller, the hourly recombination engine's 60 artifacts have no consumer, and 'A entry + B exit' has no representation at all.",
-   "next_step": "Make desks/mt5/side_channels/alpha_recombination.py write its REC rows under a `\"discoveries\": [...]` key in the miner contract (as libs/ops/deepseek_cycle._donate does) so miner_candidate_compiler._rows picks up the recombinant rather than its atoms."
+   "gap": "",
+   "next_step": "Make desks/mt5/side_channels/alpha_recombination.py write its REC rows under a `\"discoveries\": [...]` key in the miner contract (as libs/ops/deepseek_cycle._donate does) so miner_candidate_compiler._rows picks up the recombinant rather than its atoms.",
+   "landed": [
+    "161b4444"
+   ]
   },
   {
    "id": "G13",
    "item": "Representation learning / latent state / regime foundation model",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/models/embedding.py:1-9 — 'A self-supervised market embedding and the historical-analogue engine built on it … trained with a masked-reconstruction pretext'; :35 `class MarketEncoder`, :163 `class WindowPCA`, :202 `_infonce(v1, v2, w, …)`, :230 `class ContrastiveEncoder`, :307 Wang & Isola alignment/uniformity, :84 `analogues(z_now, z_hist, forward, k=20)`, :371 `representation_gain(windows, forward, encoder=...)` (MEASURED)",
-    "libs/models/embedding.py has NO production importer: grep for `models.embedding`, `MarketEncoder`, `ContrastiveEncoder` across the tree matches only the file itself and desks/mt5/tests/test_models_moe_adapt.py (MEASURED)",
-    "desks/mt5/research/ml_layer.py:118 `representation(close, k=4)` (PCA on the train slice only), :144 `pretext(close, mask=16)`, :186 `mixture(close, n_experts=3)`, :247 `distil(close, student_k=3)`; :50 `REPORT = reports/ML_LAYER.json`, :55 `HORIZONS = (2,4,8,16,32,64,128)` (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1256 `mll = _costed(\"ml_layer\", ml_layer)` → :978 `_producer(\"ml_layer\", \"desks/mt5/research/ml_layer.py\")` — hourly (MEASURED)",
-    "desks/mt5/reports/ML_LAYER.json (2026-09-06T01:10) — 6 series, per-series `representation.status: FITTED, k:4, explained_variance 0.7648`, `pretext.status: FITTED, pretext_r2 0.345`, `mixture.admitted: false`, `distillation.admitted: true` (MEASURED)",
-    "libs/portfolio/latent_factors.py:61 `factor_model(m, k=3, halflife=60.0)`, :102 `n_eff`, :234 `drift` — a PORTFOLIO-side latent factor model over sleeve returns, not a market-state embedding (MEASURED)",
-    "desks/mt5/reports/FRONTIER_GAPS.json — `n_missing: 6`, `missing: [\"REPRESENTATION_LEARNING\", \"MULTIMODAL\", \"SELF_SUPERVISED\", \"DISTRIBUTED_TRAINING\", \"MIXTURE_OF_EXPERTS\", \"GEOPOLITICS\"]` (MEASURED)",
-    "desks/mt5/reports/FRONTIER_INTELLIGENCE.json — `largest_gap.capability = \"REPRESENTATION_LEARNING\"`, gap MISSING, and `unknowns.unaddressed_capabilities` names REPRESENTATION_LEARNING with `mentions: 0` (MEASURED)",
-    "No sequence model anywhere: grep for transformer/RNN/LSTM/GRU as a model class across libs/ and desks/mt5/ returns nothing structural (MEASURED)",
-    "The StateVector (libs/regime/state_vector.py:40) is a hand-assembled dict of engine outputs with a content hash `id` (:73), NOT a learned embedding (MEASURED)"
+    "A contrastive encoder runs beside PCA on the hourly leg, on the same folds and the same scorer, and both gains reach the board (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1256 'ml_layer' only. libs/models/embedding.py: NONE",
-   "artifact": "desks/mt5/reports/ML_LAYER.json (per-series representation/pretext/mixture/distillation verdicts); desks/mt5/data/state_vector.json",
+   "scheduled_by": "hourly_cycle:ml_layer",
+   "artifact": "desks/mt5/reports/ML_LAYER.json",
    "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) — the representation is not consumed by any allocator, gate or family. libs/models/embedding.py: NONE (test only).",
-   "gap": "A contrastive/InfoNCE encoder with a proper alignment-uniformity diagnostic and an OOS `representation_gain` scorer EXISTS and is dead code: it has no importer outside a test and no scheduler. The only live representation is ml_layer's k=4 PCA over ret/vol windows on 6 series, whose output nothing but the dashboard reads. There is no shared market-state embedding that families or the allocator consume, and the desk's own frontier ranks REPRESENTATION_LEARNING as its single largest capability gap.",
-   "next_step": "Have `desks/mt5/research/ml_layer.representation()` call `libs.models.embedding.ContrastiveEncoder` alongside `WindowPCA` and report `representation_gain` for both, so the contrastive encoder is exercised on the hourly leg and its OOS gain is on the board next to PCA's."
+   "gap": "",
+   "next_step": "Have `desks/mt5/research/ml_layer.representation()` call `libs.models.embedding.ContrastiveEncoder` alongside `WindowPCA` and report `representation_gain` for both, so the contrastive encoder is exercised on the hourly leg and its OOS gain is on the board next to PCA's.",
+   "landed": [
+    "63a2a9a1"
+   ]
   },
   {
    "id": "G14",
@@ -2216,120 +2140,95 @@
    "item": "Persistent specialist agent roles as scheduled organs",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/ops/deepseek_cycle.py:73 `SEED_ROLES` — 36 roles, of which the blueprint's six map as: mechanism scientist = `cold_alpha_inventor` ('economically plausible hypotheses from first principles'); literature miner (multilingual) = `multilingual_intelligence` ('mine CN/KR/JP/RU/PT/ES/AR/TR/VI/ID/HI ecosystems') + `external_replication_factory`; cross-domain transfer = `cross_domain_transfer`; mutation agent = `alpha_recombination` + `near_survivor_repair`; cartographer = `negative_space_miner` ('low-coverage cells across data x mechanism x asset x venue x horizon x regime x representation x execution x label') + `unknown_unknown_explorer`; hypothesis synthesizer = `experiment_designer` (MEASURED)",
-    "libs/ops/deepseek_cycle.py:66 comment — 'Roles are SEEDS, not permanent bureaucracy — spawnable, splittable, mergeable, retirable … so the allocator can rank them by measured marginal contribution' (MEASURED)",
-    "SCHEDULED: ops/quant-deepseek.timer `OnCalendar=*-*-* *:20:00 UTC`; ops/quant-seat-dataaxis.timer 05:00; ops/quant-seat-prospector.timer 06:00; ops/quant-seat-frontier2.timer 06:20; ops/quant-seat-litminer.timer 07:00; ops/quant-seat-frontier.timer 08:00; ops/quant-video-hunter.timer 10:30; ops/quant-blindrediscovery.timer `*-*-01 20:00`; ops/quant-brain-chain.timer 09:00; ops/quant-midnight-frontier.timer 00:00 Europe/Dublin (MEASURED)",
-    "ops/crontab.research.manifest carries fallback cron rows for every seat, gated on `systemctl is-enabled quant-<seat>.timer` (MEASURED)",
-    "docs/research/SPECIALIZED_SEATS_SPEC.md — the seat designs (Scheduled-Event Miner, GitHub Archeologist, OSINT Regional-Flow tier), with MEV RESEARCH marked RETIRED 2026-09-05 (MEASURED)",
-    "desks/mt5/research/research_org.py:54 `ROLES = (\"ADVOCATE\",\"SKEPTIC\",\"REPLICATOR\",\"VALIDATOR\")`; :50 `REPORT = reports/RESEARCH_ORG.json`; :51 `LEDGER = data/agent_reputation.jsonl`; hourly leg at desks/mt5/research/hourly_cycle.py:1253 (MEASURED)",
-    "libs/research/agents.py:55 `_MECHANISM_QUESTIONS = (\"who_is_forced\",\"why_forced\",\"when\",\"what_constraint\", …)`; :60 `REQUIRED_CONTROLS = (\"randomised_event_clock\",\"shuffled_conditioning_variable\", …)`; :156 `falsify(hyp, …)`; :224 `research_cycle(observations, …)` — the mechanism-before-strategy discipline as code (MEASURED)",
-    "CARTOGRAPHER GAP: desks/mt5/side_channels/alpha_periodic_table.py:1-10 ('Every candidate gets coordinates: WHO caused it? WHY must they act? … Maintains a matrix with empty cells as research targets') has NO caller — grep matches only desks/mt5/side_channels/__init__.py:21, a docstring index (MEASURED)",
-    "desks/mt5/frontier_intel/unknowns.py and ontology.py exist and ARE hourly legs (desks/mt5/research/hourly_cycle.py:1280 'frontier_unknowns', :1282 'frontier_ontology'), and FRONTIER_INTELLIGENCE.json `unknowns.unknown_firms: []`, `unknown_capabilities: []` — the white-space walker runs and finds nothing (MEASURED)",
-    "scripts/meta_architect.py and scripts/research_exchange.py — the attribution/architecture roles — are on no timer (MEASURED)"
+    "Persistent specialist roles run as scheduled organs rather than ad-hoc calls (MEASURED)"
    ],
-   "scheduled_by": "ops/quant-deepseek.timer (:20 hourly, 36 roles); ops/quant-seat-{dataaxis,prospector,frontier,frontier2,litminer}.timer; ops/quant-blindrediscovery.timer; ops/quant-video-hunter.timer; desks/mt5/research/hourly_cycle.py:1253/1280/1282",
-   "artifact": "data/intelligence/hypotheses/H-*.yaml; data/cro_ai_logs/seat_*.log and frontier_unified_*.log; desks/mt5/reports/RESEARCH_ORG.json; desks/mt5/reports/FRONTIER_INTELLIGENCE.json",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/ALPHA_PERIODIC_TABLE.json",
    "consumer": "miner_candidate_compiler (seat donations, currently 0 rows); desks/mt5/research/frontier_intel/implementer.py --apply (desks/mt5/research/hourly_cycle.py:1242) turns a scored gap into a challenger under frontier_intel/challengers/",
-   "gap": "Five of the six blueprint roles exist as DeepSeek seed roles on an hourly timer, and four physical seats have their own timers — but the cartographer's artifact is the missing one: alpha_periodic_table.py (the mechanism × axis white-space matrix) has no caller anywhere, and the running white-space walker (frontier_intel/unknowns.py) reports zero unknown firms and zero unknown capabilities, so the desk has no maintained map of where it has not looked.",
-   "next_step": "Add `alpha_periodic_table` as a leg in desks/mt5/research/daily_cycle.py `_state_research_feedback` (it needs no network and writes a matrix of empty cells) so the white-space map is produced on a cadence and can be joined to regime_coverage's uncovered buckets."
+   "gap": "",
+   "next_step": "Add `alpha_periodic_table` as a leg in desks/mt5/research/daily_cycle.py `_state_research_feedback` (it needs no network and writes a matrix of empty cells) so the white-space map is produced on a cadence and can be joined to regime_coverage's uncovered buckets.",
+   "landed": [
+    "15035d72"
+   ]
   },
   {
    "id": "G16",
    "item": "Quality-diversity search (MAP-Elites archive)",
    "domain": "G",
    "phase": 2,
-   "status": "MISSING",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "grep -riE 'map.?elites|quality.diversity|behaviou?r.?descriptor|elite.?archive|illuminat' across libs/, desks/mt5/ and scripts/ returns ZERO matches (MEASURED)",
-    "The only 'elite' in the search is a single global list: desks/mt5/research/alpha_evolution.py:93 `POP, GENS, ELITE, DEPTH = 40, 5, 8, 3`; :382 and :474 keep `[:ELITE]` by fitness; :432 'the elite is the Pareto front over the fitness terms, ordered by crowding distance' — one front, no descriptor grid, no per-niche champion (MEASURED)",
-    "libs/research/alpha_fitness.py:673 `crowding_distance(rows, front)` and :702 NSGA-II ordering — diversity is preserved WITHIN a Pareto front, never across an archive of behaviour cells (MEASURED)",
-    "libs/research/search_populations.py:723-732 `POPULATIONS` — nine populations sharing ONE budget and deduped by structural hash (:741 'THE DEDUPE IS ACROSS POPULATIONS'), which spreads the search but keeps no archive (MEASURED)",
-    "CLOSEST THING, AND IT IS DARK: desks/mt5/research/alpha_habitat.py:90 `fingerprint(h1, costs_pts, tick, contract)` (skew/kurtosis/Hurst/session buckets at :38 `SESSIONS = {\"asia\":(0,6),\"london_am\":(7,12),\"ny_open\":(13,15),\"afternoon\":(16,23)}`), :166 `affinity(hunt_files)` builds a symbol × family matrix, :190 `main()` writes `reports/market_fingerprints.json` — appears in NO scheduler surface and the artifact is absent from desks/mt5/reports/ (MEASURED)",
-    "libs/research/alpha_clusters.py declares 15 phenomena and classifies the book to name EMPTY clusters — a coverage report, not an archive; it has no scheduler reference (MEASURED)",
-    "desks/mt5/reports/REGIME_COVERAGE.json gives a 5-bucket coverage grid over (global × event × weekday) with `families_never_tried_here` per bucket — the nearest live approximation of an illumination map, but on 3 axes and 5 cells (MEASURED)"
+    "A descriptor-keyed MAP-Elites archive beside the elite: the best tree per (mechanism, horizon, regime, asset) cell is never forgotten and the occupancy is published (MEASURED)"
    ],
-   "scheduled_by": "NONE",
-   "artifact": "NONE (alpha_habitat's reports/market_fingerprints.json has never been written on this box)",
+   "scheduled_by": "hourly_cycle:search",
+   "artifact": "desks/mt5/reports/EVOLUTION.json archive",
    "consumer": "NONE",
-   "gap": "There is no archive keyed on behaviour descriptors. The blueprint's six-axis grid (mechanism × horizon × regime × asset × factor exposure × execution style × tail behaviour) has no representation: the search keeps one Pareto front of 8, so a candidate that is the best thing the desk has ever found in 'Asia + high-vol + short-horizon' is discarded the moment eight globally-better trees exist.",
-   "next_step": "Add a descriptor-keyed dict to `desks/mt5/research/alpha_evolution.Evaluator` — cell = (mechanism_class, horizon bucket from `hold_bars`, top regime label from data/state_vector.json, symbol asset_class) — and keep the best expression per cell alongside the existing `ELITE` list, so the elite becomes an archive rather than a single front."
+   "gap": "",
+   "next_step": "Add a descriptor-keyed dict to `desks/mt5/research/alpha_evolution.Evaluator` — cell = (mechanism_class, horizon bucket from `hold_bars`, top regime label from data/state_vector.json, symbol asset_class) — and keep the best expression per cell alongside the existing `ELITE` list, so the elite becomes an archive rather than a single front.",
+   "landed": [
+    "3988ae7e"
+   ]
   },
   {
    "id": "G17",
    "item": "Cross-frequency research (D1 state → H1 setup → M5 execution)",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "DATA RESOLUTION, MEASURED: desks/mt5/data/universe contains 117 files — 101 `*_H1.parquet`, 4 `*_M15.parquet` (AUDCAD, AUDNZD, NZDCAD, XAUUSD), 1 `XAUUSD_M5.parquet`, 1 `XAUUSD_M1.parquet`, plus universe.json/canon/stumps. There is NO `*_D1.parquet`, NO `*_H4.parquet`, NO `*_M30.parquet` and NO `*_W1.parquet` anywhere (MEASURED)",
-    "TAPE, MEASURED: desks/mt5/data/tape/ contains only depth_probe.json and triangle_executable.json — no tick partitions on this checkout (MEASURED)",
-    "desks/mt5/research/state_vector_build.py:86 `ASSET_CLOCKS = (\"weekly\",\"daily\",\"H4\",\"H1\",\"M15\",\"M5\")` and :89 `BAR_SUFFIXES = (\"M5\",\"M15\",\"H1\")` — the state builder declares six clocks and can only load three file suffixes; :80 `FACTOR_CLOCKS = (\"daily\",)` (MEASURED)",
-    "desks/mt5/research/orthogonal_sweep.py:202 `_resample_rule(timeframe)` and :535 `timeframes_of(symbol, meta)` — higher clocks are RESAMPLED from H1 rather than sourced (MEASURED)",
-    "desks/mt5/mt5desk/executables.py:96 `GATEWAY_FAMILY_TIMEFRAMES = (\"M1\",\"M5\",\"M15\",\"M30\",\"H1\",\"H4\",\"D1\")`; :162 `executor_gap` refuses a certificate whose chart is outside that set — timeframe is treated as a per-certificate PARAMETER, resolved by `gateway._family_chart` from the certificate's own params (MEASURED)",
-    "desks/mt5/mt5desk/families_orthogonal.py declares `FAMILY_TIMEFRAMES` (referenced at desks/mt5/research/orthogonal_sweep.py:153) — again a per-family parameter, not a hierarchy (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1229 `_costed(\"timeframe_coverage\", lambda: _producer(\"timeframe_coverage\", \"scripts/check_timeframe_coverage.py\"))` — a coverage FENCE exists and runs hourly, but no report file for it is present in desks/mt5/reports/ (MEASURED)",
-    "desks/mt5/mt5desk/family_clock_transition.py is registered at desks/mt5/mt5desk/families_orthogonal.py:1452 and desks/mt5/mt5desk/family_multi_speed_trend.py at :1460 — two families that combine speeds, the nearest thing to a cross-frequency construct (MEASURED)",
-    "No module composes a D1 state with an H1 setup and an M5 execution: grep across desks/mt5/ finds no such chain (MEASURED)"
+    "The daily clock gets a file of its own: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks the series per clock. MEASURED: XAUUSD@daily saw 73 observations against a floor of 250 because the M5 file answered every clock, and XAUUSD@daily IS the state vector's global state that the allocator's world draw reads. Both clocks fit after the change (441 weekly, 2,000 daily) (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1229 'timeframe_coverage' (the fence). The causal hierarchy itself: NONE",
-   "artifact": "desks/mt5/data/state_vector.json carries per-clock AssetStates for the three suffixes that exist",
+   "scheduled_by": "hourly_cycle:refresh_bars",
+   "artifact": "desks/mt5/data/universe/derived_series.json",
    "consumer": "pf_allocator and the gateway read state_vector.json; executables.executor_gap enforces the certificate's own chart",
-   "gap": "Timeframe IS a fixed per-family/per-certificate parameter, exactly what the blueprint says it should not be — and the data cannot support the alternative: 101 symbols have H1 only, 4 have M15, 1 has M5/M1, and NO symbol has a D1 or H4 file, so 'D1 state → H1 setup → M5 execution' is buildable for XAUUSD alone and only by resampling the daily leg from H1.",
-   "next_step": "Extend `desks/mt5/research/refresh_tail.py` / the universe pull to write `<SYM>_D1.parquet` for the book's symbols (a D1 resample of H1 is already computed in orthogonal_sweep._resample_rule), so `state_vector_build.BAR_SUFFIXES` can carry the daily clock it already declares in ASSET_CLOCKS."
+   "gap": "",
+   "next_step": "Extend `desks/mt5/research/refresh_tail.py` / the universe pull to write `<SYM>_D1.parquet` for the book's symbols (a D1 resample of H1 is already computed in orthogonal_sweep._resample_rule), so `state_vector_build.BAR_SUFFIXES` can carry the daily clock it already declares in ASSET_CLOCKS.",
+   "landed": [
+    "8801b7ff"
+   ]
   },
   {
    "id": "G18",
    "item": "Negative-correlation / drawdown alpha, liquidity alpha, regime transitions, time-of-day capital",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "DRAWDOWN ALPHA — LIT: desks/mt5/research/drawdown_alpha.py:1-8 quotes the mandate ('Find another edge that earns +40 precisely during those -80 periods'); :61 `OUT = BASE/\"reports\"/\"DRAWDOWN_ALPHA.json\"`; scheduled at desks/mt5/research/daily_cycle.py:323; artifact present (162,915 bytes, 2026-09-05 17:29); consumers desks/mt5/research/survivor_neighbourhood.py and libs/ops/capability_graph.py (MEASURED)",
-    "desks/mt5/mt5desk/families_orthogonal.py:1139 registers `\"drawdown_conditional\": family_drawdown_conditional` — an executable family for the same idea (MEASURED)",
-    "TAIL SEARCH — DARK: desks/mt5/research/tail_alpha_search.py:37 `SOURCE = \"tail_alpha\"`, :38 `REPORT = reports/tail_alpha_search.json`; scheduled in desks/mt5/research/daily_cycle.py:260 and desks/mt5/research/hourly_discovery.py:81 — but reports/tail_alpha_search.json is 152 bytes with `tests_run: 0, cells_proposed: 0`, and there is no data/intelligence/tail_alpha donation dir (MEASURED)",
-    "LIQUIDITY ALPHA: desks/mt5/mt5desk/families_orthogonal.py:639 `\"liquidity_regime\": family_liquidity_regime`; desks/mt5/mt5desk/families_edge_queue.py:264 `\"liquidity_gamma_reversal\"`; libs/regime/liquidity_state.py; desks/mt5/research/state_vector_build.py:241 `liquidity_state(symbols, now, …)` (MEASURED)",
-    "REGIME TRANSITIONS: desks/mt5/research/transition_alpha.py:1-8 ('`family_regime_transition` exists and is registered, but a registered family only runs when a candidate names it. Nothing did.'); desks/mt5/mt5desk/families_orthogonal.py:1443 regime_transition, :1452 clock_transition. MEASURED reports/transition_alpha.json = `tests_run: 0, cells_proposed: 0`, no data/intelligence/transition_alpha dir (MEASURED)",
-    "TIME-OF-DAY CAPITAL — DARK: desks/mt5/research/hour_surface.py:1-10 quotes the principal ('the allocator solves on a daily R matrix, so it structurally cannot express \"Asia is better than NY right now\"'); :42 `OUT = reports/hour_surface.json`. desks/mt5/research/hour_prior.py:2-6 — 'desks/mt5/research/hour_surface.py has been measuring expected R by hour of day … and NOTHING has ever read it — the only importer is its own producer'; :41 SURFACE, :42 `OUT = reports/hour_prior.json` (MEASURED)",
-    "NEITHER desks/mt5/research/hour_surface.py NOR desks/mt5/research/hour_prior.py appears in desks/mt5/research/hourly_cycle.py, desks/mt5/research/daily_cycle.py, desks/mt5/research/hourly_discovery.py ORGANS, ops/*.service, ops/*.sh, ops/crontab.research.manifest, desks/mt5/ops/box_tasks.manifest or desks/mt5/scripts/Install-QuantWindows.ps1; and neither reports/hour_surface.json nor reports/hour_prior.json exists on disk (MEASURED)",
-    "desks/mt5/research/pf_allocator.py is the only other file that mentions hour_surface/hour_prior — i.e. the allocator is READY to read a prior nothing writes (MEASURED)",
-    "desks/mt5/research/hour_prior.py:8-14 records the measured surface: 08Z +0.166R n=6143 t=+13.0 heat 7.55%; 14Z +0.164R n=6154 t=+12.9 heat 0.04% STARVED; 18Z −0.032R heat 8.53% (MEASURED, from the module's own docstring)",
-    "The 66-certificate canon holds 5 families (discovered 32, session_range_breakout 20, overnight_gap_decay 12, dav_range_filter_adx 1, carry 1) — none of them a drawdown-, liquidity- or transition-conditioned sleeve (MEASURED)"
+    "The timing layer and the white-space map get a clock: hour_surface, hour_prior and alpha_periodic_table run in the daily cycle (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/daily_cycle.py:323 'drawdown_alpha'; desks/mt5/research/daily_cycle.py:260 + desks/mt5/research/hourly_discovery.py:81 'transition_alpha' and 'tail_alpha_search'. hour_surface / hour_prior: NONE",
-   "artifact": "desks/mt5/reports/DRAWDOWN_ALPHA.json (present, 2026-09-05); reports/tail_alpha_search.json and reports/transition_alpha.json (present but zero-yield); reports/hour_surface.json and reports/hour_prior.json (ABSENT)",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/HOUR_SURFACE.json",
    "consumer": "DRAWDOWN_ALPHA.json → desks/mt5/research/survivor_neighbourhood.py + libs/ops/capability_graph.py. hour_surface.json → desks/mt5/research/hour_prior.py only (its producer's producer). tail_alpha / transition_alpha → miner_candidate_compiler, which has recorded 0 rows from either.",
-   "gap": "The drawdown-alpha FEEDSTOCK is LIT (the book's worst periods are published and read), but the two engines meant to search it — tail_alpha_search and transition_alpha — are scheduled and have run ZERO tests, and the time-of-day capital market is the sharpest miss: a measured +0.164R hour at t=+12.9 carries 0.04% of heat while a −0.032R hour carries 8.53%, and the module that would turn that into an allocator prior is on no clock and has never written its file.",
-   "next_step": "Add `\"hour_surface\"` and `\"hour_prior\"` to the module list in `desks/mt5/research/daily_cycle.py:323` `_state_research_feedback` (both are pure readers of the shadow ledgers, no network, no terminal), which makes reports/hour_prior.json exist for the pf_allocator branch that already looks for it."
+   "gap": "",
+   "next_step": "Add `\"hour_surface\"` and `\"hour_prior\"` to the module list in `desks/mt5/research/daily_cycle.py:323` `_state_research_feedback` (both are pure readers of the shadow ledgers, no network, no terminal), which makes reports/hour_prior.json exist for the pf_allocator branch that already looks for it.",
+   "landed": [
+    "15035d72"
+   ]
   },
   {
    "id": "G19",
    "item": "Automated simplification of survivors and alpha distillation",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "MODEL DISTILLATION — LIT: desks/mt5/research/ml_layer.py:247 `distil(close, student_k=3)`; reports/ML_LAYER.json (2026-09-06) shows `distillation: {name: distilled_student, admitted: true, skill: -0.00066, baseline: -0.00696, n_oos: 3828}`; scheduled at desks/mt5/research/hourly_cycle.py:1256 (MEASURED)",
-    "COMPLEXITY PRESSURE INSIDE THE SEARCH: libs/research/alpha_fitness.py:107-110 `complexity` weight 0.03 in `PENALTIES`; libs/research/alpha_grammar.py:933 `complexity(expr)`; desks/mt5/research/alpha_evolution.py:452 hard cap `ag.complexity(e) > 14` (MEASURED)",
-    "desks/mt5/research/survivor_distiller.py:1-23 — it is a PRIOR + NEIGHBOUR proposer ('prior[family][param] = (median, IQR) among CERTIFIED vs among FAILED/BURIED … neighbours(cert) = K untested cells one grid step from the certificate'), named operators `step_<param>_up`, `step_<param>_down`, `swap_<param>` for mutation_yield to bill; :45 SOURCE, :46 `REPORT = reports/SURVIVOR_DISTILLER.json` (MEASURED)",
-    "MEASURED: desks/mt5/data/intelligence/survivor_distiller/ holds 52 donation files (latest discoveries_20260906_2239.json), but reports/SURVIVOR_DISTILLER.json is ABSENT from desks/mt5/reports/ (MEASURED)",
-    "survivor_distiller MOVES a certificate's parameters toward the survivor median; it does not REMOVE conditions or parameters — there is no 'drop a condition and re-judge' pass anywhere (MEASURED)",
-    "libs/portfolio/latent_factors.py:61 `factor_model(m, k=3, halflife=60.0)`, :102 `n_eff(rho, w)`, :108 `effective(ev, book, k=3)` — compresses correlated sleeve returns into k latent factors, but on the PORTFOLIO side; nothing turns the latent factor back into a tradable meta-strategy (MEASURED)",
-    "desks/mt5/mt5desk/family_ensemble.py + desks/mt5/mt5desk/families_orthogonal.py:1468 `ORTHOGONAL_FAMILIES[\"ensemble\"]` — the one path from many weak members to one certificate; its feeder desks/mt5/reports/weak_signal_compiler.json shows `tests_run: 0` (MEASURED)",
-    "libs/research/alpha_clusters.py:1-16 — the 15-phenomenon taxonomy that classifies the book and names empty clusters; on NO scheduler (MEASURED)",
-    "scripts/meta_architect.py:1-20 — 'META-RESEARCH ARCHITECT + RESEARCH SIMPLIFIER … SIMPLIFIER (mechanical, runs today) — what should be REMOVED or wired?' — this simplifies the RESEARCH SYSTEM (unwired modules), not survivors, and is on no timer (MEASURED)"
+    "The distiller can subtract: one cell per optional condition with that condition dropped, screened and gated exactly like a stepped neighbour (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1256 'ml_layer' (distillation); desks/mt5/research/daily_cycle.py:260 + desks/mt5/research/hourly_discovery.py:81 'survivor_distiller'. alpha_clusters, meta_architect: NONE",
-   "artifact": "desks/mt5/reports/ML_LAYER.json (distillation verdict); data/intelligence/survivor_distiller/discoveries_*.json (52 files); reports/SURVIVOR_DISTILLER.json ABSENT",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/SURVIVOR_MOTIFS.json simplifications_generated",
    "consumer": "ML_LAYER.json → scripts/build_zentech_state.py (dashboard only). survivor_distiller donations → miner_candidate_compiler → the gauntlet.",
-   "gap": "Model-level distillation runs hourly and is admitted, and complexity is penalised inside the search — but there is no pass that takes an ALREADY-CERTIFIED survivor and re-judges it with a condition or a parameter removed: survivor_distiller only steps parameters toward the survivor median (it adds neighbours, never subtracts terms), and the latent-factor compression in libs/portfolio/latent_factors.py never becomes a meta-strategy certificate.",
-   "next_step": "Add a `simplify(cert)` generator to desks/mt5/research/survivor_distiller.py that emits, per certificate, the cells with each optional condition dropped in turn (tagged operator `drop_<param>`, which mutation_yield already knows how to bill), so parsimony is proposed through the same door as every other mutation."
+   "gap": "",
+   "next_step": "Add a `simplify(cert)` generator to desks/mt5/research/survivor_distiller.py that emits, per certificate, the cells with each optional condition dropped in turn (tagged operator `drop_<param>`, which mutation_yield already knows how to bill), so parsimony is proposed through the same door as every other mutation.",
+   "landed": [
+    "13caf00e"
+   ]
   },
   {
    "id": "G20",
@@ -2356,26 +2255,19 @@
    "item": "Portfolio-generated research missions / unused-heat intelligence",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/portfolio_gap.py:1-12 — 'THE PORTFOLIO GAP — every unfilled point of heat becomes a research request … one that says \"4% unfilled, and the desk owns nothing that trades the 00-04 UTC band outside JPY\" is a search'; :39 `OUT = BASE/\"reports\"/\"portfolio_gap.json\"`; :284 `OUT.write_text(...)`; scheduled at desks/mt5/research/daily_cycle.py:323 (MEASURED)",
-    "MEASURED: desks/mt5/reports/portfolio_gap.json DOES NOT EXIST on this box — the scheduled leg has never produced its artifact (MEASURED)",
-    "desks/mt5/research/opportunity_gap.py:1-16 — G decomposed by cause into SUPPLY / CONVERSION / BREADTH / CAPITAL / EXECUTION / DELIVERY, each with a named fix; hourly leg at desks/mt5/research/hourly_cycle.py:1258; artifact desks/mt5/reports/OPPORTUNITY_GAP.json present (2026-09-06 00:53) (MEASURED)",
-    "desks/mt5/research/regime_coverage.py:1-20 — 'Where the book has no edge, said precisely enough that research can go and find one … THE INSTRUCTION IS MACHINE-READABLE. Each uncovered bucket is written into the deepening queue as a research task naming the state, the families already tried there and what they returned, and the families structurally absent from it'; artifact REGIME_COVERAGE.json shows 3 uncovered buckets each with a `families_never_tried_here` list (MEASURED)",
-    "desks/mt5/research/missed_growth.py:461-462 — `from research.regime_coverage import _merge_into_queue; _merge_into_queue(tasks, source=\"missed_growth\")`; :16 'for a binary rail it writes a `rail_review` task for the research queue'; :44 LEDGER data/missed_growth.jsonl, :45 OUT reports/MISSED_GROWTH.json; scheduled desks/mt5/research/daily_cycle.py:323 (MEASURED)",
-    "MEASURED: desks/mt5/reports/MISSED_GROWTH.json (2026-09-04) — `ledger_rows: 1`, and EVERY rail reads UNMEASURED: 'no replayed vetoes for this reason yet' or 'no allocator pass on this host' (position_inertia, per_sleeve_bounds, sleeve_share_cap, family_cap, hard_ceiling, floor_mandate) (MEASURED)",
-    "data/MINER_YIELD_ALARM.txt (2026-09-07T08:39) — 'ZERO-YIELD: forexfactory, github, github_topics, reddit, seasonality, shipping produced 20+ rows and no survivor in 14d — noise at cost (III.16)' (MEASURED)",
-    "data/PRINCIPAL_ACTION.md — 'MAX-AUDIT ESCALATION: 34 REPO-scope below-max state(s) >48h unfixed/unacked' with rec-owed rows, and 'rec-ledger-backlog: 300 recommendation row(s) owe a disposition' (MEASURED)",
-    "QUEUE: desks/mt5/research/queue_store.py:48 `QUEUE = data/research_queue.jsonl`, :49 ARCHIVE, :50 `REPORT = reports/QUEUE_STORE.json`; compacted hourly at desks/mt5/research/hourly_cycle.py:1250 'queue_compact'. Consumers: desks/mt5/research/trial_allocator.py, desks/mt5/research/research_loop.py, conversion_ledger.py, desks/mt5/research/meta_desk.py, moat_miner.py, scripts/check_research_queue.py (MEASURED)",
-    "MEASURED on data/research_queue.jsonl: 47,150 rows — status GAUNTLET_REJECTED 46,786 / BLOCKED_CANONICAL_DOCKET_MISSING 287 / GAUNTLET_PASSED 49 / PENDING 17 / DONE 10 / QUEUED_CANONICAL_GAUNTLET 1; every row has `kind: None` and no `origin`/`producer`/`queued_by` field (MEASURED)",
-    "desks/mt5/research/trial_allocator.py:1-20 — the conversion measurement that gives missions their economics: '46,835 cards judged, 49 certified, 0.105%', with 55% of trials spent on `discovered × equity` at a 0.03% certify rate; reports/TRIAL_ALLOCATION.json (2026-09-05) `n_cell_types: 132` (MEASURED)"
+    "Every research task the coverage map queues names the engine that must answer it (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1258 'opportunity_gap' and :1250 'queue_compact'; desks/mt5/research/daily_cycle.py:323 'regime_coverage', 'missed_growth', 'portfolio_gap', 'alpha_breadth', 'drawdown_alpha'; desks/mt5/research/hourly_discovery.py:81 'trial_allocator'",
-   "artifact": "desks/mt5/reports/OPPORTUNITY_GAP.json; REGIME_COVERAGE.json; MISSED_GROWTH.json; TRIAL_ALLOCATION.json; data/research_queue.jsonl; data/MINER_YIELD_ALARM.txt; data/PRINCIPAL_ACTION.md. reports/portfolio_gap.json ABSENT",
+   "scheduled_by": "hourly_cycle:opportunity_gap",
+   "artifact": "desks/mt5/data/hypotheses/miner_deepening_queue.json",
    "consumer": "research_queue.jsonl → desks/mt5/research/trial_allocator.py, desks/mt5/research/research_loop.py, conversion_ledger.py, desks/mt5/research/meta_desk.py; REGIME_COVERAGE uncovered buckets → the deepening queue → desks/mt5/research/deepening_worker.py",
-   "gap": "The unused-heat loop is wired at both ends — the allocator's gaps become queue rows and the queue has real consumers — but the mission never names a GENERATOR: all 47,150 queue rows carry `kind: None` and no producer field, so a row saying 'nothing pays in Asia + low vol' cannot be routed to the engine that could answer it. And the half that prices the missing heat is dark: portfolio_gap.py is a scheduled step that has never written reports/portfolio_gap.json, and every rail in MISSED_GROWTH.json reads 'no allocator pass on this host'.",
-   "next_step": "Have `desks/mt5/research/regime_coverage._merge_into_queue` stamp each task with a `target_engine` chosen from `libs/research/bandit.SOURCE_ARM` (e.g. an uncovered state → `conditional_state_edge` → transition_alpha), so the deepening queue's rows address a generator instead of a general audience."
+   "gap": "",
+   "next_step": "Have `desks/mt5/research/regime_coverage._merge_into_queue` stamp each task with a `target_engine` chosen from `libs/research/bandit.SOURCE_ARM` (e.g. an uncovered state → `conditional_state_edge` → transition_alpha), so the deepening queue's rows address a generator instead of a general audience.",
+   "landed": [
+    "066a1807"
+   ]
   },
   {
    "id": "X1",

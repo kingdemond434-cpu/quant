@@ -1,5 +1,5 @@
 {
- "signed_utc": "2026-09-09T01:14:11.246359+00:00",
+ "signed_utc": "2026-09-09T01:59:10.508919+00:00",
  "signed_by": "principal",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "f317044dffb4c077",
@@ -15,7 +15,7 @@
   "libs/validation/redteam.py": "bf1c019bfeee360e",
   "libs/validation/replay2.py": "81abc1b46a04b694",
   "libs/validation/calibration.py": "39b1af6276bb31bf",
-  "libs/regime/state_admission.py": "555c1d3fa9067362",
+  "libs/regime/state_admission.py": "761fa65a898e5818",
   "scripts/check_growth_governance.py": "0ea2336e08cd14a9",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
   "scripts/check_immutable_evaluator.py": "15095e24bb8a1b45",
