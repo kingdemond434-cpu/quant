@@ -1459,6 +1459,105 @@ def read_drift() -> tuple[dict[str, Any] | None, str]:
     return doc, f"DRIFT.json verdict={doc.get('verdict')} structure={doc.get('structure_verdict')}"
 
 
+#: The structural-duplicate map `research/alpha_genome.py` writes. Its own docstring (:23-25)
+#: says it is consumed "by the allocator artifact, where `n_clusters` is reported beside
+#: `k_eff`" -- and a repo-wide grep for ALPHA_GENOME found no allocator reader at all, so the
+#: claim was false for as long as it had been written. This is that reader.
+GENOME = BASE / "reports" / "ALPHA_GENOME.json"
+
+
+def alpha_genome_view(ev: list[SleeveEvidence], book: dict[str, float]) -> dict[str, Any]:
+    """`n_clusters` and each FUNDED sleeve's structural cluster, beside the book's k_eff.
+
+    WHY IT BELONGS NEXT TO k_eff AND NOT INSTEAD OF IT. `latent_factors.effective` measures
+    independence from realised RETURNS (covariance, latent factor, tail); `alpha_genome.cluster`
+    measures it from what each edge structurally IS -- mechanism, direction, clock, shared
+    currency leg -- before it has traded. Two sleeves can look independent day to day and be one
+    trade wearing two names, which is exactly what the genome found on this desk (twenty
+    session_range_breakout sleeves in one cluster, twelve overnight_gap_decay rows sharing one
+    parameter hash). Reporting the two numbers together is what lets a reader see them disagree.
+
+    REPORTING ONLY. Nothing here sizes, caps or vetoes: the cluster id reaches the artifact and
+    stops. A sleeve whose cluster cannot be resolved is COUNTED AND NAMED, never assigned a
+    cluster of its own -- that would read as breadth the book has not got (L1.28a).
+    """
+    out: dict[str, Any] = {"status": "UNMEASURED", "consumed": False,
+                           "note": ("structural clusters from reports/ALPHA_GENOME.json, "
+                                    "reported beside the covariance/factor/tail k_eff; "
+                                    "nothing here sizes anything")}
+    try:
+        doc = json.loads(GENOME.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return {**out, "why": f"ALPHA_GENOME.json unreadable ({type(exc).__name__})"}
+    genome = doc.get("genome") or {}
+    clusters = doc.get("clusters") or {}
+    if not isinstance(genome, dict) or not isinstance(clusters, dict) or not clusters:
+        return {**out, "why": "ALPHA_GENOME.json carries no clusters"}
+    cluster_of_key = {m: name for name, members in clusters.items()
+                      for m in (members if isinstance(members, list) else [])}
+    # THE JOIN, on the parts both sides already carry. The genome keys on its certificate key
+    # and stamps symbol/family/clock on every row; the allocator names a sleeve
+    # SYM_family_selector. Matching on (symbol, family, clock) first and (symbol, family) only
+    # when that is UNAMBIGUOUS is the same rule `promoter._index` uses, for the same reason: a
+    # sleeve funded on another sleeve's cluster id is worse than one that did not join.
+    by_triple: dict[tuple[str, str, str], list[str]] = {}
+    by_pair: dict[tuple[str, str], list[str]] = {}
+    for key, row in genome.items():
+        if not isinstance(row, dict):
+            continue
+        sym = str(row.get("symbol") or "").lower()
+        fam = str(row.get("family") or "").lower()
+        clk = str(row.get("clock") or "").lower()
+        by_triple.setdefault((sym, fam, clk), []).append(key)
+        by_pair.setdefault((sym, fam), []).append(key)
+    by_name = {e.name: e for e in ev}
+    funded = [n for n, h in (book or {}).items() if float(h) > 1e-5]
+    per_sleeve: dict[str, str] = {}
+    unjoined: dict[str, str] = {}
+    for name in sorted(funded):
+        e = by_name.get(name)
+        if e is None:
+            unjoined[name] = "not in the priced universe"
+            continue
+        sym, fam = str(e.symbol).lower(), str(e.family).lower()
+        sel = _selector_of(e).lower()
+        hits = by_triple.get((sym, fam, sel)) or []
+        how = "symbol|family|clock"
+        if not hits:
+            hits, how = by_pair.get((sym, fam)) or [], "symbol|family"
+        if not hits:
+            unjoined[name] = f"no genome row for {sym}|{fam}|{sel or '(no selector)'}"
+            continue
+        names = {cluster_of_key.get(k) for k in hits} - {None}
+        if len(names) != 1:
+            unjoined[name] = (f"{len(hits)} genome row(s) on {how} spanning {len(names)} "
+                              f"cluster(s); ambiguous, so no cluster is claimed")
+            continue
+        per_sleeve[name] = str(next(iter(names)))
+    occupied = sorted(set(per_sleeve.values()))
+    return {
+        **out, "status": "MEASURED",
+        "generated_utc": doc.get("generated_utc"),
+        "n_clusters": doc.get("n_clusters"),
+        "n_sleeves": doc.get("n_sleeves"),
+        "structural_breadth": doc.get("structural_breadth"),
+        "largest_clusters": [{"cluster": c.get("cluster"), "n": c.get("n")}
+                             for c in (doc.get("largest_clusters") or [])[:5]
+                             if isinstance(c, dict)],
+        # THE BOOK'S OWN STRUCTURE: how many distinct clusters the FUNDED sleeves occupy, which
+        # is the number to read against k_eff -- a book of eight sleeves in one cluster is one
+        # structural bet however its returns happened to covary.
+        "book_clusters_occupied": len(occupied),
+        "book_clusters": occupied,
+        "cluster_by_sleeve": per_sleeve,
+        "n_funded_joined": len(per_sleeve),
+        "n_funded_unjoined": len(unjoined),
+        "unjoined": unjoined,
+        "why": (f"{len(per_sleeve)}/{len(funded)} funded sleeve(s) joined to "
+                f"{len(occupied)} of the genome's {doc.get('n_clusters')} structural cluster(s)"),
+    }
+
+
 def effective_heat_of(ev: list[SleeveEvidence], book: dict[str, float]) -> dict[str, Any]:
     """The four heats of `book` -- nominal, covariance, factor, tail -- or an `error` key.
 
@@ -3076,6 +3175,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # the ceiling was actually derived from, so the artifact can be read as an argument rather
     # than as an assertion: what was measured before the solve, what the cap came out at, what
     # the book ended up carrying, and which of the two bars decided.
+    # THE STRUCTURAL INDEPENDENCE NUMBER, BESIDE THE STATISTICAL ONE. `alpha_genome` clusters
+    # every certified edge by what it IS (mechanism, direction, clock, shared leg) and its own
+    # docstring has claimed since it was written that `n_clusters` is reported here beside
+    # k_eff -- a claim no reader existed for. Reporting only: nothing sizes on a cluster id.
+    effective_heat["alpha_genome"] = alpha_genome_view(ev, funded)
+    _log(f"alpha genome: {effective_heat['alpha_genome'].get('status')} -- "
+         f"{effective_heat['alpha_genome'].get('why')}")
     effective_heat["candidate_pre_solve"] = eff_pre
     effective_heat["ceiling"] = {
         "growth_bar": round(float(ceiling_now), 6),
