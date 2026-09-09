@@ -20,6 +20,15 @@ actually trades.
 
 WHAT IT IS NOT. Not a gate, not a promoter, not a sizer. It writes `reports/portfolio_gap.json`
 and ranks cells. Nothing here can admit or reject a candidate.
+
+THE GAP BECOMES A MISSION (acceptance property AP4, "the portfolio creates research missions";
+audit P17, 2026-09-08). `research_requests` named the gap and `pf_allocator`'s `opportunity`
+block named the unfunded heat by session and family, and neither reached the organ that does
+research: the deepening queue. `missions` turns them into queue rows of kind "mission" -- each
+with a stable `mission_id`, the exposure that is missing (session / family / state), the heat
+gap, and the allocator's own opportunity reading -- written through the same shared writer
+alpha_breadth uses, under source `portfolio_gap`. `reports/RESEARCH_MISSIONS.json` lists the
+open missions and every candidate that carries a `mission_id` back to one.
 """
 from __future__ import annotations
 
@@ -39,6 +48,14 @@ for _p in (str(BASE), str(BASE.parent.parent)):
 OUT = BASE / "reports" / "portfolio_gap.json"
 ALLOC = BASE / "reports" / "pf_allocation.json"
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+MISSIONS_OUT = BASE / "reports" / "RESEARCH_MISSIONS.json"
+#: Where a candidate born from a mission would carry its `mission_id`: the deepening worker's
+#: recovered candidates and the miner compiler's store. Read for the report, never written.
+CANDIDATE_STORES = (BASE / "data" / "hypotheses" / "deepened_candidates.json",
+                    BASE / "data" / "hypotheses" / "miner_candidates.json")
+#: Empty cells are numerous and cheap to name; the queue is worked in VOI order, so the first
+#: dozen (already ranked by band then family) are missions and the rest stay requests.
+MAX_EMPTY_CELL_MISSIONS = 12
 
 #: UTC hour bands. Coarse on purpose: the desk's sleeves are session-bracketed, so a finer grid
 #: would report structure the evidence cannot support.
@@ -255,6 +272,168 @@ def build(alloc: dict[str, Any], survivors: list[dict[str, Any]]) -> dict[str, A
     }
 
 
+def mission_id(kind: str, session: str = "any", family: str = "any") -> str:
+    """Stable across reruns and readable: the queue worker keys a task on its title and bills it
+    once, and a candidate is tagged with this id, so it must not carry a timestamp or a hash."""
+    return f"mission:{kind}:{session or 'any'}:{family or 'any'}"
+
+
+def missions(doc: dict[str, Any], alloc: dict[str, Any],
+             now: datetime | None = None) -> list[dict[str, Any]]:
+    """The queue rows: one per heat gap, per dark band, per (capped) empty cell.
+
+    Every mission carries the SAME allocator reading (`opportunity`: positive marginal dE[log W]
+    by session and by family, opportunity density, the allocator's own gap sentence) so the
+    crawler working any one of them can see where the library already has unfunded opportunity
+    and where it has none -- a gap that says "4% unfilled" is a number, one that says "4%
+    unfilled, nothing positive in the 00-04 band, most of it in overnight_gap_decay" is a search.
+    """
+    at = (now or datetime.now(UTC)).isoformat()
+    gap = float(doc.get("heat_gap") or 0.0)
+    opp = alloc.get("opportunity") if isinstance(alloc.get("opportunity"), dict) else {}
+    by_session = dict(opp.get("positive_marginal_by_session") or {})
+    by_family = dict(opp.get("positive_marginal_by_family") or {})
+    context = {
+        "opportunity_density": opp.get("opportunity_density"),
+        "n_positive_marginal": opp.get("n_positive_marginal"),
+        "positive_marginal_by_session": by_session,
+        "positive_marginal_by_family": by_family,
+        "allocator_heat_gap": opp.get("heat_gap"),
+        "allocator_request": list(opp.get("research_request") or []),
+        "basis": ("reports/pf_allocation.json opportunity block" if opp
+                  else "no opportunity block in the allocation artifact on this host"),
+    }
+    out: list[dict[str, Any]] = []
+
+    def _mission(kind: str, session: str, family: str, state: str, priority: int,
+                 title: str, description: str) -> None:
+        out.append({
+            "source": "portfolio_gap", "kind": "mission", "mission_kind": kind,
+            "mission_id": mission_id(kind, session, family),
+            "title": title, "description": description,
+            "exposure_missing": {"session": session or "any", "family": family or "any",
+                                 "state": state or "any"},
+            "heat_gap": round(gap, 6), "target_heat": doc.get("target_heat"),
+            "held_heat": doc.get("held_heat"), "issued_at": at, "priority": priority,
+            "opportunity": context, "status": None,
+            "consumer": "deepening_worker / proposers / research brains",
+            "rule": ("a mission funds nothing and gates nothing: it is the portfolio asking "
+                     "research for the exposure it cannot buy, on the MT5/Fusion universe, and "
+                     "a candidate that answers it carries this mission_id back"),
+        })
+
+    sessions_txt = (", ".join(f"{k} {v:+.2e}" for k, v in list(by_session.items())[:6])
+                    or "no session carries positive unfunded marginal")
+    families_txt = (", ".join(f"{k} {v:+.2e}" for k, v in list(by_family.items())[:6])
+                    or "no family carries positive unfunded marginal")
+    for r in doc.get("research_requests") or []:
+        if r.get("kind") == "heat_gap" and gap > 1e-9:
+            _mission("heat_gap", "any", "any", "any", 1,
+                     f"Mission: fill {gap:.2%} of unfunded heat",
+                     f"{r.get('detail')}. The allocator's own reading of where unfunded "
+                     f"opportunity sits -- by session: {sessions_txt}; by family: "
+                     f"{families_txt}. What to hunt: a mechanism whose marginal dE[log W] is "
+                     f"positive against the HELD book, in a session or family the library is "
+                     f"thin in, on the MT5/Fusion universe -- not a re-parameterisation of what "
+                     f"the book already holds.")
+    for b in doc.get("dark_bands") or []:
+        _mission("dark_band", str(b), "any", "any", 2,
+                 f"Mission: a funded sleeve in the {b} UTC band",
+                 f"No funded sleeve trades the {b} UTC band -- the book is flat there whatever "
+                 f"the opportunity set offers. Unfunded positive marginal by session today: "
+                 f"{sessions_txt}. What to hunt: a mechanism that fires inside {b} UTC on the "
+                 f"MT5/Fusion universe, with the payer named.")
+    for e in (doc.get("empty_cells") or [])[:MAX_EMPTY_CELL_MISSIONS]:
+        _mission("empty_cell", str(e.get("band")), str(e.get("family")), "any", 3,
+                 f"Mission: {e.get('family')} in the {e.get('band')} UTC band",
+                 f"No certificate has ever come from {e.get('family')} in the {e.get('band')} "
+                 f"UTC band. What to hunt: whether the mechanism {e.get('family')} monetises "
+                 f"anything inside {e.get('band')} UTC on the MT5/Fusion universe.")
+    return out
+
+
+def tagged_candidates(ids: list[str]) -> dict[str, Any]:
+    """Every candidate in the stores that carries a `mission_id` naming an open mission.
+
+    THE TAG DOES NOT SURVIVE THE COMPILER TODAY, and the report says so rather than showing an
+    empty list as if nothing had been hunted: `miner_candidate_compiler._candidate` copies url
+    and title from the task row and nothing else, so a mission's id is on the queue row and not
+    on the candidate it produces. The note names the one line that would carry it.
+    """
+    wanted = set(ids)
+    by_mission: dict[str, list[dict[str, Any]]] = {m: [] for m in ids}
+    stores: dict[str, Any] = {}
+    for p in CANDIDATE_STORES:
+        try:
+            doc = json.loads(p.read_text("utf-8"))
+        except (OSError, ValueError):
+            stores[p.name] = {"present": False, "candidates": 0, "with_mission_id": 0}
+            continue
+        rows = doc.get("candidates") if isinstance(doc, dict) else doc
+        rows = [r for r in (rows if isinstance(rows, list) else []) if isinstance(r, dict)]
+        n_tagged = 0
+        for r in rows:
+            mid = r.get("mission_id")
+            if not isinstance(mid, str):
+                continue
+            n_tagged += 1
+            if mid in wanted:
+                by_mission[mid].append({"symbol": r.get("symbol"), "family": r.get("family"),
+                                        "source": r.get("source"), "store": p.name,
+                                        "params": r.get("params")})
+        stores[p.name] = {"present": True, "candidates": len(rows), "with_mission_id": n_tagged}
+    n_tagged_total = sum(len(v) for v in by_mission.values())
+    note = None
+    if not any(s.get("with_mission_id") for s in stores.values()):
+        note = ("no candidate store carries mission_id: miner_candidate_compiler._candidate "
+                "copies url and title from the task row and nothing else, so the tag stays on "
+                "the queue row and does not reach the candidate. Coordinator: copy "
+                "row.get('mission_id') onto the candidate there (one line) and this report "
+                "fills itself")
+    return {"by_mission": by_mission, "n_candidates_tagged": n_tagged_total, "stores": stores,
+            "note": note}
+
+
+def write_missions(doc: dict[str, Any], alloc: dict[str, Any], *, write_queue: bool = True,
+                   now: datetime | None = None) -> dict[str, Any]:
+    """Write RESEARCH_MISSIONS.json and, when there are missions, this source's queue rows."""
+    rows = missions(doc, alloc, now=now)
+    tagged = tagged_candidates([m["mission_id"] for m in rows])
+    queue: dict[str, Any] = {"source": "portfolio_gap", "n_tasks": len(rows), "written": False,
+                             "why": "no mission this pass"}
+    if rows and write_queue:
+        try:
+            try:
+                from research.regime_coverage import _merge_into_queue
+            except ImportError:
+                from regime_coverage import _merge_into_queue
+            _merge_into_queue(rows, source="portfolio_gap")
+            queue.update(written=True, why=f"{len(rows)} mission(s) written under source "
+                                            f"portfolio_gap, replacing that source's rows only")
+        except Exception as exc:
+            queue["why"] = f"queue write failed: {type(exc).__name__}: {exc}"
+    elif rows:
+        queue["why"] = "queue write disabled for this pass"
+    report = {
+        "generated_utc": (now or datetime.now(UTC)).isoformat(),
+        "n_open": len(rows), "heat_gap": doc.get("heat_gap"),
+        "target_heat": doc.get("target_heat"), "held_heat": doc.get("held_heat"),
+        "by_kind": {k: sum(1 for m in rows if m["mission_kind"] == k)
+                    for k in ("heat_gap", "dark_band", "empty_cell")},
+        "missions": rows,
+        "candidates_by_mission": tagged["by_mission"],
+        "n_candidates_tagged": tagged["n_candidates_tagged"],
+        "candidate_stores": tagged["stores"], "tagging_note": tagged["note"],
+        "queue": queue,
+        "rule": ("open missions are the portfolio's standing research asks, re-derived from "
+                 "reports/portfolio_gap.json and the allocator's opportunity block every pass; "
+                 "a mission funds nothing and gates nothing"),
+    }
+    MISSIONS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    MISSIONS_OUT.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
+    return report
+
+
 def main() -> int:
     if not ALLOC.exists():
         print("no pf_allocation.json -- the gap is UNMEASURED, not zero. Run pf_allocator first.")
@@ -282,8 +461,21 @@ def main() -> int:
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=2, default=str), encoding="utf-8")
-    print(f"-> {OUT.relative_to(BASE.parent.parent)}")
+    print(f"-> {_rel(OUT)}")
+    rep = write_missions(doc, alloc)
+    print(f"missions: {rep['n_open']} open ({rep['by_kind']}), "
+          f"{rep['n_candidates_tagged']} candidate(s) tagged -- {rep['queue']['why']}")
+    print(f"-> {_rel(MISSIONS_OUT)}")
     return 0
+
+
+def _rel(p: Path) -> str:
+    """Repository-relative when the path is inside the repository, absolute otherwise -- a
+    test that points OUT at tmp_path must not fail the pass on the print line."""
+    try:
+        return str(p.relative_to(BASE.parent.parent))
+    except ValueError:
+        return str(p)
 
 
 if __name__ == "__main__":
