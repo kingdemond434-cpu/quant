@@ -174,6 +174,18 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             extra["factors"] = factors
             return extra, "ok"
 
+        if family == "execution_state":
+            # The venue's published spread/activity surface for THIS instrument. Rebuilt by the
+            # same reader the sweep used, so the gauntlet and the forward engine condition on
+            # the same map the screen did; absent report -> refused BY NAME, never run without
+            # it (the family would return [] and read as a mechanism that never fires).
+            got = inputs._surface_for(sym)
+            if not got:
+                return None, (f"no microstructure surface for {sym} in "
+                              f"{inputs.MICROSTRUCTURE_SURFACES.name}")
+            extra["surface"] = got
+            return extra, "ok"
+
         if family in {"liquidity_regime", "orderflow_imbalance"}:
             spread, flow = inputs._tape_series(sym, h1.index, tf)
             series = spread if family == "liquidity_regime" else flow
@@ -255,4 +267,7 @@ def strip_identity_keys(family: str, params: dict[str, Any]) -> dict[str, Any]:
 #:
 #: One definition, because a filter and its exception list drifting apart is exactly this bug.
 IDENTITY_KEYS = frozenset({"peer_symbol", "factor_symbols", "input_symbol",
-                           "input_source", "timeframe"})
+                           "input_source", "timeframe",
+                           # The fill surface's vintage: it identifies WHICH map selected the
+                           # cell's windows and is not an argument any family accepts.
+                           "surface_generated_at"})
