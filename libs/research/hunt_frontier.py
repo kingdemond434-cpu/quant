@@ -30,6 +30,13 @@ hours pays a full reasoning pass to discover that the world has not changed, whe
 already knew.
 
 Pure state accounting. Calls nothing, fetches nothing, and never decides what a hunter concludes.
+
+PER-LANGUAGE ACCOUNTING (2026-09-08). A vector may carry the `language` and `region` of the
+ground it names -- the deep-forest registry has 502 grounds in 26 languages and, until this
+date, nothing reported which languages produced a finding and which only produced names.
+`summarise` rolls the four outcomes up per language and per region when the state carries the
+fields, and says so when it does not; the fields are optional, so every existing coverage file
+loads unchanged.
 """
 
 from __future__ import annotations
@@ -49,6 +56,7 @@ __all__ = [
     "load",
     "prompt_sections",
     "record",
+    "rollup",
     "save",
     "should_hunt",
     "summarise",
@@ -81,6 +89,9 @@ class Vector:
     attempts: int = 0
     findings: int = 0
     blocker: str = ""
+    #: The ground's language and region, when the hunter knows them. Empty means unstated.
+    language: str = ""
+    region: str = ""
 
     def __post_init__(self) -> None:
         if self.outcome not in OUTCOMES:
@@ -162,6 +173,8 @@ def load(path: Path | str) -> VectorState:
             attempts=int(rec.get("attempts") or 0),
             findings=int(rec.get("findings") or 0),
             blocker=str(rec.get("blocker") or ""),
+            language=str(rec.get("language") or ""),
+            region=str(rec.get("region") or ""),
         ))
     return out
 
@@ -173,7 +186,8 @@ def save(state: VectorState, path: Path | str) -> None:
         "updated": datetime.now(tz=UTC).isoformat(),
         "vectors": {n: {"outcome": v.outcome, "first_seen": v.first_seen,
                         "last_attempt": v.last_attempt, "attempts": v.attempts,
-                        "findings": v.findings, "blocker": v.blocker}
+                        "findings": v.findings, "blocker": v.blocker,
+                        "language": v.language, "region": v.region}
                     for n, v in sorted(state.vectors.items())},
         "note": ("NAMED_ONLY and BLOCKED are FRONTIER, not coverage -- they are surfaced to the "
                  "hunter as priority targets, never as exclusions. Only YIELDED and EMPTY are "
@@ -182,8 +196,9 @@ def save(state: VectorState, path: Path | str) -> None:
 
 
 def record(state: VectorState, name: str, *, outcome: str, findings: int = 0,
-           blocker: str = "") -> Vector:
-    """Record the RESULT of a hunt, not merely that a name was uttered."""
+           blocker: str = "", language: str = "", region: str = "") -> Vector:
+    """Record the RESULT of a hunt, not merely that a name was uttered. A language or region
+    given once is kept; a call that omits them does not erase what an earlier one knew."""
     now = datetime.now(tz=UTC).isoformat()
     prev = state.vectors.get(name)
     v = Vector(
@@ -193,9 +208,29 @@ def record(state: VectorState, name: str, *, outcome: str, findings: int = 0,
         attempts=(prev.attempts if prev else 0) + (0 if outcome == "NAMED_ONLY" else 1),
         findings=(prev.findings if prev else 0) + max(0, findings),
         blocker=blocker,
+        language=str(language or (prev.language if prev else "") or ""),
+        region=str(region or (prev.region if prev else "") or ""),
     )
     state.upsert(v)
     return v
+
+
+def rollup(state: VectorState, by: str) -> dict[str, dict[str, int]] | None:
+    """Outcome counts per `language` or `region`: {value: {NAMED_ONLY, BLOCKED, EMPTY, YIELDED,
+    findings, vectors}}. None when no vector carries the field -- a legacy coverage file reads
+    "not accounted per language", never "every language empty"."""
+    if by not in ("language", "region"):
+        raise ValueError(f"rollup is per language or per region, not {by!r}")
+    if not any(getattr(v, by) for v in state.vectors.values()):
+        return None
+    out: dict[str, dict[str, int]] = {}
+    for v in state.vectors.values():
+        key = getattr(v, by) or "UNSTATED"
+        row = out.setdefault(key, dict.fromkeys(OUTCOMES, 0) | {"findings": 0, "vectors": 0})
+        row[v.outcome] += 1
+        row["findings"] += v.findings
+        row["vectors"] += 1
+    return dict(sorted(out.items(), key=lambda kv: (-kv[1]["vectors"], kv[0])))
 
 
 def frontier(state: VectorState, *, now: datetime | None = None,
@@ -300,12 +335,24 @@ def summarise(state: VectorState, *, cooldown_d: int = COVERED_COOLDOWN_D) -> di
     f = frontier(state, cooldown_d=cooldown_d)
     go, why = should_hunt(state, cooldown_d=cooldown_d)
     yielded = [v for v in state.vectors.values() if v.outcome == "YIELDED"]
+    by_language = rollup(state, "language")
     return {
         "vectors": len(state.vectors),
         "unhunted": len(f["unhunted"]), "blocked": len(f["blocked"]),
         "off_cooldown": len(f["ready"]), "picked_over": len(f["picked_over"]),
         "total_findings": sum(v.findings for v in state.vectors.values()),
         "yield_rate": (round(len(yielded) / len(state.vectors), 3) if state.vectors else None),
+        # Per-language and per-region outcome counts, or None with the reason: the state
+        # carries no language field, so nothing can be said per language from it.
+        "by_language": by_language,
+        "by_region": rollup(state, "region"),
+        "languages_yielded": (sorted(k for k, r in by_language.items() if r["YIELDED"])
+                              if by_language else None),
+        "languages_named_only": (sorted(k for k, r in by_language.items()
+                                        if r["vectors"] == r["NAMED_ONLY"])
+                                 if by_language else None),
+        "by_language_note": (None if by_language else
+                             "no vector carries a language: per-language yield is UNMEASURED"),
         "should_hunt": go, "why": why,
         "headline": (
             f"{len(f['unhunted'])} territory/territories NAMED and never hunted, "
