@@ -1340,6 +1340,13 @@ def main() -> None:
         "opportunity_forecast", "research/opportunity_forecast.py"))
     erl = _costed("edge_reliability", lambda: _producer(
         "edge_reliability", "research/edge_reliability.py"))
+    # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
+    # verdict per research arm against the leader -- the count AP5 measures -- and retires
+    # nothing; session_capital reports which four-hour bands of the day the book's heat never
+    # reached, which is the denominator a session auction would need.
+    ar = _costed("arena", lambda: _producer("arena", "libs/research/arena.py"))
+    scap = _costed("session_capital", lambda: _producer(
+        "session_capital", "research/session_capital.py"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -1359,7 +1366,8 @@ def main() -> None:
                     "graveyard_model": gm, "world_crawler": wc,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
-                    "edge_reliability": erl, "publish_state": pub,
+                    "edge_reliability": erl, "arena": ar, "session_capital": scap,
+                    "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "external_gauntlet": gt, "falsifier_run": fz, "merge_docket": mh,

@@ -46,8 +46,10 @@
    "id": "AP5",
    "name": "The machine improves the machine",
    "measure": "Generators, validators, schedulers and allocation methods run as A/B arms with equal compute and the inferior arm is retired by survivor yield / realized Elog; measured as the number of arms with a recorded verdict.",
-   "status": "MISSING",
-   "evidence": []
+   "status": "PARTIAL",
+   "evidence": [
+    "libs/research/arena.py records LEADS/KEEP/TRAILS/UNDECIDED/UNMEASURED per research arm against the leader and appends one row per arm per pass to data/arm_verdicts.jsonl, so 'arms with a recorded verdict' is a count; the controller A/B reads ONE_ARM until a second variant runs. Verdicts are recorded, never executed: no arm is defunded. (MEASURED 2026-09-09)"
+   ]
   }
  ],
  "items": [
@@ -1296,22 +1298,20 @@
    "item": "Time-of-day capital market: each session runs its own capital auction",
    "domain": "P",
    "phase": 5,
-   "status": "MISSING",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/hour_surface.py:25 — 'ADVISORY. It moves no capital and gates nothing; it writes reports/hour_surface.json'; `OUT = BASE / \"reports\" / \"hour_surface.json\"` (:42) (MEASURED)",
-    "desks/mt5/research/hour_prior.py:3-4 — 'WHY THIS EXISTS. `desks/mt5/research/hour_surface.py` has been measuring expected R by hour of day and writing hour_surface.json, and NOTHING has ever read it -- the only importer is its own producer.'; :70 'hour_surface.json absent -- no prior, not a neutral prior' (MEASURED)",
-    "CONFIRMED DARK: repo-wide grep for `hour_prior` / `hour_surface` outside those two files returns a single hit — desks/mt5/research/pf_allocator.py:2613, a COMMENT naming `hour_surface` as one of the readers of `marginal_delta_elog` (i.e. the dependency runs the other way) (MEASURED)",
-    "THE SESSION ENTERS ONLY AS A POSTERIOR LEVEL AND A PROOF BUCKET, NOT AS A BUDGET: libs/portfolio/robust_elog.py:333-368 (`k_state = 40.0`, session phase narrows the sleeve's own mean) and libs/portfolio/allocator_proof.py:136 `state_id` / :363 `select` (which allocator is authorised in this state) (MEASURED)",
-    "ONE HEAT BUDGET FOR ALL HOURS: heat_policy.resolve returns a single `total_heat` per pass; desks/mt5/research/pf_allocator.py:1347 `state_growth_curves` records `basis: scaled_candidate` — the per-state curves scale ONE book rather than auctioning a per-session budget (MEASURED)",
-    "GOLD'S THREE SESSIONS ARE HARDCODED WINDOWS, NOT COMPETING AUCTIONS: desks/mt5/mt5desk/decision_core.py:120-124 `GOLD_WINDOWS = [(\"asia\", 7, None), (\"london_am\", 13, (10,13)), (\"afternoon\", 17, (14,17))]`, each emitted with `\"lot\": \"auto\"` (:1090) (MEASURED)",
-    "grep for 'capital auction' / 'session budget' / 'per-session heat' across .py returns only libs/ops/deepseek_cycle.py:466 ('docs/research/research_auction.jsonl', a RESEARCH-capital auction) (MEASURED)"
+    "desks/mt5/research/session_capital.py — held heat, priced marginal value, certificates and realised R per four-hour band; underspent_bands and dark_bands named (MEASURED)",
+    "desks/mt5/tests/test_session_capital.py (MEASURED)"
    ],
-   "scheduled_by": "NONE for a session capital market. hour_surface has no cycle leg; hour_prior has no importer.",
-   "artifact": "desks/mt5/reports/hour_surface.json (advisory, unread)",
+   "scheduled_by": "hourly_cycle:session_capital",
+   "artifact": "desks/mt5/reports/session_capital.json",
    "consumer": "NONE",
-   "gap": "There is one heat budget per pass for the whole clock. The session narrows a sleeve's posterior (k_state=40) and picks which allocator is authorised, but no session holds its own budget and no two sessions ever bid against each other, so an hour with an unusually rich opportunity set cannot draw heat away from a thin one.",
-   "next_step": "In desks/mt5/research/pf_allocator.py, solve the book once per session bucket at that bucket's own `state_growth_curves` optimum and publish a `session_book` map keyed by phase; the gateway already reads `heat.state` (desks/mt5/mt5desk/gateway.py:287), so a session whose curve peaks above the global one gets MORE heat during its own hours rather than the blended average."
+   "gap": "Report only: the auction itself would change sizing and is the allocator wave's, under the principal's no-shrink order.",
+   "next_step": "In desks/mt5/research/pf_allocator.py, solve the book once per session bucket at that bucket's own `state_growth_curves` optimum and publish a `session_book` map keyed by phase; the gateway already reads `heat.state` (desks/mt5/mt5desk/gateway.py:287), so a session whose curve peaks above the global one gets MORE heat during its own hours rather than the blended average.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P19",

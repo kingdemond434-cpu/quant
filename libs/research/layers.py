@@ -56,6 +56,7 @@ LEG_LAYER: dict[str, str] = {
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
     "opportunity_forecast": "prediction", "edge_reliability": "prediction",
+    "arena": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
     "rebalance_trigger": "timing",
@@ -72,6 +73,7 @@ LEG_LAYER: dict[str, str] = {
     "publish_state": "meta", "release_identity": "meta", "smoke_release": "meta",
     "burn_in": "meta", "maintain_miners": "meta", "reclaim_disk": "meta", "daily": "meta",
     "layer_census": "meta", "opportunity_cost": "meta", "acceptance": "meta",
+    "session_capital": "portfolio",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')

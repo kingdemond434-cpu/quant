@@ -10,7 +10,8 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 - **AP2 No unmeasured intelligence** — MISSING. Measure: Every LLM seat, miner, dataset, generator and infrastructure change has a row with incremental survivors and incremental robust E[log W] attributed to it (compiled artifact per_source/seats, hunt_frontier yield, compute_ledger cost); anything without a row is EXISTS-DARK by definition.
 - **AP3 No semantic breaks** — MISSING. Measure: A hypothesis id can be followed deterministically source -> compiler row -> gauntlet cell -> certificate -> forward clock -> allocation fraction -> intent -> broker order -> position -> deal -> realized R -> lesson/graph update; measured as the share of closed strategy deals with a complete chain (target 100%).
 - **AP4 The portfolio creates research missions** — MISSING. Measure: The allocator's unfilled heat and the book's missing exposures (session, regime, factor beta, horizon, drawdown states) are written as missions that generators consume; measured as missions issued per week and candidates tagged with the mission that caused them.
-- **AP5 The machine improves the machine** — MISSING. Measure: Generators, validators, schedulers and allocation methods run as A/B arms with equal compute and the inferior arm is retired by survivor yield / realized Elog; measured as the number of arms with a recorded verdict.
+- **AP5 The machine improves the machine** — PARTIAL. Measure: Generators, validators, schedulers and allocation methods run as A/B arms with equal compute and the inferior arm is retired by survivor yield / realized Elog; measured as the number of arms with a recorded verdict.
+  - libs/research/arena.py records LEADS/KEEP/TRAILS/UNDECIDED/UNMEASURED per research arm against the leader and appends one row per arm per pass to data/arm_verdicts.jsonl, so 'arms with a recorded verdict' is a count; the controller A/B reads ONE_ARM until a second variant runs. Verdicts are recorded, never executed: no arm is defunded. (MEASURED 2026-09-09)
 
 ## Census
 
@@ -21,10 +22,10 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 1 | 1 | 20 | 1 | 1 |
 | 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 8 | 0 | 0 |
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 2 | 0 | 12 |
-| 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 9 | 2 | 8 |
+| 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 9 | 1 | 9 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 1 | 1 | 0 | 8 |
-| **all** | 4 | 3 | 48 | 3 | 55 |
+| **all** | 4 | 3 | 48 | 2 | 56 |
 
 ## Items
 
@@ -729,14 +730,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:opportunity_gap · artifact: desks/mt5/reports/RESEARCH_MISSIONS.json · consumer: libs/portfolio/rails.rail_multiplier reads rail_calibration.json back into the rails; portfolio_gap.research_requests is cited by desks/mt5/research/hour_surface.py:21 (INFERRED — no direct queue writer verified)
   - next: Wire desks/mt5/research/portfolio_gap.py's `research_requests` (already carrying `kind: heat_gap` and the missing session/family from pf_allocator.opportunity) into the deepening queue the way alpha_breadth writes empty clusters — the unfundable heat then becomes an explicit hunt for the missing exposure type instead of a number in a report.
   - landed: 1c2910ad, this commit
-- **P18 Time-of-day capital market: each session runs its own capital auction** — MISSING
-  - gap: There is one heat budget per pass for the whole clock. The session narrows a sleeve's posterior (k_state=40) and picks which allocator is authorised, but no session holds its own budget and no two sessions ever bid against each other, so an hour with an unusually rich opportunity set cannot draw heat away from a thin one.
-  - desks/mt5/research/hour_surface.py:25 — 'ADVISORY. It moves no capital and gates nothing; it writes reports/hour_surface.json'; `OUT = BASE / "reports" / "hour_surface.json"` (:42) (MEASURED)
-  - desks/mt5/research/hour_prior.py:3-4 — 'WHY THIS EXISTS. `desks/mt5/research/hour_surface.py` has been measuring expected R by hour of day and writing hour_surface.json, and NOTHING has ever read it -- the only importer is its own producer.'; :70 'hour_surface.json absent -- no prior, not a neutral prior' (MEASURED)
-  - CONFIRMED DARK: repo-wide grep for `hour_prior` / `hour_surface` outside those two files returns a single hit — desks/mt5/research/pf_allocator.py:2613, a COMMENT naming `hour_surface` as one of the readers of `marginal_delta_elog` (i.e. the dependency runs the other way) (MEASURED)
-  - THE SESSION ENTERS ONLY AS A POSTERIOR LEVEL AND A PROOF BUCKET, NOT AS A BUDGET: libs/portfolio/robust_elog.py:333-368 (`k_state = 40.0`, session phase narrows the sleeve's own mean) and libs/portfolio/allocator_proof.py:136 `state_id` / :363 `select` (which allocator is authorised in this state) (MEASURED)
-  - clock: NONE for a session capital market. hour_surface has no cycle leg; hour_prior has no importer. · artifact: desks/mt5/reports/hour_surface.json (advisory, unread) · consumer: NONE
+- **P18 Time-of-day capital market: each session runs its own capital auction** — LANDED
+  - gap: Report only: the auction itself would change sizing and is the allocator wave's, under the principal's no-shrink order.
+  - desks/mt5/research/session_capital.py — held heat, priced marginal value, certificates and realised R per four-hour band; underspent_bands and dark_bands named (MEASURED)
+  - desks/mt5/tests/test_session_capital.py (MEASURED)
+  - clock: hourly_cycle:session_capital · artifact: desks/mt5/reports/session_capital.json · consumer: NONE
   - next: In desks/mt5/research/pf_allocator.py, solve the book once per session bucket at that bucket's own `state_growth_curves` optimum and publish a `session_book` map keyed by phase; the gateway already reads `heat.state` (desks/mt5/mt5desk/gateway.py:287), so a session whose curve peaks above the global one gets MORE heat during its own hours rather than the blended average.
+  - landed: this commit
 - **P19 Compounding attribution and true P&L decomposition** — LANDED
   - desks/mt5/research/allocator_attribution.py — _compounding_term: mean ln(1+h r) minus mean(h) mean(r) per sleeve, split into timing and drag, beside the pinned nine terms and outside the identity (MEASURED)
   - desks/mt5/tests/test_compounding_attribution.py (MEASURED)
