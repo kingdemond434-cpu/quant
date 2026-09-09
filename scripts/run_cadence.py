@@ -552,6 +552,97 @@ def main() -> None:
           f"tier1 due in {max(0.0, _TIER1_EVERY_D - _days_since(state, 'last_tier1')):.1f}d")
 
 
+#: The synthetic laboratory's artifact: the detection floor, written by scripts/calibrate_gauntlet.py
+#: (its `OUT`). Declared there since the lab was built and NEVER produced on this tree (measured
+#: 2026-09-08: absent while data/ holds 215 other artifacts), because the run failed every cycle
+#: and the failure was a log line. Relative, like every artifact path in this file: the cadence
+#: service runs from the repo root.
+_CALIBRATION = Path("data/gauntlet_calibration.json")
+
+
+def _calibration_measured(path: Path = _CALIBRATION) -> bool:
+    """A calibration artifact counts as produced only when it is a MEASUREMENT. The BLOCKED
+    record below lives at the same path so the blocker is an artifact; it must not be mistaken
+    for a detection floor by the leg that checks existence."""
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(doc, dict) and doc.get("status") != "BLOCKED"
+
+
+def _record_blocked_calibration(rc: int | None, last_stderr: str,
+                                path: Path = _CALIBRATION) -> dict[str, Any]:
+    """Write WHY the detection floor was not measured, in the shape scripts/certify_gauntlet.py
+    uses for its own blocked run (generated_utc / status BLOCKED / blocker / consequence /
+    resolution / rows), plus the exit code and the moment.
+
+    A measurement already on disk is carried under `previous`, never overwritten by a blocker:
+    a floor measured yesterday is still the last floor measured, and a failed run today is a
+    second fact beside it, not a replacement for it.
+    """
+    prior: Any = None
+    try:
+        prior = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        prior = None
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    doc: dict[str, Any] = {
+        "generated_utc": stamp,
+        "status": "BLOCKED",
+        "rc": rc,
+        "blocker": (last_stderr or "").strip()[:400] or (
+            "the run exited without a line of stderr" if rc else
+            "the run exited 0 and wrote no artifact"),
+        "at": stamp,
+        "consequence": ("The detection floor -- the one progress metric that cannot be gamed, "
+                        "because it moves only when the desk gets better at finding weak "
+                        "planted edges -- has not been measured; 'the candidates were "
+                        "worthless' and 'the screen cannot detect an edge it is handed' "
+                        "remain indistinguishable."),
+        "resolution": ("Run scripts/calibrate_gauntlet.py by hand from the repo root; the "
+                       "blocker line above is its last stderr line and names the failing "
+                       "import or input."),
+        "rows": [],
+    }
+    if isinstance(prior, dict) and prior.get("status") not in (None, "BLOCKED"):
+        doc["previous"] = prior
+    elif isinstance(prior, dict) and isinstance(prior.get("previous"), dict):
+        doc["previous"] = prior["previous"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=2), "utf-8")
+    os.replace(tmp, path)
+    return doc
+
+
+def _run_calibrate_gauntlet(fired: list[str]) -> None:
+    """GAUNTLET CALIBRATION (EVERY CYCLE). 420 candidates tested, 420 died -- and "the candidates
+    were worthless" and "the screen cannot detect an edge it is handed" fit that observation
+    equally well while demanding opposite responses. Live data can never separate them because
+    the truth is never available; a planted edge of known strength can. The detection floor it
+    produces is the desk's one progress metric that cannot be gamed: hypothesis count rises by
+    generating more and survivor count rises by lowering the bar, but the floor moves only when
+    the desk genuinely gets better at finding weak edges.
+
+    A FAILED RUN IS NOW AN ARTIFACT. The leg printed `NO ARTIFACT` and moved on every cycle since
+    it was scheduled, so the reason the floor was never measured lived in a service log nobody
+    opened. It is written to the artifact's own path as a BLOCKED record instead.
+    """
+    _r = _srun([sys.executable, "scripts/calibrate_gauntlet.py"],
+                        capture_output=True, text=True, timeout=420, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not _calibration_measured():
+        _err = (_r.stderr or "").strip().splitlines()[-1:] or [""]
+        _record_blocked_calibration(_r.returncode, _err[0] or _tail[0])
+        print(f"cadence: gauntlet-calibration rc={_r.returncode} NO ARTIFACT -> BLOCKED record "
+              f"at {_CALIBRATION} | {_tail[0][:110]}")
+    else:
+        fired.append("gauntlet-calibration")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:150]}")
+
+
 def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str]) -> None:
     """The duty sequence itself. Mutates `state` in place; `main` owns persisting it."""
 
@@ -766,22 +857,10 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
             fired.append(_organ)
             print(f"cadence: {_tail[0][:150]}")
 
-    # GAUNTLET CALIBRATION (EVERY CYCLE). 420 candidates tested, 420 died -- and "the candidates
-    # were worthless" and "the screen cannot detect an edge it is handed" fit that observation
-    # equally well while demanding opposite responses. Live data can never separate them because
-    # the truth is never available; a planted edge of known strength can. The detection floor it
-    # produces is the desk's one progress metric that cannot be gamed: hypothesis count rises by
-    # generating more and survivor count rises by lowering the bar, but the floor moves only when
-    # the desk genuinely gets better at finding weak edges.
-    _r = _srun([sys.executable, "scripts/calibrate_gauntlet.py"],
-                        capture_output=True, text=True, timeout=420, check=False)
-    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
-    if _r.returncode != 0 or not Path("data/gauntlet_calibration.json").exists():
-        print(f"cadence: gauntlet-calibration rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
-    else:
-        fired.append("gauntlet-calibration")
-        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
-            print(f"cadence: {_ln[:150]}")
+    # GAUNTLET CALIBRATION (EVERY CYCLE): see `_run_calibrate_gauntlet`. A failed run writes a
+    # BLOCKED record to the artifact's own path, so the reason the floor was never measured is
+    # an artifact and not a log line.
+    _run_calibrate_gauntlet(fired)
 
     # ANCESTOR ORGANS (EVERY CYCLE). Lineage, breeding, theory induction, feature invention and
     # the internal information market. Built with tests and no caller, which is the exact
