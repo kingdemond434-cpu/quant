@@ -36,18 +36,46 @@ Wired into daily_cycle STEPS (shadow -> promoter -> markout -> decay -> export),
 uses today's promoter output and today's closed trades. Artifact: data/decay_live.json every run;
 actions append-only to data/decay_actions.jsonl. Absence of live sleeves is reported as the
 number zero, never as silence (L1.28a).
+
+THE MODEL HALF (audit P7 / P16, 2026-09-08). The demotion half above is lit and correct; what it
+lacked was a MODEL: no per-sleeve half-life, no time-to-fade, and the allocator charging every
+sleeve one blanket 30% decay probability (robust_elog.py:129). Replacement was reactive by
+design -- a slot was refilled only AFTER a retirement, so the lead time was exactly zero.
+
+  `fit_half_life`   a log-linear fit of each sleeve's trailing ROLLING expectancy against
+                    calendar days: e(t) = e0 * exp(-lambda t). Published per sleeve as
+                    `half_life_days` (ln 2 / lambda) and `t_to_fade_days` (days until the fitted
+                    expectancy reaches FADE_FLOOR_R, the desk's own weak-edge bar). A series too
+                    short, too brief, or without a positive expectancy to decay from is
+                    UNMEASURED with its n -- never a number about noise.
+  `successor_tasks` for every LIVE sleeve whose fitted half-life is under 2x the forward window
+                    a successor still has to clear (FORWARD_BAR_DAYS), one `successor_hunt` task
+                    keyed on the mechanism and symbol goes into the deepening queue, the way
+                    alpha_breadth writes empty clusters. The search starts while the incumbent
+                    still earns.
+
+NEITHER MOVES A VERDICT. The FADE / RETIRE rules above are untouched and read nothing from the
+model; the model is published for the allocator wave to consume as a per-sleeve decay_prob_i, so
+a sleeve with a long fitted half-life can stop paying the blanket haircut. Nothing here retires,
+fades, resizes or delays anything.
 """
 from __future__ import annotations
 
 import json
+import math
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
+ROOT = BASE.parent.parent
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 OUT = BASE / "data" / "decay_live.json"
 ACTIONS = BASE / "data" / "decay_actions.jsonl"
+#: The forward clocks' own ledgers, the model's fallback series while the live ledger is thin:
+#: a promoted sleeve's shadow clock keeps running (promoter.py never stops it), so its forward
+#: rows are the longest untouched expectancy series the desk holds for that sleeve.
+SHADOW_LEDGER_DIRS = (BASE / "reports" / "shadow", ROOT / "backups" / "moat" / "shadow_ledgers")
 
 #: The promotion bar, mirrored. Change gate_spec.yaml, not this file, if the bar ever moves.
 T_PROMOTE = 2.5
@@ -57,6 +85,27 @@ DD_HARD_R = -25.0
 TRAIL_DAYS = 45
 TRAIL_MAX_TRADES = 60
 FADE_FACTOR = 0.5
+
+#: THE MODEL HALF's floors. Each is a refusal threshold for publishing a NUMBER, not a rule that
+#: moves capital: below any of them the half-life is UNMEASURED with its n.
+FIT_WINDOW = 5            # trades per rolling-expectancy point
+MIN_FIT_TRADES = 10       # trailing trades before an expectancy series exists to fit
+MIN_FIT_POINTS = 3        # positive rolling points a log-linear fit needs
+MIN_FIT_SPAN_DAYS = 1.0   # calendar span those points must cover to fit a RATE against
+#: The level `t_to_fade_days` is measured to: promoter.RETIRE_MIN_EXP, the desk's own weak-edge
+#: bar (n >= 50 and exp < 0.05R retires). Mirrored, not imported: promoter imports the terminal
+#: bindings and this organ must run without them. Pinned equal by test_decay_half_life.py.
+FADE_FLOOR_R = 0.05
+#: The forward window a successor still has to clear: shadow_forward.VERDICT_MIN_DAYS (14 days,
+#: with the 50-trade bar beside it). A successor cannot carry capital sooner, so an incumbent
+#: whose edge halves inside twice that window needs its successor search started NOW.
+FORWARD_BAR_DAYS = 14
+SUCCESSOR_HALF_LIFE_MULT = 2.0
+#: Keys the trade timestamp may sit under, by ledger: the live ledger stamps `time`, the forward
+#: ledgers `exit_time`/`entry_time`, the scalp lane `closed_at`/`opened_at`. The close is
+#: preferred because the R is realised there.
+_TIME_KEYS = ("time", "close_time", "exit_time", "closed_at", "entry_time", "opened_at")
+_R_KEYS = ("r_multiple", "r", "R")
 
 
 def _read_json(p: Path, default):
@@ -159,7 +208,247 @@ def source_state() -> tuple[str, str]:
     return "READ", f"{SLEEVES_FILE.name} read cleanly"
 
 
-def main() -> int:
+# ------------------------------------------------------------------------------ THE MODEL HALF
+def roster_rows(doc) -> dict[str, dict]:
+    """Every roster row by name, whichever shape the file has.
+
+    MEASURED 2026-09-08: `promoter.save_sleeves` writes `{"sleeves": [row, ...]}` (a LIST, each
+    row carrying `name`), and `decision_core.load_sleeves` reads that list. The verdict loop in
+    `main` reads a DICT keyed by name, so on a promoter-written roster it judges no row at all.
+    That loop is NOT changed here (this wave may not arm a demotion path); the model half reads
+    both shapes so a half-life is published for every row the promoter actually wrote, and the
+    artifact names the mismatch so it cannot stay invisible.
+    """
+    if not isinstance(doc, dict):
+        return {}
+    sl = doc.get("sleeves")
+    if isinstance(sl, list):
+        return {str(r["name"]): r for r in sl if isinstance(r, dict) and r.get("name")}
+    if isinstance(sl, dict):
+        return {str(k): v for k, v in sl.items() if isinstance(v, dict)}
+    return {str(k): v for k, v in doc.items() if isinstance(v, dict)}
+
+
+def _row_time(row: dict) -> datetime | None:
+    for k in _TIME_KEYS:
+        v = row.get(k)
+        if not isinstance(v, str) or not v.strip():
+            continue
+        try:
+            ts = datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+    return None
+
+
+def _row_r(row: dict) -> float | None:
+    for k in _R_KEYS:
+        v = row.get(k)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return float(v)
+    return None
+
+
+def _shadow_ledger_rows(name: str) -> list[dict]:
+    """The sleeve's forward-clock ledger rows, from the first directory that holds the file.
+    Ledgers are named by the clock key with dots as underscores (`ledger_CADJPY_asia.json`)."""
+    stem = str(name).replace(".", "_")
+    for d in SHADOW_LEDGER_DIRS:
+        f = d / f"ledger_{stem}.json"
+        if not f.exists():
+            continue
+        rows = _read_json(f, None)
+        return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
+    return []
+
+
+def sleeve_series(name: str, now: datetime | None = None
+                  ) -> tuple[list[tuple[float, float]], str, int]:
+    """(points, basis, n): the trailing (days_since_first_trade, R) series to fit, oldest first.
+
+    THE LIVE LEDGER FIRST, THE CLOCK SECOND. Live fills are the evidence the demotion half
+    judges on; when they are fewer than MIN_FIT_TRADES the sleeve's own forward clock supplies
+    the series (forward-phase rows when there are enough, every row otherwise), inside the same
+    trailing window and cap the verdicts use. The basis is part of the answer: a half-life fitted
+    on a clock is a half-life of the SIMULATED edge, and the artifact says so.
+    """
+    now = now or datetime.now(tz=UTC)
+    cutoff = now - timedelta(days=TRAIL_DAYS)
+
+    def _pairs(rows: list[dict]) -> list[tuple[datetime, float]]:
+        out = []
+        for r in rows:
+            ts, rv = _row_time(r), _row_r(r)
+            if ts is None or rv is None or ts < cutoff:
+                continue
+            out.append((ts, rv))
+        out.sort(key=lambda p: p[0])
+        return out[-TRAIL_MAX_TRADES:]
+
+    live = _pairs(sleeve_trades(name))
+    best, basis = live, "live_ledger"
+    if len(live) < MIN_FIT_TRADES:
+        shadow = _shadow_ledger_rows(name)
+        fwd = _pairs([r for r in shadow if str(r.get("phase") or "") == "forward"])
+        alls = _pairs(shadow)
+        if len(fwd) >= MIN_FIT_TRADES:
+            best, basis = fwd, "shadow_forward"
+        elif len(alls) > len(live):
+            best, basis = alls, "shadow_all"
+    if not best:
+        return [], "none", 0
+    t0 = best[0][0]
+    return [((ts - t0).total_seconds() / 86400.0, r) for ts, r in best], basis, len(best)
+
+
+def fit_half_life(points: list[tuple[float, float]], basis: str = "") -> dict:
+    """The exponential the trailing expectancy series is decaying along, or why there is none.
+
+        e(t) = e0 * exp(-lambda t),  fitted as  ln e_k = a - lambda t_k
+
+    over the ROLLING expectancy (mean R of the last FIT_WINDOW trades) at each trade's time.
+    Only points with a positive rolling expectancy enter the fit -- a log of a losing window is
+    undefined, and a sleeve with nothing positive to decay from has no half-life, it has no edge
+    over the window, which the demotion half already judges. `half_life_days` is ln 2 / lambda;
+    `t_to_fade_days` is the time until the fitted expectancy, continued from its last point,
+    reaches FADE_FLOOR_R. A rising or flat series is MEASURED with no finite half-life, which is
+    the reading the allocator wants (a long or infinite half-life earns back the blanket haircut).
+
+    UNMEASURED, with the n, whenever: fewer than MIN_FIT_TRADES trades; fewer than MIN_FIT_POINTS
+    positive rolling points; or the positive points span under MIN_FIT_SPAN_DAYS of calendar
+    time, because a rate cannot be fitted against no time. No threshold here moves capital.
+    """
+    n = len(points)
+    out: dict = {"status": "UNMEASURED", "n": n, "basis": basis or "none",
+                 "half_life_days": None, "t_to_fade_days": None, "lambda_per_day": None,
+                 "expectancy_now_r": None, "fade_floor_r": FADE_FLOOR_R, "direction": None,
+                 "fit_window": FIT_WINDOW, "fit_points": 0, "fit_r2": None, "span_days": 0.0,
+                 "why": ""}
+    if n < MIN_FIT_TRADES:
+        out["why"] = (f"{n} trailing trade(s) < {MIN_FIT_TRADES}: no expectancy series to fit; "
+                      f"half-life UNMEASURED at this n")
+        return out
+    pts = sorted(points, key=lambda p: p[0])
+    rolling = [(pts[k][0], sum(r for _, r in pts[k - FIT_WINDOW + 1:k + 1]) / FIT_WINDOW)
+               for k in range(FIT_WINDOW - 1, n)]
+    pos = [(t, math.log(e)) for t, e in rolling if e > 0.0]
+    span = (max(t for t, _ in pos) - min(t for t, _ in pos)) if pos else 0.0
+    out.update({"fit_points": len(pos), "span_days": round(span, 3)})
+    if len(pos) < MIN_FIT_POINTS:
+        out["why"] = (f"{len(pos)} positive rolling-expectancy point(s) of {len(rolling)} "
+                      f"(window {FIT_WINDOW}); an exponential decay needs {MIN_FIT_POINTS}. The "
+                      f"edge is absent over this window, which is not the same as decaying -- "
+                      f"the demotion half judges absence, this half measures the rate")
+        return out
+    if span < MIN_FIT_SPAN_DAYS:
+        out["why"] = (f"the positive points span {span:.2f} day(s) < {MIN_FIT_SPAN_DAYS}: no "
+                      f"calendar time to fit a rate against")
+        return out
+    ts = [t for t, _ in pos]
+    ys = [y for _, y in pos]
+    mt, my = sum(ts) / len(ts), sum(ys) / len(ys)
+    sxx = sum((t - mt) ** 2 for t in ts)
+    sxy = sum((t - mt) * (y - my) for t, y in zip(ts, ys, strict=True))
+    slope = sxy / sxx
+    a = my - slope * mt
+    ss_tot = sum((y - my) ** 2 for y in ys)
+    ss_res = sum((y - (a + slope * t)) ** 2 for t, y in zip(ts, ys, strict=True))
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 1.0
+    lam = -slope
+    e_now = math.exp(a + slope * max(ts))
+    out.update({"status": "MEASURED", "lambda_per_day": round(lam, 6),
+                "fit_r2": round(r2, 4), "expectancy_now_r": round(e_now, 4)})
+    if lam > 1e-9:
+        hl = math.log(2.0) / lam
+        ttf = max(0.0, math.log(e_now / FADE_FLOOR_R) / lam) if e_now > FADE_FLOOR_R else 0.0
+        out.update({"direction": "decaying", "half_life_days": round(hl, 2),
+                    "t_to_fade_days": round(ttf, 2),
+                    "why": (f"log-linear fit over {len(pos)} rolling-expectancy points spanning "
+                            f"{span:.1f} day(s) ({basis}, r2={r2:.2f}): the expectancy halves "
+                            f"every {hl:.1f} day(s) and, continued at that rate from "
+                            f"{e_now:.3f}R, reaches the {FADE_FLOOR_R}R floor in {ttf:.1f} "
+                            f"day(s)")})
+    else:
+        out.update({"direction": "rising" if lam < -1e-9 else "flat",
+                    "why": (f"no decay measured over {len(pos)} points spanning {span:.1f} "
+                            f"day(s) ({basis}, r2={r2:.2f}): the fitted expectancy is not "
+                            f"falling (lambda={lam:+.4f}/day), so the half-life is not finite")})
+    return out
+
+
+def successor_tasks(models: dict[str, dict], rows: dict[str, dict], now: str) -> list[dict]:
+    """One `successor_hunt` per LIVE sleeve whose fitted half-life is under 2x the forward window
+    a successor still has to clear. Keyed on mechanism and symbol; the queue contract is
+    alpha_breadth's (source, kind, title, description, status None, consumer). Titles carry no
+    number, so a rerun keys the same task and the worker bills it once."""
+    lead = SUCCESSOR_HALF_LIFE_MULT * FORWARD_BAR_DAYS
+    tasks: list[dict] = []
+    for name, m in sorted(models.items()):
+        row = rows.get(name) or {}
+        if str(row.get("status") or "LIVE").upper() != "LIVE":
+            continue
+        hl = m.get("half_life_days")
+        if m.get("status") != "MEASURED" or not isinstance(hl, (int, float)) or hl >= lead:
+            continue
+        sym = str(row.get("symbol") or "")
+        fam = str(row.get("family") or "")
+        sel = str(row.get("selector") or row.get("window") or "")
+        tasks.append({
+            "source": "decay_monitor", "kind": "successor_hunt",
+            "title": (f"Successor hunt: {fam or 'unknown mechanism'} on {sym or '?'} "
+                      f"(incumbent {name})"),
+            "description": (
+                f"{name} is LIVE and its trailing expectancy is decaying: fitted half-life "
+                f"{hl:.1f} day(s) ({m.get('basis')}, {m.get('fit_points')} points), reaching the "
+                f"{FADE_FLOOR_R}R floor in about {m.get('t_to_fade_days')} day(s). A successor "
+                f"needs the forward bar ({FORWARD_BAR_DAYS} days / 50 trades) before it can carry "
+                f"capital, so the search starts now, while the incumbent still earns. What to "
+                f"hunt: a mechanism on {sym or 'the same instrument'} in the {sel or 'same'} "
+                f"selector that is NOT a re-parameterisation of {fam or 'the incumbent'} -- the "
+                f"payer the incumbent monetised is drying up, so name a different payer on the "
+                f"MT5/Fusion universe. Nothing retires: the incumbent keeps every unit of its "
+                f"capital and the promoter refills the slot only if it fails the unchanged "
+                f"retire rules."),
+            "sleeve": name, "symbol": sym, "family": fam, "mechanism": fam, "selector": sel,
+            "state": row.get("state"), "half_life_days": hl,
+            "t_to_fade_days": m.get("t_to_fade_days"), "basis": m.get("basis"),
+            "remaining_forward_window_days": FORWARD_BAR_DAYS,
+            "successor_lead_days": lead, "issued_at": now, "status": None,
+            "consumer": "deepening_worker / proposers / research brains",
+        })
+    return tasks
+
+
+def _write_queue(tasks: list[dict]) -> tuple[bool, str]:
+    """Replace this source's rows in the deepening queue, through the one shared writer."""
+    try:
+        try:
+            from research.regime_coverage import _merge_into_queue
+        except ImportError:
+            from regime_coverage import _merge_into_queue
+        _merge_into_queue(tasks, source="decay_monitor")
+        return True, f"{len(tasks)} successor_hunt task(s) written under source decay_monitor"
+    except Exception as exc:
+        return False, f"queue write failed: {type(exc).__name__}: {exc}"
+
+
+def decay_models(doc, now: datetime | None = None) -> dict[str, dict]:
+    """The half-life model for every non-retired roster row, whichever shape the roster has."""
+    models: dict[str, dict] = {}
+    for name, row in roster_rows(doc).items():
+        if str(row.get("status") or "").upper() == "RETIRED":
+            continue
+        pts, basis, _n = sleeve_series(name, now)
+        m = fit_half_life(pts, basis)
+        m["roster_status"] = row.get("status") or None
+        m["symbol"] = row.get("symbol")
+        m["family"] = row.get("family")
+        models[name] = m
+    return models
+
+
+def main(write_queue: bool = True) -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     source, source_why = source_state()
     doc = _read_json(SLEEVES_FILE, {})
@@ -216,11 +505,46 @@ def main() -> int:
             for a in actions:
                 f.write(json.dumps(a) + "\n")
 
+    # THE MODEL HALF, after the verdicts and reading none of them: a half-life per roster row,
+    # merged onto the verdict row where one exists, and a successor hunt for every LIVE sleeve
+    # whose edge halves inside the window a successor still has to clear.
+    models = {} if source == "UNMEASURED" else decay_models(doc)
+    for name, m in models.items():
+        if name in report:
+            report[name].update({"half_life_days": m["half_life_days"],
+                                 "t_to_fade_days": m["t_to_fade_days"],
+                                 "decay_model": m["status"]})
+    hunts = successor_tasks(models, roster_rows(doc), now)
+    queue = {"source": "decay_monitor", "n_tasks": len(hunts), "written": False,
+             "why": "no LIVE sleeve's fitted half-life is under the successor lead time"}
+    if hunts and write_queue:
+        queue["written"], queue["why"] = _write_queue(hunts)
+    elif hunts:
+        queue["why"] = "queue write disabled for this pass (--no-queue)"
+    rows_seen = roster_rows(doc)
+    shape_note = None
+    if rows_seen and not live:
+        shape_note = (f"the roster holds {len(rows_seen)} row(s) in the LIST shape "
+                      f"promoter.save_sleeves writes; the verdict loop reads a DICT-shaped roster "
+                      f"and judged none of them (a standing defect, reported here and NOT "
+                      f"changed by the model half -- fixing it arms a demotion path)")
+
     OUT.write_text(json.dumps({
         "checked_at": now,
         "live_sleeves": None if source == "UNMEASURED" else len(live),
         "roster_state": source, "roster_why": source_why,
+        "roster_rows_seen": len(rows_seen), "roster_shape_note": shape_note,
         "verdicts": report, "actions_taken": actions,
+        "decay_model": models, "successor_hunts": hunts, "queue": queue,
+        "model_rule": (
+            f"half_life_days = ln 2 / lambda from a log-linear fit of the rolling expectancy "
+            f"(window {FIT_WINDOW} trades) against calendar days; t_to_fade_days = days until the "
+            f"fitted expectancy reaches {FADE_FLOOR_R}R (promoter.RETIRE_MIN_EXP). UNMEASURED "
+            f"below {MIN_FIT_TRADES} trades / {MIN_FIT_POINTS} positive points / "
+            f"{MIN_FIT_SPAN_DAYS} day of span. A successor_hunt is queued for a LIVE sleeve whose "
+            f"half-life is under {SUCCESSOR_HALF_LIFE_MULT:.0f}x {FORWARD_BAR_DAYS} days. The "
+            f"model moves no verdict, size or slot: it is published for the allocator to "
+            f"consume as a per-sleeve decay probability"),
         # DECLARE WHY THE BYTES CANNOT MOVE, or a correct organ reads as a stuck one. With an
         # empty roster this file's content is a function of nothing, so `check_job_manifest`
         # flagged it FROZEN ("a loop turning without cutting") on 55 consecutive checks and
@@ -240,9 +564,15 @@ def main() -> int:
         return 1
     print(f"decay monitor: {len(live)} live sleeve(s) [{source}], "
           f"{sum(1 for r in report.values() if r['verdict'] != 'HEALTHY')} flagged, "
-          f"{len(actions)} action(s)")
+          f"{len(actions)} action(s); model: {len(models)} row(s), "
+          f"{sum(1 for m in models.values() if m['status'] == 'MEASURED')} half-life(s) "
+          f"measured, {len(hunts)} successor hunt(s) -- {queue['why']}")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--no-queue", action="store_true",
+                    help="publish the model but write no successor_hunt task into the queue")
+    raise SystemExit(main(write_queue=not ap.parse_args().no_queue))

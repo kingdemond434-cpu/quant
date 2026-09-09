@@ -46,6 +46,17 @@ organ for another's growth.
 
 NOTHING HERE SIZES, GATES OR PROMOTES. The heat budget keeps reading `mt5desk.independence`; this
 publishes and it queues.
+
+A FIFTH READING, INFORMATIONAL (audit P5, 2026-09-08): `timestamp_overlap` -- the Jaccard of the
+minutes each pair of sleeves actually held a position, from the shadow ledgers' entry and exit
+stamps. Two sleeves that never hold a position at the same time cannot co-move at the trade
+level whatever their instruments' daily correlation says, and the exposure readings above cannot
+see that: they price a book of sleeves as if every sleeve were always on. The reading counts
+bets as n^2 / sum_ij J_ij (the exposure_neff formula with the overlap matrix in place of the
+correlation matrix), so it can only RAISE measured breadth where same-mechanism sleeves fire in
+different hours. It is published BESIDE the four readings and is NOT in the headline minimum:
+until the allocator consumes it, folding it into the verdict would let a timing argument buy
+leverage the return readings say is not there.
 """
 from __future__ import annotations
 
@@ -73,6 +84,8 @@ from libs.research.alpha_clusters import (  # noqa: E402
     occupancy,
 )
 from libs.research.effective_breadth import (  # noqa: E402
+    MEASURED,
+    UNMEASURED,
     conditional_breadth,
     exposure_breadth,
     factor_breadth,
@@ -109,8 +122,15 @@ MIN_OWN_OBS = 250
 #: tolerates both, which is why the trade COUNT looked right while the exposure did not; these
 #: tuples mirror its key lists so the two loaders cannot drift apart again.
 _TIME_KEYS: tuple[str, ...] = ("entry_time", "opened_at", "open_time", "time")
+_EXIT_KEYS: tuple[str, ...] = ("exit_time", "closed_at", "close_time")
 _R_KEYS: tuple[str, ...] = ("r_multiple", "r", "R")
 _SIDE_KEYS: tuple[str, ...] = ("side", "direction")
+
+#: A trade occupies at least one H1 bar: the forward ledgers stamp bar-open times, so a row whose
+#: exit equals its entry (measured: every overnight_gap_decay row) still held the bar. And at most
+#: a week: a corrupt exit stamp must not paint a sleeve across the whole calendar.
+MIN_TRADE_SPAN_MIN = 60
+MAX_TRADE_SPAN_MIN = 7 * 24 * 60
 
 
 def _first(row: dict[str, Any], keys: tuple[str, ...]) -> Any:
@@ -244,6 +264,101 @@ def daily_sleeve_returns() -> dict[str, dict[str, float]]:
     return {k: v for k, v in out.items() if v}
 
 
+def _parse_when(v: Any) -> datetime | None:
+    if not isinstance(v, str) or not v.strip():
+        return None
+    try:
+        ts = datetime.fromisoformat(v.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+
+
+def trading_minutes() -> dict[str, set[int]]:
+    """sleeve -> the set of calendar minutes (epoch minutes) it held a position, from every
+    shadow ledger's entry and exit stamps, both schemas. A row with no parseable entry is
+    skipped; a row with no exit occupies one bar."""
+    out: dict[str, set[int]] = {}
+    for sleeve, trades in _ledger_rows().items():
+        mins: set[int] = set()
+        for t in trades:
+            start = _parse_when(_first(t, _TIME_KEYS))
+            if start is None:
+                continue
+            end = _parse_when(_first(t, _EXIT_KEYS))
+            s = int(start.timestamp() // 60)
+            e = int(end.timestamp() // 60) if end is not None else s
+            e = min(max(e, s + MIN_TRADE_SPAN_MIN), s + MAX_TRADE_SPAN_MIN)
+            mins.update(range(s, e))
+        if mins:
+            out[sleeve] = mins
+    return out
+
+
+def timestamp_overlap(minutes: dict[str, set[int]],
+                      labels: dict[str, str] | None = None) -> dict[str, Any]:
+    """Bets counted by WHEN the sleeves are in the market: n^2 / sum_ij J_ij over the pairwise
+    Jaccard of held minutes (J_ii = 1). N disjoint sleeves count N; N copies of one clock count 1.
+
+    Reported beside the four return-based readings, never inside the headline minimum: a book
+    whose sleeves take turns is more diversified at the trade level than its instruments' daily
+    correlation admits, and this is the one reading that can say so -- which is exactly why it
+    stays informational until the allocator consumes it rather than buying leverage on its own.
+    `same_mechanism` isolates the pairs the exposure readings treat as one bet (same declared
+    cluster) that never hold a position at the same time.
+    """
+    names = sorted(k for k, v in minutes.items() if v)
+    n = len(names)
+    out: dict[str, Any] = {
+        "name": "timestamp_overlap", "status": UNMEASURED, "n_eff": None,
+        "n_nominal": n, "n_obs": int(sum(len(minutes[k]) for k in names)),
+        "informational": True, "in_headline": False, "why": "",
+        "rule": ("Jaccard of the calendar minutes each pair of sleeves held a position, from the "
+                 "shadow ledgers' entry/exit stamps; n_eff = n^2 / sum_ij J_ij with J_ii = 1. "
+                 "INFORMATIONAL: published beside the readings and excluded from the headline "
+                 "minimum until the allocator consumes it. It can only raise measured breadth "
+                 "where same-mechanism sleeves fire in different hours; it never lowers the "
+                 "headline"),
+    }
+    if n < 2:
+        out["why"] = f"{n} sleeve(s) with parseable trade times; an overlap needs two"
+        return out
+    jac: dict[tuple[str, str], float] = {}
+    total = float(n)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            union = len(minutes[a] | minutes[b])
+            j = (len(minutes[a] & minutes[b]) / union) if union else 0.0
+            jac[(a, b)] = j
+            total += 2.0 * j
+    n_eff = n * n / total
+    ranked = sorted(jac.items(), key=lambda kv: -kv[1])
+    disjoint = [(a, b) for (a, b), j in jac.items() if j == 0.0]
+    same: dict[str, Any] = {"n_pairs": 0, "mean_jaccard": None, "n_disjoint_pairs": 0,
+                            "disjoint_pairs": []}
+    if labels:
+        pairs = [((a, b), j) for (a, b), j in jac.items()
+                 if labels.get(a) and labels.get(a) == labels.get(b)
+                 and labels.get(a) != UNCLASSIFIED]
+        if pairs:
+            same = {"n_pairs": len(pairs),
+                    "mean_jaccard": round(float(np.mean([j for _, j in pairs])), 4),
+                    "n_disjoint_pairs": sum(1 for _, j in pairs if j == 0.0),
+                    "disjoint_pairs": [[a, b, labels[a]] for (a, b), j in pairs
+                                       if j == 0.0][:12]}
+    out.update({
+        "status": MEASURED, "n_eff": round(float(n_eff), 3), "n_pairs": len(jac),
+        "mean_jaccard": round(float(np.mean(list(jac.values()))), 4),
+        "n_disjoint_pairs": len(disjoint),
+        "most_overlapping": [[a, b, round(j, 3)] for (a, b), j in ranked[:8]],
+        "same_mechanism": same,
+        "why": (f"{n} sleeves, {len(jac)} pairs, {len(disjoint)} never in the market at the same "
+                f"minute; {same['n_disjoint_pairs']} of {same['n_pairs']} same-mechanism pairs "
+                f"fire in disjoint hours"),
+    })
+    return out
+
+
 def cluster_view() -> dict[str, Any]:
     """Cluster occupancy of the TRADED book and of the CERTIFIED book, reported separately.
 
@@ -353,9 +468,19 @@ def run(write_queue: bool = True) -> dict[str, Any]:
     clusters = cluster_view()
     empty = clusters["empty_in_both"]
     tasks = _tasks(empty, head, clusters)
+    # THE FIFTH READING, BESIDE THE FOUR AND OUTSIDE THE MINIMUM. `would_raise_headline_to` is
+    # what the headline would read if the allocator consumed this reading and it bound; None
+    # when it would not raise it, or when there is no measured headline to raise.
+    overlap = timestamp_overlap(trading_minutes(), clusters["traded_labels"])
+    k_head = head.get("effective_breadth")
+    overlap["headline_unchanged"] = True
+    overlap["would_raise_headline_to"] = (
+        overlap["n_eff"] if (overlap["n_eff"] is not None and k_head is not None
+                             and overlap["n_eff"] > k_head) else None)
     doc: dict[str, Any] = {
         "generated_utc": datetime.now(tz=UTC).isoformat(),
         "gaps": gaps,
+        "timestamp_overlap": overlap,
         "nominal": {
             "sleeves_with_ledgers": exp["n_sleeves_total"],
             "sleeves_in_the_measurement": int(nominal_measured),
@@ -415,6 +540,7 @@ def _append_history(doc: dict[str, Any]) -> None:
         "binding_reading": doc["effective"]["binding_reading"],
         "n_clusters_occupied": len(doc["clusters"]["occupied_either"]),
         "n_clusters_empty": len(doc["clusters"]["empty_in_both"]),
+        "n_eff_time": (doc.get("timestamp_overlap") or {}).get("n_eff"),
     }
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as fh:

@@ -95,6 +95,21 @@ INFORMATION ATTRIBUTION. `dElog_DataSource` per source, from the research P&L th
 computes: the expected log-wealth per day the source's certificates carry in the funded book,
 against the trials it burned to get them. A source with trials and no growth is named DEAD
 INFORMATION -- the report NAMES it; killing it is the bandit's and a person's decision.
+
+COMPOUNDING (audit P19, 2026-09-08). The EDGE term is signed per sleeve, but no term said how a
+sleeve changed GEOMETRIC growth given WHEN its heat was held. `_compounding_term` prices that
+from what the desk already has: h_i,t from the forecast log's own books (the last pass of each
+day) crossed with the realised daily R the same join uses everywhere else. Per sleeve,
+
+    compounding_i = mean_t[ ln(1 + h_t r_t) ] - mean_t(h_t) x mean_t(r_t)
+                  = TIMING  (cov of heat and realised R across days: positive when the
+                             allocator held more heat on the days the sleeve paid)
+                  + DRAG    (mean_t[ln(1 + h r) - h r]: the geometric cost of variance at the
+                             heat actually held, never positive)
+
+in log-wealth per day. It rides BESIDE the pinned nine-term contract (add, never rename) and is
+kept out of the identity until that contract is re-pinned; UNMEASURED names the exact input it
+lacks, which on this host is a realised daily R for any sleeve the forecast books hold.
 """
 from __future__ import annotations
 
@@ -697,6 +712,94 @@ def _entry_term() -> dict[str, Any]:
                   why_unweighted="reports/pf_allocation.json carries no book heat here")
 
 
+def _compounding_term(forecasts: list[dict[str, Any]], realized: dict[str, dict[str, float]],
+                      basis: str = UNMEASURED) -> dict[str, Any]:
+    """Per sleeve, the growth it added GIVEN WHEN its heat was held -- timing plus drag.
+
+    THE LAST PASS OF A DAY SPEAKS FOR IT (the rule `daily_book_growth` keeps), so several
+    allocator passes in one day cannot count that day's R once per pass. A sleeve is scored on
+    the days it was FUNDED AND TRADED; a day it sat out charges it nothing.
+
+    TIMING is the covariance of heat and realised R across those days: the allocator's solve
+    re-weights the book every pass, and this is the number that says whether the re-weighting
+    put more heat on the sleeve on the days it paid. DRAG is the geometric-minus-arithmetic gap
+    at the heat actually held, which is what compounding costs and which the EDGE term (linear
+    in h r) cannot see. Both are log-wealth per day and are reported separately, because a good
+    timing record and a large drag are two different instructions.
+    """
+    src = "data/pf_forecast_log.jsonl books (last pass of each day) x realised daily R"
+    heat_by_day: dict[str, dict[str, float]] = {}
+    for f in forecasts:
+        book = {str(k): hv for k, v in (f.get("book") or {}).items()
+                if (hv := _num(v)) is not None}
+        heat_by_day[str(f["t"])[:10]] = book
+    per: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    book_days: dict[str, float] = {}
+    for day, book in heat_by_day.items():
+        got, seen = 0.0, False
+        for name, h in book.items():
+            r = realized.get(name, {}).get(day)
+            if r is None:
+                continue
+            per[name].append((h, float(r)))
+            got += h * float(r)
+            seen = True
+        if seen:
+            book_days[day] = got
+    if len(book_days) < MIN_DAYS:
+        why = (f"needs {MIN_DAYS} scored day(s) on which a forecast book joins a realised daily "
+               f"R for at least one funded sleeve; {len(book_days)} today over {len(forecasts)} "
+               f"forecast pass(es) with realised basis {basis}")
+        if not realized:
+            why += (". No realised daily R exists at all: data/live_ledger.jsonl carries no "
+                    "closed trade and the forward clocks' daily series is empty, so the exact "
+                    "missing input is a realised R for any sleeve the forecast books hold")
+        elif forecasts and not per:
+            why += (". Forecast books and realised series exist but share no sleeve name on any "
+                    "day: the missing input is a realised series keyed as the allocator keys "
+                    "its book")
+        return _gterm(UNMEASURED, src, why, unit=LOGW, in_identity=False,
+                      scored_days=len(book_days), n_sleeves=0, sleeves={})
+    rows: dict[str, dict[str, Any]] = {}
+    skipped: list[str] = []
+    for name, pairs in per.items():
+        hs = [h for h, _ in pairs]
+        rs = [r for _, r in pairs]
+        mean_h, mean_r = statistics.fmean(hs), statistics.fmean(rs)
+        arith = statistics.fmean(h * r for h, r in pairs)
+        timing = arith - mean_h * mean_r
+        if any(1.0 + h * r <= 0.0 for h, r in pairs):
+            skipped.append(name)          # a day that wiped the sleeve's heat has no log
+            continue
+        drag = statistics.fmean(math.log1p(h * r) for h, r in pairs) - arith
+        rows[name] = {
+            "value": round(timing + drag, 10), "timing": round(timing, 10),
+            "drag": round(drag, 10), "n_days": len(pairs), "unit": LOGW,
+            "mean_heat": round(mean_h, 8), "heat_sd": round(statistics.pstdev(hs), 8),
+            "mean_r": round(mean_r, 8),
+            "reading": ("heat was held higher on the days this sleeve paid" if timing > 1e-12
+                        else "heat was held higher on the days this sleeve lost"
+                        if timing < -1e-12 else "heat did not move with the sleeve's results"),
+        }
+    ordered = sorted(rows.items(), key=lambda kv: -kv[1]["value"])
+    gaps = [math.log1p(x) - x for x in book_days.values() if 1.0 + x > 0.0]
+    return _gterm(
+        round(sum(v["value"] for v in rows.values()), 10), src,
+        "sum over sleeves of mean_t[ln(1 + h_t r_t)] - mean_t(h_t) x mean_t(r_t): the growth "
+        "each sleeve added given WHEN its heat was held, split into timing (covariance of heat "
+        "and realised R across days) and drag (the geometric cost of variance at that heat)",
+        unit=LOGW, in_identity=False,
+        out_of_identity_why=("rides beside the pinned nine-term contract (add, never rename); "
+                             "it enters the identity when that contract is re-pinned"),
+        scored_days=len(book_days), n_sleeves=len(rows),
+        timing_total=round(sum(v["timing"] for v in rows.values()), 10),
+        drag_total=round(sum(v["drag"] for v in rows.values()), 10),
+        book_geometric_gap=(round(statistics.fmean(gaps), 10) if gaps else None),
+        sleeves=dict(ordered[:40]),
+        best_timed=[k for k, _ in ordered[:5]], worst_timed=[k for k, _ in ordered[-5:]],
+        skipped_sleeves=sorted(skipped))
+
+
 # --------------------------------------------------------------------------- the weekly table
 def _stat(samples: list[float]) -> dict[str, Any]:
     """Mean, n and a 95% interval. The interval is the point: a term with n=5 and a term with
@@ -926,6 +1029,7 @@ def weekly_table(days: int = WEEK_DAYS) -> dict[str, Any]:
         "measured": sorted(k for k, t in terms.items() if isinstance(t.get("value"), float)),
         "unmeasured": sorted(k for k, t in terms.items() if not isinstance(t.get("value"), float)),
         "per_sleeve": per_sleeve(forecasts, realized),
+        "compounding": _compounding_term(forecasts, realized, basis),
         "information": information_attribution(),
         "reading": ("the answer to 'what made us richer this week'. A term that reads UNMEASURED "
                     "has no ledger on this host and is NOT a zero; the residual is what the "
@@ -995,6 +1099,7 @@ def build(days: int = 30) -> dict[str, Any]:
         "dlogw_per_day": {**_stat(sorted(daily_book_growth(forecasts, realized).values())),
                           "basis": basis, "unit": LOGW},
         "per_sleeve": per_sleeve(forecasts, realized),
+        "compounding": _compounding_term(forecasts, realized, basis),
         "information": information_attribution(),
         "note": ("Every term reports UNMEASURED rather than zero when the evidence is absent. "
                  "Read the regime term FIRST: a sleeve that loses in the wrong regime has not "
@@ -1029,6 +1134,7 @@ def run(days: int = TRAILING_DAYS, week_days: int = WEEK_DAYS,
             "residual": weekly["identity"]["residual"]["value"],
             "dead_information": weekly["information"]["dead_information"],
             "n_sleeves_attributed": weekly["per_sleeve"].get("n_sleeves", 0),
+            "compounding": weekly["compounding"]["value"],
             "weekly": weekly, "daily": doc}
 
 

@@ -262,6 +262,187 @@ def load_sleeves() -> list[dict]:
         return []
 
 
+# --------------------------------------------- IDENTITY ON THE ROW, AND THE ALPHA-STATE LEDGER
+#
+# THE HOP FROM A FUNDED SLEEVE TO THE CERTIFICATE THAT JUSTIFIED IT WAS AN INFERENCE (audit E9/E1,
+# 2026-09-08): the sleeve row carried `name`, `certificate_drift` and `admission`, and a reader
+# who wanted the certificate had to guess that the name was its key. `forward_reconcile.py:308`
+# already reads `row.get("certificate") or key`, so the key IS the certificate id on this desk;
+# every row now carries it as `certificate`, and the registry's `sleeve_id` (the frozen identity
+# hash of code, cost and behaviour) beside it. Additive fields: no door reads them.
+#
+# THE ALPHA-STATE LEDGER WAS NEVER DRIVEN (audit P10/A15): two rows, nine milliseconds apart, for
+# one alpha. Every door this module opens or closes is now written through
+# `libs.research.alpha_state.AlphaStateLedger` -- and when the door is not a legal rung step (it
+# almost never is: a matured clock arrives at DISCOVERED on the ledger, and LIVE is nine rungs up
+# with a principal token this organ may not synthesise) the attempt is recorded as an OBSERVATION
+# row in a sibling file, with the ledger's own refusal quoted. The state machine is never forced:
+# the sibling exists because `AlphaStateLedger._load` raises on any row that is not a legal
+# transition, so an observation written into the ledger itself would make every later read fail.
+SLEEVE_REGISTRY = BASE / "data" / "sleeve_registry.json"
+ROOT = BASE.parent.parent
+#: The canonical ledger `scripts/run_conversion_control.py:113` and `run_live_ladder.py:282`
+#: read -- repository `data/`, not the desk's, so the promoter's rows join theirs.
+ALPHA_STATE_LEDGER = ROOT / "data" / "alpha_state_ledger.jsonl"
+ALPHA_STATE_OBSERVATIONS = ROOT / "data" / "alpha_state_observations.jsonl"
+
+#: Door -> the rung the door claims. A door with no rung (STANDBY is reversible and sits on no
+#: rung; DEGRADED would make it terminal) is an observation by construction.
+_RUNG_BY_DOOR: dict[tuple[str, str], str | None] = {
+    ("PROMOTED", "LIVE"): "LIVE",
+    ("PROMOTED", "STANDBY"): "CAPITAL_ELIGIBLE",
+    ("RESTORED", "LIVE"): "LIVE",
+    ("DEMOTED", "STANDBY"): None,
+    ("RETIRED", "RETIRED"): "RETIRED",
+}
+
+
+def _alpha_state_paths() -> tuple[Path, Path]:
+    """(ledger, observations), ALWAYS beside whatever SLEEVES_FILE currently points at when a
+    test has moved the roster -- the same rule `_gold_voided_file` follows, and for the same
+    reason: five promoter test files redirect the roster to tmp_path and call `main()`, and a
+    ledger resolved through the module constant would append their fixture sleeves to the
+    repository's real data/alpha_state_ledger.jsonl. The constants stay for callers that set
+    them explicitly."""
+    ledger, obs = ALPHA_STATE_LEDGER, ALPHA_STATE_OBSERVATIONS
+    if SLEEVES_FILE != BASE / "data" / "sleeves.json":
+        if ledger == ROOT / "data" / "alpha_state_ledger.jsonl":
+            ledger = SLEEVES_FILE.with_name("alpha_state_ledger.jsonl")
+        if obs == ROOT / "data" / "alpha_state_observations.jsonl":
+            obs = SLEEVES_FILE.with_name("alpha_state_observations.jsonl")
+    return ledger, obs
+
+
+def registry_row(name: str) -> dict:
+    """The sleeve registry's row for a clock key, or {} when the registry or the key is absent.
+    The registry is keyed exactly as the forward engine keys its clocks, which is the name every
+    promoted row carries."""
+    try:
+        doc = json.loads(SLEEVE_REGISTRY.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc.get("sleeves") if isinstance(doc, dict) else None
+    row = rows.get(name) if isinstance(rows, dict) else None
+    return row if isinstance(row, dict) else {}
+
+
+def registry_sleeve_id(name: str) -> str | None:
+    """`sleeves.<key>.identity.sleeve_id` from data/sleeve_registry.json, else None -- absent is
+    reported as None on the row, never as an empty string a reader could mistake for an id."""
+    ident = registry_row(name).get("identity")
+    v = ident.get("sleeve_id") if isinstance(ident, dict) else None
+    return str(v) if v else None
+
+
+def door_evidence(name: str, cap: dict | None = None, *, n=None, exp_r=None, days=None,
+                  certificate: str | None = None, **extra) -> dict[str, str]:
+    """What the promoter MEASURED at a door, as the string-valued evidence the ledger takes.
+    Empty values are dropped rather than written blank: an empty string is how a checkbox gets
+    ticked by a script with nothing to say (alpha_state's own rule)."""
+    reg = registry_row(name)
+    cap = cap if isinstance(cap, dict) else {}
+    ev: dict = {
+        "certificate": certificate or name, "sleeve_id": registry_sleeve_id(name),
+        "forward_observations": n,
+        "forward_result": (f"{float(exp_r):.4f}R" if isinstance(exp_r, (int, float)) else None),
+        "forward_days": days, "shadow_started_at": reg.get("forward_start"),
+        "delta_elogw_per_day": cap.get("delta_elogw_per_day"),
+        "heat_earned": cap.get("heat_earned"), "admission": cap.get("status"),
+    }
+    ev.update(extra)
+    return {str(k): str(v) for k, v in ev.items() if v is not None and str(v).strip()}
+
+
+def record_door_transition(name: str, *, door: str, from_status: str, to_status: str,
+                           evidence: dict | None = None, reason: str = "") -> dict:
+    """Write one door of this pass onto the alpha-state ledger, or record why it could not be.
+
+    ONE ATTEMPT, NEVER A WALK. The ledger is asked for exactly the rung the door claims; it
+    refuses a skipped rung and missing evidence by design, and this function does not then step
+    through the lower rungs asserting evidence it did not measure -- that would be the machine
+    being forced from below, which is the bypass the ledger exists to prevent. A refusal is a
+    real answer and is quoted verbatim on the observation row.
+
+    EVERY DOOR LEAVES A TIMESTAMPED ROW in the observations file, whether or not the ledger took
+    it, so a per-rung timeline exists for every promoted sleeve from the day this landed (the
+    per-rung latency the audit could not measure). Retirement is the one door the ledger always
+    accepts: RETIRED is reachable from every state and needs only its reason.
+
+    Returns `{outcome, rung, why, ledger, observations}`; NEVER raises. A ledger that cannot be
+    read (a malformed line) is reported on the row and the pass continues -- a note-taking
+    failure must not abort a promotion (the `plog` lesson, 2026-09-03).
+    """
+    ledger_path, obs_path = _alpha_state_paths()
+    at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    rung = _RUNG_BY_DOOR.get((door, to_status))
+    ev = {str(k): str(v) for k, v in (evidence or {}).items()
+          if v is not None and str(v).strip()}
+    out = {"outcome": "OBSERVATION", "rung": rung, "why": "", "state_before": None,
+           "state_after": None, "ledger": str(ledger_path), "observations": str(obs_path)}
+    try:
+        if rung is None:
+            out["why"] = (f"{door} ({from_status or 'new'} -> {to_status}) is not a rung of the "
+                          f"alpha-state ladder: STANDBY is the reversible door and sits on no "
+                          f"rung; recorded as an observation, the machine is not forced")
+        else:
+            from libs.research.alpha_state import AlphaStateLedger
+            try:
+                ledger = AlphaStateLedger(ledger_path)
+            except ValueError as exc:
+                ledger = None
+                out["why"] = (f"alpha-state ledger unreadable ({exc}); the door is recorded as "
+                              f"an observation only")
+            if ledger is not None:
+                out["state_before"] = ledger.get(name).state
+                if rung == "RETIRED":
+                    rec, why = ledger.retreat(name, "RETIRED",
+                                              reason=reason or f"{door}: {to_status}", now=at)
+                else:
+                    rec, why = ledger.advance(name, rung, ev, now=at)
+                out["state_after"] = rec.state
+                moved = (rec.state == rung
+                         and (rec.history and rec.history[-1][1] == at))
+                out["outcome"] = "LEDGERED" if moved else "OBSERVATION"
+                out["why"] = why
+        row = {"schema_version": 1, "kind": "OBSERVATION", "alpha_id": name, "at": at,
+               "door": door, "from": from_status or None, "to": to_status,
+               "rung_attempted": rung, "outcome": out["outcome"],
+               "ledger_state_before": out["state_before"],
+               "ledger_state_after": out["state_after"],
+               "why": out["why"], "reason": reason or None, "evidence": ev}
+        obs_path.parent.mkdir(parents=True, exist_ok=True)
+        with obs_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True, default=str) + "\n")
+        plog(f"alpha_state: {name} {door} -> {to_status}: {out['outcome']}"
+             + (f" at rung {rung}" if rung else "")
+             + (f" ({out['why'][:120]})" if out["outcome"] != "LEDGERED" else ""))
+    except Exception as exc:
+        out["why"] = f"alpha-state recording failed: {type(exc).__name__}: {exc}"
+        plog(f"alpha_state: {name} {door} -> {to_status}: NOT RECORDED -- {out['why']}")
+    return out
+
+
+#: Doors opened or closed during THIS pass, recorded by `main` once the roster is written.
+#: Buffered rather than written at the door because the lane functions are called directly by
+#: seven test files that redirect none of the ledger paths; a write at the door sent their
+#: fixture sleeves to the repository's real data/ (measured on the first run of this change).
+#: `main` is the only caller that has a roster to write and the only one that flushes.
+_DOOR_EVENTS: list[dict] = []
+
+
+def note_door(name: str, *, door: str, from_status: str, to_status: str,
+              evidence: dict | None = None, reason: str = "") -> None:
+    """Remember a door for `flush_door_events`; never writes."""
+    _DOOR_EVENTS.append({"name": name, "door": door, "from_status": from_status,
+                         "to_status": to_status, "evidence": evidence, "reason": reason})
+
+
+def flush_door_events() -> list[dict]:
+    """Write every buffered door through `record_door_transition`, in the order it happened."""
+    events, _DOOR_EVENTS[:] = list(_DOOR_EVENTS), []
+    return [record_door_transition(e.pop("name"), **e) for e in events]
+
+
 def account_in_hand() -> dict:
     """The account this promoter is judging -- MEASURED from the terminal, or UNKNOWN.
 
@@ -916,6 +1097,7 @@ def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
                         "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
                         "admission": cap,
                         "certificate": cert,
+                        "sleeve_id": registry_sleeve_id(name),
                         "forward_verdict": row.get("forward_verdict"),
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": row.get("expectancy_r", 0.0),
@@ -924,6 +1106,10 @@ def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
              f"(exec=scalp_market {tf} {recipe['family']}/{recipe['session']}; shadow "
              f"exp={float(row.get('expectancy_r') or 0.0):.3f}R n={row.get('n', 0)}) -- "
              f"{cap['why']}")
+        note_door(
+            name, door="PROMOTED", from_status="", to_status=_door_status(cap),
+            evidence=door_evidence(name, cap, n=row.get("n"), exp_r=row.get("expectancy_r"),
+                                   days=row.get("days"), certificate=cert, lane="scalp"))
         changed = True
     return changed
 
@@ -1108,12 +1294,25 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
             s.pop("demote_reason", None)
             plog(f"RESTORED {s['name']} -> LIVE at {cap['risk_frac']:.2%} risk after "
                  f"{cap['streak']} consecutive positive reading(s) -- {cap['why']}")
+            note_door(
+                str(s.get("name") or ""), door="RESTORED", from_status="STANDBY",
+                to_status="LIVE",
+                evidence=door_evidence(str(s.get("name") or ""), cap, n=s.get("shadow_n"),
+                                       exp_r=s.get("shadow_exp"), days=s.get("shadow_days"),
+                                       certificate=s.get("certificate"),
+                                       admit_streak=cap.get("streak")))
             changed = True
         elif cap["status"] == "STANDBY" and status == "LIVE":
             s.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
                       "demoted_at": stamp, "demote_reason": cap["why"]})
             plog(f"DEMOTED {s['name']} -> STANDBY (0% risk, NOT retired) on the current "
                  f"reading -- {cap['why']}")
+            note_door(
+                str(s.get("name") or ""), door="DEMOTED", from_status="LIVE",
+                to_status="STANDBY", reason=str(cap.get("why") or ""),
+                evidence=door_evidence(str(s.get("name") or ""), cap, n=s.get("shadow_n"),
+                                       exp_r=s.get("shadow_exp"), days=s.get("shadow_days"),
+                                       certificate=s.get("certificate")))
             changed = True
         elif status == "LIVE" and abs(float(s.get("risk_frac") or 0.0) - cap["risk_frac"]) > 1e-9:
             # SIZE IS AN OUTPUT OF THE CURRENT SOLVE, not a constant carried from promotion day.
@@ -1193,6 +1392,8 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
                         "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
                         "admission": cap,
                         "status": _door_status(cap),
+                        # THE CERTIFICATE KEY AND THE REGISTRY IDENTITY, on the row (audit E9).
+                        "certificate": key, "sleeve_id": registry_sleeve_id(key),
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": row.get("exp_r", 0.0)})
         plog(f"PROMOTED (generic) {key} -> {_door_status(cap)} at {cap['risk_frac']:.2%} risk, "
@@ -1200,11 +1401,16 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
              f"n={row.get('n', 0)}) -- {cap['why']}"
              + ("; orders LOG-ONLY until data/GENERIC_EXEC_ENABLED"
                 if _door_status(cap) == "LIVE" else ""))
+        note_door(
+            key, door="PROMOTED", from_status="", to_status=_door_status(cap),
+            evidence=door_evidence(key, cap, n=row.get("n"), exp_r=row.get("exp_r"),
+                                   days=row.get("days"), lane="qquant"))
         changed = True
     return changed
 
 
 def main() -> None:
+    _DOOR_EVENTS.clear()          # a lane function called outside a pass leaves nothing behind
     shadow = load_shadow()
     sleeves = load_sleeves()
     # ONE MEASUREMENT OF THE ACCOUNT for the whole pass: the ledger is filtered on it and the
@@ -1281,7 +1487,11 @@ def main() -> None:
                "status": _door_status(cap),
                "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                "shadow_exp": st.get("exp_r", 0.0), "family": family,
-               "side": side_txt, "certificate_drift": st["certificate_drift"]}
+               "side": side_txt, "certificate_drift": st["certificate_drift"],
+               # THE CERTIFICATE KEY (already `key`; forward_reconcile.py:308 reads the same
+               # convention) AND THE REGISTRY IDENTITY, so the hop from a funded sleeve to the
+               # certificate that justified it is a field, not a name-shaped inference (E9/E1).
+               "certificate": key, "sleeve_id": registry_sleeve_id(key)}
         if family == "session_range_breakout":
             if win not in GOLD_WINDOWS:
                 st["executor_gap"] = f"bracket window {win!r} is not one the gateway runs"
@@ -1342,6 +1552,10 @@ def main() -> None:
         plog(f"PROMOTED {key} -> {_door_status(cap)} at {cap['risk_frac']:.2%} risk "
              f"({family} {side_txt}, exec={row.get('exec', 'bracket')}; shadow "
              f"exp={st.get('exp_r', 0.0):.3f}R n={st.get('n', 0)}) -- {cap['why']}")
+        note_door(
+            key, door="PROMOTED", from_status="", to_status=_door_status(cap),
+            evidence=door_evidence(key, cap, n=st.get("n"), exp_r=st.get("exp_r"),
+                                   days=st.get("days"), lane="shadow_forward"))
         changed = True
 
     # ---------------------------------------------------- CAPITAL, ON THE CURRENT READING
@@ -1372,6 +1586,7 @@ def main() -> None:
         elif fs["n"] >= 50 and fs["exp"] < RETIRE_MIN_EXP:
             retire, reason = True, f"n={fs['n']} exp {fs['exp']:.3f}R < {RETIRE_MIN_EXP}R"
         if retire:
+            status_before_retire = str(s.get("status") or "")
             s["status"] = "RETIRED"
             s["retired_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
             s["retire_reason"] = reason
@@ -1392,6 +1607,15 @@ def main() -> None:
                 srows[skey]["status"] = "KILL"
                 schanged = True
             plog(f"AUTO-RETIRED {s['name']} ({reason})")
+            # THE ONE DOOR THE LEDGER ALWAYS TAKES: RETIRED is reachable from every state and
+            # owes only its reason -- the promoter's own, verbatim, never the generic note.
+            note_door(
+                skey, door="RETIRED", from_status=status_before_retire,
+                to_status="RETIRED", reason=reason,
+                evidence=door_evidence(skey, s.get("admission"), n=fs["n"], exp_r=fs["exp"],
+                                       certificate=s.get("certificate"),
+                                       roll20_exp=f"{fs['roll20_exp']:.4f}R",
+                                       max_dd=f"{fs['max_dd']:.3f}R"))
             changed = True
 
     # ---------------------------------------------------------------- the gold book
@@ -1470,6 +1694,9 @@ def main() -> None:
         (SHADOW_DIR / "shadow_state.json").write_text(
             json.dumps(shadow, indent=2), encoding="utf-8")
         plog(f"sleeves.json updated: {[s['name'] for s in sleeves if s['status']=='LIVE']}")
+    # THE DOORS OF THIS PASS, onto the alpha-state ledger or its observation file -- after the
+    # roster is written, so a note-taking failure can never precede a promotion it describes.
+    flush_door_events()
 
 
 if __name__ == "__main__":
