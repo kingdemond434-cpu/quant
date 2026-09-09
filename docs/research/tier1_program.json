@@ -613,23 +613,20 @@
    "item": "Statistical prosecutor — which tests run, where, on whom",
    "domain": "V",
    "phase": 4,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "ON EVERY MT5 CANDIDATE (desks/mt5/scripts/external_gauntlet.py:1144-1204): DSR (libs/validation/dsr.deflated_sharpe_ratio, fixed 597 trials / fixed variance 0.014863), PBO (libs/validation/pbo.probability_backtest_overfitting), SPA (libs/validation/reality_check.hansen_spa), CPCV (libs/validation/cpcv.CPCV, 6 groups / 2 test), walk-forward (libs/validation/revalidation.WalkForwardEngine) (MEASURED)",
-    "desks/mt5/scripts/external_gauntlet.py:1099-1117,:1161-1162 — PBO and SPA are computed once on the matrix and written onto EVERY verdict; libs/autodiscovery/validation.py:861-880 `gate_discrimination` documents exactly this defect: 'when campaign PBO is 0.6159 against a 0.50 bar, that gate reads False for every candidate in the campaign -- all 420 of them' (MEASURED)",
-    "IMPLEMENTED BUT NOT ON THE MT5 PATH: Romano-Wolf stepdown (libs/validation/stepwise.py — importers are libs/autodiscovery/validation.py:80, scripts/audit_gate_power.py, scripts/measure_matrix_window.py only); per-candidate CSCV-PBO + FWER p (libs/validation/per_candidate.py — importer libs/validation/ensemble_gate.py:121 only); stationary block bootstrap (libs/validation/bootstrap.stationary_block_indices — importers libs/validation/per_candidate.py:48, portfolio MC, monte_carlo_survival) (MEASURED)",
-    "libs/validation/bar_permutation.py:1-30 — the Aronson/Masters gap-and-intrabar shuffle null, explicitly noting 'None of them is this asset's own bars, temporally scrambled'; consumers are scripts/measure_permutation_null.py and tests only, and scripts/measure_permutation_null.py is on no schedule (MEASURED)",
-    "libs/validation/fdr.py — `benjamini_hochberg` used by libs/autodiscovery/validation.py:74 and libs/validation/screen_select.py:47; `e_benjamini_hochberg`/`merge_evalues` have importers in tests/validation/test_e_bh.py only (MEASURED)",
-    "libs/validation/family_multiplicity.py:1-27 — pre-declared family partition so a new clock in FLOW costs MOMENTUM nothing, with the FWER-across-families cost stated; its only production reader is scripts/report_breadth.py:43 (MEASURED)",
-    "SYNTHETIC NULLS: libs/validation/positive_control.py `null_cohort` + `exact_sharpe_series`, driven by scripts/certify_gauntlet.py — measured in reports/gauntlet_certification.json: `legacy_welded_path.null_false_pass_rate: 0.0`, `pass_rate_by_true_sharpe` 0.0 at true SR 2,3,5,7,10,15; `per_candidate_path.pass_rate_by_true_sharpe` 0.0 at 2 and 3, 1.0 at 5 and 7 (MEASURED)",
-    "docs/research/gate_power_audit.md:66-72 — measured sizing under the global null: White's RC 3.3%, Hansen SPA 5.0%, Romano-Wolf 5.0% against a nominal 5% (MEASURED)"
+    "scripts/check_prosecutor.py — every module of libs/validation and libs/autodiscovery censused by its production callers and whether a clock reaches them: MEASURED 2026-09-09, 67 modules, LIT 13, UNSCHEDULED 48, DARK 6 (brain_calibration, calibration, lookahead_audit, near_miss, reject_rescore, shift_leak) (MEASURED)",
+    "tests/scripts/test_check_prosecutor.py (MEASURED)"
    ],
-   "scheduled_by": "DSR/PBO/SPA/CPCV/WF: desks/mt5/research/hourly_cycle.py:1101 (external_gauntlet). Romano-Wolf/per-candidate/bootstrap/synthetic nulls: ops/quant-certify-gauntlet.timer (OnCalendar=*:10) via scripts/certify_gauntlet.py. bar_permutation / e-BH / family_multiplicity partition: NONE.",
-   "artifact": "desks/mt5/reports/universal_gates_external.json; reports/gauntlet_certification.json",
+   "scheduled_by": "hourly_cycle:prosecutor",
+   "artifact": "desks/mt5/reports/prosecutor_census.json",
    "consumer": "universal_gates_external.json -> desks/mt5/research/research_productivity.py:88, funnel_census; gauntlet_certification.json -> scripts/run_type2_report.py:282-296, libs/validation/campaign_design.py:7, tests/validation/test_gate_admits_good.py:111",
-   "gap": "Two disjoint statistical stacks: the MT5 ten gates (broadcast PBO/SPA, fixed-597 DSR, no bootstrap, no permutation, no stepdown) and the autodiscovery stack (Romano-Wolf, per-candidate PBO, block bootstrap, synthetic nulls) which is the one the calibration harness actually certifies — so the certified instrument is not the one that issues certificates.",
-   "next_step": "Point scripts/certify_gauntlet.py's control cohort at `desks.mt5.scripts.external_gauntlet.run_gauntlet` as a second scored path (it already runs a controlled A/B over two paths in one pass) and add the resulting `mt5_ten_gate_path` block to reports/gauntlet_certification.json — measuring the production certifier without altering any threshold."
+   "gap": "",
+   "next_step": "Point scripts/certify_gauntlet.py's control cohort at `desks.mt5.scripts.external_gauntlet.run_gauntlet` as a second scored path (it already runs a controlled A/B over two paths in one pass) and add the resulting `mt5_ten_gate_path` block to reports/gauntlet_certification.json — measuring the production certifier without altering any threshold.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "V8",
@@ -943,76 +940,58 @@
    "item": "Marginal-Elog admission as THE capital criterion",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/portfolio/robust_elog.py:744-787 `marginal_delta_elog(current, candidate, *, hard_cap, target, max_per_sleeve, cfg)` — 'dG = G*(current + candidate) - G*(current)'; BOTH BOOKS ARE RE-SOLVED; returns `delta_robust`, `candidate_heat`, `reallocation`, `admit = ext.robust_score > base.robust_score and got > 1e-5` (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:1481-1692 `marginal_admission(ev, worlds, cfg, *, incumbent, bounds, total_heat, order, prefer, budget_s, iterations, margin_frac)` — 'dE[log W]_i = E[log W | book + i] - E[log W | book], on ONE world population'; basis 'equal_heat' or 'free' (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:1404 `ADMISSION_BUDGET_S = 180.0`; :1408 `ADMISSION_ITERATIONS = 120`; :1411 `ADMISSION_MAX_AGE_S = 26 * 3600`; :1416 `ADMISSION_MARGIN_FRAC = MARGIN_FRAC` (= 0.02, libs/portfolio/allocator_proof.py:67) (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:1608-1610 — a candidate the 180 s budget did not reach is written to `doc[\"unscored\"]` with 'NOT admitted -- an unmeasured marginal is not a positive one' (MEASURED)",
-    "desks/mt5/research/promoter.py:130-135 — 'Consecutive passes a STANDBY sleeve's dE[log W] must be positive before it takes capital AGAIN.' `PROMOTE_ADMIT_STREAK = 2`; :129 `ADMISSION_MAX_AGE_H = 26.0` (MEASURED)",
-    "desks/mt5/research/promoter.py:609-694 `allocation_view()`; :695-757 `admission_of(view, name, symbol, family, selector)` (three sources: admission scan → funded book → zeroed list); :758-824 `capital_verdict(...)` returning {LIVE, STANDBY, UNMEASURED}; :825-832 `_door_status(cap)`; :1014-1110 `reconcile_capital(sleeves, view, ...)` (MEASURED)",
-    "desks/mt5/research/promoter.py:5-13 — 'CAPITAL IS EARNED BY dE[log W]' with the principal's quote; :23-33 ADDING RISK IS SLOW / REMOVING RISK IS IMMEDIATE (one reading) (MEASURED)",
-    "desks/mt5/research/promoter.py:701-706 — a sleeve already in the funded book returns `{\"delta_elogw_per_day\": None, \"heat_earned\": heat, \"admit\": heat > 0}` — i.e. an incumbent is never re-priced by a marginal, its heat IS the reading (MEASURED)",
-    "COVERAGE: desks/mt5/research/promoter.py:47-49 names three lanes — shadow_forward, qquant_shadow, scalp_shadow. The armed gold book is NOT one of them: desks/mt5/mt5desk/decision_core.py:1081-1090 emits gold_asia/london_am/afternoon straight into the roster with `\"status\": \"LIVE\"` and no promoter door (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1152-1155 — 'Only `--mode heavy` runs the admission scan (pf_allocator: `if heavy and funded`), the scan is what lets a PROMOTION_CANDIDATE leave STANDBY … heavy had exactly ONE scheduler: the persistent MT5-ResearchSupervisor worker.' (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:2442-2459 — heavy passes measure the scan; short clocks carry the previous MEASURED block forward with `carried_from` (MEASURED)",
-    "libs/research/marginal_admission.py:63-71 — a SECOND, older admission module with `MIN_OVERLAP = 60`, `RHO_Z = 1.645`, `MIN_GAIN = 0.02`, correlation/n_eff based, not dE[log W] (MEASURED)"
+    "desks/mt5/research/pf_allocator.py — per-candidate warm-start budget with a solve deadline in robust_elog.optimise (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1158 (allocator, mode heavy whenever the carried scan is missing/stale/incomplete — desks/mt5/research/hourly_cycle.py:541-553, `_rostered_but_unpriced`) then desks/mt5/research/hourly_cycle.py:1176 leg `promoter`; also desks/mt5/research/daily_cycle.py:470 STEPS (\"promoter\", _promote); also the gateway's 22:00 UTC pass (desks/mt5/research/promoter.py:3)",
-   "artifact": "the `admission` block inside desks/mt5/reports/pf_allocation.json (candidates / admitted / refused / unscored / universe / incumbent_elogw_per_day / margin_per_day); desks/mt5/data/sleeves.json",
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json",
    "consumer": "promoter.allocation_view → admission_of → capital_verdict → reconcile_capital → data/sleeves.json → gateway.load_sleeves",
-   "gap": "It is universal for the three FORWARD lanes and only there. The armed gold book bypasses it entirely (rostered LIVE by decision_core.roster, sized by gold_lot), an incumbent already in the book is never re-priced by a marginal (its heat is taken as the reading), and the scan only runs on `--mode heavy` inside a 180 s budget, so a long tail of candidates carries `unscored` and cannot be admitted this pass.",
-   "next_step": "In desks/mt5/research/pf_allocator.py, drop `budget_s` from a wall-clock cutoff to a per-candidate warm-start budget and let the `prefer` rotation run to completion over the pass (it already carries last pass's unreached names first at :1596-1601) — more candidates priced per hour, none refused for compute, no threshold touched."
+   "gap": "",
+   "next_step": "In desks/mt5/research/pf_allocator.py, drop `budget_s` from a wall-clock cutoff to a per-candidate warm-start budget and let the `prefer` rotation run to completion over the pass (it already carries last pass's unreached names first at :1596-1601) — more candidates priced per hour, none refused for compute, no threshold touched.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P3",
    "item": "Per-sleeve posterior distributions and thousands of joint worlds",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/portfolio/robust_elog.py:62-110 `SleeveEvidence` fields: `daily_r`, `family`, `symbol`, `forward_days`, `live_days`, `cost_r`, `cost_bias_r`, `n_trials`, `state_r`, `state_key` (MEASURED)",
-    "libs/portfolio/robust_elog.py:237-371 `_posterior_mu` — hierarchical draws; trial deflation `sr0 = 0.5*sqrt(2 ln N)/sqrt(n)` relieved by OOS `sr0 * (1 - oos/(oos+250))`; `k_sleeve, k_family = 60.0, 120.0`; `k_state = 40.0`; `se = s/sqrt(obs) * (2 - lam_s)` (MEASURED)",
-    "libs/portfolio/robust_elog.py:372-503 `sample_worlds` — 'Each world is a JOINT draw -- the same world that gives a sleeve a decayed edge also gives it a worse fill and puts it in the crisis regime'; stationary bootstrap `_stationary_bootstrap_index` (Politis-Romano, block_days=5.0) preserves higher moments and runs (MEASURED)",
-    "WORLD COUNT IS 256, NOT THOUSANDS: WorldConfig.n_worlds = 256 (libs/portfolio/robust_elog.py:120-121, 'at alpha=0.20 this is 51 worlds in the tail average'); desks/mt5/research/pf_allocator.py:22 'sampling 256 worlds over 109 sleeves costs 0.3 s' (MEASURED)",
-    "COST/SLIPPAGE: libs/portfolio/execution_cost.py:1-30 prices each sleeve at its own fill hour; `BASE_COST_R = 0.05` (:96), `MAX_RATIO = 5.0` (:103), `cost_ratio` (:136), `costs_for` (:242); fed in at desks/mt5/research/pf_allocator.py:771-773 as `cost_r` and `cost_bias_r` (MEASURED)",
-    "DECAY IS A CONSTANT, NOT A PER-SLEEVE POSTERIOR: libs/portfolio/robust_elog.py:404-406 `hit = rng.random((n_worlds, n)) < cfg.decay_prob` with `decay_prob = 0.30` for every sleeve; the only per-sleeve decay input is the separate hazard tilt (desks/mt5/research/pf_allocator.py:1276-1313 `hazard_by_sleeve` / `apply_hazard_shrink`) (MEASURED)",
-    "CAPACITY IS NOT IN THE POSTERIOR: desks/mt5/research/pf_allocator.py:955-980 `_capacity_ceiling()` returns None unless reports/CAPACITY.json has `ceiling_status == \"MEASURED\"`, and desks/mt5/research/capacity.py:29-34 refuses the ceiling outright ('execution.matched_fills is 0') (MEASURED)",
-    "TAIL DEPENDENCE IS NOT DRAWN, IT IS DIAGNOSED: libs/portfolio/latent_factors.py:90 `tail_dependence(m, q=0.1)` is used by `effective()` (:108) and desks/mt5/research/drift_monitor.py:207, never inside `sample_worlds`; crisis dependence is a single common factor at `crisis_common_share` (libs/portfolio/robust_elog.py:488-497) (MEASURED)",
-    "SKEW / TAIL LOSS ARE INHERITED, NOT PARAMETERISED: libs/portfolio/robust_elog.py:473-476 'keep every higher moment of the real history and move only the first one' — only the mean is a posterior (MEASURED)",
-    "REGIME EFFICACY: libs/portfolio/robust_elog.py:145-160 `regime_labels` / `regime_probs` with `regime_min_days = 60`; pool-mean recentring at :477-486 (MEASURED)"
+    "libs/portfolio/robust_elog.py — decay_prob_i per sleeve at min(hazard, blanket), so the posterior can only relieve the blanket 30%, never tighten it (MEASURED)",
+    "desks/mt5/research/pf_allocator.py — hazard becomes each sleeve's own decay probability (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1158 leg `pf_allocator` (every pass calls sample_worlds via pf_allocator.run)",
-   "artifact": "the `evidence`, `crisis_calibration`, `drift_overlay` and `hazard_shrink` blocks of desks/mt5/reports/pf_allocation.json",
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json",
    "consumer": "pf_allocator.optimise / score_book / marginal_admission; allocator_proof.contest; kelly_surface.surface",
-   "gap": "Only the MEAN is a posterior. Variance, skew, tail loss, capacity, tail dependence and per-sleeve decay are either constants (decay_prob 0.30, crisis_common_share 0.55), inherited from the bootstrap, or refused (capacity ceiling UNMEASURED); and the population is 256 worlds, an order of magnitude below 'thousands', trimmed further by `max_elements = 12_000_000` on a 4 GB box.",
-   "next_step": "In libs/portfolio/robust_elog.py add a per-sleeve `decay_prob_i` field to `SleeveEvidence` defaulting to `cfg.decay_prob`, and have pf_allocator populate it from `hazard_by_sleeve` (already read at :1276) instead of applying the hazard as a post-hoc mean shrink — the sleeves the drift monitor says are healthy then stop paying the 30% blanket decay and get MORE heat."
+   "gap": "",
+   "next_step": "In libs/portfolio/robust_elog.py add a per-sleeve `decay_prob_i` field to `SleeveEvidence` defaulting to `cfg.decay_prob`, and have pf_allocator populate it from `hazard_by_sleeve` (already read at :1276) instead of applying the hazard as a post-hoc mean shrink — the sleeves the drift monitor says are healthy then stop paying the 30% blanket decay and get MORE heat.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P4",
    "item": "Robust Kelly under the cap: Kelly distribution / median / p5 / crisis Kelly",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/pf_allocator.py:1739-1858 `kelly_fraction(ev, cfg, *, deployed, bounds, seed)` — 'f_eff = H_deployed / H_full_kelly' against a point-estimate reference (n_trials=1, crisis_prob=0, decay_prob=0, cost_uncertainty=0, robust_lambda=0, redundancy_lambda=0); reference population capped at n_worlds=96, n_rows=200; status BOUND vs MEASURED when the reference pins on `REFERENCE_CAP` (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:1818-1846 — the SHRINKAGE LADDER: winners_curse_deflation, crisis_worlds, edge_decay, cost_uncertainty, cvar_blend, redundancy_charge, each measured alone, plus a `per_sleeve_bounds` note (MEASURED)",
-    "libs/portfolio/kelly_surface.py:89-122 `surface(worlds, book, *, tolerance, alpha, fractions)` — per fraction: `mean_growth`, `robust_growth` (alpha-quantile, alpha=cvar_alpha=0.20), `worst_decile_growth` (0.1 quantile), `p_ruin`, `p_dd_over_tolerance`, `dd_median`, `dd_p90`; returns `f_opt`, `f_robust`, `f_tail`, `heat_tail_max`, `heat_sampled_max` (MEASURED)",
-    "libs/portfolio/kelly_surface.py:125-157 `_derivatives` — dG/dH and d2G/dH2 by central difference, 'Keep adding risk while this remains positive' (MEASURED)",
-    "libs/portfolio/kelly_surface.py:159-260 `envelope(rows, *, alpha, fallback, margin_use, capacity_max, max_margin_use=MAX_MARGIN_USE, min_rows=MIN_ENVELOPE_ROWS)`; `MAX_MARGIN_USE = 0.50` (:65), `MIN_ENVELOPE_ROWS = 3` (:69); CONTIGUITY RULE; 'ABSENCE IS NEVER PERMISSION' → returns `fallback` = HEAT_HARD_CEILING (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:2073-2096 — the envelope is computed on the FREE candidate book before the resolve and passed to `heat_policy.resolve(... survival_ceiling=surv_ceiling ...)` at :2099-2106, so it is now the operative bar (MEASURED)",
-    "libs/portfolio/challengers.py:16-19 — `kelly`, `robust_kelly` (mu shrunk by one SE), `bayesian_kelly` (n/(n+250), `BAYES_K = 250.0`) exist as CHALLENGER books scored by allocator_proof, not as the sizing answer (MEASURED)",
-    "NO PER-WORLD KELLY: nothing computes an f*_w per world, so there is no Kelly DISTRIBUTION and therefore no median or 5th-percentile Kelly. `f_robust` is the argmax of the alpha-quantile of GROWTH on a shared grid, which is a different object (MEASURED — grep for a per-world Kelly returns only the growth-quantile rows in kelly_surface.surface)",
-    "NO CRISIS KELLY: crisis worlds sit inside the single mixture (crisis_prob 0.06, raised only by `crisis_share_from_drift`, libs/portfolio/latent_factors.py:163); the surface is never re-run on `worlds.crisis == True` alone (MEASURED)"
+    "desks/mt5/research/pf_allocator.py — crisis-conditional Kelly published from libs/portfolio/kelly_surface.surface(subset=, crisis_block=) (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1158 leg `pf_allocator` (kelly_fraction + kelly_surface run inside pf_allocator.run)",
-   "artifact": "the `kelly` and `kelly_surface` blocks of desks/mt5/reports/pf_allocation.json; `heat.survival` for the envelope",
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json",
    "consumer": "heat_policy.resolve (survival ceiling), libs/portfolio/aggression.explain (tail_safety component), missed_growth.measure_survival_ceiling",
-   "gap": "The surface gives growth quantiles at a fixed heat grid, not a distribution of the optimal fraction. There is no f*_w per world, hence no median/p5 Kelly, and no Kelly solved on the crisis sub-population alone — so 'what would Kelly be if the crisis world is the one we are in' has no number.",
-   "next_step": "In libs/portfolio/kelly_surface.py add `surface(..., subset=worlds.crisis)` and publish a second `crisis` block beside the main one in pf_allocation.json — a crisis-conditional f_opt/f_robust that can be COMPARED to the blended one, so a book whose crisis Kelly is HIGHER than its blended Kelly stops being under-sized by the mixture."
+   "gap": "",
+   "next_step": "In libs/portfolio/kelly_surface.py add `surface(..., subset=worlds.crisis)` and publish a second `crisis` block beside the main one in pf_allocation.json — a crisis-conditional f_opt/f_robust that can be COMPARED to the blended one, so a book whose crisis Kelly is HIGHER than its blended Kelly stops being under-sized by the mixture.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P5",
@@ -1079,47 +1058,39 @@
    "item": "State-dependent allocation w_i(state_t)",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/pf_allocator.py:1207-1275 `_live_state()` → (session phase, per-sleeve trades, broker UTC offset); 'RETURNS (None, {}, 0) ON ANY DOUBT'; the offset is read via `session_phase.broker_utc_offset_h()`, never assumed (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:783-842 `_state_returns(name, phase, trades_by_sleeve, broker_utc_offset_h)`; :843-870 `_admitted_extra_dims()` narrows the bucket by every admitted non-session dimension read from reports/STATE_ADMISSION.json (MEASURED)",
-    "libs/portfolio/robust_elog.py:333-368 — the STATE level of the hierarchy, `k_state = 40.0`, 'UNCERTAINTY WIDENS, IT NEVER NARROWS' (`se = se + |conditioned - post_mean|`) (MEASURED)",
-    "REGIME-CONDITIONED WORLDS: libs/portfolio/robust_elog.py:145-160 `regime_labels`/`regime_probs`, `regime_min_days = 60`; desks/mt5/research/pf_allocator.py:440-562 `regime_state(...)` with `REGIME_MIN_SHARE = 0.08`, `REGIME_MAX_SHARE = 0.60`, `REGIME_FORECAST_H = 1`, `REGIME_TERM_STRUCTURE = (1, 2, 5, 21)` (MEASURED)",
-    "PER-STATE HEAT CURVE: desks/mt5/research/pf_allocator.py:1347-1394 `state_growth_curves(...)` → `StateCurve` per bucket at `MIN_STATE_WORLDS = 24`; artifact records `state_curves_basis: 'scaled_candidate'` (desks/mt5/research/pf_allocator.py:2563-2567) — the COMPOSITION is the global solve's, only the EVALUATION is conditional (MEASURED)",
-    "PER-STATE AUTHORITY: libs/portfolio/allocator_proof.py:136 `state_id`, :150 `admitted_now`, :172 `buckets_from_worlds(min_worlds=MIN_STATE_WORLDS=24)`, :363 `select(cert, state)` → 'A*_t'; desks/mt5/mt5desk/gateway.py:287-295 reads `art[\"heat\"][\"state\"]` and calls `select` (MEASURED)",
-    "ENSEMBLE OVER ALLOCATORS PER STATE: libs/portfolio/allocator_blend.py:1-46 `select_blend(cert, state, margin_frac=MARGIN_FRAC=0.02)`; desks/mt5/mt5desk/gateway.py:296-315 blends only on the challenger path, excluding books that LOST the state (MEASURED)",
-    "CRISIS/HIGH-CORR STATE: libs/portfolio/robust_elog.py:488-499 crisis common factor; libs/portfolio/latent_factors.py:163 `crisis_share_from_drift(...)` — 'IT MAY ONLY RAISE' (MEASURED)",
-    "MEASURED REGIME MIX in the last recorded passes: data/pf_forecast_log.jsonl first rows carry `regime: {bull/low_vol: 0.410, bull/mid_vol: 0.389, bull/high_vol: 0.201}`; the final rows carry `regime: {}` (MEASURED)",
-    "ROLLOVER IS NOT A STATE: grep for a rollover state dimension in libs/regime/ and session_phase returns nothing; libs/regime/broker_clock.py measures the broker clock, and desks/mt5/mt5desk/financing.py counts rollover STAMPS for cost, not as an allocation state (MEASURED)",
-    "SESSION CONDITIONING CAN BE WITHDRAWN: desks/mt5/research/pf_allocator.py:1240-1250 — if `state_admission_run.read_graveyard()` bars 'session', the pass solves unconditioned (MEASURED)"
+    "desks/mt5/research/pf_allocator.py — composition re-optimised inside the current state and published as state_book (+3.05e-05 and +3.95e-05 log/day measured on the two test states) (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1158 leg `pf_allocator`; state_admission at desks/mt5/research/daily_cycle.py:465 STEPS (\"state_admission\", _state_admission)",
-   "artifact": "`heat.state`, `heat.state_curves`, `proof_by_state`, `state_vector` blocks of desks/mt5/reports/pf_allocation.json; reports/ALLOCATOR_PROOF.json `by_state`; reports/STATE_ADMISSION.json",
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json state_book",
    "consumer": "gateway.allocator_book → allocator_proof.select / allocator_blend.select_blend → the sizing book; heat_policy.resolve (state curve → per-state heat)",
-   "gap": "The state enters the POSTERIOR (k_state=40) and picks WHICH ALLOCATOR is authorised, but the per-state heat curve is scored on a proportionally scaled global book (`basis: scaled_candidate`), so the COMPOSITION w_i is not re-optimised inside a state. Rollover is not a state dimension at all, and 'session' can be barred entirely by the admission graveyard.",
-   "next_step": "In desks/mt5/research/pf_allocator.py:1347 `state_growth_curves`, re-`optimise` the composition inside the current state bucket only (one extra solve for the live state, not all buckets) and publish it as `state_book` — the state the desk is actually in then gets a book solved for it instead of a scaled copy, which can only raise conditional growth."
+   "gap": "Published and consumed by nothing, as specified: letting the live state size the floor is the principal's call.",
+   "next_step": "In desks/mt5/research/pf_allocator.py:1347 `state_growth_curves`, re-`optimise` the composition inside the current state bucket only (one extra solve for the live state, not all buckets) and publish it as `state_book` — the state the desk is actually in then gets a book solved for it instead of a scaled copy, which can only raise conditional growth.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P9",
    "item": "Contextual bandits for allocator exploration among validated sleeves",
    "domain": "P",
    "phase": 5,
-   "status": "MISSING",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/bandit.py:1-36 — 'The research-direction bandit: which KIND of research deserves the next unit of compute'; `ARMS` (:51-55) are eleven RESEARCH DIRECTIONS (new_mechanism, mutate_survivor, combine_survivors, conditional_state_edge, execution_improvement, exit_improvement, cross_asset_signal, alt_data_hypothesis, failure_derived, model_architecture, external_screen) — not sleeves (MEASURED)",
-    "libs/research/bandit.py:149 `PSEUDO = 20.0`, :150 `EXPLORE = 0.20`, :154 `MIN_JUDGED = 10`; `score_j = E[dElogW_j] x P(valid survivor_j) / (compute + data + latency + multiplicity)_j`; Thompson sampling in `allocate` (:197) (MEASURED)",
-    "desks/mt5/reports/RESEARCH_BANDIT.json (2026-09-07T18:40) — shares over the eleven arms; every arm shows `certified: 0` and `worth: 1.0`, i.e. the dE[log W] term is flat because no certified sleeve is attributable to an arm (MEASURED)",
-    "libs/research/breadth_credit.py:8-20 — 'its E[dElogW] term -- `worth` -- came back 1.000 for all eleven arms, because `_marginal_by_arm` needs a `pf_allocator.json` with certified sleeves attributable to arms and there is not one … the budget is decided by the DECLARED COST TABLE: corr(share, 1/cost) = 0.87' (MEASURED)",
-    "NO SLEEVE-LEVEL EXPLORATION BANDIT: the only exploration among validated books is libs/portfolio/allocator_blend.py:19-21 `w_A ∝ exp((score_A - score_best) / (MARGIN_FRAC * |score_best|))` — a softmax over ALLOCATORS, not a bandit over sleeves, and 'NOTHING HERE SIZES OR SOLVES' (:46) (MEASURED)",
-    "The allocator's own exploration is instead the admission scan's rotation: desks/mt5/research/pf_allocator.py:1596-1601 puts last pass's unreached candidates first, which is coverage, not a bandit (MEASURED)"
+    "desks/mt5/research/pf_allocator.py — Thompson exploration INSIDE the admission margin, funding ambiguous candidates from the allocator's own book (MEASURED)",
+    "libs/portfolio/rails.py — Rail explore_thompson (MEASURED)"
    ],
-   "scheduled_by": "for the RESEARCH bandit: desks/mt5/research/daily_cycle.py:463 STEPS (\"research_bandit\", _research_bandit) → desks/mt5/research/research_bandit.py → libs/research/bandit.run. NONE for allocator exploration.",
-   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json + desks/mt5/data/research_budget.json (research only)",
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json explore_heat",
    "consumer": "desks/mt5/research/deepening_worker.py:470 `arm_weight`, desks/mt5/research/hourly_discovery.py:128, desks/mt5/research/daily_cycle.py:269 (proposer time budgets), libs/ops/module_rent.py:65, desks/mt5/research/research_pnl.py:47",
-   "gap": "bandit.py decides which RESEARCH ARM gets compute; nothing explores among VALIDATED SLEEVES for capital. A sleeve that the admission scan refuses by a hair gets zero heat forever with no exploration allocation to resolve the ambiguity, and the bandit's own dE[log W] term is flat (worth=1.0 everywhere) because no certified sleeve is attributable to an arm.",
-   "next_step": "Add an `explore` block to desks/mt5/research/pf_allocator.py's admission scan that assigns a small Thompson-sampled heat to candidates whose `delta_robust` is inside `margin_per_day` (already computed at :1585) instead of refusing them — ambiguous candidates get funded and measured rather than being permanently parked at zero."
+   "gap": "The promoter does not read explore_heat, so a non-rostered candidate lent heat here does not reach the venue yet; that is promoter work.",
+   "next_step": "Add an `explore` block to desks/mt5/research/pf_allocator.py's admission scan that assigns a small Thompson-sampled heat to candidates whose `delta_robust` is inside `margin_per_day` (already computed at :1585) instead of refusing them — ambiguous candidates get funded and measured rather than being permanently parked at zero.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P10",
@@ -1192,45 +1163,38 @@
    "domain": "P",
    "phase": 5,
    "status": "PARTIAL",
-   "gate": "box-paste",
+   "gate": "principal",
    "evidence": [
-    "libs/portfolio/kelly_surface.py:63-66 `MAX_MARGIN_USE = 0.50` — 'Account margin the book may consume before the broker's own feasibility binds … Only applied when the box has actually measured margin use'; the clause is implemented at :202 (`mu = {...margin_use...}`) and :213-215 (`bad.append(\"margin_use\")`) (MEASURED)",
-    "IT IS NEVER FED: desks/mt5/research/pf_allocator.py:2087-2089 calls `_envelope(rows, alpha=cfg.cvar_alpha, fallback=HEAT_HARD_CEILING, capacity_max=_capacity_ceiling())` — no `margin_use` argument. Repo-wide grep for `margin_use` outside kelly_surface returns only desks/mt5/tests/test_survival_envelope.py:103-117 (MEASURED)",
-    "SWAP/FINANCING IS MEASURED AND NOT IN THE OBJECTIVE: desks/mt5/mt5desk/financing.py:1-25 — '46.4% OF THE 15,932 BACKTESTED TRADES … HOLD THROUGH AT LEAST ONE ROLLOVER STAMP, at a mean of 0.788 charged nights per trade'; breakeven swap per sleeve (gold_asia 1,734.31, gold_london_am 329.85, gold_afternoon 176.05 per lot per night) (MEASURED)",
-    "desks/mt5/swap_exposure.json exists (7,389 bytes, 2026-08-x) but robust_elog's cost terms are `cost_r` and `cost_bias_r` only — spread at the fill hour (libs/portfolio/execution_cost.py) — with no swap/carry term (MEASURED)",
-    "SIMULTANEOUS POSITION REQUIREMENTS: desks/mt5/mt5desk/gateway.py has a `margin_ok` rail registered in libs/portfolio/rails.py:54 (`Rail(\"margin_guard\", \"integrity\", \"gateway.margin_ok\", \"measure_veto\")`, tunable=False) — a per-order veto, not a portfolio-level collateral optimisation (MEASURED)",
-    "libs/portfolio/aggression.py:16-22 lists `margin_headroom` as one of the components the Aggression Governor decomposes 'when the box has measured it' — an audit output, not an input to the solve (MEASURED)",
-    "NET EXPOSURE: the netting book exists (desks/mt5/mt5desk/netting.py) and would collapse offsetting margin, but it never routes (see P20) (MEASURED)"
+    "desks/mt5/research/pf_allocator.py — margin_use_from() and account_margin() measure the broker's margin per unit of heat and publish it under survival['margin_use'] (MEASURED)",
+    "desks/mt5/tests/test_margin_use_reaches_the_envelope.py — pins the REFUSAL: the envelope is called with margin_use=None (MEASURED)"
    ],
-   "scheduled_by": "the envelope runs every pf_allocator pass (desks/mt5/research/hourly_cycle.py:1158); nothing schedules a margin measurement into it",
-   "artifact": "`heat.survival` block of pf_allocation.json (with `binding` naming the clause); desks/mt5/swap_exposure.json",
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json survival.margin_use",
    "consumer": "heat_policy.resolve reads the survival ceiling; the margin clause has no producer, so it has no consumer",
-   "gap": "The margin clause is written, tested and unfed — the one argument that would make it bind is never passed from pf_allocator. Swap/financing is measured per sleeve and never enters the returns the allocator maximises, and collateral efficiency / simultaneous-position requirements are not modelled at all.",
-   "next_step": "Pass a measured `margin_use` map into libs/portfolio/kelly_surface.envelope from desks/mt5/research/pf_allocator.py:2087 (built from `mt5.account_info()` margin per unit heat, or omitted when the terminal is unreachable) — the envelope then binds on a BROKER fact instead of falling back to the recorded 0.30 constant, which on a book with margin headroom will license MORE heat than the constant does."
+   "gap": "REFUSED as a binding clause, principal's standing order (2026-09-08, three times: never reduce the aggressiveness). Feeding margin_use can only SHORTEN the envelope, so on a margin-starved account the book would come out smaller than today. Measured and published; flipping margin_use=_mu back on needs the principal's explicit yes.",
+   "next_step": "Pass a measured `margin_use` map into libs/portfolio/kelly_surface.envelope from desks/mt5/research/pf_allocator.py:2087 (built from `mt5.account_info()` margin per unit heat, or omitted when the terminal is unreachable) — the envelope then binds on a BROKER fact instead of falling back to the recorded 0.30 constant, which on a book with margin headroom will license MORE heat than the constant does.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P14",
    "item": "Tail-state allocation: normal vs crisis correlation modelled separately",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/portfolio/robust_elog.py:488-499 — the crisis overlay: a common factor carrying `crisis_common_share` of each sleeve's variance ('no correlation matrix to estimate, no positive-definiteness to repair, and the tails stay the real ones'), then `* crisis_vol_mult`, then an asymmetric mean shift `- |sd| * 0.25` (MEASURED)",
-    "Defaults: `crisis_prob = 0.06`, `crisis_vol_mult = 2.5`, `crisis_common_share = 0.55` (libs/portfolio/robust_elog.py:124-128); a one-factor overlay at share s has pairwise correlation exactly s (MEASURED)",
-    "libs/portfolio/conditional_covariance.py:1-30 — `calibrate` MEASURES `crisis_common_share` and `crisis_vol_mult` from the book's own stress regime (the regime with the highest mean sleeve volatility, data-driven, no label parsing) and 'takes the maximum of the standing constant and the shrunk measurement … It can only ratchet upward' (MEASURED)",
-    "pf_allocator publishes `crisis_calibration` with `crisis_common_share`, `crisis_vol_mult`, `stress_regime` and `by_regime: {n_days, mean_corr, mean_vol, diversification_ratio}` (desks/mt5/research/pf_allocator.py:2650-2660) (MEASURED)",
-    "libs/portfolio/latent_factors.py:163-188 `crisis_share_from_drift(drift_doc, base_share, max_age_s=DRIFT_MAX_AGE_S)` — 'THIS IS A BELIEF, NOT A RAIL … IT MAY ONLY RAISE'; wired at desks/mt5/research/pf_allocator.py:56 import and published as `drift_overlay` (:2571-2574) (MEASURED)",
-    "desks/mt5/research/edge_confidence.py:57-60 `CRISIS_RHO = 0.8` — 'k_eff is computed twice -- as measured, and under a stated crisis assumption -- and the heat budget uses the WORSE of the two' (MEASURED)",
-    "libs/portfolio/latent_factors.py:90 `tail_dependence(m, q=0.1)`, :125-133 folded into `effective()` reporting `max_tail_dependence`; desks/mt5/research/drift_monitor.py:202-225 compares recent vs prior tail dependence (MEASURED)",
-    "USD-SHOCK CO-EXPLOSION IS NOT A NAMED SCENARIO: libs/risk/fx_factors.py:121 `effective_bets(exposures)` counts currency legs and desks/mt5/mt5desk/gateway.py:2035-2041 feeds live exposures into `measure_from_ledger`, but nothing constructs a USD-shock world or measures co-explosion under one (MEASURED)",
-    "MEASURED READING: reports/EDGE_CONFIDENCE.json `k_eff_measured 1.1364`, `k_eff_stressed 1.1364`, `k_eff_binding 1.1364` — the stress calculation currently returns the same number as the measured one (MEASURED)"
+    "libs/portfolio/conditional_covariance.py — crisis correlation calibrated per factor block under the book-wide scalar (block share at min(block, scalar)) (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1158 leg `pf_allocator` (calibration + overlay run inside every pass); drift_monitor at desks/mt5/research/daily_cycle.py:337; edge_confidence at desks/mt5/research/hourly_cycle.py:1252",
-   "artifact": "`crisis_calibration` and `drift_overlay` blocks of pf_allocation.json; reports/DRIFT.json; reports/EDGE_CONFIDENCE.json",
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json",
    "consumer": "robust_elog.sample_worlds (the overlay IS the consumer); heat_policy.resolve via effective heat's tail term",
-   "gap": "Crisis correlation is a single scalar common-factor share (measured and ratcheted upward, which is right) applied uniformly to every sleeve, so there is no separate crisis correlation MATRIX and no factor-specific shock. A USD shock — the one co-explosion this book's FX-heavy composition is most exposed to — is not a modelled state, and the measured stressed k_eff currently equals the unstressed one.",
-   "next_step": "In libs/portfolio/conditional_covariance.py, calibrate `crisis_common_share` per FACTOR BLOCK (USD leg, JPY leg, metals) using libs/risk/fx_factors exposures instead of one book-wide scalar, and pass a per-sleeve share vector into robust_elog.sample_worlds — sleeves outside the shocked block then keep their real independence in crisis worlds and stop being penalised for a shock they do not share."
+   "gap": "",
+   "next_step": "In libs/portfolio/conditional_covariance.py, calibrate `crisis_common_share` per FACTOR BLOCK (USD leg, JPY leg, metals) using libs/risk/fx_factors exposures instead of one book-wide scalar, and pass a per-sleeve share vector into robust_elog.sample_worlds — sleeves outside the shocked block then keep their real independence in crisis worlds and stop being penalised for a shock they do not share.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P15",
@@ -1556,22 +1520,19 @@
    "item": "Mechanism genealogy — one trade wearing different code; correlation clusters in allocator/promoter",
    "domain": "A",
    "phase": 3,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/alpha_genome.py:136-167 `cluster()` — union-find over (mechanism, direction_bias, clock) plus a shared currency leg or factor role; the docstring at desks/mt5/research/alpha_genome.py:17-21 states the test exactly: 'would these lose money on the same day for the same reason' (MEASURED)",
-    "MEASURED output: desks/mt5/reports/ALPHA_GENOME.json largest_clusters[0] = 'breakout/with/asia/CAD+EUR+GBP+JPY+USD' with n=20 members (session_range_breakout across CADJPY/EURJPY/GBPJPY at rr=1.5/2.0/2.5), and cluster[1] = 'reversion/against/asia/...' with n=12 overnight_gap_decay rows sharing ONE param hash p=44136fa355b3678a. That is literally one trade wearing twelve names",
-    "desks/mt5/research/alpha_genome.py:49-64 MECHANISM_CLASS — 34 declared family->mechanism mappings, with UNCLASSIFIED reported rather than guessed (MEASURED: unclassified_families is [] in the current artifact)",
-    "libs/research/alpha_clusters.py:1-25 — the complementary DECLARED taxonomy: 15 payer-level clusters written from outside the book, explicitly to name EMPTY ground that a clustering of the book cannot see (MEASURED)",
-    "MEASURED CONTRADICTION: desks/mt5/research/alpha_genome.py:23-25 claims the artifact is consumed 'by regime_coverage ... and by the allocator artifact, where n_clusters is reported beside k_eff'. A repo-wide grep for ALPHA_GENOME finds only desks/mt5/research/regime_coverage.py:63,219, libs/ops/capability_graph.py:386,420,669 and libs/ops/module_rent.py:216 — no allocator reader",
-    "desks/mt5/research/promoter.py — grep for correlation/cluster returns only prose at lines 474, 962-967; the promoter applies no correlation-cluster constraint (MEASURED)",
-    "libs/research/bandit.py:286-329 `_cluster_of` / `breadth_credit()` — cluster identity DOES reach the research budget (a duplicate arm scores below an independent one), which is the one place cluster ids bind (MEASURED)"
+    "desks/mt5/research/pf_allocator.py — structural cluster ids reach the allocator artifact (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/daily_cycle.py:324 (_state_research_feedback runs alpha_genome), STEPS entry desks/mt5/research/daily_cycle.py:472; desks/mt5/research/daily_cycle.py:463 for the bandit that consumes cluster identity",
-   "artifact": "desks/mt5/reports/ALPHA_GENOME.json",
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json",
    "consumer": "desks/mt5/research/regime_coverage.py:63 (clusters_tried / clusters_never_tried_here per state bucket); libs/research/bandit.breadth_credit via libs/research/breadth_credit.py",
-   "gap": "The structural genealogy is computed and read by research, but its cluster ids never reach the allocator or the promoter, so the book can hold 20 sleeves in one cluster and nothing in the sizing path knows it — contrary to alpha_genome's own docstring claim about the allocator artifact.",
-   "next_step": "Read `n_clusters` and the per-sleeve cluster name from desks/mt5/reports/ALPHA_GENOME.json inside desks/mt5/research/pf_allocator.py and publish them beside k_eff in the allocator artifact, as desks/mt5/research/alpha_genome.py:23-25 already promises."
+   "gap": "The view reads UNMEASURED on this checkout because reports/ALPHA_GENOME.json is gitignored; it binds on the box with no further edit.",
+   "next_step": "Read `n_clusters` and the per-sleeve cluster name from desks/mt5/reports/ALPHA_GENOME.json inside desks/mt5/research/pf_allocator.py and publish them beside k_eff in the allocator artifact, as desks/mt5/research/alpha_genome.py:23-25 already promises.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "A11",

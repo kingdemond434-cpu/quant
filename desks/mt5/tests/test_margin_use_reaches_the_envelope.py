@@ -111,15 +111,23 @@ def test_a_margin_starved_account_binds_where_the_broker_would_liquidate() -> No
 
 
 # -------------------------------------------------------------------------------- the wiring
-def test_the_allocator_feeds_the_clause_and_omits_it_when_unmeasured() -> None:
+def test_the_allocator_measures_the_margin_and_refuses_to_feed_it() -> None:
+    """PRINCIPAL-GATED (standing order 2026-09-08, stated three times: never reduce the
+    aggressiveness, only the dynamicness). The clause above is correct and the reading is real,
+    but feeding it can only ever SHORTEN the envelope -- on a margin-starved account the book
+    comes out smaller than it is today. So the allocator measures it, publishes it under
+    `survival["margin_use"]`, and passes `margin_use=None`. This test pins the refusal: it
+    flips to `margin_use=_mu` only on the principal's explicit yes."""
     src = inspect.getsource(pa.run)
-    assert "margin_use=_mu," in src, "the envelope is still called without the argument"
+    assert "margin_use=None," in src, "the envelope must not be fed the clause"
+    assert "margin_use=_mu," not in src, "the clause is principal-gated and was fed anyway"
     assert "_acc_margin, _acc_equity, _acc_why = account_margin()" in src
     assert "margin_use_from(_acc_margin, _acc_equity, _free_total, _mu_heats)" in src, (
-        "the map must be built from the DEPLOYED heat, not from a constant")
+        "the map must still be BUILT from the DEPLOYED heat, so the principal can read it")
     assert '_mu, _mu_why = (None, "not measured")' in src, "unmeasured must stay the default"
     assert 'survival["margin_use"]' in src, "the artifact must record what was measured"
-    # And the audit slot that has always been None is fed from the same reading.
+    # And the audit slot that has always been None is fed from the same reading. It reports
+    # only -- `aggression.explain` decides a verdict for missed_growth, it sizes nothing.
     assert "margin_headroom=_headroom" in src
 
 

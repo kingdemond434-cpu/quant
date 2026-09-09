@@ -2677,9 +2677,17 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             else:
                 _mu_why = f"margin unmeasured: {_acc_why}"
             _log(f"margin use: {_mu_why}")
+            # MEASURED AND PUBLISHED, NOT FED (principal's standing order, 2026-09-08, stated
+            # three times: never reduce the aggressiveness, only the dynamicness). The margin
+            # clause is the one term in this wave that can bind the envelope BELOW today's
+            # ceiling: on a margin-starved account `margin_use` shortens the feasible run and
+            # the book gets smaller than it is now. That is a risk reduction by fiat, so the
+            # measurement rides in `survival["margin_use"]` where the principal can read it and
+            # decide, and the envelope is computed exactly as it was before this wave.
+            # Flip `margin_use=_mu` back on only on the principal's explicit yes.
             survival = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
                                  fallback=HEAT_HARD_CEILING,
-                                 margin_use=_mu,
+                                 margin_use=None,
                                  capacity_max=_capacity_ceiling())
             survival["margin_use"] = {
                 "status": "MEASURED" if _mu else "UNMEASURED", "why": _mu_why,
