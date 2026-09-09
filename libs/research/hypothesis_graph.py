@@ -19,6 +19,22 @@ prior failures and the caller's deflation can count them.
 
 APPEND-ONLY. A node is never edited; a new fate is a new row with the same node id. The current
 state of a hypothesis is the last row about it, and its history is every row.
+
+TYPED EDGES (2026-09-08). Until this date the only edge was the scalar `parent` hash, so a
+question like "which hypotheses use the COT vintage on JPY crosses" could not be asked of the
+ledger at all. Each row now carries `edges: list[dict]`, every edge `{"type", "to"}` plus any
+detail, and the types are the ones the compiler's candidates already carry the facts for:
+
+    applies_to_symbol   -> symbol:<SYM>                 from the candidate's `symbol`
+    uses_data           -> data:<name>                  from params.input_source, factor_symbols,
+                                                        input_symbol, peer_symbol, factors
+    mutated_from        -> <parent certificate key>     from `parent` / evidence.parent, with the
+                                                        named operator so mutation_yield can bill
+    sourced_from        -> url:<source_url>             from the miner row's `source_url`
+
+A row written before this field existed has no `edges` key and reads as []; nothing about the
+30,313 existing rows changes. `Graph.query` filters the current state by edge type, target,
+symbol, family and fate.
 """
 from __future__ import annotations
 
@@ -44,6 +60,14 @@ REGION_WIDTH: dict[str, float] = {
 BORN, JUDGED, CERTIFIED, FAILED, RETIRED, BURIED = (
     "BORN", "JUDGED", "CERTIFIED", "FAILED", "RETIRED", "BURIED")
 
+#: The typed edges a row may carry. Anything else on an edge is detail, never a new type.
+USES_DATA, APPLIES_TO_SYMBOL, MUTATED_FROM, SOURCED_FROM = (
+    "uses_data", "applies_to_symbol", "mutated_from", "sourced_from")
+EDGE_TYPES: tuple[str, ...] = (USES_DATA, APPLIES_TO_SYMBOL, MUTATED_FROM, SOURCED_FROM)
+#: Parameter names whose VALUE names a dataset or an input series the hypothesis reads.
+DATA_PARAMS: tuple[str, ...] = ("input_source", "factor_symbols", "input_symbol",
+                                "peer_symbol", "factors")
+
 
 @dataclass(frozen=True)
 class Node:
@@ -56,6 +80,8 @@ class Node:
     why: str = ""
     gates: dict[str, Any] = field(default_factory=dict)
     at: str = ""
+    #: Typed edges (`edges_for`). Absent on rows written before 2026-09-08, which read as [].
+    edges: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def id(self) -> str:
@@ -69,7 +95,48 @@ class Node:
         return {"id": self.id, "region": self.region, "symbol": self.symbol,
                 "family": self.family, "params": self.params, "source": self.source,
                 "parent": self.parent, "fate": self.fate, "why": self.why, "gates": self.gates,
-                "at": self.at or datetime.now(tz=UTC).isoformat()}
+                "at": self.at or datetime.now(tz=UTC).isoformat(),
+                "edges": [dict(e) for e in self.edges]}
+
+
+def edges_for(symbol: str, params: dict[str, Any], *, parent: str = "", operator: str = "",
+              source_url: str = "") -> list[dict[str, Any]]:
+    """The typed edges a candidate's own fields imply. Deterministic, deduplicated, ordered.
+
+    Nothing here is inferred: every edge names a field the caller already carried. A candidate
+    with no `input_source`, no factor list and no parent gets exactly one edge -- its symbol --
+    and that is the honest graph of it.
+    """
+    out: list[dict[str, Any]] = []
+    sym = str(symbol or "").strip().upper()
+    if sym:
+        out.append({"type": APPLIES_TO_SYMBOL, "to": f"symbol:{sym}"})
+    seen: set[str] = set()
+    for name in DATA_PARAMS:
+        v = (params or {}).get(name)
+        if v is None or v == "" or v == []:
+            continue
+        values = v if isinstance(v, (list, tuple)) else [v]
+        for x in values:
+            to = f"data:{str(x).strip()}"
+            if to in seen or to == "data:":
+                continue
+            seen.add(to)
+            out.append({"type": USES_DATA, "to": to, "via": name})
+    if parent:
+        e: dict[str, Any] = {"type": MUTATED_FROM, "to": str(parent)}
+        if operator:
+            e["operator"] = str(operator)
+        out.append(e)
+    if source_url:
+        out.append({"type": SOURCED_FROM, "to": f"url:{str(source_url).strip()}"})
+    return out
+
+
+def edges_of(row: dict[str, Any]) -> list[dict[str, Any]]:
+    """A row's typed edges; [] for the rows written before the field existed."""
+    e = row.get("edges") if isinstance(row, dict) else None
+    return [x for x in e if isinstance(x, dict)] if isinstance(e, list) else []
 
 
 def node_id(symbol: str, family: str, params: dict[str, Any]) -> str:
@@ -173,12 +240,70 @@ class Graph:
         cur = self.current()
         by_fate: dict[str, int] = {}
         by_source: dict[str, dict[str, int]] = {}
+        by_edge: dict[str, int] = {}
+        with_edges = 0
         for r in cur.values():
             by_fate[r.get("fate", "?")] = by_fate.get(r.get("fate", "?"), 0) + 1
             s = by_source.setdefault(str(r.get("source") or "?"), {})
             s[r.get("fate", "?")] = s.get(r.get("fate", "?"), 0) + 1
+            es = edges_of(r)
+            with_edges += int(bool(es))
+            for e in es:
+                t = str(e.get("type") or "?")
+                by_edge[t] = by_edge.get(t, 0) + 1
         return {"nodes": len(cur), "by_fate": by_fate, "by_source": by_source,
-                "buried_regions": len(self.buried())}
+                "buried_regions": len(self.buried()),
+                # Nodes written before 2026-09-08 carry no edges; the count says how much of
+                # the graph is typed rather than pretending the whole ledger is.
+                "nodes_with_edges": with_edges, "by_edge_type": by_edge}
+
+    def query(self, *, edge_type: str | None = None, to: str | None = None,
+              symbol: str | None = None, family: str | None = None,
+              fate: str | None = None) -> list[dict[str, Any]]:
+        """Current-state rows matching every given filter; an omitted filter matches all.
+
+        `edge_type` keeps rows carrying at least one edge of that type; `to` narrows to edges
+        whose target is that string or starts with it (`data:` for every dataset edge,
+        `symbol:USDJPY` for one instrument). `symbol` is matched case-insensitively.
+        """
+        if edge_type is not None and edge_type not in EDGE_TYPES:
+            raise ValueError(f"unknown edge type {edge_type!r}; expected one of {EDGE_TYPES}")
+        sym = str(symbol).upper() if symbol is not None else None
+        out: list[dict[str, Any]] = []
+        for r in self.current().values():
+            if sym is not None and str(r.get("symbol") or "").upper() != sym:
+                continue
+            if family is not None and str(r.get("family") or "") != family:
+                continue
+            if fate is not None and str(r.get("fate") or "") != fate:
+                continue
+            if edge_type is not None or to is not None:
+                hit = False
+                for e in edges_of(r):
+                    if edge_type is not None and e.get("type") != edge_type:
+                        continue
+                    target = str(e.get("to") or "")
+                    if to is not None and not (target == to or target.startswith(to)):
+                        continue
+                    hit = True
+                    break
+                if not hit:
+                    continue
+            out.append(r)
+        return out
+
+
+def _candidate_parent_key(c: dict[str, Any]) -> tuple[str, str]:
+    """(certificate key the candidate was stepped from, operator) or ("", "").
+
+    The distiller and the mutation proposers carry both on `evidence`; a candidate may also
+    carry `parent` at the top level. A parent that is only the miner-row hash (below) is NOT a
+    mutation and gets no `mutated_from` edge.
+    """
+    ev = c.get("evidence") if isinstance(c.get("evidence"), dict) else {}
+    parent = c.get("parent") or ev.get("parent") or ""
+    op = c.get("operator") or ev.get("operator") or ""
+    return str(parent or ""), str(op or "")
 
 
 def record_candidates(cands: Iterable[dict[str, Any]], source: str,
@@ -190,13 +315,18 @@ def record_candidates(cands: Iterable[dict[str, Any]], source: str,
         parent = hashlib.sha256(json.dumps({"u": c.get("source_url"), "t": c.get("source_title"),
                                             "s": c.get("source")}, sort_keys=True,
                                            default=str).encode()).hexdigest()[:16]
+        params = dict(c.get("params") or {})
+        mut_parent, op = _candidate_parent_key(c)
         # THE CANDIDATE'S OWN SOURCE WINS. The compiler registers every candidate it admits, and
         # stamping them all "miner_candidate_compiler" erased which proposer found each one --
         # the bandit's per-arm evidence and the research P&L attribute by this field.
         g.append(Node(symbol=str(c.get("symbol")), family=str(c.get("family")),
-                      params=dict(c.get("params") or {}),
+                      params=params,
                       source=str(c.get("source") or source), parent=parent,
-                      fate=BORN, why=str(c.get("mechanism_note") or "")[:200]))
+                      fate=BORN, why=str(c.get("mechanism_note") or "")[:200],
+                      edges=edges_for(str(c.get("symbol")), params, parent=mut_parent,
+                                      operator=op,
+                                      source_url=str(c.get("source_url") or ""))))
         n += 1
     return n
 
@@ -210,10 +340,13 @@ def record_verdicts(verdicts: Iterable[dict[str, Any]], graph: Graph | None = No
         passed_all = bool(gates) and all(isinstance(x, dict) and x.get("passed") is True
                                          for x in gates.values())
         failed = [k for k, x in gates.items() if isinstance(x, dict) and x.get("passed") is False]
-        g.append(Node(symbol=str(v.get("sym") or v.get("symbol")), family=str(v.get("family")),
-                      params=dict(v.get("params") or {}), source=str(v.get("hunt") or "gauntlet"),
+        sym = str(v.get("sym") or v.get("symbol"))
+        params = dict(v.get("params") or {})
+        g.append(Node(symbol=sym, family=str(v.get("family")),
+                      params=params, source=str(v.get("hunt") or "gauntlet"),
                       fate=CERTIFIED if passed_all else FAILED,
                       why=("passed all gates" if passed_all else
-                           f"failed {', '.join(failed) or 'unmeasured'}"), gates=gates))
+                           f"failed {', '.join(failed) or 'unmeasured'}"), gates=gates,
+                      edges=edges_for(sym, params)))
         n += 1
     return n
