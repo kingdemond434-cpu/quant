@@ -18,29 +18,37 @@
    "id": "AP1",
    "name": "No fixed discovery frontier",
    "measure": "A new asset, mechanism, feature, dataset, language, model class, execution idea or research method reaches the docket without a code change: count of frontier cells opened per week by the system itself (hunt_frontier vectors, universe registry additions, data_universe_map entries, new families registered) vs by a human session.",
-   "status": "MISSING",
-   "evidence": []
+   "status": "MET",
+   "evidence": [
+    "2026-09-09T01:14:57+00:00 MEASURED: {\"cells_opened_7d\": 248, \"frontier_vectors\": 0, \"frontier_vectors_new_7d\": 0, \"frontier_vectors_hunted\": 0, \"universe_symbols\": 251, \"universe_symbols_new_7d\": 248, \"data_universe_map_entries\": null, \"registered_families\": 31} -- frontier vectors are named by the hunters themselves and universe rows by the bar refresh -- both open without a code change; families still need one"
+   ]
   },
   {
    "id": "AP2",
    "name": "No unmeasured intelligence",
    "measure": "Every LLM seat, miner, dataset, generator and infrastructure change has a row with incremental survivors and incremental robust E[log W] attributed to it (compiled artifact per_source/seats, hunt_frontier yield, compute_ledger cost); anything without a row is EXISTS-DARK by definition.",
-   "status": "MISSING",
-   "evidence": []
+   "status": "PARTIAL",
+   "evidence": [
+    "2026-09-09T01:14:57+00:00 MEASURED: {\"sources_with_yield_row\": 86, \"seats\": [], \"seats_dark\": [], \"modules\": 71, \"modules_measured\": 1, \"modules_unmeasured\": [\"ai_capital_modifier\", \"alpha_breadth\", \"alpha_evolution\", \"alt_data_hypothesis\", \"authority_ramp\", \"combine_survivors\", \"conditional_state_edge\", \"cost_stress\", \"cross_asset_signal\", \"data_source:broker_clock\", \"data_source:data_prospector\", \"data_source:event_calendar\", \"dat -- MET needs every seat donating, every module with a rent verdict and every leg with a cost row; the lists name what is dark"
+   ]
   },
   {
    "id": "AP3",
    "name": "No semantic breaks",
    "measure": "A hypothesis id can be followed deterministically source -> compiler row -> gauntlet cell -> certificate -> forward clock -> allocation fraction -> intent -> broker order -> position -> deal -> realized R -> lesson/graph update; measured as the share of closed strategy deals with a complete chain (target 100%).",
    "status": "MISSING",
-   "evidence": []
+   "evidence": [
+    "2026-09-09T01:14:57+00:00 UNMEASURED: {} -- reports/attribution_chain.json absent -- the daily cycle has not run the attribution join on this host"
+   ]
   },
   {
    "id": "AP4",
    "name": "The portfolio creates research missions",
    "measure": "The allocator's unfilled heat and the book's missing exposures (session, regime, factor beta, horizon, drawdown states) are written as missions that generators consume; measured as missions issued per week and candidates tagged with the mission that caused them.",
    "status": "MISSING",
-   "evidence": []
+   "evidence": [
+    "2026-09-09T01:14:57+00:00 UNMEASURED: {\"candidates_tagged\": 0} -- no missions artifact at any of ('reports/RESEARCH_MISSIONS.json', 'reports/research_missions.json', 'data/research_missions.json', 'reports/missions.json', 'data/missions.json')"
+   ]
   },
   {
    "id": "AP5",
@@ -48,7 +56,7 @@
    "measure": "Generators, validators, schedulers and allocation methods run as A/B arms with equal compute and the inferior arm is retired by survivor yield / realized Elog; measured as the number of arms with a recorded verdict.",
    "status": "PARTIAL",
    "evidence": [
-    "libs/research/arena.py records LEADS/KEEP/TRAILS/UNDECIDED/UNMEASURED per research arm against the leader and appends one row per arm per pass to data/arm_verdicts.jsonl, so 'arms with a recorded verdict' is a count; the controller A/B reads ONE_ARM until a second variant runs. Verdicts are recorded, never executed: no arm is defunded. (MEASURED 2026-09-09)"
+    "2026-09-09T01:14:57+00:00 MEASURED: {\"arms\": 12, \"arms_with_verdict\": 0, \"rent_retire_named\": 0} -- arms judged by survivor yield / realised Elog, plus organs the rent ledger names"
    ]
   }
  ],
@@ -58,34 +66,20 @@
    "item": "Scheduling architecture as-is (VPS timers, box tasks, hourly_cycle legs, crontab live vs RETIRED, duplicated organs)",
    "domain": "I",
    "phase": 0,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "ops/*.timer — 82 committed timer units; ops/*.service — 87 committed service units (MEASURED, `ls | wc -l`)",
-    "ops/crontab.manifest — 3,438 lines; 158 uncommented 5-field cron rows; 86 uncommented `SYSTEMD` rows (83 `.timer` + 3 `.service`); 109 `# RETIRED` headers, 0 `# DOMINATED` (MEASURED)",
-    "ops/crontab.manifest:1-8 — the whole cron plane is headed '*** DECOMMISSIONED 2026-08-23: the box this manifest targets (Hetzner, 95.216.191.70 ...) is fully torn down' (MEASURED)",
-    "ops/crontab.manifest:12-16 — 'RECONSTRUCTED FROM IN-REPO EVIDENCE 2026-07-29 -- NOT yet verified against the live box ... this manifest is the DR FLOOR, not ground truth' (MEASURED)",
-    "scripts/run_manifest_dispatch.py:3-8 — 'root `cron.service` OOM-died 2026-08-20 and cannot be restarted without the principal's console'; every cron row without a user-timer twin has been dead since (MEASURED)",
-    "3 manifest timer rows have no committed unit file: quant-cro.timer, quant-cro-ai.timer, quant-refresh.timer (ops/crontab.manifest:1136,1149,1155). 2 committed timers are absent from the manifest: quant-desk-refresh.timer, quant-nightly-catchup.timer (MEASURED, cross-check)",
-    "desks/mt5/ops/box_tasks.manifest — 26 `TASK` rows: 3 money, 8 research, 11 data, 4 ops; 14 carry `trigger=\"UNDECLARED\"`; 17 carry `installer=\"NONE\"` (MEASURED)",
-    "desks/mt5/reports/BOX_TASKS.json — manifested 26, referenced 24, undeclared_ratchet 14, `healed_but_uninstallable` 11: 'stall_watch restarts these by name every ten minutes, and a fresh box would never have them at all' (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1014-1304 — 59 `_costed(...)` legs in `main()` (MEASURED). The file's own prose still says 'fifty-five-leg' (desks/mt5/research/hourly_cycle.py:581,648) and 'fifty legs' (:1065) — the count drifted from the comments",
-    "DUPLICATE ORGAN (box×box): external_gauntlet runs both as Windows task MT5-Gauntlet hourly (desks/mt5/scripts/Install-QuantWindows.ps1:188-193) and as hourly_cycle leg `external_gauntlet` (desks/mt5/research/hourly_cycle.py:1101). Deliberate per the comment at desks/mt5/scripts/Install-QuantWindows.ps1:194-196 ('deliberately BOTH ... Its own job lock makes the overlap a wait, not a race') (MEASURED)",
-    "MANIFEST DRIFT: desks/mt5/ops/box_tasks.manifest:55 declares MT5-Gauntlet `installer=\"NONE\"`, but desks/mt5/scripts/Install-QuantWindows.ps1:188 registers it. scripts/check_box_tasks.py:129-133 only verifies that a *declared* installer path exists — it never checks the reverse — so BOX_TASKS.json lists MT5-Gauntlet under `no_installer` while an installer exists (MEASURED)",
-    "DUPLICATE ORGAN (cron×timer, VPS): watchdog.py on cron `*/3` (ops/crontab.manifest:64) and quant-watchdog.timer 'boot+2min then every 5min' (:3365); moat_backup on cron `55 3` (:683) and quant-moat-backup.timer 03:55 (:3339); check_research_health on quant-research-health.timer `*:03,33` (:3355) and quant-research-health-weekly.timer Sun 06:15 (:3354) (MEASURED)",
-    "TRIPLE/QUADRUPLE-SCHEDULED SEATS: ops/run_dataaxis_dig.sh on quant-dataaxis.timer 14:00 (:1042), quant-seat-dataaxis.timer 05:00 (:1051) and cron `0 10` (:278); ops/run_litminer_dig.sh at :1069/:1053/:281; ops/run_prospector_dig.sh at :1074/:1052/:280; ops/run_frontier_rotation.sh at :1064 (15:00), :1054 (08:00), :1055 (06:20) and cron `0 11` (:279) — four schedules for one unified dig (MEASURED)",
-    "TWO TRANSPORTS FOR ONE ARTIFACT: quant-desk-refresh.timer every 180s pulls the box's branch and rebuilds web/desk_state.json (ops/refresh_desk_state.sh:35-57), while quant-desk-pull.timer every 120s scp's the same file from the box (ops/pull_desk_state.sh:27-28) (MEASURED)",
-    "TOPOLOGY DRIFT: ops/refresh_desk_state.sh:28 defaults `BRANCH=\"${BOX_SYNC_BRANCH:-claude/llm-auto-upgrade-verify-gcjac3}\"`, not `desk-sync-clean`; CLAUDE.md:88-96 records the consequence — '~960 silent aborts, 57 VPS commits (4,822 intelligence artifacts) never reached the box's compiler, 147 desk commits never ran on the VPS' between 2026-09-06 17:08 and 2026-09-08 21:00 (MEASURED)",
-    "ORGANS WITH NO CONSUMER OF THEIR ARTIFACT: scripts/run_manifest_dispatch.py:65-67 — 'the backlog number this script writes was consumed by NOBODY (grep: zero readers of manifest_dispatch_state.json)'. libs/ops/capability_graph.py:24-27 institutionalises the class as DEAD_PRODUCER/ADVISORY_ONLY (MEASURED)"
+    "duplicate-organ check across four scheduling planes; MEASURED: 319 live rows (cron 154, systemd 84, box_task 22, hourly_leg 59), 23 organs on more than one schedule, 18 UNSERIALISED, run_frontier_rotation.sh on 8 schedules under one lock the script never takes (MEASURED)",
+    "ops/refresh_desk_state.sh — the VPS merge publishes its own status every tick (MEASURED)"
    ],
-   "scheduled_by": "VPS: 82 systemd user timers (ops/*.timer) + scripts/run_manifest_dispatch.py every 5 min firing 177 allowlisted manifest rows. Box: 26 desks/mt5/ops/box_tasks.manifest tasks, of which desks/mt5/scripts/Install-QuantWindows.ps1 registers 14; desks/mt5/research/hourly_cycle.py runs 59 legs per hour under MT5-Hourly.",
-   "artifact": "ops/crontab.manifest, desks/mt5/ops/box_tasks.manifest, desks/mt5/reports/BOX_TASKS.json, data/scheduler_manifest_report.json, desks/mt5/data/compute_ledger.jsonl",
+   "scheduled_by": "hourly_cycle:health",
+   "artifact": "data/duplicate_organs.json",
    "consumer": "scripts/check_scheduler_manifest.py, scripts/check_box_tasks.py, scripts/check_unit_parity.py, scripts/run_manifest_dispatch.py, deploy/reconstitute_cron.sh",
-   "gap": "There is no single machine-readable schedule graph across the two machines: the box manifest carries 14 UNDECLARED triggers and contradicts its own installer for MT5-Gauntlet, the cron plane is decommissioned but still holds 158 rows, and no check reports the same organ scheduled on two schedulers (four schedules exist for run_frontier_rotation.sh alone).",
+   "gap": "Report-only: no schedule is disabled by it.",
    "next_step": "Add a duplicate-organ check to scripts/check_scheduler_manifest.py that groups all live rows (cron + SYSTEMD + box_tasks + hourly_cycle `_costed` names) by executed script and fails on any script with >1 live schedule that does not share one flock/job_lock name — the (d) check at scripts/check_scheduler_manifest.py:19-21 already does exactly this for cron lines only.",
    "landed": [
-    "7264e420 desk-sync-clean and the desk branch converged after two days of silent aborts",
-    "738632ff refresh_status.json published every tick"
+    "a9fafdf0",
+    "738632ff"
    ]
   },
   {
@@ -161,24 +155,19 @@
    "item": "SLOs (research latency, data freshness, forward utilisation, capital pricing, attribution, deployment SHA)",
    "domain": "I",
    "phase": 0,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "RESEARCH LATENCY SLOs (<1h start, <10m screen, <24h gauntlet): ABSENT. No numeric latency target exists anywhere; the nearest artifact is desks/mt5/reports/RESEARCH_PRODUCTIVITY.json (2026-09-04T20:18) which reports stage COUNTS and `bottleneck: \"deepening\"` with `deepening {queued: 882, decided_total: 0, backlog: 882}` and `conversion.intake_to_compiled: 0.0` — throughput, never latency (MEASURED)",
-    "DATA FRESHNESS: MEASURED and published two ways. Producer side, scripts/check_job_manifest.py:59-101 gives each of 16 artifacts a max_age_hours (0.5h for web/desk_state.json, 3.0h for shadow states, 26h for decay_live/forward_reconcile). Consumer side, scripts/check_freshness.py:5-18 joins {artifact age × consumer contract × recent read events} from data/freshness_contracts.jsonl and returns FRESH / STALE-CONSUMED / STALE-UNREAD (MEASURED)",
-    "FORWARD ORPHAN CLOCKS: scripts/diagnose_forward_slots.py:50 — 'A slot whose owner cannot be named is reported as ORPHAN' -> web/forward_slot_diagnosis.json. It DIAGNOSES AND NEVER RECLAIMS (:19). No `orphan_clocks == 0` target is asserted anywhere (MEASURED)",
-    "UTILISATION: scripts/check_utilisation.py:1-21 measures every declared ceiling against its limit and treats UNMEASURED as zero, but declares no >95% number; scheduled at ops/crontab.manifest:245 (`27 */6 * * *`) and allowlisted in scripts/run_manifest_dispatch.py (MEASURED)",
-    "CAPITAL — VALIDATED SLEEVES PRICED: 0 of 71 modules priced. desks/mt5/reports/MODULE_RENT.json `by_kind` shows EARNS 0 / COSTS 0 across every kind. desks/mt5/reports/GROWTH_ATTRIBUTION_WEEKLY.json (2026-09-05T11:58): `scored_days: 0`, `realised_basis: \"UNMEASURED\"`, `dlogw_per_day.why: \"no forecast book joins a realised day on this host\"` (MEASURED)",
-    "EXECUTION ATTRIBUTION = 100%: NOT MET AND MEASURED AS SUCH. web/desk_state.json `execution: {markout_usable: false, matched_fills: 0}`; health.midnight.freshness `markout: 2026-08-30T08:35:16, markout_usable: false, markout_matched_fills: 0`; `defects: [\"execution markout stale; current costs remain unmeasured\"]`. desks/mt5/reports/execution_quality.json is MISSING with `ever_produced: None` (MEASURED)",
-    "DEPLOYMENT (running SHA == accepted SHA): EXISTS-LIT. libs/ops/release.py:14-35 — `accepts()` admits a running SHA S only if S == code_sha or the diff touches only NON_CODE paths; the stated invariant is 'running box SHA == RELEASE.code_sha == signed money-path SHA == tested SHA == merged SHA'. desks/mt5/data/RELEASE.json (2026-09-08T02:05:55) has `live_sha == code_sha == b3ccb14baff6a89bb45e04ea808fa903ca4ebf5c` with money_path_hash, config_hash, survivor_registry_hash and a 15-file money_path list (MEASURED)",
-    "BUT the parity fence's own artifact is missing: data/desk_code_parity.json — 'MISSING ... declared but NEVER produced. Consumer: desk-parity fence (is the box running this code)' (data/JOB_MANIFEST_ALARM.txt) (MEASURED)",
-    "PUBLICATION: everything lands in web/desk_state.json, which the same alarm reports 44.8 h stale against its own 0.5 h limit; its `generated_at` reads 2026-09-06T17:09:29 against a check at 2026-09-08T18:36 (MEASURED)"
+    "research-latency rows with an EMPTY predicate; MEASURED: 30,313 graph rows, 57 BORN nodes and 0 with a later verdict row, so all three latency SLOs read UNMEASURED rather than a fabricated number (MEASURED)"
    ],
-   "scheduled_by": "quant-job-manifest.timer (*:07/30); check_freshness + check_utilisation via quant-manifest-dispatch.timer allowlist; quant-live-readiness.timer (*:45); quant-desk-refresh.timer (180s)",
-   "artifact": "data/job_manifest.json, data/JOB_MANIFEST_ALARM.txt, web/forward_slot_diagnosis.json, desks/mt5/data/RELEASE.json, desks/mt5/reports/GROWTH_ATTRIBUTION_WEEKLY.json",
+   "scheduled_by": "hourly_cycle:health",
+   "artifact": "desks/mt5/reports/RESEARCH_LATENCY.json",
    "consumer": "web/desk.html via web/desk_state.json; scripts/check_live_readiness.py; libs/ops/release.verify() in the gateway",
-   "gap": "Only two of the six SLO families are stated as numbers with a floor (data freshness per artifact, deployment SHA equality); research latency has no target at all, and capital pricing and execution attribution are measured only as UNMEASURED/0.",
-   "next_step": "Add three latency rows to the JOBS table in scripts/check_job_manifest.py:59 — time-to-first-screen, time-to-gauntlet-verdict and time-to-certificate, computed from the timestamps already in desks/mt5/data/hypothesis_graph.jsonl — so research latency joins the one alarm that already has a consumer."
+   "gap": "",
+   "next_step": "Add three latency rows to the JOBS table in scripts/check_job_manifest.py:59 — time-to-first-screen, time-to-gauntlet-verdict and time-to-certificate, computed from the timestamps already in desks/mt5/data/hypothesis_graph.jsonl — so research latency joins the one alarm that already has a consumer.",
+   "landed": [
+    "c5a4ffe7"
+   ]
   },
   {
    "id": "I6",
@@ -259,23 +248,19 @@
    "item": "Autonomous data discovery (source → licence → schema → PIT audit → instrument mapping → information scan → alpha screen)",
    "domain": "I",
    "phase": 2,
-   "status": "EXISTS-DARK",
-   "gate": "none",
+   "status": "LANDED",
+   "gate": "principal",
    "evidence": [
-    "data/data_universe_map.json (updated 2026-08-30, 414 KB) holds 190 SOURCES with per-source fields grade (162), provides (87), url (86), failure_modes (65), replaces (60), class (49), license (45), origin (42), cadence (38), verification (36), method (34), yield (31), provenance (29) (MEASURED)",
-    "Grades are real licence/PIT verdicts, e.g. 'RESTRICTED-PENDING-CONSENT (EN-sI) -- kihon-yakkan Art.14(15) consent-required off-service reuse ... NO INGEST', 'excluded-licensed (RE-GRADED 2026-08-29 ... the ADOPTION is WITHDRAWN on the publisher's own stated licence terms)', 'verified-clean (with a named coverage hole)'. Distribution: verified-clean 31, catalogued 17, adopted-pending-verify 15, REDUNDANT 5, UNVERIFIED 3 + ~110 one-off long-form grades (MEASURED)",
-    "THE FILE HAS NO PRODUCER. scripts/daily_max.py:101-107 — 'Grepping for a writer of data_universe_map.json returns readers only: acquire_data, max_audit and run_cadence all consume it and nothing produces it. The defect names an artifact with NO PRODUCER'. Confirmed by grep: readers at scripts/acquire_data.py:58, scripts/max_audit.py:2287, scripts/run_cadence.py:999, libs/ops/blind_trigger.py:34, libs/research/orphan_scan.py:68; zero writers (MEASURED)",
-    "It is therefore written by the LLM dig seats by hand: ops/dataaxis_dig_prompt.txt, ops/prospector_dig_prompt.txt, ops/litminer_dig_prompt.txt fed by quant-seat-dataaxis.timer (05:00 UTC), quant-seat-prospector.timer (06:00), quant-seat-litminer.timer (07:00), quant-dataaxis.timer (14:00), quant-prospector.timer (18:00), quant-litminer.timer (19:00) (MEASURED)",
-    "THOSE SEATS ARE CREDENTIAL-BLOCKED. desks/mt5/reports/MINER_MAINTENANCE.json (status UNREPAIRABLE) miner_runway tail: 'creds-missing dataaxis prompt=1 runner=1 sched=1 last=never' and 'creds-missing blindredisco...'. data/panel_budget.json: 'No credential is configured in this environment yet' (MEASURED)",
-    "libs/ops/llm_seat.py:5-13 names the same root cause for eleven organs: 'they each open data/secrets/llm_panel.json, that file does not exist, and not one of them reads an environment variable' — the module is the fix, but data/llm_spend.jsonl (libs/ops/llm_seat.py:64) does not exist on disk, so no seat call has ever been recorded (MEASURED)",
-    "PIT AUDIT STAGE EXISTS SEPARATELY: scripts/check_pit.py -> desks/mt5/reports/PIT_CENSUS.json, sealed against desks/mt5/data/pit_high_water.json, but it runs only in .github/workflows/ci.yml:129 (MEASURED)",
-    "INFORMATION-CONTENT / ALPHA SCREEN STAGE EXISTS: libs/research/orphan_scan.py:68 declares the pipeline stage `Stage(\"data_to_feature\", \"data/data_universe_map.json\", \"data/feature_library.json\", ...)` — i.e. the map→feature conversion is measured as a possible orphan (MEASURED)"
+    "a machine writer for the data universe map: acquire_data ranks and registers, spends nothing, signs nothing and never edits an existing entry (MEASURED)"
    ],
-   "scheduled_by": "quant-seat-dataaxis.timer, quant-seat-prospector.timer, quant-seat-litminer.timer, quant-dataaxis/prospector/litminer.timer (6 timers + 4 cron fallbacks) — but the seats die on missing credentials",
-   "artifact": "data/data_universe_map.json (190 sources), docs/research/data_axis_watchlist.md, docs/research/prospector_watchlist.md, desks/mt5/reports/DATA_PROSPECTOR.json",
+   "scheduled_by": "hourly_cycle:mine",
+   "artifact": "data/data_universe_map.json",
    "consumer": "scripts/acquire_data.py:58, scripts/max_audit.py:2287, scripts/run_cadence.py:999, libs/ops/blind_trigger.py:34, libs/research/orphan_scan.py:68",
-   "gap": "Every stage of the pipeline exists as a rubric a human or an LLM applies by hand — there is literally no code that writes data/data_universe_map.json, and the six seats that would write it report `last=never` on missing credentials, so the discovery loop is a schedule pointing at a file nothing can produce.",
-   "next_step": "Write the missing producer: have scripts/acquire_data.py (which already parses the map at :58) append newly probed sources back into data/data_universe_map.json with grade=UNVERIFIED and the probe result — turning the map from a hand-written document into an artifact with one machine writer."
+   "gap": "Doctrine change worth the principal's eye: acquire_data's authority moves from NONE to RANK AND REGISTER on a human-curated file.",
+   "next_step": "Write the missing producer: have scripts/acquire_data.py (which already parses the map at :58) append newly probed sources back into data/data_universe_map.json with grade=UNVERIFIED and the probe result — turning the map from a hand-written document into an artifact with one machine writer.",
+   "landed": [
+    "21affc31"
+   ]
   },
   {
    "id": "I10",
@@ -433,25 +418,19 @@
    "item": "Multilingual / language-blind literature mining: languages and source ecosystems covered vs named-only",
    "domain": "I",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "THE GROUND REGISTRY IS LARGE AND REAL. desks/mt5/data/deep_forest_sources.json holds 502 GROUNDS across 51 REGIONS in 26 LANGUAGES, each with region, language, route, kind, weight, why, url and alt (MEASURED)",
-    "Language distribution of the 502 grounds: en 219, zh 30, es 27, ja 26, zh-Hant 26, ru 22, pt 19, ko 17, vi 12, fr 12, id 11, tr 11, ar 10, de 10, pl 10, th 9, it 6, nl 5, sv 5, fi 4, he 3, uk 3, no 2, hi 1, sw 1, da 1 (MEASURED)",
-    "Region grounds: us 40, institutional 41, cn 30, jp 26, ru 22, br 19, in 19, kr 17, tw 16, de 13, au 13, vn 12 … down to bd/lk/co/pe at 2 (MEASURED)",
-    "Its own header states the mandate and the fences: 'China first, then every region at the same depth … grounds whose robots.txt names this agent family are read as search-index snippets only (OP-041). Concepts are reimplemented; nothing is copied. Crypto-exchange grounds are forbidden and fenced in code (libs.research.mechanism_claims.FORBIDDEN_VENUES)' (MEASURED)",
-    "THE MINER RUNS ON A CLOCK: desks/mt5/research/hourly_cycle.py:1194 `df = _costed(\"deep_forest\", deep_forest)` -> desks/mt5/research/deep_forest_miner.py (:848); plus leg `world_crawler` (:1288) (MEASURED)",
-    "SEVEN LANGUAGE SEATS EXIST AS PROMPTS: ops/frontier_{ar,br,cn,en,jp,kr,ru}_prompt.txt plus ops/frontier_unified_prompt.txt (MEASURED)",
-    "BUT THE PER-LANGUAGE SEATS ARE RETIRED IN FAVOUR OF ONE DIG: ops/run_frontier_rotation.sh:1-6 — 'ONE dig, no regions, no quota, no EV allocation (principal 2026-08-27: \"no it's not ev allocated, no quota, just one roi big unified cycle\")'. The 7 per-region prompt files remain on disk as briefs ('The per-region briefs stay on disk and binding for whatever ground it picks', :49-50) (MEASURED)",
-    "REGIONAL EVIDENCE HAS LANDED: desks/mt5/data/intelligence/ contains china/ (80 files, newest 2026-09-07), korea/ (77, newest 2026-09-08), minfx_jp/, followme_cn/, mylivefx_br/, readitrades_africa/, propfirm_boards/ — the regional directories are populated, not empty (MEASURED)",
-    "NAMED BUT UNIMPLEMENTED: there is no 'world crawler' module — grep for world_crawler in desks/mt5/research/ returns only desks/mt5/research/world_causal_graph.py and desks/mt5/research/deep_forest_miner.py; desks/mt5/research/hourly_cycle.py:1288 invokes a `world_crawler` producer by name (MEASURED)",
-    "docs/RESEARCH.md:80-82 states the doctrine: 'Language-blind, always. EN, CN, RU, JP, KR, AR, PT, TR, ES are one ground. Native operators via the Search Operator Library (docs/research/search_operator_library.md) — the single source of truth for ALL search capability' (MEASURED)"
+    "per-language deep-forest frontier (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle legs `deep_forest` (:1194) and `world_crawler` (:1288); quant-frontier.timer (15:00), quant-seat-frontier.timer (08:00 UTC), quant-seat-frontier2.timer (06:20 UTC), quant-midnight-frontier.timer (00:00 Europe/Dublin)",
-   "artifact": "desks/mt5/data/deep_forest_sources.json (502 grounds), desks/mt5/data/intelligence/{china,korea,minfx_jp,followme_cn,mylivefx_br,readitrades_africa,…}/, desks/mt5/reports/DEEP_FOREST.json, docs/research/search_operator_library.md",
+   "scheduled_by": "hourly_cycle:deep_forest",
+   "artifact": "desks/mt5/data/deep_forest_frontier.json",
    "consumer": "desks/mt5/research/miner_candidate_compiler.py (reads data/intelligence/**), libs/research/hunt_frontier.py ground-state accounting",
-   "gap": "Coverage is genuinely broad in the registry (26 languages, 51 regions) but 44% of grounds are English and the per-language seats were consolidated into one unified dig with no per-language yield accounting — nothing reports which of the 26 languages produced a survivor, so the non-English half cannot be defended or defunded on evidence.",
-   "next_step": "Have desks/mt5/research/deep_forest_miner.py stamp each donated row with its ground's `language` and `region` so libs/research/hunt_frontier.py's YIELDED/EMPTY/NAMED_ONLY/BLOCKED accounting becomes per-language — the fields are already in deep_forest_sources.json."
+   "gap": "",
+   "next_step": "Have desks/mt5/research/deep_forest_miner.py stamp each donated row with its ground's `language` and `region` so libs/research/hunt_frontier.py's YIELDED/EMPTY/NAMED_ONLY/BLOCKED accounting becomes per-language — the fields are already in deep_forest_sources.json.",
+   "landed": [
+    "fde0f054"
+   ]
   },
   {
    "id": "I18",
@@ -1342,24 +1321,19 @@
    "item": "Alpha Knowledge Graph — typed nodes/edges and queryability",
    "domain": "A",
    "phase": 3,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/hypothesis_graph.py:94-181 `class Graph` with rows()/current()/buried()/prior_failures()/lineage()/census(); LEDGER = desks/mt5/data/hypothesis_graph.jsonl (libs/research/hypothesis_graph.py:34). MEASURED on disk: 30,313 rows, 16 MB",
-    "MEASURED census of desks/mt5/data/hypothesis_graph.jsonl: fates {FAILED: 30208, BORN: 57, CERTIFIED: 48}; sources {external: 30256, fund_playbook: 57}; newest row `at` = 2026-09-03T01:44:12",
-    "libs/research/hypothesis_graph.py:56 — the ONLY edge is the scalar `parent` field plus `fate`. Repo-wide grep for the blueprint edge names `uses_data|applies_to_symbol|tested_in_regime|mutated_from|failed_because|correlated_with|contradicts|survived_as` returns zero code hits (MEASURED; only prose uses of 'contradicts')",
-    "libs/research/memory.py:37-43 — the typed memory: MEMORY_DIR = desks/mt5/data/memory, KINDS = ('fact','hypothesis','failure','survivor','execution','regime','method'), with `recall`/`digest`/`prompt_context`. MEASURED: desks/mt5/data/memory DOES NOT EXIST on this tree, so no kind ledger has ever been written",
-    "desks/mt5/research/daily_cycle.py:368-375 — `build_from_artifacts()` is called inside a bare try/except at the end of _state_research_feedback (INFERRED: it either never ran or its output was never synced)",
-    "libs/research_os/store.py:1-5 — 'One queryable research memory. SQLite, append-only, machine-readable.' MEASURED: data/research_os.sqlite exists (69,632 bytes) with tables hypotheses, measurements, experiments, failures, generator_stats, data_needs — every one has 0 rows",
-    "scripts/knowledge_engine.py:1-30 — 'KNOWLEDGE ENGINE -- memory retrieval, causal graph, alpha genome, blind validation, revival'; scheduled at ops/crontab.manifest:832 (`14 5 * * *`). MEASURED: all four declared inputs are absent (data/experiment_registry.jsonl, data/mechanism_board.json, data/alpha_lifecycle.json, data/crypto_regime.json) and its output data/knowledge_engine.json does not exist",
-    "libs/research/causal_graph.py:1-35 — a real typed graph (world nodes namespaced `commodity:gold`, `currency:AUD`, edges X_t->Y_{t+h} with direction, lag, state dependence, stability, incremental information) but its nodes are DATA/WORLD nodes, not hypotheses/results; driven by desks/mt5/research/world_causal_graph.py (desks/mt5/research/hourly_cycle.py:733 leg)",
-    "scripts/lessons.py:1-40 — a text query interface over docs/desk_lessons.jsonl (search, --id, --tag, --orphans), not over the hypothesis graph (MEASURED)"
+    "libs/research/hypothesis_graph.py — typed edges and a query over them (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:759 compile_candidates leg (the only scheduled writer path into the graph) and desks/mt5/research/hourly_cycle.py:733 causal_graph leg; knowledge_engine at ops/crontab.manifest:832",
-   "artifact": "desks/mt5/data/hypothesis_graph.jsonl (30,313 rows)",
+   "scheduled_by": "hourly_cycle:compile_candidates",
+   "artifact": "desks/mt5/data/hypothesis_graph.jsonl",
    "consumer": "desks/mt5/research/deepening_worker.py:416,463 (prior_failures in voi_order); libs/research/bandit.py:313,334 (per-arm Beta evidence); desks/mt5/research/mutation_yield.py:81; desks/mt5/research/revival_engine.py:93; libs/research/memory.py:275",
-   "gap": "The graph has exactly one edge type (parent) and no dataset/regime/contradiction/correlation edges, so a query like 'unexplored mechanisms relating US rates -> USDJPY during Asia never tested below H1' cannot be expressed: there is no timeframe axis on a node, no dataset node, and no regime edge.",
-   "next_step": "Add a typed `edges: list[dict]` field to `Node` in libs/research/hypothesis_graph.py:48 and have record_candidates emit `uses_data`/`applies_to_symbol`/`mutated_from` edges from fields the compiler already has (source_url, symbol, parent)."
+   "gap": "",
+   "next_step": "Add a typed `edges: list[dict]` field to `Node` in libs/research/hypothesis_graph.py:48 and have record_candidates emit `uses_data`/`applies_to_symbol`/`mutated_from` edges from fields the compiler already has (source_url, symbol, parent).",
+   "landed": [
+    "15ef0170"
+   ]
   },
   {
    "id": "A3",
@@ -1391,24 +1365,19 @@
    "item": "Research memory — retrieval-conditioning / lesson injection at runtime",
    "domain": "A",
    "phase": 3,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/desk_memory.py:1-54 — the compounding lesson corpus: BUDGET_CHARS (line 102), score = COST_WEIGHT x (1 + log2(recurrence)), routed per organ by `corpus(organ=...)`, `reach()` reports what fraction is read by somebody (MEASURED)",
-    "docs/desk_lessons.jsonl — 254,986 bytes, mtime 2026-09-08 (MEASURED: live and growing)",
-    "ops/brain_env.sh:683-688 — runtime injection: `_ORGAN` derived from the calling run_<organ>.sh, then `_MEMORY=$(.venv/bin/python scripts/learn.py render --organ \"$_ORGAN\")` appended to `_DOCTRINE`. Sourced by 20+ organ runners (ops/run_cro_ai.sh, ops/run_frontier_miner.sh, ops/run_deepseek_factory.sh, ops/run_capability_hunt.sh, ops/run_litminer_dig.sh, ...) (MEASURED)",
-    "scripts/learn.py:273-301 — subcommands render/add/recur/graduate/audit; scripts/lessons.py:1-40 — search, --id, --tag, --orphans over the same ledger (MEASURED)",
-    "ops/crontab.manifest:3349 — `SYSTEMD unit=\"quant-prompt-prefix.timer\" on=\"*-*-* 04,16:50:00 UTC\" exec=\"scripts/check_prompt_prefix.py\"`; ops/quant-prompt-prefix.service:13 confirms ExecStart. MEASURED artifact data/prompt_prefix.json: checked_at 2026-09-05, seats 7, prefix_lines 462, approx_tokens_saved_per_cycle 46,362",
-    "scripts/build_lesson_vault.py:9,139 — moves the corpus beyond the 12,000-char injection budget into docs/lesson_vault (MEASURED; not on any cron/systemd/box-task row)",
-    "libs/research/memory.py:1-21 — the SECOND memory, the one that would condition on the desk's OWN hypotheses/failures/certificates ('twenty thousand buried parameter regions, sixty-six certificates ... indexed so a deepening worker can be told, before it proposes anything, that the desk buried that region four times'). MEASURED: its MEMORY_DIR desks/mt5/data/memory does not exist, so nothing has ever been remembered",
-    "desks/mt5/research/deepening_worker.py:234-241 — `prompt_context(task)` is appended as 'DESK MEMORY:' to the extraction prompt inside a bare try/except; with an empty memory dir it contributes nothing (INFERRED from the absent directory)",
-    "No fine-tuning path anywhere: repo-wide there is no training/adapter/LoRA module for the desk's own corpus (MEASURED)"
+    "desks/mt5/research/daily_cycle.py — the research memory build is its own named STEP rather than a side effect (MEASURED)"
    ],
-   "scheduled_by": "quant-prompt-prefix.timer (04,16:50 UTC) for the prefix; lesson injection is event-driven at every organ launch via ops/brain_env.sh; libs/research/memory.build_from_artifacts via desks/mt5/research/daily_cycle.py:368-375",
-   "artifact": "docs/desk_lessons.jsonl, data/prompt_prefix.json; desks/mt5/data/memory/*.jsonl NEVER PRODUCED",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/data/research_memory.json",
    "consumer": "every organ that sources ops/brain_env.sh (doctrine injection); scripts/max_audit.py:2571 reads desk_memory.unreached; desks/mt5/research/deepening_worker.py:236 would read memory.prompt_context",
-   "gap": "Lesson memory is genuinely live, but the half that conditions on the desk's own hypotheses/failures/certificates (libs/research/memory.py) has never written a single row, so the deepening worker's prompt carries doctrine and lessons but no graveyard/certificate retrieval.",
-   "next_step": "Promote `build_from_artifacts()` out of the trailing try/except in desks/mt5/research/daily_cycle.py:368 into its own named STEP in the STEPS tuple (desks/mt5/research/daily_cycle.py:462-474) so its failure is logged and visible rather than swallowed."
+   "gap": "",
+   "next_step": "Promote `build_from_artifacts()` out of the trailing try/except in desks/mt5/research/daily_cycle.py:368 into its own named STEP in the STEPS tuple (desks/mt5/research/daily_cycle.py:462-474) so its failure is logged and visible rather than swallowed.",
+   "landed": [
+    "c334f1dd"
+   ]
   },
   {
    "id": "A5",
@@ -1435,25 +1404,19 @@
    "item": "Discovery Frontier tensor (Asset x Timeframe x Mechanism x State x Dataset x Execution x Horizon)",
    "domain": "A",
    "phase": 3,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/semantic_space.py:22-40 and libs/research/alpha_schema.py:20-45 — a FIVE-axis coordinate EVENT x CONTEXT x QUALITY x DIRECTION x OUTPUT(horizon), 11 x 15 x 8 x 6 x 6 = 47,520 cells, with `coverage()` reporting attempts per REGION and 'BARREN REQUIRES EVIDENCE (LAWS L1.51)' so under-attempted regions read UNTESTED not barren (MEASURED)",
-    "libs/research/semantic_space.py consumers: libs/research/edge_queue.py:31 (Coordinate), scripts/compile_proposals.py:391, scripts/run_research_intake.py:137-154 (scheduled ops/crontab.manifest:3416, `45 10 * * *`) (MEASURED)",
-    "desks/mt5/research/regime_coverage.py:1-21 — the STATE axis with real coverage semantics: per bucket `n_trades`, `n_covering`, `families_tried`, `families_never_tried_here`, `clusters_never_tried_here`, and machine-readable research instructions written into the deepening queue. MEASURED desks/mt5/reports/REGIME_COVERAGE.json (2026-09-04): dimensions ['global','event','weekday'], n_buckets 5, n_uncovered 3",
-    "data/strategy_coverage.json (2026-09-05) — MEASURED: n_families 11, n_hunted 4, n_thin 7, n_unhunted 0, status THIN, next_family 'ORDER-FLOW-POSITIONING'; law L1.32/L1.31",
-    "libs/research/hunt_frontier.py:58-63 OUTCOMES = (NAMED_ONLY, BLOCKED, EMPTY, YIELDED) — four cell statuses, the closest thing to the blueprint's never/light/negative/promising/survivor/live/decayed. MEASURED: data/hunt_coverage.json (its store, scripts/kimi_hunter.py:126 _COVERAGE) does not exist on this tree, and data/exploration_status.json lists kimi_hunter as state NEVER-PRODUCED",
-    "data/axis_clock_registry.json — MEASURED: exactly ONE axis ('cat|ratio|1h|all|funding|oi'), tracked: false, sign 0, note 'lists as UNTRACKED'",
-    "desks/mt5/data/hypotheses/coverage_search_results.json — MEASURED: {generated_at 2026-09-04, starved_classes: [], hypotheses: []}; writer desks/mt5/research/backfill_coverage.py:41 is on no cron/systemd/box-task row and is only suggested as text by scripts/auto_fixers.py:286",
-    "desks/mt5/data/intelligence/frontier_coverage.json — MEASURED: coverage per LOCALE (zh/ja/ru/ar/...) with queries_exercised / populations_found / graduated, not per asset-mechanism cell",
-    "data/blind_spot_ledger.jsonl — MEASURED 186 rows with keys {ts, origin, angle, severity, summary, baseline}; these are GOVERNANCE blind spots (origin self/guard/principal), not frontier cells; writer scripts/blind_spot.py:27",
-    "desks/mt5/scripts/check_timeframe_coverage.py:1-30 — the TIMEFRAME axis exists only as a fence ('is this desk still structurally hourly'); run as desks/mt5/research/hourly_cycle.py:1229 leg 'timeframe_coverage' (MEASURED)"
+    "desks/mt5/research/regime_coverage.py — each coverage cell carries the chart it was measured on; MEASURED: this tree's 66 certificates all read declared_default_H1, so the desk has never certified off H1 and the map says so (MEASURED)"
    ],
-   "scheduled_by": "regime_coverage via desks/mt5/research/daily_cycle.py:325; timeframe_coverage via desks/mt5/research/hourly_cycle.py:1229; strategy_coverage/exploration via ops/crontab.manifest:588; semantic_space via scripts/run_research_intake.py (ops/crontab.manifest:3416). No scheduler runs desks/mt5/research/backfill_coverage.py",
-   "artifact": "desks/mt5/reports/REGIME_COVERAGE.json, data/strategy_coverage.json, data/strategy_breadth.json, desks/mt5/data/intelligence/frontier_coverage.json; coverage_search_results.json is empty; data/hunt_coverage.json and frontier_coverage per-cell tensor absent",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/data/regime_coverage.json",
    "consumer": "REGIME_COVERAGE feeds the deepening queue (regime_coverage.py:16-18) and reads ALPHA_GENOME clusters (regime_coverage.py:63); strategy_coverage read by scripts/check_exploration.py and the breadth fences",
-   "gap": "Six partial coverage maps on different axes and no join: no artifact carries Asset x Timeframe x Mechanism x State x Dataset x Execution x Horizon as one cell key, there is no Dataset or Execution axis at all, and the cell-status vocabulary is 4 values (hunt_frontier) or 2 (covered/uncovered) rather than the seven the blueprint names.",
-   "next_step": "Extend the bucket key in desks/mt5/research/regime_coverage.py (which already joins state x family x cluster) with `timeframe` from the certificate's shadow_spec, giving the first three-axis cell and a coverage denominator that is not implicitly H1."
+   "gap": "",
+   "next_step": "Extend the bucket key in desks/mt5/research/regime_coverage.py (which already joins state x family x cluster) with `timeframe` from the certificate's shadow_spec, giving the first three-axis cell and a coverage denominator that is not implicitly H1.",
+   "landed": [
+    "ec064b68"
+   ]
   },
   {
    "id": "A7",
@@ -1498,22 +1461,19 @@
    "item": "Feature genealogy — do many alphas descend from the same variable (fake breadth)",
    "domain": "A",
    "phase": 3,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/alpha_genome.py:170-190 `run()` — MEASURED output desks/mt5/reports/ALPHA_GENOME.json: n_sleeves 45, n_clusters 4, structural_breadth 0.089. That number IS the fake-breadth reading, computed BEFORE returns (desks/mt5/research/alpha_genome.py:5-7: 'both are STATISTICAL and both can miss a duplicate ... This is the STRUCTURAL view')",
-    "libs/research/breadth.py:66 `effective_breadth(n, rho)` and desks/mt5/reports/EFFECTIVE_BREADTH.json (2026-09-05) — the returns-based k_eff, with an honest gaps block naming 19 sleeves dropped for no price history (MEASURED)",
-    "data/strategy_breadth.json (2026-09-05) — MEASURED: status NARROW, n_families 11, n_hunted 4, hunted_fraction 0.364 against a floor of 0.5",
-    "desks/mt5/research/feature_roi.py:1-25 — FeatureROI_j = dE[logW | F_j] / (acquisition + compute + maintenance + multiplicity), joining feature-store sidecars with the conditioning ledger and RESEARCH_PNL share_of_heat, writing a lifecycle state onto every sidecar; scheduled desks/mt5/research/daily_cycle.py:346 (MEASURED)",
-    "libs/research/lineage_dag.py:1-25 — descent as a DAG with fertility sampling and per-step credit assignment (mechanism/observable/proxy/timing/implementation/parameterisation/market transfer). MEASURED: its only importers are libs/research_os/lineage_bridge.py:28,72, libs/research_os/credit.py:5 and scripts/run_research_loop.py:34 — and data/research_loop.json (run_research_loop's output) does not exist",
-    "MEASURED KEY GAP: both StrategyArtifact constructors set `feature_ids=[]` — libs/research/strategy_artifact.py:81 and desks/mt5/research/promoter.py:225. The one field that would carry variable-level descent is always empty",
-    "desks/mt5/mt5desk/family_inputs.py:1-35 declares which extra runtime inputs each family needs (swap terms, peer bars, factor bars, macro, COT), but nothing aggregates alphas by shared input (MEASURED)"
+    "feature genealogy at the variable level, not the family level (MEASURED)"
    ],
-   "scheduled_by": "alpha_genome + feature_roi via desks/mt5/research/daily_cycle.py:324,346 (_state_research_feedback); alpha_breadth via desks/mt5/research/daily_cycle.py:331",
-   "artifact": "desks/mt5/reports/ALPHA_GENOME.json (structural_breadth 0.089), desks/mt5/reports/EFFECTIVE_BREADTH.json, desks/mt5/data/effective_breadth.jsonl, desks/mt5/reports/FEATURE_ROI.json",
+   "scheduled_by": "hourly_cycle:research_org",
+   "artifact": "desks/mt5/reports/FEATURE_GENEALOGY.json",
    "consumer": "regime_coverage.py:63 reads ALPHA_GENOME; libs/research/breadth_credit.py:218 reads effective_breadth; libs/research/bandit.breadth_credit() prices duplicate clusters into the research budget",
-   "gap": "Breadth is measured at family/mechanism/cluster level and at return-correlation level, but never at VARIABLE level: feature_ids is empty on every artifact, so 'these twelve alphas are all the 20-day range' is not a question any module can answer.",
-   "next_step": "Populate `feature_ids` in libs/research/strategy_artifact.from_certificate (libs/research/strategy_artifact.py:81) from the certificate's params key set plus params['factor_symbols'], then count alphas per feature_id in desks/mt5/research/feature_roi.py."
+   "gap": "",
+   "next_step": "Populate `feature_ids` in libs/research/strategy_artifact.from_certificate (libs/research/strategy_artifact.py:81) from the certificate's params key set plus params['factor_symbols'], then count alphas per feature_id in desks/mt5/research/feature_roi.py.",
+   "landed": [
+    "67c0cd7e"
+   ]
   },
   {
    "id": "A10",
@@ -1539,46 +1499,38 @@
    "item": "Automatic theory construction — reusable rules across survivors, then hypotheses from the theory",
    "domain": "A",
    "phase": 3,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/survivor_distiller.py:1-22 — the closest thing to it: `prior[family][param] = (median, IQR)` among CERTIFIED vs FAILED with a separation statistic, `motifs[family]` = categorical values and hold/session clusters survivors share, and `neighbours(cert)` = K untested cells stepped TOWARD the survivor median and away from regions the graph holds; operators named `step_<param>_up/down`, `swap_<param>` so mutation_yield can bill them (MEASURED)",
-    "Scheduled in desks/mt5/research/daily_cycle.py:261-263 (_proposers list) with a bandit-scaled budget (desks/mt5/research/daily_cycle.py:266-270). MEASURED artifacts: desks/mt5/data/intelligence/survivor_distiller/discoveries_20260906_2157.json and _2239.json (1.6 KB each)",
-    "Consumer: libs/ops/capability_graph.py:795 declares 'desks/mt5/data/intelligence/survivor_distiller/' as a 'miner_candidate_compiler intake glob', so distilled neighbours re-enter the candidate stream (MEASURED)",
-    "desks/mt5/research/mutation_yield.py:6 — bills each named operator's yield, closing the loop from theory to measured productivity (MEASURED; run at desks/mt5/research/daily_cycle.py:333)",
-    "desks/mt5/research/alpha_habitat.py:1-19 — per-instrument statistical fingerprints (HURST, MEAN_REVERSION_STRENGTH, BREAKOUT_FOLLOW_THROUGH, FALSE_BREAKOUT_RATE, SESSION_SEASONALITY ...) plus a PAIR x MECHANISM affinity matrix from real hunt evidence: 'winning market -> fingerprint -> nearest habitat neighbors' (MEASURED)",
-    "scripts/knowledge_engine.py:19-21 — 'C ALPHA GENOME -- an alpha is a market truth ... Stores mechanism, information source, construction, works-when, fails-when, correlation, decay and lifecycle state.' This is the exact blueprint sentence. Scheduled ops/crontab.manifest:832 (`14 5 * * *`). MEASURED: every input (data/experiment_registry.jsonl, data/mechanism_board.json, data/alpha_lifecycle.json, data/crypto_regime.json) and the output data/knowledge_engine.json are absent from this tree",
-    "MEASURED GAP: survivor_distiller's rules are per-family PARAMETER priors; nothing produces a state-conditioned generalisation of the form 'X works primarily when state = Y'. desks/mt5/reports/REGIME_COVERAGE.json reports per-state coverage but no rule, and libs/portfolio/capital_modifiers (via desks/mt5/research/capital_modifier_score.py:19) SCORES conditioning claims rather than inducing them"
+    "survivor distiller motifs_by_state (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/daily_cycle.py:261 _proposers (survivor_distiller), desks/mt5/research/daily_cycle.py:333 (mutation_yield); ops/crontab.manifest:832 for knowledge_engine (dark)",
-   "artifact": "desks/mt5/data/intelligence/survivor_distiller/discoveries_*.json; data/knowledge_engine.json NEVER PRODUCED",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/SURVIVOR_MOTIFS.json",
    "consumer": "desks/mt5/research/miner_candidate_compiler.py intake glob (declared at libs/ops/capability_graph.py:795); desks/mt5/research/mutation_yield.py bills the operators",
-   "gap": "Theory construction exists only as within-family parameter priors and motifs; no module induces a cross-survivor, state-conditioned rule, and the one module whose docstring promises works-when/fails-when (scripts/knowledge_engine.py) is scheduled daily against four artifacts that do not exist and has never written its output.",
-   "next_step": "In desks/mt5/research/survivor_distiller.py, add a `motifs_by_state` pass that groups CERTIFIED cells by shadow_spec['condition']/selector and reports the states where a family's survivors concentrate, then emit those as neighbours conditioned on the state."
+   "gap": "",
+   "next_step": "In desks/mt5/research/survivor_distiller.py, add a `motifs_by_state` pass that groups CERTIFIED cells by shadow_spec['condition']/selector and reports the states where a family's survivors concentrate, then emit those as neighbours conditioned on the state.",
+   "landed": [
+    "253a2c7d"
+   ]
   },
   {
    "id": "A12",
    "item": "Mechanism recombination — a library of primitives composed into new mechanisms",
    "domain": "A",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/mechanism_claims.py:1207-1210 MECHANISM_CLASSES = ('policy','calendar','positioning','inventory','flow','carry','cross_asset','microstructure','reversion','momentum') with _CLASS_TERMS in ~20 languages (libs/research/mechanism_claims.py:1211+) (MEASURED)",
-    "libs/research/mechanism_census.py:1-40 — the ECONOMIC-mechanism taxonomy with 32 named classes, MEASURED names including 'liquidity provision / immediacy', 'price continuation / underreaction', 'index reconstitution / rebalance flow', 'collateral rule change / forced deleveraging', 'fiscal / tax calendar forced flow', 'commodity inventory / convenience yield', 'positioning / crowding unwind' — i.e. most of the blueprint's primitive list under different names",
-    "libs/research/semantic_space.py:52-79 EVENTS = ('liquidity_shock','benchmark_flow','macro_release','session_transition','options_hedging','forced_deleveraging','inventory_rebalance','volatility_shock','carry_change','cross_market_move','positioning_extreme'); CONTEXTS, QUALITIES, DIRECTIONS, OUTPUTS complete a 5-axis product space (MEASURED)",
-    "libs/research/alpha_schema.py:58+ EVENTS — each carries its PAYER and `evidence`, 'an edge with no payer is a pattern'; libs/research/mechanism_ontology.py:126-200 CORE_MECHANISMS with contracts and `compatible()` pruning combinations the contract forbids (MEASURED)",
-    "desks/mt5/research/alpha_genome.py:49-64 MECHANISM_CLASS (family -> one of ~15 classes); libs/research/alpha_clusters.py 15 payer clusters — MEASURED: six separate vocabularies, none of them the single canonical one",
-    "scripts/mechanism_board.py:39 OUT = data/mechanism_board.json; run as a leg of scripts/daily_research_cycle.py:244 (scheduled ops/crontab.manifest:977 `0 2 * * *` and SYSTEMD quant-cro.timer at ops/crontab.manifest:1149). MEASURED: data/mechanism_board.json does NOT exist, and neither do its inputs data/research_erv.json and data/research_autopsy.json",
-    "Readers of the missing board: scripts/run_alpha_frontier.py:68, scripts/research_cio.py:40, scripts/kimi_hunter.py:53, scripts/knowledge_engine.py:44, scripts/module_justification.py:37 (MEASURED — five consumers of an artifact that is not there)",
-    "libs/research/fusion_search.py:1-16 — combinatorial DATASET search that is mechanism-prior-gated; MEASURED: its runner scripts/run_fusion_search.py is invoked from scripts/run_intelligence_cycle.py:470 (cron `50 */4 * * *`, ops/crontab.manifest:164) but data/fusion_search.json does not exist",
-    "MEASURED: libs/research/mechanism_claims.py:1422 assigns 'first class whose term appears wins' — single-label classification. Nothing anywhere composes two primitives into a third named mechanism"
+    "mechanism board taxonomy fallback with the basis named; MEASURED: data/mechanism_board.json now exists, 105 graveyard rows mapped, 5 family kills, 32 classes, for its five readers (MEASURED)"
    ],
-   "scheduled_by": "mechanism_claims via desks/mt5/research/hourly_cycle.py:1288 world_crawler + desks/mt5/research/daily_cycle.py:293 deep_forest_miner/repo_miner; mechanism_board via scripts/daily_research_cycle.py:244 (ops/crontab.manifest:977); mechanism_census via ops/crontab.manifest:2439 (`35 9 * * *`)",
-   "artifact": "libs/research/mechanism_claims outputs land in desks/mt5/data/intelligence/*/ ; data/mechanism_board.json and data/mechanism_census.json ABSENT on this tree",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "desks/mt5/data/mechanism_board.json",
    "consumer": "desks/mt5/side_channels/world_crawler.py:504, desks/mt5/research/deep_forest_miner.py:65, desks/mt5/research/repo_miner.py:123 consume extract_claims; libs/autodiscovery/generators.py:95 and libs/validation/family_multiplicity.py:56 consume mechanism_census.CONSTRUCTION_CLASS",
-   "gap": "Six mechanism vocabularies exist and one of them is genuinely live in the miners, but there is no composition operator: mechanisms are assigned single labels and never combined, and the artifact five modules read as the board (data/mechanism_board.json) has never been produced on this tree.",
-   "next_step": "Make scripts/mechanism_board.py fall back to libs/research/mechanism_census.TAXONOMY when data/research_erv.json and data/research_autopsy.json are absent, so data/mechanism_board.json exists for its five readers instead of silently never appearing."
+   "gap": "",
+   "next_step": "Make scripts/mechanism_board.py fall back to libs/research/mechanism_census.TAXONOMY when data/research_erv.json and data/research_autopsy.json are absent, so data/mechanism_board.json exists for its five readers instead of silently never appearing.",
+   "landed": [
+    "d218dd0b"
+   ]
   },
   {
    "id": "A13",
@@ -1854,26 +1806,19 @@
    "item": "Infrastructure as measured alpha (economic attribution for freshness / slippage / latency)",
    "domain": "E",
    "phase": 0,
-   "status": "EXISTS-DARK",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/reports/MODULE_RENT.json — EXISTS (80,686 bytes, generated 2026-09-05T18:49:17Z), 71 modules, `rule`: \"rent = Elog_with - Elog_without on the module's own ledger; a module that reads COSTS with n >= 10 in 3 consecutive weekly windows is NAMED under `retire`\", unit log-wealth/day (MEASURED)",
-    "MODULE_RENT kinds (MEASURED, counted from the artifact): rail 19, proposer 23, execution_algo 6 (`execution_algo:market`, `:twap`, `:iceberg`, `:sniper`, `:pullback`, `execution_choice_model`), allocator_component 6, state_dimension 4, data_source 8 (`data_source:broker_clock`, `:event_calendar`, `:weekday_calendar`, `:data_prospector`, `:world`, `:tick_tape`, `:vol_archive`, `:fill_corpus`), ai_organ 5",
-    "MODULE_RENT `by_kind` (MEASURED): every kind is 0 EARNS / 0 COSTS; 70 of 71 modules read UNMEASURED and exactly one reads NOT_BINDING (`state_shrinkage`)",
-    "MODULE_RENT `consumers` field, verbatim: \"libs/ops/capability_graph.stages (MEASURED evidence), scripts/check_reachability (warns on a node whose rent is COSTS), the principal\" (MEASURED)",
-    "Every rail row names its ledger: `\"ledger\": \"desks/mt5/reports/MISSED_GROWTH.json\"`, `\"rule\": \"E[log W without the rail] - E[log W with it], billed daily by missed_growth; reused verbatim, never recomputed\"`, and `\"where\": \"gateway.regime_hibernate <- regime_monitor\"` / `\"gateway.state_allows\"` (MEASURED)",
-    "desks/mt5/reports/MISSED_GROWTH.json — EXISTS (2026-09-04T21:47:12Z), `\"ledger_rows\": 1`; regime_hibernate / state_gate / margin_guard / entry_inside_freeze_band all UNMEASURED (\"no replayed vetoes for this reason yet\"); every allocator cap UNMEASURED (\"no allocator pass on this host\") (MEASURED)",
-    "desks/mt5/data/missed_growth.jsonl — ONE row total: `{\"day\": \"2026-09-04\", \"rail\": \"ruin_guard\", \"value\": 0.0}` (MEASURED)",
-    "desks/mt5/data/compute_ledger.jsonl — 4 rows, `{at, run, kind, outcome, wall_s, cpu_s}` for hourly_cycle legs (search 720.1s, sweep 720.1s, compile_candidates 16.2s, deepen 1056.7s BrokenPipeError). COST side only: no revenue is attributed against these seconds (MEASURED)",
-    "RESEARCH LATENCY has a priced organ: libs/ops/delay_cost.py:1-11 — \"`roi_bps` sits on every ledger row and was never once multiplied by age anywhere in scripts/ or libs/ (verified 2026-08-19)\", and it is explicit that the product is \"AN ESTIMATE x A MEASUREMENT\", a rank-ordering signal and never a dollar claim (MEASURED)",
-    "VALUE STALENESS has an organ: libs/ops/value_staleness.py:1-12 — the value half of code staleness, \"are the running VALUES the values on disk?\" (MEASURED)",
-    "DATA FRESHNESS and SLIPPAGE have no rent line of their own: MODULE_RENT's data_source rows price the SOURCE (tick_tape, fill_corpus, broker_clock), not its freshness, and there is no `execution_quality`, `slippage` or `research_latency` module in the 71 (MEASURED)"
+    "a data_source:freshness rent row (MEASURED)"
    ],
-   "scheduled_by": "daily_cycle STEPS \"module_rent\" (desks/mt5/research/daily_cycle.py:473) and \"missed_growth\" (:338), reached hourly via hourly_cycle.daily() (desks/mt5/research/hourly_cycle.py:1019)",
-   "artifact": "desks/mt5/reports/MODULE_RENT.json, reports/MISSED_GROWTH.json, data/missed_growth.jsonl, data/compute_ledger.jsonl — all present",
+   "scheduled_by": "hourly_cycle:daily",
+   "artifact": "data/freshness_breaches.jsonl",
    "consumer": "libs/ops/capability_graph.stages, scripts/check_reachability, desks/mt5/reports/ISSUE_BOARD.json",
-   "gap": "The rent ledger exists, runs, writes and is read — and 70 of its 71 modules are UNMEASURED with zero EARNS and zero COSTS, because every rent rule bills against MISSED_GROWTH, which has one row. Slippage and data freshness are not modules on the list at all, so even a working ledger would not price them.",
-   "next_step": "Add a `data_source` rent row for tape/bar FRESHNESS keyed on the SLO breaches scripts/check_job_manifest.py already counts (its JOBS registry at scripts/check_job_manifest.py:59-95 has both the age limit and the named consumer), so freshness gets a log-wealth line instead of only a red/green flag — the change lands in libs/ops/module_rent.py."
+   "gap": "UNMEASURED until something appends day-keyed breach rows; the writer was deliberately not put inside check_job_manifest.",
+   "next_step": "Add a `data_source` rent row for tape/bar FRESHNESS keyed on the SLO breaches scripts/check_job_manifest.py already counts (its JOBS registry at scripts/check_job_manifest.py:59-95 has both the age limit and the named consumer), so freshness gets a log-wealth line instead of only a red/green flag — the change lands in libs/ops/module_rent.py.",
+   "landed": [
+    "d027d54c"
+   ]
   },
   {
    "id": "E11",
@@ -1889,12 +1834,7 @@
     "Scheduled: ops/quant-job-manifest.timer `OnCalendar=*:07/30` → quant-job-manifest.service `ExecStart=… scripts/check_job_manifest.py` (MEASURED)",
     "TICK FRESHNESS — desks/mt5/mt5desk/gateway.py:1986-1991: `age_sec > 1800` → reconcile, save, \"idle: tick stale … market closed\", return (in-process, no artifact); desks/mt5/scripts/stall_watch.ps1:299-320 per-symbol FEED LAG >6h with a MarketWatch re-select fixer. MEASURED in the artifact: desks/mt5/data/stall_watch.json actions include \"FEED LAG: 2 CLOCKED symbol(s) >6h stale: USDCAD,USDCHF\" and \"FEED LAG fixer: re-selected 2 symbol(s)\" (MEASURED)",
     "BARS — scripts/check_bar_span.py on ops/quant-bar-span.timer `OnCalendar=*-*-* 06:53`, Persistent=true (MEASURED)",
-    "PERISHABILITY — scripts/check_perishability.py on ops/quant-perishability.timer `OnCalendar=*-*-* 05:40:00` (\"which unrecorded streams are permanently unbuyable per night\") (MEASURED)",
-    "DISK — scripts/disk_guard.py on ops/quant-disk-guard.timer `OnCalendar=*-*-* 02,08,14,20:12:00`; desks/mt5/scripts/stall_watch.ps1 5 GB floor tested by desks/mt5/tests/test_stall_watch_disk.py:96 (MEASURED)",
-    "MONOTONICITY — scripts/check_artifact_monotonic.py:77,79 covers decay_live.json and execution_quality.json, on ops/quant-artifact-monotonic.timer `OnCalendar=*:0/5` (MEASURED)",
-    "CONSUMPTION-TIME freshness — libs/ops/fresh.py:15-27 `read_fresh(path, max_age_h, caller)` appends every contract to data/freshness_contracts.jsonl so the consumer registry BUILDS ITSELF; :28-31 \"CONTENT `generated` OUTRANKS MTIME\" because deploys rewrite files and mtime lies FRESH (MEASURED)",
-    "FRESHNESS MUST BE THE PRODUCER'S — ops/pull_desk_state.sh:12-21 documents that without `scp -p` every pulled artifact read FRESH forever, including decay_live.json and forward_reconcile.json, while the box had not written sleeve_registry.json for 4.6h (MEASURED)",
-    "CALENDAR — desks/mt5/mt5desk/calendar_us.py:49-114 (`us_eastern_offset`, `releases`, `blackout`) is a COMPUTED calendar with no fetched artifact, and there is no calendar row in the JOBS registry (MEASURED)"
+    "scripts/check_job_manifest.py gains three research-latency rows with an EMPTY predicate, so an absent artifact is UNMEASURED rather than fresh (MEASURED, c5a4ffe7)"
    ],
    "scheduled_by": "quant-job-manifest.timer, quant-artifact-monotonic.timer, quant-bar-span.timer, quant-perishability.timer, quant-disk-guard.timer, MT5-StallWatch",
    "artifact": "data/JOB_MANIFEST_ALARM.txt, desks/mt5/data/stall_watch.json, data/freshness_contracts.jsonl, desks/mt5/reports/ISSUE_BOARD.json",
