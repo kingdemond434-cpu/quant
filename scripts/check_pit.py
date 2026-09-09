@@ -59,7 +59,15 @@ from libs.data.pit import census, is_stamped  # noqa: E402
 from libs.data.pit_certificate import CERT_DIR  # noqa: E402
 from libs.data.pit_certificate import census as cert_census  # noqa: E402
 
-INTEL = ROOT / "desks" / "mt5" / "data" / "intelligence"
+#: BOTH TREES THE COMPILER READS, not one. `miner_candidate_compiler.INTEL_ROOTS` globs
+#: desks/mt5/data/intelligence AND data/intelligence, and the two LLM seats donate to the
+#: SECOND -- kimi_hunter to data/intelligence/kimi, deepseek_cycle to data/intelligence/deepseek.
+#: A census over one tree reported a stamped fraction for a population that excluded every seat
+#: donation, while the judge's ratchet applies to rows from both.
+_DEFAULT_ROOTS = (ROOT / "desks" / "mt5" / "data" / "intelligence",
+                  ROOT / "data" / "intelligence")
+INTEL_ROOTS = _DEFAULT_ROOTS
+INTEL = _DEFAULT_ROOTS[0]
 OUT = ROOT / "desks" / "mt5" / "reports" / "PIT_CENSUS.json"
 HIGH_WATER = ROOT / "desks" / "mt5" / "data" / "pit_high_water.json"
 CERTIFICATES = CERT_DIR
@@ -79,12 +87,29 @@ def _rows(path: Path) -> list[Any]:
     return []
 
 
+def _roots() -> tuple[Path, ...]:
+    """The trees this census reads, resolved AT CALL TIME so both seams work.
+
+    A caller that points `INTEL` somewhere is saying "census exactly this tree" -- that is what
+    the existing suite does, and honouring it is why the roots are not frozen at import. A caller
+    that sets `INTEL_ROOTS` is naming the whole population. Neither silently drags in the real
+    repository's data underneath a fixture.
+    """
+    if INTEL != _DEFAULT_ROOTS[0]:
+        return (INTEL,)
+    return tuple(INTEL_ROOTS)
+
+
 def run() -> dict[str, Any]:
     """The census: newest three discovery files per source, stamped fraction per source and in
     total. Written to OUT (gitignored: a generated report, not a record)."""
     per_source: dict[str, dict[str, Any]] = {}
     all_rows: list[dict[str, Any]] = []
-    for src_dir in sorted(p for p in INTEL.iterdir() if p.is_dir()) if INTEL.exists() else []:
+    src_dirs: list[Path] = []
+    for intel in _roots():
+        if intel.exists():
+            src_dirs += sorted(p for p in intel.iterdir() if p.is_dir())
+    for src_dir in src_dirs:
         files = sorted(glob.glob(str(src_dir / "discoveries_*.json")))[-3:]
         rows = [r for f in files for r in _rows(Path(f)) if isinstance(r, dict)]
         if not rows:
@@ -98,6 +123,17 @@ def run() -> dict[str, Any]:
         unstamped = sum(1 for r in rows if not is_stamped(r))
         c["unstamped_rows"] = unstamped
         c["blocks_certification"] = unstamped > 0
+        # ONE SOURCE NAME CAN APPEAR UNDER BOTH TREES. The counts are ADDED; letting the second
+        # root's entry silently replace the first would be the same undercount this change exists
+        # to fix, one level down.
+        prev = per_source.get(src_dir.name)
+        if prev:
+            for k in ("rows", "stamped", "unstamped_rows"):
+                if isinstance(prev.get(k), (int, float)) and isinstance(c.get(k), (int, float)):
+                    c[k] = prev[k] + c[k]
+            c["stamped_frac"] = (c["stamped"] / c["rows"]) if c.get("rows") else None
+            c["blocks_certification"] = bool(c["unstamped_rows"])
+        c["roots"] = sorted({*((prev or {}).get("roots") or []), src_dir.parent.as_posix()})
         per_source[src_dir.name] = c
         all_rows.extend(rows)
     total = census(all_rows)
@@ -105,6 +141,13 @@ def run() -> dict[str, Any]:
            "per_source": per_source,
            "unstamped_sources": sorted(s for s, c in per_source.items()
                                        if (c["stamped_frac"] or 0.0) < 0.5),
+           # WHICH TREES THIS CENSUS ACTUALLY READ. A stamped fraction is meaningless without the
+           # population it was taken over, and this census read one of the compiler's two trees
+           # until 2026-09-09 -- so the number excluded every LLM seat donation while the judge's
+           # ratchet applied to rows from both.
+           "roots_read": [r.as_posix() for r in _roots() if r.exists()],
+           "roots_absent": [r.as_posix() for r in _roots() if not r.exists()],
+           "n_sources": len(per_source),
            "ratchet": {
                "predicate": ("libs.data.pit.is_stamped -- the predicate external_gauntlet's "
                              "judge-side ratchet applies to every docket row"),
