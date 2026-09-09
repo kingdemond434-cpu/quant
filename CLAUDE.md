@@ -277,3 +277,33 @@ and n=7 per sleeve. Read the doc before discussing it -- the numbers there are m
   VIEW — edit `docs/desk_lessons.jsonl`, never the vault, or the two drift.
 - **Adding a lesson:** `scripts/learn.py add`. A lesson leaves the corpus one way only — retired
   with a named falsifier that actually arrived. Silence is not retirement.
+
+## The Tier-1 programme, and how to read it
+
+- **The ledger is data and the checker is its gate.** `docs/research/tier1_program.json` holds
+  113 items from the principal's two blueprints (2026-09-08) plus the five acceptance
+  properties. `python scripts/check_tier1_program.py` verifies every claim against this
+  repository and exits 1 on a lie: an EXISTS-LIT or LANDED entry must cite files that exist,
+  lines inside them, a clock the repo knows (a VPS timer, a box task, or a leg of the two
+  cycles) and an artifact. `--render` regenerates `docs/research/TIER1_PROGRAM.md`; never edit
+  the Markdown, it is derived. A wrong ledger fails the suite, which is the only reason a
+  coverage number is worth reading.
+- **The acceptance properties are measured, never asserted.**
+  `python scripts/check_acceptance_properties.py` derives AP1..AP5 from the artifacts that own
+  them and writes `desks/mt5/reports/acceptance_properties.json`; `--ledger` copies the verdicts
+  into the ledger's own rows. An absent artifact is UNMEASURED, which is a verdict, not a zero.
+  It runs hourly as leg `acceptance`.
+- **Where the machine now measures itself.** `libs/research/layers.py` (which of the seven
+  strategy layers the hour's compute went to, and the test that fails when a leg belongs to
+  none), `research/opportunity_cost.py` (what the hour therefore did NOT test, by name),
+  `libs/ops/scaling_laws.py` (survivors per compute hour, fitted in logs),
+  `scripts/check_prosecutor.py` (which statistical judge a clock actually reaches),
+  `scripts/check_dead_architecture.py` (which organs have anything on the other end),
+  `libs/research/arena.py` (a recorded verdict per research arm) and `libs/ops/events.py` (the
+  event log every leg writes). All are hourly legs and all are reports.
+- **Two items are REFUSED, not missing.** P1 (route the gold book through the allocator's
+  fraction) and P13 (feed the broker margin clause into the survival envelope) would both size
+  the book BELOW what it gets today. The principal's standing order is that the desk never
+  reduces its aggressiveness, only its dynamicness, so both are measured and published and
+  neither is fed. Turning either on needs the principal's explicit yes, and the tests pin the
+  refusal so it cannot be flipped by accident.
