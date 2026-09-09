@@ -53,13 +53,35 @@ def band_of(hour: int) -> str:
     return "??"
 
 
-def sleeve_hours() -> dict[str, dict[int, list[float]]]:
-    """sleeve -> {utc_hour: [R multiples]} from the replayed trades themselves."""
-    from research.portfolio_projection import build_sleeves, h18_survivor_sleeves
+#: Why the projection could not be built this run, or "". Read by `build` so an absent input is
+#: a NAMED gap in the artifact rather than a book that appears to trade at no hour at all.
+REFUSAL = ""
 
-    sleeves = build_sleeves()
-    h18, _excluded = h18_survivor_sleeves()
-    sleeves += h18
+
+def sleeve_hours() -> dict[str, dict[int, list[float]]]:
+    """sleeve -> {utc_hour: [R multiples]} from the replayed trades themselves.
+
+    A PROJECTION REFUSAL IS NOT A CRASH, AND IT MUST NOT BE A SystemExit REACHING THE CALLER
+    (2026-09-08, the day this became a daily-cycle leg). `portfolio_projection.build_sleeves`
+    raises `SystemExit` when reports/hunt12_partial.json is absent -- correctly, because an
+    empty survivor list would silently produce a gold-only book presented as the whole desk --
+    and `SystemExit` is a BaseException, so the daily cycle's own `except Exception` around each
+    module would NOT have caught it: one missing report would have torn down the entire cycle,
+    promotion chain included. That is the exact defect `test_bar_refresh_cannot_tear_down_the_
+    daily_cycle` pins for `refresh_tail`. The refusal is caught here, recorded in `REFUSAL`, and
+    reported as a gap.
+    """
+    global REFUSAL
+    REFUSAL = ""
+    try:
+        from research.portfolio_projection import build_sleeves, h18_survivor_sleeves
+
+        sleeves = build_sleeves()
+        h18, _excluded = h18_survivor_sleeves()
+        sleeves += h18
+    except (SystemExit, Exception) as exc:
+        REFUSAL = f"{type(exc).__name__}: {str(exc)[:400]}"
+        return {}
     out: dict[str, dict[int, list[float]]] = {}
     for s in sleeves:
         hours = s.get("hours")
@@ -142,10 +164,22 @@ def build() -> dict[str, Any]:
         "best_hours": [{"hour_utc": x["hour_utc"], "expected_r": x["expected_r"],
                         "trades": x["trades"]} for x in best],
         "marginal_available": bool(marginal),
+        # WHY THERE IS NOTHING HERE, when there is nothing here. An empty surface with no reason
+        # reads as a book that trades at no hour; with one it is an input this box does not have.
+        "gap": REFUSAL,
         "note": ("Hours are measured from trade timestamps, not sleeve names. An UNCOVERED hour "
                  "has no expectancy and is not 0.0: the desk has not tried it, which is a "
                  "research request, not a flat result."),
     }
+
+
+def run() -> dict[str, Any]:
+    """The daily-cycle leg: build the surface, write it, return it. Never raises for a missing
+    input -- `sleeve_hours` turns a projection refusal into the `gap` this artifact carries."""
+    doc = build()
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    return doc
 
 
 def main() -> int:
@@ -153,7 +187,7 @@ def main() -> int:
     if not doc["covered_hours"]:
         print("hour surface UNMEASURED: no sleeve carried entry hours. build_sleeves must keep "
               "them (see sleeve_hours) -- reporting nothing rather than a book that trades at "
-              "hour zero.")
+              f"hour zero.{(' ' + doc['gap']) if doc.get('gap') else ''}")
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
         return 2

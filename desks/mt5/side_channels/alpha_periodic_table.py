@@ -18,10 +18,29 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from . import SideChannelAxis, SideChannelHypothesis, generate_id, save_hypothesis, DATA_DIR
+try:
+    from . import SideChannelAxis, SideChannelHypothesis, generate_id, save_hypothesis, DATA_DIR
+except ImportError:  # pragma: no cover - exercised by the standalone runner
+    # RUNNABLE AS A MODULE, NOT ONLY AS A PACKAGE MEMBER (2026-09-08). The daily cycle imports
+    # its legs by bare name off `desks/mt5/research`, and a relative import is fatal there. The
+    # package import stays first and is what normally runs; this is the fallback that lets
+    # `research/alpha_periodic_table.py` load the implementation without restructuring the
+    # side-channel package.
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from side_channels import (  # type: ignore[no-redef]
+        DATA_DIR,
+        SideChannelAxis,
+        SideChannelHypothesis,
+        generate_id,
+        save_hypothesis,
+    )
 
 PERIODIC_DIR = DATA_DIR / "alpha_periodic_table"
 PERIODIC_DIR.mkdir(parents=True, exist_ok=True)
+#: The summary the research feedback loop reads. The CSV beside it stays where it was.
+REPORT = DATA_DIR.parent.parent / "reports" / "ALPHA_PERIODIC_TABLE.json"
 
 
 @dataclass
@@ -305,6 +324,70 @@ def register_hypothesis_in_table(hypothesis: SideChannelHypothesis, table: Alpha
         "mechanism": hypothesis.metadata.get("mechanism", "unknown"),
     }
     table.register_element(hypothesis.id, coords)
+
+
+def run() -> dict:
+    """Build the mechanism x axis matrix, write it, and return what it says.
+
+    THE CARTOGRAPHER'S ARTIFACT, ON A CLOCK (Tier-1 audit G15, 2026-09-08). This module has
+    existed with NO CALLER -- grep matched only the package's own docstring index -- so the desk
+    had no maintained map of where it has not looked, while `frontier_intel/unknowns` (which does
+    run) reported zero unknown firms and zero unknown capabilities. An empty cell here is a
+    research target: a mechanism x axis pair the desk has never put a hypothesis in.
+
+    Writes the CSV and elements the class already knew how to save, plus a JSON summary the
+    research feedback loop can read beside `regime_coverage`'s uncovered buckets. Pure reader:
+    no network, no terminal, and it proposes nothing -- it only says where nobody has been.
+    """
+    import json as _json
+
+    table = AlphaPeriodicTable()
+    table.save()
+    empty = table.get_research_targets()
+    discovered = table.get_discovered()
+    priorities = table.get_research_priorities(top_n=40)
+    doc = {
+        "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+        "mechanisms": list(MECHANISMS),
+        "axes": [a.value for a in AXES],
+        "cells_total": len(table.cells),
+        "cells_empty": len(empty),
+        "cells_discovered": len(discovered),
+        "cells_validated": sum(1 for c in table.cells.values() if c.status == "validated"),
+        "empty_cells": [{"mechanism": m, "axis": a.value} for m, a in sorted(
+            empty, key=lambda p: (p[0], p[1].value))],
+        "research_priorities": [{"mechanism": m, "axis": a.value, "priority": p}
+                                for m, a, p in priorities],
+        "consumer": ("the research feedback loop: an empty cell is a mechanism x axis pair the "
+                     "desk has never put a hypothesis in, which is a target rather than a fact "
+                     "about the market"),
+        # WHAT "DISCOVERED" MEANS HERE, because 0 empty cells must not be read as full coverage.
+        # `_initialize_matrix` PRE-FILLS every mechanism x axis pair with a one-line description
+        # and evidence_strength 0.5, so on a desk where no hypothesis has been registered through
+        # `register_element` the matrix reports every cell discovered and none empty. That is a
+        # statement about this file's seed list, not about the book: a cell only becomes
+        # `validated` when a hypothesis with evidence is registered in it.
+        "coverage_caveat": (
+            "every cell is pre-filled with a seed description, so `cells_empty` counts only "
+            "pairs this file's own seed list omits -- currently none. The measurement that "
+            "means coverage is `cells_validated`, which counts cells a registered hypothesis "
+            "with evidence has actually reached."
+            if not empty else
+            f"{len(empty)} pair(s) carry no seed description and no hypothesis"),
+    }
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(_json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    return doc
+
+
+def main() -> int:
+    doc = run()
+    print(f"ALPHA PERIODIC TABLE  {doc['cells_total']} cells: {doc['cells_discovered']} "
+          f"discovered, {doc['cells_validated']} validated, {doc['cells_empty']} EMPTY")
+    for row in doc["research_priorities"][:12]:
+        print(f"   {row['mechanism']:22s} x {row['axis']:16s} {row['priority']}")
+    print(f"written: {REPORT}")
+    return 0
 
 
 if __name__ == "__main__":

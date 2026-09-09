@@ -67,8 +67,20 @@ def _t_stat(expected_r: float, trades: int) -> float:
 def build() -> dict[str, Any]:
     """Read the surface, apply significance, emit a bounded per-hour prior."""
     if not SURFACE.exists():
-        return {"error": "hour_surface.json absent -- no prior, not a neutral prior",
-                "hours": {}}
+        # THE ABSENCE IS WRITTEN DOWN (2026-09-08, the day this became a daily-cycle leg). This
+        # used to return without writing anything, so a box with no surface had no artifact --
+        # indistinguishable from a box where this had never run. The empty `priors` map is what
+        # `prior_for` already treats as no opinion, so writing it changes no allocation.
+        doc: dict[str, Any] = {
+            "built_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "source": str(SURFACE), "status": "UNMEASURED",
+            "error": "hour_surface.json absent -- no prior, not a neutral prior",
+            "priors": {}, "hours": [], "acted_on": 0,
+            "starved_positive_hours": [], "overfunded_negative_hours": [],
+        }
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        return doc
     doc = json.loads(SURFACE.read_text("utf-8"))
     rows = doc.get("hours") or []
 
@@ -121,6 +133,12 @@ def build() -> dict[str, Any]:
     return report
 
 
+def run() -> dict[str, Any]:
+    """The daily-cycle leg. Runs AFTER `hour_surface` in the same pass, which is why the list
+    carries them in that order: this reads the artifact that one has just written."""
+    return build()
+
+
 def prior_for(hour_utc: int) -> float:
     """The bounded shade for one hour, or 1.0 when unmeasured.
 
@@ -133,11 +151,23 @@ def prior_for(hour_utc: int) -> float:
         return 1.0
 
 
-if __name__ == "__main__":
+def main() -> int:
+    """Standalone entry point. 0 when a prior was built, 2 when there is no surface to read --
+    an honest answer, and the same convention `refresh_tail` uses for a missing terminal."""
     rep = build()
+    if rep.get("status") == "UNMEASURED":
+        print(f"hour prior UNMEASURED: {rep.get('error')}")
+        print(f"written: {OUT}")
+        return 2
     print(f"hour prior: acted on {rep.get('acted_on')} of 24 hours")
     print(f"  starved positive hours (free reallocation): {rep.get('starved_positive_hours')}")
     print(f"  over-funded negative hours:                 {rep.get('overfunded_negative_hours')}")
     for d in (rep.get("hours") or [])[:6]:
         print(f"   {d['hour_utc']:2d}Z  expR {d['expected_r']:+.3f}  t {d['t']:+6.1f}  "
               f"heat {d['funded_heat_pct']:5.2f}%  prior {d['prior']:.3f}  {d['why']}")
+    print(f"written: {OUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

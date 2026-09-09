@@ -357,7 +357,18 @@ def _state_research_feedback() -> None:
                  # three; it writes a lifecycle status onto every feature sidecar, which is what
                  # stops the desk spending compute on features that do not contribute.
                  "feature_roi",
-                 "live_manifest"):
+                 "live_manifest",
+                 # THE TIMING LAYER AND THE CARTOGRAPHER'S MAP (Tier-1 audit G18/G15,
+                 # 2026-09-08). All three existed and ran on nobody's clock. `hour_surface`
+                 # measures expected R by UTC hour from the trades themselves and `hour_prior`
+                 # turns it into the bounded allocator prior `pf_allocator` already looks for --
+                 # the desk's sharpest measured miss (a +0.164R hour at t=+12.9 holding 0.04% of
+                 # heat beside a -0.032R hour holding 8.53%). `alpha_periodic_table` is the
+                 # mechanism x axis white-space map, whose empty cells are research targets.
+                 # In this order because hour_prior reads the artifact hour_surface writes; all
+                 # three are pure readers -- no network, no terminal -- and none conditions
+                 # capital.
+                 "hour_surface", "hour_prior", "alpha_periodic_table"):
         try:
             mod = __import__(name)
             if hasattr(mod, "run"):
