@@ -73,6 +73,36 @@ UNI = _DESK / "data" / "universe"
 INTEL = _DESK / "data" / "intelligence" / "factor_residual"
 REPORT = _DESK / "reports" / "factor_residual.json"
 
+# ==============================================================================================
+# THE BOOK AS A FACTOR (Tier-1 audit G5, 2026-09-08).
+#
+# Everything above searches the residual against a PEER-INSTRUMENT panel: what is left of an
+# instrument once its economic drivers are removed. That is not the residual the desk is short
+# of. The book's own daily P&L is a factor too -- the one factor the desk is unavoidably long --
+# and an edge orthogonal to IT is worth more than an edge orthogonal to the dollar. `alpha_
+# fitness.delta_elog_term` prices that at SCORING time, on a finished candidate; nothing made it
+# the SEARCH TARGET. One extra DriverSet per instrument does, at the cost of one more regression.
+#
+# THE BOOK RETURN IS A DAILY OBJECT AND IS READ ONE DAY LATE. Day D's book R is knowable at the
+# end of day D, so an H1 bar inside day D sees day D-1's -- `book_on` shifts before it fills, and
+# a test asserts that a bar cannot see its own day.
+#
+# THESE ROWS ARE MEASURED AND CHARGED, AND NEVER PROPOSED. `family_inputs.resolve` rebuilds a
+# `cross_asset_residual` cell from `factor_symbols` by loading each named instrument's parquet;
+# there is no parquet for the book, so a candidate naming it could not be rebuilt by the gauntlet
+# or the forward engine. Emitting one would be a certificate for a cell nothing can run. They are
+# counted in the trial ledger (they were tested, and the deflation the OTHER rows face is
+# therefore stricter, never looser), reported under `book_residual`, and queued as research
+# rather than donated as recipes.
+# ==============================================================================================
+#: The driver name the book takes in a DriverSet. Not a Fusion symbol on purpose: the gauntlet's
+#: rebuild path resolves factor names to parquets, and this one must fail loudly there.
+BOOK_DRIVER = "BOOK"
+BOOK_SET_NAME = "book_residual"
+ALLOCATION = _DESK / "reports" / "pf_allocation.json"
+SLEEVE_DAILY = _DESK / "data" / "pf_allocator_cache" / "daily_r.parquet"
+SHADOW_LEDGERS = _DESK / "reports" / "shadow"
+
 #: Bars the causal betas are fitted on, and bars the residual's own level is z-scored over.
 #: Both are passed through onto the candidate so the gauntlet rebuilds the same object.
 BETA_WIN = 240
@@ -124,10 +154,99 @@ def _cost_frac(sym: str, meta: dict, close: pd.Series) -> float | None:
         return None
 
 
-def panel(ds: DriverSet, cache: dict[str, pd.DataFrame | None]) -> pd.DataFrame | None:
-    """Log returns of the target and its drivers on one shared index, inner-joined."""
+def book_daily() -> tuple[pd.Series | None, str]:
+    """The live book's daily R, and where it came from.
+
+    The allocator's own artifact first -- its heats times the sleeve-return matrix it solved on,
+    which is the book the desk actually holds -- then the shadow ledgers pooled equal-weight,
+    which is the book it would hold if every certified sleeve ran at the same size. Neither
+    present is (None, why): UNMEASURED is a real answer and an absent book is never a flat one.
+    """
+    try:
+        art = json.loads(ALLOCATION.read_text("utf-8"))
+        heats = art.get("book") if isinstance(art.get("book"), dict) else {}
+    except (OSError, ValueError):
+        heats = {}
+    if heats:
+        try:
+            mat = pd.read_parquet(SLEEVE_DAILY)
+            mat.index = pd.DatetimeIndex(pd.to_datetime(mat.index, utc=True, errors="coerce"))
+            mat = mat[~mat.index.isna()]
+            cols = [c for c in mat.columns if str(c) in heats]
+            if cols and len(mat) >= 40:
+                w = pd.Series({c: float(heats[str(c)]) for c in cols}, dtype=float)
+                s = (mat[cols].fillna(0.0) * w).sum(axis=1).sort_index()
+                return s, (f"{ALLOCATION.name} x {SLEEVE_DAILY.name}: {len(cols)} funded "
+                           f"sleeves over {len(s)} days")
+        except (OSError, ValueError, ImportError, KeyError):
+            pass
+    rows: dict[pd.Timestamp, list[float]] = {}
+    n_ledgers = 0
+    if SHADOW_LEDGERS.is_dir():
+        for f in sorted(SHADOW_LEDGERS.glob("ledger_*.json")):
+            try:
+                recs = json.loads(f.read_text("utf-8"))
+            except (OSError, ValueError):
+                continue
+            if not isinstance(recs, list) or not recs:
+                continue
+            n_ledgers += 1
+            for r in recs:
+                if not isinstance(r, dict):
+                    continue
+                when = r.get("entry_time") or r.get("time")
+                val = r.get("r_multiple", r.get("r"))
+                try:
+                    ts = pd.Timestamp(when)
+                    v = float(val)
+                except (TypeError, ValueError):
+                    continue
+                ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+                rows.setdefault(ts.normalize(), []).append(v)
+    if len(rows) >= 40:
+        s = pd.Series({k: float(np.mean(v)) for k, v in rows.items()}).sort_index()
+        return s, f"{n_ledgers} shadow ledger(s), equal weight, {len(s)} days"
+    return None, (f"no book to residualise against: {ALLOCATION.name} carries no heats with a "
+                  f"matching {SLEEVE_DAILY.name}, and {SHADOW_LEDGERS.name} holds under 40 days "
+                  f"of ledger rows ({len(rows)} found)")
+
+
+def book_on(index: pd.DatetimeIndex, daily: pd.Series) -> pd.Series:
+    """The book's daily R on an H1 index, ONE DAY LATE.
+
+    Day D's book return is knowable at the end of day D, so every bar inside day D carries day
+    D-1's. Stamping each daily value at the start of the FOLLOWING day and forward-filling is
+    that rule, and it is the whole reason this is not a look-ahead: a bar can never see the day
+    it is in.
+    """
+    s = daily.copy()
+    s.index = pd.DatetimeIndex(pd.to_datetime(s.index, utc=True, errors="coerce")).normalize() \
+        + pd.Timedelta(days=1)
+    s = s[~s.index.isna()].sort_index()
+    s = s[~s.index.duplicated(keep="last")]
+    return s.reindex(index, method="ffill")
+
+
+def book_driver_sets(targets: list[str]) -> list[DriverSet]:
+    """One book-residual hypothesis per instrument: what is left of it once the book is removed."""
+    return [DriverSet(target=t, name=BOOK_SET_NAME, drivers=(BOOK_DRIVER,),
+                      why=("the desk's own book is the one factor it is unavoidably long; what "
+                           "is left of an instrument after removing it is the return that would "
+                           "add growth rather than crowd the heat already committed"))
+            for t in sorted(set(targets))]
+
+
+def panel(ds: DriverSet, cache: dict[str, pd.DataFrame | None],
+          book: pd.Series | None = None) -> pd.DataFrame | None:
+    """Log returns of the target and its drivers on one shared index, inner-joined.
+
+    `BOOK` is not an instrument and carries no parquet: it is the book's daily R, already a
+    return, joined onto the panel one day late by `book_on`.
+    """
     frames = {}
     for sym in (ds.target, *ds.drivers):
+        if sym == BOOK_DRIVER:
+            continue
         if sym not in cache:
             cache[sym] = _bars(sym)
         df = cache[sym]
@@ -137,7 +256,14 @@ def panel(ds: DriverSet, cache: dict[str, pd.DataFrame | None]) -> pd.DataFrame 
     joined = pd.DataFrame(frames).dropna()
     if len(joined) < MIN_PANEL_BARS:
         return None
-    return np.log(joined).diff().dropna()
+    ret = np.log(joined).diff().dropna()
+    if BOOK_DRIVER in ds.drivers:
+        if book is None or book.empty:
+            return None
+        ret = ret.assign(**{BOOK_DRIVER: book_on(ret.index, book)}).dropna()
+        if len(ret) < MIN_PANEL_BARS:
+            return None
+    return ret
 
 
 def residual_z(ret: pd.DataFrame, ds: DriverSet) -> pd.Series:
@@ -274,6 +400,12 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
         wanted = {t.upper() for t in targets}
         sets = [s for s in sets if s.target.upper() in wanted]
 
+    # THE BOOK'S OWN RESIDUAL, one extra hypothesis per instrument the peer sweep already
+    # reaches. Absent book -> no book sets and the reason travels into the report.
+    book, book_why = book_daily()
+    if book is not None:
+        sets = [*sets, *book_driver_sets([s.target for s in sets])]
+
     cache: dict[str, pd.DataFrame | None] = {}
     rows: list[dict] = []
     skipped: dict[str, str] = {}
@@ -282,7 +414,7 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
         if time.monotonic() - started > budget_s:
             skipped[ds.cell] = "sweep budget exhausted"
             continue
-        ret = panel(ds, cache)
+        ret = panel(ds, cache, book)
         if ret is None:
             missing = [s for s in (ds.target, *ds.drivers) if cache.get(s) is None]
             skipped[ds.cell] = (f"no H1 bars for {', '.join(missing)}" if missing
@@ -303,6 +435,17 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
         row["t_deflated_sweep"] = round(deflate_t(row["t_gross"], n_tests), 3)
         row["proposed"] = bool(row["clears_cost"] and row["t_deflated_sweep"] > PROPOSE_T
                                and row["n_independent"] >= MIN_INDEPENDENT)
+        # A BOOK ROW IS A MEASUREMENT, NEVER A RECIPE. `family_inputs.resolve` rebuilds a
+        # cross_asset_residual cell by loading each `factor_symbols` name's parquet and there is
+        # none for the book, so a candidate naming it could not be rebuilt by the gauntlet or the
+        # forward engine. It stays in the trial count -- it was tested, and the deflation every
+        # other row faces is therefore stricter -- and leaves as research, not as a certificate.
+        if BOOK_DRIVER in row["drivers"]:
+            row["not_proposed_why"] = (
+                "the book is not an instrument: no parquet exists for it, so "
+                "family_inputs.resolve cannot rebuild this cell and the gauntlet would certify "
+                "something nothing can run. Charged as a trial, published, never donated.")
+            row["proposed"] = False
 
     proposals = [r for r in rows if r["proposed"]]
     # One proposal per cell: the whole point of deflation is that the desk pays for the search,
@@ -325,6 +468,9 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
         "windows": {"beta_win": BETA_WIN, "z_win": Z_WIN, "horizons": list(HORIZONS),
                     "entry_z": list(ENTRY_Z), "side_modes": list(SIDE_MODES)},
         "proposals": sorted(best.values(), key=lambda x: -x["t_deflated_sweep"]),
+        # THE LIVE BOOK'S OWN RESIDUAL: what the sweep found once the desk's daily P&L was the
+        # factor. UNMEASURED with its reason when there is no book on this host.
+        "book_residual": _book_report(rows, book, book_why),
         "all": rows,
     }
     # The control writes beside the real report rather than over it: a null run that clobbers the
@@ -346,6 +492,29 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
         (INTEL / f"discoveries_{stamp}.json").write_text(
             json.dumps(payload, indent=1, default=str), "utf-8")
     return report
+
+
+def _book_report(rows: list[dict], book: pd.Series | None, why: str) -> dict:
+    """What the book-residual arm measured, or UNMEASURED and why. Never a silent absence."""
+    mine = [r for r in rows if BOOK_DRIVER in r.get("drivers", ())]
+    if book is None:
+        return {"status": "UNMEASURED", "why": why, "tests_run": 0, "cells_measured": 0}
+    would = [r for r in mine
+             if r["clears_cost"] and r["t_deflated_sweep"] > PROPOSE_T
+             and r["n_independent"] >= MIN_INDEPENDENT]
+    return {
+        "status": "MEASURED" if mine else "NO_PANEL",
+        "book_source": why,
+        "book_days": int(book.size),
+        "tests_run": len(mine),
+        "cells_measured": len({r["cell"] for r in mine}),
+        "clearing_the_bar": sorted(
+            ({"cell": r["cell"], "side_mode": r["side_mode"], "horizon_bars": r["horizon_bars"],
+              "entry_z": r["entry_z"], "n_independent": r["n_independent"],
+              "net_per_trade": r["net_per_trade"], "t_deflated_sweep": r["t_deflated_sweep"]}
+             for r in would), key=lambda d: -d["t_deflated_sweep"])[:20],
+        "why_not_donated": (mine[0]["not_proposed_why"] if mine else ""),
+    }
 
 
 def main() -> int:
@@ -378,6 +547,17 @@ def main() -> int:
               f"{r['t_gross']:>8.2f}{r['t_deflated_sweep']:>9.2f}")
     if not rep["proposals"]:
         print("  (nothing cleared the round trip and its own deflation)")
+    br = rep["book_residual"]
+    if br["status"] == "UNMEASURED":
+        print(f"\nbook residual: UNMEASURED -- {br['why']}")
+    else:
+        print(f"\nbook residual: {br['tests_run']} tests over {br['cells_measured']} cell(s) "
+              f"against {br['book_days']} book days ({br['book_source']}); "
+              f"{len(br['clearing_the_bar'])} cleared the bar, none donated")
+        for r in br["clearing_the_bar"][:10]:
+            print(f"   {r['cell'][:33]:34s}{r['side_mode']:10s}{r['horizon_bars']:>5}"
+                  f"{r['entry_z']:>6.1f}{r['n_independent']:>6}{r['net_per_trade']:>12.6f}"
+                  f"{r['t_deflated_sweep']:>9.2f}")
     print(f"\n{rep['cells_proposed']} cell(s) proposed"
           + ("  [control: donates nothing by design]" if args.shuffle else f" -> {INTEL}"))
     print(f"written: {rep['report_path']}")
