@@ -1100,6 +1100,11 @@ def main() -> None:
         "run_external_backtest", "side_channels/run_external_backtest.py"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
+    # THE FALSIFIERS RUN AGAINST THE FRESH CANON (Tier-1 item V4, 2026-09-09). libs/validation/
+    # falsifiers.py had zero callers; every certificate was minted and never attacked. The
+    # producer budgets itself (600 s default) under this leg's timeout and writes
+    # reports/FALSIFIER_VERDICTS.json; a kill there is evidence for the promoter, never a gate here.
+    fz = _costed("falsifier_run", lambda: _producer("falsifier_run", "research/falsifier_run.py"))
     # THE CANON SEAL, hourly rather than daily. A certificate the gauntlet minted at 02:00 sat
     # unsealed until the next midnight run, so `shadow_admission._canon` -- which enrolment,
     # promotion and the dashboard all read -- was up to 24 hours behind the gates.
@@ -1335,7 +1340,8 @@ def main() -> None:
                     "opportunity_cost": oc, "acceptance": ac, "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
-                    "external_gauntlet": gt, "merge_docket": mh, "backtest": bt,
+                    "external_gauntlet": gt, "falsifier_run": fz, "merge_docket": mh,
+                    "backtest": bt,
                     "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
