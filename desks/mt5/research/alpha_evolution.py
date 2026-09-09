@@ -566,6 +566,9 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
     pop_weights, pop_basis = _population_weights()
     ev.generator_weights = {"weights": weights, "basis": weights_basis,
                             "population_weights": pop_weights, "population_basis": pop_basis}
+    #: The dE[logW] ordering this sweep has earned so far. A one-element list because `_draw`
+    #: rebinds it; empty until something has been scored, and the file's table stands until then.
+    live_weights: list[dict[str, float] | None] = [None]
     ctx = spop.SearchContext(rng=rng, frames=ev.frames, ret=ev.ret, symbol=sym,
                              allow_drivers=allow_drivers, max_depth=DEPTH, cache=ev.cache,
                              seeds=list(ag.CANON.values()))
@@ -576,6 +579,10 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
                        if "fitness" in r]
         ctx.scored = [(ev.rows[k]["params"]["expr"], t) for k, t in ev.terms.items()
                       if k in ev.rows]
+        # WHAT EACH POPULATION'S DRAWS WERE WORTH, not how many it drew: the term vector of
+        # every scored expression, tagged with the population that made it. `search_populations`
+        # turns this into the next pass's ordering (`SearchResult.elog_weights`).
+        ctx.attributed = [(ev.origin.get(k, "unspecified"), t) for k, t in ev.terms.items()]
         elite = sorted((r for r in ev.rows.values() if r.get("stage") == 1),
                        key=lambda r: -float(r.get("fitness") or -9.0))[:ELITE]
         ctx.seeds = [r["params"]["expr"] for r in elite] or list(ag.CANON.values())
@@ -589,8 +596,17 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
         """
         _refresh_context()
         per = max(1, math.ceil(n / max(1, len(spop.POPULATIONS))))
+        # THE WEIGHTS ARE THE REALISED GROWTH OF WHAT EACH POPULATION PRODUCED once anything has
+        # been scored, and the file's table only until then. `live_weights` is rebound after
+        # every draw, so the ordering tracks the sweep rather than yesterday's certify counts.
         res = spop.run(ctx, n_per_population=per, budget_s=max(5.0, budget_s / 4.0),
-                       weights=pop_weights)
+                       weights=live_weights[0] if live_weights[0] else pop_weights)
+        got, basis = res.elog_weights()
+        if got:
+            live_weights[0] = got
+            ev.generator_weights["population_weights_live"] = {k: round(v, 5)
+                                                               for k, v in sorted(got.items())}
+        ev.generator_weights["population_basis_live"] = basis
         ev.population_yield.append({"at_rows": len(ev.rows), **{"rows": res.yield_rows()}})
         ev.generator_failures.extend(res.failures)
         out = [(e, who) for e, who in res.proposals]
@@ -780,10 +796,17 @@ def population_yield(per_symbol: dict[str, dict]) -> dict[str, dict]:
             for row in batch.get("rows") or []:
                 name = str(row.get("population") or "unspecified")
                 acc = out.setdefault(name, {"proposed": 0, "unique": 0, "well_formed": 0,
-                                            "passed": 0, "seconds": 0.0, "note": ""})
+                                            "passed": 0, "seconds": 0.0, "note": "",
+                                            "scored": 0, "delta_elog_mean": None})
                 for k in ("proposed", "unique", "well_formed", "passed"):
                     acc[k] = int(acc[k]) + int(row.get(k) or 0)
                 acc["seconds"] = round(float(acc["seconds"]) + float(row.get("seconds") or 0), 2)
+                # THE LAST BATCH'S REALISED GROWTH IS THE SWEEP'S: each batch's mean is over
+                # every draw scored SO FAR, so the final one already pools the earlier ones and
+                # averaging the batches again would weight the early, thin means equally.
+                if row.get("delta_elog_mean") is not None:
+                    acc["delta_elog_mean"] = float(row["delta_elog_mean"])
+                    acc["scored"] = int(row.get("scored") or 0)
                 if row.get("note"):
                     acc["note"] = str(row["note"])
     return out
@@ -929,10 +952,14 @@ def main() -> int:
               f"nov={r.get('novelty', 0):.2f}  {r['params']['side_mode']}  {r['expr']}")
     for k, v in rep["skipped"].items():
         print(f"  skipped {k}: {v}")
-    print("populations (proposed/unique/well-formed/passed):")
+    print("populations (proposed/unique/well-formed/passed  dE[logW] over scored):")
     for name, y in sorted(rep.get("population_yield", {}).items()):
+        el = ("     --" if y.get("delta_elog_mean") is None
+              else f"{y['delta_elog_mean']:+6.3f}")
         print(f"  {name:20s} {y['proposed']:4d}/{y['unique']:4d}/{y['well_formed']:4d}/"
-              f"{y['passed']:4d}  {y['seconds']:6.1f}s  {y['note'][:70]}")
+              f"{y['passed']:4d}  {y['seconds']:6.1f}s  {el} over {y.get('scored', 0):3d}"
+              f"  {y['note'][:44]}")
+    print(f"  population ordering: {rep['generator_weights'].get('population_basis_live') or ''}")
     print("outcomes: " + ", ".join(
         f"{g}={y['tried']}/{y['full']}/{y['proposed']}" for g, y in rep["generator_yield"].items())
         + f"  (weights: {rep['generator_weights'].get('population_basis')})")
