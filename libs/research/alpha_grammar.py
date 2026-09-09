@@ -85,6 +85,108 @@ CANON: dict[str, Expr] = {
     "spread_rank_240": ["ts_rank", "spread", 240],
 }
 
+# ==============================================================================================
+# THE PUBLISHED FORMULAIC ALPHAS THE DESK CAN ACTUALLY SAY (Tier-1 audit G2, 2026-09-08).
+#
+# `data/brain_hunter_s10_alpha101_fields.json` enumerates the field requirements of alpha001..101
+# (close 53, volume 53, vwap 30, high 31, low 28, open 25, returns 12, cap 1) -- the desk MINED
+# that corpus and then implemented none of it: grep for "alpha101" outside this file matched one
+# side-channel docstring. So novelty was measured against seven hand-written references and the
+# search could rediscover a published formula and count it new.
+#
+# WHAT IS ADDED AND WHAT IS NOT. Fifteen alphas whose fields are close/open/high/low/volume,
+# rewritten in THIS grammar on THIS desk's terminals, with their published ids named. Nothing is
+# copied: each is the SHAPE re-derived in the desk's own operators, and the translation is stated
+# per entry because it is where a claim could quietly change.
+#
+#   rank(x) -> ts_rank(x, w).  The published set ranks CROSS-SECTIONALLY over an equity universe;
+#   this desk trades one instrument per cell and has no panel (`search_populations` line 410), so
+#   the rank is over the series' OWN history -- the same question asked of time instead of peers,
+#   which is the translation `zoo_mutation` already makes for the same reason.
+#
+#   volume -> `activity`.  Fusion publishes tick counts, not traded contracts; the terminal is
+#   typed ACTIVITY and is a proxy, which is why it is never added to a price.
+#
+#   THE VWAP ALPHAS ARE ABSENT AND THIS IS THE REASON. 30 of the 101 need vwap. The desk has no
+#   vwap terminal, and the honest proxy -- sum(close x activity, w) / sum(activity, w) -- is
+#   REFUSED by this module's own type algebra: `mul` of PRICE by ACTIVITY is INVALID (neither is
+#   dimensionless), which is the rule that stops the desk adding lots to returns. Writing a vwap
+#   proxy would mean widening that rule for a proxy, so the alphas that need one are recorded as
+#   unexpressible here rather than approximated: alpha001/#41/#83/#84 and the rest of the vwap
+#   set are a TERMINAL acquisition task, not a grammar task.
+#
+# MEASURED ON A 3,000-BAR SYNTHETIC WALK before landing: all fifteen pass `is_valid` (structure,
+# type AND units), all evaluate to >2,500 finite bars with non-zero dispersion, all fifteen
+# structural hashes are distinct from each other and from the seven above, and the largest |rho|
+# between any two of the twenty-two is 0.96 (alpha101's intraday thrust against alpha033's
+# open/close ratio -- two published spellings of the same statement; the second is not carried).
+#
+# WHAT THEY ARE FOR. `alpha_evolution` measures every candidate's novelty against CANON, so a
+# rediscovery of a published alpha now scores as the rediscovery it is; `random_or_canon` seeds
+# 15% of its draws from here; `search_populations.gp` and `symreg` start from these trees when
+# the elite is empty. Nothing here is traded as written and none of it has authority.
+# ==============================================================================================
+CANON.update({
+    # alpha#101: ((close - open) / ((high - low) + .001)) -- the desk's `body` and `range` are
+    # both already divided by close, so their ratio IS the published quantity.
+    "wq101_intraday_thrust": ["div", "body", "range"],
+    # alpha#12: (sign(delta(volume, 1)) * (-1 * delta(close, 1)))
+    "wq012_volume_signed_reversal": ["mul", ["sign", ["delta", "activity", 2]],
+                                     ["neg", ["delta", "close", 2]]],
+    # alpha#6: (-1 * correlation(open, volume, 10))
+    "wq006_open_activity_corr": ["neg", ["corr", "open", "activity", 12]],
+    # alpha#3: (-1 * correlation(rank(open), rank(volume), 10))
+    "wq003_rank_open_activity_corr": ["neg", ["corr", ["ts_rank", "open", 12],
+                                              ["ts_rank", "activity", 12], 12]],
+    # alpha#2: (-1 * correlation(rank(delta(log(volume), 2)), rank((close - open) / open), 6))
+    "wq002_activity_body_corr": ["neg", ["corr", ["delta", "activity", 2], "body", 8]],
+    # alpha#4: (-1 * Ts_Rank(rank(low), 9))
+    "wq004_low_rank_reversal": ["neg", ["ts_rank", "low", 8]],
+    # alpha#53: (-1 * delta((((close - low) - (high - close)) / (close - low)), 9))
+    "wq053_range_position_delta": ["neg", ["delta", ["div", ["sub", ["sub", "close", "low"],
+                                                             ["sub", "high", "close"]],
+                                                     ["sub", "close", "low"]], 8]],
+    # alpha#23: ((sum(high, 20) / 20) < high) ? (-1 * delta(high, 2)) : 0 -- the condition is
+    # "high above its own 20-bar mean", which `zscore(high, 24) > 0` states as a free number;
+    # the grammar's gate must be dimensionless, and a raw price gate never fires.
+    "wq023_high_break_fade": ["trade_when", ["zscore", "high", 24],
+                              ["neg", ["delta", "high", 2]]],
+    # alpha#9: momentum taken only while the recent deltas keep one sign.
+    "wq009_consistent_momentum": ["trade_when", ["sign", ["min", ["delta", "close", 2], 5]],
+                                  ["delta", "close", 2]],
+    # alpha#19: (-1 * sign((close - delay(close, 7)) + delta(close, 7))) -- the sign half.
+    "wq019_close_trend_sign": ["neg", ["sign", ["delta", "close", 8]]],
+    # alpha#46: the acceleration term ((delay(close,20)-delay(close,10)) - (delay(close,10)-close))
+    "wq046_trend_acceleration": ["sub", ["delta", ["delay", "close", 12], 12],
+                                 ["delta", "close", 12]],
+    # alpha#13: (-1 * rank(covariance(rank(close), rank(volume), 5)))
+    "wq013_close_activity_cov": ["neg", ["cov", "close", "activity", 5]],
+    # alpha#26: (-1 * ts_max(correlation(ts_rank(volume, 5), ts_rank(high, 5), 5), 3))
+    "wq026_activity_high_corr": ["neg", ["max", ["corr", ["ts_rank", "activity", 5],
+                                                 ["ts_rank", "high", 5], 5], 3]],
+    # alpha#40: ((-1 * rank(stddev(high, 10))) * correlation(high, volume, 10))
+    "wq040_high_vol_activity": ["mul", ["neg", ["ts_rank", ["std", "high", 12], 12]],
+                                ["corr", "high", "activity", 12]],
+    # alpha#55: (-1 * correlation(rank((close - ts_min(low,12)) / (ts_max(high,12) -
+    #            ts_min(low,12))), rank(volume), 6))
+    "wq055_range_position_activity_corr": [
+        "neg", ["corr", ["div", ["sub", "close", ["min", "low", 12]],
+                         ["sub", ["max", "high", 12], ["min", "low", 12]]],
+                ["ts_rank", "activity", 5], 8]],
+})
+#: The published ids the fifteen above re-derive, and the corpus they came from. Held as data so
+#: a report can say WHICH public alphas the desk can express without re-reading the comments.
+CANON_ALPHA101_IDS: dict[str, str] = {
+    "wq101_intraday_thrust": "alpha101", "wq012_volume_signed_reversal": "alpha012",
+    "wq006_open_activity_corr": "alpha006", "wq003_rank_open_activity_corr": "alpha003",
+    "wq002_activity_body_corr": "alpha002", "wq004_low_rank_reversal": "alpha004",
+    "wq053_range_position_delta": "alpha053", "wq023_high_break_fade": "alpha023",
+    "wq009_consistent_momentum": "alpha009", "wq019_close_trend_sign": "alpha019",
+    "wq046_trend_acceleration": "alpha046", "wq013_close_activity_cov": "alpha013",
+    "wq026_activity_high_corr": "alpha026", "wq040_high_vol_activity": "alpha040",
+    "wq055_range_position_activity_corr": "alpha055",
+}
+
 
 # --------------------------------------------------------------------------- frames
 def terminal_frames(bars: pd.DataFrame, raw: pd.DataFrame | None = None,

@@ -243,10 +243,22 @@ def symreg(ctx: SearchContext, n: int) -> list[Expr]:
         return [ag.random_expr(ctx.rng, ctx.max_depth, ctx.allow_drivers,
                                terminals=ctx.terminals) for _ in range(n)]
     target = pd.Series(ctx.ret).shift(-1)
-    return [gen.symbolic_regression(ctx.rng, ctx.frames, target,
-                                    allow_drivers=ctx.allow_drivers, max_depth=ctx.max_depth,
-                                    terminals=ctx.terminals)
-            for _ in range(n)]
+    # SEEDED FROM WHAT THE DESK ALREADY KNOWS HOW TO SAY (2026-09-08). The seeds are the elite
+    # once there is one and `alpha_grammar.CANON` -- now fifteen published formulaic alphas
+    # beside the seven hand-written references -- before that. Sixty mutations from noise rarely
+    # reach a structure a published alpha already names; half the draws start from one and half
+    # still start from noise, so the population keeps finding shapes nobody wrote down.
+    seeds = [s for s in (ctx.seeds or tuple(ag.CANON.values()))
+             if ag.is_valid(s, ctx.allow_drivers, ctx.terminals)]
+    out: list[Expr] = []
+    for i in range(n):
+        seed = (seeds[int(ctx.rng.integers(len(seeds)))]
+                if seeds and i % 2 == 0 else None)
+        out.append(gen.symbolic_regression(ctx.rng, ctx.frames, target,
+                                           allow_drivers=ctx.allow_drivers,
+                                           max_depth=ctx.max_depth, terminals=ctx.terminals,
+                                           seed_expr=seed))
+    return out
 
 
 # --------------------------------------------------------------------------- program synthesis
