@@ -30,7 +30,9 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from mt5desk import config as _cfg  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
+from mt5desk.sizing import decay_factor  # noqa: E402
 
 _GW_SRC = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
 _GW_TREE = ast.parse(_GW_SRC)
@@ -555,3 +557,223 @@ def test_no_bracket_is_sent_at_or_after_the_cancel_hour() -> None:
     cancel = loop.index("if _past_cancel_hour(hour):")
     assert sig < cancel < loop.index("sym = mt5.symbol_info(s[\"symbol\"])")
     assert "st[\"placement_pass\"] = tnow.isoformat()" in _GW_SRC
+
+
+# ------------------------------------------- main(): the pause file and placement idempotence
+#
+# `main()` is exec'd from the source over the real core with the venue, the clock and every
+# file-touching adapter faked, so the two properties the audit found untested (E13) are run
+# rather than read: a present pause file sends nothing and writes nothing, and the once-per-day
+# guard and the recovery match are what stop a second pass from sending a bracket twice.
+
+#: A Tuesday, 09:30 UTC: past the asia window's 07:00 signal hour, before london_am (13:00),
+#: afternoon (17:00), the 19:30 close and the 20:30 cancel. `main()` dates the tick against the
+#: wall clock, so the clock it reads is pinned here too.
+_WHEN = datetime(2026, 9, 8, 9, 30, tzinfo=UTC)
+_DAY = "2026-09-08"
+
+
+class _Clock(datetime):
+    @classmethod
+    def now(cls, tz=None):
+        return _WHEN.astimezone(tz) if tz else _WHEN.replace(tzinfo=None)
+
+
+def _gold_rows(n: int = 400) -> list[dict]:
+    """Hourly XAUUSD rows ending on the bar forming at _WHEN: a two-dollar range around a slow
+    drift, so the asia range (00:00-06:59) is formed and the ATR is measurable."""
+    idx = pd.date_range(end=pd.Timestamp(_WHEN).floor("h"), periods=n, freq="h")
+    base = 2000.0 + np.linspace(0, 4.0, n)
+    return [{"time": int(t.timestamp()), "open": b, "high": b + 1.0, "low": b - 1.0,
+             "close": b + 0.2, "tick_volume": 50.0} for t, b in zip(idx, base, strict=True)]
+
+
+def _quote(rows: list[dict]) -> tuple[float, float]:
+    """A bid/ask inside the asia range, clear of the 20-point freeze band on both edges, so the
+    bracket's two pending stops are legal and `place_bracket` sends both."""
+    hi, lo, _ = dc.bracket_from_bars(dc.h1_frame(rows), None, 7, 0.01, 20)
+    mid = (hi + lo) / 2.0
+    return mid - 0.05, mid + 0.05
+
+
+class _Terminal:
+    """A venue that answers every read `main()` makes and records every order it is sent."""
+
+    TIMEFRAME_H1 = 16385
+    TRADE_ACTION_PENDING, TRADE_ACTION_DEAL = 5, 1
+    ORDER_TYPE_BUY, ORDER_TYPE_SELL, ORDER_TYPE_BUY_STOP, ORDER_TYPE_SELL_STOP = 0, 1, 4, 5
+    ORDER_FILLING_RETURN, ORDER_TIME_GTC, ORDER_TIME_SPECIFIED = 2, 0, 1
+    SYMBOL_EXPIRATION_SPECIFIED = 4
+
+    def __init__(self, rows: list[dict], bid: float, ask: float) -> None:
+        self.rows, self.bid, self.ask = rows, bid, ask
+        self.pending: list[SimpleNamespace] = []
+        self.sent: list[dict] = []
+
+    def terminal_info(self):
+        return SimpleNamespace(connected=True)
+
+    def initialize(self, **kw):
+        return True
+
+    def shutdown(self):
+        return None
+
+    def last_error(self):
+        return (0, "")
+
+    def symbol_info_tick(self, symbol):
+        return SimpleNamespace(time=int(_WHEN.timestamp()), bid=self.bid, ask=self.ask)
+
+    def account_info(self):
+        return SimpleNamespace(equity=10_000.0, margin_free=9_000.0, login=1, server="demo")
+
+    def positions_get(self, symbol=None):
+        return []
+
+    def symbol_info(self, symbol):
+        return SimpleNamespace(trade_tick_size=0.01, trade_stops_level=20, point=0.01,
+                               volume_min=0.01, volume_step=0.01, expiration_mode=0)
+
+    def copy_rates_from_pos(self, symbol, tf, start, count):
+        return self.rows
+
+    def orders_get(self, symbol=None):
+        return list(self.pending)
+
+    def order_send(self, req):
+        self.sent.append(req)
+        return SimpleNamespace(retcode=10009, order=len(self.sent), comment="done")
+
+
+def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
+             state: dict | None) -> dict:
+    """`main` and the placement path exec'd from the source, over the real core, with the
+    pause file read by THE REAL READER (`mt5desk.config.gateway_paused`) pointed at a private
+    data/ directory, and every venue read, file write and sibling adapter faked."""
+    data = tmp_path / "data"
+    data.mkdir(exist_ok=True)
+    pause = data / "GATEWAY_PAUSED"
+    monkeypatch.setattr(_cfg, "PAUSE_FILE", pause)
+    if paused:
+        pause.write_text("paused by test", "utf-8")
+    state_file = data / "gateway_state.json"
+    if state is not None:
+        state_file.write_text(json.dumps({"brackets": {}, "position": None,
+                                          "last_bracket_date": None, **state}), "utf-8")
+    logs: list[str] = []
+    decisions: list[dict] = []
+    intents: list[dict] = []
+    calls: list[str] = []
+    ns = {
+        "gateway_paused": _cfg.gateway_paused, "mt5": mt5, "datetime": _Clock, "json": json,
+        "STATE": state_file, "PAUSED": pause, "log": logs.append, "decay_factor": decay_factor,
+        "connect": lambda: calls.append("connect") or True,
+        "sleeve_set": lambda: dc.roster({}, [])[0],
+        "manage_open_positions": lambda st, sleeves: None,
+        "release_gate": lambda: (True, "release identity ok (test)"),
+        "regime_hibernate": lambda sleeves: set(),
+        "load_sleeves": lambda: [],
+        "ledger_rows": lambda: [],
+        "measure_from_ledger": lambda rows, acc, exposures=None: (None, "k_eff unmeasured"),
+        "_prov": SimpleNamespace(current_account=lambda info: {}),
+        "allocator_book": lambda: (None, "no allocator book (test)"),
+        "cap_by_heat": lambda sleeves, equity, per_sleeve_q=None, k_eff=None: (sleeves, None),
+        "run_family_sleeves": lambda st, sleeves, equity: None,
+        "run_scalp_sleeves": lambda st, sleeves, equity: None,
+        "_net_routes": lambda symbols: None,
+        "gold_lot": lambda *a, **k: 0.02, "gold_min_lot": lambda: 0.02, "min_lot": lambda: 0.01,
+        "promoted_lot": lambda *a, **k: 0.01, "realised_q": lambda *a, **k: 0.0075,
+        "sleeve_live_n": lambda name: 0,
+        "margin_ok": lambda symbol, lot, price: True,
+        "_record_decision": lambda **row: decisions.append(row),
+        "_record_intent": lambda **row: intents.append(row),
+        "_record_vetoed_bracket": lambda *a, **k: False,
+        "_expiry_request": lambda symbol, sleeve="", window=None: {"type_time": 0},
+        "expire_stale_brackets": lambda st: 0,
+        "cancel_pending": lambda st, symbol: None,
+        "close_positions": lambda st, symbol, keep_tags=frozenset(): None,
+        "scalp_position_tags": lambda sleeves: frozenset(),
+        "record_trades": lambda st, sleeves: None,
+        "reconcile": lambda st: {**st, "position": [], "pending": []},
+        "_logs": logs, "_decisions": decisions, "_intents": intents, "_calls": calls,
+        "_state_file": state_file,
+    }
+    return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
+                  "_rejection_streak_expired", "load_state", "save_state", "now"), ns)
+
+
+def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
+        tmp_path, monkeypatch) -> None:
+    """The pause is consulted before the terminal is touched: no connect, no read, no order,
+    no state file, one log line saying why."""
+    rows = _gold_rows()
+    mt5 = _Terminal(rows, *_quote(rows))
+    ns = _main_ns(tmp_path, monkeypatch, mt5, paused=True, state=None)
+    assert _cfg.gateway_paused() is True
+    ns["main"]()
+    assert mt5.sent == [] and ns["_calls"] == []
+    assert not ns["_state_file"].exists()
+    assert ns["_decisions"] == [] and ns["_intents"] == []
+    assert ns["_logs"] == ["gateway paused (data/GATEWAY_PAUSED present); no trading this pass"]
+
+
+def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_sends_nothing(
+        tmp_path, monkeypatch) -> None:
+    """Three mechanisms, run: the first pass places asia's two legs; the same pass again is
+    stopped by the once-per-day guard; a pass that has LOST its state (a restart) against a
+    terminal still holding both pending orders takes the `recovered` path and sends nothing."""
+    rows = _gold_rows()
+    mt5 = _Terminal(rows, *_quote(rows))
+    ns = _main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["main"]()
+    assert [r["type"] for r in mt5.sent] == [mt5.ORDER_TYPE_BUY_STOP, mt5.ORDER_TYPE_SELL_STOP]
+    assert {r["comment"] for r in mt5.sent} == {"DWgold_asia"}   # 09:30 is asia's hour alone
+    st = json.loads(ns["_state_file"].read_text("utf-8"))
+    placed = st["brackets"]["gold_asia"]
+    assert placed["date"] == _DAY and "recovered" not in placed
+    assert [o["retcode"] for o in placed["result"]["orders"]] == [10009, 10009]
+    assert st["last_bracket_date"] == _DAY and ns["_calls"] == ["connect"]
+
+    ns["main"]()                                          # same day, state intact: the guard
+    assert len(mt5.sent) == 2
+
+    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"])
+                   for i, r in enumerate(mt5.sent)]
+    ns["_state_file"].write_text(json.dumps({"armed": True, "brackets": {},
+                                             "last_bracket_date": None}), "utf-8")
+    ns["main"]()                                          # state lost, orders still resting
+    assert len(mt5.sent) == 2, "a bracket the terminal already holds was sent again"
+    st = json.loads(ns["_state_file"].read_text("utf-8"))
+    recovered = st["brackets"]["gold_asia"]
+    assert recovered["recovered"] is True and recovered["date"] == _DAY
+    assert recovered["spec"]["buy_stop"]["price"] == placed["spec"]["buy_stop"]["price"]
+    assert f"recovered [gold_asia] bracket for {_DAY}" in ns["_logs"]
+
+
+def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused(
+        tmp_path, monkeypatch) -> None:
+    """THE PATH FACTS THE AUDIT MEASURED (E13, 2026-09-08). Every reader of the pause flag --
+    config.py:54 `PAUSE_FILE = DATA / "GATEWAY_PAUSED"`, gateway.py:97 `PAUSED = BASE / "data" /
+    "GATEWAY_PAUSED"` -- opens desks/mt5/data/GATEWAY_PAUSED, and `main()`'s first statement
+    consults `gateway_paused()`. A file is also TRACKED at desks/mt5/GATEWAY_PAUSED, the desk
+    root: no reader opens it. This test pins the reader path and the consult and NOTHING about
+    that root file -- it must not be moved, copied or "fixed" into data/, because a file at the
+    reader's path pauses the live desk.
+    """
+    import inspect
+    assert _cfg.PAUSE_FILE == _cfg.DATA / "GATEWAY_PAUSED"
+    assert _cfg.desk_root() / "data" == _cfg.DATA
+    assert "return PAUSE_FILE.exists()" in inspect.getsource(_cfg.gateway_paused)
+    assert 'PAUSED = BASE / "data" / "GATEWAY_PAUSED"' in _GW_SRC
+    assert "from mt5desk.config import desk_root, gateway_paused, terminal_path" in _GW_SRC
+    main = next(n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+    first = main.body[0]
+    assert isinstance(first, ast.If) and isinstance(first.test, ast.Call)
+    assert first.test.func.id == "gateway_paused" and first.test.args == []
+    assert any(isinstance(s, ast.Return) for s in first.body)
+    # The reader's path is under data/, and it is not the desk root the stale file sits at.
+    assert _cfg.PAUSE_FILE.parent.name == "data"
+    assert _cfg.PAUSE_FILE != _DESK / "GATEWAY_PAUSED"
+    monkeypatch.setattr(_cfg, "PAUSE_FILE", tmp_path / "data" / "GATEWAY_PAUSED")
+    assert _cfg.gateway_paused() is False
