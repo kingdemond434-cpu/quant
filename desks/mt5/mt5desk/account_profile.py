@@ -54,7 +54,10 @@ among them and the SIZE of them differ, and only those two are tuned here.
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 #: Effective independent bets in the current book. Measured, not assumed: 23 certificates carry
 #: n_eff ~5.5, so sleeves lose TOGETHER and a daily limit is hit by a correlated cluster rather
@@ -266,3 +269,118 @@ def profile_for(account: str | None) -> AccountProfile:
     if p is not None:
         return p
     return E8_PRO
+
+
+# ------------------------------------------------- which envelope THE CONNECTED ACCOUNT gets
+#: Where the box declares which venue each account it might connect to actually is. Relative to
+#: the repository root, next to the desk's other state.
+DECLARATIONS_REL = "desks/mt5/data/ACCOUNT_PROFILES.json"
+
+#: Key shape in that file: "<login>@<server>" -> profile name. Login alone is not enough, for the
+#: reason `provenance.same_account` already gives: a broker that reuses logins across servers
+#: would collide, and the demo and live sides of one broker differ by exactly this pair.
+def account_key(acc: dict[str, Any] | None) -> str | None:
+    """The declaration key for a `provenance.current_account()` dict, or None if unidentifiable."""
+    if not acc:
+        return None
+    login, server = acc.get("login"), acc.get("server")
+    if login in (None, "") or server in (None, ""):
+        return None
+    return f"{login}@{server}"
+
+
+def read_declarations(root: Path) -> tuple[dict[str, str] | None, str]:
+    """The box's account declarations, or (None, why) when there are none to read.
+
+    ABSENT IS NOT EMPTY, AND NEITHER IS BROKEN. The whole safety of this layer turns on holding
+    those three apart:
+
+      * NO FILE -> None. The desk has never been told it runs more than one account, and the
+        answer must be the behaviour it already had.
+      * FILE PRESENT BUT UNREADABLE OR MALFORMED -> {}. Something declared the set and this
+        process cannot read it. That is NOT "there are no declarations": a truncated write while
+        a prop account is connected would otherwise hand that account the live envelope, which
+        is the one outcome this file exists to prevent. An empty mapping leaves every account
+        undeclared, and the caller fails each of them closed.
+      * FILE READ -> the mapping it carries.
+    """
+    p = root / Path(*DECLARATIONS_REL.split("/"))
+    if not p.exists():
+        return None, f"no {DECLARATIONS_REL} on this box"
+    try:
+        raw = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {}, f"{DECLARATIONS_REL} exists but is unreadable ({exc.__class__.__name__})"
+    accounts = raw.get("accounts") if isinstance(raw, dict) else None
+    if not isinstance(accounts, dict):
+        return {}, f"{DECLARATIONS_REL} exists but carries no 'accounts' object"
+    return {str(k): str(v) for k, v in accounts.items()}, f"declared in {DECLARATIONS_REL}"
+
+
+def envelope_for_connected(acc: dict[str, Any] | None,
+                           root: Path) -> tuple[AccountProfile | None, str]:
+    """The envelope binding the account now under the terminal, or (None, why) for no bar.
+
+    (principal, 2026-09-09: "we tune only our prop firm side for the prop firm n keep 20 percent
+    heat rule fr the main only".)
+
+    THE THREE ANSWERS, AND WHY THE FIRST ONE IS NOT `LIVE`:
+
+      * NO DECLARATION FILE -> (None, why). No venue bar is applied and the desk sizes exactly as
+        it does today. This is deliberately NOT `profile_for`'s fail-closed default. That
+        function answers "how should an account I am being asked to FUND be sized", where an
+        unknown one must resolve to the tightest envelope. This one answers "may I keep sizing
+        the book I am already trading", and there the tightest envelope is not caution -- it is a
+        silent 12x cut to a running live book that nobody asked for and nothing would report.
+        Refusing to change what was not declared is the conservative answer to THIS question.
+
+      * DECLARED -> that profile. Creating the file is the arming act, in the same shape as
+        `GENERIC_EXEC_ENABLED`: the wiring never waits for a person, the ARMING always does.
+
+      * FILE EXISTS AND THIS ACCOUNT IS NOT IN IT -> E8_PRO, the tightest. Once the box has been
+        told it runs more than one account, an account nobody named is an account nobody has
+        vouched for, and the funding asymmetry applies again in full.
+
+    Pure over its inputs: the caller reads the terminal, this decides. It never writes.
+    """
+    declared, why = read_declarations(root)
+    if declared is None:
+        return None, f"{why}; the account envelope is unchanged from the desk's own"
+    key = account_key(acc)
+    if key is None:
+        return E8_PRO, (
+            f"the terminal did not name the connected account (login/server missing) while "
+            f"{DECLARATIONS_REL} exists; failing closed to {E8_PRO.name}")
+    name = declared.get(key)
+    if name is None:
+        # `why` and not a fixed sentence: "not named" and "named, in a file this process could
+        # not parse" reach the same envelope by different routes, and only one of them is a
+        # missing declaration. An operator reading "not named" after a torn write would go and
+        # add a line that is already there.
+        return E8_PRO, (
+            f"account {key} is not declared ({why}); failing closed to "
+            f"{E8_PRO.name} rather than sizing an undeclared account at the live envelope")
+    prof = PROFILES.get(name)
+    if prof is None:
+        return E8_PRO, (
+            f"account {key} is declared as {name!r}, which is not a known profile "
+            f"({', '.join(sorted(PROFILES))}); failing closed to {E8_PRO.name}")
+    return prof, f"account {key} is declared {prof.name} ({why})"
+
+
+def venue_heat_cap(acc: dict[str, Any] | None, root: Path) -> tuple[float | None, str]:
+    """Total book heat this venue's rules allow at once, or (None, why) when they impose none.
+
+    `LIVE` has no daily loss limit, so `max_concurrent_risk()` is None and the desk's own budget
+    stands alone -- the 20% heat floor and everything above it are untouched on the main book.
+    A prop profile answers with `daily_loss_limit x LIMIT_UTILISATION`, which is a HARD bar on
+    total concurrent risk and has nothing to do with the growth budget it caps.
+    """
+    prof, why = envelope_for_connected(acc, root)
+    if prof is None:
+        return None, why
+    cap = prof.max_concurrent_risk()
+    if cap is None:
+        return None, f"{why}; {prof.name} imposes no daily loss limit"
+    return cap, (f"{why}; {prof.name} allows {cap:.2%} concurrent risk "
+                 f"({prof.daily_loss_limit:.2%} daily x {LIMIT_UTILISATION:.0%} utilisation)")

@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import MetaTrader5 as mt5
 import pandas as pd
+from mt5desk import account_profile as _acct
 from mt5desk import decision_core as _core
 from mt5desk import position_manager as _pm
 from mt5desk import provenance as _prov
@@ -343,7 +344,32 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     """
     solved, why = allocator_heat()
     return _core.cap_by_heat(sleeves, equity, per_sleeve_q, k_eff,
-                             allocation=(solved, why), rank=allocator_rank(BASE))
+                             allocation=(solved, why), rank=allocator_rank(BASE),
+                             venue_cap=venue_heat_cap())
+
+
+def venue_heat_cap() -> tuple[float | None, str]:
+    """The connected account's own hard bar on concurrent risk, or (None, why) for none.
+
+    (principal, 2026-09-09: "we tune only our prop firm side for the prop firm n keep 20 percent
+    heat rule fr the main only".)
+
+    NOTHING CHANGES ON THE MAIN BOOK, twice over: this box has no `ACCOUNT_PROFILES.json`, so the
+    resolver returns None; and the `fusion-live` profile has no daily loss limit, so it would
+    return None even once one is declared. A bar can only appear for an account someone has
+    declared to sit at a venue that can END it on a daily loss.
+
+    READS THE TERMINAL AND NEVER RAISES. An unreachable terminal is an unidentified account, not
+    an absent one -- which the resolver already treats as the tightest envelope WHEN declarations
+    exist, and as no change when they do not. Either way the failure mode is a decision someone
+    wrote down, not an exception inside the cap.
+    """
+    try:
+        acc = _prov.current_account(mt5.account_info())
+    except Exception as exc:                                    # noqa: BLE001 -- see docstring
+        acc = None
+        _ = exc
+    return _acct.venue_heat_cap(acc, BASE.parent.parent)
 
 
 def regime_hibernate(sleeves: list[dict]) -> set[str]:

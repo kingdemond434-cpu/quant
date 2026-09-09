@@ -926,7 +926,8 @@ def cap_by_heat(sleeves: list[dict], equity: float,
                 per_sleeve_q: float | None = None,
                 k_eff: float | None = None, *,
                 allocation: tuple[float | None, str] | None = None,
-                rank: dict[str, float] | None = None) -> tuple[list[dict], str | None]:
+                rank: dict[str, float] | None = None,
+                venue_cap: tuple[float | None, str] | None = None) -> tuple[list[dict], str | None]:
     """Trim `sleeves` so their combined risk stays inside the heat budget.
 
     Returns the admitted sleeves and a note when anything was dropped, because a silently
@@ -1040,6 +1041,23 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     # bound the slide. So the constant still bounds the SLIDE and never the budget it is added to.
     limit = min(budget + HEAT_SLIDE, max(MAX_HEAT_CEILING, budget))
 
+    # THE VENUE'S OWN BAR, WHICH IS NOT A BUDGET (principal, 2026-09-09: "we tune only our prop
+    # firm side for the prop firm n keep 20 percent heat rule fr the main only"). Everything
+    # above answers "how much heat maximises long-run growth". A prop venue asks a different
+    # question -- how much concurrent risk can be carried without a DAILY LOSS LIMIT ending the
+    # account permanently -- and no growth argument overrides it, because there is no compounding
+    # back from a breach. So it is applied last, as a floor over the answer, never as an input to
+    # it: `mt5desk.account_profile.venue_heat_cap` derives it from the connected account's
+    # declared profile.
+    #
+    # THE MAIN BOOK IS UNTOUCHED, and that is a property of the data rather than of this line:
+    # `LIVE.daily_loss_limit` is None, so `max_concurrent_risk()` is None, so `venue_cap` is None
+    # and `limit` is exactly what it was. A box with no declaration file passes None too. This
+    # can only ever narrow an account whose venue was declared to have a hard daily limit.
+    vcap, vwhy = venue_cap if venue_cap is not None else (None, "")
+    if vcap is not None and vcap < limit:
+        limit = float(vcap)
+
     admitted: list[dict] = []
     dropped: list[str] = []
     used = 0.0
@@ -1056,9 +1074,15 @@ def cap_by_heat(sleeves: list[dict], equity: float,
         used += q
     if not dropped:
         return list(sleeves), None
+    # WHICH BAR ACTUALLY BOUND. A book trimmed by the venue's daily-loss rule and one trimmed by
+    # the growth budget are the same short book on screen, and the operator's next move differs
+    # completely between them -- so the note names the binding constraint rather than implying
+    # the usual one.
+    bound_by = (f"VENUE bar {vcap:.2%} [{vwhy}]" if vcap is not None and vcap <= limit
+                else f"budget {budget:.1%} + {HEAT_SLIDE:.1%} slide, "
+                     f"ceiling {MAX_HEAT_CEILING:.0%}")
     note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves totalling {sum(qs):.1%} "
-            f"exceed {limit:.1%} (budget {budget:.1%} + {HEAT_SLIDE:.1%} slide, "
-            f"ceiling {MAX_HEAT_CEILING:.0%}) [{budget_src}] "
+            f"exceed {limit:.1%} ({bound_by}) [{budget_src}] "
             f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
             f"admitting {len(admitted)} at {used:.1%}, deferring {dropped}")
     return admitted, note

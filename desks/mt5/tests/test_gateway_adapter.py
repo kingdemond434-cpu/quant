@@ -33,8 +33,10 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from mt5desk import account_profile as _acct_real  # noqa: E402
 from mt5desk import config as _cfg  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
+from mt5desk import provenance as _prov_real  # noqa: E402
 from mt5desk.sizing import decay_factor  # noqa: E402
 
 _GW_SRC = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
@@ -138,8 +140,18 @@ def test_the_ledger_and_file_readers_are_bound_to_the_desks_paths(tmp_path) -> N
 
 def test_cap_by_heat_is_budgeted_from_the_allocator_verdict_the_gateway_reads() -> None:
     sl = [{"name": "a", "q_charge": 0.08}, {"name": "b", "q_charge": 0.08}]
-    ns = _exec(("cap_by_heat",), {"allocator_heat": lambda: (0.10, "allocator book (ok)"),
-                                  "allocator_rank": lambda base: None, "BASE": Path("/x")})
+    # `venue_heat_cap` is extracted too, not stubbed: it is what the adapter now consults, and a
+    # stub would let the real one drift into returning a bar on an undeclared box. BASE /x means
+    # no ACCOUNT_PROFILES.json, which is this box, so it must answer None.
+    ns = _exec(("cap_by_heat", "venue_heat_cap"),
+               {"allocator_heat": lambda: (0.10, "allocator book (ok)"),
+                "allocator_rank": lambda base: None, "BASE": Path("/x"),
+                "_acct": _acct_real, "_prov": _prov_real,
+                # No terminal: `current_account(None)` is an UNKNOWN account, which with no
+                # declarations must still be no bar.
+                "mt5": SimpleNamespace(account_info=lambda: None)})
+    assert ns["venue_heat_cap"]()[0] is None, (
+        "an undeclared box grew a venue bar; the main book's heat is no longer its own")
     admitted, note = ns["cap_by_heat"](sl, 1683.89)
     assert [s["name"] for s in admitted] == ["a"] and "[allocator book (ok)]" in note
     # The allocator's ranking reaches the cap too.
