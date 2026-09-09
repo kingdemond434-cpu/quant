@@ -19,6 +19,14 @@ nothing that pays; carry and cross-asset residual have never been tested there".
 
 ONLY ADMITTED DIMENSIONS ARE USED, plus the global regime. A bucket built from a dimension the
 admission test has buried would be asking research to fill a hole in a map that does not exist.
+
+THE TIMEFRAME IS AN AXIS OF THE CELL (2026-09-08), read from each sleeve's certificate rather
+than assumed. Until then every bucket was implicitly H1: a state "covered" by three hourly
+sleeves read as covered for the M5 book too, and a family "never tried here" could not say on
+which chart. The cell is now state x family x cluster x TIMEFRAME, and the label is explicit:
+`M5` where the certificate's shadow_spec names the chart, `H1` where it carries params without
+one (the desk's own declared default, shadow_forward.timeframe_of), `UNSTATED` where no
+certificate matches the sleeve at all -- so the denominator names what it is built on.
 """
 from __future__ import annotations
 
@@ -86,6 +94,75 @@ def _cluster_map() -> dict[tuple[str, str], str]:
 def _cluster_of(sleeve: str, cmap: dict[tuple[str, str], str]) -> str | None:
     sym = str(sleeve).split("_")[0].split("|")[0].upper()
     return cmap.get((sym, _family_of(sleeve)))
+
+
+CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+TIMEFRAME_DIM = "timeframe"
+UNSTATED_TF = "UNSTATED"
+
+
+def _timeframe_of_cert(cert: dict) -> tuple[str, str]:
+    """(chart, basis) for one certificate. `basis` says HOW the label was arrived at:
+    `stated` when shadow_spec.params names a timeframe, `declared_default_H1` otherwise --
+    the same rule shadow_forward.timeframe_of applies when it runs the sleeve."""
+    spec = cert.get("shadow_spec") or {}
+    params = spec.get("params") if isinstance(spec.get("params"), dict) else {}
+    tf = params.get("timeframe") or spec.get("timeframe")
+    if tf:
+        return str(tf).upper(), "stated"
+    return "H1", "declared_default_H1"
+
+
+def _timeframe_map() -> tuple[dict[tuple[str, str], str], dict[str, str], dict[str, int]]:
+    """From the canon: (symbol, family) -> chart, symbol -> chart when every certificate of the
+    symbol agrees, and the basis census. All empty when the canon is absent."""
+    try:
+        doc = json.loads(CANON.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}, {}, {}
+    by_pair: dict[tuple[str, str], set[str]] = defaultdict(set)
+    by_sym: dict[str, set[str]] = defaultdict(set)
+    basis: dict[str, int] = defaultdict(int)
+    for cert in (doc.get("survivors") or {}).values():
+        if not isinstance(cert, dict):
+            continue
+        spec = cert.get("shadow_spec") or {}
+        sym = str(cert.get("sym") or spec.get("symbol") or "").upper()
+        fam = str(spec.get("family") or cert.get("family") or "")
+        if not sym:
+            continue
+        tf, how = _timeframe_of_cert(cert)
+        basis[how] += 1
+        by_pair[(sym, fam)].add(tf)
+        by_sym[sym].add(tf)
+    pair = {k: next(iter(v)) if len(v) == 1 else "AMBIGUOUS" for k, v in by_pair.items()}
+    sym_only = {k: next(iter(v)) for k, v in by_sym.items() if len(v) == 1}
+    return pair, sym_only, dict(basis)
+
+
+def _timeframe_labeller(pair: dict[tuple[str, str], str], sym_only: dict[str, str]):
+    """Trade -> chart label. A chart written into the sleeve key (`@M5`) outranks the canon,
+    because that key was minted from the certificate that runs the clock; a sleeve no
+    certificate matches reads UNSTATED, never H1 -- a default here would rebuild the very
+    implicit-H1 denominator this axis exists to remove."""
+    def fn(t: Trade) -> str:
+        sleeve = str(t.sleeve)
+        if "@" in sleeve:
+            tag = sleeve.split("@", 1)[1]
+            for sep in ("#", ".", "_", "|"):
+                tag = tag.split(sep)[0]
+            if tag:
+                return tag.upper()
+        sym = sleeve.split("_")[0].split("|")[0].upper()
+        return pair.get((sym, _family_of(sleeve))) or sym_only.get(sym) or UNSTATED_TF
+    return fn
+
+
+def _timeframe_of_key(key: str) -> str | None:
+    for part in str(key).split("|"):
+        if part.startswith(f"{TIMEFRAME_DIM}="):
+            return part.split("=", 1)[1]
+    return None
 
 
 def _global_regime_labeller():
@@ -166,6 +243,7 @@ def instructions(cov: dict) -> list[dict]:
                           for r in c["sleeves"][:5]) or "nothing measured"
         absent = ", ".join(c["families_never_tried_here"][:8]) or "none"
         absent_cl = ", ".join(c.get("clusters_never_tried_here", [])[:6]) or "none"
+        tf = _timeframe_of_key(key)
         tasks.append({
             "source": "regime_coverage", "kind": "coverage_gap",
             "title": f"No positive-expectancy mechanism in state {key}",
@@ -173,10 +251,13 @@ def instructions(cov: dict) -> list[dict]:
                             f"{c['n_sleeves_measured']} sleeves measured, none with shrunk "
                             f"conditional expectancy >= {COVERED_R}R. Tried here: {tried}. "
                             f"Families never tested in this state: {absent}. Structural "
-                            f"clusters (alpha genome) never tested here: {absent_cl}. Find an "
-                            "orthogonal mechanism whose economic cause is specific to this "
-                            "state -- not a re-parameterisation of what already loses here."),
-            "state": key, "families_tried": c["families_tried"],
+                            f"clusters (alpha genome) never tested here: {absent_cl}. "
+                            + (f"Chart: {tf} (coverage on other timeframes does not count "
+                               f"here). " if tf else "")
+                            + "Find an orthogonal mechanism whose economic cause is specific "
+                              "to this state -- not a re-parameterisation of what already "
+                              "loses here."),
+            "state": key, "timeframe": tf, "families_tried": c["families_tried"],
             "families_never_tried_here": c["families_never_tried_here"],
             "clusters_never_tried_here": c.get("clusters_never_tried_here", []), "status": None,
             "consumer": "hourly/daily research brains: propose a family + params for this "
@@ -185,7 +266,9 @@ def instructions(cov: dict) -> list[dict]:
     return tasks
 
 
-def _label(trades: list[Trade], dims: tuple[str, ...]) -> tuple[list[Trade], dict[str, str]]:
+def _label(trades: list[Trade], dims: tuple[str, ...],
+           timeframes: tuple[dict[tuple[str, str], str], dict[str, str]] | None = None,
+           ) -> tuple[list[Trade], dict[str, str]]:
     gaps: dict[str, str] = {}
     fns = {}
     g = _global_regime_labeller()
@@ -199,6 +282,10 @@ def _label(trades: list[Trade], dims: tuple[str, ...]) -> tuple[list[Trade], dic
             gaps[d] = "no point-in-time labeller on this host"
         else:
             fns[d] = fn
+    if timeframes is not None:
+        # The chart axis always labels: a sleeve without a certificate reads UNSTATED, which is
+        # a bucket of its own rather than a trade dropped from the map.
+        fns[TIMEFRAME_DIM] = _timeframe_labeller(*timeframes)
     out = []
     for t in trades:
         b = {d: v for d, fn in fns.items() if (v := fn(t))}
@@ -212,18 +299,35 @@ def run(write_queue: bool = True) -> dict:
     admitted = _admitted()
     dims = tuple(d for d in DIMENSIONS if d in admitted)
     trades = load_trades("shadow")
-    labelled, gaps = _label(trades, dims)
-    used = tuple(d for d in ("global", *dims) if d not in gaps)
+    pair_tf, sym_tf, tf_basis = _timeframe_map()
+    labelled, gaps = _label(trades, dims, (pair_tf, sym_tf))
+    if not pair_tf:
+        gaps["timeframe_certificates"] = (f"{CANON.name} absent or empty; every sleeve reads "
+                                          f"timeframe={UNSTATED_TF}")
+    # THE CHART IS ALWAYS AN AXIS. It is not an admitted state dimension (nothing about the
+    # market is being conditioned on) but a property of the sleeve, so it joins the key after
+    # the state dimensions and never goes through the admission gauntlet.
+    used = (*(d for d in ("global", *dims) if d not in gaps), TIMEFRAME_DIM)
     cmap = _cluster_map()
     if not cmap:
         gaps["alpha_genome"] = "ALPHA_GENOME.json absent; cluster coverage not computed"
     cov = coverage(labelled, used, cmap)
     tasks = instructions(cov)
+    tf_sleeves: dict[str, set[str]] = defaultdict(set)
+    for t in labelled:
+        tf_sleeves[t.buckets.get(TIMEFRAME_DIM, UNSTATED_TF)].add(t.sleeve)
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "dimensions": list(used),
            "n_clusters_known": len(set(cmap.values())),
            "admitted_dimensions": sorted(admitted), "gaps": gaps, "n_trades": len(trades),
            "n_buckets": len(cov), "n_uncovered": len(tasks),
-           "uncovered": [t["state"] for t in tasks], "coverage": cov}
+           "uncovered": [t["state"] for t in tasks],
+           # The denominator, stated: which charts the sleeves sit on and how each label was
+           # reached (`stated` from the certificate, `declared_default_H1` by the desk's own
+           # rule, UNSTATED where no certificate matches).
+           "timeframes": {tf: len(s) for tf, s in sorted(tf_sleeves.items())},
+           "timeframe_basis": {**tf_basis,
+                               "sleeves_unstated": len(tf_sleeves.get(UNSTATED_TF, ()))},
+           "coverage": cov}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     if write_queue and tasks:
