@@ -712,6 +712,91 @@ def _release_block() -> dict[str, Any]:
     }
 
 
+#: Past this an organ is not late and not stale -- it is not running. Every artifact in
+#: BOX_REPORTS is written at least daily by a live producer, so a day of silence from ONE of them
+#: while others still move cannot be a market gap or a slow pass; it is that producer being dead.
+ORGAN_DEAD_SECONDS = 24 * 3600
+
+#: Worst first. An organ nobody can SEE ranks above one seen to be stale: staleness is a measured
+#: quantity with a next step attached, while an artifact that has never crossed the wire could be
+#: any age at all, including dead since before anyone looked.
+_ORGAN_RANK = {"DEAD": 0, "FAILING": 1, "UNMEASURED": 2, "STALE": 3, "LATE": 4, "LIVE": 5}
+
+
+def _age_human(seconds: float | None) -> str:
+    """`23d`, `2.1h`, `46m`. Salience is the entire point of this block, and "2049285" is not a
+    number anyone reads as three weeks."""
+    if seconds is None:
+        return "?"
+    s = float(seconds)
+    if s >= 86400:
+        return f"{s / 86400:.0f}d"
+    if s >= 3600:
+        return f"{s / 3600:.1f}h"
+    return f"{s / 60:.0f}m"
+
+
+def _organs(now: datetime) -> dict[str, Any]:
+    """WHICH ORGAN IS DEAD -- the question `_box_liveness` deliberately does not answer.
+
+    MEASURED 2026-09-09, and the numbers are why this exists. The gateway had not written
+    `gateway_state.json` since 2026-08-17 -- TWENTY-THREE DAYS -- and the board's headline read
+    `box: LATE, 2.1h`, which was true: `_box_liveness` takes the FRESHEST clock across the box's
+    artifacts, on purpose, because one organ dying is a defect in that organ while all of them
+    stopping is the machine. Both facts were published. Neither was legible: the dead organ sat
+    inside `per_report` where `age_seconds: 2049285` is graded by the same word -- STALE -- that
+    a forty-six-minute lag gets.
+
+    So this is not a new measurement. It is the same evidence given a LADDER and an ORDER, which
+    is what the failure actually needed: three weeks and forty-six minutes must not print the
+    same word, and the worst organ must not be something a reader has to go and find.
+
+    ABSENCE IS NEVER A PASS (L1.28a). An artifact with no clock reads UNMEASURED and ranks ABOVE
+    stale, because an organ nobody can see could be any age including long dead -- and a block
+    that let silence render as health would be the failure it exists to expose.
+    """
+    box = _box_liveness(now)
+    rows: list[dict[str, Any]] = []
+    for name, rec in (box.get("per_report") or {}).items():
+        age = rec.get("age_seconds")
+        if age is None:
+            verdict = "UNMEASURED"
+            why = rec.get("why", "no readable clock")
+        elif age >= ORGAN_DEAD_SECONDS:
+            verdict = "DEAD"
+            why = (f"last wrote {_age_human(age)} ago; a live producer writes this at least "
+                   f"daily, so this one is not running")
+        elif age >= BOX_SILENT_SECONDS:
+            verdict, why = "STALE", f"last wrote {_age_human(age)} ago"
+        elif age > BOX_LATE_SECONDS:
+            verdict, why = "LATE", f"last wrote {_age_human(age)} ago"
+        else:
+            verdict, why = "LIVE", f"wrote {_age_human(age)} ago"
+        rows.append({"organ": name, "verdict": verdict, "age_seconds": age,
+                     "age": _age_human(age), "at": rec.get("at"), "why": why})
+
+    # THE WATCHDOG'S OWN VERDICT, which is a different kind of evidence: a task can be FAILING
+    # while its artifact is fresh (it ran, it errored, the old file is still there), and that
+    # combination is invisible to every age-based reading on this board.
+    watch = _read(DESK / "data" / "stall_watch.json")
+    for key in sorted((watch.get("procs") or {})):
+        if not str(key).startswith("fail."):
+            continue
+        rows.append({"organ": str(key)[len("fail."):], "verdict": "FAILING",
+                     "age_seconds": None, "age": "-", "at": watch.get("checked_at"),
+                     "why": "the box's stall watchdog reports this task's last result non-zero"})
+
+    rows.sort(key=lambda r: (_ORGAN_RANK.get(r["verdict"], 9),
+                             -(r["age_seconds"] or 0), r["organ"]))
+    worst = rows[0]["verdict"] if rows else "UNMEASURED"
+    down = [r["organ"] for r in rows if r["verdict"] in ("DEAD", "FAILING")]
+    headline = (f"{len(down)} organ(s) down: {', '.join(down)}" if down else
+                f"no organ down (worst: {worst})" if rows else
+                "no organ reported at all")
+    return {"worst": worst, "down": down, "headline": headline, "rows": rows,
+            "dead_after_seconds": ORGAN_DEAD_SECONDS}
+
+
 def build() -> dict[str, Any]:
     gateway = _read(DESK / "data" / "gateway_state.json")
     # NEVER FALL BACK TO gateway_state FOR THE ACCOUNT (2026-09-04). On a box with no MT5
@@ -879,6 +964,7 @@ def build() -> dict[str, Any]:
     payload["readiness"] = _read(ROOT / "data" / "live_readiness.json") or {
         "status": "UNMEASURED", "blocking": ["readiness has not been assessed"]}
     payload["release"] = _release_block()
+    payload["organs"] = _organs(now)
     payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}
     payload["stats"] = _ledger_stats(rows)
     payload["stats"]["today_pnl"] = payload["account"]["today_pnl"]
