@@ -291,3 +291,45 @@ def test_the_box_side_mirror_hashes_and_allowlists_identically(tmp_path: Path) -
     assert release.hash_paths(("c.py",), tmp_path) == h_lf
     assert release.hash_paths(("d.py",), tmp_path) != h_lf          # different name prefix
     assert release._norm(b"x\r\ny\r\n") == b"x\ny\n"
+
+
+# ---------------------------------------------------------------- the rollback target
+def test_a_seal_names_the_record_it_replaces(repo: Path) -> None:
+    """MEASURED 2026-09-08: no script restores a previous seal and no record said which seal
+    that would be. The first seal has nothing to name; the next names the first; a re-seal of
+    the same HEAD carries the target forward rather than pointing the rollback at itself."""
+    first = release.seal(root=repo)
+    assert first["previous_code_sha"] is None and first["previous_release_id"] is None
+    assert "previous_code_sha" in json.loads((repo / release.RELEASE_REL).read_text("utf-8"))
+
+    # A re-seal of the same commit (the RELEASE.json rewrite is a state path, so no dirty refusal).
+    again = release.seal(root=repo)
+    assert again["code_sha"] == first["code_sha"]
+    assert again["previous_code_sha"] is None, "a re-seal must not name itself as the rollback"
+
+    _commit(repo, release.RELEASE_REL, None, "seal release")
+    second_sha = _commit(repo, SIZING, "# new sizing\n", "code")
+    second = release.seal(root=repo)
+    assert second["code_sha"] == second_sha
+    assert second["previous_code_sha"] == first["code_sha"]
+    assert second["previous_release_id"] == first["release_id"]
+
+    # A re-seal of the second commit keeps pointing at the FIRST release, not at the second.
+    third = release.seal(root=repo)
+    assert third["code_sha"] == second_sha
+    assert third["previous_code_sha"] == first["code_sha"]
+    assert third["previous_release_id"] == first["release_id"]
+
+    # The formula the readers depend on is untouched, and the record still verifies.
+    assert second["release_id"] == third["release_id"]
+    assert release.verify(root=repo)["ok"], "the rollback fields must not disturb verification"
+
+
+def test_a_seal_with_no_prior_record_and_a_write_free_seal_both_name_nothing(repo: Path) -> None:
+    doc = release.seal(root=repo, write=False)
+    assert doc["previous_code_sha"] is None
+    assert not (repo / release.RELEASE_REL).exists()
+    # An unreadable prior record is "nothing to name", never a crash on the seal path.
+    (repo / release.RELEASE_REL).parent.mkdir(parents=True, exist_ok=True)
+    (repo / release.RELEASE_REL).write_text("{ not json", "utf-8")
+    assert release.seal(root=repo, write=False)["previous_code_sha"] is None
