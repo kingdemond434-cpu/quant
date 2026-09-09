@@ -55,7 +55,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from libs.data.pit import census  # noqa: E402
+from libs.data.pit import census, is_stamped  # noqa: E402
 from libs.data.pit_certificate import CERT_DIR  # noqa: E402
 from libs.data.pit_certificate import census as cert_census  # noqa: E402
 
@@ -89,13 +89,33 @@ def run() -> dict[str, Any]:
         rows = [r for f in files for r in _rows(Path(f)) if isinstance(r, dict)]
         if not rows:
             continue
-        per_source[src_dir.name] = census(rows)
+        c = census(rows)
+        # WHICH SOURCES THE JUDGE WOULD REFUSE (audit V6). `external_gauntlet.main` splits its
+        # docket with `libs.data.pit.is_stamped` and, the moment ANY stamped row exists, refuses
+        # every unstamped one. This is that predicate, applied per source, so the census names
+        # exactly which sources must be re-donated before the ratchet that already exists fires
+        # -- measurement and ordering only; the exit code below still belongs to the fraction.
+        unstamped = sum(1 for r in rows if not is_stamped(r))
+        c["unstamped_rows"] = unstamped
+        c["blocks_certification"] = unstamped > 0
+        per_source[src_dir.name] = c
         all_rows.extend(rows)
     total = census(all_rows)
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "total": total,
            "per_source": per_source,
            "unstamped_sources": sorted(s for s, c in per_source.items()
                                        if (c["stamped_frac"] or 0.0) < 0.5),
+           "ratchet": {
+               "predicate": ("libs.data.pit.is_stamped -- the predicate external_gauntlet's "
+                             "judge-side ratchet applies to every docket row"),
+               "armed": int(total["stamped"]) > 0,
+               "rule": ("the judge refuses every unstamped row the moment ANY stamped row exists "
+                        "in its docket; until then unstamped rows are judged and the gap is "
+                        "named. `blocks_certification` per source: the source still carries rows "
+                        "that predicate refuses once the ratchet is armed"),
+               "sources_blocking_certification": sorted(
+                   s for s, c in per_source.items() if c["blocks_certification"]),
+           },
            # THE DATASET HALF. A stamped row says when the desk could have known it; a certificate
            # says whether the DATASET it came from survived the seven adversarial questions. Both
            # are published here because a pipeline can be perfect at one and empty at the other.
