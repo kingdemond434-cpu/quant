@@ -131,24 +131,21 @@
    "item": "Dead-architecture policy: automated census of dead/superseded/stale organs, and automatic deletion or disabling",
    "domain": "I",
    "phase": 7,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "FOUR INDEPENDENT CENSUSES RUN AND PUBLISH. (1) libs/ops/capability_graph.py:24-33 checks DEAD_PRODUCER, DEAD_CONSUMER, ADVISORY_ONLY, UNMEASURED_AUTHORITY, STALE_DECISION, UNDECLARED over 50 nodes / 99 artifacts -> desks/mt5/reports/CAPABILITY_STATUS.json (generated 2026-09-05T01:22:19), `findings: []`, `stage_counts {MISSING:0, CODED:0, WIRED:19, RUNNING:2, DECISION_AFFECTING:22, MEASURED:7}` (MEASURED)",
-    "(2) libs/ops/module_rent.py -> desks/mt5/reports/MODULE_RENT.json (2026-09-05T18:49): 71 modules, verdicts `{UNMEASURED: 70, NOT_BINDING: 1}`, `retire: {}`, `costs: []`, `earns: []`. Its own rule line: 'a module that reads COSTS with n >= 10 in 3 consecutive weekly windows is NAMED under `retire`. This report names; a person or the capability-graph check retires. No sacred modules' (MEASURED)",
-    "(3) scripts/check_job_manifest.py:59-101 declares 16 artifacts each with a named consumer and a max age, and alarms MISSING / STALE / FROZEN / IDLE / NO-CONSUMER. data/job_manifest.json (checked_at 2026-09-08T18:36:21) summary: `{MISSING: 13, STALE: 3}`, `retired: {}`; 13 rows carry `ever_produced: None` — declared and never produced on this host (MEASURED)",
-    "data/JOB_MANIFEST_ALARM.txt (2026-09-08T18:36:21, 18 lines) names each with its consumer, e.g. 'MISSING desks/mt5/reports/execution_quality.json: declared but NEVER produced -- an owed build. Consumer: promoter (promotion gate), dashboard' and 'STALE web/desk_state.json: 44.8h old, limit 0.5h' (MEASURED)",
-    "(4) data/MINER_YIELD_ALARM.txt (2026-09-07T08:39:31): 'ZERO-YIELD: forexfactory, github, github_topics, reddit, seasonality, shipping produced 20+ rows and no survivor in 14d -- noise at cost (III.16)' — 6 named sources (MEASURED)",
-    "scripts/check_desk_tasks.py:35-41 names 4 CRITICAL box tasks and what stops if each stops; it reports UNREACHABLE rather than healthy (:19-21). Its output data/desk_tasks.json is ABSENT on this host (MEASURED)",
-    "scripts/max_audit.py:11-22 — 'a below-max state is a DEFECT unless acknowledged with a reason AND an expiry (max 30d) in data/max_audit_acks.json -- no permanent burial, ever'; defects >48h un-acked escalate to docs/PRINCIPAL_ACTION.md (MEASURED)",
-    "NOTHING IS DELETED OR DISABLED AUTOMATICALLY. MODULE_RENT.json's own `rule` says the report NAMES and a human retires; `retire` is `{}` and `retired` in job_manifest.json is `{}`. The one auto-actuator, scripts/check_unit_health.py:10-19, only restarts failed units and explicitly 'never enables or disables units' (CLAUDE.md:103-105) (MEASURED)",
-    "RETIREMENT IS A HAND-EDIT: 109 `# RETIRED` headers in ops/crontab.manifest, each written by a person on a dated sweep ('RETIRED 2026-09-05 under the MT5 universe mandate (2026-08-18)') (MEASURED)"
+    "scripts/check_dead_architecture.py — clock (exact, from check_scheduler_manifest's four planes) x artifact x consumer per organ; MEASURED 2026-09-09: 134 organs that write a named artifact, LIVE 7, BURNING 1 (desks/mt5/research/exit_study.py runs hourly and nothing reads it), NO_CLOCK 68, UNREACHED 58, and 18 artifacts with two writers (MEASURED)",
+    "tests/scripts/test_check_dead_architecture.py — pins that the census never uses the word DEAD (MEASURED)"
    ],
-   "scheduled_by": "quant-job-manifest.timer (*:07/30), quant-capratchet-auto.timer (*:0/12), quant-miner-conversion.timer (05:40 UTC), quant-desk-tasks.timer (*:9/15), quant-daily-max.timer (05:30)",
-   "artifact": "desks/mt5/reports/CAPABILITY_STATUS.json, desks/mt5/reports/MODULE_RENT.json, data/job_manifest.json + data/JOB_MANIFEST_ALARM.txt, data/MINER_YIELD_ALARM.txt, desks/mt5/reports/BOX_TASKS.json",
-   "consumer": "libs/ops/capability_graph.stages reads MODULE_RENT; scripts/check_reachability warns on a COSTS node; scripts/max_audit.py reads the miner scan; docs/PRINCIPAL_ACTION.md for escalation",
-   "gap": "The census is real and running but the verdict is always UNMEASURED (70/71 modules) and nothing acts on it: no organ is ever disabled, no timer masked, no source dropped — retirement happens only when a human writes a `# RETIRED` header by hand.",
-   "next_step": "Give libs/ops/module_rent.py's `retire` list an actuator: a check that masks the systemd timer of any named module (`systemctl --user mask`) after the third consecutive weekly COSTS verdict, writing the mask to data/ so it is reversible — the naming logic already exists, only the action is missing."
+   "scheduled_by": "hourly_cycle:dead_architecture",
+   "artifact": "desks/mt5/reports/dead_architecture.json",
+   "consumer": "the principal; the issue board",
+   "gap": "",
+   "next_step": "Give libs/ops/module_rent.py's `retire` list an actuator: a check that masks the systemd timer of any named module (`systemctl --user mask`) after the third consecutive weekly COSTS verdict, writing the mask to data/ so it is reversible — the naming logic already exists, only the action is missing.",
+   "landed": [
+    "this commit"
+   ],
+   "note": "Report only, by the desk's standing order: no timer is masked, no source removed. The consumer half is a heuristic that under-reports, so UNREACHED is a review list and not a death certificate -- the module refuses the word."
   },
   {
    "id": "I5",

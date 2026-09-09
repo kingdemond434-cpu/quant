@@ -1351,6 +1351,10 @@ def main() -> None:
     # THE DESK'S OWN SCALING LAW (Tier-1 item I15): survivors per compute hour, fitted in logs,
     # now that every leg records its cost. UNMEASURED until the ledger holds seven days.
     slw = _costed("scaling_laws", lambda: _producer("scaling_laws", "libs/ops/scaling_laws.py"))
+    # WHICH ORGANS HAVE ANYTHING ON THE OTHER END (Tier-1 item I4). Report only: nothing is
+    # disabled, masked or deleted -- organs are retired by a person, on this evidence.
+    dac = _costed("dead_architecture", lambda: _producer(
+        "dead_architecture", "scripts/check_dead_architecture.py"))
     scap = _costed("session_capital", lambda: _producer(
         "session_capital", "research/session_capital.py"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
@@ -1374,6 +1378,7 @@ def main() -> None:
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "prosecutor": pc, "scaling_laws": slw,
+                    "dead_architecture": dac,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,

@@ -56,7 +56,7 @@ LEG_LAYER: dict[str, str] = {
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
     "opportunity_forecast": "prediction", "edge_reliability": "prediction",
-    "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta",
+    "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
     "rebalance_trigger": "timing",

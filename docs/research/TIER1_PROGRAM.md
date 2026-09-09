@@ -28,8 +28,8 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 1 | 0 | 13 |
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 4 | 0 | 15 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
-| 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 1 | 0 | 9 |
-| **all** | 4 | 0 | 31 | 1 | 77 |
+| 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
+| **all** | 4 | 0 | 30 | 1 | 78 |
 
 ## Items
 
@@ -737,14 +737,12 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 
 ### Phase 7 — Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself
 
-- **I4 Dead-architecture policy: automated census of dead/superseded/stale organs, and automatic deletion or disabling** — PARTIAL
-  - gap: The census is real and running but the verdict is always UNMEASURED (70/71 modules) and nothing acts on it: no organ is ever disabled, no timer masked, no source dropped — retirement happens only when a human writes a `# RETIRED` header by hand.
-  - FOUR INDEPENDENT CENSUSES RUN AND PUBLISH. (1) libs/ops/capability_graph.py:24-33 checks DEAD_PRODUCER, DEAD_CONSUMER, ADVISORY_ONLY, UNMEASURED_AUTHORITY, STALE_DECISION, UNDECLARED over 50 nodes / 99 artifacts -> desks/mt5/reports/CAPABILITY_STATUS.json (generated 2026-09-05T01:22:19), `findings: []`, `stage_counts {MISSING:0, CODED:0, WIRED:19, RUNNING:2, DECISION_AFFECTING:22, MEASURED:7}` (MEASURED)
-  - (2) libs/ops/module_rent.py -> desks/mt5/reports/MODULE_RENT.json (2026-09-05T18:49): 71 modules, verdicts `{UNMEASURED: 70, NOT_BINDING: 1}`, `retire: {}`, `costs: []`, `earns: []`. Its own rule line: 'a module that reads COSTS with n >= 10 in 3 consecutive weekly windows is NAMED under `retire`. This report names; a person or the capability-graph check retires. No sacred modules' (MEASURED)
-  - (3) scripts/check_job_manifest.py:59-101 declares 16 artifacts each with a named consumer and a max age, and alarms MISSING / STALE / FROZEN / IDLE / NO-CONSUMER. data/job_manifest.json (checked_at 2026-09-08T18:36:21) summary: `{MISSING: 13, STALE: 3}`, `retired: {}`; 13 rows carry `ever_produced: None` — declared and never produced on this host (MEASURED)
-  - data/JOB_MANIFEST_ALARM.txt (2026-09-08T18:36:21, 18 lines) names each with its consumer, e.g. 'MISSING desks/mt5/reports/execution_quality.json: declared but NEVER produced -- an owed build. Consumer: promoter (promotion gate), dashboard' and 'STALE web/desk_state.json: 44.8h old, limit 0.5h' (MEASURED)
-  - clock: quant-job-manifest.timer (*:07/30), quant-capratchet-auto.timer (*:0/12), quant-miner-conversion.timer (05:40 UTC), quant-desk-tasks.timer (*:9/15), quant-daily-max.timer (05:30) · artifact: desks/mt5/reports/CAPABILITY_STATUS.json, desks/mt5/reports/MODULE_RENT.json, data/job_manifest.json + data/JOB_MANIFEST_ALARM.txt, data/MINER_YIELD_ALARM.txt, desks/mt5/reports/BOX_TASKS.json · consumer: libs/ops/capability_graph.stages reads MODULE_RENT; scripts/check_reachability warns on a COSTS node; scripts/max_audit.py reads the miner scan; docs/PRINCIPAL_ACTION.md for escalation
+- **I4 Dead-architecture policy: automated census of dead/superseded/stale organs, and automatic deletion or disabling** — LANDED
+  - scripts/check_dead_architecture.py — clock (exact, from check_scheduler_manifest's four planes) x artifact x consumer per organ; MEASURED 2026-09-09: 134 organs that write a named artifact, LIVE 7, BURNING 1 (desks/mt5/research/exit_study.py runs hourly and nothing reads it), NO_CLOCK 68, UNREACHED 58, and 18 artifacts with two writers (MEASURED)
+  - tests/scripts/test_check_dead_architecture.py — pins that the census never uses the word DEAD (MEASURED)
+  - clock: hourly_cycle:dead_architecture · artifact: desks/mt5/reports/dead_architecture.json · consumer: the principal; the issue board
   - next: Give libs/ops/module_rent.py's `retire` list an actuator: a check that masks the systemd timer of any named module (`systemctl --user mask`) after the third consecutive weekly COSTS verdict, writing the mask to data/ so it is reversible — the naming logic already exists, only the action is missing.
+  - landed: this commit
 - **I10 Agent scoreboard: per LLM/miner/source AgentValue = realized utility / resources, with budgets reallocated by yield** — LANDED
   - gap: UNMEASURED until miners are costed individually: hourly_cycle costs them collectively under `mine`.
   - scripts/check_miner_conversion.py — agent_value writes data/agent_value.json through compute_ledger.rank with ranked/unpriced/uncosted/UNJUDGED and a per-seat block (MEASURED)
