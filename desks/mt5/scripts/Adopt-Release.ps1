@@ -233,6 +233,7 @@ function Write-InPlace {
     # tries two seconds apart outlast that, and a path still locked after six seconds is
     # reported exactly as before.
     $tries = 0
+    $unlinked = $false
     while ($true) {
         try {
             $fs = [System.IO.File]::Open($Full, $mode, [System.IO.FileAccess]::Write,
@@ -243,6 +244,30 @@ function Write-InPlace {
             $tries++
             if ($tries -ge 3) { throw }
             Start-Sleep -Seconds 2
+        } catch [System.UnauthorizedAccessException] {
+            # A DENIED WRITE IS NOT A DENIED PATH (2026-09-09). Ten paths on the box -- eight
+            # `data/` files the SYSTEM-run intelligence legs wrote, plus desks/mt5/AGENTS.md and
+            # desks/mt5/blueprint/coverage.py -- came to carry an ACL the desk's own account
+            # cannot write. Truncate needs WRITE_DATA on the FILE; unlink needs only DELETE_CHILD
+            # on its DIRECTORY, which the account plainly has (the same pass created 15,136 files
+            # beside them). So the adoption failed, hourly, on ten paths out of 15,146 -- and
+            # because Adopt-And-Seal refuses to seal a tree that only half-matches the branch,
+            # those ten held the whole box on stale code for a day.
+            #
+            # THIS IS NOT A RETREAT FROM THE IN-PLACE RULE. Truncate stays the only first move,
+            # for exactly the reason the header gives: a corrupt directory entry must never be
+            # consulted. The unlink is reached ONLY after the kernel has already refused the
+            # in-place write on permission grounds, where the alternative is not "a safer write"
+            # but no write at all. It is tried once, it is tried only for a path that already
+            # existed, and if the unlink is refused too the ORIGINAL access error is what the
+            # caller sees -- so a genuinely unwritable path still reads as [FAIL] and still
+            # leaves the exit code non-zero. Nothing is force-removed that was not about to be
+            # overwritten with the branch's own bytes in the next statement.
+            if ($unlinked -or $mode -ne [System.IO.FileMode]::Truncate) { throw }
+            $denied = $_
+            try { [System.IO.File]::Delete($Full) } catch { throw $denied }
+            $unlinked = $true
+            $mode = [System.IO.FileMode]::Create
         }
     }
 }

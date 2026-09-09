@@ -470,6 +470,42 @@ def test_a_locked_file_is_retried_before_it_is_reported() -> None:
     assert "Start-Sleep -Seconds 2" in code
 
 
+def test_a_write_the_acl_refuses_falls_back_to_unlink_without_ever_going_first() -> None:
+    """The one path on which unlinking is allowed, and the four rails that keep it there.
+
+    MEASURED 2026-09-09. Ten of 15,146 paths on the box carried an ACL the desk's account cannot
+    write -- eight `data/` files the SYSTEM-run legs had written, plus desks/mt5/AGENTS.md and
+    desks/mt5/blueprint/coverage.py. Truncate wants WRITE_DATA on the file; unlink wants only
+    DELETE_CHILD on the directory, which the same pass demonstrably had. So the adoption failed
+    hourly on ten paths, Adopt-And-Seal refused to seal a half-matching tree, and the gateway sat
+    on stale code for a day.
+
+    The fallback must not become the rule. This test is what stops that, and it is SOURCE-PINNED,
+    not behavioural: no PowerShell runs in CI, so it reads the script rather than executing it.
+    The strongest assertion here is the count -- ONE `File]::Delete` inside `Write-InPlace` means
+    the unlink cannot exist anywhere in the writer but inside the access-denied catch, whatever a
+    later edit intends. (The script's other unlink is the one the header already allows: a CODE
+    path the incoming tree DELETES needs a real unlink, and that one lives outside this writer.)
+    """
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    body = code[code.index("function Write-InPlace"):code.index("$StatePrefixes = @(")]
+    assert body.count("[System.IO.File]::Delete(") == 1, (
+        "more than one unlink in Write-InPlace: the in-place rule is only a rule while Truncate "
+        "is the sole first move")
+    catch = body.index("catch [System.UnauthorizedAccessException]")
+    unlink = body.index("[System.IO.File]::Delete(")
+    assert body.index("[System.IO.File]::Open(") < catch < unlink, (
+        "the unlink is not downstream of a refused in-place write")
+    # Tried once, and only for a path that already existed -- a Create that is refused is a
+    # directory the account cannot write, where unlinking answers nothing.
+    assert "if ($unlinked -or $mode -ne [System.IO.FileMode]::Truncate) { throw }" in body
+    assert body.index("$unlinked = $false") < catch < body.index("$unlinked = $true")
+    # And a path that refuses BOTH still reports the access error, not the unlink's: the caller
+    # counts it, names it, and the exit code stays non-zero.
+    assert "$denied = $_" in body
+    assert "catch { throw $denied }" in body
+
+
 def test_untracking_is_narrowed_to_paths_origin_dropped_and_never_swallows_a_failure() -> None:
     """Two verifier hardenings. A state path the BOX added since the merge base was never
     tracked by origin, so origin cannot have dropped it: it falls through to the kept-by-box
