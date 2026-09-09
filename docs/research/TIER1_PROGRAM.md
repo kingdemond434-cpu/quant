@@ -332,7 +332,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 - **G10 Alpha Zoo — families registered vs executable** — LANDED
   - Two mechanism classes the zoo could not try are registered families; the no-lookahead invariant reaches the whole orthogonal registry (MEASURED)
   - clock: hourly_cycle:sweep · artifact: desks/mt5/mt5desk/families_orthogonal.py · consumer: desks/mt5/mt5desk/gateway.py + desks/mt5/research/promoter.py via executables.gateway_can_execute; desks/mt5/research/trial_allocator.py
-  - next: Register `family_opening_range` and `family_jump` in desks/mt5/mt5desk/families_orthogonal.ORTHOGONAL_FAMILIES (both are price-only, need no new data, and orthogonal_sweep will enumerate them the next hour) — the file to touch is desks/mt5/mt5desk/families_orthogonal.py.
+  - next: DONE and verified 2026-09-09: both families are defined in desks/mt5/mt5desk/families_orthogonal.py (family_opening_range, family_jump), registered in ORTHOGONAL_FAMILIES with FAMILY_INPUTS 'price only', and covered behaviourally by desks/mt5/tests/test_generator_families.py as well as by the registry-wide no-lookahead sweep. The open question on this row is no longer a build: neither family has earned a certificate yet, and that is measured on the box, not here.
   - landed: 4227b566
 - **G11 Exit research as first-class trials** — LANDED
   - The exit is the third key of a cell type, so a 216-arm exit sweep stops being invisible in the yield table (MEASURED)
