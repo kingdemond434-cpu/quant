@@ -21,6 +21,33 @@ from typing import Any
 
 SCHEMA_VERSION = 1
 
+#: Parameters whose VALUE names the variable the strategy reads -- the 20-day range, the hour
+#: feature, the COT vintage, the driver basket. Everything else on `params` is a tunable of the
+#: family and contributes its NAME only. The distinction is what lets `alpha_genome` answer
+#: "these twelve alphas are all the same variable" rather than "twelve alphas have a lookback".
+VALUE_BEARING_PARAMS: tuple[str, ...] = ("feature", "input_source", "input_symbol",
+                                         "peer_symbol", "factor_symbols", "factors",
+                                         "selector", "condition", "session")
+
+
+def feature_ids_of(params: dict[str, Any] | None) -> list[str]:
+    """Variable-level ids from a certificate's params: `<name>` for a tunable, `<name>:<value>`
+    for a value-bearing one (one id per element of a list). Sorted, deduplicated, and empty
+    only when the params are -- an artifact with no feature ids descends from nothing the desk
+    can name, which is itself a reading (measured 2026-09-08: every artifact read `[]`)."""
+    out: set[str] = set()
+    for k, v in (params or {}).items():
+        name = str(k)
+        if name in VALUE_BEARING_PARAMS:
+            values = v if isinstance(v, (list, tuple)) else [v]
+            for x in values:
+                if x is None or x == "":
+                    continue
+                out.add(f"{name}:{x}")
+        else:
+            out.add(name)
+    return sorted(out)
+
 
 @dataclass
 class StrategyArtifact:
@@ -75,8 +102,8 @@ def from_certificate(key: str, cert: dict[str, Any]) -> StrategyArtifact:
         state_conditioning={"state": spec.get("state") or cert.get("state")},
         data_requirements=[f"bars.h1:{sym}"] + [f"driver:{d}" for d in
                                                 (params.get("factor_symbols") or [])],
-        feature_ids=[], cost_assumptions={"cost_hash": cert.get("cost_hash"),
-                                          "cost_r": cert.get("cost_r")},
+        feature_ids=feature_ids_of(params),
+        cost_assumptions={"cost_hash": cert.get("cost_hash"), "cost_r": cert.get("cost_r")},
         validation_certificate={"status": cert.get("status") or "PASS",
                                 "gates": cert.get("gates"), "hunt": cert.get("hunt"),
                                 "certified_at": cert.get("certified_at") or cert.get("at")},
