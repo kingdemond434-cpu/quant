@@ -1446,6 +1446,106 @@ def state_growth_curves(ev: list[SleeveEvidence], worlds: Worlds, book: dict[str
                  f"from {len(buckets)} bucket(s)")
 
 
+def state_book(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfig, *,
+               state: str, now_buckets: dict[str, str] | None, total_heat: float,
+               bounds: dict[str, float], family_of: dict[str, str],
+               warm_start: dict[str, float] | None,
+               global_book: dict[str, float] | None) -> dict[str, Any]:
+    """The COMPOSITION re-optimised inside the CURRENT state bucket alone -- one extra solve.
+
+    `state_growth_curves` scores the global book proportionally scaled on each state's worlds,
+    so the per-state curve carries the global solve's composition and only the EVALUATION is
+    conditional (`state_curves_basis: scaled_candidate`). This is the stronger measurement for
+    the one state that matters -- the one the desk is in -- and it costs exactly one solve: the
+    same evidence, the same bounds and family cap the published book was solved under, at the
+    same resolved total heat, on the current state's worlds only. The global book is scored on
+    those same worlds beside it, so the artifact says in one number what solving FOR the state
+    would have bought over holding the global composition in it.
+
+    PUBLISHED, NOT CONSUMED. The gateway sizes from `book`; it reads `heat.state` to pick which
+    allocator's certificate applies (`allocator_proof.select`) and nothing reads this block for
+    a size. It is written so the comparison exists and so a later change that lets the live
+    state's own composition size the floor can be argued from a measured delta rather than a
+    belief. `consumed` is False on every return until that change exists.
+
+    THE TOTAL IS THE RESOLVED HEAT AND THE BOUNDS ARE THE BOOK'S. Solved at exactly
+    `total_heat` (the floor or above, as the law resolved it) under `bounds` -- so even if a
+    reader took this book as the answer, no sleeve would sit above its bound and the total would
+    be neither below the floor nor above what the law licensed.
+    """
+    out: dict[str, Any] = {
+        "status": "UNMEASURED", "state": state or "", "consumed": False,
+        "basis": ("reoptimised_in_state: the composition re-solved on the current state "
+                  "bucket's worlds alone, at the resolved total heat, under the published "
+                  "book's own per-sleeve bounds and family cap"),
+        "note": ("published, not consumed: the gateway reads heat.state and the proof "
+                 "certificate's per-state verdict to choose WHICH allocator sizes; nothing "
+                 "sizes from this block yet")}
+    if not state:
+        return {**out, "why": "no current state id this pass"}
+    # `sample_worlds` returns a tuple of EMPTY labels when nothing conditioned the draw, which is
+    # a non-empty tuple: testing the tuple alone would let an unconditioned population produce a
+    # "state book" that is the global solve wearing a state's name.
+    if worlds is None or not any(getattr(worlds, "regimes", ()) or ()):
+        return {**out, "why": "no regime-labelled worlds: no state bucket to solve inside"}
+    if total_heat <= 0:
+        return {**out, "why": "no resolved heat (catastrophe guard): nothing to compose"}
+    try:
+        from libs.portfolio.allocator_proof import _subworlds, buckets_from_worlds
+    except Exception as exc:
+        return {**out, "why": f"state buckets unavailable ({type(exc).__name__}: {exc})"}
+    buckets = buckets_from_worlds(worlds, now_buckets, min_worlds=MIN_STATE_WORLDS)
+    idx = buckets.get(state)
+    if not idx:
+        return {**out, "why": (f"the current state {state!r} has no bucket of >= "
+                               f"{MIN_STATE_WORLDS} worlds ({len(buckets)} bucket(s) reached "
+                               "it); the global composition stands")}
+    sub = _subworlds(worlds, idx)
+    ub = {k: min(float(v), float(total_heat)) for k, v in bounds.items()}
+    try:
+        solve = optimise(ev, hard_cap=max(CURVE_SAMPLE_MAX, float(total_heat)),
+                         target=float(total_heat), cfg=cfg, worlds=sub, max_per_sleeve=ub,
+                         warm_start=warm_start or None)
+        capped = enforce_family_cap(solve.heat, family_of, solve.total_heat)
+        family_bound = not all(math.isinf(v) for v in capped.values())
+        if family_bound:
+            tight = {k: min(ub.get(k, math.inf), capped.get(k, math.inf)) for k in ub}
+            solve = optimise(ev, hard_cap=max(CURVE_SAMPLE_MAX, float(total_heat)),
+                             target=float(total_heat), cfg=cfg, worlds=sub,
+                             max_per_sleeve=tight, warm_start=solve.heat or None)
+    except ValueError as exc:
+        return {**out, "n_worlds": len(idx),
+                "why": f"the bounds cannot fund {total_heat:.2%} inside this state ({exc})"}
+    if not math.isfinite(solve.mean_log_growth):
+        return {**out, "n_worlds": len(idx),
+                "why": "the state-solved book is wiped out in one of the state's own worlds"}
+    growth = {"mean_log_per_day": round(solve.mean_log_growth, 10),
+              "cvar_log_per_day": round(solve.cvar_log_growth, 10),
+              "robust_score": round(solve.robust_score, 10),
+              "annual_growth_pct": solve.annual_growth_pct,
+              "prob_annual_loss": solve.prob_annual_loss}
+    res: dict[str, Any] = {
+        **out, "status": "MEASURED", "n_worlds": len(idx),
+        "total_heat": round(solve.total_heat, 6),
+        "book": {k: round(v, 6) for k, v in solve.heat.items() if v > 1e-5},
+        "growth_on_state": growth, "family_cap_bound": bool(family_bound),
+        "converged": bool(solve.converged), "iterations": int(solve.iterations),
+        "why": f"solved on the {len(idx)} world(s) of state {state!r}",
+    }
+    if global_book:
+        g = score_book(ev, global_book, cfg=cfg, worlds=sub)
+        res["global_book_on_state"] = {k: (round(float(v), 10) if math.isfinite(float(v))
+                                           else None) for k, v in g.items()}
+        if math.isfinite(g["mean_log_growth"]):
+            res["delta_elogw_per_day"] = round(solve.mean_log_growth - g["mean_log_growth"], 10)
+            res["delta_robust"] = round(solve.robust_score - g["robust_score"], 10)
+            res["reading"] = (
+                f"solving FOR state {state!r} would grow "
+                f"{res['delta_elogw_per_day']:+.6f}/day faster than holding the global "
+                f"composition in it (robust {res['delta_robust']:+.6f}); reported, not sized")
+    return res
+
+
 # ---------------------------------------------------------------------------------------
 # ADMISSION -- dE[log W] AGAINST THE BOOK THE DESK IS ACTUALLY HOLDING
 # ---------------------------------------------------------------------------------------
@@ -2403,6 +2503,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # 3. THE BOOK, at the heat the law resolved.
     fam_share: dict[str, float] = {}
     fill_note: dict[str, Any] = {"needed": False}
+    ub: dict[str, float] = {}
+    family_of = {e.name: e.family for e in ev}
     if verdict.total_heat <= 0:
         book = AllocationResult(heat={}, total_heat=0.0, robust_score=0.0, mean_log_growth=0.0,
                                 cvar_log_growth=0.0, annual_growth_pct=0.0, prob_annual_loss=0.0,
@@ -2427,7 +2529,6 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # to day while sharing a mechanism and a 01:00 fill hour. Two passes converge: the cap
         # scales the offending family's members proportionally, the optimiser re-spends what it
         # frees on everything else, and a family already inside the cap is never touched.
-        family_of = {e.name: e.family for e in ev}
         for _pass in range(2):
             capped = enforce_family_cap(book.heat, family_of, book.total_heat)
             if all(math.isinf(v) for v in capped.values()):
@@ -2464,6 +2565,20 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _log(f"mechanism mix: {len(fam_share)} family(ies), largest {top[0]} at "
                  f"{top[1] / max(book.total_heat, 1e-9):.0%} of the book")
     funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+
+    # ---------------------------------------- THE BOOK SOLVED FOR THE STATE THE DESK IS IN
+    # One extra solve on the current state bucket's worlds alone, at the resolved heat, under
+    # the same bounds and family cap -- the composition the state itself would choose, beside
+    # what the global composition earns in it. Published as `state_book`; consumed by nothing.
+    if heavy:
+        sbook = state_book(ev, worlds, cfg, state=current_state, now_buckets=kept_dims,
+                           total_heat=float(verdict.total_heat), bounds=ub, family_of=family_of,
+                           warm_start=funded or None, global_book=funded or None)
+        _log(f"state book: {sbook.get('status')} -- {sbook.get('why')}"
+             + (f"; {sbook.get('reading')}" if sbook.get("reading") else ""))
+    else:
+        sbook = {"status": "not measured on this clock", "consumed": False,
+                 "state": current_state or ""}
 
     # ---------------------------------------------------- THE POSTERIOR MULTI-PERIOD BOOK
     # `libs/portfolio/posterior_growth` solves the same objective over a POSTERIOR on worlds --
@@ -3002,6 +3117,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # which carries them into the sizing book AT ZERO so the gateway can size them at zero
         # instead of falling back to the 3% base fraction. Nothing here is retired.
         "book_zeroed": zeroed,
+        # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns
+        # there. `consumed` is False: the gateway sizes from `book` and reads `heat.state` only
+        # to choose whose certificate applies. Published so the delta is a measurement.
+        "state_book": sbook,
         # THE ADMISSION CRITERION: dE[log W] per candidate against THIS book, on THESE worlds, at
         # equal total heat. `promoter.py` gives capital to nothing that fails it.
         "admission": admission,
