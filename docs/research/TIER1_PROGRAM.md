@@ -27,13 +27,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 |---|---|---|---|---|---|
 | 0 Close the truth loop: attribution, deadman, stable adoption, node separation, durable jobs, data freshness, research lineage | 1 | 0 | 2 | 0 | 19 |
 | 1 Remove the research throughput ceiling: worker queue, multi-fidelity screening, EVSI scheduler, research DAG, scalable forward clocks, content-addressed cache, experiment DB | 1 | 0 | 2 | 0 | 7 |
-| 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 0 | 0 | 3 | 0 | 21 |
+| 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 0 | 0 | 4 | 0 | 20 |
 | 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 0 | 0 | 8 |
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 0 | 0 | 14 |
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 2 | 0 | 17 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
-| **all** | 3 | 0 | 10 | 0 | 100 |
+| **all** | 3 | 0 | 11 | 0 | 99 |
 
 ## Items
 
@@ -361,11 +361,11 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:search · artifact: desks/mt5/reports/EVOLUTION.json archive · consumer: NONE
   - next: Add a descriptor-keyed dict to `desks/mt5/research/alpha_evolution.Evaluator` — cell = (mechanism_class, horizon bucket from `hold_bars`, top regime label from data/state_vector.json, symbol asset_class) — and keep the best expression per cell alongside the existing `ELITE` list, so the elite becomes an archive rather than a single front.
   - landed: 3988ae7e
-- **G17 Cross-frequency research (D1 state → H1 setup → M5 execution)** — LANDED
+- **G17 Cross-frequency research (D1 state → H1 setup → M5 execution)** — PARTIAL
+  - gap: DEMOTED 2026-09-09. A D1 file is not a D1->H1->M5 chain. What landed is the DATA rung: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks a series per clock, which fixed a real defect (finer gold bars had silently switched off the book-wide regime signal). The CAPABILITY asked for is a hypothesis whose state timeframe, signal timeframe and execution timeframe are three declared fields, searched as such by the sweep, carried through certificate -> forward clock -> gateway. Today a cell has ONE timeframe; H4, M30 and W1 are not derived at all; and all 66 certificates read declared_default_H1. LANDED here would have been the build-coverage-as-comfort reading the ledger's own vocabulary note warns about.
   - The daily clock gets a file of its own: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks the series per clock. MEASURED: XAUUSD@daily saw 73 observations against a floor of 250 because the M5 file answered every clock, and XAUUSD@daily IS the state vector's global state that the allocator's world draw reads. Both clocks fit after the change (441 weekly, 2,000 daily) (MEASURED)
   - clock: hourly_cycle:refresh_bars · artifact: desks/mt5/data/universe/derived_series.json · consumer: pf_allocator and the gateway read state_vector.json; executables.executor_gap enforces the certificate's own chart
   - next: Extend `desks/mt5/research/refresh_tail.py` / the universe pull to write `<SYM>_D1.parquet` for the book's symbols (a D1 resample of H1 is already computed in orthogonal_sweep._resample_rule), so `state_vector_build.BAR_SUFFIXES` can carry the daily clock it already declares in ASSET_CLOCKS.
-  - landed: 8801b7ff
 - **G18 Negative-correlation / drawdown alpha, liquidity alpha, regime transitions, time-of-day capital** — LANDED
   - The timing layer and the white-space map get a clock: hour_surface, hour_prior and alpha_periodic_table run in the daily cycle (MEASURED)
   - clock: hourly_cycle:daily · artifact: desks/mt5/reports/HOUR_SURFACE.json · consumer: DRAWDOWN_ALPHA.json → desks/mt5/research/survivor_neighbourhood.py + libs/ops/capability_graph.py. hour_surface.json → desks/mt5/research/hour_prior.py only (its producer's producer). tail_alpha / transition_alpha → miner_candidate_compiler, which has recorded 0 rows from either.
@@ -529,6 +529,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - desks/mt5/mt5desk/decision_core.py — gold_book_lot(): max(the allocator's h_i lot, gold_lot), returning the lot AND the basis that set it (MEASURED)
   - desks/mt5/mt5desk/gateway.py — the `"auto"` placement branch routes through it, so the optimiser's fraction for a gold window now reaches the venue instead of being computed, billed as heat and discarded (MEASURED)
   - desks/mt5/tests/test_gold_is_sized_by_the_allocator.py — the lot is never below today's at any fraction from 1e-9 to 1.0; a fraction the optimiser wants larger actually raises it (MEASURED)
+  - desks/mt5/mt5desk/gateway.py — the gold heat charge is computed by the SAME gold_book_lot the send calls, and its branch is tested BEFORE from_book; a gold row the allocator held was previously charged h_i while max(h_i lot, policy lot) went to the venue, which predates the allocator wiring (MEASURED, external audit 2026-09-09)
   - clock: MT5-Gateway · artifact: desks/mt5/data/intent_ledger.jsonl; the gateway log's gold sizing basis · consumer: decision_core.allocator_heat/allocator_rank/book_from_allocation → gateway.allocator_heat/allocator_book/cap_by_heat; promoter.allocation_view; missed_growth (ALLOC); allocator_attribution; portfolio_gap
   - next: In desks/mt5/mt5desk/gateway.py:2168, let the gold branch take the allocator's fraction when one exists — `promoted_lot(..., from_book=True)` with `risk_frac=_book[name]` — and keep `max(that lot, gold_min_lot())` so the 0.02 floor still binds upward. Gold then gets whatever h_i the optimiser earned it (which on the last recorded solve was 1.7% of a 20.5% book) and can never be sized below the floor.
   - landed: this commit

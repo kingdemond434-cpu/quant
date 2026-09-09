@@ -113,3 +113,39 @@ def test_the_floor_and_the_envelope_constants_are_untouched() -> None:
     assert "max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot())" in src, \
         "gold_lot must still floor at the principal's minimum"
     assert dc.gold_min_lot() >= 0.02 - 1e-12
+
+
+# ------------------------------------------------------ the charge must equal what is sent
+def test_the_charge_can_never_sit_below_the_policy_component_of_the_lot() -> None:
+    """THE HEAT-ACCOUNTING IDENTITY (external audit, 2026-09-09). A gold window the allocator
+    held was charged h_i while the placement site sent max(h_i lot, policy lot). Charge below
+    send is the one direction a heat budget exists to prevent, and it PREDATES the allocator
+    wiring: before it, such a row was charged h_i and always sent the policy lot.
+
+    The charge is now computed by the SAME function the send calls, so for every fraction the
+    charged lot equals the sent lot at the same arguments -- and in particular is never the
+    smaller allocator term while the larger policy term goes to the venue.
+    """
+    policy = _policy()
+    for h_i in (None, 0.0, 1e-6, 0.001, 0.01, 0.05, 0.50, 1.0):
+        charged, _ = dc.gold_book_lot(EQUITY, DIST, INFO, h_i)
+        sent, _ = dc.gold_book_lot(EQUITY, DIST, INFO, h_i)
+        assert charged == sent, f"h_i={h_i}: charge {charged} != send {sent}"
+        assert charged >= policy - 1e-12, (
+            f"h_i={h_i}: charged {charged} below the policy lot {policy} the venue would get")
+
+
+def test_the_gateway_bills_gold_through_the_same_sizer_and_not_behind_from_book() -> None:
+    """Pinned in source, because this is a control-flow bug and not an arithmetic one: the gold
+    branch must be tested BEFORE `from_book`, or a gold row the allocator holds never reaches it.
+    """
+    src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    block = src.split("from_book = _book is not None", 1)[1].split("cap_by_heat(sleeves", 1)[0]
+    gold_at = block.index('if _s.get("lot") == "auto":')
+    book_at = block.index("elif from_book:")
+    assert gold_at < book_at, "the gold charge branch is behind from_book again"
+    assert "_lot_charge, _charge_basis = gold_book_lot(" in block, \
+        "the charge must call the same sizer the send calls"
+    assert 'lot=gold_lot(equity))' not in block, \
+        "the old policy-only charge is back; it cannot see the allocator's larger lot"
+    assert '_s["q_charge_basis"]' in block, "the charge must say which term set it"

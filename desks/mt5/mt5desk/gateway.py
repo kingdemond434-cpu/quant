@@ -2263,6 +2263,28 @@ def main() -> None:
         if from_book:
             _s["risk_frac"] = float(_book[_s["name"]])
             _s["sized_by"] = "allocator_book"
+        if _s.get("lot") == "auto":
+            # GOLD IS BILLED AT THE LOT IT WILL ACTUALLY SEND, WHETHER OR NOT THE ALLOCATOR
+            # HOLDS IT. This branch used to sit BEHIND `from_book`, so a gold window the
+            # allocator held never reached it: the row was charged h_i while the placement site
+            # sent `gold_book_lot` = max(h_i lot, policy lot). Charge below send is the one
+            # direction a heat budget exists to prevent, and it is the same class of defect as
+            # the 2.94%-believed/22.2%-true reading `cap_by_heat` was written to end. Found by an
+            # external audit 2026-09-09 and it PREDATES the allocator wiring: before it, a gold
+            # row in the book was charged h_i and always sent the policy lot.
+            #
+            # THE CHARGE CALLS THE SAME SIZER THE SEND WILL CALL, with the house nominal, exactly
+            # as the old branch did -- the sleeve's own stop is not known until
+            # `stop_distance(spec)` inside the placement loop, and `cap_by_heat` prices this
+            # symbol the same way. The `max` is what guarantees the charge cannot fall below the
+            # policy component of the lot that is sent.
+            _lot_charge, _charge_basis = gold_book_lot(
+                equity, None, None,
+                _s.get("risk_frac") if from_book else None, _s.get("decay_faded"))
+            _s["q_charge"] = realised_q(equity, None, _s.get("symbol", GOLD_SYMBOL),
+                                        lot=_lot_charge)
+            _s["q_charge_basis"] = _charge_basis
+        elif from_book:
             # BILLED AT EXACTLY THE FRACTION IT IS SIZED AT (see promoted_lot from_book): the
             # heat cap and the sizer must price the same leg at the same number.
             _s["q_charge"] = float(_book[_s["name"]]) * decay_factor(_s.get("decay_faded"))
@@ -2272,18 +2294,6 @@ def main() -> None:
             # heat ledger and the order path could come to disagree about the same leg.
             _s["q_charge"] = ramped_fraction(_s.get("risk_frac"), sleeve_live_n(_s["name"]),
                                              _s.get("decay_faded"))
-        elif _s.get("lot") == "auto":
-            # THE GOLD BOOK, BILLED AT THE LOT IT WILL ACTUALLY SEND. Without this the cap fell
-            # through to its own `realised_q(equity, None, XAUUSD)`, which prices the POLICY lot
-            # -- and the principal's 0.02 floor is precisely the case where the lot sent is
-            # larger than the lot policy asked for. The book would then have run at up to twice
-            # the risk the heat ledger was reserving for it, in the one direction a heat budget
-            # exists to prevent. The stop is not known until `stop_distance(spec)` inside the
-            # placement loop, so this uses gold's house nominal exactly as `cap_by_heat` does
-            # for this symbol; the two agree by construction because they now call the same
-            # sizer with the same arguments.
-            _s["q_charge"] = realised_q(equity, None, _s.get("symbol", GOLD_SYMBOL),
-                                        lot=gold_lot(equity))
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)

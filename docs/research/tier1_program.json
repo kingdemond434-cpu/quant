@@ -878,14 +878,15 @@
    "evidence": [
     "desks/mt5/mt5desk/decision_core.py — gold_book_lot(): max(the allocator's h_i lot, gold_lot), returning the lot AND the basis that set it (MEASURED)",
     "desks/mt5/mt5desk/gateway.py — the `\"auto\"` placement branch routes through it, so the optimiser's fraction for a gold window now reaches the venue instead of being computed, billed as heat and discarded (MEASURED)",
-    "desks/mt5/tests/test_gold_is_sized_by_the_allocator.py — the lot is never below today's at any fraction from 1e-9 to 1.0; a fraction the optimiser wants larger actually raises it (MEASURED)"
+    "desks/mt5/tests/test_gold_is_sized_by_the_allocator.py — the lot is never below today's at any fraction from 1e-9 to 1.0; a fraction the optimiser wants larger actually raises it (MEASURED)",
+    "desks/mt5/mt5desk/gateway.py — the gold heat charge is computed by the SAME gold_book_lot the send calls, and its branch is tested BEFORE from_book; a gold row the allocator held was previously charged h_i while max(h_i lot, policy lot) went to the venue, which predates the allocator wiring (MEASURED, external audit 2026-09-09)"
    ],
    "scheduled_by": "MT5-Gateway",
    "artifact": "desks/mt5/data/intent_ledger.jsonl; the gateway log's gold sizing basis",
    "consumer": "decision_core.allocator_heat/allocator_rank/book_from_allocation → gateway.allocator_heat/allocator_book/cap_by_heat; promoter.allocation_view; missed_growth (ALLOC); allocator_attribution; portfolio_gap",
    "gap": "",
    "next_step": "In desks/mt5/mt5desk/gateway.py:2168, let the gold branch take the allocator's fraction when one exists — `promoted_lot(..., from_book=True)` with `risk_frac=_book[name]` — and keep `max(that lot, gold_min_lot())` so the 0.02 floor still binds upward. Gold then gets whatever h_i the optimiser earned it (which on the last recorded solve was 1.7% of a 20.5% book) and can never be sized below the floor.",
-   "note": "CLOSED UPWARD ONLY. Routing gold at h_i ALONE would be a size CUT at today's equity on the desk's only forward-evidenced book, so the sent lot is max(allocator, policy): the semantic break is gone and the size can only rise. Gold at h_i alone remains the principal's to grant.",
+   "note": "CLOSED UPWARD ONLY. Routing gold at h_i ALONE would be a size CUT at today's equity on the desk's only forward-evidenced book, so the sent lot is max(allocator, policy): the semantic break is gone and the size can only rise. Gold at h_i alone remains the principal's to grant. The heat identity is closed too: charge and send call one sizer with one set of arguments, so charge can never sit below the policy component of the lot. Gold remains max(allocator, policy) rather than allocator alone: the allocator can raise gold and cannot cut, zero or retire a window, which is the standing order and not full allocator control. That last step is the principal's to grant.",
    "landed": [
     "this commit"
    ]
@@ -2167,7 +2168,7 @@
    "item": "Cross-frequency research (D1 state → H1 setup → M5 execution)",
    "domain": "G",
    "phase": 2,
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "evidence": [
     "The daily clock gets a file of its own: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks the series per clock. MEASURED: XAUUSD@daily saw 73 observations against a floor of 250 because the M5 file answered every clock, and XAUUSD@daily IS the state vector's global state that the allocator's world draw reads. Both clocks fit after the change (441 weekly, 2,000 daily) (MEASURED)"
@@ -2175,11 +2176,9 @@
    "scheduled_by": "hourly_cycle:refresh_bars",
    "artifact": "desks/mt5/data/universe/derived_series.json",
    "consumer": "pf_allocator and the gateway read state_vector.json; executables.executor_gap enforces the certificate's own chart",
-   "gap": "",
+   "gap": "DEMOTED 2026-09-09. A D1 file is not a D1->H1->M5 chain. What landed is the DATA rung: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks a series per clock, which fixed a real defect (finer gold bars had silently switched off the book-wide regime signal). The CAPABILITY asked for is a hypothesis whose state timeframe, signal timeframe and execution timeframe are three declared fields, searched as such by the sweep, carried through certificate -> forward clock -> gateway. Today a cell has ONE timeframe; H4, M30 and W1 are not derived at all; and all 66 certificates read declared_default_H1. LANDED here would have been the build-coverage-as-comfort reading the ledger's own vocabulary note warns about.",
    "next_step": "Extend `desks/mt5/research/refresh_tail.py` / the universe pull to write `<SYM>_D1.parquet` for the book's symbols (a D1 resample of H1 is already computed in orthogonal_sweep._resample_rule), so `state_vector_build.BAR_SUFFIXES` can carry the daily clock it already declares in ASSET_CLOCKS.",
-   "landed": [
-    "8801b7ff"
-   ]
+   "landed": []
   },
   {
    "id": "G18",
