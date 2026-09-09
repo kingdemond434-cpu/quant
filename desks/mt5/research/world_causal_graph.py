@@ -283,6 +283,14 @@ def _condition(graph: cg.CausalGraph, e: cg.Edge, a: tuple[str, str, float],
                 and float(got.get("p_value", 1.0)) <= cg.ALPHA)
     e.evidence["conditional"] = {"status": "SURVIVES" if survives else "FAILS",
                                  "parents": used, "parents_skipped": skipped, **got}
+    # THE SAME QUESTION WITHOUT THE LINEAR FORM, published beside the verdict and never as one
+    # (external audit round 3, 2026-09-09). A confounder that acts through magnitude or past a
+    # threshold is absorbed by neither regression, so the deltaR2 can read SURVIVES for an edge
+    # that is entirely the shared driver. The status above stays the deltaR2's; this is a second
+    # column, and it REFUSES loudly when the sample cannot support the histogram rather than
+    # answering from too few cells -- 1,280 aligned bars for one admitted parent, 5,120 for two.
+    e.evidence["conditional_information_flow"] = cg.conditional_information_flow(
+        x, y, zmat, e.lag, z_lags=[u["lag"] for u in used])
 
 
 def _weekly_cot_pairs(z: pd.Series, close: pd.Series, sign: float

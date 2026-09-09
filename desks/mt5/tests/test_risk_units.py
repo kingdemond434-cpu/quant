@@ -21,6 +21,7 @@ from __future__ import annotations
 import ast
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -286,13 +287,25 @@ def test_the_trade_loop_passes_the_sleeve_s_own_symbol_and_live_info():
                 if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
                 and n.func.id == "gold_book_lot"]
     assert _sizings, "the gold branch no longer sizes through gold_book_lot at all"
-    assert any([getattr(a, "id", None) for a in c.args[:3]] == ["equity", "dist", "sym"]
+    assert any([getattr(a, "id", None) for a in c.args[:3]] == ["equity", "dist_usd", "info"]
+               or [getattr(a, "id", None) for a in c.args[:3]] == ["equity", "dist", "sym"]
                for c in _sizings), (
-        "the gold placement branch no longer hands the sizer this pass's stop and the live "
-        "symbol_info; it would price a live order off a default contract spec")
-    # canon also hands over the sleeve's own risk_frac (clamped inside promoted_lot)
-    assert 'promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym' in _SRC
-    assert 'realised_q(equity, dist, s["symbol"], sym, lot=lot)' in _SRC
+        "the gold sizer no longer receives this pass's stop and the live symbol_info; it would "
+        "price a live order off a default contract spec")
+    # THE SIZERS MOVED INTO `bracket_lane_lot` AND `resolve_family_order` (2026-09-09), so the
+    # arguments are checked where they are now passed. What this test is about is unchanged and
+    # is now true in more places: every sizing site hands over the sleeve's OWN instrument, its
+    # OWN stop and the LIVE symbol_info, and none of them falls back to a house average.
+    assert 'promoted_lot(equity, n_live, dist, s["symbol"], sym' in _SRC, (
+        "a promoted sizing site no longer passes the sleeve's own symbol and live info")
+    assert _SRC.count('promoted_lot(equity, n_live, dist, s["symbol"], sym') >= 2, (
+        "both the bracket lane and the family lane must size through the same call shape")
+    # Whitespace-insensitive: the call spans two lines and a reflow must not read as a defect.
+    _flat = re.sub(r"\s+", " ", _SRC)
+    assert 'realised_q(equity, _pend["dist"], _s["symbol"], _pend["sym"], lot=_lot_charge)' \
+        in _flat, (
+        "the heat charge is no longer measured at the resolved stop, in the sleeve's own "
+        "instrument, from the live symbol_info, at the lot that will be sent")
     assert "cannot price" in _SRC
 
 

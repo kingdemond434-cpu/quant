@@ -937,6 +937,78 @@ def information_flow(x: np.ndarray, y: np.ndarray, lag: int, *, seed: int = 0,
         return {"why": f"information flow refused: {type(exc).__name__}: {exc}"}
 
 
+def conditional_information_flow(x: np.ndarray, y: np.ndarray, z: np.ndarray, lag: int, *,
+                                 z_lags: Sequence[int] | None = None, own_lags: int = 1,
+                                 seed: int = 0, n_perm: int = N_PERM) -> dict[str, Any]:
+    """Nonlinear I(X_{t-lag}; Y_t | Z_{t-lz}, Y_{t-1}) beside `conditional_information`'s deltaR2.
+
+    THE HALF THE LINEAR TEST CANNOT ANSWER (external audit round 3, 2026-09-09). `_condition`
+    already asks the constraint-based question -- once the parent the graph already believes in
+    is held fixed, does X still add anything? -- but it asks it as a REGRESSION. A confounder
+    that acts through magnitude rather than sign, or past a threshold, is absorbed by neither
+    the base nor the full model, so a deltaR2 can report "survives" for a mechanism that is
+    entirely the shared driver, and can report "fails" for one whose dependence is real and
+    nonlinear. Conditional mutual information asks the same question without the linear form.
+
+    IT IS AN ANNOTATION AND ADMITS NOTHING, exactly as `information_flow` is. The admission rule
+    stays the deflated interval plus the incremental test, and the conditional verdict stays
+    `conditional_information`'s. This is a second column on the same row.
+
+    THE FLOOR IS THE HONEST COST OF CONDITIONING and it is stated rather than sensed: a joint
+    histogram over (X, Y, Y's own lag, k confounders) has `bins ** (3 + k)` cells and needs five
+    observations each -- 1,280 aligned bars for ONE admitted parent at the default four bins,
+    5,120 for two. `causal_graph.MIN_N` is 500, so a two-parent conditioning REFUSES on most
+    edges and says so; that is the measurement telling the truth about what it can resolve, and
+    it is why the linear test is not replaced by this one.
+
+    Returns `value`/`plugin`/`n`/`floor`/`why` from the estimator plus `p_value` under a
+    within-Z permutation null -- the correct null for a conditional statistic, because a free
+    shuffle of X breaks X-Z as well as X-Y|Z and so tests plain independence instead. Never
+    raises: a refusal comes back with `value: None` and a filled `why`.
+    """
+    try:
+        from libs.research import information_flow as _inf
+    except Exception as exc:                                    # pragma: no cover - import guard
+        return {"value": None, "why": f"information_flow unavailable: {type(exc).__name__}: {exc}"}
+    try:
+        a = np.asarray(x, dtype="float64")
+        b = np.asarray(y, dtype="float64")
+        zm = np.asarray(z, dtype="float64")
+        if zm.ndim == 1:
+            zm = zm[:, None]
+        k = int(zm.shape[1])
+        zl = [int(v) for v in (z_lags if z_lags is not None else [lag] * k)]
+        p_own = max(1, int(own_lags))
+        start = max(int(lag), p_own, *(zl or [1]))
+        n_all = a.size - start
+        if n_all < 30:
+            return {"value": None, "n": int(max(0, n_all)),
+                    "why": f"{max(0, n_all)} aligned rows after the lags is too few to bin"}
+        # THE SAME ALIGNMENT `conditional_information` USES, so the two columns describe one
+        # sample. Y's own lag joins the conditioning set for the same reason transfer entropy
+        # conditions on it: whatever Y could already predict about itself is not X's doing.
+        src = a[start - int(lag):a.size - int(lag)]
+        tgt = b[start:]
+        blocks = [b[start - j:a.size - j] for j in range(1, p_own + 1)]
+        blocks += [zm[start - lz:a.size - lz, c] for c, lz in enumerate(zl)]
+        cond = np.column_stack(blocks)
+        est = _inf.conditional_mutual_information(src, tgt, cond)
+        out = dict(est.to_dict())
+        out["conditioners"] = int(cond.shape[1])
+        out["p_value"] = None
+        if est.value is not None:
+            sig = _inf.significance(_inf.conditional_mutual_information, src, tgt, cond,
+                                    within=cond[:, -1] if k else cond[:, 0],
+                                    n_perm=int(n_perm), seed=int(seed))
+            out["p_value"] = sig.get("p_value")
+            out["null_mean"] = sig.get("null_mean")
+        out["_"] = ("annotation only: the nonlinear conditional is read beside the deltaR2 and "
+                    "changes no admission and no conditional verdict")
+        return out
+    except Exception as exc:
+        return {"value": None, "why": f"nonlinear conditional refused: {type(exc).__name__}: {exc}"}
+
+
 def measure_edge(x: np.ndarray, y: np.ndarray, *, src: str, dst: str, clock: str,
                  decay_cls: str, n_tests: int, max_lag: int = MAX_LAG,
                  lags: Iterable[int] | None = None,

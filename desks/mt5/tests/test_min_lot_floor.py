@@ -104,21 +104,24 @@ def test_the_heat_ledger_bills_the_floored_lot_not_the_policy_lot() -> None:
     rewritten against what they defend rather than against the old text.
     """
     src = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
-    assert 'if _s.get("lot") == "auto":' in src, (
-        "the pre-cap loop has no branch for the gold book's lot mode")
+    # SINCE 2026-09-09 THE BRANCH IS THE WHOLE BRACKET LANE, not gold alone: gold, promoted and
+    # fixed-lot rows are all charged at the order they will send, because the audit that found
+    # this in gold found the same shape in `auto_ramp` one lane over.
+    lane = 'if _s.get("exec") not in ("family_market", "scalp_market"):'
+    assert lane in src, "the pre-cap loop has no branch for the bracket lane"
     assert 'elif _s.get("lot") == "auto":' not in src, (
         "the gold charge branch is an `elif` again: a gold row the allocator's book holds takes "
         "the `from_book` branch first and is never billed at the lot it sends")
     # THE WHOLE BRANCH, not a fixed slice of characters: the comment above it explains a
     # money-path defect at length, and a 1,200-character window stopped reaching the code.
-    head = src.split('if _s.get("lot") == "auto":', 1)[1].split("elif from_book:", 1)[0]
-    assert "gold_book_lot(" in head, (
-        "the gold heat charge must be priced from the same sizer the send calls")
-    assert "realised_q(equity, _pend[\"dist\"]" in head, (
+    head = src.split(lane, 1)[1].split("elif _s.get(\"exec\") == \"family_market\":", 1)[0]
+    assert "bracket_lane_lot(" in head, (
+        "the heat charge must be priced from the same sizer the send calls")
+    assert 'realised_q(equity, _pend["dist"]' in head, (
         "the charge must be billed at the pending bracket's own stop, not the house nominal")
-    assert "lot, _lot_basis = gold_book_lot(" in src, (
-        "the placement path must size the gold book through gold_book_lot, or the ledger and "
-        "the order disagree about the same leg")
+    assert 'lot = float(_pend["lot"])' in src, (
+        "the placement path must send the lot the cap admitted, or the ledger and the order "
+        "disagree about the same leg")
 
 
 def test_promoted_sleeves_get_the_floor_too() -> None:
@@ -252,11 +255,10 @@ def test_the_heat_ledger_bills_gold_at_its_own_floor() -> None:
     so the book would run at up to twice the risk the budget reserved for it.
     """
     src = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
-    # THE WHOLE BRANCH, not a fixed slice of characters: the comment above it explains a
-    # money-path defect at length, and a 1,200-character window stopped reaching the code.
-    head = src.split('if _s.get("lot") == "auto":', 1)[1].split("elif from_book:", 1)[0]
-    assert "gold_book_lot(" in head, "the gold heat charge is not priced from the send's sizer"
-    assert "lot, _lot_basis = gold_book_lot(" in src
+    head = src.split('if _s.get("exec") not in ("family_market", "scalp_market"):', 1)[1] \
+              .split('elif _s.get("exec") == "family_market":', 1)[0]
+    assert "bracket_lane_lot(" in head, "the gold heat charge is not priced from the send's sizer"
+    assert "return gold_book_lot(" in src, "the gold branch no longer reaches gold_book_lot"
     # And the sizer both sides call still floors at the GOLD minimum, at every stop and every
     # allocator fraction -- checked in arithmetic, because that is the claim, not the spelling.
     for dist in (2.0, 19.1, 60.0, 200.0):

@@ -10,11 +10,14 @@ hundred noise pairs have been charged to the ledger.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 from libs.research import causal_graph as cg
+
+_ROOT = Path(__file__).resolve().parents[2]
 
 N = 4_000
 
@@ -313,3 +316,82 @@ def test_a_reading_that_cannot_be_taken_refuses_and_never_stops_the_measure():
     flow = e.evidence["information_flow"]
     assert flow["te_forward"]["value"] is None and flow["why"]
     assert "below the floor" in flow["te_forward"]["why"]
+
+
+# ------------------------------------- the nonlinear conditional, beside the linear one
+def _confounded(n: int = 3000, seed: int = 0, mech: float = 0.0):
+    """Z drives X at t and Y at t+1, so X_{t-1} predicts Y_t with NO mechanism between them --
+    the shape this book is full of, since nearly every pair shares the dollar. `mech` adds a
+    genuine X -> Y channel on top of the same driver."""
+    rng = np.random.default_rng(seed)
+    z = rng.normal(size=n)
+    x = z + 0.4 * rng.normal(size=n)
+    y = np.concatenate([[0.0], z[:-1]]) + 0.4 * rng.normal(size=n)
+    if mech:
+        y = y + mech * np.concatenate([[0.0], x[:-1]])
+    return x, y, z
+
+
+def test_the_nonlinear_conditional_collapses_a_shared_driver_and_spares_a_mechanism():
+    """Measured 2026-09-09 on this fixture: a pure shared driver keeps 5% of its unconditioned
+    MI once Z is held, a genuine mechanism keeps 23% and is ~7x the driver's CMI."""
+    from libs.research import information_flow as inf
+    xs, ys, zs = _confounded()
+    xm, ym, zm = _confounded(mech=0.9)
+    mi_s = inf.mutual_information(xs[:-1], ys[1:]).value
+    cmi_s = cg.conditional_information_flow(xs, ys, zs, 1)
+    cmi_m = cg.conditional_information_flow(xm, ym, zm, 1)
+    assert cmi_s["value"] is not None and cmi_m["value"] is not None, (cmi_s, cmi_m)
+    assert cmi_s["value"] < 0.15 * mi_s, (
+        f"conditioning left {cmi_s['value']:.4f} of {mi_s:.4f} nats on a pure shared driver")
+    assert cmi_m["value"] > 4 * cmi_s["value"], (
+        f"a mechanism ({cmi_m['value']:.4f}) is not separated from a shared driver "
+        f"({cmi_s['value']:.4f})")
+
+
+def test_the_nonlinear_conditional_p_value_still_does_not_separate_them():
+    """The same honest warning as the unconditional case, and it must stay pinned: BOTH return
+    the smallest reportable p under the within-Z null. Only the magnitude tells them apart, and
+    a reader who trusts the p-value here would call a shared driver a mechanism."""
+    xs, ys, zs = _confounded()
+    xm, ym, zm = _confounded(mech=0.9)
+    p_s = cg.conditional_information_flow(xs, ys, zs, 1, n_perm=60)["p_value"]
+    p_m = cg.conditional_information_flow(xm, ym, zm, 1, n_perm=60)["p_value"]
+    assert p_s is not None and p_m is not None
+    assert p_s < 0.05 and p_m < 0.05, (p_s, p_m)
+
+
+def test_the_nonlinear_conditional_refuses_rather_than_answering_from_too_few_cells():
+    """The floor is bins ** (3 + k) x 5 observations: 1,280 aligned bars for one admitted
+    parent. `causal_graph.MIN_N` is 500, so a short edge REFUSES and says what it needed --
+    which is why the linear test is not replaced by this one."""
+    x, y, z = _confounded(n=600)
+    out = cg.conditional_information_flow(x, y, z, 1)
+    assert out["value"] is None and out["why"]
+    assert "below the floor" in out["why"] and str(out["floor"]) in out["why"]
+
+
+def test_the_nonlinear_conditional_is_an_annotation_and_never_a_verdict():
+    x, y, z = _confounded()
+    out = cg.conditional_information_flow(x, y, z, 1, n_perm=30)
+    assert "annotation only" in out["_"]
+    assert "status" not in out and "survives" not in out, (
+        "the nonlinear conditional has grown a verdict; the conditional status is the deltaR2's")
+
+
+def test_it_never_raises_whatever_it_is_handed():
+    for bad in (np.zeros(0), np.ones(50), np.array([np.nan] * 400)):
+        out = cg.conditional_information_flow(bad, bad, bad, 1)
+        assert out["value"] is None and out.get("why")
+
+
+def test_the_world_graph_publishes_it_beside_the_linear_conditional():
+    """Wired where the linear one already is, on the same aligned sample, so the two columns
+    describe one measurement rather than two."""
+    src = (_ROOT / "desks" / "mt5" / "research" / "world_causal_graph.py").read_text("utf-8")
+    block = src.split("def _condition(", 1)[1].split("\ndef ", 1)[0]
+    assert 'e.evidence["conditional_information_flow"] = cg.conditional_information_flow(' \
+        in block
+    assert 'x, y, zmat, e.lag, z_lags=[u["lag"] for u in used])' in block, (
+        "the nonlinear conditional must use the same sample and lags as the deltaR2 beside it")
+    assert block.index('e.evidence["conditional"]') < block.index("conditional_information_flow")

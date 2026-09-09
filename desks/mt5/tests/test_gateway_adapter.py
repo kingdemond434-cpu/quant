@@ -351,8 +351,26 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
           "_logs": logs, "_intents": intents, "_book": book, "_closes": closes}
     # `_sleeve_identity` rides along because the send site spreads it onto the intent row; it is
     # pure over the sleeve dict and the harness would otherwise report the adapter broken.
-    return _exec(("run_family_sleeves", "_family_chart", "_family_constructor",
-                  "_family_takes_side", "_family_call_params", "_sleeve_identity"), ns)
+    return _exec(("run_family_sleeves", "resolve_family_order", "_family_chart",
+                  "_family_constructor", "_family_takes_side", "_family_call_params",
+                  "_sleeve_identity"), ns)
+
+
+def _run_family(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
+    """BOTH PHASES, IN THE ORDER `main` RUNS THEM: resolve before the heat cap, then send what
+    was resolved.
+
+    The family lane was split on 2026-09-09 for the reason the bracket lane was: `cap_by_heat`
+    charged it `ramped_fraction`, a number fixed before the signal's stop existed, while the
+    executor sized `promoted_lot` against that stop and let the venue's lot floor round it. The
+    executor now sends only what the pre-cap resolution priced, so a test that called it alone
+    would be measuring a sleeve the cap never saw -- which is exactly the state the split
+    exists to make impossible.
+    """
+    for s in sleeves:
+        if s.get("exec") == "family_market":
+            s["pending_order"] = ns["resolve_family_order"](st, s, equity)
+    ns["run_family_sleeves"](st, sleeves, equity)
 
 
 def _sleeve(**over) -> dict:
@@ -366,7 +384,7 @@ def test_unarmed_the_family_executor_logs_the_exact_order_and_marks_the_bar(tmp_
     mt5 = _fake_mt5(rows)
     ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=False, sig_hour=_sig_hour(rows))
     st = {"armed": True}
-    ns["run_family_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_family(ns, st, [_sleeve()], 10_000.0)
     assert mt5.sent == []
     last_bar = dc.h1_frame(rows).index[-2]
     ttl = dc.family_ttl_until(last_bar, 12)
@@ -384,7 +402,7 @@ def test_armed_the_family_executor_sends_the_signals_levels_once_per_bar(tmp_pat
     mt5 = _fake_mt5(rows)
     ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows))
     st = {"armed": True}
-    ns["run_family_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_family(ns, st, [_sleeve()], 10_000.0)
     (req,) = mt5.sent
     assert req["type"] == mt5.ORDER_TYPE_BUY and req["volume"] == 0.12
     assert req["price"] == 1.1102 and req["sl"] == 1.1050 and req["tp"] == 1.1150
@@ -401,7 +419,7 @@ def test_armed_the_family_executor_sends_the_signals_levels_once_per_bar(tmp_pat
     assert ns["_book"][1][3] == 0.12 and ns["_book"][1][4] == 1.1103      # the venue's fill
     assert any("FAMILY-EXEC ORDER -> retcode=10009" in x for x in ns["_logs"])
     # The same bar again places nothing.
-    ns["run_family_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_family(ns, st, [_sleeve()], 10_000.0)
     assert len(mt5.sent) == 1
 
 
@@ -530,7 +548,7 @@ def test_the_family_intent_carries_the_sleeves_certificate_and_id_when_the_row_h
     rows = _rows()
     mt5 = _fake_mt5(rows)
     ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows))
-    ns["run_family_sleeves"]({"armed": True},
+    _run_family(ns, {"armed": True},
                              [_sleeve(certificate="EURUSD.fam.asia", sleeve_id="1903a4cc")],
                              10_000.0)
     (req,) = mt5.sent
@@ -552,7 +570,7 @@ def test_a_state_mismatch_is_marked_and_named_and_a_failed_signal_is_not_marked(
                     sig_hour=_sig_hour(rows),
                     states=lambda closed: {last_bar.date(): "NORMAL_DAY"})
     st = {"armed": True}
-    ns["run_family_sleeves"](st, [_sleeve(state="FAILED_BREAK")], 10_000.0)
+    _run_family(ns, st, [_sleeve(state="FAILED_BREAK")], 10_000.0)
     assert f"[{_NAME}] no trade: day state NORMAL_DAY != FAILED_BREAK" in ns["_logs"]
     assert st["generic"][_NAME] == {"last_signal_bar": str(last_bar)}
 
@@ -561,7 +579,7 @@ def test_a_state_mismatch_is_marked_and_named_and_a_failed_signal_is_not_marked(
     ns = _family_ns(tmp_path, _fake_mt5(rows), monkeypatch, armed_file=True,
                     sig_hour=_sig_hour(rows), signals=_boom)
     st = {"armed": True}
-    ns["run_family_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_family(ns, st, [_sleeve()], 10_000.0)
     assert (f"[{_NAME}] FAMILY-EXEC signal computation failed (no such column); skipped"
             in ns["_logs"])
     assert st["generic"][_NAME] == {}                # considered, so the next pass retries
@@ -572,7 +590,7 @@ def test_off_the_signal_hour_the_executor_touches_no_state(tmp_path, monkeypatch
     ns = _family_ns(tmp_path, _fake_mt5(rows), monkeypatch, armed_file=True,
                     sig_hour=_sig_hour(rows, off=True))   # the sleeve's hour is not this bar's
     st = {"armed": True}
-    ns["run_family_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_family(ns, st, [_sleeve()], 10_000.0)
     assert st["generic"] == {} and ns["_logs"] == []
 
 
@@ -581,7 +599,7 @@ def test_the_executor_refuses_what_it_cannot_replay_exactly(tmp_path, monkeypatc
     ns = _family_ns(tmp_path, _fake_mt5(rows), monkeypatch, armed_file=True,
                     sig_hour=_sig_hour(rows))
     st = {"armed": True}
-    ns["run_family_sleeves"](st, [_sleeve(family="nope"), _sleeve(selector="nope")], 10_000.0)
+    _run_family(ns, st, [_sleeve(family="nope"), _sleeve(selector="nope")], 10_000.0)
     # TWO CAUSES, TWO MESSAGES. This asserted one line ("family/selector has no exact executable")
     # for both, which sends the reader to the wrong place half the time: an unresolvable family is
     # an ORPHAN CERTIFICATE -- no code on this tree answers to the name -- while an unknown
@@ -594,7 +612,7 @@ def test_the_executor_refuses_what_it_cannot_replay_exactly(tmp_path, monkeypatc
             in ns["_logs"])
     short = _fake_mt5(_rows(n=10))
     ns = _family_ns(tmp_path, short, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows))
-    ns["run_family_sleeves"]({"armed": True}, [_sleeve()], 10_000.0)
+    _run_family(ns, {"armed": True}, [_sleeve()], 10_000.0)
     # The chart is NAMED in this message now that the executor runs the whole M1..D1 ladder.
     # "bars unavailable" on a desk hunting seven charts does not say which bars, and the first
     # question about a missing read is always which chart it was for.
@@ -603,12 +621,12 @@ def test_the_executor_refuses_what_it_cannot_replay_exactly(tmp_path, monkeypatc
     flat = _fake_mt5(rows)
     ns = _family_ns(tmp_path, flat, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows),
                     signals=lambda closed, side: [_signal(closed.index[-1], stop=1.1102)])
-    ns["run_family_sleeves"]({"armed": True}, [_sleeve()], 10_000.0)
+    _run_family(ns, {"armed": True}, [_sleeve()], 10_000.0)
     assert f"[{_NAME}] FAMILY-EXEC: degenerate stop distance; skipped" in ns["_logs"]
     ns = _family_ns(tmp_path, _fake_mt5(rows), monkeypatch, armed_file=True,
                     sig_hour=_sig_hour(rows))
     ns["promoted_lot"] = lambda *a, **k: 0.0
-    ns["run_family_sleeves"]({"armed": True}, [_sleeve()], 10_000.0)
+    _run_family(ns, {"armed": True}, [_sleeve()], 10_000.0)
     assert f"[{_NAME}] FAMILY-EXEC: allocator gave this sleeve no heat; skipped" in ns["_logs"]
 
 
@@ -618,13 +636,13 @@ def test_the_time_exit_closes_the_position_and_tells_the_book(tmp_path, monkeypa
     past = (datetime.now(tz=UTC) - timedelta(minutes=1)).isoformat()
     ns = _family_ns(tmp_path, _fake_mt5(rows), monkeypatch, armed_file=True, sig_hour=off)
     st = {"armed": True, "generic": {_NAME: {"open_ttl_until": past}}}
-    ns["run_family_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_family(ns, st, [_sleeve()], 10_000.0)
     assert ns["_closes"] == [("close", "EURUSD")]
     assert ns["_book"] == [("target", _NAME, "EURUSD", 0.0, "ttl")]
     assert "open_ttl_until" not in st["generic"][_NAME]
     ns = _family_ns(tmp_path, _fake_mt5(rows), monkeypatch, armed_file=False, sig_hour=off)
     st = {"armed": True, "generic": {_NAME: {"open_ttl_until": past}}}
-    ns["run_family_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_family(ns, st, [_sleeve()], 10_000.0)
     assert ns["_closes"] == [] and f"[{_NAME}] SHADOW would TTL-close open position(s)" in ns["_logs"]
 
 
@@ -871,9 +889,13 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     # cap (to bill gold at the bracket it will actually send) and again at the placement site for
     # anything not already resolved. Left out of the slice it is a NameError on every pass, and
     # this test would once again pass by never reaching the code it names.
+    # `bracket_lane_lot` rides along for the same reason again: since 2026-09-09 the PRE-CAP
+    # phase sizes every bracket-lane sleeve through it, so without it in the slice every sleeve
+    # resolves as `unpriceable`, nothing is charged, nothing is placeable and the pass sends
+    # nothing -- a green "sends nothing" test that never reached the code it names.
     return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
                   "_rejection_streak_expired", "load_state", "save_state", "now",
-                  "_sleeve_identity", "resolve_pending_bracket"), ns)
+                  "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(

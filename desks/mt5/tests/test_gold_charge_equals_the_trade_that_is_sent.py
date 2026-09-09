@@ -112,14 +112,23 @@ def _resolver(span: float):
     """
     seed = {k: v for k, v in vars(dc).items() if not k.startswith("__")}
     seed["mt5"] = _fake_mt5(span)
-    fn = next(n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef)
-              and n.name == "resolve_pending_bracket")
-    exec(compile(ast.Module(body=[fn], type_ignores=[]), "<gw>", "exec"), seed)
-    return seed["resolve_pending_bracket"]
+    # The gateway's `sleeve_live_n` is a one-argument adapter bound to the desk's ledger path;
+    # the core's same-named function takes the ledger. Stubbed at zero live trades, which is the
+    # bottom of the authority ramp and therefore the conservative end of promoted sizing.
+    seed["sleeve_live_n"] = lambda name: 0
+    # `_past_cancel_hour` rides along: the resolver checks the day's backstop itself now, so the
+    # cap only ever prices orders that are eligible to reach the venue. Left out of the slice it
+    # is a NameError on every call -- the same harness gap that hid a live NameError in the gold
+    # placement path for a whole session.
+    keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef)
+            and n.name in ("resolve_pending_bracket", "_past_cancel_hour", "bracket_lane_lot")]
+    assert len(keep) == 3, [n.name for n in keep]
+    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), seed)
+    return seed
 
 
 def _resolve(span: float, hour: float = 14.0) -> dict:
-    return _resolver(span)(SLEEVE, hour, date(2026, 9, 8))
+    return _resolver(span)["resolve_pending_bracket"](SLEEVE, hour, date(2026, 9, 8))
 
 
 #: Session ranges from a quiet Asia morning to a CPI-day London range. Chosen to straddle the
@@ -166,7 +175,7 @@ def test_a_wider_session_range_carries_a_wider_stop() -> None:
 
 
 def test_the_resolver_refuses_before_the_signal_hour_and_names_the_stage() -> None:
-    pend = _resolver(45.0)(SLEEVE, 11.0, date(2026, 9, 8))
+    pend = _resolve(45.0, hour=11.0)
     assert not pend["ok"] and pend["stage"] == "signal_hour"
 
 
@@ -298,15 +307,28 @@ def test_the_charge_site_bills_at_the_resolved_stop_and_the_live_symbol_info() -
     assert 'resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date())' in block, (
         "the charge must ask about the same day the placement loop will, or the two sites can "
         "disagree across midnight and the charge site silently becomes the trading rule")
-    assert '_pend["dist"], _pend["sym"]' in block, (
+    assert '_s, equity, _pend["dist"], _pend["sym"]' in block, (
         "the charge must be sized at the bracket's own stop in the sleeve's own instrument")
-    assert 'realised_q(equity, _pend["dist"], _s["symbol"], _pend["sym"]' in block, (
-        "the billed fraction must be measured at the same stop the lot was sized against")
+    assert 'realised_q(equity, _pend["dist"], _s["symbol"],' in block \
+        and '_pend["sym"], lot=_lot_charge)' in block, (
+        "the billed fraction must be measured at the same stop the lot was sized against, in "
+        "the sleeve's own instrument, at the lot that will be sent")
+    assert "bracket_lane_lot(" in block, (
+        "the charge must go through the one sizer the send calls, for EVERY lane -- gold, "
+        "promoted and fixed-lot -- not just for gold")
     assert '_s["pending_bracket"] = _pend' in block, (
         "the resolution must be handed to the placement loop, or the send can drift from it")
-    assert 'realised_q(equity, None' in block, (
-        "the house-nominal fallback must survive for a pass where no bracket resolves; without "
-        "it a failed read would drop the sleeve's charge to nothing")
+    # THE HOUSE-NOMINAL FALLBACK IS GONE, DELIBERATELY (external audit round 3, 2026-09-09).
+    # It was what let an unresolved sleeve be charged an approximation and then placed anyway
+    # when the placement site's second attempt succeeded -- an order whose exact risk the cap
+    # had never seen. A sleeve that cannot be resolved before the cap is now charged NOTHING and
+    # marked not placeable, which costs no size: the next pass prices it properly from the start.
+    assert 'realised_q(equity, None' not in block, (
+        "the house-nominal fallback is back in the bracket lane's charge; an unresolved sleeve "
+        "can be charged an approximation and then sent")
+    assert '_s["q_charge"] = 0.0' in block and '_s["placeable"] = False' in block, (
+        "an unresolvable sleeve must be charged nothing and refused the venue for this pass")
+    assert "NOT PLACEABLE THIS PASS" in block, "the refusal must say so on the row"
 
 
 def test_the_placement_site_sends_the_resolution_the_cap_admitted() -> None:
@@ -370,9 +392,10 @@ def test_main_charges_the_heat_cap_exactly_what_it_sends_to_the_venue(tmp_path,
     assert charged["gold_asia"] == q_sent, (
         f"the cap reserved {charged['gold_asia']:.6%} and the venue got {sent_lot} lots at a "
         f"{dist:.5g} stop, which runs {q_sent:.6%}")
-    # And the log must say so rather than leaving it to be reconstructed here.
-    assert any("charged at the bracket this pass will send" in x for x in ns["_logs"]) or \
-        any("gold sizing basis" in x for x in ns["_logs"]), ns["_logs"]
+    # And the log must name the basis that set the size rather than leaving it to be
+    # reconstructed here -- the number and the reason travel together or neither is auditable.
+    assert any("sizing basis" in x for x in ns["_logs"]), ns["_logs"]
+    assert any("realised q" in x for x in ns["_logs"]), ns["_logs"]
     assert not [x for x in ns["_logs"] if "HEAT RECONCILE" in x], (
         "the charge and the send diverged on a clean pass: " + str(ns["_logs"]))
 
@@ -398,3 +421,132 @@ def test_the_reconciliation_tripwire_never_refuses_a_trade() -> None:
             "the heat tripwire skips or stops a trade; it may only report")
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             assert node.func.id in ("log", "float", "isinstance", "abs"), node.func.id
+
+
+# ============================================================ round 3: the invariant goes universal
+# The second audit closed gold on its normal path. The third found three ways it was still not a
+# universal statement, and each is pinned here.
+
+
+def test_the_cancel_hour_is_part_of_the_resolution_not_of_the_send():
+    """THE CAP MUST SEE ONLY ORDERS THAT CAN REACH THE VENUE. The day's backstop was checked in
+    the placement loop alone, so after it passed the pre-cap phase could resolve a good bracket,
+    have the cap RESERVE budget for it, and then watch the loop refuse to place it. Nothing
+    unsafe -- heat held for an impossible order, and a better sleeve possibly deferred behind
+    it. That is a growth cost, and growth is the objective."""
+    pend = _resolve(45.0, hour=float(dc.CANCEL_HOUR) + 0.5)
+    assert not pend["ok"] and pend["stage"] == "past_cancel_hour"
+    assert "taken back by this same pass" in pend["why"]
+    # And it is still resolvable an hour before the backstop, or the guard has eaten the session.
+    assert _resolve(45.0, hour=float(dc.CANCEL_HOUR) - 1.0)["ok"]
+
+
+def test_a_sleeve_the_cap_did_not_price_cannot_be_placed_later_in_the_same_pass():
+    """THE UNIVERSALITY FIX. The old shape was: pre-cap resolution fails -> charge the house
+    nominal -> the placement site resolves AGAIN -> it succeeds -> the order is sent and a
+    tripwire logs the breach. The invariant then held on the normal path and not universally.
+
+    The placement site now consumes the pre-cap resolution and never resolves, so an order the
+    cap did not price cannot be sent at all. It is not a size cut: the sleeve is resolved and
+    charged properly on the next pass, minutes later."""
+    block = _GW_SRC.split("sleeves, heat_note = cap_by_heat(sleeves", 1)[1] \
+                   .split("for s in _hibernated:", 1)[0]
+    assert 'resolve_pending_bracket(' not in block, (
+        "the placement loop resolves the bracket again; a sleeve the cap never priced can reach "
+        "the venue whenever that second attempt happens to succeed")
+    assert "no pre-cap resolution this pass" in block, (
+        "an unresolved sleeve must be refused the venue and told why")
+    assert 'lot = float(_pend["lot"])' in block and 'q_real = float(_pend["q_real"])' in block, (
+        "the send must use the admitted numbers, not recompute its own")
+
+
+def test_the_whole_bracket_lane_is_priced_at_its_order_not_just_gold():
+    """`auto_ramp` had the same defect one lane over: charged `ramped_fraction`, a fraction
+    fixed before the stop existed, and sent `promoted_lot` at the real stop with the venue's lot
+    floor applied on top. One sizer now serves the whole lane."""
+    ns = _resolver(45.0)
+    pend = _resolve(45.0)
+    equity = 8_000.0
+    gold = dict(SLEEVE)
+    assert ns["bracket_lane_lot"](gold, equity, pend["dist"], pend["sym"])[0] > 0
+
+    promoted = {"name": "eurusd_asia", "symbol": "XAUUSD", "lot": "auto_ramp",
+                "risk_frac": 0.03, "rng": None, "sig_hour": 13}
+    lot, basis = ns["bracket_lane_lot"](promoted, equity, pend["dist"], pend["sym"])
+    assert lot > 0 and "promoted_lot" in basis and "risk_frac" in basis
+
+    fixed = {"name": "fixed", "symbol": "XAUUSD", "lot": 0.07, "rng": None, "sig_hour": 13}
+    assert ns["bracket_lane_lot"](fixed, equity, pend["dist"], pend["sym"]) == (
+        0.07, "fixed lot 0.07 from the sleeve row")
+
+
+def test_a_promoted_rows_charge_is_its_realised_risk_and_not_its_requested_fraction():
+    """THE NUMBER THE THIRD AUDIT ASKED FOR. `ramped_fraction` is what the sleeve REQUESTED;
+    `realised_q` at the resolved stop and the floored lot is what the order RUNS. On a small
+    account the venue's minimum lot is the whole difference, and it moves the risk UP."""
+    ns = _resolver(110.0)
+    pend = _resolve(110.0)
+    equity = 1_500.0
+    promoted = {"name": "eurusd_asia", "symbol": "XAUUSD", "lot": "auto_ramp",
+                "risk_frac": 0.03, "rng": None, "sig_hour": 13}
+    lot, _ = ns["bracket_lane_lot"](promoted, equity, pend["dist"], pend["sym"])
+    exact = dc.realised_q(equity, pend["dist"], "XAUUSD", pend["sym"], lot=lot)
+    requested = dc.ramped_fraction(promoted["risk_frac"], 0, None)
+    assert exact > 0 and requested > 0
+    assert abs(exact - requested) > 1e-6, (
+        f"the requested fraction {requested:.4%} and the realised risk {exact:.4%} agree on this "
+        f"fixture, so it no longer demonstrates the gap it was written for")
+
+
+def test_the_charge_site_covers_every_lane_and_names_the_one_it_does_not():
+    """Gold, promoted and fixed-lot are all charged at their resolved order; the family lane is
+    charged at ITS resolved order; the scalp lane is still charged a fraction and the source
+    says so out loud rather than leaving it to be rediscovered by a fourth audit."""
+    block = _GW_SRC.split("from_book = _book is not None", 1)[1] \
+                   .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
+    assert 'if _s.get("exec") not in ("family_market", "scalp_market"):' in block
+    assert 'elif _s.get("exec") == "family_market":' in block
+    assert "resolve_family_order(" in block, "the family lane is not priced at its order"
+    assert "THE SCALP LANE IS STILL CHARGED A FRACTION" in block, (
+        "the one lane that still charges an abstract fraction must say so where it happens")
+
+
+def test_the_family_lane_charges_what_its_executor_sends():
+    """The family resolver returns the lot the executor will send, so the charge is
+    `realised_q` at that lot and the executor never sizes again."""
+    src = _GW_SRC.split("def resolve_family_order(", 1)[1].split("\ndef ", 1)[0]
+    assert "promoted_lot(equity, n_live, dist" in src
+    assert 'from_book=(s.get("sized_by") == "allocator_book")' in src, (
+        "the allocator book's fraction must reach the venue un-re-shrunk (governance G3)")
+    sender = _GW_SRC.split("def run_family_sleeves(", 1)[1].split("\ndef ", 1)[0]
+    assert "promoted_lot(" not in sender, (
+        "the family executor sizes again; it must send the lot the cap admitted")
+    assert 'plan = s.get("pending_order")' in sender
+    assert "no pre-cap resolution this pass" in sender
+
+
+def test_the_family_resolver_writes_no_state():
+    """It runs before the cap, and the cap may reject what it resolved. Marking a signal bar
+    there would consume a signal the sleeve then never traded, and the bar would never come
+    back -- so the mark is reported and applied only by an executor that acted."""
+    fn = next(n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef)
+              and n.name == "resolve_family_order")
+    called = {n.func.id for n in ast.walk(fn)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    assert not called & {"save_state", "_record_intent", "_book_target", "_book_fill", "log"}
+    assert not [n for n in ast.walk(fn) if isinstance(n, ast.Attribute)
+                and isinstance(n.value, ast.Name) and n.value.id == "mt5"
+                and n.attr in ("order_send", "order_check")]
+    # `setdefault` would CREATE the sleeve's pass-state record; the resolver only ever reads.
+    assert "gstate.setdefault" not in _GW_SRC.split("def resolve_family_order(", 1)[1] \
+        .split("\ndef ", 1)[0]
+
+
+def test_an_open_bracket_is_charged_at_the_lot_the_venue_holds():
+    """Re-sizing an order the book already has prices a trade the book does not have: equity
+    has moved since it was placed. The bracket record now carries its own lot."""
+    assert _GW_SRC.count('"lot": lot') == 3, (
+        "a bracket write site stopped recording the lot it placed")
+    block = _GW_SRC.split("from_book = _book is not None", 1)[1] \
+                   .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
+    assert '"placed_lot"' in block and "already on the book" in block

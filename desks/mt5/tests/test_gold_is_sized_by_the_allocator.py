@@ -101,11 +101,18 @@ def test_the_gateway_routes_the_gold_branch_through_it() -> None:
     semantic break returns silently and this test is what catches it."""
     src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
     assert "gold_book_lot as gold_book_lot" in src, "the gateway must import it"
-    assert "lot, _lot_basis = gold_book_lot(" in src
+    # SINCE 2026-09-09 THERE IS ONE SIZER FOR THE WHOLE BRACKET LANE, and gold's branch lives
+    # inside it. `bracket_lane_lot` is called by the pre-cap charge and read back by the send,
+    # so the two cannot be given different arguments -- which is what made this test necessary
+    # in the first place.
+    lane = src.split("def bracket_lane_lot(", 1)[1].split("\ndef ", 1)[0]
+    assert 'if mode == "auto":' in lane and "return gold_book_lot(" in lane, (
+        "the gold branch no longer routes through gold_book_lot")
     assert 'lot = gold_lot(equity, dist, sym) if s["lot"] == "auto"' not in src, \
         "the old auto branch is back and the allocator no longer sizes gold"
-    assert 's.get("sized_by") == "allocator_book"' in src
-    assert "gold sizing basis" in src, "the log must say which term set the size"
+    assert 's.get("sized_by") == "allocator_book"' in lane, (
+        "the allocator's fraction no longer reaches the gold sizer")
+    assert "sizing basis" in src, "the log must say which term set the size"
 
 
 def test_the_floor_and_the_envelope_constants_are_untouched() -> None:
@@ -140,11 +147,16 @@ def test_the_gateway_bills_gold_through_the_same_sizer_and_not_behind_from_book(
     branch must be tested BEFORE `from_book`, or a gold row the allocator holds never reaches it.
     """
     src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
-    block = src.split("from_book = _book is not None", 1)[1].split("cap_by_heat(sleeves", 1)[0]
-    gold_at = block.index('if _s.get("lot") == "auto":')
+    block = src.split("from_book = _book is not None", 1)[1] \
+               .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
+    # THE LANE BRANCH IS TESTED BEFORE `from_book`, and that ordering is the whole point: a gold
+    # row the allocator's book holds must reach the sizer, not be diverted into the fraction
+    # branch. The branch is now the WHOLE bracket lane rather than gold alone, so a promoted row
+    # in the book is billed at its order too.
+    lane_at = block.index('if _s.get("exec") not in ("family_market", "scalp_market"):')
     book_at = block.index("elif from_book:")
-    assert gold_at < book_at, "the gold charge branch is behind from_book again"
-    assert "_lot_charge, _charge_basis = gold_book_lot(" in block, \
+    assert lane_at < book_at, "the bracket-lane charge branch is behind from_book again"
+    assert "bracket_lane_lot(" in block, \
         "the charge must call the same sizer the send calls"
     assert 'lot=gold_lot(equity))' not in block, \
         "the old policy-only charge is back; it cannot see the allocator's larger lot"
