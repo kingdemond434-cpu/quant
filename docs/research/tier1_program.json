@@ -2392,7 +2392,7 @@
    "scheduled_by": "quant-desk-refresh.timer",
    "artifact": "web/refresh_status.json",
    "consumer": "scripts/build_zentech_state.py health.vps_refresh; any session",
-   "gap": "",
+   "gap": "MEASURED 2026-09-09 01:36 UTC over HTTPS: the VPS is alive and rebuilding (desk_state.json generated_at current, breadth.measured_at 01:19) but serving a build from before 2026-09-08 21:29 -- refresh_status.json 404s and desk_state.json carries neither `graph` nor `execution.attributed_share`. The convergence commit landed on desk-sync-clean; the VPS has not taken it. No SSH from this container.",
    "next_step": "",
    "landed": [
     "7264e420",

@@ -147,6 +147,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - next: Add a test to desks/mt5/tests/test_gateway_adapter.py that runs main() with the pause file present and asserts zero order_send calls and zero state writes, and a second that runs the bracket loop twice in one day against a terminal already holding the matching pending orders and asserts the second pass takes the `recovered` path and sends nothing.
   - landed: 518e2927
 - **X1 VPS branch and desk branch converged; automatic merge publishes its status** — LANDED
+  - gap: MEASURED 2026-09-09 01:36 UTC over HTTPS: the VPS is alive and rebuilding (desk_state.json generated_at current, breadth.measured_at 01:19) but serving a build from before 2026-09-08 21:29 -- refresh_status.json 404s and desk_state.json carries neither `graph` nor `execution.attributed_share`. The convergence commit landed on desk-sync-clean; the VPS has not taken it. No SSH from this container.
   - ops/refresh_desk_state.sh:52 — writes web/refresh_status.json every tick (MEASURED)
   - CLAUDE.md — TWO BRANCHES, ONE SILENT ABORT standing fact (MEASURED)
   - tests/ops/test_refresh_desk_state_publishes_its_status.py (MEASURED)

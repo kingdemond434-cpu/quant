@@ -95,6 +95,16 @@ vocabulary. Do not decide something the desk already decided.
   `quant-unit-health` (every 10 min) copies `ops/quant-*.{service,timer}` into the VPS's
   systemd user dir and daemon-reloads, so a pushed timer change is live within the hour of the
   VPS taking the commit; it never enables or disables units.
+- **THE VPS IS ALIVE AND ITS CHECKOUT IS BEHIND (measured 2026-09-09 01:36 UTC, over HTTPS —
+  this container has no SSH).** `dash.quanttt.xyz/desk_state.json` regenerates continuously
+  (`generated_at` current to the minute, `breadth.measured_at` 01:19), so the refresh loop and
+  the miners ARE running. But that payload has no `graph` block, its `execution` block has no
+  `attributed_deals` / `attributed_share`, and `dash.quanttt.xyz/refresh_status.json` 404s —
+  three fields that landed in 738632ff, 14dd6ae9 and fcf57929. So the VPS is serving a build
+  from BEFORE 2026-09-08 21:29 while `desk-sync-clean` carries everything since. HOW TO CHECK
+  IT ADOPTED, from any session with no SSH: fetch `refresh_status.json` (a 200 means the VPS
+  runs the post-738632ff `ops/refresh_desk_state.sh`) and look for `graph` in `desk_state.json`.
+  No VPS-authored ("Codex") commit has appeared on `desk-sync-clean` since 2026-09-08 21:00.
 - **SEAT OUTPUT GOES THROUGH `data/intelligence/<seat>/` (2026-09-08).** The compiler reads
   `data/intelligence/**` (both roots) and nothing else; `data/suggestion_ledger.jsonl` and
   `data/kimi_hunt.json` are gitignored audit trails read by no scheduled organ. kimi donates to
