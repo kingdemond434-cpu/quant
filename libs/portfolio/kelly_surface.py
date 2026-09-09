@@ -66,6 +66,12 @@ MAX_MARGIN_USE = 0.50
 #: turns, and a bound read off two points is a bound read off noise.
 MIN_ENVELOPE_ROWS = 3
 
+#: Worlds a SUB-population needs before its own Kelly surface is a measurement. The crisis
+#: sub-population is `crisis_prob` of the whole (6% of 256 is ~15 worlds); at alpha=0.20 eight
+#: worlds put one or two in the robust quantile, and below that the "crisis Kelly" is one draw
+#: wearing a distribution. Reported UNMEASURED with the count rather than as a number.
+MIN_SUBSET_WORLDS = 8
+
 MEASURED, UNMEASURED = "MEASURED", "UNMEASURED"
 
 
@@ -87,13 +93,26 @@ def _paths(port: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 def surface(worlds: Any, book: Mapping[str, float], *, tolerance: float, alpha: float,
-            fractions: tuple[float, ...] = FRACTIONS) -> dict[str, Any]:
+            fractions: tuple[float, ...] = FRACTIONS,
+            subset: Any | None = None) -> dict[str, Any]:
+    """The Kelly surface of `book` on `worlds`, or on the `subset` of them a caller names.
+
+    `subset` is a boolean mask or an index array over the world axis -- `worlds.crisis` is the
+    one this exists for, so the surface can be re-run on the crisis worlds ALONE and compared
+    with the blended one. Nothing is re-sampled: the same draws, fewer of them.
+    """
     names = tuple(worlds.names)
     h = np.array([float(book.get(n, 0.0)) for n in names], dtype=np.float32)
     total = float(h.sum())
-    if total <= 0 or worlds.r.size == 0:
-        return {"total_heat": total, "rows": [], "note": "empty book"}
-    port = np.einsum("wtn,n->wt", worlds.r, h, optimize=True).astype(np.float64)
+    r = worlds.r
+    if subset is not None:
+        sel = np.asarray(subset)
+        r = r[sel.astype(bool)] if sel.dtype == bool else r[sel.astype(int)]
+    n_worlds = int(r.shape[0]) if r.ndim == 3 else 0
+    if total <= 0 or r.size == 0:
+        return {"total_heat": total, "rows": [], "n_worlds": n_worlds,
+                "note": ("empty book" if total <= 0 else "empty world subset")}
+    port = np.einsum("wtn,n->wt", r, h, optimize=True).astype(np.float64)
     rows = []
     for f in fractions:
         g, dd, ruined = _paths(f * port)
@@ -114,12 +133,78 @@ def surface(worlds: Any, book: Mapping[str, float], *, tolerance: float, alpha: 
     ok = [r["f"] for r in rows if r["p_ruin"] == 0.0 and r["p_dd_over_tolerance"] <= alpha]
     f_tail = max(ok) if ok else 0.0
     return {"total_heat": round(total, 6), "tolerance": tolerance, "alpha": alpha,
+            "n_worlds": n_worlds,
             "f_opt": f_opt, "f_robust": f_robust, "f_tail": f_tail,
             "heat_opt": round(f_opt * total, 6), "heat_robust": round(f_robust * total, 6),
             "heat_tail_max": round(f_tail * total, 6),
             "heat_sampled_max": round(max((r["heat"] for r in rows), default=0.0), 6),
             "at_book": next((r for r in rows if abs(r["f"] - 1.0) < 1e-9), None),
             "rows": rows}
+
+
+def crisis_block(worlds: Any, book: Mapping[str, float], blended: Mapping[str, Any] | None, *,
+                 tolerance: float, alpha: float, fractions: tuple[float, ...] = FRACTIONS,
+                 min_worlds: int = MIN_SUBSET_WORLDS) -> dict[str, Any]:
+    """The crisis-conditional Kelly of `book`, beside the blended one, FOR COMPARISON.
+
+    "What would Kelly be if the crisis world is the one we are in" had no number: crisis worlds
+    sat inside the single mixture and the surface was never re-run on `worlds.crisis` alone. This
+    runs it there and puts f_opt / f_robust next to the blended surface's, with the sign of the
+    difference named -- a book whose crisis Kelly is HIGHER than its blended Kelly is a book the
+    mixture is under-sizing, and a reader can now see that.
+
+    BINDS NOTHING. `binds` is False on every return and no caller sizes from this block; it is
+    published so the comparison exists. Fewer than `min_worlds` crisis worlds is UNMEASURED with
+    the count, never a number.
+    """
+    base: dict[str, Any] = {"binds": False, "basis": "worlds.crisis only, same draws",
+                            "rule": ("crisis-conditional f_opt / f_robust of the SAME book on the "
+                                     "crisis worlds alone, compared with the blended surface; "
+                                     "reported for comparison, sized on by nothing")}
+    crisis = getattr(worlds, "crisis", None)
+    if crisis is None:
+        return {**base, "status": UNMEASURED, "n_worlds": 0,
+                "why": "the world population carries no crisis mask"}
+    mask = np.asarray(crisis).astype(bool)
+    n = int(mask.sum())
+    if n < int(min_worlds):
+        return {**base, "status": UNMEASURED, "n_worlds": n,
+                "why": (f"{n} crisis world(s) in the population, below the {min_worlds} floor "
+                        "-- a Kelly read off that few draws is one draw wearing a distribution")}
+    s = surface(worlds, book, tolerance=tolerance, alpha=alpha, fractions=fractions, subset=mask)
+    if not s.get("rows"):
+        return {**base, "status": UNMEASURED, "n_worlds": n, "why": s.get("note", "no rows")}
+    b = blended or {}
+    f_opt_b, f_rob_b = b.get("f_opt"), b.get("f_robust")
+    out: dict[str, Any] = {
+        **base, "status": MEASURED, "n_worlds": n,
+        "total_heat": s["total_heat"], "tolerance": tolerance, "alpha": alpha,
+        "f_opt": s["f_opt"], "f_robust": s["f_robust"], "f_tail": s["f_tail"],
+        "heat_opt": s["heat_opt"], "heat_robust": s["heat_robust"],
+        "heat_tail_max": s["heat_tail_max"], "at_book": s.get("at_book"),
+        "rows": s["rows"][::2],
+    }
+    if isinstance(f_opt_b, (int, float)) and isinstance(f_rob_b, (int, float)):
+        d_opt = float(s["f_opt"]) - float(f_opt_b)
+        d_rob = float(s["f_robust"]) - float(f_rob_b)
+        out["vs_blended"] = {
+            "f_opt_blended": float(f_opt_b), "f_robust_blended": float(f_rob_b),
+            "f_opt_crisis_minus_blended": round(d_opt, 4),
+            "f_robust_crisis_minus_blended": round(d_rob, 4),
+            "crisis_kelly_higher_than_blended": bool(d_opt > 1e-9),
+            "reading": (("the crisis worlds alone want a LARGER fraction of this book than the "
+                         "mixture does: the mixture is not under-sizing for the crisis, the "
+                         "crisis is not where this book's growth turns over")
+                        if d_opt > 1e-9 else
+                        ("the crisis worlds alone want a smaller or equal fraction: the "
+                         "mixture's f_opt is above the crisis Kelly, which is what a blended "
+                         "surface is expected to show and is the case the CVaR term already "
+                         "prices") if d_opt < -1e-9 else
+                        "crisis and blended f_opt coincide on this grid"),
+        }
+    else:
+        out["vs_blended"] = {"status": UNMEASURED, "why": "no blended surface to compare with"}
+    return out
 
 
 def _derivatives(rows: list[dict[str, Any]]) -> None:
@@ -244,8 +329,8 @@ def envelope(rows: Sequence[Mapping[str, Any]], *, alpha: float, fallback: float
            f"(P(ruin)=0, P(DD>tolerance)<={alpha:.0%}"
            + (", margin" if mu else "") + (", capacity" if capacity_max is not None else "")
            + ")")
-    why += (f" and that is the HIGHEST heat the surface sampled -- the bound is the edge of the "
-            f"measurement, not of the opportunity; sample further out to earn more."
+    why += (" and that is the HIGHEST heat the surface sampled -- the bound is the edge of the "
+            "measurement, not of the opportunity; sample further out to earn more."
             if at_edge else
             f", and {', '.join(stopped_by)} fails at the next sampled heat.")
     return {"ceiling": ceiling, "status": MEASURED, "binding": binding,

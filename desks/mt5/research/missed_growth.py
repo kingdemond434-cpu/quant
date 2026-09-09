@@ -346,6 +346,72 @@ def measure_hazard_shrink(r, alloc: dict, _fv: dict) -> dict[str, Any]:
             "why": "growth of the tilted book minus the untilted one, same worlds, same heat"}
 
 
+def measure_decay_posterior(r, alloc: dict, _fv: dict) -> dict[str, Any]:
+    """The PER-SLEEVE decay haircut against the blanket, on the same worlds and the same book.
+
+    `pf_allocator.apply_decay_posterior` hands each sleeve the drift monitor's hazard as its own
+    `decay_prob_i`, capped at the blanket 30%, instead of tilting its posterior mean post hoc.
+    The allocator scores the FUNDED book on its own worlds (`growth_with`) and on a population
+    drawn identically except that every sleeve carries the blanket (`growth_without`); the
+    difference is what the per-sleeve posterior is worth in log-wealth per day. No sleeve
+    relieved this pass is a real zero, not a missing measurement.
+    """
+    dp = alloc.get("decay_posterior") or {}
+    if not alloc:
+        return {"verdict": UNMEASURED, "why": "no allocator pass on this host"}
+    if not dp:
+        return {"verdict": UNMEASURED,
+                "why": ("pf_allocation.json carries no decay_posterior block; needs "
+                        "decay_posterior.growth_with and .growth_without (mean log per day of "
+                        "the same book, same worlds, per-sleeve decay vs the blanket) plus "
+                        ".by_sleeve {sleeve: {hazard, decay_prob_i}}")}
+    if str(dp.get("mode") or "") != "decay_posterior" or not int(dp.get("n_from_hazard") or 0):
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
+                "why": (f"mode={dp.get('mode')!r}, {int(dp.get('n_from_hazard') or 0)} sleeve(s) "
+                        "carried a measured hazard: every sleeve paid the blanket this pass")}
+    with_, without = _num(dp.get("growth_with")), _num(dp.get("growth_without"))
+    if with_ is None or without is None:
+        return {"verdict": UNMEASURED, "n_relieved": int(dp.get("n_from_hazard") or 0),
+                "why": "decay_posterior names the relieved sleeves but carries no with/without "
+                       "growth pair to price them"}
+    return {"verdict": "SAMPLE", "value_logw_per_day": round(with_ - without, 8), "sample": True,
+            "n_relieved": int(dp.get("n_from_hazard") or 0),
+            "blanket": dp.get("blanket"),
+            "why": "growth of the funded book under per-sleeve decay minus under the blanket, "
+                   "same book, same worlds"}
+
+
+def measure_explore(r, alloc: dict, _fv: dict) -> dict[str, Any]:
+    """What lending a slice of the book to ambiguous candidates cost, or earned, this pass.
+
+    `admission.explore` is the Thompson draw inside the admission margin: candidates whose
+    dE[log W] sat inside the noise margin, funded from within the book's total. The allocator
+    scores the explored book and the un-explored one on the same worlds; the difference is the
+    rail's own line. A pass that lent nothing (no ambiguous candidate, every draw negative, or a
+    funding rule that could not be satisfied) is NOT_BINDING with the reason the block gives.
+    """
+    ex = (alloc.get("admission") or {}).get("explore") or {}
+    if not alloc:
+        return {"verdict": UNMEASURED, "why": "no allocator pass on this host"}
+    if not ex:
+        return {"verdict": UNMEASURED,
+                "why": ("pf_allocation.json carries no admission.explore block; needs "
+                        "explore.status, explore.applied, explore.growth_with and "
+                        "explore.growth_without")}
+    if str(ex.get("status") or "") != "FUNDED" or not ex.get("applied"):
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
+                "why": str(ex.get("why") or "no exploration heat was lent this pass")}
+    with_, without = _num(ex.get("growth_with")), _num(ex.get("growth_without"))
+    if with_ is None or without is None:
+        return {"verdict": UNMEASURED, "n_explored": len(ex.get("band") or {}),
+                "why": "explore was applied but carries no with/without growth pair"}
+    return {"verdict": "SAMPLE", "value_logw_per_day": round(with_ - without, 8), "sample": True,
+            "n_explored": len(ex.get("band") or {}),
+            "explore_heat_total": ex.get("explore_heat_total"),
+            "why": "growth of the explored book minus the un-explored one, same worlds, same "
+                   "total heat"}
+
+
 def measure_ruin_guard(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     note = str((alloc.get("growth") or {}).get("annual_growth_pct", ""))
     heat = alloc.get("heat") or {}

@@ -1289,6 +1289,59 @@ def hazard_by_sleeve(drift: dict[str, Any] | None) -> dict[str, float]:
     return out
 
 
+#: HOW THE DRIFT MONITOR'S PER-SLEEVE HAZARD REACHES THE SOLVE.
+#:
+#:   "decay_posterior"  (the path since 2026-09-09) each sleeve with a measured hazard carries
+#:                      it as its OWN decay probability, `decay_prob_i = min(hazard, blanket)`,
+#:                      and the world population decays that sleeve's edge in that share of
+#:                      worlds instead of the blanket 30%. A sleeve the monitor calls healthy
+#:                      stops paying the blanket and can earn MORE heat; a sleeve it calls
+#:                      breaking is charged the blanket -- never more than every sleeve was
+#:                      charged before, because the blanket is the ceiling (`robust_elog.
+#:                      decay_prob_of`). Billed by `missed_growth.measure_decay_posterior`.
+#:   "mean_shrink"      the previous path: `apply_hazard_shrink` tilts the posterior mean by
+#:                      (1 - hazard) post hoc and every sleeve pays the blanket decay. Kept
+#:                      available behind the same `hazard_shrink` rail and its billing.
+#:
+#: One of the two runs on a pass, never both: the hazard entering twice would charge one fact
+#: as two.
+HAZARD_MODE = "decay_posterior"
+
+
+def apply_decay_posterior(ev: list[SleeveEvidence], haz: dict[str, float],
+                          blanket: float) -> dict[str, Any]:
+    """Hand each sleeve with a measured hazard its own decay probability, capped at the blanket.
+
+    THE OTHER HALF OF "DECAY IS A CONSTANT". `robust_elog` decayed every sleeve's edge in 30% of
+    worlds whatever the desk had measured about it, and the only per-sleeve decay input was a
+    post-hoc shrink of the mean -- so a sleeve the drift monitor had watched for weeks and found
+    stable paid exactly what an unwatched one paid. This writes the monitor's P(edge breaks |
+    history) onto the sleeve as `decay_prob_i`, which `sample_worlds` uses in place of the
+    blanket. Both numbers are returned per sleeve so the artifact can show the relief.
+
+    NEVER ABOVE THE BLANKET. `min(hazard, blanket)` here, and `decay_prob_of` caps again inside
+    the library: a sleeve's decay can only be relieved by this, never deepened, which is what
+    lets it run on the money path under the standing order that nothing may size a sleeve below
+    what it gets today. A sleeve without a measured hazard keeps the blanket exactly as before.
+    """
+    from dataclasses import replace as _replace
+    by_sleeve: dict[str, dict[str, float]] = {}
+    for i, e in enumerate(ev):
+        h = haz.get(e.name)
+        if h is None:
+            continue
+        p = min(float(h), float(blanket))
+        ev[i] = _replace(e, decay_prob_i=p)
+        by_sleeve[e.name] = {"hazard": round(float(h), 6), "decay_prob_i": round(p, 6),
+                             "relief_vs_blanket": round(float(blanket) - p, 6)}
+    return {"mode": "decay_posterior", "blanket": float(blanket),
+            "n_from_hazard": len(by_sleeve), "n_blanket": len(ev) - len(by_sleeve),
+            "by_sleeve": by_sleeve,
+            "rule": ("decay_prob_i = min(drift_monitor hazard, blanket) per sleeve; a sleeve "
+                     "without a measured hazard pays the blanket; nothing is ever charged above "
+                     "the blanket, so this can only relieve today's haircut")}
+
+
 def apply_hazard_shrink(ev: list[SleeveEvidence], haz: dict[str, float]) -> dict[str, Any]:
     """Shrink each sleeve's posterior mean by (1 - hazard) BEFORE any retirement threshold.
 
@@ -1949,15 +2002,37 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     crisis_share, crisis_why = crisis_share_from_drift(drift_doc, WorldConfig().crisis_prob)
     _log(f"drift: {drift_why}")
     _log(f"crisis worlds: {crisis_why}")
-    # THE HAZARD TILT, BEFORE THE SOLVE AND BEFORE ANY RETIREMENT THRESHOLD. A sleeve whose edge
-    # is measurably breaking has its posterior MEAN shrunk toward zero on this pass; the desk
-    # does not wait for the retirement bar to react to evidence it already has. Report-only
-    # until `missed_growth.measure_hazard_shrink` bills it -- the rail is registered, so a tilt
-    # that costs growth walks its own multiplier down.
-    hazard_meta = apply_hazard_shrink(ev, hazard_by_sleeve(drift_doc))
-    if hazard_meta["n_shrunk"]:
-        _log(f"hazard shrink: {hazard_meta['n_shrunk']} sleeve(s) tilted "
-             f"({', '.join(f'{k}={v:.2f}' for k, v in list(hazard_meta['applied'].items())[:5])})")
+    # THE HAZARD, BEFORE THE SOLVE AND BEFORE ANY RETIREMENT THRESHOLD. Under `HAZARD_MODE =
+    # "decay_posterior"` each sleeve with a measured hazard carries it as its OWN decay
+    # probability, capped at the blanket, so the healthy ones stop paying the blanket 30% and
+    # the breaking ones pay no more than before (`apply_decay_posterior`). Under "mean_shrink"
+    # the previous tilt of the posterior mean runs instead, billed by the `hazard_shrink` rail.
+    # Exactly one of the two runs: the hazard is one fact and is charged once.
+    _haz = hazard_by_sleeve(drift_doc)
+    _blanket = WorldConfig().decay_prob
+    if HAZARD_MODE == "mean_shrink":
+        hazard_meta = apply_hazard_shrink(ev, _haz)
+        decay_meta: dict[str, Any] = {
+            "mode": "mean_shrink", "blanket": _blanket, "n_from_hazard": 0,
+            "n_blanket": len(ev), "by_sleeve": {},
+            "why": ("HAZARD_MODE is mean_shrink: the hazard tilts the posterior mean "
+                    "(hazard_shrink) and every sleeve pays the blanket decay")}
+        if hazard_meta["n_shrunk"]:
+            _tilted = ", ".join(f"{k}={v:.2f}"
+                                for k, v in list(hazard_meta["applied"].items())[:5])
+            _log(f"hazard shrink: {hazard_meta['n_shrunk']} sleeve(s) tilted ({_tilted})")
+    else:
+        decay_meta = apply_decay_posterior(ev, _haz, _blanket)
+        hazard_meta = {"applied": {}, "n_shrunk": 0, "mode": HAZARD_MODE,
+                       "superseded_by": "decay_posterior",
+                       "rule": ("the hazard enters as each sleeve's own decay probability "
+                                "(see decay_posterior); the post-hoc mean tilt did not run")}
+        if decay_meta["n_from_hazard"]:
+            _relieved = sorted(decay_meta["by_sleeve"].items(),
+                               key=lambda kv: -kv[1]["relief_vs_blanket"])[:5]
+            _relieved_txt = ", ".join(f"{k}={v['decay_prob_i']:.2f}" for k, v in _relieved)
+            _log(f"decay posterior: {decay_meta['n_from_hazard']} sleeve(s) carry their own "
+                 f"decay (blanket {_blanket:.2f}); most relieved {_relieved_txt}")
 
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
                       # The fast clock buys its speed here and nowhere else: a smaller world
@@ -2335,15 +2410,27 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # is, and how much more the worlds would bear. Report-only -- `heat_policy.resolve` is the
     # lever -- but UNUSED_UPSIDE is a verdict `missed_growth` will not let stand.
     ks_doc: dict[str, Any] = {}
+    ks_crisis: dict[str, Any] = {"status": "UNMEASURED", "binds": False,
+                                 "why": "no funded book to condition on the crisis worlds"}
     aggression: dict[str, Any] = {}
     try:
         from mt5desk.gateway_config_fallback import MAX_DRAWDOWN_TOLERANCE as _DD_TOL
 
         from libs.portfolio.aggression import explain as _explain
+        from libs.portfolio.kelly_surface import crisis_block as _crisis_block
         from libs.portfolio.kelly_surface import surface as _surface
         if funded:
             ks_doc = _surface(worlds, funded, tolerance=_DD_TOL, alpha=cfg.cvar_alpha)
             ks_doc["rows"] = ks_doc.get("rows", [])[::2]          # every second grid point
+            # THE CRISIS KELLY, BESIDE THE BLENDED ONE, FOR COMPARISON (2026-09-09). The same
+            # surface on `worlds.crisis` alone -- "what would Kelly be if the crisis world is
+            # the one we are in" -- with the sign of the difference named. It binds nothing:
+            # computed after the heat is resolved and the book solved, read by no sizing path.
+            ks_crisis = _crisis_block(worlds, funded, ks_doc, tolerance=_DD_TOL,
+                                      alpha=cfg.cvar_alpha)
+            _log(f"crisis kelly: {ks_crisis.get('status')} on {ks_crisis.get('n_worlds')} "
+                 f"crisis world(s): f_opt={ks_crisis.get('f_opt')} vs blended "
+                 f"{ks_doc.get('f_opt')} -- {ks_crisis.get('why') or 'comparison only'}")
         # THE OPERATIVE CEILING, NOT THE FALLBACK CONSTANT. `aggression` decides between
         # CEILING_BOUND and UNUSED_UPSIDE by comparing the book against the bar it was
         # actually held by; handing it 0.30 while the law ran a measured 22% would report
@@ -2473,6 +2560,45 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     if zeroed:
         _log(f"zeroed but NOT retired: {len(zeroed)} rostered sleeve(s) earn 0% this pass "
              f"({', '.join(sorted(zeroed)[:6])})")
+
+    # WHAT THE PER-SLEEVE DECAY POSTERIOR IS WORTH, billed on the PUBLISHED book. The same book
+    # scored on its own worlds and on a population drawn identically except that every sleeve
+    # carries the blanket -- the random stream is shared, so the two differ only in which
+    # sleeves decay in which worlds. `missed_growth.measure_decay_posterior` reads the pair. A
+    # cached world population (fast clock) was not drawn under this pass's decay and is not
+    # compared against; it says so rather than billing a number.
+    if decay_meta.get("n_from_hazard") and funded:
+        if "cached" in str(worlds.note):
+            decay_meta["billing"] = {"status": "UNMEASURED",
+                                     "why": "world population reused from cache; the with/"
+                                            "without pair needs worlds drawn this pass"}
+        else:
+            try:
+                from dataclasses import replace as _replace_ev
+                _ev_blanket = [_replace_ev(e, decay_prob_i=None) for e in ev]
+                _w_blanket = sample_worlds(_ev_blanket, cfg)
+                _g_with = score_book(ev, funded, cfg=cfg, worlds=worlds)["mean_log_growth"]
+                _g_without = score_book(_ev_blanket, funded, cfg=cfg,
+                                        worlds=_w_blanket)["mean_log_growth"]
+                decay_meta["growth_with"] = (round(_g_with, 10) if math.isfinite(_g_with)
+                                             else None)
+                decay_meta["growth_without"] = (round(_g_without, 10)
+                                                if math.isfinite(_g_without) else None)
+                decay_meta["billing"] = {
+                    "status": "MEASURED", "basis": "same book, same seed, per-sleeve decay vs "
+                                                   "the blanket",
+                    "delta_logw_per_day": (round(_g_with - _g_without, 10)
+                                           if math.isfinite(_g_with) and math.isfinite(_g_without)
+                                           else None)}
+                _log(f"decay posterior billing: with {_g_with:+.6f} vs blanket "
+                     f"{_g_without:+.6f} log/day")
+            except (ValueError, MemoryError) as exc:
+                decay_meta["billing"] = {"status": "UNMEASURED",
+                                         "why": f"{type(exc).__name__}: {exc}"}
+    elif decay_meta.get("mode") == "decay_posterior":
+        decay_meta["billing"] = {"status": "NOT_BINDING",
+                                 "why": "no sleeve carried a measured hazard this pass; every "
+                                        "sleeve paid the blanket"}
 
     # THE FRACTIONAL-KELLY NUMBER, said out loud. Heavy clock: it costs a second world population
     # and a handful of solves, and it is the number the principal asked to be reported rather
@@ -2611,6 +2737,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "aggression": aggression,
         "posterior_growth": posterior,
         "kelly_surface": ks_doc,
+        # THE CRISIS-CONDITIONAL KELLY beside the blended one. `binds` is False on every pass:
+        # a comparison a reader can make, not a bar anything sizes against.
+        "kelly_surface_crisis": ks_crisis,
         "growth_derivatives": growth_derivs,
         "effective_heat": effective_heat,
         "trade_value_worlds": trade_value,
@@ -2642,6 +2771,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # scores must come from the SAME sampled worlds at the SAME total heat, which is the only
         # comparison in which the difference is the tilt rather than the sizing.
         "hazard_shrink": hazard_meta,
+        # THE PER-SLEEVE DECAY POSTERIOR: which sleeves carry their own decay probability, from
+        # which hazard, how far below the blanket, and what that was worth on the published book
+        # (`billing`). `missed_growth.measure_decay_posterior` reads growth_with/growth_without.
+        "decay_posterior": decay_meta,
         "no_trade": nt,
         "opportunity": opp,
         # `probabilities` is the FORWARD mix the worlds were drawn from; `transition` carries the
@@ -2696,6 +2829,19 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # to trust a scalp sleeve's heat needs to know which kind of evidence stands behind it.
             "scalp_library": scalp_acct,
             "search_trials": trials,
+            # BOTH DECAY VALUES, ON THE EVIDENCE BLOCK: the blanket every sleeve used to pay and
+            # each hazard-carrying sleeve's own probability beside it.
+            "decay": {
+                "mode": decay_meta.get("mode"),
+                "blanket": decay_meta.get("blanket"),
+                "n_from_hazard": decay_meta.get("n_from_hazard", 0),
+                "n_blanket": decay_meta.get("n_blanket", len(ev)),
+                "by_sleeve": {k: {"hazard": v["hazard"], "decay_prob_i": v["decay_prob_i"]}
+                              for k, v in (decay_meta.get("by_sleeve") or {}).items()},
+                "min_decay_prob_i": (min((v["decay_prob_i"] for v in
+                                          (decay_meta.get("by_sleeve") or {}).values()),
+                                         default=None)),
+            },
         },
         "solver": {"iterations": book.iterations, "converged": book.converged},
     }
