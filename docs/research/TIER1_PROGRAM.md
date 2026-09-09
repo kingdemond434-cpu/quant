@@ -26,10 +26,10 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 1 | 0 | 18 | 1 | 4 |
 | 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 0 | 0 | 8 |
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 1 | 0 | 13 |
-| 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 4 | 0 | 15 |
+| 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 3 | 0 | 16 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
-| **all** | 4 | 0 | 29 | 1 | 79 |
+| **all** | 4 | 0 | 28 | 1 | 80 |
 
 ## Items
 
@@ -638,14 +638,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:promoter · artifact: data/alpha_state_ledger.jsonl · consumer: promoter (lane clocks), pf_allocator.scalp_evidence / certified_evidence, pf_allocator._live_state (reads the same ledgers for state conditioning)
   - next: Have desks/mt5/research/promoter.py write each roster transition into data/alpha_state_ledger.jsonl through libs/research/alpha_state.advance — one append per pass — so the four-lane picture becomes a single queryable ledger and every validated-but-unfunded sleeve is visibly accruing evidence rather than being invisible outside its own lane file.
   - landed: 989a1d73
-- **P11 Hierarchical transfer learning / partial pooling across symbols, sessions, horizons** — PARTIAL
-  - gap: Partial pooling exists and is correctly two-sided (sleeve↔family↔zero, plus state), but the grouping variable is the MECHANISM only. There is no instrument, asset-class, session or horizon level, so evidence on XAUUSD reaches XAGUSD only if both carry the same mechanism string, and a new instrument in a proven family inherits nothing through the allocator's prior (only through family_evidence's separate promotion path).
-  - libs/portfolio/robust_elog.py:311-331 — the pooling: family mean weighted by `fam_w = eff`, then `post_mean = lam_s * m + (1 - lam_s) * (lam_f * fam_vec)` with `k_sleeve, k_family = 60.0, 120.0`; the outer prior is ZERO (no edge). This IS partial pooling, three levels deep (MEASURED)
-  - libs/portfolio/robust_elog.py:333-368 — a fourth, narrower level: state, `k_state = 40.0`, sleeve's OWN state returns only ('evidence about this sleeve, never a borrowing from another') (MEASURED)
-  - THE HIERARCHY IS MECHANISM, NOT INSTRUMENT: desks/mt5/research/pf_allocator.py:744-752 — 'FAMILY IS THE MECHANISM, NOT THE SYMBOL. … The mechanism is what shares a prior; the instrument is what shares a correlation, and correlation is handled by the worlds.' `fam = "session_bracket" if … else "_".join(parts[1:-1])`, `symbol=parts[0]` is carried but never pooled on (MEASURED)
-  - SO XAUUSD DOES NOT UPDATE XAGUSD unless they share a mechanism family; there is no metal / FX / index / asset-class level, no session level above the sleeve, and no horizon level (MEASURED — grep for a symbol- or asset-class-keyed pooling term in robust_elog returns nothing)
-  - clock: desks/mt5/research/hourly_cycle.py:1158 leg `pf_allocator` (the posterior runs every pass); family_evidence via the shadow/promoter chain · artifact: `mu_draws` inside the world tensor (not published per-level); the `evidence` block of pf_allocation.json; backups/moat/shadow_ledgers/FAMILY_EVIDENCE.json · consumer: pf_allocator.optimise (the posterior IS the input); promoter's forward verdict (family_evidence)
+- **P11 Hierarchical transfer learning / partial pooling across symbols, sessions, horizons** — LANDED
+  - libs/portfolio/robust_elog.py — the asset class is now the level above the mechanism: sleeve -> family -> ASSET CLASS -> zero, k_class 240 against k_family 120 and k_sleeve 60 (MEASURED)
+  - libs/portfolio/robust_elog.py — _asset_class imports mt5desk.universe.asset_class rather than re-spelling it, and returns '' for an absent or unplaceable symbol so no-metadata sleeves never pool (MEASURED)
+  - tests/portfolio/test_asset_class_pooling.py — a losing class cannot pull a sleeve below where it sits without the level; a thin metal beside two proven metals lands above the same sleeve beside other classes (MEASURED)
+  - clock: hourly_cycle:pf_allocator · artifact: desks/mt5/reports/pf_allocation.json · consumer: pf_allocator.optimise (the posterior IS the input); promoter's forward verdict (family_evidence)
   - next: Add a second grouping key to libs/portfolio/robust_elog._posterior_mu — pool `mechanism x asset_class` alongside `mechanism`, with its own `k_class` — and populate `asset_class` in pf_allocator.sleeve_evidence from the universe registry. A certified mechanism on a new metal or cross then starts with its family's mean rather than at zero, which is the shrinkage relief that lets a new symbol earn heat sooner.
+  - landed: this commit
 - **P12 Capacity-aware Elog(C): expected growth as a function of capital per alpha** — PARTIAL · gate: data
   - gap: Capacity is a scalar floor + a refused ceiling, not a function. There is no Elog(C) curve per alpha, so the desk cannot say which of its edges will die as the account grows, and the envelope's capacity clause is permanently inert.
   - desks/mt5/research/capacity.py:1-45 — measures the FLOOR exactly (`min_lot_risk_eur(symbol, dist)` → the equity below which the venue's minimum lot overrides policy) and REFUSES the ceiling: 'CEILING UNMEASURED, and said so rather than estimated. Impact needs realised fills and `execution.matched_fills` is 0 -- nothing has ever filled.' Publishes `headroom_multiple` as 'how long does this edge remain ours' (MEASURED)

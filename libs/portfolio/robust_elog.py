@@ -44,6 +44,7 @@ import math
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
@@ -263,6 +264,43 @@ def _stationary_bootstrap_index(n_rows: int, n_obs: int, block_days: float,
     return idx
 
 
+def _asset_class(symbol: str) -> str:
+    """The desk's own classifier, imported -- never a second spelling of it.
+
+    `mt5desk.universe.asset_class` already knows that XAUUSD is a metal before it is FX and that
+    the bond roots are prefix-only (a contains-test once made the Euro Stoxx 50 a bond). This
+    library is importable from hosts that do not carry the desk package, so a failure falls back
+    to one bucket, which makes the class level inert rather than wrong.
+    """
+    try:
+        from mt5desk.universe import asset_class
+    except Exception:
+        try:
+            import sys
+            desk = str(Path(__file__).resolve().parents[2] / "desks" / "mt5")
+            if desk not in sys.path:
+                sys.path.insert(0, desk)
+            from mt5desk.universe import asset_class
+        except Exception:
+            return "unknown"
+    # NO SYMBOL IS NOT A CLASS. A sleeve that carries no instrument gets "", and "" never pools:
+    # the desk's classifier falls back to `equity` for an unrecognised ticker, so an empty symbol
+    # would have put every metadata-less sleeve into ONE group and let them borrow each other's
+    # means. Measured while building this: two unrelated test sleeves with no symbols were pooled
+    # and the short one stopped being shrunk toward no-edge -- the exact protection this file
+    # exists to provide. No metadata, no borrowing.
+    if not str(symbol or "").strip():
+        return ""
+    try:
+        c = str(asset_class(symbol) or "")
+    except Exception:
+        return ""
+    # "unknown" IS NOT A CLASS EITHER, for the same reason: it is the classifier's way of saying
+    # it could not place the ticker, and pooling everything it could not place would let unrelated
+    # instruments borrow each other's means under a label that means "we do not know".
+    return "" if c == "unknown" else c
+
+
 def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
                   n_worlds: int) -> tuple[np.ndarray, np.ndarray]:
     """Hierarchical posterior draws of each sleeve's mean daily R.
@@ -353,7 +391,35 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
                         for j in range(n)])
     lam_f = fam_eff / (fam_eff + k_family)
 
-    post_mean = lam_s * m + (1.0 - lam_s) * (lam_f * fam_vec)
+    # ------------------------------------------------ ASSET CLASS, THE LEVEL ABOVE THE MECHANISM
+    # MEASURED 2026-09-08 (Tier-1 item P11): the hierarchy was sleeve -> family -> ZERO, and
+    # `family` is the MECHANISM. So evidence on XAUUSD reached XAGUSD only if both carried the
+    # same mechanism string, and a new instrument in a proven asset class inherited nothing at
+    # all: its outer prior was no-edge. That is the right prior for a new MECHANISM and the wrong
+    # one for a new INSTRUMENT of a mechanism the desk already trades.
+    #
+    # ONE-SIDED, BY THE PRINCIPAL'S STANDING ORDER. The class mean enters through max(., 0): it
+    # can only RELIEVE the pull toward zero, never deepen it. A negative class mean leaves the
+    # posterior exactly where it is today, so no sleeve is ever sized smaller than it is now by
+    # this level -- proven element-wise by test_asset_class_pooling_never_shrinks.
+    classes = [_asset_class(e.symbol) for e in ev]
+    cls_mean: dict[str, float] = {}
+    cls_w: dict[str, float] = {}
+    for c in set(classes):
+        rows = [i for i, x in enumerate(classes) if x == c]
+        wts = fam_w[rows]
+        cls_mean[c] = float(np.average(m[rows], weights=wts)) if wts.sum() > 0 else 0.0
+        cls_w[c] = float(wts.sum())
+    cls_vec = np.array([max(cls_mean[c], 0.0) if c else 0.0 for c in classes])
+    cls_eff = np.array([cls_w[c] if c else 0.0 for c in classes])
+    #: An asset class needs more evidence than a mechanism to speak, because it is a weaker claim:
+    #: "metals work" is a broader statement than "this mechanism works", and the wider the group
+    #: the more of its mean is other instruments' luck.
+    k_class = 240.0
+    lam_c = cls_eff / (cls_eff + k_class)
+
+    post_mean = lam_s * m + (1.0 - lam_s) * (
+        lam_f * fam_vec + (1.0 - lam_f) * (lam_c * cls_vec))
     # Posterior sd of the mean, floored so a sleeve with two observations is not treated as
     # certain. Widened by the shrinkage that was applied: pulling an estimate does not make it
     # more certain, and pretending otherwise would let a heavily-shrunk sleeve look precise.
