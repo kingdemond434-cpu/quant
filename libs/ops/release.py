@@ -111,6 +111,13 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/shadow/qquant_shadow_state.json",
     "desks/mt5/reports/shadow/external_shadow_state.json",
     "desks/mt5/data/account_state.json",
+    # The attribution chain's ledgers (2026-09-08): decisions, intents, fills and the chain the
+    # markout leg materialises. Append-only outputs of the running code, published on the same
+    # fifteen-minute clock; a seal that refused them would refuse the desk on its first fill.
+    "desks/mt5/data/decision_ledger.jsonl",
+    "desks/mt5/data/order_intents.jsonl",
+    "desks/mt5/data/live_ledger.jsonl",
+    "desks/mt5/reports/attribution_chain.json",
 })
 
 SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --name-only "

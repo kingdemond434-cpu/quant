@@ -334,6 +334,15 @@ desks/mt5/data/deep_forest_seen.json
 !desks/mt5/reports/QQUANT_GATES.json
 !desks/mt5/reports/UNIVERSAL_SURVIVORS.json
 !desks/mt5/reports/markout.json
+# THE ATTRIBUTION CHAIN'S LEDGERS (2026-09-08), published by sync_shadow_to_git.ps1's $relPaths
+# beside markout.json. attribution_chain.json is caught by `**/reports/*` above and needs this
+# negation; the three JSONL under desks/mt5/data/ match no exclusion today and are named here so
+# the script's contract ("each MUST be individually allowlisted") holds by inspection and a
+# future `**/*.jsonl` rule fails tests/ops/test_ledger_publication.py rather than the sync.
+!desks/mt5/data/decision_ledger.jsonl
+!desks/mt5/data/order_intents.jsonl
+!desks/mt5/data/live_ledger.jsonl
+!desks/mt5/reports/attribution_chain.json
 
 # CONSOLE LOGS ARE NEVER TRACKED (2026-09-06). Seventeen of them were, and they are append-only
 # files that RUNNING hunt processes hold open. Every merge on the trading box therefore tried to
