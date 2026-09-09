@@ -23,6 +23,14 @@ The canary rejection rate MUST stay at 100%. It is not a KPI to improve, it is a
 defend: the first time it drops, a gate has stopped gating and every certificate issued since is
 suspect. That is why the alarm is unconditional and why it names which canary survived.
 
+THE JUDGE IS THE REAL ONE (2026-09-08). Until then `main()` ran the canaries against a stand-in
+that rejects everything, and ADVERSARY.json said so in `gate_source` -- an hourly 100% that proved
+nothing. `real_gate()` now builds the five canaries into one docket and hands it to
+desks/mt5/scripts/external_gauntlet.run_gauntlet, the same ten gates every certificate passes, so
+`gate_source` reads "injected: external_gauntlet.run_gauntlet" and the constant is a statement
+about those gates. On a host where the certifier cannot be imported the report says BLOCKED and
+why, and claims nothing.
+
 P48 -- THE SILENT-DEFECT HUNTER. Not a linter. It looks for the specific shapes this desk has
 actually been bitten by, each of which passes review, passes tests, and reports success while
 doing nothing:
@@ -268,6 +276,210 @@ def _default_gate(name: str, sig: list[float], fwd: list[float]) -> bool:
     return False
 
 
+# --------------------------------------------------------------------------- the real judge
+#: What `gate_source` says when the canaries were judged by the desk's own ten-gate certifier.
+#: Spelled once, here, so a reader of ADVERSARY.json can tell a run that judged the real gates
+#: from one that judged a stand-in without parsing prose.
+GAUNTLET_GATE_SOURCE = "injected: external_gauntlet.run_gauntlet"
+
+#: THE DOCKET'S INSTRUMENT, FIXED SO THE RUN IS THE SAME ON EVERY HOST. The research box carries
+#: no universe registry and the desk box carries a live one, so pricing the canaries off
+#: whatever `universe.json` happens to be present would make the same seed judge differently on
+#: the two machines -- and a canary suite whose verdict depends on the host cannot say whether a
+#: change was the gate or the box. An EURUSD-shaped contract: 100k units, a 1e-5 tick, a 1-pip
+#: median spread and tick_value 1.0 (quoted in the account currency). `Costs.from_symbol` turns
+#: it into the same cost model the certifier charges real cells.
+CANARY_SYMBOL = "CANARY"
+CANARY_META: dict[str, dict[str, float]] = {
+    CANARY_SYMBOL: {"contract_size": 1e5, "tick_size": 1e-5,
+                    "median_spread_pts": 10.0, "tick_value": 1.0},
+}
+
+#: EVERY DOCKET TRADE HOLDS EXACTLY ONE BAR. The stop and target sit 5% either side of the
+#: reference close -- five sigma on a 1%-sigma bar, never touched in 400 draws -- so the engine's
+#: TTL exit at the next open is the only exit and a trade's R is its bar's return over a fixed
+#: unit. This is not a stylistic choice. The first draft used a 0.5% stop with a 2:1 target, and
+#: on synthetic bars whose high and low are the open/close extremes the stop truncates every loss
+#: past 1R while the target only truncates gains past 2R: MEASURED, pure i.i.d. noise scored
+#: +0.12R a trade and an in-sample Sharpe of 0.109 -- a manufactured edge the canary never had,
+#: living entirely in the adapter's bracket geometry. A canary that carries an artefact is no
+#: longer "no signal by construction", and its rejection then measures the artefact, not the gate.
+CANARY_HOLD_STOP = 0.05
+CANARY_WICK = 0.0005
+CANARY_TIMEFRAME = "D1"
+
+
+def _canary_offset(kind: str) -> int:
+    """The stable per-name seed offset `_series` uses -- one derivation, two callers."""
+    return int(hashlib.sha1(kind.encode()).hexdigest()[:8], 16) % 10_000
+
+
+def _docket_filler(n: int) -> list[float]:
+    """Returns realised on the bars BETWEEN canary bars: independent of every canary by seed.
+
+    They exist so consecutive canary draws never collide in the engine's single-position
+    discipline (a one-bar hold entered at bar k+1 releases at bar k+2, so the next signal at k+2
+    fills at k+3), and so the lookahead canary's honest fill lands on a bar it knows nothing about.
+    """
+    rng = random.Random(CANARY_SEED + _canary_offset("docket_filler"))  # noqa: S311
+    return [rng.gauss(0.0, 0.01) for _ in range(n)]
+
+
+def docket_cell(name: str, sig: list[float], fwd: list[float], *, stamp_offset: int = 0,
+                costs: Any = None) -> dict[str, Any]:
+    """One canary as a CELL the ten-gate certifier judges: synthetic daily bars plus signals.
+
+    THE LAYOUT. Bar 0 is flat. For canary draw i, bar 2i+1 realises `fwd[i]` open-to-close and
+    bar 2i+2 realises an independent filler return; each bar opens at the previous close. The
+    signal for draw i is stamped on bar 2i + `stamp_offset`, and `mt5desk.engine.run_backtest`
+    fills it at the open of the NEXT bar and exits at the open of the bar after that -- so with
+    the default stamp (bar 2i) the trade captures exactly `fwd[i]`, which is what `sig[i]` was
+    constructed to predict. Every draw becomes one trade on its own day, so a 400-draw canary is
+    400 daily observations, and the gates that need 60 have them.
+
+    THE LOOKAHEAD CANARY IS STAMPED ONE BAR LATER (`stamp_offset=1`), on the very bar whose return
+    it "is". That is the honest timestamp of the information it carries -- `sig[i] == fwd[i]`
+    exists only once bar 2i+1 has closed -- and it turns the canary into the desk's own probe for
+    a leaky HARNESS (libs/validation/lookahead_audit.perfect_foresight_probe: "a signal that knows
+    the current candle scores Sharpe > 100 when allowed to trade it, and collapses once the
+    engine's one-bar delay is applied"). An engine that fills at the stamped bar's own open lets
+    the signal trade the bar it already knows and the canary passes; the desk's engine fills at
+    the next open, the trade captures the filler bar, and the canary is noise. Stamping it on bar
+    2i instead, as the other four are, would hand the engine a signal that is literally the next
+    bar's return -- undetectable by ANY engine, because the caller cheated before the harness
+    ever saw it -- and would raise the CAPITAL alarm every hour for a defect no gate can have.
+    """
+    import numpy as np
+    import pandas as pd
+    from mt5desk.engine import Costs, Signal
+
+    n = len(fwd)
+    filler = _docket_filler(n)
+    rets = [0.0]
+    for i in range(n):
+        rets.extend((float(fwd[i]), float(filler[i])))
+    opens = np.empty(len(rets))
+    closes = np.empty(len(rets))
+    price = 1.0
+    for k, r in enumerate(rets):
+        opens[k] = price
+        closes[k] = price * (1.0 + r)
+        price = closes[k]
+    frame = pd.DataFrame({
+        "open": opens, "close": closes,
+        "high": np.maximum(opens, closes) * (1.0 + CANARY_WICK),
+        "low": np.minimum(opens, closes) * (1.0 - CANARY_WICK),
+    }, index=pd.date_range("2020-01-01", periods=len(rets), freq="D", tz="UTC"))
+    sigs = []
+    for i in range(n):
+        k = 2 * i + stamp_offset
+        if k >= len(rets):
+            continue
+        side = 1 if sig[i] > 0 else -1
+        ref = float(closes[k])
+        sigs.append(Signal(time=frame.index[k], side=side,
+                           stop=ref * (1.0 - side * CANARY_HOLD_STOP),
+                           target=ref * (1.0 + side * CANARY_HOLD_STOP),
+                           ttl_bars=1, tag=name))
+    return {
+        "sym": CANARY_SYMBOL, "family": f"canary_{name}",
+        "params": {"timeframe": CANARY_TIMEFRAME}, "timeframe": CANARY_TIMEFRAME,
+        "df": frame, "sigs": sigs,
+        "costs": costs if costs is not None else Costs.from_symbol(CANARY_META[CANARY_SYMBOL]),
+        # Gate 1 is the mechanism registry, not a statistic. The canaries are named so that the
+        # nine statistical gates behind it are the ones under test; a canary refused at gate 1
+        # for having no registered mechanism would be rejected for a reason that says nothing
+        # about whether the gates can still fail.
+        "mechanism_status": "NAMED",
+        "mechanism_note": "poison canary: gate 1 waived by construction so gates 2-10 are judged",
+    }
+
+
+class GauntletGate:
+    """The REAL judge behind the `gate(name, sig, fwd) -> bool` contract `judge()` drives.
+
+    The whole canary set is built into ONE docket and judged in ONE `run_gauntlet` call, because
+    two of the ten gates (PBO and the SPA reality check) are program-level: on a one-cell docket
+    they fail unconditionally ("requires >=2 strategies"), and a canary suite rejected by that
+    clause alone would be measuring the docket's width, not the gates. The verdicts are then
+    answered per canary as `judge()` asks for them.
+
+    UNMEASURED IS NOT REJECTED. A canary the certifier could not judge -- too few observations,
+    no series -- is raised, so `judge()` records it as unjudged exactly as it records a crash:
+    against the rate, never as a rejection.
+    """
+
+    source = GAUNTLET_GATE_SOURCE
+
+    def __init__(self, gauntlet: Any, canaries: tuple[Canary, ...] = CANARIES) -> None:
+        self._gauntlet = gauntlet
+        self._canaries = canaries
+        self._verdicts: dict[str, dict[str, Any]] | None = None
+        self.detail: dict[str, Any] = {}
+        self.docket: dict[str, Any] | None = None
+
+    def _judge_all(self) -> None:
+        cells = []
+        for c in self._canaries:
+            sig, fwd = _series(c.name)
+            cells.append(docket_cell(c.name, sig, fwd,
+                                     stamp_offset=1 if c.name == "lookahead" else 0))
+        out = self._gauntlet.run_gauntlet(cells, "poison-canaries", CANARY_META)
+        self._verdicts = {str(v.get("family", "")).removeprefix("canary_"): v
+                          for v in out.get("verdicts") or []}
+        self.docket = {
+            "n_cells": out.get("n_cells"), "n_trials": out.get("n_trials"),
+            "trial_count_basis": out.get("trial_count_basis"),
+            "program_level": out.get("program_level"), "gate_fails": out.get("gate_fails"),
+            "n_judged": out.get("n_judged"), "n_unmeasured": out.get("n_unmeasured"),
+            "error": out.get("error"),
+            "harness": (f"one-bar hold on synthetic {CANARY_TIMEFRAME} bars; stop and target "
+                        f"{CANARY_HOLD_STOP:.0%} off the reference close, outside every bar; "
+                        f"costs {CANARY_META[CANARY_SYMBOL]} via Costs.from_symbol; lookahead "
+                        f"stamped on the bar it knows (harness probe), the rest one bar before"),
+        }
+
+    def __call__(self, name: str, sig: list[float], fwd: list[float]) -> bool:
+        if self._verdicts is None:
+            self._judge_all()
+        if (sig, fwd) != _series(name):
+            raise ValueError(f"the {name} canary handed to the gate is not the one in the docket")
+        v = self._verdicts.get(name)
+        if v is None:
+            raise LookupError(f"the gauntlet returned no verdict for canary {name!r} "
+                              f"(docket error: {(self.docket or {}).get('error')})")
+        stages = v.get("stages") or {}
+        self.detail[name] = {
+            "cell": v.get("cell"), "days": v.get("days"),
+            "failed_gates": [g for g, s in stages.items() if not s.get("passed")],
+            "stages": stages,
+        }
+        if v.get("unmeasured"):
+            why = (stages.get("observations") or {}).get("why", "no reason recorded")
+            raise RuntimeError(f"UNMEASURED: {why}")
+        return bool(v.get("passed"))
+
+
+def real_gate() -> tuple[GauntletGate | None, str | None]:
+    """The desk's ten-gate certifier as a gate, or the reason it cannot be reached from here.
+
+    Returns `(gate, None)` or `(None, "BLOCKED: <reason>")`. The certifier is
+    desks/mt5/scripts/external_gauntlet.py: it runs on the research box and the desk box alike
+    and imports without MetaTrader5, so on either an import failure here is a defect to name,
+    not a host to excuse.
+    """
+    for p in (BASE / "scripts", BASE):
+        if str(p) not in sys.path:
+            sys.path.insert(0, str(p))
+    try:
+        import external_gauntlet
+        from mt5desk.engine import Signal  # noqa: F401 -- the docket cannot be built without it
+    except Exception as exc:
+        return None, (f"BLOCKED: external_gauntlet is not importable on this host "
+                      f"({type(exc).__name__}: {exc})")
+    return GauntletGate(external_gauntlet), None
+
+
 def run(gate=None) -> dict[str, Any]:
     g = gate or _default_gate
     canaries = run_canaries(g)
@@ -277,9 +489,15 @@ def run(gate=None) -> dict[str, Any]:
         by_shape[h["shape"]] = by_shape.get(h["shape"], 0) + 1
     return {
         "measured_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "gate_source": "injected" if gate else "stand-in (rejects everything; this run proves "
-                                               "nothing about the real gates)",
+        "gate_source": (getattr(gate, "source", "injected") if gate else
+                        "stand-in (rejects everything; this run proves nothing about the real "
+                        "gates)"),
         "canaries": canaries,
+        # PER-GATE READINGS, so a reader can see WHICH gate did the rejecting. Five canaries all
+        # thrown out by one program-level clause would print the same 100% as five thrown out by
+        # the gates they were built to test; the difference is the whole measurement.
+        "gate_detail": getattr(gate, "detail", None) if gate else None,
+        "docket": getattr(gate, "docket", None) if gate else None,
         "silent_defects": {"total": len(defects), "by_shape": by_shape,
                            "top": defects[:25]},
         "seed": CANARY_SEED,
@@ -289,7 +507,14 @@ def run(gate=None) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    doc = run()
+    gate, blocked = real_gate()
+    doc = run(gate)
+    if blocked:
+        # NEVER A PROOF FROM A STAND-IN. The rate below is the stand-in's, and the alarm logic
+        # runs over it unchanged; what changes is that the report says why the real gates were
+        # not judged, in the field every consumer reads first.
+        doc["gate_source"] = (f"{blocked}; the stand-in rejects everything, so this run proves "
+                              f"nothing about the real gates")
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     c = doc["canaries"]

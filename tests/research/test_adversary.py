@@ -135,6 +135,144 @@ def test_the_stand_in_gate_declares_itself(adv) -> None:
     assert injected["gate_source"] == "injected"
 
 
+# ------------------------------------------------------------------ P49 against the REAL judge
+@pytest.fixture(scope="module")
+def real(adv):
+    """The desk's ten-gate certifier as the gate, and the canary verdicts it gave."""
+    gate, blocked = adv.real_gate()
+    assert gate is not None, blocked
+    return gate, adv.run_canaries(gate)
+
+
+def test_the_real_judge_is_reachable_and_named_as_the_source(adv, real, monkeypatch) -> None:
+    """`gate_source` must name the certifier, not a stand-in, or the 100% proves nothing."""
+    gate, _ = real
+    monkeypatch.setattr(adv, "hunt_silent_defects", lambda *a, **k: [])
+    doc = adv.run(gate)
+    assert doc["gate_source"] == "injected: external_gauntlet.run_gauntlet"
+    assert doc["docket"]["n_cells"] == len(adv.CANARIES) and doc["docket"]["error"] is None
+    assert doc["docket"]["n_unmeasured"] == 0
+    assert set(doc["gate_detail"]) == {c.name for c in adv.CANARIES}
+
+
+def test_the_real_gates_reject_every_canary_and_each_is_judged(adv, real) -> None:
+    """THE CONSTANT, NOW ABOUT THE REAL GATES. A survivor here is a gate that stopped gating."""
+    gate, out = real
+    assert all(r["judged"] and r["gate_error"] is None for r in out["canaries"]), (
+        [r for r in out["canaries"] if not r["judged"]])
+    assert out["intact"] is True and out["survivors"] == [], out["verdict"]
+    for name, d in gate.detail.items():
+        assert d["failed_gates"], f"{name} was rejected by no named gate"
+        assert d["days"] >= 60, f"{name} has too few observations to have been judged"
+
+
+def test_the_docket_is_wide_enough_for_the_program_level_gates(adv, real) -> None:
+    """PBO and SPA fail unconditionally on one cell. Five canaries judged as one docket means a
+    rejection can come from the gate the canary was built for, not from the docket's width."""
+    gate, _ = real
+    pl = gate.docket["program_level"]
+    assert pl["pbo"] < 1.0 and pl["spa_p"] < 1.0, pl
+    # And the multiplicity canary is caught by the multiplicity gate, not by everything at once.
+    assert gate.detail["survivor_biased"]["failed_gates"] == ["deflated_sharpe"]
+
+
+def _daily(adv, name, **kw):
+    import external_gauntlet as eg
+    sig, fwd = adv._series(name)
+    cell = adv.docket_cell(name, sig, fwd, **kw)
+    ds = eg.daily_series(cell["df"], cell["sigs"], cell["costs"])
+    return float(ds.mean()), float(ds.mean() / ds.std() * 252 ** 0.5)
+
+
+def test_the_docket_carries_no_geometry_artefact(adv, real) -> None:
+    """A zero-drift series must score zero drift. The first adapter's 0.5% stop / 2:1 target
+    truncated losses harder than gains on synthetic bars and handed pure noise +0.12R a trade."""
+    from mt5desk.engine import Costs
+    free = Costs(spread_per_lot=0.0, commission_per_lot=0.0, contract_oz=1e5)
+    mean_free, _ = _daily(adv, "pure_noise", costs=free)
+    mean_paid, _ = _daily(adv, "pure_noise")
+    assert abs(mean_free) < 0.05 and abs(mean_paid) < 0.05, (mean_free, mean_paid)
+
+
+def test_the_lookahead_canary_is_the_harness_probe_under_the_docket(adv, real) -> None:
+    """Stamped on the bar it knows, an engine that lets it trade that bar scores absurdly; the
+    desk's next-open fill sees noise. That is the leak the canary exists to catch."""
+    _, sharpe_same_bar = _daily(adv, "lookahead", stamp_offset=0)
+    _, sharpe_honest = _daily(adv, "lookahead", stamp_offset=1)
+    assert sharpe_same_bar > 10.0, sharpe_same_bar
+    assert abs(sharpe_honest) < 2.0, sharpe_honest
+
+
+def test_the_cost_blind_canary_is_a_real_edge_that_costs_more_than_it_earns(adv, real) -> None:
+    from mt5desk.engine import Costs
+    free = Costs(spread_per_lot=0.0, commission_per_lot=0.0, contract_oz=1e5)
+    mean_free, sharpe_free = _daily(adv, "cost_blind", costs=free)
+    mean_paid, _ = _daily(adv, "cost_blind")
+    assert mean_free > 0.0 and sharpe_free > 2.0, (mean_free, sharpe_free)
+    assert mean_paid < 0.0, mean_paid
+
+
+def test_the_gate_refuses_a_canary_that_is_not_the_one_in_its_docket(adv, real) -> None:
+    gate, _ = real
+    sig, fwd = adv._series("pure_noise")
+    with pytest.raises(ValueError, match="not the one in the docket"):
+        gate("pure_noise", sig, [f + 1.0 for f in fwd])
+
+
+def test_an_unmeasured_verdict_is_unjudged_not_rejected(adv) -> None:
+    """The certifier's UNMEASURED is a failure to judge; scoring it as a rejection would be
+    the crash-as-rejection defect wearing the certifier's own vocabulary."""
+    class _Gauntlet:
+        @staticmethod
+        def run_gauntlet(cells, hunt, meta):
+            return {"n_cells": len(cells), "verdicts": [
+                {"family": c["family"], "passed": False, "unmeasured": True, "days": 3,
+                 "stages": {"observations": {"passed": False, "why": "only 3 days"}}}
+                for c in cells]}
+    out = adv.run_canaries(adv.GauntletGate(_Gauntlet()))
+    assert out["intact"] is False
+    assert all(not r["judged"] and "UNMEASURED" in r["gate_error"] for r in out["canaries"])
+
+
+def _main_paths(adv, monkeypatch, tmp_path):
+    monkeypatch.setattr(adv, "REPORT", tmp_path / "ADVERSARY.json")
+    monkeypatch.setattr(adv, "ALARM", tmp_path / "CANARY_ALARM.txt")
+    monkeypatch.setattr(adv, "hunt_silent_defects", lambda *a, **k: [])
+    return tmp_path / "ADVERSARY.json", tmp_path / "CANARY_ALARM.txt"
+
+
+def test_main_judges_with_the_real_gates_and_writes_the_source(adv, monkeypatch,
+                                                                tmp_path) -> None:
+    report, alarm = _main_paths(adv, monkeypatch, tmp_path)
+    assert adv.main() == 0
+    import json
+    doc = json.loads(report.read_text("utf-8"))
+    assert doc["gate_source"] == "injected: external_gauntlet.run_gauntlet"
+    assert doc["canaries"]["intact"] is True and not alarm.exists()
+
+
+def test_main_says_blocked_and_claims_nothing_when_the_judge_is_unreachable(
+        adv, monkeypatch, tmp_path) -> None:
+    report, alarm = _main_paths(adv, monkeypatch, tmp_path)
+    monkeypatch.setattr(adv, "real_gate", lambda: (None, "BLOCKED: no gauntlet on this host"))
+    assert adv.main() == 0
+    import json
+    doc = json.loads(report.read_text("utf-8"))
+    assert doc["gate_source"].startswith("BLOCKED: no gauntlet on this host")
+    assert "proves nothing" in doc["gate_source"]
+    assert "injected" not in doc["gate_source"] and not alarm.exists()
+
+
+def test_main_still_raises_the_alarm_when_the_injected_judge_admits_a_canary(
+        adv, monkeypatch, tmp_path) -> None:
+    """Injection changes the judge, never the alarm: a survivor is exit 1 and a named file."""
+    _, alarm = _main_paths(adv, monkeypatch, tmp_path)
+    monkeypatch.setattr(adv, "real_gate", lambda: (lambda n, s, f: n == "lookahead", None))
+    assert adv.main() == 1
+    text = alarm.read_text("utf-8")
+    assert text.startswith("CANARY ") and "lookahead passed" in text
+
+
 # --------------------------------------------------------------------------- P58
 def test_reposts_of_one_source_count_once(adv) -> None:
     claims = [{"primary_source": "doi:10.1/abc", "title": t}
