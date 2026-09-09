@@ -41,6 +41,7 @@ it is given.
 from __future__ import annotations
 
 import math
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
@@ -51,6 +52,8 @@ __all__ = [
     "SleeveEvidence",
     "WorldConfig",
     "Worlds",
+    "crisis_share_vector",
+    "decay_prob_of",
     "marginal_delta_elog",
     "optimise",
     "project_capped_simplex",
@@ -104,6 +107,18 @@ class SleeveEvidence:
     #: Which state `state_r` was collected in. Carried for the allocation explanation, never used
     #: in the arithmetic -- a number the desk cannot attribute to an hour is not an explanation.
     state_key: str = ""
+    #: THIS SLEEVE'S OWN DECAY PROBABILITY, or None for the blanket `WorldConfig.decay_prob`.
+    #: Until 2026-09-08 every sleeve paid the same 30% chance of a decayed edge in every world,
+    #: whatever the drift monitor had measured about it, and the only per-sleeve decay input was
+    #: a separate post-hoc shrink of the posterior mean. This is the per-sleeve posterior the
+    #: decay haircut is drawn from instead.
+    #:
+    #: THE BLANKET IS THE CEILING, NOT THE DEFAULT. `sample_worlds` draws each sleeve's decay at
+    #: `min(decay_prob_i, cfg.decay_prob)`: a sleeve the monitor calls healthy stops paying the
+    #: blanket, and a sleeve it calls breaking is never charged MORE than the blanket by this
+    #: field -- so it can only relieve today's haircut, never deepen it, and a reference
+    #: population drawn with `decay_prob=0` stays decay-free whatever the sleeves carry.
+    decay_prob_i: float | None = None
 
     def __post_init__(self) -> None:
         if self.daily_r.ndim != 1:
@@ -128,6 +143,16 @@ class WorldConfig:
     #: Crisis severity: multiplies volatility, and the common-factor share of total variance.
     crisis_vol_mult: float = 2.5
     crisis_common_share: float = 0.55
+    #: PER-SLEEVE common-factor share in crisis worlds, `((name, share), ...)`; a name absent
+    #: here carries `crisis_common_share`. A one-factor overlay at shares s_i, s_j has pairwise
+    #: crisis correlation sqrt(s_i s_j), so a metals sleeve measured at 0.30 and a USD-leg sleeve
+    #: at 0.55 converge to 0.41 in a crisis instead of both being fused at 0.55.
+    #:
+    #: THE BOOK-WIDE SCALAR IS THE CEILING. Each entry is applied at `min(share, crisis_common_
+    #: share)`: the scalar is the RATCHETED number (`conditional_covariance.calibrate` only ever
+    #: raises it), and this vector may say a factor block is LESS fused than the book, never more
+    #: -- so no sleeve is ever stressed harder than it is today by this field.
+    crisis_common_share_by_sleeve: tuple[tuple[str, float], ...] = ()
     #: Probability that a given sleeve's edge has decayed in a given world, and how far. Backtest
     #: edges decay; a sizer that assumes they do not is sizing a book that no longer exists.
     decay_prob: float = 0.30
@@ -213,6 +238,10 @@ class AllocationResult:
     iterations: int = 0
     converged: bool = False
     note: str = ""
+    #: True when `optimise` stopped on its wall-clock `deadline` rather than on convergence or
+    #: the iteration budget. A partial solve is still a feasible book with a real score; the flag
+    #: is what lets a caller carry it forward warm-started instead of calling it an answer.
+    budget_hit: bool = False
 
 
 def _stationary_bootstrap_index(n_rows: int, n_obs: int, block_days: float,
@@ -369,6 +398,40 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
     return draws, post_mean
 
 
+def decay_prob_of(e: SleeveEvidence, cfg: WorldConfig) -> float:
+    """The decay probability THIS sleeve is charged: its own posterior, capped at the blanket.
+
+    None, a non-finite or a negative value falls back to the blanket -- an unpriced decay is the
+    blanket, never zero. The cap is what makes the field relief-only: it can never charge a
+    sleeve more than every sleeve was already charged before it existed.
+    """
+    p = getattr(e, "decay_prob_i", None)
+    blanket = float(cfg.decay_prob)
+    if p is None:
+        return blanket
+    try:
+        v = float(p)
+    except (TypeError, ValueError):
+        return blanket
+    if not math.isfinite(v) or v < 0.0:
+        return blanket
+    return min(v, blanket)
+
+
+def crisis_share_vector(names: Sequence[str], cfg: WorldConfig) -> np.ndarray:
+    """Per-sleeve crisis common-factor share as float32, each entry <= the book-wide scalar."""
+    scalar = float(cfg.crisis_common_share)
+    by_name = {}
+    for k, v in (cfg.crisis_common_share_by_sleeve or ()):
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(f):
+            by_name[str(k)] = min(max(f, 0.0), scalar)
+    return np.array([by_name.get(str(n), scalar) for n in names], dtype=np.float32)
+
+
 def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) -> Worlds:
     """Draw the scenario population the objective is evaluated on.
 
@@ -404,8 +467,14 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
     # Decay: a multiplicative haircut on the EDGE only, never on the noise. An edge that has
     # halved still has its old volatility, and modelling decay as a scale on the whole return
     # series would quietly halve the risk along with the reward.
+    #
+    # PER SLEEVE, CAPPED AT THE BLANKET. `decay_prob_i` is the sleeve's own posterior of having
+    # decayed; the blanket `cfg.decay_prob` is the most any sleeve is charged. The random stream
+    # is the same one the scalar draw used, so a population in which every sleeve carries the
+    # blanket is byte-identical to the one drawn before this field existed.
     decay = np.ones((n_worlds, n), dtype=np.float64)
-    hit = rng.random((n_worlds, n)) < cfg.decay_prob
+    p_decay = np.array([decay_prob_of(e, cfg) for e in ev], dtype=np.float64)
+    hit = rng.random((n_worlds, n)) < p_decay[None, :]
     decay[hit] = rng.uniform(cfg.decay_floor, 1.0, size=int(hit.sum()))
 
     # Execution cost: spread around the modelled level, in R, charged per day in proportion to
@@ -447,6 +516,12 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
     # on a subsample chosen for having gone up.
     pool_mean = {k: hist[v].mean(axis=0) for k, v in pools.items()}
 
+    # The crisis common-factor share, per sleeve, with the book-wide scalar as the ceiling (see
+    # `WorldConfig.crisis_common_share_by_sleeve`). One vector, built once, outside the loop.
+    share_vec = crisis_share_vector(tuple(e.name for e in ev), cfg)
+    idio_vec = np.sqrt(np.float32(1.0) - share_vec)
+    root_share_vec = np.sqrt(share_vec)
+
     r = np.empty((n_worlds, n_rows, n), dtype=np.float32)
     for w in range(n_worlds):
         pool = pools.get(world_regime[w])
@@ -482,12 +557,13 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
             # Correlations converge in a crisis. A common factor carrying `crisis_common_share`
             # of each sleeve's variance reproduces that directly -- no correlation matrix to
             # estimate, no positive-definiteness to repair, and the tails stay the real ones.
+            # The share is a per-sleeve vector (a factor block measured less fused than the book
+            # loads less on the common factor); with every entry at the scalar the arithmetic
+            # is exactly the scalar overlay.
             sd = world.std(axis=0)
             common = rng.standard_normal(n_rows).astype(np.float32)
-            share = np.float32(cfg.crisis_common_share)
-            idio = np.sqrt(np.float32(1.0) - share)
-            world = (world - world.mean(axis=0)) * idio \
-                + common[:, None] * (sd * np.sqrt(share))[None, :] \
+            world = (world - world.mean(axis=0)) * idio_vec[None, :] \
+                + common[:, None] * (sd * root_share_vec)[None, :] \
                 + world.mean(axis=0)[None, :]
             world = world * np.float32(cfg.crisis_vol_mult)
             # A crisis is not symmetric: the mean goes against the book too, not just the vol up.
@@ -608,7 +684,8 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
              cfg: WorldConfig | None = None, worlds: Worlds | None = None,
              warm_start: Mapping[str, float] | None = None,
              max_per_sleeve: float | Mapping[str, float] | None = None,
-             iterations: int = 400, step: float = 0.02) -> AllocationResult:
+             iterations: int = 400, step: float = 0.02,
+             deadline: float | None = None) -> AllocationResult:
     """Solve for per-sleeve heat maximising the robust posterior E[log W].
 
     `hard_cap` is the ceiling total heat may never cross. `target`, when given, is the
@@ -619,6 +696,12 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
     `max_per_sleeve` bounds any single sleeve's heat -- a float applied to all, or a per-name
     mapping. It exists for the mandated case; see `project_capped_simplex` for what happens
     without it.
+
+    `deadline` is a wall-clock instant (`time.time()` seconds) after which the ascent stops and
+    returns the best FEASIBLE point it has -- every iterate is a projected, scored book, so a
+    partial solve is a real book with a real score, flagged `budget_hit=True` and
+    `converged=False` so the caller can warm-start the next attempt from it rather than treat
+    it as the optimum. None means no wall-clock bound, which is what every caller had before.
 
     Projected gradient ascent with backtracking: the objective is concave in `h` on the feasible
     set (log of an affine function, minus a positive-semidefinite quadratic), so a projected
@@ -671,8 +754,11 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
             h = np.zeros(n)
             score, grad, g_w = _objective(w_pop, h, corr_abs, cfg)
 
-    lr, converged, done = step, False, 0
+    lr, converged, done, budget_hit = step, False, 0, False
     for i in range(iterations):
+        if deadline is not None and time.time() > deadline:
+            budget_hit = True
+            break
         done = i + 1
         cand = project_capped_simplex(h + lr * grad, cap, exact=exact, upper=ub)
         c_score, c_grad, c_g = _objective(w_pop, cand, corr_abs, cfg)
@@ -710,7 +796,7 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
         annual_growth_pct=round(ann, 2), prob_annual_loss=round(p_loss, 4),
         marginal={k: round(v, 6) for k, v in
                   sorted(marginal.items(), key=lambda kv: -kv[1])},
-        iterations=done, converged=converged, note=w_pop.note,
+        iterations=done, converged=converged, note=w_pop.note, budget_hit=budget_hit,
     )
 
 

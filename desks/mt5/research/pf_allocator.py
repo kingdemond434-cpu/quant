@@ -39,6 +39,7 @@ import json
 import math
 import sys
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -952,6 +953,84 @@ def _competing_pairs(d: dict[str, Any], top: int = 10) -> list[dict[str, Any]]:
     return out[:top]
 
 
+def margin_use_from(margin: float, equity: float, deployed_heat: float,
+                    heats: Any) -> tuple[dict[float, float] | None, str]:
+    """Margin use at each sampled heat, extrapolated from ONE measured point. Pure arithmetic.
+
+    The broker charges margin per LOT and the book's lots scale with its heat, so margin use is
+    linear in heat through the origin: at deployed heat h0 the account uses m0/equity of its
+    margin, therefore at heat h it would use (m0/equity) * (h/h0). One measured point and a
+    proportion -- no model, and nothing here is extrapolated past what the surface sampled.
+
+    Returns (None, why) on every input that cannot support the proportion: no equity, no
+    deployed heat, or -- the common case on a flat book -- no margin in use, which is 0/0 and
+    not "margin is free". A refusal here means the envelope carries NO margin clause and binds
+    exactly as it does today.
+    """
+    try:
+        m, eq, h0 = float(margin), float(equity), float(deployed_heat)
+    except (TypeError, ValueError):
+        return None, "account figures are not numbers"
+    if not (math.isfinite(m) and math.isfinite(eq) and math.isfinite(h0)):
+        return None, "account figures are not finite"
+    if eq <= 0.0:
+        return None, f"equity is {eq}: no denominator for margin use"
+    if h0 <= 0.0:
+        return None, "the book deploys no heat: margin per unit heat is 0/0"
+    if m <= 0.0:
+        return None, ("no margin in use (the book is flat or the positions are not open yet): "
+                      "0/0 is not a measurement of margin per unit heat, and an unmeasured "
+                      "margin never licenses heat")
+    per_unit = (m / eq) / h0
+    out: dict[float, float] = {}
+    for h in heats:
+        try:
+            hv = float(h)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(hv) and hv > 0.0:
+            out[round(hv, 6)] = per_unit * hv
+    if not out:
+        return None, "no sampled heat to price margin at"
+    return out, (f"margin {m:.2f} on equity {eq:.2f} at {h0:.2%} deployed heat = "
+                 f"{m / eq:.2%} of the account, i.e. {per_unit:.4f} of margin per unit of heat")
+
+
+def account_margin() -> tuple[float | None, float | None, str]:
+    """(margin, equity) from the live terminal, or (None, None) with the reason. Never raises.
+
+    Measured the way `promoter.account_in_hand` measures the account: an existing connection is
+    used and left alone, otherwise one is opened from `data/terminal_path.txt` and closed again.
+    A host without MetaTrader5, without a terminal, or without an account is UNMEASURED -- which
+    is the honest answer and the one that leaves the survival envelope exactly as it is.
+    """
+    try:
+        import MetaTrader5 as mt5
+    except ImportError:
+        return None, None, "MetaTrader5 is not importable on this host"
+    opened = False
+    try:
+        if mt5.terminal_info() is None:
+            try:
+                from mt5desk.config import terminal_path
+                path = terminal_path()
+            except Exception:
+                path = ""
+            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
+            if not opened:
+                return None, None, f"terminal unreachable ({mt5.last_error()})"
+        acc = mt5.account_info()
+        if acc is None:
+            return None, None, "the terminal reports no account"
+        return float(acc.margin), float(acc.equity), "measured from the live terminal"
+    except Exception as exc:
+        return None, None, f"{type(exc).__name__}: {exc}"
+    finally:
+        if opened:
+            with suppress(Exception):
+                mt5.shutdown()
+
+
 def _capacity_ceiling() -> float | None:
     """The most total heat the MARKET can absorb, in account fraction, or None when unmeasured.
 
@@ -1289,6 +1368,59 @@ def hazard_by_sleeve(drift: dict[str, Any] | None) -> dict[str, float]:
     return out
 
 
+#: HOW THE DRIFT MONITOR'S PER-SLEEVE HAZARD REACHES THE SOLVE.
+#:
+#:   "decay_posterior"  (the path since 2026-09-09) each sleeve with a measured hazard carries
+#:                      it as its OWN decay probability, `decay_prob_i = min(hazard, blanket)`,
+#:                      and the world population decays that sleeve's edge in that share of
+#:                      worlds instead of the blanket 30%. A sleeve the monitor calls healthy
+#:                      stops paying the blanket and can earn MORE heat; a sleeve it calls
+#:                      breaking is charged the blanket -- never more than every sleeve was
+#:                      charged before, because the blanket is the ceiling (`robust_elog.
+#:                      decay_prob_of`). Billed by `missed_growth.measure_decay_posterior`.
+#:   "mean_shrink"      the previous path: `apply_hazard_shrink` tilts the posterior mean by
+#:                      (1 - hazard) post hoc and every sleeve pays the blanket decay. Kept
+#:                      available behind the same `hazard_shrink` rail and its billing.
+#:
+#: One of the two runs on a pass, never both: the hazard entering twice would charge one fact
+#: as two.
+HAZARD_MODE = "decay_posterior"
+
+
+def apply_decay_posterior(ev: list[SleeveEvidence], haz: dict[str, float],
+                          blanket: float) -> dict[str, Any]:
+    """Hand each sleeve with a measured hazard its own decay probability, capped at the blanket.
+
+    THE OTHER HALF OF "DECAY IS A CONSTANT". `robust_elog` decayed every sleeve's edge in 30% of
+    worlds whatever the desk had measured about it, and the only per-sleeve decay input was a
+    post-hoc shrink of the mean -- so a sleeve the drift monitor had watched for weeks and found
+    stable paid exactly what an unwatched one paid. This writes the monitor's P(edge breaks |
+    history) onto the sleeve as `decay_prob_i`, which `sample_worlds` uses in place of the
+    blanket. Both numbers are returned per sleeve so the artifact can show the relief.
+
+    NEVER ABOVE THE BLANKET. `min(hazard, blanket)` here, and `decay_prob_of` caps again inside
+    the library: a sleeve's decay can only be relieved by this, never deepened, which is what
+    lets it run on the money path under the standing order that nothing may size a sleeve below
+    what it gets today. A sleeve without a measured hazard keeps the blanket exactly as before.
+    """
+    from dataclasses import replace as _replace
+    by_sleeve: dict[str, dict[str, float]] = {}
+    for i, e in enumerate(ev):
+        h = haz.get(e.name)
+        if h is None:
+            continue
+        p = min(float(h), float(blanket))
+        ev[i] = _replace(e, decay_prob_i=p)
+        by_sleeve[e.name] = {"hazard": round(float(h), 6), "decay_prob_i": round(p, 6),
+                             "relief_vs_blanket": round(float(blanket) - p, 6)}
+    return {"mode": "decay_posterior", "blanket": float(blanket),
+            "n_from_hazard": len(by_sleeve), "n_blanket": len(ev) - len(by_sleeve),
+            "by_sleeve": by_sleeve,
+            "rule": ("decay_prob_i = min(drift_monitor hazard, blanket) per sleeve; a sleeve "
+                     "without a measured hazard pays the blanket; nothing is ever charged above "
+                     "the blanket, so this can only relieve today's haircut")}
+
+
 def apply_hazard_shrink(ev: list[SleeveEvidence], haz: dict[str, float]) -> dict[str, Any]:
     """Shrink each sleeve's posterior mean by (1 - hazard) BEFORE any retirement threshold.
 
@@ -1325,6 +1457,105 @@ def read_drift() -> tuple[dict[str, Any] | None, str]:
     if not isinstance(doc, dict):
         return None, "DRIFT.json is not an object"
     return doc, f"DRIFT.json verdict={doc.get('verdict')} structure={doc.get('structure_verdict')}"
+
+
+#: The structural-duplicate map `research/alpha_genome.py` writes. Its own docstring (:23-25)
+#: says it is consumed "by the allocator artifact, where `n_clusters` is reported beside
+#: `k_eff`" -- and a repo-wide grep for ALPHA_GENOME found no allocator reader at all, so the
+#: claim was false for as long as it had been written. This is that reader.
+GENOME = BASE / "reports" / "ALPHA_GENOME.json"
+
+
+def alpha_genome_view(ev: list[SleeveEvidence], book: dict[str, float]) -> dict[str, Any]:
+    """`n_clusters` and each FUNDED sleeve's structural cluster, beside the book's k_eff.
+
+    WHY IT BELONGS NEXT TO k_eff AND NOT INSTEAD OF IT. `latent_factors.effective` measures
+    independence from realised RETURNS (covariance, latent factor, tail); `alpha_genome.cluster`
+    measures it from what each edge structurally IS -- mechanism, direction, clock, shared
+    currency leg -- before it has traded. Two sleeves can look independent day to day and be one
+    trade wearing two names, which is exactly what the genome found on this desk (twenty
+    session_range_breakout sleeves in one cluster, twelve overnight_gap_decay rows sharing one
+    parameter hash). Reporting the two numbers together is what lets a reader see them disagree.
+
+    REPORTING ONLY. Nothing here sizes, caps or vetoes: the cluster id reaches the artifact and
+    stops. A sleeve whose cluster cannot be resolved is COUNTED AND NAMED, never assigned a
+    cluster of its own -- that would read as breadth the book has not got (L1.28a).
+    """
+    out: dict[str, Any] = {"status": "UNMEASURED", "consumed": False,
+                           "note": ("structural clusters from reports/ALPHA_GENOME.json, "
+                                    "reported beside the covariance/factor/tail k_eff; "
+                                    "nothing here sizes anything")}
+    try:
+        doc = json.loads(GENOME.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return {**out, "why": f"ALPHA_GENOME.json unreadable ({type(exc).__name__})"}
+    genome = doc.get("genome") or {}
+    clusters = doc.get("clusters") or {}
+    if not isinstance(genome, dict) or not isinstance(clusters, dict) or not clusters:
+        return {**out, "why": "ALPHA_GENOME.json carries no clusters"}
+    cluster_of_key = {m: name for name, members in clusters.items()
+                      for m in (members if isinstance(members, list) else [])}
+    # THE JOIN, on the parts both sides already carry. The genome keys on its certificate key
+    # and stamps symbol/family/clock on every row; the allocator names a sleeve
+    # SYM_family_selector. Matching on (symbol, family, clock) first and (symbol, family) only
+    # when that is UNAMBIGUOUS is the same rule `promoter._index` uses, for the same reason: a
+    # sleeve funded on another sleeve's cluster id is worse than one that did not join.
+    by_triple: dict[tuple[str, str, str], list[str]] = {}
+    by_pair: dict[tuple[str, str], list[str]] = {}
+    for key, row in genome.items():
+        if not isinstance(row, dict):
+            continue
+        sym = str(row.get("symbol") or "").lower()
+        fam = str(row.get("family") or "").lower()
+        clk = str(row.get("clock") or "").lower()
+        by_triple.setdefault((sym, fam, clk), []).append(key)
+        by_pair.setdefault((sym, fam), []).append(key)
+    by_name = {e.name: e for e in ev}
+    funded = [n for n, h in (book or {}).items() if float(h) > 1e-5]
+    per_sleeve: dict[str, str] = {}
+    unjoined: dict[str, str] = {}
+    for name in sorted(funded):
+        e = by_name.get(name)
+        if e is None:
+            unjoined[name] = "not in the priced universe"
+            continue
+        sym, fam = str(e.symbol).lower(), str(e.family).lower()
+        sel = _selector_of(e).lower()
+        hits = by_triple.get((sym, fam, sel)) or []
+        how = "symbol|family|clock"
+        if not hits:
+            hits, how = by_pair.get((sym, fam)) or [], "symbol|family"
+        if not hits:
+            unjoined[name] = f"no genome row for {sym}|{fam}|{sel or '(no selector)'}"
+            continue
+        names = {cluster_of_key.get(k) for k in hits} - {None}
+        if len(names) != 1:
+            unjoined[name] = (f"{len(hits)} genome row(s) on {how} spanning {len(names)} "
+                              f"cluster(s); ambiguous, so no cluster is claimed")
+            continue
+        per_sleeve[name] = str(next(iter(names)))
+    occupied = sorted(set(per_sleeve.values()))
+    return {
+        **out, "status": "MEASURED",
+        "generated_utc": doc.get("generated_utc"),
+        "n_clusters": doc.get("n_clusters"),
+        "n_sleeves": doc.get("n_sleeves"),
+        "structural_breadth": doc.get("structural_breadth"),
+        "largest_clusters": [{"cluster": c.get("cluster"), "n": c.get("n")}
+                             for c in (doc.get("largest_clusters") or [])[:5]
+                             if isinstance(c, dict)],
+        # THE BOOK'S OWN STRUCTURE: how many distinct clusters the FUNDED sleeves occupy, which
+        # is the number to read against k_eff -- a book of eight sleeves in one cluster is one
+        # structural bet however its returns happened to covary.
+        "book_clusters_occupied": len(occupied),
+        "book_clusters": occupied,
+        "cluster_by_sleeve": per_sleeve,
+        "n_funded_joined": len(per_sleeve),
+        "n_funded_unjoined": len(unjoined),
+        "unjoined": unjoined,
+        "why": (f"{len(per_sleeve)}/{len(funded)} funded sleeve(s) joined to "
+                f"{len(occupied)} of the genome's {doc.get('n_clusters')} structural cluster(s)"),
+    }
 
 
 def effective_heat_of(ev: list[SleeveEvidence], book: dict[str, float]) -> dict[str, Any]:
@@ -1393,15 +1624,129 @@ def state_growth_curves(ev: list[SleeveEvidence], worlds: Worlds, book: dict[str
                  f"from {len(buckets)} bucket(s)")
 
 
+def state_book(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfig, *,
+               state: str, now_buckets: dict[str, str] | None, total_heat: float,
+               bounds: dict[str, float], family_of: dict[str, str],
+               warm_start: dict[str, float] | None,
+               global_book: dict[str, float] | None) -> dict[str, Any]:
+    """The COMPOSITION re-optimised inside the CURRENT state bucket alone -- one extra solve.
+
+    `state_growth_curves` scores the global book proportionally scaled on each state's worlds,
+    so the per-state curve carries the global solve's composition and only the EVALUATION is
+    conditional (`state_curves_basis: scaled_candidate`). This is the stronger measurement for
+    the one state that matters -- the one the desk is in -- and it costs exactly one solve: the
+    same evidence, the same bounds and family cap the published book was solved under, at the
+    same resolved total heat, on the current state's worlds only. The global book is scored on
+    those same worlds beside it, so the artifact says in one number what solving FOR the state
+    would have bought over holding the global composition in it.
+
+    PUBLISHED, NOT CONSUMED. The gateway sizes from `book`; it reads `heat.state` to pick which
+    allocator's certificate applies (`allocator_proof.select`) and nothing reads this block for
+    a size. It is written so the comparison exists and so a later change that lets the live
+    state's own composition size the floor can be argued from a measured delta rather than a
+    belief. `consumed` is False on every return until that change exists.
+
+    THE TOTAL IS THE RESOLVED HEAT AND THE BOUNDS ARE THE BOOK'S. Solved at exactly
+    `total_heat` (the floor or above, as the law resolved it) under `bounds` -- so even if a
+    reader took this book as the answer, no sleeve would sit above its bound and the total would
+    be neither below the floor nor above what the law licensed.
+    """
+    out: dict[str, Any] = {
+        "status": "UNMEASURED", "state": state or "", "consumed": False,
+        "basis": ("reoptimised_in_state: the composition re-solved on the current state "
+                  "bucket's worlds alone, at the resolved total heat, under the published "
+                  "book's own per-sleeve bounds and family cap"),
+        "note": ("published, not consumed: the gateway reads heat.state and the proof "
+                 "certificate's per-state verdict to choose WHICH allocator sizes; nothing "
+                 "sizes from this block yet")}
+    if not state:
+        return {**out, "why": "no current state id this pass"}
+    # `sample_worlds` returns a tuple of EMPTY labels when nothing conditioned the draw, which is
+    # a non-empty tuple: testing the tuple alone would let an unconditioned population produce a
+    # "state book" that is the global solve wearing a state's name.
+    if worlds is None or not any(getattr(worlds, "regimes", ()) or ()):
+        return {**out, "why": "no regime-labelled worlds: no state bucket to solve inside"}
+    if total_heat <= 0:
+        return {**out, "why": "no resolved heat (catastrophe guard): nothing to compose"}
+    try:
+        from libs.portfolio.allocator_proof import _subworlds, buckets_from_worlds
+    except Exception as exc:
+        return {**out, "why": f"state buckets unavailable ({type(exc).__name__}: {exc})"}
+    buckets = buckets_from_worlds(worlds, now_buckets, min_worlds=MIN_STATE_WORLDS)
+    idx = buckets.get(state)
+    if not idx:
+        return {**out, "why": (f"the current state {state!r} has no bucket of >= "
+                               f"{MIN_STATE_WORLDS} worlds ({len(buckets)} bucket(s) reached "
+                               "it); the global composition stands")}
+    sub = _subworlds(worlds, idx)
+    ub = {k: min(float(v), float(total_heat)) for k, v in bounds.items()}
+    try:
+        solve = optimise(ev, hard_cap=max(CURVE_SAMPLE_MAX, float(total_heat)),
+                         target=float(total_heat), cfg=cfg, worlds=sub, max_per_sleeve=ub,
+                         warm_start=warm_start or None)
+        capped = enforce_family_cap(solve.heat, family_of, solve.total_heat)
+        family_bound = not all(math.isinf(v) for v in capped.values())
+        if family_bound:
+            tight = {k: min(ub.get(k, math.inf), capped.get(k, math.inf)) for k in ub}
+            solve = optimise(ev, hard_cap=max(CURVE_SAMPLE_MAX, float(total_heat)),
+                             target=float(total_heat), cfg=cfg, worlds=sub,
+                             max_per_sleeve=tight, warm_start=solve.heat or None)
+    except ValueError as exc:
+        return {**out, "n_worlds": len(idx),
+                "why": f"the bounds cannot fund {total_heat:.2%} inside this state ({exc})"}
+    if not math.isfinite(solve.mean_log_growth):
+        return {**out, "n_worlds": len(idx),
+                "why": "the state-solved book is wiped out in one of the state's own worlds"}
+    growth = {"mean_log_per_day": round(solve.mean_log_growth, 10),
+              "cvar_log_per_day": round(solve.cvar_log_growth, 10),
+              "robust_score": round(solve.robust_score, 10),
+              "annual_growth_pct": solve.annual_growth_pct,
+              "prob_annual_loss": solve.prob_annual_loss}
+    res: dict[str, Any] = {
+        **out, "status": "MEASURED", "n_worlds": len(idx),
+        "total_heat": round(solve.total_heat, 6),
+        "book": {k: round(v, 6) for k, v in solve.heat.items() if v > 1e-5},
+        "growth_on_state": growth, "family_cap_bound": bool(family_bound),
+        "converged": bool(solve.converged), "iterations": int(solve.iterations),
+        "why": f"solved on the {len(idx)} world(s) of state {state!r}",
+    }
+    if global_book:
+        g = score_book(ev, global_book, cfg=cfg, worlds=sub)
+        res["global_book_on_state"] = {k: (round(float(v), 10) if math.isfinite(float(v))
+                                           else None) for k, v in g.items()}
+        if math.isfinite(g["mean_log_growth"]):
+            res["delta_elogw_per_day"] = round(solve.mean_log_growth - g["mean_log_growth"], 10)
+            res["delta_robust"] = round(solve.robust_score - g["robust_score"], 10)
+            res["reading"] = (
+                f"solving FOR state {state!r} would grow "
+                f"{res['delta_elogw_per_day']:+.6f}/day faster than holding the global "
+                f"composition in it (robust {res['delta_robust']:+.6f}); reported, not sized")
+    return res
+
+
 # ---------------------------------------------------------------------------------------
 # ADMISSION -- dE[log W] AGAINST THE BOOK THE DESK IS ACTUALLY HOLDING
 # ---------------------------------------------------------------------------------------
 
-#: Wall clock the admission scan may spend, in seconds. A candidate re-solve is ~1.2 s warm-started
-#: on the desk's 110-sleeve population, so this measures ~150 of them on the hourly heavy pass.
-#: The budget exists so a widening library DEGRADES the scan honestly (unreached candidates are
-#: NAMED and refused) instead of silently stretching the pass that sizes the live book.
-ADMISSION_BUDGET_S = 180.0
+#: Wall clock ONE candidate's warm-started re-solve may spend, in seconds. Until 2026-09-09 this
+#: was a 180 s budget for the WHOLE scan: ~150 candidates an hour, and everything past the cut
+#: left `unscored` -- named, refused, and refused again next hour if the rotation did not reach
+#: it. A compute limit hardening into a verdict. The budget is now PER CANDIDATE and the scan
+#: runs over EVERY candidate on every heavy pass; a re-solve that hits its own budget is not
+#: refused, it is carried forward WARM-STARTED from the exact point it stopped and continues on
+#: the next pass (`optimise(..., deadline=)`, `AllocationResult.budget_hit`). A warm-started
+#: candidate re-solve is ~1.2 s on the desk's 110-sleeve population; 8 s is headroom for one
+#: that starts far from the incumbent, not a cap on the scan. Zero or negative means unbounded.
+ADMISSION_CANDIDATE_BUDGET_S = 8.0
+#: Share of the book's TOTAL heat that may be lent to exploration among candidates whose
+#: dE[log W] sits INSIDE the admission margin -- the ambiguous ones, which the criterion could
+#: neither admit nor refuse on evidence and which were parked at zero for ever. Lent from
+#: WITHIN the total (incumbents scaled proportionally; the total is unchanged by construction),
+#: Thompson-sampled so an ambiguous candidate is funded in proportion to how often a draw from
+#: its own noise says it wins, and billed as the `explore_thompson` rail. Five percent of the
+#: book is one percent of account heat on the 20% floor: enough to accrue a forward record,
+#: small enough that the growth it can cost is inside the margin by construction.
+EXPLORE_SHARE = 0.05
 #: Iterations a candidate's re-solve gets, warm-started from the incumbent's own optimum. One
 #: sleeve added to a solved book is a small perturbation; a cold solve of the same problem
 #: converged in 104 iterations, so this is headroom, and `converged` is recorded either way.
@@ -1483,9 +1828,12 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                        total_heat: float,
                        order: dict[str, float] | None = None,
                        prefer: set[str] | None = None,
-                       budget_s: float = ADMISSION_BUDGET_S,
+                       budget_s: float = ADMISSION_CANDIDATE_BUDGET_S,
                        iterations: int = ADMISSION_ITERATIONS,
-                       margin_frac: float = ADMISSION_MARGIN_FRAC) -> dict[str, Any]:
+                       margin_frac: float = ADMISSION_MARGIN_FRAC,
+                       warm: dict[str, dict[str, float]] | None = None,
+                       explore_share: float = EXPLORE_SHARE,
+                       explore_seed: int | None = None) -> dict[str, Any]:
     """dE[log W]_i = E[log W | book + i] - E[log W | book], on ONE world population.
 
         "Don't rank candidates primarily by Sharpe. Rank by dE[log W] after adding the candidate
@@ -1516,10 +1864,18 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     admitting on it is admitting on luck; the bar is `margin_frac` of the incumbent book's own
     growth rate, the same fraction the proof certificate demands of the allocator itself.
 
+    THE BUDGET IS PER CANDIDATE AND THE SCAN RUNS TO COMPLETION (2026-09-09). `budget_s` bounds
+    ONE re-solve, not the pass; every candidate is re-solved every heavy pass, in the `prefer`
+    rotation's order. A re-solve that hits its own budget before converging is not a verdict:
+    it is written to `unscored` with the partial reading beside it (`partial`), and its book is
+    carried in `warm` so the NEXT pass warm-starts that candidate from where this one stopped
+    rather than from the incumbent again. Nothing is refused for compute; a candidate the
+    solver has not finished with is one the solver continues.
+
     Returns the artifact block. Every candidate is either SCORED (with its delta, the heat the
     re-solve gave it, what it displaced, and -- reported beside, never ranked on -- its standalone
-    Sharpe and its correlation to the held book) or NAMED as unscored with the reason. A candidate
-    the budget did not reach is not admitted: absence is never permission.
+    Sharpe and its correlation to the held book) or NAMED as unscored with the reason. A partial
+    reading is not admitted: absence is never permission, and neither is half a solve.
     """
     t0 = time.time()
     by_name = {e.name: e for e in ev}
@@ -1544,6 +1900,12 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
         "measured_utc": datetime.now(UTC).isoformat(),
         "basis": basis, "total_heat": round(float(total_heat), 6),
         "margin_frac": margin_frac, "budget_s": budget_s,
+        "budget": {"per_candidate_s": budget_s, "iterations": iterations,
+                   "scope": ("per candidate; the scan re-solves EVERY candidate each pass and a "
+                             "re-solve that hits its budget is carried forward warm-started, "
+                             "never refused for compute")},
+        # PARTIAL SOLVES, carried to the next pass: candidate -> the book the solver reached.
+        "warm": {}, "partial": {},
         # THE SCAN CARRIES ITS OWN EXPIRY, like the proof certificate does. `promoter` refuses to
         # price capital from a scan older than this -- stated here so the rule travels with the
         # measurement instead of living only in the reader.
@@ -1603,12 +1965,9 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                     if pref else "ranked by the free solve's marginal at the current book")
     doc["n_carried_from_last_unreached"] = len(pref & set(cand_names))
 
+    warm_in = {str(k): v for k, v in (warm or {}).items() if isinstance(v, dict) and v}
+    solve_s: list[float] = []
     for name in cand_names:
-        if time.time() - t0 > budget_s:
-            doc["unscored"][name] = (f"the {budget_s:.0f}s admission budget was spent before this "
-                                     f"candidate was reached; NOT admitted -- an unmeasured "
-                                     f"marginal is not a positive one")
-            continue
         e = by_name[name]
         sharpe = _annual_sharpe(e.daily_r)
         corr = _corr_to_book(e.daily_r, held, by_name)
@@ -1618,14 +1977,25 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
             "family": e.family, "symbol": e.symbol, "selector": _selector_of(e),
             "forward_days": int(e.forward_days), "live_days": int(e.live_days),
         }
+        # WHERE THIS SOLVE STARTS: the point the last pass's solve stopped at, when it hit its
+        # budget, else the incumbent's own optimum with the candidate at zero. The projection
+        # inside `optimise` re-fits a carried point to THIS pass's bounds and cap.
+        carried = warm_in.get(name)
+        ws = ({str(k): float(v) for k, v in carried.items()} if carried
+              else {**base_heat, name: 0.0})
+        deadline = (time.time() + float(budget_s)) if budget_s and budget_s > 0 else None
+        t_c = time.time()
         try:
             ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
                            max_per_sleeve=_ub(allowed_base | {name}),
-                           warm_start={**base_heat, name: 0.0},
-                           iterations=iterations)
+                           warm_start=ws, iterations=iterations, deadline=deadline)
         except ValueError as exc:
             doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
             continue
+        solve_s.append(time.time() - t_c)
+        row.update({"solve_s": round(solve_s[-1], 3), "iterations": int(ext.iterations),
+                    "budget_hit": bool(ext.budget_hit),
+                    "warm_started_from_last_pass": bool(carried)})
         got = float(ext.heat.get(name, 0.0))
         g_ext = float(ext.mean_log_growth)
         if not math.isfinite(g_ext):
@@ -1642,6 +2012,20 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                      for k, v in base_heat.items()
                      if k != name and abs(float(ext.heat.get(k, 0.0)) - v) > 1e-5}
         admit = bool(delta > bar and got > 1e-5)
+        if ext.budget_hit and not ext.converged and not admit:
+            # A PARTIAL SOLVE IS NOT A REFUSAL AND NOT A VERDICT. The reading is written beside
+            # the name so a reader can see how far it got, the book it reached is carried, and
+            # the next pass continues from there. It is not admitted on half a solve either.
+            doc["unscored"][name] = (
+                f"per-candidate budget ({float(budget_s):.1f}s) hit after {ext.iterations} "
+                f"iteration(s) without convergence; NOT admitted on a partial reading "
+                f"(dE {delta:+.6f}/day so far) -- carried forward warm-started, so the next "
+                f"pass continues this solve instead of restarting it")
+            doc["warm"][name] = {k: round(float(v), 8) for k, v in ext.heat.items()
+                                 if float(v) > 0.0}
+            doc["partial"][name] = {**row, "delta_elogw_per_day": round(delta, 10),
+                                    "heat_earned": round(got, 6)}
+            continue
         sr, rho = row["sharpe_standalone_annual"], row["corr_to_book"]
         shape = (f"standalone Sharpe {sr:.2f}" if sr is not None else "Sharpe unmeasured")
         shape += (f" at correlation {rho:+.2f} to the held book" if rho is not None
@@ -1671,9 +2055,21 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     doc["admitted"].sort(key=lambda n: -(doc["candidates"][n].get("delta_elogw_per_day") or 0.0))
     doc["refused"].sort(key=lambda n: -(doc["candidates"][n].get("delta_elogw_per_day") or -1e9))
     doc["n_scored"] = len(doc["candidates"])
+    doc["priced"] = doc["n_scored"]
     doc["n_admitted"] = len(doc["admitted"])
+    doc["n_unscored"] = len(doc["unscored"])
+    doc["n_partial"] = len(doc["partial"])
     doc["elapsed_s"] = round(time.time() - t0, 1)
+    doc["per_candidate_s"] = (round(float(np.mean(solve_s)), 3) if solve_s else None)
+    doc["max_candidate_s"] = (round(float(max(solve_s)), 3) if solve_s else None)
     doc["status"] = "MEASURED"
+    # EXPLORATION INSIDE THE MARGIN: the ambiguous candidates, funded a little from within the
+    # book so they accrue a forward record instead of standing at zero for ever. Computed here
+    # because it needs every row's delta against THIS bar; applied (or not) by the caller, which
+    # is where the published book lives, and billed by the `explore_thompson` rail.
+    doc["explore"] = thompson_explore(doc["candidates"], held, bounds, bar=bar,
+                                      total_heat=float(total_heat), basis=basis,
+                                      share=explore_share, seed=explore_seed)
     # THE RENT LINE (AGENTS.md): what this criterion is worth is the growth the admitted set adds
     # to the held book, measured the same way each candidate was. It is a SUM OF SEPARATE
     # marginals, not the delta of admitting them together -- said here so nobody reads it as the
@@ -1688,6 +2084,151 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                  "them at once is a different and smaller number"),
     }
     return doc
+
+
+def thompson_explore(rows: dict[str, dict[str, Any]], held: dict[str, float],
+                     bounds: dict[str, float], *, bar: float, total_heat: float, basis: str,
+                     share: float = EXPLORE_SHARE, seed: int | None = None) -> dict[str, Any]:
+    """A small Thompson-sampled heat for the candidates the criterion could not decide.
+
+    THE HOLE. A candidate whose dE[log W] lands inside the noise margin is refused -- correctly,
+    a hair's-breadth win is luck -- and refused again next hour, and the hour after: nothing
+    ever resolves the ambiguity because a sleeve at zero heat accrues no forward record. The
+    research bandit explores among research DIRECTIONS; nothing explored among validated sleeves
+    for capital.
+
+    THE DRAW. For each candidate in the band |dE| <= bar (and which the re-solve wanted at some
+    size), one draw z ~ N(dE, bar): the margin IS the declared noise scale of the estimate, so a
+    candidate is funded in proportion to how often its own noise says it wins. Draws at or below
+    zero fund nothing this pass. Winners share `share x total heat`, each capped at the heat the
+    equal-heat re-solve gave it and at its per-sleeve bound.
+
+    FROM WITHIN THE TOTAL, OR NOT AT ALL. The heat is lent by the incumbents pro rata (see
+    `apply_explore`): the total is unchanged by construction, no incumbent goes below zero or
+    above its bound (they only scale down), and when that cannot be satisfied for a pass --
+    nothing held, the free basis, or a lent share the incumbents cannot fund -- the block says
+    so and funds nothing. `seed` fixed per UTC day by the caller keeps the explored set stable
+    within a day rather than re-drawn every pass, which is the churn control.
+    """
+    out: dict[str, Any] = {
+        "status": "NONE", "applied": False, "share": float(share), "bar": float(bar),
+        "rule": ("Thompson draw z ~ N(dE[log W], margin) per candidate inside |dE| <= margin; "
+                 "positive draws share EXPLORE_SHARE of total heat, each capped at the heat the "
+                 "re-solve gave the candidate and at its bound; lent by incumbents pro rata, "
+                 "total unchanged; billed by the explore_thompson rail")}
+    if basis != "equal_heat" or not held:
+        return {**out, "why": "no held book to fund exploration from (free basis)"}
+    band: dict[str, dict[str, Any]] = {}
+    for name, row in rows.items():
+        d = row.get("delta_elogw_per_day")
+        got = float(row.get("heat_earned") or 0.0)
+        if d is None or row.get("admit") or got <= 1e-5 or abs(float(d)) > float(bar):
+            continue
+        band[name] = {"delta_elogw_per_day": float(d), "heat_earned_in_resolve": got}
+    out["n_band"] = len(band)
+    if not band:
+        return {**out, "why": ("no candidate inside the margin that the re-solve wanted at any "
+                               "size; nothing is ambiguous this pass")}
+    try:
+        from libs.portfolio.rails import rail_multiplier as _rail_mult
+        mult = float(_rail_mult("explore_thompson"))
+    except Exception:
+        mult = 1.0
+    budget = float(share) * mult * float(total_heat)
+    out.update({"rail_multiplier": round(mult, 4), "budget_heat": round(budget, 6),
+                "seed": seed})
+    if budget <= 1e-9:
+        return {**out, "why": "the exploration budget is zero (share, rail multiplier or total)"}
+    rng = np.random.default_rng(seed)
+    sigma = max(float(bar), 0.0)
+    for b in band.values():
+        b["z_draw"] = float(rng.normal(b["delta_elogw_per_day"], sigma)) if sigma > 0 \
+            else b["delta_elogw_per_day"]
+    winners = {n: b["z_draw"] for n, b in band.items() if b["z_draw"] > 0.0}
+    if not winners:
+        out["band"] = {n: {k: round(v, 10) for k, v in b.items()} for n, b in band.items()}
+        return {**out, "why": ("every ambiguous candidate's draw came out at or below zero this "
+                               "pass; nothing funded, the band is listed")}
+    z_sum = float(sum(winners.values()))
+    heats: dict[str, float] = {}
+    for name, z in winners.items():
+        cap_n = min(float(bounds.get(name, total_heat)), band[name]["heat_earned_in_resolve"])
+        x = min(budget * z / z_sum, cap_n)
+        if x > 1e-6:
+            heats[name] = x
+    for name in band:
+        band[name]["explore_heat"] = round(heats.get(name, 0.0), 6)
+    out["band"] = {n: {k: (round(v, 10) if isinstance(v, float) else v) for k, v in b.items()}
+                   for n, b in band.items()}
+    x_total = float(sum(heats.values()))
+    if x_total <= 1e-9:
+        return {**out, "why": "every positive draw capped to nothing (bound or re-solve heat)"}
+    inc_total = float(sum(held.values()))
+    if x_total >= inc_total - 1e-9:
+        return {**out, "why": (f"the lent share {x_total:.4%} is not fundable from within the "
+                               f"{inc_total:.4%} the incumbents hold; nothing funded")}
+    out.update({"status": "FUNDED", "explore_heat": {k: round(v, 6) for k, v in heats.items()},
+                "explore_heat_total": round(x_total, 6),
+                "why": (f"{len(heats)} of {len(band)} ambiguous candidate(s) drew positive; "
+                        f"{x_total:.4%} of heat lent from within the book's "
+                        f"{inc_total:.4%}")})
+    return out
+
+
+def apply_explore(funded: dict[str, float], heats: dict[str, float],
+                  bounds: dict[str, float]) -> tuple[dict[str, float], str]:
+    """The published book with the exploration heat lent from within it, or the book unchanged.
+
+    Incumbents scale by one common factor so the total is preserved exactly; a candidate already
+    in the book is SET to its exploration heat, never topped up. Returns (book, why) and refuses
+    -- returning the input book -- whenever the rule cannot be honoured: nothing held, a lent
+    share the incumbents cannot fund, an incumbent that would have to GROW past its bound to
+    keep the total (a held book already carrying more exploration than this draw), or a total
+    that would move. Each refusal is the reason string, never a silent no-op.
+    """
+    base = {k: float(v) for k, v in funded.items() if float(v) > 0.0}
+    lend = {k: float(v) for k, v in (heats or {}).items() if float(v) > 1e-9}
+    if not lend:
+        return dict(base), "no exploration heat to apply"
+    total = float(sum(base.values()))
+    if total <= 1e-9:
+        return dict(base), "no held book to lend from"
+    incumbents = {k: v for k, v in base.items() if k not in lend}
+    inc_sum = float(sum(incumbents.values()))
+    x_total = float(sum(lend.values()))
+    if inc_sum <= 1e-9 or x_total >= total - 1e-9:
+        return dict(base), (f"the lent {x_total:.4%} is not fundable from the {inc_sum:.4%} "
+                            "the incumbents hold")
+    scale = (total - x_total) / inc_sum
+    if scale > 1.0 + 1e-9:
+        return dict(base), ("the held book already carries more exploration heat than this "
+                            "draw; incumbents would have to grow to keep the total, so the "
+                            "book stands as held")
+    for k, v in lend.items():
+        if v > float(bounds.get(k, total)) + 1e-9:
+            return dict(base), f"{k}: exploration heat {v:.4%} exceeds its bound"
+    book = {k: v * scale for k, v in incumbents.items()}
+    book.update(lend)
+    if abs(sum(book.values()) - total) > 1e-6:
+        return dict(base), "the explored book would not sum to the held total"
+    return book, (f"{x_total:.4%} lent to {len(lend)} candidate(s); incumbents scaled by "
+                 f"{scale:.4f}; total {total:.4%} unchanged")
+
+
+def without_explore(book: dict[str, float], lend: dict[str, float]) -> dict[str, float]:
+    """The explored book with the lent heat handed back: incumbents scaled up to the total.
+
+    A counterfactual for SCORING (the rail's `growth_without`), never published -- scaling the
+    incumbents back up can put one a hair over its bound, which is fine for a comparison on the
+    same worlds and not fine for a book the gateway sizes from. Empty when there is no incumbent
+    to hand the heat back to.
+    """
+    inc = {k: float(v) for k, v in book.items() if k not in lend and float(v) > 0.0}
+    x = float(sum(float(book.get(k, 0.0)) for k in lend))
+    s = float(sum(inc.values()))
+    if s <= 1e-12:
+        return {}
+    return {k: v * (s + x) / s for k, v in inc.items()}
 
 
 def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
@@ -1916,6 +2457,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # return matrix can be asked. The calibration RATCHETS ONLY UPWARD: a quiet sample never
     # licenses modelling crises as gentler than the standing assumption, because that is how a
     # book finds out its real correlations at the worst possible moment.
+    #
+    # PER FACTOR BLOCK, UNDER THAT SCALAR (2026-09-09). The scalar fused every sleeve onto one
+    # common factor at the same loading, so a gold sleeve was stressed for a USD co-explosion it
+    # does not share with EURUSD. The calibration now also measures the stress-regime correlation
+    # INSIDE each block `libs/risk/fx_factors` can name (USD leg, JPY leg, metals) and hands each
+    # sleeve its block's share -- with the ratcheted scalar as the CEILING, so a block measured
+    # less fused keeps that independence in crisis worlds and nothing is ever stressed harder.
     cov_cal = None
     try:
         from libs.portfolio.conditional_covariance import calibrate as _calibrate_cov
@@ -1923,7 +2471,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         _hist = daily.to_numpy(dtype=float)
         cov_cal = _calibrate_cov(_hist, labels or None,
                                  standing_share=_base.crisis_common_share,
-                                 standing_vol_mult=_base.crisis_vol_mult)
+                                 standing_vol_mult=_base.crisis_vol_mult,
+                                 symbols={e.name: e.symbol for e in ev},
+                                 names=[str(c) for c in daily.columns])
         _log(f"crisis calibration: common_share={cov_cal.crisis_common_share:.3f} "
              f"vol_mult={cov_cal.crisis_vol_mult:.2f} ({cov_cal.note})")
     except Exception as exc:
@@ -1940,15 +2490,37 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     crisis_share, crisis_why = crisis_share_from_drift(drift_doc, WorldConfig().crisis_prob)
     _log(f"drift: {drift_why}")
     _log(f"crisis worlds: {crisis_why}")
-    # THE HAZARD TILT, BEFORE THE SOLVE AND BEFORE ANY RETIREMENT THRESHOLD. A sleeve whose edge
-    # is measurably breaking has its posterior MEAN shrunk toward zero on this pass; the desk
-    # does not wait for the retirement bar to react to evidence it already has. Report-only
-    # until `missed_growth.measure_hazard_shrink` bills it -- the rail is registered, so a tilt
-    # that costs growth walks its own multiplier down.
-    hazard_meta = apply_hazard_shrink(ev, hazard_by_sleeve(drift_doc))
-    if hazard_meta["n_shrunk"]:
-        _log(f"hazard shrink: {hazard_meta['n_shrunk']} sleeve(s) tilted "
-             f"({', '.join(f'{k}={v:.2f}' for k, v in list(hazard_meta['applied'].items())[:5])})")
+    # THE HAZARD, BEFORE THE SOLVE AND BEFORE ANY RETIREMENT THRESHOLD. Under `HAZARD_MODE =
+    # "decay_posterior"` each sleeve with a measured hazard carries it as its OWN decay
+    # probability, capped at the blanket, so the healthy ones stop paying the blanket 30% and
+    # the breaking ones pay no more than before (`apply_decay_posterior`). Under "mean_shrink"
+    # the previous tilt of the posterior mean runs instead, billed by the `hazard_shrink` rail.
+    # Exactly one of the two runs: the hazard is one fact and is charged once.
+    _haz = hazard_by_sleeve(drift_doc)
+    _blanket = WorldConfig().decay_prob
+    if HAZARD_MODE == "mean_shrink":
+        hazard_meta = apply_hazard_shrink(ev, _haz)
+        decay_meta: dict[str, Any] = {
+            "mode": "mean_shrink", "blanket": _blanket, "n_from_hazard": 0,
+            "n_blanket": len(ev), "by_sleeve": {},
+            "why": ("HAZARD_MODE is mean_shrink: the hazard tilts the posterior mean "
+                    "(hazard_shrink) and every sleeve pays the blanket decay")}
+        if hazard_meta["n_shrunk"]:
+            _tilted = ", ".join(f"{k}={v:.2f}"
+                                for k, v in list(hazard_meta["applied"].items())[:5])
+            _log(f"hazard shrink: {hazard_meta['n_shrunk']} sleeve(s) tilted ({_tilted})")
+    else:
+        decay_meta = apply_decay_posterior(ev, _haz, _blanket)
+        hazard_meta = {"applied": {}, "n_shrunk": 0, "mode": HAZARD_MODE,
+                       "superseded_by": "decay_posterior",
+                       "rule": ("the hazard enters as each sleeve's own decay probability "
+                                "(see decay_posterior); the post-hoc mean tilt did not run")}
+        if decay_meta["n_from_hazard"]:
+            _relieved = sorted(decay_meta["by_sleeve"].items(),
+                               key=lambda kv: -kv[1]["relief_vs_blanket"])[:5]
+            _relieved_txt = ", ".join(f"{k}={v['decay_prob_i']:.2f}" for k, v in _relieved)
+            _log(f"decay posterior: {decay_meta['n_from_hazard']} sleeve(s) carry their own "
+                 f"decay (blanket {_blanket:.2f}); most relieved {_relieved_txt}")
 
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
                       # The fast clock buys its speed here and nowhere else: a smaller world
@@ -2076,6 +2648,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     try:
         from mt5desk.gateway_config_fallback import MAX_DRAWDOWN_TOLERANCE as _DD_TOL
 
+        from libs.portfolio.kelly_surface import MAX_MARGIN_USE as _MAX_MARGIN_USE
         from libs.portfolio.kelly_surface import envelope as _envelope
         from libs.portfolio.kelly_surface import surface as _surface
         _free_total = float(free.total_heat)
@@ -2084,9 +2657,41 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _fr = tuple(round(x, 4) for x in np.linspace(0.0, _top, 21))
             _pre_surface = _surface(worlds, free.heat, tolerance=_DD_TOL, alpha=cfg.cvar_alpha,
                                     fractions=_fr)
+            # THE MARGIN CLAUSE, FED FROM THE BROKER (2026-09-09). `envelope` has carried a
+            # `margin_use` clause and a MAX_MARGIN_USE since it was written and NOTHING had ever
+            # passed the argument -- the one clause that is a fact about the venue rather than
+            # about the desk's own worlds was inert. It is measured from `mt5.account_info()`
+            # (margin over equity at the heat currently deployed, extrapolated linearly across
+            # the sampled heats) and OMITTED whenever the terminal, the account or an open
+            # position is missing, in which case the envelope binds exactly as it does today.
+            #
+            # THIS IS THE INTEGRITY CLAUSE, NOT A PREFERENCE. Past the broker's own feasibility
+            # a margin call liquidates positions the desk chose to hold, which no growth
+            # argument survives; it is the same class as `margin_guard` and it is why
+            # `survival_ceiling` is registered integrity rather than tunable.
+            _mu, _mu_why = (None, "not measured")
+            _mu_heats = [r.get("heat") for r in (_pre_surface.get("rows") or [])]
+            _acc_margin, _acc_equity, _acc_why = account_margin()
+            if _acc_margin is not None and _acc_equity is not None:
+                _mu, _mu_why = margin_use_from(_acc_margin, _acc_equity, _free_total, _mu_heats)
+            else:
+                _mu_why = f"margin unmeasured: {_acc_why}"
+            _log(f"margin use: {_mu_why}")
             survival = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
                                  fallback=HEAT_HARD_CEILING,
+                                 margin_use=_mu,
                                  capacity_max=_capacity_ceiling())
+            survival["margin_use"] = {
+                "status": "MEASURED" if _mu else "UNMEASURED", "why": _mu_why,
+                "account_margin": _acc_margin, "account_equity": _acc_equity,
+                "deployed_heat": round(_free_total, 6),
+                "max_margin_use": _MAX_MARGIN_USE,
+                "by_heat": ({round(k, 6): round(v, 6) for k, v in sorted(_mu.items())}
+                            if _mu else {}),
+                "rule": ("margin use is linear in heat through the origin (lots scale with "
+                         "heat); an unmeasured margin carries NO clause, so the envelope binds "
+                         "exactly as it did before this was fed"),
+            }
             if survival.get("status") == "MEASURED":
                 surv_ceiling = float(survival["ceiling"])
             surv_why = str(survival.get("why") or "")
@@ -2109,6 +2714,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # 3. THE BOOK, at the heat the law resolved.
     fam_share: dict[str, float] = {}
     fill_note: dict[str, Any] = {"needed": False}
+    ub: dict[str, float] = {}
+    family_of = {e.name: e.family for e in ev}
     if verdict.total_heat <= 0:
         book = AllocationResult(heat={}, total_heat=0.0, robust_score=0.0, mean_log_growth=0.0,
                                 cvar_log_growth=0.0, annual_growth_pct=0.0, prob_annual_loss=0.0,
@@ -2133,7 +2740,6 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # to day while sharing a mechanism and a 01:00 fill hour. Two passes converge: the cap
         # scales the offending family's members proportionally, the optimiser re-spends what it
         # frees on everything else, and a family already inside the cap is never touched.
-        family_of = {e.name: e.family for e in ev}
         for _pass in range(2):
             capped = enforce_family_cap(book.heat, family_of, book.total_heat)
             if all(math.isinf(v) for v in capped.values()):
@@ -2170,6 +2776,20 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _log(f"mechanism mix: {len(fam_share)} family(ies), largest {top[0]} at "
                  f"{top[1] / max(book.total_heat, 1e-9):.0%} of the book")
     funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+
+    # ---------------------------------------- THE BOOK SOLVED FOR THE STATE THE DESK IS IN
+    # One extra solve on the current state bucket's worlds alone, at the resolved heat, under
+    # the same bounds and family cap -- the composition the state itself would choose, beside
+    # what the global composition earns in it. Published as `state_book`; consumed by nothing.
+    if heavy:
+        sbook = state_book(ev, worlds, cfg, state=current_state, now_buckets=kept_dims,
+                           total_heat=float(verdict.total_heat), bounds=ub, family_of=family_of,
+                           warm_start=funded or None, global_book=funded or None)
+        _log(f"state book: {sbook.get('status')} -- {sbook.get('why')}"
+             + (f"; {sbook.get('reading')}" if sbook.get("reading") else ""))
+    else:
+        sbook = {"status": "not measured on this clock", "consumed": False,
+                 "state": current_state or ""}
 
     # ---------------------------------------------------- THE POSTERIOR MULTI-PERIOD BOOK
     # `libs/portfolio/posterior_growth` solves the same objective over a POSTERIOR on worlds --
@@ -2290,6 +2910,133 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     book, funded = bind_verdict(nt, prev_book, held, book, funded)
     opp = opportunity(free, funded, HEAT_TARGET)
 
+    # ------------------------------------------------- ADMISSION BY dE[log W], NOT BY SHARPE
+    # THE CRITERION, NOT A REPORT (principal, 2026-09-05). Every priced sleeve the published book
+    # does NOT hold is re-solved INTO that book at the same total heat on these same worlds, and
+    # what it is worth is the growth it adds. `promoter.py` reads this block and gives capital to
+    # nothing that fails it, however good its standalone Sharpe -- which is on every row, beside
+    # the correlation to the held book, so the disagreement between the two orderings is legible
+    # rather than asserted.
+    #
+    # HEAVY CLOCK ONLY, AND CARRIED WITH ITS AGE. A candidate re-solve is a full optimisation; a
+    # hundred of them do not fit in a five-minute clock. The heavy pass runs hourly, and the
+    # short clocks carry its answer forward stamped with when it was taken, so a reader (and the
+    # promoter's freshness check) can tell a measurement from an inheritance.
+    #
+    # MOVED AHEAD OF THE PROOF (2026-09-09), because the scan's `explore` block may now lend a
+    # slice of the book to ambiguous candidates, and the book the contest certifies must be the
+    # book that is published.
+    admission: dict[str, Any]
+    adm_bounds = per_sleeve_bounds(dd, max(book.total_heat, HEAT_TARGET))
+    prev_admission: dict[str, Any] = {}
+    try:
+        _prev_art = json.loads(OUT.read_text("utf-8")).get("admission")
+        prev_admission = _prev_art if isinstance(_prev_art, dict) else {}
+    except (OSError, ValueError, AttributeError):
+        prev_admission = {}
+    if heavy and funded:
+        admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
+                                       total_heat=book.total_heat, order=free.marginal,
+                                       # Whatever the last scan could not finish goes first, and
+                                       # continues from the book its solve had reached.
+                                       prefer=set(prev_admission.get("unscored") or {}),
+                                       warm=prev_admission.get("warm") or {},
+                                       # One draw per UTC day: the explored set is stable across
+                                       # the hourly passes of a day instead of re-drawn hourly.
+                                       explore_seed=int(seed) + int(datetime.now(UTC)
+                                                                    .strftime("%Y%m%d")))
+        _log(f"admission: {admission.get('status')} -- {admission.get('n_admitted', 0)}/"
+             f"{admission.get('priced', 0)} priced candidate(s) raise robust growth "
+             f"(basis={admission.get('basis')}, {admission.get('elapsed_s', 0)}s, "
+             f"{admission.get('per_candidate_s')}s/candidate, "
+             f"{admission.get('n_unscored', 0)} unscored of which "
+             f"{admission.get('n_partial', 0)} partial and carried, "
+             f"{admission.get('n_carried_from_last_unreached', 0)} continued from last pass)")
+    else:
+        admission = {"status": "not measured on this clock", "candidates": {},
+                     "admitted": [], "refused": [], "unscored": {}, "warm": {}, "partial": {}}
+        if prev_admission.get("status") == "MEASURED":
+            admission = {**prev_admission,
+                         "carried_from": prev_admission.get("measured_utc"),
+                         "carried_by": mode}
+
+    # EXPLORATION APPLIED TO THE PUBLISHED BOOK. On a heavy pass the draw was just made; on a
+    # short clock the carried draw is re-applied to THIS pass's book so the explored set keeps
+    # its heat for the day. Candidates the main solve has since funded on its own are dropped
+    # from the lent set (they are no longer ambiguous). The total never moves; the explored book
+    # and the un-explored one are both scored on these worlds so the rail can be billed.
+    explore = admission.get("explore") if isinstance(admission.get("explore"), dict) else None
+    if explore is not None:
+        explore = dict(explore)
+        explore["applied"] = False
+        lend = {k: float(v) for k, v in (explore.get("explore_heat") or {}).items()
+                if float(v) > 1e-9}
+        # A drawn candidate the main solve now funds ABOVE its lent heat is no longer ambiguous
+        # and is dropped from the lent set; one held AT its lent heat is the held book carrying
+        # last pass's draw, and stays.
+        lend = {k: v for k, v in lend.items() if float(funded.get(k, 0.0)) <= v + 1e-6}
+        if explore.get("status") == "FUNDED" and lend and funded:
+            base_now = {k: float(v) for k, v in funded.items() if float(v) > 0.0}
+            explored, e_why = apply_explore(base_now, lend, adm_bounds)
+            changed = any(abs(explored.get(k, 0.0) - base_now.get(k, 0.0)) > 1e-9
+                          for k in set(explored) | set(base_now))
+            held_already = all(abs(base_now.get(k, 0.0) - v) <= 1e-6 for k, v in lend.items())
+            if changed or held_already:
+                without = without_explore(explored, lend)
+                sc_with = score_book(ev, explored, cfg=cfg, worlds=worlds)
+                sc_without = (score_book(ev, without, cfg=cfg, worlds=worlds) if without
+                              else {"mean_log_growth": float("nan")})
+                if math.isfinite(sc_with["mean_log_growth"]):
+                    explore.update({
+                        "applied": True,
+                        "applied_via": ("heavy" if heavy else ("carried" if changed else "held")),
+                        "applied_why": (e_why if changed else
+                                        "the held book already carries this draw's heat"),
+                        "growth_with": round(float(sc_with["mean_log_growth"]), 10),
+                        "growth_without": (round(float(sc_without["mean_log_growth"]), 10)
+                                           if math.isfinite(sc_without["mean_log_growth"])
+                                           else None),
+                        "book": {k: round(v, 6) for k, v in explored.items() if v > 1e-6},
+                        "paid_by": {k: round(explored.get(k, 0.0) - v, 6)
+                                    for k, v in base_now.items()
+                                    if k not in lend and abs(explored.get(k, 0.0) - v) > 1e-6},
+                        "without_basis": ("the same book with the lent heat removed and the "
+                                          "incumbents scaled back to the total; scored, not "
+                                          "published"),
+                    })
+                    if changed:
+                        book = AllocationResult(
+                            heat={k: v for k, v in explored.items() if v > 1e-6},
+                            total_heat=float(sum(explored.values())),
+                            robust_score=float(sc_with["robust_score"]),
+                            mean_log_growth=float(sc_with["mean_log_growth"]),
+                            cvar_log_growth=float(sc_with["cvar_log_growth"]),
+                            annual_growth_pct=float(sc_with["annual_growth_pct"]),
+                            prob_annual_loss=float(sc_with["prob_annual_loss"]),
+                            marginal=dict(book.marginal), iterations=book.iterations,
+                            converged=book.converged,
+                            note=(f"{book.note}; explore: {e_why}").strip("; "))
+                        funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+                    _log(f"explore ({explore['applied_via']}): {explore['applied_why']} -> "
+                         f"growth {explore['growth_with']:+.6f} vs "
+                         f"{explore['growth_without']} log/day un-explored")
+                else:
+                    explore["applied_why"] = ("explored book is wiped out in a sampled world; "
+                                              "nothing lent")
+            else:
+                explore["applied_why"] = e_why
+        elif explore.get("status") == "FUNDED":
+            explore["applied_why"] = ("nothing left to lend: every drawn candidate is funded by "
+                                      "the main solve on its own, or no book is held")
+        admission["explore"] = explore
+    # SLEEVES THIS SOLVE ZEROED, NAMED so the answer can actually BE zero. Without this list the
+    # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
+    # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
+    zeroed = zeroed_live(ev, funded, extra=prev_book)
+    if zeroed:
+        _log(f"zeroed but NOT retired: {len(zeroed)} rostered sleeve(s) earn 0% this pass "
+             f"({', '.join(sorted(zeroed)[:6])})")
+
     # ------------------------------------------------------ THE BASELINE CONTEST, EVERY PASS
     # A dynamic allocator sits above every edge and reallocates, so it can destroy compounding
     # faster than any single sleeve can. It therefore has to beat the answers anyone could have
@@ -2326,25 +3073,47 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # is, and how much more the worlds would bear. Report-only -- `heat_policy.resolve` is the
     # lever -- but UNUSED_UPSIDE is a verdict `missed_growth` will not let stand.
     ks_doc: dict[str, Any] = {}
+    ks_crisis: dict[str, Any] = {"status": "UNMEASURED", "binds": False,
+                                 "why": "no funded book to condition on the crisis worlds"}
     aggression: dict[str, Any] = {}
     try:
         from mt5desk.gateway_config_fallback import MAX_DRAWDOWN_TOLERANCE as _DD_TOL
 
         from libs.portfolio.aggression import explain as _explain
+        from libs.portfolio.kelly_surface import crisis_block as _crisis_block
         from libs.portfolio.kelly_surface import surface as _surface
         if funded:
             ks_doc = _surface(worlds, funded, tolerance=_DD_TOL, alpha=cfg.cvar_alpha)
             ks_doc["rows"] = ks_doc.get("rows", [])[::2]          # every second grid point
+            # THE CRISIS KELLY, BESIDE THE BLENDED ONE, FOR COMPARISON (2026-09-09). The same
+            # surface on `worlds.crisis` alone -- "what would Kelly be if the crisis world is
+            # the one we are in" -- with the sign of the difference named. It binds nothing:
+            # computed after the heat is resolved and the book solved, read by no sizing path.
+            ks_crisis = _crisis_block(worlds, funded, ks_doc, tolerance=_DD_TOL,
+                                      alpha=cfg.cvar_alpha)
+            _log(f"crisis kelly: {ks_crisis.get('status')} on {ks_crisis.get('n_worlds')} "
+                 f"crisis world(s): f_opt={ks_crisis.get('f_opt')} vs blended "
+                 f"{ks_doc.get('f_opt')} -- {ks_crisis.get('why') or 'comparison only'}")
         # THE OPERATIVE CEILING, NOT THE FALLBACK CONSTANT. `aggression` decides between
         # CEILING_BOUND and UNUSED_UPSIDE by comparing the book against the bar it was
         # actually held by; handing it 0.30 while the law ran a measured 22% would report
         # UNUSED_UPSIDE every pass and send `missed_growth` hunting a rail that did not bind.
         _op_ceiling = min(float(ceiling_now),
                           float(surv_ceiling) if surv_ceiling is not None else float("inf"))
+        # MARGIN HEADROOM, from the same broker reading the survival envelope's clause used.
+        # `aggression.explain` has carried a `margin_headroom` component since it was written
+        # and every pass reported it as a GAP ("no account margin reading on this host"); it is
+        # an audit input and moves nothing.
+        _headroom = None
+        _srv_mu = (survival.get("margin_use") or {}) if isinstance(survival, dict) else {}
+        if _srv_mu.get("status") == "MEASURED" and _srv_mu.get("account_equity"):
+            _headroom = 1.0 - (float(_srv_mu["account_margin"])
+                               / float(_srv_mu["account_equity"]))
         aggression = _explain(floor=HEAT_TARGET, ceiling=_op_ceiling,
                               total_heat=book.total_heat, free_optimum=free.total_heat,
                               readiness=ready, proof_passed=bool(proof.get("passed")),
-                              surface=ks_doc, book=funded, ev=ev)
+                              surface=ks_doc, book=funded, ev=ev,
+                              margin_headroom=_headroom)
         _log(f"aggression: A={aggression['A']:.2f} {aggression['verdict']} "
              f"tail_max={ (aggression['components']['tail_safety'] or {}).get('heat_tail_max')}")
     except Exception as exc:
@@ -2406,6 +3175,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # the ceiling was actually derived from, so the artifact can be read as an argument rather
     # than as an assertion: what was measured before the solve, what the cap came out at, what
     # the book ended up carrying, and which of the two bars decided.
+    # THE STRUCTURAL INDEPENDENCE NUMBER, BESIDE THE STATISTICAL ONE. `alpha_genome` clusters
+    # every certified edge by what it IS (mechanism, direction, clock, shared leg) and its own
+    # docstring has claimed since it was written that `n_clusters` is reported here beside
+    # k_eff -- a claim no reader existed for. Reporting only: nothing sizes on a cluster id.
+    effective_heat["alpha_genome"] = alpha_genome_view(ev, funded)
+    _log(f"alpha genome: {effective_heat['alpha_genome'].get('status')} -- "
+         f"{effective_heat['alpha_genome'].get('why')}")
     effective_heat["candidate_pre_solve"] = eff_pre
     effective_heat["ceiling"] = {
         "growth_bar": round(float(ceiling_now), 6),
@@ -2418,52 +3194,44 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                  "capital at work); the CEILING counts max(covariance, factor, tail), because "
                  "hidden concentration bites at the top of the band and nowhere else"),
     }
-    # ------------------------------------------------- ADMISSION BY dE[log W], NOT BY SHARPE
-    # THE CRITERION, NOT A REPORT (principal, 2026-09-05). Every priced sleeve the published book
-    # does NOT hold is re-solved INTO that book at the same total heat on these same worlds, and
-    # what it is worth is the growth it adds. `promoter.py` reads this block and gives capital to
-    # nothing that fails it, however good its standalone Sharpe -- which is on every row, beside
-    # the correlation to the held book, so the disagreement between the two orderings is legible
-    # rather than asserted.
-    #
-    # HEAVY CLOCK ONLY, AND CARRIED WITH ITS AGE. A candidate re-solve is a full optimisation; a
-    # hundred of them do not fit in a five-minute clock. The heavy pass runs hourly, and the
-    # short clocks carry its answer forward stamped with when it was taken, so a reader (and the
-    # promoter's freshness check) can tell a measurement from an inheritance.
-    admission: dict[str, Any]
-    adm_bounds = per_sleeve_bounds(dd, max(book.total_heat, HEAT_TARGET))
-    prev_admission: dict[str, Any] = {}
-    try:
-        _prev_art = json.loads(OUT.read_text("utf-8")).get("admission")
-        prev_admission = _prev_art if isinstance(_prev_art, dict) else {}
-    except (OSError, ValueError, AttributeError):
-        prev_admission = {}
-    if heavy and funded:
-        admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
-                                       total_heat=book.total_heat, order=free.marginal,
-                                       # Whatever the last scan's budget could not reach goes
-                                       # first, so a candidate below the cut is measured within a
-                                       # few passes instead of never.
-                                       prefer=set(prev_admission.get("unscored") or {}))
-        _log(f"admission: {admission.get('status')} -- {admission.get('n_admitted', 0)}/"
-             f"{admission.get('n_scored', 0)} scored candidate(s) raise robust growth "
-             f"(basis={admission.get('basis')}, {admission.get('elapsed_s', 0)}s, "
-             f"{len(admission.get('unscored') or {})} unreached, "
-             f"{admission.get('n_carried_from_last_unreached', 0)} carried from last pass)")
-    else:
-        admission = {"status": "not measured on this clock", "candidates": {},
-                     "admitted": [], "refused": [], "unscored": {}}
-        if prev_admission.get("status") == "MEASURED":
-            admission = {**prev_admission,
-                         "carried_from": prev_admission.get("measured_utc"),
-                         "carried_by": mode}
-    # SLEEVES THIS SOLVE ZEROED, NAMED so the answer can actually BE zero. Without this list the
-    # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
-    # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
-    zeroed = zeroed_live(ev, funded, extra=prev_book)
-    if zeroed:
-        _log(f"zeroed but NOT retired: {len(zeroed)} rostered sleeve(s) earn 0% this pass "
-             f"({', '.join(sorted(zeroed)[:6])})")
+    # WHAT THE PER-SLEEVE DECAY POSTERIOR IS WORTH, billed on the PUBLISHED book. The same book
+    # scored on its own worlds and on a population drawn identically except that every sleeve
+    # carries the blanket -- the random stream is shared, so the two differ only in which
+    # sleeves decay in which worlds. `missed_growth.measure_decay_posterior` reads the pair. A
+    # cached world population (fast clock) was not drawn under this pass's decay and is not
+    # compared against; it says so rather than billing a number.
+    if decay_meta.get("n_from_hazard") and funded:
+        if "cached" in str(worlds.note):
+            decay_meta["billing"] = {"status": "UNMEASURED",
+                                     "why": "world population reused from cache; the with/"
+                                            "without pair needs worlds drawn this pass"}
+        else:
+            try:
+                from dataclasses import replace as _replace_ev
+                _ev_blanket = [_replace_ev(e, decay_prob_i=None) for e in ev]
+                _w_blanket = sample_worlds(_ev_blanket, cfg)
+                _g_with = score_book(ev, funded, cfg=cfg, worlds=worlds)["mean_log_growth"]
+                _g_without = score_book(_ev_blanket, funded, cfg=cfg,
+                                        worlds=_w_blanket)["mean_log_growth"]
+                decay_meta["growth_with"] = (round(_g_with, 10) if math.isfinite(_g_with)
+                                             else None)
+                decay_meta["growth_without"] = (round(_g_without, 10)
+                                                if math.isfinite(_g_without) else None)
+                decay_meta["billing"] = {
+                    "status": "MEASURED", "basis": "same book, same seed, per-sleeve decay vs "
+                                                   "the blanket",
+                    "delta_logw_per_day": (round(_g_with - _g_without, 10)
+                                           if math.isfinite(_g_with) and math.isfinite(_g_without)
+                                           else None)}
+                _log(f"decay posterior billing: with {_g_with:+.6f} vs blanket "
+                     f"{_g_without:+.6f} log/day")
+            except (ValueError, MemoryError) as exc:
+                decay_meta["billing"] = {"status": "UNMEASURED",
+                                         "why": f"{type(exc).__name__}: {exc}"}
+    elif decay_meta.get("mode") == "decay_posterior":
+        decay_meta["billing"] = {"status": "NOT_BINDING",
+                                 "why": "no sleeve carried a measured hazard this pass; every "
+                                        "sleeve paid the blanket"}
 
     # THE FRACTIONAL-KELLY NUMBER, said out loud. Heavy clock: it costs a second world population
     # and a handful of solves, and it is the number the principal asked to be reported rather
@@ -2577,6 +3345,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # which carries them into the sizing book AT ZERO so the gateway can size them at zero
         # instead of falling back to the 3% base fraction. Nothing here is retired.
         "book_zeroed": zeroed,
+        # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns
+        # there. `consumed` is False: the gateway sizes from `book` and reads `heat.state` only
+        # to choose whose certificate applies. Published so the delta is a measurement.
+        "state_book": sbook,
         # THE ADMISSION CRITERION: dE[log W] per candidate against THIS book, on THESE worlds, at
         # equal total heat. `promoter.py` gives capital to nothing that fails it.
         "admission": admission,
@@ -2602,6 +3374,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "aggression": aggression,
         "posterior_growth": posterior,
         "kelly_surface": ks_doc,
+        # THE CRISIS-CONDITIONAL KELLY beside the blended one. `binds` is False on every pass:
+        # a comparison a reader can make, not a bar anything sizes against.
+        "kelly_surface_crisis": ks_crisis,
         "growth_derivatives": growth_derivs,
         "effective_heat": effective_heat,
         "trade_value_worlds": trade_value,
@@ -2633,6 +3408,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # scores must come from the SAME sampled worlds at the SAME total heat, which is the only
         # comparison in which the difference is the tilt rather than the sizing.
         "hazard_shrink": hazard_meta,
+        # THE PER-SLEEVE DECAY POSTERIOR: which sleeves carry their own decay probability, from
+        # which hazard, how far below the blanket, and what that was worth on the published book
+        # (`billing`). `missed_growth.measure_decay_posterior` reads growth_with/growth_without.
+        "decay_posterior": decay_meta,
         "no_trade": nt,
         "opportunity": opp,
         # `probabilities` is the FORWARD mix the worlds were drawn from; `transition` carries the
@@ -2656,6 +3435,23 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                               "mean_vol": round(v.mean_vol, 6),
                               "diversification_ratio": round(v.diversification_ratio, 4)}
                           for k, v in cov_cal.by_regime.items()},
+            # THE SHARE PER FACTOR BLOCK, measured on the stress pool and applied UNDER the
+            # scalar. `share_by_sleeve` lists only the sleeves relieved below the scalar; every
+            # other sleeve is stressed exactly as the scalar stresses it.
+            "by_block": {k: {"status": v.status, "n_sleeves": v.n_sleeves, "n_days": v.n_days,
+                             "mean_corr": (None if not math.isfinite(v.mean_corr)
+                                           else round(v.mean_corr, 4)),
+                             "shrunk_share": round(v.shrunk_share, 4),
+                             "applied_share": round(v.applied_share, 4), "why": v.why}
+                         for k, v in cov_cal.by_block.items()},
+            "share_by_sleeve": dict(sorted(cov_cal.share_by_sleeve.items())),
+            "n_sleeves_relieved": len(cov_cal.share_by_sleeve),
+            "blocks_by_sleeve": {k: list(v) for k, v in cov_cal.blocks_by_sleeve.items() if v},
+            "block_rule": ("crisis share per factor block (USD leg, JPY leg, metals) measured "
+                           "on the stress regime's own rows; the ratcheted book-wide scalar is "
+                           "the ceiling for every block, so a block can only be LESS fused than "
+                           "the book, never more; a sleeve in two blocks takes the higher share; "
+                           "a block under 3 live sleeves carries the scalar"),
         } if cov_cal else {"note": "calibration unavailable; standing constants used"}),
         "evidence": {
             "sleeves": len(ev), "rows": int(daily.shape[0]),
@@ -2670,6 +3466,19 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # to trust a scalp sleeve's heat needs to know which kind of evidence stands behind it.
             "scalp_library": scalp_acct,
             "search_trials": trials,
+            # BOTH DECAY VALUES, ON THE EVIDENCE BLOCK: the blanket every sleeve used to pay and
+            # each hazard-carrying sleeve's own probability beside it.
+            "decay": {
+                "mode": decay_meta.get("mode"),
+                "blanket": decay_meta.get("blanket"),
+                "n_from_hazard": decay_meta.get("n_from_hazard", 0),
+                "n_blanket": decay_meta.get("n_blanket", len(ev)),
+                "by_sleeve": {k: {"hazard": v["hazard"], "decay_prob_i": v["decay_prob_i"]}
+                              for k, v in (decay_meta.get("by_sleeve") or {}).items()},
+                "min_decay_prob_i": (min((v["decay_prob_i"] for v in
+                                          (decay_meta.get("by_sleeve") or {}).values()),
+                                         default=None)),
+            },
         },
         "solver": {"iterations": book.iterations, "converged": book.converged},
     }

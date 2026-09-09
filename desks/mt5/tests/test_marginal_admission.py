@@ -155,16 +155,22 @@ def test_the_margin_is_not_zero_so_a_hairs_breadth_win_is_not_a_win() -> None:
     assert doc["margin_per_day"] > 0
 
 
-def test_a_candidate_the_budget_did_not_reach_is_named_and_refused() -> None:
-    """ABSENCE IS NEVER PERMISSION. A widening library must degrade the scan honestly: the
-    candidates the clock did not reach are listed with the reason and are NOT admitted."""
+def test_a_candidate_whose_solve_hits_its_budget_is_named_carried_and_not_admitted() -> None:
+    """ABSENCE IS NEVER PERMISSION, AND NEITHER IS HALF A SOLVE. The budget is per candidate
+    (2026-09-09): a re-solve that hits it is listed with the reason and the partial reading,
+    is NOT admitted, and is carried forward warm-started -- never refused for compute. A
+    non-positive budget is unbounded, so every candidate is priced."""
     held, diversifier, star = _book_and_two_candidates()
-    doc = _scan(held, diversifier, star, budget_s=-1.0)
+    doc = _scan(held, diversifier, star, budget_s=1e-9)
     assert doc["candidates"] == {}
     assert set(doc["unscored"]) == {"EURJPY_carry_asia", "XAUUSD_trend_ny"}
+    assert set(doc["warm"]) == set(doc["unscored"]) == set(doc["partial"])
     assert doc["admitted"] == []
     for why in doc["unscored"].values():
-        assert "not admitted" in why.lower()
+        assert "not admitted" in why.lower() and "carried forward" in why
+    full = _scan(held, diversifier, star, budget_s=-1.0)
+    assert full["unscored"] == {} and full["priced"] == 2
+    assert full["budget"]["per_candidate_s"] == -1.0 and "per candidate" in full["budget"]["scope"]
 
 
 def test_the_unreached_tail_goes_first_next_pass_so_coverage_is_eventually_complete() -> None:

@@ -111,6 +111,26 @@ RAILS: tuple[Rail, ...] = (
          "measure_hazard_shrink", tunable=True, lo=0.5, hi=1.0,
          weaken_means="a smaller fraction of the hazard is applied, so a sleeve keeps more of "
                       "its posterior mean while the question resolves"),
+    # THE DECAY HAIRCUT, PER SLEEVE (2026-09-09). `robust_elog` decays every sleeve's edge in
+    # `decay_prob` = 30% of worlds, one blanket number; the drift monitor's per-sleeve hazard
+    # now sets `decay_prob_i = min(hazard, blanket)` instead of tilting the posterior mean
+    # post hoc. It is registered so `missed_growth` bills what the per-sleeve posterior is worth
+    # against the blanket on the same worlds. Not tunable: it can only relieve the blanket (the
+    # blanket is its ceiling), so there is no "weaker" direction for a calibration loop to walk.
+    Rail("decay_posterior", "shrink",
+         "pf_allocator.apply_decay_posterior <- drift_monitor hazard_by_sleeve "
+         "(SleeveEvidence.decay_prob_i, capped at WorldConfig.decay_prob)",
+         "measure_decay_posterior"),
+    # EXPLORATION INSIDE THE ADMISSION MARGIN (2026-09-09). A candidate whose dE[log W] sits
+    # inside the noise margin was parked at zero for ever; `pf_allocator.thompson_explore` lends
+    # it a small Thompson-sampled heat from WITHIN the book's total (no increase of the total,
+    # incumbents scaled proportionally and never below zero or above their bounds). Billed as a
+    # shrink on the incumbents; walked weaker (less of the book lent) when it costs growth.
+    Rail("explore_thompson", "shrink",
+         "pf_allocator.thompson_explore: ambiguous admission candidates funded from within the "
+         "book at EXPLORE_SHARE of total heat",
+         "measure_explore", tunable=True, lo=0.25, hi=1.0,
+         weaken_means="a smaller share of the book is lent to exploration inside the margin"),
     Rail("floor_mandate", "mandate", "heat_policy.resolve HEAT_TARGET 20% floor",
          "measure_floor"),
     Rail("proof_fallback", "gate", "gateway.allocator_book <- allocator_proof",
