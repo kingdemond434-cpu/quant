@@ -170,6 +170,82 @@ def test_running_clock_without_a_frozen_identity_is_reported(tmp_path, monkeypat
     assert any(a["action"] == "IDENTITY_UNFROZEN" and a["key"] == key for a in doc["actions"])
 
 
+def test_family_budget_is_published_per_enrolled_clock_beside_the_flat_cohort(
+    tmp_path, monkeypatch,
+) -> None:
+    """Each enrolled clock carries the census family the engine's own family name resolves to
+    and that family's own BH bar; the flat cohort's cap and bar sit beside them, unchanged."""
+    from libs.research.slot_registry import MAX_FORWARD_SLOTS
+    from libs.validation import family_multiplicity as fm
+    from libs.validation.forward_stats import holm_bar
+
+    gap, brk = "EURZAR.overnight_gap_decay.asia", "GBPJPY.asia"
+    monkeypatch.setattr(forward_reconcile, "engine_clock_families",
+                        lambda: {gap: "overnight_gap_decay", brk: "session_range_breakout"})
+    out = tmp_path / "forward_reconcile.json"
+    monkeypatch.setattr(forward_reconcile, "OUT", out)
+    _reconcile_tmp(tmp_path, monkeypatch,
+                   {gap: {"status": "ACTIVE", "n": 3}, brk: {"status": "ACTIVE", "n": 5}},
+                   enrolled={gap, brk}, cert_keys={gap, brk})
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    fb = doc["family_budget"]
+    assert fb["status"] == "MEASURED"
+    assert fb["flat_cohort"]["max_forward_slots"] == MAX_FORWARD_SLOTS == 12
+    assert fb["flat_cohort"]["holm_bar_rank1_at_cap"] == holm_bar(12, 1)
+    assert fb["clocks"][gap]["family"] == fm.family_of("overnight_gap_decay")
+    assert fb["clocks"][gap]["declared_via"] == "engine"
+    assert fb["clocks"][brk]["family"] == fm.family_of("session_range_breakout")
+    for key in (gap, brk):
+        fam = fb["clocks"][key]["family"]
+        m = fb["families"][fam]["effective_m"]
+        assert fb["clocks"][key]["family_m"] == m
+        assert fb["clocks"][key]["bh_bar"] == fm.bh_bar(m, 1) == fb["families"][fam]["bh_bar_rank1"]
+    assert "NOTHING" in fb["decides"]
+    assert fb["error_budget"]["n_families"] == len(fb["families"])
+
+
+def test_family_budget_is_UNMEASURED_when_enrolment_is_unknown(tmp_path, monkeypatch) -> None:
+    out = tmp_path / "forward_reconcile.json"
+    monkeypatch.setattr(forward_reconcile, "OUT", out)
+    monkeypatch.setattr(forward_reconcile, "engine_clock_families", lambda: None)
+    _reconcile_tmp(tmp_path, monkeypatch, {"GBPJPY.asia": {"status": "ACTIVE", "n": 4}},
+                   enrolled=None, cert_keys=None)
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    assert doc["family_budget"]["status"] == "UNMEASURED"
+
+
+def test_family_name_resolution_prefers_exact_sources_over_the_key() -> None:
+    engine = {"XAUUSD.asia": "session_range_breakout"}
+    certs = {"qquant.hunt16.json.AUDNZD x": "dav_range_filter_adx"}
+    assert forward_reconcile._family_name("XAUUSD.asia", {"family": "other"}, engine, certs) == (
+        "session_range_breakout", "engine")
+    assert forward_reconcile._family_name("k", {"family": "vwap_trend"}, {}, certs) == (
+        "vwap_trend", "row.family")
+    assert forward_reconcile._family_name("k", {"choice": {"family": "anti_breakout"}}, {},
+                                          certs) == ("anti_breakout", "row.choice.family")
+    assert forward_reconcile._family_name(
+        "qquant.hunt16.json.AUDNZD x", {"certificate": "qquant.hunt16.json.AUDNZD x"}, {},
+        certs) == ("dav_range_filter_adx", "certificate.shadow_spec.family")
+    assert forward_reconcile._family_name("k", {"cell": "AUDNZD dav SHORT"}, {}, {}) == (
+        "AUDNZD dav SHORT", "row.cell")
+    assert forward_reconcile._family_name("k", None, {}, {}) == ("k", "key")
+
+
+def test_an_undeclared_mechanism_pays_the_largest_declared_family_bar() -> None:
+    """The floor that makes declaring the mechanism never the cheaper path, carried through to
+    the published row rather than lost in the census."""
+    from libs.validation import family_multiplicity as fm
+
+    engine = {f"SYM{i}.overnight_gap_decay.asia": "overnight_gap_decay" for i in range(4)}
+    engine["MYSTERY.zzz"] = "zzz_no_such_mechanism"
+    fb = forward_reconcile.family_budget(set(engine), {}, engine)
+    assert fb["status"] == "MEASURED"
+    unk = fb["clocks"]["MYSTERY.zzz"]
+    assert unk["family"] == fm.UNCLASSIFIED
+    assert unk["family_m"] == 4 and fb["families"][fm.UNCLASSIFIED]["floored_to_largest_declared"]
+    assert unk["bh_bar"] == fb["clocks"]["SYM0.overnight_gap_decay.asia"]["bh_bar"]
+
+
 def test_frozen_clock_raises_no_identity_finding(tmp_path, monkeypatch) -> None:
     key = "GBPJPY.asia"
     reg = tmp_path / "reg.json"

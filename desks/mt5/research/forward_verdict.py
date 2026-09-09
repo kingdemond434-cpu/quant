@@ -38,6 +38,23 @@ this module reproduces it exactly. Three things around it were wrong and are fix
 
 3. THREE ENGINES. They now all call `verdict()`. A rule change happens here or not at all.
 
+THE E-PROCESS, ADDED 2026-09-08, AND WHAT IT IS NOT ALLOWED TO DO
+
+`libs.research.anytime_valid` holds an e-process whose type-I control was Monte-Carlo VERIFIED
+(1.0% at alpha=0.01 under daily peeking) and which nothing on the desk read. `e_process()` now
+computes it over each clock's ledger and `verdict()` writes it onto the row as `e_value` /
+`e_crossed_at`, BESIDE the schedule above -- which is byte-identical.
+
+It is oriented so that it can ONLY KILL. The e-value is computed on the NEGATED ledger, so its
+null is "mean R >= 0: the sleeve is not losing", and growth is anytime-valid evidence that the
+sleeve LOSES. A clock that is decisively negative currently burns its full calendar and its seat
+before anyone is allowed to say so; this number says so the moment Ville's inequality permits.
+It never passes anything early: `promote`, `status`, `matured`, `significant` and `independent`
+do not read it, there is no positive-direction e-value on the row to be mistaken for one, and
+`e_kill_supported` is advisory -- a reader may act on it only in the direction of an earlier
+kill. Below `anytime_valid._MIN_OBS` trades the row carries `e_value: "UNMEASURED"` with the
+count, because an e-value from an untrustworthy scale is a number that looks like evidence.
+
 ON THE MIXTURE BOUNDARY BEING "STRICTER". At any single look it is, because it is paying for
 every other look the desk takes. That is the point: the old test was not a 2.5 threshold that
 this replaces with something harsher, it was an unknown and much weaker threshold that merely
@@ -48,8 +65,10 @@ the decision is made rather than smeared across sample sizes nobody decides at.
 from __future__ import annotations
 
 import math
+import sys
 from collections.abc import Sequence
 from datetime import datetime
+from pathlib import Path
 
 #: THE canonical status. Both spellings existed; consumers must import this, never retype it.
 PROMOTION_CANDIDATE = "PROMOTION CANDIDATE"
@@ -110,6 +129,70 @@ MIN_EFFECTIVE_N = 20
 #: rule); past that lag the estimates are noise and summing them inflates n_eff, which would
 #: defeat the entire point of measuring it.
 _MAX_ACF_LAG = 20
+
+#: Level of the kill-direction e-process. 0.01 is `anytime_valid.graduates`' own default and is
+#: deliberately stricter than the desk's 0.05 one-sided tests: this row is re-read every pass,
+#: and an e-process is the one statistic that may be. The threshold the capital must reach is
+#: 1/alpha; crossing it at ANY trade is a valid stop, by Ville's inequality.
+E_ALPHA = 0.01
+
+#: The null the e-process tests, written onto every row so no reader can mistake the direction.
+E_NULL = "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only"
+
+
+def _repo_root_on_path() -> None:
+    """`libs.research.anytime_valid` lives at the repository root, three levels above this file.
+
+    Callers reach this module two ways -- `desks.mt5.research.forward_verdict` from a root-anchored
+    process and bare `forward_verdict` from the desk's own research/ path -- and only the first has
+    the root importable. Inserting it here, idempotently, means the e-process resolves under both
+    and the second does not silently report UNAVAILABLE on every clock forever."""
+    root = str(Path(__file__).resolve().parents[3])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+
+
+def e_process(rs: Sequence[float], stamps: Sequence[object] | None = None) -> dict:
+    """The anytime-valid e-process over one clock's ledger, ORIENTED SO IT CAN ONLY KILL.
+
+    `libs.research.anytime_valid.e_value` tests H0: mean <= 0 -- large means "this series has a
+    positive edge", which is a promotion argument and exactly what may not be read early. It is
+    therefore run on the NEGATED ledger. The null becomes "mean R >= 0" and the e-value grows
+    only as evidence that the sleeve LOSES; nothing here can support a pass.
+
+    Returned, flat, with an `e_` prefix so the keys can sit on a state row beside the verdict:
+      e_value          mixture e-value against `E_NULL`, or the string "UNMEASURED"
+      e_crossed_at     trade count at which it FIRST reached 1/alpha (a valid stop at any t),
+                       None if it never has; `e_crossed_stamp` is that trade's stamp when the
+                       caller supplied one per trade
+      e_n              ledger length the number was drawn from -- 4.0 on 25 trades and 4.0 on
+                       2,500 are different statements
+      e_kill_supported True iff the process has crossed. ADVISORY, and one-directional: a caller
+                       may only ever use it to kill earlier, never to promote earlier
+      e_status         MEASURED / UNMEASURED (ledger shorter than the e-process's own floor) /
+                       UNAVAILABLE (the library could not be imported) -- each with the reason
+    """
+    n = len(rs)
+    out: dict = {"e_value": "UNMEASURED", "e_crossed_at": None, "e_crossed_stamp": None,
+                 "e_n": n, "e_alpha": E_ALPHA, "e_threshold": 1.0 / E_ALPHA, "e_null": E_NULL,
+                 "e_kill_supported": False, "e_status": ""}
+    try:
+        _repo_root_on_path()
+        from libs.research import anytime_valid as av
+    except Exception as exc:  # the e-process is a diagnostic; it never takes a clock down
+        out["e_status"] = f"UNAVAILABLE: {type(exc).__name__}: {exc}"
+        return out
+    if n < av._MIN_OBS:
+        out["e_status"] = f"UNMEASURED: {n}/{av._MIN_OBS} trades"
+        return out
+    neg = [-float(x) for x in rs]
+    e = av.e_value(neg)
+    crossed = av.days_to_graduation(neg, alpha=E_ALPHA)
+    out.update({"e_value": round(float(e), 4), "e_crossed_at": crossed,
+                "e_kill_supported": crossed is not None, "e_status": "MEASURED"})
+    if crossed is not None and stamps is not None and len(stamps) == n:
+        out["e_crossed_stamp"] = str(stamps[crossed - 1])
+    return out
 
 
 def is_promotion_candidate(status: str | None) -> bool:
@@ -262,9 +345,12 @@ def verdict(rs: Sequence[float], days_active: int,
     else:
         why = f"matured and independent but mean R {exp_r:+.4f} is not positive"
 
+    # THE E-PROCESS RIDES BESIDE THE VERDICT AND IS READ BY NOTHING ABOVE THIS LINE. `promote`
+    # is already decided; the kill-direction e-value is written for the reader and the ledger.
     return {"promote": promote, "status": PROMOTION_CANDIDATE if promote else "ACTIVE",
             "n": n, "n_eff": round(n_eff, 2), "n_eff_basis": n_eff_basis,
             "days_active": days_active, "exp_r": exp_r,
             "seq_lower_bound": None if lower == float("-inf") else round(lower, 6),
             "significant": significant, "matured": matured, "independent": independent,
-            "reason": why, "rule": "forward_verdict.verdict/canonical-2026-08-29"}
+            "reason": why, "rule": "forward_verdict.verdict/canonical-2026-08-29",
+            **e_process(rs)}

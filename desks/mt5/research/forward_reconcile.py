@@ -63,8 +63,9 @@ def _read(p: Path) -> dict:
         return {}
 
 
-def _engine_clock_keys() -> set[str]:
-    """Every clock key the engine will build from a certificate, named by the ENGINE.
+def _engine_clock_families() -> dict[str, str]:
+    """Every clock key the engine will build from a certificate, named by the ENGINE, mapped to
+    the strategy family the engine runs it as.
 
     ARITY IS NOT UNPACKED POSITIONALLY. `certified_sleeves()` was widened from
     (sym, window, params) to (sym, window, params, family) and this reader still destructured
@@ -77,7 +78,9 @@ def _engine_clock_keys() -> set[str]:
     format is the drift this whole function exists to avoid.
     """
     import shadow_forward as sf
-    keys: set[str] = {sf.sleeve_key(s, w, dict(sf.WINDOWS.get(w, {}))) for s, w in sf.SLEEVES}
+    fams: dict[str, str] = {
+        sf.sleeve_key(s, w, dict(sf.WINDOWS.get(w, {}))): "session_range_breakout"
+        for s, w in sf.SLEEVES}
     for row in sf.certified_sleeves():
         sym, win, params = row[0], row[1], row[2]
         family = row[3] if len(row) > 3 else "session_range_breakout"
@@ -89,7 +92,7 @@ def _engine_clock_keys() -> set[str]:
         # side marker for SHORT, so a long key is unchanged either way.
         side = row[4] if len(row) > 4 else "LONG"
         try:
-            keys.add(sf.sleeve_key(sym, win, params, family, side))
+            key = sf.sleeve_key(sym, win, params, family, side)
         except TypeError:
             # AN ENGINE REVISION THAT PREDATES THE SIDE PARAMETER. Passing five
             # positionally to a four-argument `sleeve_key` is the same defect this
@@ -97,8 +100,131 @@ def _engine_clock_keys() -> set[str]:
             # would again return "nothing is enrolled" for the whole book.
             # Nothing is lost by falling back: a LONG key is identical either way,
             # and an engine that cannot take a side cannot be running a short clock.
-            keys.add(sf.sleeve_key(sym, win, params, family))
-    return keys
+            key = sf.sleeve_key(sym, win, params, family)
+        fams[key] = str(family)
+    return fams
+
+
+def _engine_clock_keys() -> set[str]:
+    """The key set of `_engine_clock_families` -- one reader of the engine's key format."""
+    return set(_engine_clock_families())
+
+
+def engine_clock_families() -> dict[str, str] | None:
+    """{clock key: strategy family} as the engine names them, or None if unreadable."""
+    try:
+        return _engine_clock_families()
+    except Exception as exc:
+        print(f"  WARN: engine clock families unreadable ({exc}); family labels fall back to rows")
+        return None
+
+
+def _certificate_families() -> dict[str, str]:
+    """{certificate id: declared family} from the survivors file's `shadow_spec`.
+
+    The qquant lane's rows carry the certificate id and a display cell, neither of which names the
+    family without parsing; the certificate itself declares it.
+    """
+    out: dict[str, str] = {}
+    for key, row in (_read(CERTS).get("survivors") or {}).items():
+        spec = row.get("shadow_spec") if isinstance(row, dict) else None
+        fam = spec.get("family") if isinstance(spec, dict) else None
+        if fam:
+            out[str(key)] = str(fam)
+    return out
+
+
+def _family_name(key: str, row: dict | None, engine_fams: dict[str, str],
+                 cert_fams: dict[str, str]) -> tuple[str, str]:
+    """(the name to classify, where it came from). EXACT SOURCES FIRST, PARSING LAST, in the
+    same spirit as the certificate match above: the engine's own map, then what the row declares,
+    then the certificate it cites, then its display cell, and only then the key's text."""
+    if key in engine_fams:
+        return engine_fams[key], "engine"
+    if isinstance(row, dict):
+        if row.get("family"):
+            return str(row["family"]), "row.family"
+        choice = row.get("choice")
+        if isinstance(choice, dict) and choice.get("family"):
+            return str(choice["family"]), "row.choice.family"
+        cert = str(row.get("certificate") or "")
+        if cert in cert_fams:
+            return cert_fams[cert], "certificate.shadow_spec.family"
+        if row.get("cell"):
+            return str(row["cell"]), "row.cell"
+    return key, "key"
+
+
+def family_budget(enrolled: set[str] | None, rows: dict[str, dict],
+                  engine_fams: dict[str, str] | None) -> dict:
+    """THE PARTITIONED MULTIPLE-TESTING BUDGET, PUBLISHED BESIDE THE FLAT COHORT. Decides nothing.
+
+    The desk corrects its forward cohort as ONE Holm family of `MAX_FORWARD_SLOTS` seats, so a new
+    clock in one mechanism tightens the bar for every clock in every other. `libs.validation.
+    family_multiplicity` holds the partitioned alternative -- each census family corrected against
+    its own m -- and until now its only reader was a breadth report over slot names. This emits,
+    per ENROLLED clock, the family the census places it in and that family's own BH bar, beside
+    the flat cohort's numbers, so tiering can be evaluated on measured cohorts before any seat
+    count moves. MAX_FORWARD_SLOTS and every seat rule are unchanged; a bar published is not a bar
+    applied.
+
+    UNCLASSIFIED is floored at the largest declared family (`effective_m`), so a clock whose
+    mechanism the census cannot place pays the worst bar on the desk rather than a cheaper one --
+    declining to declare must never be the cheaper path. UNKNOWN enrolment reports UNMEASURED:
+    a clock that cannot be enumerated cannot be placed.
+    """
+    if enrolled is None:
+        return {"status": "UNMEASURED",
+                "why": "enrolment unreadable this pass; no clock can be placed in a family"}
+    try:
+        root = str(BASE.parent.parent)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.research.slot_registry import MAX_FORWARD_SLOTS
+        from libs.validation import family_multiplicity as fm
+        from libs.validation.forward_stats import holm_bar
+    except Exception as exc:
+        return {"status": "UNMEASURED",
+                "why": f"family_multiplicity unavailable: {type(exc).__name__}: {exc}"}
+
+    cert_fams = _certificate_families()
+    clocks: dict[str, dict] = {}
+    parts: dict[str, list[str]] = {}
+    for key in sorted(enrolled):
+        name, via = _family_name(key, rows.get(key), engine_fams or {}, cert_fams)
+        fam = fm.family_of(name)
+        parts.setdefault(fam, []).append(key)
+        clocks[key] = {"family": fam, "declared_from": name, "declared_via": via}
+    eff = fm.effective_m(parts)
+    families: dict[str, dict] = {}
+    for fam, members in sorted(parts.items()):
+        m = eff[fam]
+        families[fam] = {"n_members": len(members), "effective_m": m,
+                         "bh_bar_rank1": fm.bh_bar(m, 1), "holm_bar_rank1": holm_bar(m, 1),
+                         "floored_to_largest_declared": m > len(members)}
+    for c in clocks.values():
+        m = eff[c["family"]]
+        c.update({"family_m": m, "bh_bar": fm.bh_bar(m, 1), "holm_bar": holm_bar(m, 1)})
+    m_flat = max(1, len(enrolled))
+    return {
+        "status": "MEASURED",
+        "decides": ("NOTHING -- MAX_FORWARD_SLOTS and every seat rule are unchanged; this "
+                    "publishes the per-family budget beside the flat cohort so tiering can be "
+                    "evaluated on measured cohorts"),
+        "flat_cohort": {
+            "max_forward_slots": MAX_FORWARD_SLOTS, "m_enrolled": m_flat,
+            "holm_bar_rank1_at_cap": holm_bar(MAX_FORWARD_SLOTS, 1),
+            "bh_bar_rank1_at_cap": fm.bh_bar(MAX_FORWARD_SLOTS, 1),
+            "holm_bar_rank1_at_enrolled": holm_bar(m_flat, 1),
+            "bh_bar_rank1_at_enrolled": fm.bh_bar(m_flat, 1),
+        },
+        "families": families,
+        "clocks": clocks,
+        "error_budget": fm.family_error_budget(len(parts)),
+        "orthogonality_floor": fm.ORTHOGONALITY_FLOOR,
+        "basis": ("libs.validation.family_multiplicity (family_of / effective_m / bh_bar); "
+                  "UNCLASSIFIED is floored at the largest declared family"),
+    }
 
 
 def certified_clock_keys() -> set[str] | None:
@@ -213,6 +339,9 @@ def main() -> int:
 
     actions: list[dict] = []
     to_gauntlet: list[dict] = []
+    # Every row seen this pass, by key, for the family census at the end. Read before any
+    # mutation below; the family a row declares does not change with its status.
+    all_rows: dict[str, dict] = {}
     # IDENTITY COVERAGE -- the property `sleeve_registry.json` actually guarantees. The registry is
     # IDEMPOTENT by construction (`freeze` returns early once a key is frozen), so its file age
     # says nothing at all: an unchanged registry is the HEALTHY state. The job manifest was
@@ -246,6 +375,7 @@ def main() -> int:
         for key, row in rows_here:
             if not isinstance(row, dict) or "status" not in row:
                 continue
+            all_rows.setdefault(key, row)
             _status = str(row.get("status") or "").upper()
             # REPAIR WHAT THIS ORGAN GOT WRONG. Only the two branches that INFER a verdict from
             # the key's shape are reversible here -- RETIRED_GATE_FAIL is a measured gauntlet
@@ -436,6 +566,13 @@ def main() -> int:
     except Exception as exc:
         _unreachable = {"n": None, "error": f"{type(exc).__name__}: {exc}"}
 
+    # THE PARTITIONED BUDGET, BESIDE THE FLAT COHORT. Same rule as the ceiling above: a
+    # measurement attached to a health report, never allowed to break the reconcile.
+    try:
+        _families = family_budget(enrolled, all_rows, engine_clock_families())
+    except Exception as exc:
+        _families = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
     # REPORT UNKNOWN AS UNKNOWN. `"enrolled": 0` is what a reader saw for a full day while the
     # real cause was an unpack error -- indistinguishable from an engine that legitimately enrols
     # nothing, which is why nobody chased it. Null carries the distinction the count cannot.
@@ -453,6 +590,10 @@ def main() -> int:
          # a bare `continue` in shadow_admission and left no trace anywhere.
          # Reported beside the counts it explains so the two are read together.
          "unreachable_certified": _unreachable,
+         # PER-FAMILY MULTIPLICITY, PUBLISHED FOR EVALUATION. Each enrolled clock's census
+         # family and that family's own BH bar, beside the flat 12-seat cohort's bar. It
+         # grants no seat and moves no bar; it makes the cost of the flat cohort readable.
+         "family_budget": _families,
          "actions": actions}, indent=1), "utf-8")
     counts: dict[str, int] = {}
     for a in actions:
