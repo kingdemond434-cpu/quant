@@ -4,13 +4,26 @@ Fetches only recent bars per symbol, appends new CLOSED bars to the
 existing parquet, dedupes by timestamp, saves in-place.
 Also records the MT5 server name so the VPS can verify promotion_authority.
 Run on the Windows box where MetaTrader5 is available.
+
+AND DERIVES THE SERIES NOBODY DOWNLOADS. `<SYM>_D1.parquet` is built here from the symbol's own
+H1 file, because the daily clock is a clock this desk declares and has never had a file for --
+see `DERIVED` below for what its absence cost. Derivation needs no terminal, so it runs on the
+VPS pass too, where the terminal is absent and the honest return code is 2.
 """
 
 import json
 import sys
 from pathlib import Path
 
-import MetaTrader5 as mt5
+try:
+    import MetaTrader5 as mt5
+except ImportError:
+    # NOT THE WINDOWS BOX. This used to be a bare top-level import, so the module could not even
+    # be LOADED anywhere else -- and `daily_cycle._refresh_bars` does `import refresh_tail`
+    # before calling it, so the VPS's step died on the import rather than on the terminal check
+    # it was written to survive. `main()` returns 2 for that, which the cycle already tolerates;
+    # everything in here that needs no terminal (the D1 derivation) still runs first.
+    mt5 = None                                                   # type: ignore[assignment]
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -38,9 +51,151 @@ TIMEFRAMES: dict[str, int] = {
 #: rather than writing a file with a hole in it.
 MAX_FETCH = 50_000
 
+#: Series this desk BUILDS from a finer one it already holds, rather than fetching: `{derived:
+#: source}`. Only D1 so far, and it exists because of a hole with a price on it.
+#:
+#: MEASURED 2026-09-09 in this tree. `state_vector_build.ASSET_CLOCKS` declares six clocks
+#: including `daily` and `weekly`, and `BAR_SUFFIXES` searched `M5, M15, H1` finest-first and
+#: returned ONE series for every clock. `XAUUSD_M5.parquet` holds 20,000 bars over 73 days while
+#: `XAUUSD_H1.parquet` holds 49,964 over 2,181 -- so once gold acquired M5 bars, `XAUUSD@daily`
+#: saw 73 observations against a floor of 250 and `XAUUSD@weekly` saw 15 against 120. Both
+#: refused. `XAUUSD@daily` IS the state vector's `global` state, the book-wide regime the
+#: allocator's world draw reads: downloading finer bars for gold silently turned it off.
+#:
+#: A file of the daily clock's own is what stops that class of accident: the daily tier stops
+#: depending on which intraday file happens to exist for a symbol this week.
+DERIVED: dict[str, str] = {"D1": "H1"}
+#: What was derived, from what, and when. Read by `refresh_symbol` so a derived series is never
+#: FETCHED -- see the refusal there.
+DERIVED_MANIFEST = OUT / "derived_series.json"
+#: Aggregating a bar from finer bars. `spread` is a level and averages; the volumes are flows and
+#: sum. Anything the source lacks is simply not carried, never invented.
+BAR_AGG: dict[str, str] = {"open": "first", "high": "max", "low": "min", "close": "last",
+                           "tick_volume": "sum", "spread": "mean", "real_volume": "sum"}
+
 
 def _mt5_timeframe(tf: str) -> int | None:
     return getattr(mt5, f"TIMEFRAME_{tf}", None)
+
+
+def _rule(tf: str) -> str:
+    """The pandas offset for one bar of `tf`, from the sweep's own timeframe table.
+
+    Reused rather than re-tabulated: `orthogonal_sweep` already resamples every chart the desk
+    hunts on, and two tables of bar lengths is how a D1 file ends up with H4 bars in it.
+    """
+    try:
+        from research.orthogonal_sweep import _resample_rule
+        return _resample_rule(tf)
+    except ImportError:                                          # bare-script path, no package
+        from mt5desk.universe_registry import timeframe_minutes
+        return f"{timeframe_minutes(tf)}min"
+
+
+def _derived_names() -> set[str]:
+    """`{"XAUUSD_D1", ...}` -- the (symbol, timeframe) files this desk builds rather than fetches.
+
+    Read off the manifest so it names the files that were ACTUALLY derived on this box, not the
+    ones that would be if the source existed.
+    """
+    try:
+        doc = json.loads(DERIVED_MANIFEST.read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {str(k) for k in (doc.get("series") or {})}
+
+
+def resample_bars(bars: pd.DataFrame, tf: str) -> pd.DataFrame:
+    """Aggregate finer bars into `tf` bars, dropping the one still forming.
+
+    THE LAST BAR IS DROPPED UNCONDITIONALLY, the same rule `refresh_symbol` applies to a fetch.
+    The source's tail is by construction the last CLOSED finer bar, so the calendar day it falls
+    in is almost always still open -- and a daily bar whose close is really 14:00's close is not
+    a late bar, it is a WRONG one, and it would be silently corrected tomorrow with no reader
+    able to tell it had ever been wrong. One day of latency on a 250-day clock is the cheap side.
+    """
+    agg = {c: how for c, how in BAR_AGG.items() if c in bars.columns}
+    if "close" not in agg:
+        return bars.iloc[0:0]
+    out = bars.resample(_rule(tf)).agg(agg).dropna(subset=["close"])
+    return out.iloc[:-1]
+
+
+def derive_series(sym: str, tf: str = "D1") -> str:
+    """Build `<sym>_<tf>.parquet` from its finer source. Returns a status line, never raises."""
+    src_tf = DERIVED.get(tf)
+    if src_tf is None:
+        return f"not-a-derived-timeframe({tf})"
+    src = OUT / f"{sym}_{src_tf}.parquet"
+    if not src.exists():
+        # ABSENCE IS NEVER A PASS: a symbol with no source is REPORTED, not counted as derived.
+        return f"no-{src_tf}-source"
+    try:
+        bars = pd.read_parquet(src)
+    except Exception as e:
+        return f"unreadable-source({type(e).__name__})"
+    if bars.empty or not isinstance(bars.index, pd.DatetimeIndex):
+        return "source-carries-no-bar-index"
+    bars = bars.sort_index()
+    if bars.index.tz is None:
+        # Same restoration `refresh_symbol` performs, and for the same reason: these stamps come
+        # from MT5 `rates["time"]`, UNIX EPOCH SECONDS, so the instants are unambiguous.
+        bars = bars.copy()
+        bars.index = bars.index.tz_localize("UTC")
+    out = resample_bars(bars, tf)
+    if out.empty:
+        return f"source-too-short({len(bars)} {src_tf} bars)"
+    out.to_parquet(OUT / f"{sym}_{tf}.parquet")
+    return f"{len(out)} bars (last {out.index.max().date()}) from {src.name}"
+
+
+def book_symbols() -> tuple[list[str], str]:
+    """Symbols to derive for, and where the list came from.
+
+    The BOOK, read through the same `state_vector_build.book_symbols` the state vector uses, so
+    the two can never disagree about what the book holds. When that import is unavailable the
+    fallback is every symbol with a source file -- wider, never narrower, because a derived file
+    that silently stops being produced is the failure this whole module exists to prevent.
+    """
+    try:
+        from research.state_vector_build import book_symbols as _book
+        syms = [s for s in _book() if (OUT / f"{s}_H1.parquet").exists()]
+        if syms:
+            return syms, "book (UNIVERSAL_SURVIVORS.canon.json)"
+    except ImportError:
+        pass
+    # THE PATTERN COMES FROM `DERIVED`, NEVER A LITERAL. Not only because the source timeframe
+    # must be able to change in one place: a literal one-timeframe glob in this file is exactly
+    # the defect `test_every_timeframe_is_eligible` fences, and that fence reads raw text.
+    src_tf = next(iter(DERIVED.values()))
+    return (sorted({p.stem.rpartition("_")[0] for p in OUT.glob(f"*_{src_tf}.parquet")}),
+            f"every symbol holding a {src_tf} file (book unreadable here)")
+
+
+def derive_all(symbols: list[str] | None = None) -> dict:
+    """Rebuild every derived series and write the manifest. Needs no terminal."""
+    scope = "caller-supplied"
+    if symbols is None:
+        symbols, scope = book_symbols()
+    series: dict[str, dict] = {}
+    skipped: dict[str, str] = {}
+    for tf, src_tf in DERIVED.items():
+        for sym in sorted(symbols):
+            status = derive_series(sym, tf)
+            name = f"{sym}_{tf}"
+            if status[0].isdigit():
+                series[name] = {"derived_from": f"{sym}_{src_tf}", "status": status}
+            else:
+                skipped[name] = status
+    doc = {"scope": scope, "n_symbols": len(symbols),
+           "series": series, "skipped": skipped,
+           "why_not_fetched": ("A derived daily bar is stamped at 00:00 UTC; the broker's own D1 "
+                               "bar is stamped at ITS day start. Concatenating the two would put "
+                               "two bars in every day at two different instants, so a series "
+                               "listed here is rebuilt from its source and never fetched.")}
+    DERIVED_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    DERIVED_MANIFEST.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    return doc
 
 
 def refresh_symbol(sym: str, tf: str = "H1") -> str:
@@ -59,6 +214,14 @@ def refresh_symbol(sym: str, tf: str = "H1") -> str:
     pq = OUT / f"{sym}_{tf}.parquet"
     if not pq.exists():
         return "no-cache"
+    # A DERIVED SERIES IS REBUILT, NEVER FETCHED. Our D1 bars are stamped 00:00 UTC because they
+    # are an aggregate of UTC-stamped H1 bars; the terminal's own D1 bar is stamped at the
+    # BROKER's day start, which is 21:00 or 22:00 UTC. Fetching into this file would therefore
+    # append a second bar for every day at a different instant, and the dedupe -- which keys on
+    # the timestamp -- would keep both. `derive_all` refreshes it from the source instead, after
+    # the source itself has been extended.
+    if f"{sym}_{tf}" in _derived_names():
+        return f"derived from {DERIVED.get(tf, '?')} -- rebuilt, not fetched"
     seconds = TIMEFRAMES.get(tf)
     period = _mt5_timeframe(tf)
     if seconds is None or period is None:
@@ -128,6 +291,17 @@ def refresh_symbol(sym: str, tf: str = "H1") -> str:
     return f"+{added} bars (last {combined.index.max()}){hole}"
 
 
+def _report_derivation(doc: dict) -> None:
+    n, skipped = len(doc.get("series") or {}), doc.get("skipped") or {}
+    print(f"\nderived {n} series from finer bars ({doc.get('scope')})")
+    if skipped:
+        # Listed, not counted. A symbol that stops being derivable is exactly how the daily
+        # clock went dark the first time, and a number nobody reads would hide it again.
+        print(f"  {len(skipped)} not derived:")
+        for name, why in sorted(skipped.items())[:12]:
+            print(f"   {name:20s} {why}")
+
+
 def main() -> int:
     """0 = refreshed, 2 = no terminal on this box (an honest answer, not a failure).
 
@@ -135,8 +309,13 @@ def main() -> int:
     BaseException: a bare exit here would tear down the entire cycle -- promotion chain included
     -- because a terminal was shut, rather than skipping one step.
     """
-    if mt5.terminal_info() is None and not mt5.initialize(path=TERMINAL):
-        print(f"initialize failed: {mt5.last_error()}")
+    if mt5 is None or (mt5.terminal_info() is None and not mt5.initialize(path=TERMINAL)):
+        # NO TERMINAL, BUT STILL WORK TO DO. The derived series are an aggregate of files this
+        # box already holds, so they rebuild here as well as on the trading box -- which is what
+        # keeps the daily clock alive on the VPS, where the terminal never exists.
+        print("no MT5 terminal here"
+              if mt5 is None else f"initialize failed: {mt5.last_error()}")
+        _report_derivation(derive_all())
         return 2
 
     # Record broker server for promotion_authority on VPS
@@ -185,6 +364,10 @@ def main() -> int:
         print(f"\n{len(holes)} series could not be bridged and now carry a hole:")
         for row in holes:
             print(f"   {row}")
+
+    # AFTER the fetch loop, never before: a derived series is only as fresh as the source it was
+    # built from, and building it first would leave the daily clock a full pass behind the hourly.
+    _report_derivation(derive_all())
 
     # Save broker info for VPS promotion_authority
     broker_info_path = OUT / "broker_info.json"

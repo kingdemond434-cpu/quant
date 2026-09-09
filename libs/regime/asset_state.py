@@ -44,10 +44,12 @@ import pandas as pd
 #: horizons are chosen so each clock answers over its own natural holding period: a day and a week
 #: for the daily state, a session and a day for H4, an hour to a day for H1.
 CLOCKS: dict[str, dict[str, Any]] = {
-    "weekly": {"rule": "W", "max_obs": 600, "horizons": (1, 4, 13), "min_obs": 120},
-    "daily": {"rule": None, "max_obs": 2000, "horizons": (1, 2, 5, 21), "min_obs": 250},
-    "H4": {"rule": "4h", "max_obs": 3000, "horizons": (1, 6, 30), "min_obs": 400},
-    "H1": {"rule": "1h", "max_obs": 3000, "horizons": (1, 4, 24), "min_obs": 500},
+    "weekly": {"rule": "W", "max_obs": 600, "horizons": (1, 4, 13), "min_obs": 120,
+               "bar": "7D"},
+    "daily": {"rule": None, "max_obs": 2000, "horizons": (1, 2, 5, 21), "min_obs": 250,
+              "bar": "1D"},
+    "H4": {"rule": "4h", "max_obs": 3000, "horizons": (1, 6, 30), "min_obs": 400, "bar": "4h"},
+    "H1": {"rule": "1h", "max_obs": 3000, "horizons": (1, 4, 24), "min_obs": 500, "bar": "1h"},
     # THE INTRADAY TIERS EXIST AND ARE MOSTLY DATA-BLOCKED, WHICH IS A FACT ABOUT THE PARQUETS
     # AND NOT ABOUT THIS TABLE. `_series` resamples from whatever bars it is given, so an M15
     # tier built from H1 bars would be H1 bars wearing a finer label -- `fit_asset_state` refuses
@@ -55,9 +57,9 @@ CLOCKS: dict[str, dict[str, Any]] = {
     # hourly closes is worse than one that reports a gap. These light up for a symbol the moment
     # its M15/M5 parquet exists; the desk currently holds three M15 files and no M5.
     "M15": {"rule": "15min", "max_obs": 4000, "horizons": (1, 4, 16, 96), "min_obs": 800,
-            "needs_finer_than": "1h"},
+            "bar": "15min", "needs_finer_than": "1h"},
     "M5": {"rule": "5min", "max_obs": 6000, "horizons": (1, 3, 12, 60), "min_obs": 1200,
-           "needs_finer_than": "15min"},
+           "bar": "5min", "needs_finer_than": "15min"},
 }
 
 
@@ -163,11 +165,43 @@ def _series(close: pd.Series, clock: str) -> pd.Series:
             raise ValueError(
                 f"{clock} needs bars strictly finer than {need}; the input carries "
                 f"{step if step is not None else 'an unreadable interval'}")
+    # NO CLOCK MAY BE BUILT FROM BARS COARSER THAN ITSELF (2026-09-09, when D1 parquets became a
+    # thing the loader can hand back). `needs_finer_than` guarded M15 and M5 only, so H4 and H1
+    # had NO guard at all: `resample("1h").last().dropna()` over DAILY closes returns the daily
+    # stamps with an hourly label, and `fit_asset_state` would then report an H1 regime for an
+    # instrument whose finest bar is a day. Same disease the M15 guard was written for, one tier
+    # up, and it only became reachable the moment a D1 file could be selected. The predicate is
+    # `>` and not `>=` on purpose: an H1 file is exactly an H1 clock's bar and must still serve
+    # it, which is why this cannot be spelled with `needs_finer_than`.
+    bar = spec.get("bar")
+    if bar:
+        step = native_step(pd.DatetimeIndex(s.index))
+        if step is not None and step > pd.Timedelta(bar):
+            raise ValueError(
+                f"{clock} bars are {bar}; the input carries {step}, which is coarser -- "
+                f"resampling it would relabel the same bars, not build finer ones")
     if clock == "daily":
         s = s.groupby(s.index.date).last()
     elif spec["rule"]:
         s = s.resample(spec["rule"]).last().dropna()
     return s.iloc[-int(spec["max_obs"]):]
+
+
+def observations_at(close: pd.Series, clock: str) -> int | None:
+    """How many `clock` bars this series actually yields, or None if it cannot serve the clock.
+
+    The public form of the question a loader has to ask BEFORE it picks a file: a caller holding
+    several parquets for one symbol needs to know which of them the fit will accept and how much
+    history each leaves once resampled. Answering it with the same `_series` the fit runs means
+    the two can never drift apart -- a file this reports on is a file `fit_asset_state` will take,
+    and a None here is the same refusal it would raise.
+    """
+    if clock not in CLOCKS:
+        return None
+    try:
+        return int(_series(close, clock).size)
+    except (TypeError, ValueError):
+        return None
 
 
 def cache_key(symbol: str, clock: str, s: pd.Series) -> str:

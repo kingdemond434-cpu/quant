@@ -42,6 +42,7 @@ import json
 import sys
 import time
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -53,7 +54,9 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from libs.regime.asset_state import CLOCKS, AssetState, FitCache, fit_asset_state  # noqa: E402
+from libs.regime.asset_state import (                                       # noqa: E402
+    CLOCKS, AssetState, FitCache, fit_asset_state, observations_at,
+)
 from libs.regime.state_vector import StateVector                            # noqa: E402
 from libs.research.information_decay import (                               # noqa: E402
     REGISTRY, STALE_WEIGHT, decay, state_freshness,
@@ -85,28 +88,77 @@ FACTOR_CLOCKS = ("daily",)
 #: edited this file.
 ASSET_CLOCKS = ("weekly", "daily", "H4", "H1", "M15", "M5")
 #: Parquet suffixes searched per symbol, FINEST FIRST. A finer file serves every coarser clock by
-#: resampling; a coarser one cannot serve a finer clock at all.
-BAR_SUFFIXES = ("M5", "M15", "H1")
+#: resampling; a coarser one cannot serve a finer clock at all. `D1` is last because it is the
+#: coarsest, and it is HERE because `ASSET_CLOCKS` has always declared a daily and a weekly tier
+#: that only an hourly file was ever asked to serve -- see `_close` for what that cost.
+BAR_SUFFIXES = ("M5", "M15", "H1", "D1")
 
 
+@lru_cache(maxsize=8)
+def _bars(symbol: str, suffix: str, uni: Path) -> pd.Series | None:
+    """One (symbol, timeframe) close series off disk, or None if it is absent or unreadable.
 
-def _close(symbol: str) -> pd.Series | None:
-    """The finest bars this desk holds for the symbol. Finer serves coarser; never the reverse."""
+    Cached small and deliberately: the builder finishes every clock for one symbol before moving
+    to the next, so eight entries hold that symbol's whole ladder, and without the cache a
+    clock-aware `_close` would re-read the same four parquets once per clock.
+
+    `uni` is a PARAMETER and not the module global it always is in production, because a cache
+    keyed on (symbol, suffix) alone would serve one test's tmp_path store to the next one.
+    """
+    path = uni / f"{symbol}_{suffix}.parquet"
+    if not path.exists():
+        return None
+    try:
+        df = pd.read_parquet(path, columns=["close"])
+    except (OSError, ValueError, ImportError, KeyError):
+        return None
+    if df.empty:
+        return None
+    idx = pd.to_datetime(df.index, utc=True, errors="coerce")
+    s = pd.Series(df["close"].to_numpy(dtype=float), index=idx).dropna()
+    return s if s.size else None
+
+
+def _close(symbol: str, clock: str | None = None) -> pd.Series | None:
+    """The bars this desk holds for the symbol -- chosen for the CLOCK when one is named.
+
+    FINEST-FIRST IS RIGHT ABOUT GRANULARITY AND SILENT ABOUT COVERAGE, and on its own that cost
+    the desk its global regime. MEASURED 2026-09-09 in this tree: `XAUUSD_M5.parquet` holds 20,000
+    bars spanning 73 days, `XAUUSD_H1.parquet` holds 49,964 spanning 2,181. The old finest-first
+    rule returned the M5 file for EVERY clock, so `XAUUSD@daily` saw 73 daily observations against
+    a floor of 250 and `XAUUSD@weekly` saw 15 against 120 -- both refused. `XAUUSD@daily` is the
+    state vector's `global` state, the one the allocator's world draw reads. Acquiring finer bars
+    for gold therefore turned off the book-wide regime, and the artifact recorded it as a
+    perfectly honest gap that nobody connected to the download.
+
+    So the choice is made against the clock being fitted: among the files that CAN serve it (a
+    coarser file cannot, and `observations_at` returns None for those), take the one leaving the
+    most observations once resampled, capped at the clock's own `max_obs` because history past
+    that is discarded anyway. Ties go to the finer file, which keeps the old rule wherever the
+    coverage is equal. With no clock named -- an event shock window measured in minutes, an
+    edge-search index match -- the answer is the finest file, exactly as before.
+
+    Nothing here loosens a floor: a clock whose every file falls short still gets the finest
+    series and still refuses on `min_obs`, so a shortfall is reported against real bars.
+    """
+    finest: pd.Series | None = None
+    best: pd.Series | None = None
+    best_n = -1
     for suffix in BAR_SUFFIXES:
-        path = UNI / f"{symbol}_{suffix}.parquet"
-        if not path.exists():
+        s = _bars(symbol, suffix, UNI)
+        if s is None:
             continue
-        try:
-            df = pd.read_parquet(path, columns=["close"])
-        except (OSError, ValueError, ImportError, KeyError):
-            continue
-        if df.empty:
-            continue
-        idx = pd.to_datetime(df.index, utc=True, errors="coerce")
-        s = pd.Series(df["close"].to_numpy(dtype=float), index=idx).dropna()
-        if s.size:
+        if clock is None:
             return s
-    return None
+        if finest is None:
+            finest = s
+        n = observations_at(s, clock)
+        if n is None:
+            continue                      # too coarse for this clock; a finer file is required
+        n = min(n, int(CLOCKS[clock]["max_obs"]))
+        if n > best_n:
+            best_n, best = n, s
+    return best if best is not None else finest
 
 
 def book_symbols() -> list[str]:
@@ -378,7 +430,7 @@ def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVec
         if _left() <= 0:
             gaps[tag] = "state-vector budget exhausted before this fit"
             return None
-        close = _close(sym)
+        close = _close(sym, clock)
         if close is None:
             gaps[tag] = f"no bars for {sym} (searched {', '.join(BAR_SUFFIXES)})"
             return None
