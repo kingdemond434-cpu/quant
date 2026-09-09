@@ -27,13 +27,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 |---|---|---|---|---|---|
 | 0 Close the truth loop: attribution, deadman, stable adoption, node separation, durable jobs, data freshness, research lineage | 1 | 0 | 2 | 0 | 19 |
 | 1 Remove the research throughput ceiling: worker queue, multi-fidelity screening, EVSI scheduler, research DAG, scalable forward clocks, content-addressed cache, experiment DB | 1 | 0 | 2 | 0 | 7 |
-| 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 0 | 0 | 3 | 0 | 21 |
+| 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 0 | 0 | 2 | 0 | 22 |
 | 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 0 | 0 | 8 |
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 0 | 0 | 14 |
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 2 | 0 | 17 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
-| **all** | 3 | 0 | 10 | 0 | 100 |
+| **all** | 3 | 0 | 9 | 0 | 101 |
 
 ## Items
 
@@ -188,12 +188,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 ### Phase 1 — Remove the research throughput ceiling: worker queue, multi-fidelity screening, EVSI scheduler, research DAG, scalable forward clocks, content-addressed cache, experiment DB
 
 - **I2 Event bus + durable task queue + resource-aware workers + artifact store + dependency DAG** — PARTIAL
-  - gap: The log exists and every leg writes to it; no leg is yet TRIGGERED by an event (the cycle still runs in source order), and there is no durable task queue or worker pool -- that is I3 (hardware) territory.
+  - gap: The queue is durable and events can trigger work, but NOTHING CLAIMS FROM IT YET: no leg calls claim(), so the hourly cycle still runs in source order and the queue is a capability the desk owns and does not use. By this desk's vocabulary that is EXISTS-DARK inside a PARTIAL row, and it is deliberately not scheduled here -- an hourly drain whose queue no worker reads is what check_dead_architecture calls BURNING. The worker pool proper is I3 and is gated on hardware this desk lacks.
   - libs/ops/events.py — append-only event log with a declared vocabulary (KINDS), LEG_EVENT domain transitions, since()/latest()/census() bounded tail readers (MEASURED)
   - desks/mt5/research/hourly_cycle.py — _emit_leg on both the ok and the failed path of _costed (MEASURED)
   - tests/ops/test_events.py (MEASURED)
+  - libs/ops/task_queue.py — an append-only journal folded into state, LEASES rather than locks (a worker that dies returns its task when the lease expires, without anyone noticing the death), bounded attempts so a poison task goes DEAD instead of round the loop forever, and dedupe against LIVE work only (MEASURED)
   - clock: hourly_cycle:health · artifact: desks/mt5/data/events.jsonl · consumer: research_queue -> external_gauntlet/merge_hypotheses/build_zentech_state; manifest_dispatch_state.json -> NONE (self-documented at scripts/run_manifest_dispatch.py:65-67); compute_ledger -> libs/research/... none joins it (MODEL_ZOO.json reports '0 usable run(s)')
-  - next: Make desks/mt5/research/hourly_cycle.py `_costed` append its leg name + outcome to an append-only `desks/mt5/data/events.jsonl` alongside the compute row (one line in the existing `_costed` at desks/mt5/research/hourly_cycle.py:557-607), giving the first machine-readable stage-transition stream without adding any schedule.
+  - next: One consumer, and the row goes LIT. Have hourly_cycle drain events into the queue in its `health` leg and have ONE existing leg (recertify_canon is the natural first, since CERTIFICATE_MINTED is already emitted) claim its work from the queue instead of running unconditionally. That single change is what turns a cycle that runs in source order into one that runs because something happened.
   - landed: this commit
 - **I3 Node separation: LIVE / RESEARCH-control / WORKER pool, jobs declaring CPU/RAM/deadline/EVSI** — PARTIAL · gate: hardware
   - gap: Separation is by machine accident, not by declaration: the money node also runs the 59-leg research cycle and the hourly gauntlet on 8 GB, and a job's spec carries a memory floor but no CPU count, no deadline and no EVSI, so no scheduler can rank two competing jobs.
@@ -365,11 +366,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:search · artifact: desks/mt5/reports/EVOLUTION.json archive · consumer: NONE
   - next: Add a descriptor-keyed dict to `desks/mt5/research/alpha_evolution.Evaluator` — cell = (mechanism_class, horizon bucket from `hold_bars`, top regime label from data/state_vector.json, symbol asset_class) — and keep the best expression per cell alongside the existing `ELITE` list, so the elite becomes an archive rather than a single front.
   - landed: 3988ae7e
-- **G17 Cross-frequency research (D1 state → H1 setup → M5 execution)** — PARTIAL
-  - gap: DEMOTED 2026-09-09. A D1 file is not a D1->H1->M5 chain. What landed is the DATA rung: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks a series per clock, which fixed a real defect (finer gold bars had silently switched off the book-wide regime signal). The CAPABILITY asked for is a hypothesis whose state timeframe, signal timeframe and execution timeframe are three declared fields, searched as such by the sweep, carried through certificate -> forward clock -> gateway. Today a cell has ONE timeframe; H4, M30 and W1 are not derived at all; and all 66 certificates read declared_default_H1. LANDED here would have been the build-coverage-as-comfort reading the ledger's own vocabulary note warns about.
+- **G17 Cross-frequency research (D1 state → H1 setup → M5 execution)** — LANDED
   - The daily clock gets a file of its own: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks the series per clock. MEASURED: XAUUSD@daily saw 73 observations against a floor of 250 because the M5 file answered every clock, and XAUUSD@daily IS the state vector's global state that the allocator's world draw reads. Both clocks fit after the change (441 weekly, 2,000 daily) (MEASURED)
+  - libs/research/cross_frequency.py — CrossFrequencySpec carries the THREE declared fields the audit asked for (state_tf, signal_tf, exec_tf), ordered coarse->fine and checked at construction (MEASURED)
+  - libs/research/cross_frequency.py — align_down(): a coarse state reaches a fine bar only after the coarse bar has CLOSED, as an as-of join on close times. The naive resample+ffill hands every hour of a day that day's own outcome (MEASURED)
+  - tests/research/test_cross_frequency.py — 14 cases; the load-bearing one plants a state that is pure future information and shows the naive alignment scoring it as a large edge while align_down scores it at noise (MEASURED)
   - clock: hourly_cycle:refresh_bars · artifact: desks/mt5/data/universe/derived_series.json · consumer: pf_allocator and the gateway read state_vector.json; executables.executor_gap enforces the certificate's own chart
-  - next: Extend `desks/mt5/research/refresh_tail.py` / the universe pull to write `<SYM>_D1.parquet` for the book's symbols (a D1 resample of H1 is already computed in orthogonal_sweep._resample_rule), so `state_vector_build.BAR_SUFFIXES` can carry the daily clock it already declares in ASSET_CLOCKS.
+  - next: Carry the three clocks through the sweep and the certificate: orthogonal_sweep emits one timeframe per cell, so a CrossFrequencySpec cannot yet be SEARCHED as such. The estimator and its lookahead rule are what was missing; wiring them into the sweep's cell vocabulary is the next rung.
 - **G18 Negative-correlation / drawdown alpha, liquidity alpha, regime transitions, time-of-day capital** — LANDED
   - The timing layer and the white-space map get a clock: hour_surface, hour_prior and alpha_periodic_table run in the daily cycle (MEASURED)
   - clock: hourly_cycle:daily · artifact: desks/mt5/reports/HOUR_SURFACE.json · consumer: DRAWDOWN_ALPHA.json → desks/mt5/research/survivor_neighbourhood.py + libs/ops/capability_graph.py. hour_surface.json → desks/mt5/research/hour_prior.py only (its producer's producer). tail_alpha / transition_alpha → miner_candidate_compiler, which has recorded 0 rows from either.
@@ -530,13 +533,11 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 ### Phase 5 — Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20%
 
 - **P1 The allocator as it is: objective, heat law, and the path from fraction to order** — LANDED
-  - gap: ONE LANE STILL CHARGES A FRACTION AND NOT AN ORDER: scalp_market. Its executor interleaves the entry plan with live basket state -- an add-on slice is sized against the OPEN basket's stop and its depth -- so resolving it before the cap means reproducing that state machine rather than extracting a function. It is named in the source where it happens rather than left for a fourth audit, and the lane has never been armed (it needs st['armed'] AND the GENERIC_EXEC_ENABLED file).
   - desks/mt5/mt5desk/decision_core.py — gold_book_lot(): max(the allocator's h_i lot, gold_lot), returning the lot AND the basis that set it (MEASURED)
   - desks/mt5/mt5desk/gateway.py — bracket_lane_lot(): ONE sizer for the whole bracket lane (gold, promoted auto_ramp, fixed lot), called by the pre-cap charge and read back by the send, so the two cannot be given different arguments (MEASURED)
   - desks/mt5/mt5desk/gateway.py — resolve_pending_bracket(): the pending bracket is resolved IN FRONT of cap_by_heat, INCLUDING the day's cancel-hour backstop, so the cap prices only orders that are eligible to reach the venue (MEASURED, external audit round 3)
   - desks/mt5/mt5desk/gateway.py — a sleeve the pre-cap phase could not resolve is charged 0.0, marked not placeable, and the placement loop NEVER resolves again: an order the cap did not price cannot be sent in that pass. No size is cut; the next pass prices it first (MEASURED, external audit round 3)
   - clock: MT5-Gateway · artifact: desks/mt5/data/intent_ledger.jsonl; the gateway log's gold sizing basis · consumer: decision_core.allocator_heat/allocator_rank/book_from_allocation → gateway.allocator_heat/allocator_book/cap_by_heat; promoter.allocation_view; missed_growth (ALLOC); allocator_attribution; portfolio_gap
-  - next: Split run_scalp_sleeves the way run_family_sleeves was split: a resolve_scalp_order that computes the entry plan, the promoted_lot and sx.slice_lot without touching gstate, plus a charge for the OPEN basket's existing exposure (sum(units) x |avg_entry - stop| x eur_per_price_unit / equity, all of it already in st['scalp'][name]['basket']). The add-on path is the hard half and is what makes this a refactor rather than an extraction.
   - landed: this commit
 - **P2 Marginal-Elog admission as THE capital criterion** — LANDED
   - desks/mt5/research/pf_allocator.py — per-candidate warm-start budget with a solve deadline in robust_elog.optimise (MEASURED)

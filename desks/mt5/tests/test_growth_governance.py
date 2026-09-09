@@ -94,9 +94,24 @@ def test_the_books_fraction_reaches_the_venue_unshrunk(monkeypatch) -> None:
 
 
 def test_every_promoted_lot_call_site_passes_from_book() -> None:
-    # Three sizing sites: the bracket loop, the family executor and (2026-09-04) the scalp
-    # executor. Each must hand the allocator book's fraction to the venue un-re-shrunk.
-    assert _GW_SRC.count('from_book=(s.get("sized_by") == "allocator_book")') == 3
+    """EVERY site, checked on the AST rather than by counting a string.
+
+    It read `count(...) == 3` and named the three sites in a comment. That is a fence that
+    fails when a FOURTH compliant site is added (the scalp lane gained its add-on sizer on
+    2026-09-09, and the pre-cap resolvers moved the others) and passes if someone deletes one
+    compliant site and adds one that is not. The property is "no `promoted_lot` call anywhere
+    in this file omits `from_book`", so that is what is asserted; the literal spelling is still
+    required because `scripts/check_growth_governance.py` G3 greps for it.
+    """
+    calls = [n for n in ast.walk(ast.parse(_GW_SRC))
+             if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "promoted_lot"]
+    assert calls, "the gateway no longer sizes anything through promoted_lot"
+    for c in calls:
+        kw = {k.arg for k in c.keywords}
+        assert "from_book" in kw, (
+            f"a promoted_lot call site at line {c.lineno} re-shrinks the allocator's fraction")
+    assert _GW_SRC.count('from_book=(s.get("sized_by") == "allocator_book")') >= 3, (
+        "the literal spelling scripts/check_growth_governance.py greps for is gone")
     assert '_s["q_charge"] = float(_book[_s["name"]]) * decay_factor' in _GW_SRC
 
 

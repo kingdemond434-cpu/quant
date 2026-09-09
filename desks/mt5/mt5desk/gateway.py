@@ -1980,60 +1980,37 @@ def _retarget_sleeve_positions(symbol: str, name: str, sl: float, tp: float) -> 
             f"retcode={res.retcode if res else None}")
 
 
-def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
-    """Execute promoted scalp sleeves with replay-faithful semantics (principal 2026-09-04).
+def manage_scalp_baskets(st: dict, sleeves: list[dict]) -> None:
+    """Scalp POSITION MANAGEMENT: a basket the broker has closed, and the time exit. No new risk.
 
-    FAITHFUL TO THE REPLAY OR NOT AT ALL, as for the family lane: the signal, the ATR geometry,
-    the four-slice structural basket and the time exit are `mt5desk/scalp_exec.py`'s reading
-    of `scalp_reverse_engineering.simulate`, computed on the broker's own M5/M15 bars. The one
-    stated deviation is the stop's ATR (last closed bar, since the replay's bar-i ATR cannot be
-    known at the open). Sized by `promoted_lot` like every other sleeve, so the allocator book's
-    fraction reaches the venue unshrunk; LOG-ONLY under the same arm switch as the family lane.
-    The recipe, the time exit, the basket arithmetic and the order lines are
-    `decision_core`'s; this function reads the bars and the tick, keeps the pass state, and
-    sends.
+    WHY IT IS ITS OWN FUNCTION AND WHY IT RUNS BEFORE THE HEAT CAP (2026-09-09). These two steps
+    used to sit at the top of the executor, which runs AFTER `cap_by_heat`. That put management
+    behind an admission gate, and this desk's own doctrine says the opposite in
+    `manage_open_positions`: "a position that is already on carries risk regardless of whether
+    the desk would enter it again today, and hibernating a sleeve must not orphan its open
+    trade". A scalp basket whose sleeve the cap declined was exactly that orphan -- its time
+    exit never ran.
+
+    It also has to happen before the resolution, not merely before the send: `resolve_scalp_order`
+    prices an add-on against the OPEN basket, so a basket the broker has already closed must be
+    cleared first or the cap is charged for a slice added to a position that no longer exists.
     """
     sc_sleeves = [s for s in sleeves if s.get("exec") == "scalp_market"]
     if not sc_sleeves:
-        return
-    try:
-        from mt5desk import scalp_exec as sx
-    except Exception as exc:
-        log(f"SCALP-EXEC unavailable ({type(exc).__name__}: {exc}); "
-            f"{len(sc_sleeves)} sleeve(s) NOT traded this pass")
         return
     armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
     gstate = st.setdefault("scalp", {})
     now_iso = datetime.now(tz=UTC).isoformat()
     for s in sc_sleeves:
-        name, tf = s["name"], str(s.get("timeframe") or "")
-        tf_attr = sx.MT5_TIMEFRAME_ATTR.get(tf)
-        if tf_attr is None or not hasattr(mt5, tf_attr):
-            log(f"[{name}] SCALP-EXEC refused: timeframe {tf!r} has no exact executable")
+        name = s["name"]
+        srec = gstate.get(name)
+        if not srec:
             continue
-        try:
-            family, session, stop_atr, target_atr, max_hold = scalp_recipe(s)
-        except (KeyError, TypeError, ValueError) as exc:
-            log(f"[{name}] SCALP-EXEC refused: recipe incomplete ({exc})")
-            continue
-        rates = mt5.copy_rates_from_pos(s["symbol"], getattr(mt5, tf_attr), 0, sx.BARS_NEEDED)
-        if rates is None or len(rates) < sx.MIN_BARS + 1:
-            log(f"[{name}] SCALP-EXEC: bars unavailable; skipped")
-            continue
-        try:
-            df = sx.frame_from_rates(rates)
-        except ValueError as exc:
-            log(f"[{name}] SCALP-EXEC: bars unreadable ({exc}); skipped")
-            continue
-        closed, forming = df.iloc[:-1], df.index[-1]
-        srec = gstate.setdefault(name, {})
-        basket = srec.get("basket")
         # THE BASKET ENDS WHEN THE BROKER SAYS SO: stop, target or the day's force-close leave no
         # position, and a basket with no position must not accept an add-on slice.
-        if basket and armed and not _sleeve_positions(s["symbol"], name):
+        if srec.get("basket") and armed and not _sleeve_positions(s["symbol"], name):
             srec.pop("basket", None)
             srec.pop("open_ttl_until", None)
-            basket = None
             _book_target(name, s["symbol"], 0.0, "bracket_exit")
         # THE TIME EXIT is part of the certified strategy, not an optional tidy-up.
         if ttl_expired(srec.get("open_ttl_until"), now_iso):
@@ -2041,139 +2018,256 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             close_sleeve_positions(st, s["symbol"], name)
             srec.pop("open_ttl_until", None)
             srec.pop("basket", None)
-            basket = None
-        if srec.get("last_signal_bar") == str(forming):
-            continue                                   # this bar's open already considered
-        srec["last_signal_bar"] = str(forming)
-        tick = mt5.symbol_info_tick(s["symbol"])
-        sym = mt5.symbol_info(s["symbol"])
-        if tick is None or sym is None:
-            log(f"[{name}] SCALP-EXEC: no tick/symbol_info; skipped")
-            continue
-        from_book = (s.get("sized_by") == "allocator_book")
-        if basket:
-            # AN ADD-ON SLICE, at this bar's open, on the replay's own conditions.
-            side = int(basket["side"])
-            price = float(tick.ask if side == 1 else tick.bid)
-            try:
-                ok = sx.addon_allowed(closed, tf=tf, family=family, session=session, side=side,
-                                      stop=float(basket["stop"]), depth=len(basket["entries"]),
-                                      price=price, forming_time=forming)
-            except Exception as exc:
-                log(f"[{name}] SCALP-EXEC add-on signal failed ({exc}); skipped")
-                continue
-            if not ok or basket.get("mode") != "bounded_structural":
-                continue
-            dist = abs(price - float(basket["stop"]))
-            try:
-                lot = promoted_lot(equity, sleeve_live_n(name), dist, s["symbol"], sym,
-                                   s.get("risk_frac"), s.get("decay_faded"),
-                                   from_book=(s.get("sized_by") == "allocator_book"))
-            except Exception as exc:
-                log(f"[{name}] SCALP-EXEC: cannot price add-on risk ({exc}); skipped")
-                continue
-            per, mode = sx.slice_lot(lot, float(getattr(sym, "volume_min", 0.01) or 0.01),
-                                     float(getattr(sym, "volume_step", 0.01) or 0.01))
-            if mode != "bounded_structural" or not (per > 0):
-                continue
-            entries = addon_entries(basket["entries"], price, per)
-            new_tp = sx.basket_target(entries, side, float(basket["target_atr"]),
-                                      float(basket["atr"]))
-            desc = addon_desc(side, per, s["symbol"], float(basket["stop"]), new_tp,
-                              len(entries))
-            if not armed:
-                log(f"[{name}] WOULD PLACE (scalp exec not armed): {desc}")
-                continue
-            if not margin_ok(s["symbol"], per, price):
-                log(f"[{name}] SCALP-EXEC add-on SKIPPED: margin tight (lot={per})")
-                continue
-            _t0 = time.perf_counter()
-            res = mt5.order_send({
-                "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
-                "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
-                "price": price, "sl": float(basket["stop"]), "tp": float(new_tp),
-                "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
-            })
-            _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
-            rc = res.retcode if res else None
-            _record_intent(sleeve=name, symbol=s["symbol"],
-                           side=("buy" if side == 1 else "sell"), lot=per, intended=price,
-                           sl=float(basket["stop"]), tp=float(new_tp),
-                           ticket=(getattr(res, "order", None) if res else None), retcode=rc,
-                           slice_depth=len(entries), latency_ms=_lat_ms,
-                           **_sleeve_identity(s))
-            log(f"[{name}] SCALP-EXEC ADD-ON -> retcode={rc} "
-                f"{diagnose(rc, getattr(res, 'comment', '') or '')} | {desc}")
-            if rc in (10008, 10009):
-                basket["entries"] = [[p, u] for p, u in entries]
-                basket["target"] = float(new_tp)
-                _book_fill(name, s["symbol"], side * per,
-                           float(getattr(res, "price", 0.0) or price))
-                _book_target(name, s["symbol"], side * basket_lots(entries),
-                             "scalp_market/add-on", price=price)
-                _retarget_sleeve_positions(s["symbol"], name, float(basket["stop"]),
-                                           float(new_tp))
-            continue
+
+
+def scalp_open_basket_q(st: dict, s: dict, equity: float, sym: object) -> tuple[float, str]:
+    """The risk the sleeve's OPEN basket already carries, as a fraction of equity.
+
+    THE HALF OF THE SCALP CHARGE THAT IS NOT A NEW ORDER. A scalp sleeve can hold four slices at
+    different prices against one stop; that exposure is real whether or not this pass adds to it,
+    and `ramped_fraction` -- the number this lane was charged until 2026-09-09 -- describes
+    neither the slices nor the stop. Each slice is priced at its OWN distance to the basket's
+    stop through `realised_q`, so the conversion is the desk's single one and a four-slice basket
+    is charged four times, not once.
+    """
+    srec = (st.get("scalp") or {}).get(s["name"]) or {}
+    basket = srec.get("basket")
+    if not isinstance(basket, dict) or not basket.get("entries"):
+        return 0.0, "no open basket"
+    try:
+        stop = float(basket["stop"])
+        total = 0.0
+        for price, units in basket["entries"]:
+            dist = abs(float(price) - stop)
+            if dist > 0 and float(units) > 0:
+                total += realised_q(equity, dist, s["symbol"], sym, lot=float(units))
+        return float(total), (f"{len(basket['entries'])} open slice(s) against the basket's "
+                              f"{stop:.5f} stop")
+    except Exception as exc:                                # a charge must never stop the pass
+        return 0.0, f"open basket unpriceable ({type(exc).__name__}: {exc})"
+
+
+def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
+    """The slice this scalp sleeve would send THIS pass, priced -- read-only, no state written.
+
+    THE LAST LANE TO BE GENERALISED (external audit rounds 3 and 4, 2026-09-09). The bracket lane
+    and the family lane were moved in front of `cap_by_heat` so the cap prices FINAL EXECUTABLE
+    RISK; this lane stayed on `ramped_fraction`, a requested fraction fixed before any stop
+    existed, while the executor sized `promoted_lot` against the plan's real stop and then cut it
+    into venue-legal slices with `sx.slice_lot`. Three transformations the charge could not see,
+    and the last of them is a lot floor -- the term that matters most on a small account.
+
+    IT WAS A REFACTOR AND NOT AN EXTRACTION, which is why it came last. The executor interleaved
+    the entry decision with live basket state: an add-on slice is sized against the OPEN basket's
+    stop and its depth, and the basket itself is cleaned up two branches earlier. That cleanup is
+    now `manage_scalp_baskets`, which runs before this, so the state this reads is settled.
+
+    NOTHING HERE WRITES STATE. The "already considered this bar" mark is REPORTED and applied by
+    the executor, for the same reason the family lane does it: a mark consumed by a pass the cap
+    then rejected would throw away a signal the sleeve never traded.
+
+    Returns a dict always carrying `ok`, `stage` and `why`; on `ok` also `per`, `mode`, `side`,
+    `price`, `stop`, `tp`, `dist`, `sym`, `tick`, `desc`, `kind` ("entry" or "addon"), `forming`
+    and, for an entry, `plan`.
+    """
+    name, tf = s["name"], str(s.get("timeframe") or "")
+    try:
+        from mt5desk import scalp_exec as sx
+    except Exception as exc:
+        return {"ok": False, "stage": "unavailable",
+                "why": f"SCALP-EXEC unavailable ({type(exc).__name__}: {exc})"}
+    tf_attr = sx.MT5_TIMEFRAME_ATTR.get(tf)
+    if tf_attr is None or not hasattr(mt5, tf_attr):
+        return {"ok": False, "stage": "no_chart",
+                "why": f"refused: timeframe {tf!r} has no exact executable"}
+    try:
+        family, session, stop_atr, target_atr, max_hold = scalp_recipe(s)
+    except (KeyError, TypeError, ValueError) as exc:
+        return {"ok": False, "stage": "no_recipe", "why": f"refused: recipe incomplete ({exc})"}
+    rates = mt5.copy_rates_from_pos(s["symbol"], getattr(mt5, tf_attr), 0, sx.BARS_NEEDED)
+    if rates is None or len(rates) < sx.MIN_BARS + 1:
+        return {"ok": False, "stage": "no_bars", "why": "bars unavailable; skipped"}
+    try:
+        df = sx.frame_from_rates(rates)
+    except ValueError as exc:
+        return {"ok": False, "stage": "bad_bars", "why": f"bars unreadable ({exc}); skipped"}
+    closed, forming = df.iloc[:-1], df.index[-1]
+    srec = (st.get("scalp") or {}).get(name) or {}
+    if srec.get("last_signal_bar") == str(forming):
+        return {"ok": False, "stage": "already_considered", "forming": forming,
+                "why": "this bar's open was already considered"}
+    tick = mt5.symbol_info_tick(s["symbol"])
+    sym = mt5.symbol_info(s["symbol"])
+    if tick is None or sym is None:
+        return {"ok": False, "stage": "no_tick", "forming": forming, "mark": True,
+                "why": "no tick/symbol_info; skipped"}
+    vmin = float(getattr(sym, "volume_min", 0.01) or 0.01)
+    vstep = float(getattr(sym, "volume_step", 0.01) or 0.01)
+    n_live = sleeve_live_n(name)
+    basket = srec.get("basket")
+    if basket:
+        # AN ADD-ON SLICE, at this bar's open, on the replay's own conditions.
+        side = int(basket["side"])
+        price = float(tick.ask if side == 1 else tick.bid)
         try:
-            plan = sx.plan_entry(closed, tf=tf, family=family, session=session,
-                                 stop_atr=stop_atr, target_atr=target_atr, max_hold=max_hold,
-                                 bid=float(tick.bid), ask=float(tick.ask), forming_time=forming)
+            ok = sx.addon_allowed(closed, tf=tf, family=family, session=session, side=side,
+                                  stop=float(basket["stop"]), depth=len(basket["entries"]),
+                                  price=price, forming_time=forming)
         except Exception as exc:
-            log(f"[{name}] SCALP-EXEC signal computation failed ({exc}); skipped")
-            continue
-        if plan is None:
-            continue
+            return {"ok": False, "stage": "addon_signal_failed", "forming": forming, "mark": True,
+                    "why": f"add-on signal failed ({exc}); skipped"}
+        if not ok or basket.get("mode") != "bounded_structural":
+            return {"ok": False, "stage": "no_addon", "forming": forming, "mark": True,
+                    "why": "no add-on due on this bar"}
+        dist = abs(price - float(basket["stop"]))
         try:
-            lot = promoted_lot(equity, sleeve_live_n(name), plan.stop_dist, s["symbol"], sym,
-                               s.get("risk_frac"), s.get("decay_faded"), from_book=from_book)
+            lot = promoted_lot(equity, n_live, dist, s["symbol"], sym, s.get("risk_frac"),
+                               s.get("decay_faded"),
+                               from_book=(s.get("sized_by") == "allocator_book"))
         except Exception as exc:
-            log(f"[{name}] SCALP-EXEC: cannot price risk ({exc}); skipped")
+            return {"ok": False, "stage": "unpriceable", "forming": forming, "mark": True,
+                    "why": f"cannot price add-on risk ({exc}); skipped"}
+        per, mode = sx.slice_lot(lot, vmin, vstep)
+        if mode != "bounded_structural" or not (per > 0):
+            return {"ok": False, "stage": "no_slice", "forming": forming, "mark": True,
+                    "why": f"add-on slice {per} is not a bounded_structural lot"}
+        entries = addon_entries(basket["entries"], price, per)
+        new_tp = sx.basket_target(entries, side, float(basket["target_atr"]),
+                                  float(basket["atr"]))
+        return {"ok": True, "stage": "ok", "why": "resolved", "kind": "addon", "forming": forming,
+                "mark": True, "per": float(per), "mode": mode, "side": side, "price": price,
+                "stop": float(basket["stop"]), "tp": float(new_tp), "dist": float(dist),
+                "sym": sym, "tick": tick, "entries": [[float(p), float(u)] for p, u in entries],
+                "desc": addon_desc(side, per, s["symbol"], float(basket["stop"]), new_tp,
+                                   len(entries)),
+                "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live}) "
+                          f"at the basket's own {dist:.5g} stop, sliced to {per} ({mode})")}
+    try:
+        plan = sx.plan_entry(closed, tf=tf, family=family, session=session, stop_atr=stop_atr,
+                             target_atr=target_atr, max_hold=max_hold, bid=float(tick.bid),
+                             ask=float(tick.ask), forming_time=forming)
+    except Exception as exc:
+        return {"ok": False, "stage": "signal_failed", "forming": forming, "mark": True,
+                "why": f"signal computation failed ({exc}); skipped"}
+    if plan is None:
+        return {"ok": False, "stage": "no_signal", "forming": forming, "mark": True,
+                "why": "no signal on this bar"}
+    try:
+        lot = promoted_lot(equity, n_live, plan.stop_dist, s["symbol"], sym, s.get("risk_frac"),
+                           s.get("decay_faded"),
+                           from_book=(s.get("sized_by") == "allocator_book"))
+    except Exception as exc:
+        return {"ok": False, "stage": "unpriceable", "forming": forming, "mark": True,
+                "why": f"cannot price risk ({exc}); skipped"}
+    if not (lot > 0):
+        return {"ok": False, "stage": "no_heat", "forming": forming, "mark": True,
+                "why": "allocator gave this sleeve no heat; skipped"}
+    per, mode = sx.slice_lot(lot, vmin, vstep)
+    if not (per > 0):
+        return {"ok": False, "stage": "below_min", "forming": forming, "mark": True,
+                "why": f"lot {lot} below the symbol's minimum; skipped"}
+    return {"ok": True, "stage": "ok", "why": "resolved", "kind": "entry", "forming": forming,
+            "mark": True, "per": float(per), "mode": mode, "side": int(plan.side),
+            "price": float(plan.entry_ref), "stop": float(plan.stop), "tp": float(plan.target),
+            "dist": float(plan.stop_dist), "sym": sym, "tick": tick, "plan": plan,
+            "family": family, "target_atr": target_atr,
+            "desc": scalp_order_desc(plan, per, s["symbol"], mode),
+            "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live}) at "
+                      f"the plan's own {plan.stop_dist:.5g} stop, sliced to {per} ({mode})")}
+
+
+def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
+    """Send what the pre-cap phase resolved for each promoted scalp sleeve (principal 2026-09-04).
+
+    FAITHFUL TO THE REPLAY OR NOT AT ALL, as for the family lane: the signal, the ATR geometry,
+    the four-slice structural basket and the time exit are `mt5desk/scalp_exec.py`'s reading of
+    `scalp_reverse_engineering.simulate`, computed on the broker's own M5/M15 bars. The one
+    stated deviation is the stop's ATR (last closed bar, since the replay's bar-i ATR cannot be
+    known at the open). LOG-ONLY under the same arm switch as the family lane.
+
+    THE DECISION IS NO LONGER MADE HERE. `manage_scalp_baskets` settles the open position and
+    `resolve_scalp_order` decides and prices the slice, both before `cap_by_heat` -- so the cap
+    is charged `realised_q` at the plan's real stop and the venue-legal SLICE, plus whatever the
+    open basket already carries, instead of the abstract `ramped_fraction` this lane was billed
+    until 2026-09-09. This function applies the mark, records what was decided and sends.
+    """
+    sc_sleeves = [s for s in sleeves if s.get("exec") == "scalp_market"]
+    if not sc_sleeves:
+        return
+    armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists() and NEW_RISK_OK
+    gstate = st.setdefault("scalp", {})
+    for s in sc_sleeves:
+        name = s["name"]
+        plan = s.get("pending_order")
+        if not isinstance(plan, dict):
+            log(f"[{name}] SCALP-EXEC: no pre-cap resolution this pass; the heat cap never "
+                f"priced this order, so it is not sent")
             continue
-        if not (lot > 0):
-            log(f"[{name}] SCALP-EXEC: allocator gave this sleeve no heat; skipped")
+        # THE MARK IS APPLIED HERE AND NOWHERE ELSE: a bar considered by a pass the cap then
+        # rejected must be reconsidered next pass, not thrown away by the resolver.
+        if plan.get("mark") and plan.get("forming") is not None:
+            gstate.setdefault(name, {})["last_signal_bar"] = str(plan["forming"])
+        if not plan.get("ok"):
+            if plan["stage"] not in ("already_considered", "no_signal", "no_addon"):
+                log(f"[{name}] SCALP-EXEC {plan['why']}")
             continue
-        per, mode = sx.slice_lot(lot, float(getattr(sym, "volume_min", 0.01) or 0.01),
-                                 float(getattr(sym, "volume_step", 0.01) or 0.01))
-        if not (per > 0):
-            log(f"[{name}] SCALP-EXEC: lot {lot} below the symbol's minimum; skipped")
-            continue
-        policy_advice = _policy_advice(s["symbol"], plan.side, plan.entry_ref, tick, sym,
-                                       plan.stop_dist, plan, per)
-        _book_target(name, s["symbol"], plan.side * per, f"scalp_market/{family}",
-                     price=plan.entry_ref)
-        desc = scalp_order_desc(plan, per, s["symbol"], mode)
+        srec = gstate.setdefault(name, {})
+        per, side, price = float(plan["per"]), int(plan["side"]), float(plan["price"])
+        stop, tp, sym, tick = float(plan["stop"]), float(plan["tp"]), plan["sym"], plan["tick"]
+        desc, is_addon = str(plan["desc"]), plan["kind"] == "addon"
+        log(f"[{name}] scalp sizing basis: {plan['basis']}")
+        policy_advice = None
+        if not is_addon:
+            policy_advice = _policy_advice(s["symbol"], side, price, tick, sym,
+                                           float(plan["dist"]), plan["plan"], per)
+            _book_target(name, s["symbol"], side * per, f"scalp_market/{plan['family']}",
+                         price=price)
         if not armed:
             log(f"[{name}] WOULD PLACE (scalp exec "
                 f"{'not armed' if st.get('armed') else 'account unarmed'}; "
                 f"enable={GENERIC_EXEC_ENABLED.name}): {desc}")
             continue
-        if not margin_ok(s["symbol"], per, plan.entry_ref):
-            log(f"[{name}] SCALP-EXEC SKIPPED: margin tight (lot={per})")
+        if not margin_ok(s["symbol"], per, price):
+            log(f"[{name}] SCALP-EXEC{' add-on' if is_addon else ''} SKIPPED: margin tight "
+                f"(lot={per})")
             continue
         _t0 = time.perf_counter()
         res = mt5.order_send({
             "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
-            "type": mt5.ORDER_TYPE_BUY if plan.side == 1 else mt5.ORDER_TYPE_SELL,
-            "price": plan.entry_ref, "sl": float(plan.stop), "tp": float(plan.target),
+            "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
+            "price": price, "sl": stop, "tp": tp,
             "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
         })
         _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         rc = res.retcode if res else None
         _record_intent(sleeve=name, symbol=s["symbol"],
-                       side=("buy" if plan.side == 1 else "sell"), lot=per,
-                       intended=plan.entry_ref, sl=float(plan.stop), tp=float(plan.target),
+                       side=("buy" if side == 1 else "sell"), lot=per, intended=price,
+                       sl=stop, tp=tp,
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
-                       policy_advice=policy_advice, slice_depth=1, latency_ms=_lat_ms,
-                       **_sleeve_identity(s))
-        log(f"[{name}] SCALP-EXEC ORDER -> retcode={rc} "
+                       policy_advice=policy_advice,
+                       slice_depth=(len(plan["entries"]) if is_addon else 1),
+                       latency_ms=_lat_ms, **_sleeve_identity(s))
+        log(f"[{name}] SCALP-EXEC {'ADD-ON' if is_addon else 'ORDER'} -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '')} | {desc}")
-        if rc in (10008, 10009):
-            srec["open_ttl_until"] = plan.ttl_until
-            fill_px = float(getattr(res, "price", 0.0) or plan.entry_ref)
-            _book_fill(name, s["symbol"], plan.side * per, fill_px)
-            _record_exec_outcome(s["symbol"], plan.side, per, plan.entry_ref, tick,
-                                 plan.stop_dist, plan, fill_px)
-            srec["basket"] = basket_record(plan, per, mode, target_atr)
+        if rc not in (10008, 10009):
+            continue
+        fill_px = float(getattr(res, "price", 0.0) or price)
+        if is_addon:
+            basket = srec.get("basket") or {}
+            basket["entries"] = [[p, u] for p, u in plan["entries"]]
+            basket["target"] = tp
+            srec["basket"] = basket
+            _book_fill(name, s["symbol"], side * per, fill_px)
+            _book_target(name, s["symbol"], side * basket_lots(plan["entries"]),
+                         "scalp_market/add-on", price=price)
+            _retarget_sleeve_positions(s["symbol"], name, stop, tp)
+        else:
+            srec["open_ttl_until"] = plan["plan"].ttl_until
+            _book_fill(name, s["symbol"], side * per, fill_px)
+            _record_exec_outcome(s["symbol"], side, per, price, tick, float(plan["dist"]),
+                                 plan["plan"], fill_px)
+            srec["basket"] = basket_record(plan["plan"], per, str(plan["mode"]),
+                                           float(plan["target_atr"]))
 
 
 def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
@@ -2350,6 +2444,21 @@ def main() -> None:
     NEW_RISK_OK, _ident_why = release_gate()
     if not NEW_RISK_OK:
         log(f"RELEASE IDENTITY refuses NEW risk: {_ident_why} -- managing open positions only")
+
+    # THE SCALP LANE'S OWN MANAGEMENT, HERE AND NOT INSIDE ITS EXECUTOR (2026-09-09). A basket
+    # the broker has closed and a basket past its time exit are POSITIONS, and this desk's
+    # doctrine puts management before admission: `manage_open_positions` above says a position
+    # already on carries risk whether or not the desk would enter it again today. Inside the
+    # executor these two steps sat behind `cap_by_heat`, so a scalp sleeve the cap declined kept
+    # an orphaned basket whose time exit never ran.
+    #
+    # It runs on the UNFILTERED roster for the same reason -- a hibernated sleeve's open basket
+    # still needs its exit -- and before `resolve_scalp_order`, which prices an add-on against
+    # the open basket and must not be handed one the broker has already closed.
+    try:
+        manage_scalp_baskets(st, sleeves)
+    except Exception as exc:
+        log(f"SCALP-MANAGE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
 
     reg_killed = regime_hibernate(sleeves)
     # THE VETOED SLEEVES ARE KEPT ASIDE, NOT FORGOTTEN. They are removed from `sleeves` so nothing
@@ -2559,16 +2668,54 @@ def main() -> None:
                 _s["q_charge_basis"] = (f"no order to send this pass ({_plan.get('stage')}: "
                                         f"{_plan.get('why')}); charged nothing")
             _s["pending_order"] = _plan
+        elif _s.get("exec") == "scalp_market":
+            # THE LAST LANE, AND THE ONE THAT NEEDED A REFACTOR RATHER THAN AN EXTRACTION. It was
+            # billed `ramped_fraction` -- a requested fraction, fixed before any stop existed --
+            # while the executor sized `promoted_lot` against the plan's real stop and then cut
+            # that into venue-legal slices with `sx.slice_lot`. Three transformations the charge
+            # could not see, the last of them a lot floor, which is the term that dominates on a
+            # small account.
+            #
+            # THE CHARGE IS BOTH HALVES: whatever the OPEN basket already carries, priced slice
+            # by slice at each one's own distance to the basket's stop, plus the slice this pass
+            # would add. A sleeve holding four slices and adding none is still holding four.
+            try:
+                _plan = resolve_scalp_order(st, _s, equity)
+            except Exception as _exc:
+                _plan = {"ok": False, "stage": "resolve_failed",
+                         "why": f"{type(_exc).__name__}: {_exc}"}
+            _open_q, _open_why = 0.0, "no open basket"
+            try:
+                _open_q, _open_why = scalp_open_basket_q(
+                    st, _s, equity, _plan.get("sym") if _plan.get("ok") else None)
+            except Exception as _exc:                       # a charge never stops the pass
+                _open_why = f"open basket unpriceable ({type(_exc).__name__}: {_exc})"
+            if _plan.get("ok"):
+                try:
+                    _new_q = realised_q(equity, _plan["dist"], _s["symbol"], _plan["sym"],
+                                        lot=_plan["per"])
+                except Exception as _exc:
+                    _plan = {"ok": False, "stage": "unpriceable",
+                             "why": f"cannot price {_s['symbol']} risk "
+                                    f"({type(_exc).__name__}: {_exc})"}
+                else:
+                    _s["dist"] = _plan["dist"]
+                    _s["q_charge"] = _open_q + _new_q
+                    _s["q_charge_basis"] = (
+                        f"{_plan['basis']}; charged {_new_q:.4%} for the slice this pass will "
+                        f"send plus {_open_q:.4%} for {_open_why}")
+            if not _plan.get("ok"):
+                # NO NEW SLICE THIS PASS -- but an open basket is still risk, so the charge is
+                # what it carries and not zero.
+                _s["q_charge"] = _open_q
+                _s["q_charge_basis"] = (f"no slice to send this pass ({_plan.get('stage')}: "
+                                        f"{_plan.get('why')}); charged {_open_q:.4%} for "
+                                        f"{_open_why}")
+            _s["pending_order"] = _plan
         elif from_book:
             # BILLED AT EXACTLY THE FRACTION IT IS SIZED AT (see promoted_lot from_book): the
-            # heat cap and the sizer must price the same leg at the same number.
-            #
-            # THE SCALP LANE IS STILL CHARGED A FRACTION AND NOT AN ORDER, and that is the one
-            # lane where this remains true. Its executor interleaves the entry plan with live
-            # basket state -- an add-on slice is sized against the OPEN basket's stop and its
-            # depth -- so resolving it before the cap means reproducing that state machine, not
-            # extracting a function. It is named here rather than left to be rediscovered: see
-            # the ledger's P1 row for what is owed. The lane has never been armed.
+            # heat cap and the sizer must price the same leg at the same number. Reached only by
+            # a lane with no resolver -- every lane that sends an order now has one.
             _s["q_charge"] = float(_book[_s["name"]]) * decay_factor(_s.get("decay_faded"))
         elif _s.get("lot") == "auto_ramp":
             # THE SAME LADDER THE SIZER USES (`decision_core.ramped_fraction`): base clamp x

@@ -507,8 +507,11 @@ def test_the_charge_site_covers_every_lane_and_names_the_one_it_does_not():
     assert 'if _s.get("exec") not in ("family_market", "scalp_market"):' in block
     assert 'elif _s.get("exec") == "family_market":' in block
     assert "resolve_family_order(" in block, "the family lane is not priced at its order"
-    assert "THE SCALP LANE IS STILL CHARGED A FRACTION" in block, (
-        "the one lane that still charges an abstract fraction must say so where it happens")
+    # ROUND 4 CLOSED THE LAST ONE. Every lane that sends an order now has a resolver, so the
+    # `from_book` fraction branch is reached by no sending lane at all.
+    assert 'elif _s.get("exec") == "scalp_market":' in block and "resolve_scalp_order(" in block
+    assert "THE SCALP LANE IS STILL CHARGED A FRACTION" not in block, (
+        "the scalp lane is back on an abstract fraction")
 
 
 def test_the_family_lane_charges_what_its_executor_sends():
@@ -550,3 +553,109 @@ def test_an_open_bracket_is_charged_at_the_lot_the_venue_holds():
     block = _GW_SRC.split("from_book = _book is not None", 1)[1] \
                    .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
     assert '"placed_lot"' in block and "already on the book" in block
+
+
+# ================================================== round 4: the last lane charges an order too
+def _scalp_ns():
+    """`scalp_open_basket_q` over the real core, so the basket arithmetic is the desk's own
+    `realised_q` and not a second copy of it."""
+    seed = {k: v for k, v in vars(dc).items() if not k.startswith("__")}
+    fn = next(n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef)
+              and n.name == "scalp_open_basket_q")
+    exec(compile(ast.Module(body=[fn], type_ignores=[]), "<gw>", "exec"), seed)
+    return seed
+
+
+def test_an_open_scalp_basket_is_charged_slice_by_slice_at_each_slices_own_stop_distance():
+    """THE HALF OF THE SCALP CHARGE THAT IS NOT A NEW ORDER. A scalp sleeve can hold four slices
+    at four prices against one stop; that exposure is real whether or not this pass adds to it,
+    and `ramped_fraction` -- the number this lane was billed until 2026-09-09 -- describes
+    neither the slices nor the stop. A four-slice basket must be charged four times."""
+    ns = _scalp_ns()
+    equity, info = 20_000.0, _GoldInfo()
+    st = {"scalp": {"xau_scalp": {"basket": {
+        "side": 1, "stop": 2400.0,
+        "entries": [[2410.0, 0.02], [2415.0, 0.02], [2420.0, 0.02], [2425.0, 0.02]]}}}}
+    sleeve = {"name": "xau_scalp", "symbol": "XAUUSD", "exec": "scalp_market"}
+    q, why = ns["scalp_open_basket_q"](st, sleeve, equity, info)
+    expected = sum(dc.realised_q(equity, abs(p - 2400.0), "XAUUSD", info, lot=u)
+                   for p, u in st["scalp"]["xau_scalp"]["basket"]["entries"])
+    assert q == pytest.approx(expected) and q > 0
+    assert "4 open slice(s)" in why
+    # A slice further from the stop costs more, which a single fraction cannot express.
+    one = dict(st)
+    one["scalp"] = {"xau_scalp": {"basket": {"side": 1, "stop": 2400.0,
+                                             "entries": [[2410.0, 0.02]]}}}
+    q1, _ = ns["scalp_open_basket_q"](one, sleeve, equity, info)
+    assert q > 3 * q1, (q, q1)
+
+
+def test_a_sleeve_with_no_open_basket_is_charged_nothing_for_one():
+    ns = _scalp_ns()
+    for st in ({}, {"scalp": {}}, {"scalp": {"xau_scalp": {}}},
+               {"scalp": {"xau_scalp": {"basket": {"stop": 1.0, "entries": []}}}}):
+        q, why = ns["scalp_open_basket_q"](st, {"name": "xau_scalp", "symbol": "XAUUSD"},
+                                           20_000.0, _GoldInfo())
+        assert q == 0.0 and why
+
+
+def test_an_unpriceable_basket_charges_zero_and_says_so_rather_than_raising():
+    """A charge that raises takes the whole pass down with it, and the pass is what manages
+    open positions."""
+    ns = _scalp_ns()
+    st = {"scalp": {"x": {"basket": {"stop": "not a number", "entries": [[1.0, 0.02]]}}}}
+    q, why = ns["scalp_open_basket_q"](st, {"name": "x", "symbol": "XAUUSD"}, 20_000.0, _GoldInfo())
+    assert q == 0.0 and "unpriceable" in why
+
+
+def test_the_scalp_charge_is_the_slice_plus_the_basket_and_the_source_says_which():
+    block = _GW_SRC.split("from_book = _book is not None", 1)[1] \
+                   .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
+    assert 'elif _s.get("exec") == "scalp_market":' in block
+    assert "resolve_scalp_order(" in block and "scalp_open_basket_q(" in block
+    assert '_s["q_charge"] = _open_q + _new_q' in block, (
+        "the scalp charge must carry both halves: the slice this pass sends and the exposure "
+        "the open basket already holds")
+    assert '_s["q_charge"] = _open_q' in block, (
+        "a pass with no new slice must still charge the open basket, not zero")
+    # And the fraction it used to be billed no longer SIZES anything here: the branch's own
+    # comment still names `ramped_fraction` to say what it replaced, so the check is on code.
+    lane = block.split('elif _s.get("exec") == "scalp_market":', 1)[1] \
+                .split("elif from_book:", 1)[0]
+    code = "\n".join(x for x in lane.split("\n") if not x.strip().startswith("#"))
+    assert "ramped_fraction" not in code, (
+        "the scalp charge is computed from a requested fraction again")
+
+
+def test_the_scalp_resolver_writes_no_state_and_management_runs_before_the_cap():
+    """The resolver runs before `cap_by_heat` and the cap may reject what it resolved, so a mark
+    consumed here would throw away a bar the sleeve never traded. And the basket cleanup had to
+    move OUT of the executor: behind the cap, a declined sleeve kept an orphaned basket whose
+    time exit never ran."""
+    fn = next(n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef)
+              and n.name == "resolve_scalp_order")
+    called = {n.func.id for n in ast.walk(fn)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    assert not called & {"log", "save_state", "_record_intent", "_book_target", "_book_fill",
+                         "close_sleeve_positions", "_retarget_sleeve_positions"}
+    assert not [n for n in ast.walk(fn) if isinstance(n, ast.Attribute)
+                and isinstance(n.value, ast.Name) and n.value.id == "mt5"
+                and n.attr in ("order_send", "order_check")]
+    src = _GW_SRC.split("def resolve_scalp_order(", 1)[1].split("\ndef ", 1)[0]
+    assert "setdefault" not in src, "the resolver creates pass state; it may only read"
+    # Management before the cap, and on the UNFILTERED roster.
+    main_src = _GW_SRC.split("def main(", 1)[1]
+    assert main_src.index("manage_scalp_baskets(st, sleeves)") < \
+        main_src.index("sleeves, heat_note = cap_by_heat(sleeves")
+    assert main_src.index("manage_scalp_baskets(st, sleeves)") < \
+        main_src.index("reg_killed = regime_hibernate(sleeves)"), (
+        "a hibernated sleeve's open basket must still reach its time exit")
+
+
+def test_the_scalp_executor_sends_the_slice_the_cap_admitted_and_sizes_nothing():
+    sender = _GW_SRC.split("def run_scalp_sleeves(", 1)[1].split("\ndef ", 1)[0]
+    assert "promoted_lot(" not in sender and "slice_lot(" not in sender, (
+        "the scalp executor sizes again; it must send the slice the cap admitted")
+    assert 'plan = s.get("pending_order")' in sender
+    assert "no pre-cap resolution this pass" in sender
+    assert 'per, side, price = float(plan["per"])' in sender

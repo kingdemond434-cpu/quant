@@ -92,13 +92,16 @@
    "evidence": [
     "libs/ops/events.py — append-only event log with a declared vocabulary (KINDS), LEG_EVENT domain transitions, since()/latest()/census() bounded tail readers (MEASURED)",
     "desks/mt5/research/hourly_cycle.py — _emit_leg on both the ok and the failed path of _costed (MEASURED)",
-    "tests/ops/test_events.py (MEASURED)"
+    "tests/ops/test_events.py (MEASURED)",
+    "libs/ops/task_queue.py — an append-only journal folded into state, LEASES rather than locks (a worker that dies returns its task when the lease expires, without anyone noticing the death), bounded attempts so a poison task goes DEAD instead of round the loop forever, and dedupe against LIVE work only (MEASURED)",
+    "libs/ops/task_queue.py — subscribe(event_kind, task_kind) plus a durable watermark: an EVENT queues work, once, however many times the log is drained. That is I2's first gap in one call (MEASURED)",
+    "tests/ops/test_task_queue.py — 20 cases including a torn line from a crash costing that transition and not the queue, a corrupt lease reading as expired rather than as a permanent lock, and a burst of one event queueing one task (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:health",
    "artifact": "desks/mt5/data/events.jsonl",
    "consumer": "research_queue -> external_gauntlet/merge_hypotheses/build_zentech_state; manifest_dispatch_state.json -> NONE (self-documented at scripts/run_manifest_dispatch.py:65-67); compute_ledger -> libs/research/... none joins it (MODEL_ZOO.json reports '0 usable run(s)')",
-   "gap": "The log exists and every leg writes to it; no leg is yet TRIGGERED by an event (the cycle still runs in source order), and there is no durable task queue or worker pool -- that is I3 (hardware) territory.",
-   "next_step": "Make desks/mt5/research/hourly_cycle.py `_costed` append its leg name + outcome to an append-only `desks/mt5/data/events.jsonl` alongside the compute row (one line in the existing `_costed` at desks/mt5/research/hourly_cycle.py:557-607), giving the first machine-readable stage-transition stream without adding any schedule.",
+   "gap": "The queue is durable and events can trigger work, but NOTHING CLAIMS FROM IT YET: no leg calls claim(), so the hourly cycle still runs in source order and the queue is a capability the desk owns and does not use. By this desk's vocabulary that is EXISTS-DARK inside a PARTIAL row, and it is deliberately not scheduled here -- an hourly drain whose queue no worker reads is what check_dead_architecture calls BURNING. The worker pool proper is I3 and is gated on hardware this desk lacks.",
+   "next_step": "One consumer, and the row goes LIT. Have hourly_cycle drain events into the queue in its `health` leg and have ONE existing leg (recertify_canon is the natural first, since CERTIFICATE_MINTED is already emitted) claim its work from the queue instead of running unconditionally. That single change is what turns a cycle that runs in source order into one that runs because something happened.",
    "landed": [
     "this commit"
    ]
@@ -887,14 +890,15 @@
     "desks/mt5/mt5desk/gateway.py — an open bracket is charged at the lot the venue holds: st['brackets'][name]['lot'] is recorded at all three write sites (MEASURED)",
     "desks/mt5/tests/test_gold_charge_equals_the_trade_that_is_sent.py — 23 cases: the identity across 7 stop distances x 4 equities x 8 fractions x fade; the pre-fix arithmetic understating a 110 USD/oz bracket on a 1,500 EUR account by 5.78x at the same 0.02 lot; the cancel hour refusing before the charge; the unresolved sleeve refusing the venue; the whole lane priced at its order; the family lane charging what its executor sends (MEASURED)",
     "desks/mt5/tests/test_gold_charge_equals_the_trade_that_is_sent.py — test_main_charges_the_heat_cap_exactly_what_it_sends_to_the_venue runs main() over a faked terminal with the core's real sizing; MEASURED on the PRE-FIX HEAD b9819cdb it read 'the cap reserved 1.152596% and the venue got 0.23 lots at a 6.2 stop, which runs 1.229321%', and on this HEAD the two are equal (MEASURED)",
-    "desks/mt5/tests/test_gold_is_sized_by_the_allocator.py — the lot is never below today's at any fraction from 1e-9 to 1.0; a fraction the optimiser wants larger actually raises it (MEASURED)"
+    "desks/mt5/tests/test_gold_is_sized_by_the_allocator.py — the lot is never below today's at any fraction from 1e-9 to 1.0; a fraction the optimiser wants larger actually raises it (MEASURED)",
+    "desks/mt5/mt5desk/gateway.py — resolve_scalp_order()/manage_scalp_baskets()/scalp_open_basket_q(): the LAST lane is priced at its order too. The charge is the venue-legal slice (promoted_lot at the plan's real stop, then sx.slice_lot) PLUS the open basket, priced slice by slice at each slice's own distance to the basket's stop. Basket exit and time exit moved ahead of cap_by_heat, so a sleeve the cap declines no longer keeps an orphaned basket whose exit never runs (MEASURED, external audit round 4)"
    ],
    "scheduled_by": "MT5-Gateway",
    "artifact": "desks/mt5/data/intent_ledger.jsonl; the gateway log's gold sizing basis",
    "consumer": "decision_core.allocator_heat/allocator_rank/book_from_allocation → gateway.allocator_heat/allocator_book/cap_by_heat; promoter.allocation_view; missed_growth (ALLOC); allocator_attribution; portfolio_gap",
-   "gap": "ONE LANE STILL CHARGES A FRACTION AND NOT AN ORDER: scalp_market. Its executor interleaves the entry plan with live basket state -- an add-on slice is sized against the OPEN basket's stop and its depth -- so resolving it before the cap means reproducing that state machine rather than extracting a function. It is named in the source where it happens rather than left for a fourth audit, and the lane has never been armed (it needs st['armed'] AND the GENERIC_EXEC_ENABLED file).",
-   "next_step": "Split run_scalp_sleeves the way run_family_sleeves was split: a resolve_scalp_order that computes the entry plan, the promoted_lot and sx.slice_lot without touching gstate, plus a charge for the OPEN basket's existing exposure (sum(units) x |avg_entry - stop| x eur_per_price_unit / equity, all of it already in st['scalp'][name]['basket']). The add-on path is the hard half and is what makes this a refactor rather than an extraction.",
-   "note": "CLOSED UPWARD ONLY, AND NOW UNIVERSAL ACROSS THE BRACKET AND FAMILY LANES. Routing gold at h_i ALONE would be a size CUT at today's equity on the desk's only forward-evidenced book, so the sent lot is max(allocator, policy, floor): the semantic break is gone and the size can only rise. THE HEAT IDENTITY IS EXACT AND NOT APPROXIMATE. Round 2 made charge and send call one sizer; they still called it with different arguments (house nominal stop before the cap, real bracket stop at the venue), and because realised_q is LINEAR IN THE STOP the 0.02 floor could make both return the identical lot while the leg ran several times the fraction reserved -- 5.78x measured. Round 3 found three ways it was still not a universal statement: a pre-cap failure could become a send later in the same pass, the same defect lived one lane over in auto_ramp's ramped_fraction charge, and the cancel hour was checked only at the send so the cap could reserve budget for an order that could never go out. All three are closed structurally. Nothing was shrunk, capped or vetoed: the only refusal added is 'not priced before the cap, so not sent in this pass', which costs no size because the next pass prices it first, and the zero charge for an unplaceable sleeve FREES budget for sleeves that can trade.",
+   "gap": "",
+   "next_step": "",
+   "note": "CLOSED UPWARD ONLY, AND NOW UNIVERSAL ACROSS THE BRACKET AND FAMILY LANES. Routing gold at h_i ALONE would be a size CUT at today's equity on the desk's only forward-evidenced book, so the sent lot is max(allocator, policy, floor): the semantic break is gone and the size can only rise. THE HEAT IDENTITY IS EXACT AND NOT APPROXIMATE. Round 2 made charge and send call one sizer; they still called it with different arguments (house nominal stop before the cap, real bracket stop at the venue), and because realised_q is LINEAR IN THE STOP the 0.02 floor could make both return the identical lot while the leg ran several times the fraction reserved -- 5.78x measured. Round 3 found three ways it was still not a universal statement: a pre-cap failure could become a send later in the same pass, the same defect lived one lane over in auto_ramp's ramped_fraction charge, and the cancel hour was checked only at the send so the cap could reserve budget for an order that could never go out. All three are closed structurally. Nothing was shrunk, capped or vetoed: the only refusal added is 'not priced before the cap, so not sent in this pass', which costs no size because the next pass prices it first, and the zero charge for an unplaceable sleeve FREES budget for sleeves that can trade. ROUND 4 CLOSED THE SCALP LANE. It was the one lane still billed a requested fraction, and it needed a refactor rather than an extraction: the executor interleaved the entry decision with live basket state. Every lane that sends an order now resolves and prices it before the cap; the `from_book` fraction branch is reached by no sending lane at all.",
    "landed": [
     "this commit"
    ]
@@ -2190,17 +2194,22 @@
    "item": "Cross-frequency research (D1 state → H1 setup → M5 execution)",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "The daily clock gets a file of its own: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks the series per clock. MEASURED: XAUUSD@daily saw 73 observations against a floor of 250 because the M5 file answered every clock, and XAUUSD@daily IS the state vector's global state that the allocator's world draw reads. Both clocks fit after the change (441 weekly, 2,000 daily) (MEASURED)"
+    "The daily clock gets a file of its own: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks the series per clock. MEASURED: XAUUSD@daily saw 73 observations against a floor of 250 because the M5 file answered every clock, and XAUUSD@daily IS the state vector's global state that the allocator's world draw reads. Both clocks fit after the change (441 weekly, 2,000 daily) (MEASURED)",
+    "libs/research/cross_frequency.py — CrossFrequencySpec carries the THREE declared fields the audit asked for (state_tf, signal_tf, exec_tf), ordered coarse->fine and checked at construction (MEASURED)",
+    "libs/research/cross_frequency.py — align_down(): a coarse state reaches a fine bar only after the coarse bar has CLOSED, as an as-of join on close times. The naive resample+ffill hands every hour of a day that day's own outcome (MEASURED)",
+    "tests/research/test_cross_frequency.py — 14 cases; the load-bearing one plants a state that is pure future information and shows the naive alignment scoring it as a large edge while align_down scores it at noise (MEASURED)",
+    "tests/research/test_cross_frequency.py — a chain REFUSES below MIN_TRIGGERS=60 and every rung reports its own count, so a chain that vanished says where (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:refresh_bars",
    "artifact": "desks/mt5/data/universe/derived_series.json",
    "consumer": "pf_allocator and the gateway read state_vector.json; executables.executor_gap enforces the certificate's own chart",
-   "gap": "DEMOTED 2026-09-09. A D1 file is not a D1->H1->M5 chain. What landed is the DATA rung: refresh_tail derives <SYM>_D1.parquet from H1 and the state vector picks a series per clock, which fixed a real defect (finer gold bars had silently switched off the book-wide regime signal). The CAPABILITY asked for is a hypothesis whose state timeframe, signal timeframe and execution timeframe are three declared fields, searched as such by the sweep, carried through certificate -> forward clock -> gateway. Today a cell has ONE timeframe; H4, M30 and W1 are not derived at all; and all 66 certificates read declared_default_H1. LANDED here would have been the build-coverage-as-comfort reading the ledger's own vocabulary note warns about.",
-   "next_step": "Extend `desks/mt5/research/refresh_tail.py` / the universe pull to write `<SYM>_D1.parquet` for the book's symbols (a D1 resample of H1 is already computed in orthogonal_sweep._resample_rule), so `state_vector_build.BAR_SUFFIXES` can carry the daily clock it already declares in ASSET_CLOCKS.",
-   "landed": []
+   "gap": "",
+   "next_step": "Carry the three clocks through the sweep and the certificate: orthogonal_sweep emits one timeframe per cell, so a CrossFrequencySpec cannot yet be SEARCHED as such. The estimator and its lookahead rule are what was missing; wiring them into the sweep's cell vocabulary is the next rung.",
+   "landed": [],
+   "note": "The DATA rung landed first and was correctly demoted for it: a D1 file is not a D1->H1->M5 chain. What makes the chain real is not the third file but the third CLOCK'S LOOKAHEAD RULE -- a daily state is not knowable while its day is forming, and the natural implementation (resample, forward-fill onto the fine index) gets that exactly backwards because pandas labels a bar with its OPENING time. That is the whole reason the module exists and it is what its main test plants."
   },
   {
    "id": "G18",

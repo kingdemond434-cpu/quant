@@ -653,7 +653,11 @@ def test_the_source_fences_the_desk_runs_still_hold_on_the_adapter() -> None:
     split moved the laws out; the wiring they name stays here as real code."""
     assert "solved, why = allocator_heat()" in _GW_SRC
     assert "from_book: bool = False" in _GW_SRC and "if from_book:" in _GW_SRC
-    assert _GW_SRC.count('from_book=(s.get("sized_by") == "allocator_book")') == 3
+    # A FLOOR, NOT A COUNT. This read `== 3` and broke the day a FOURTH compliant sizing site
+    # was added (the scalp add-on, 2026-09-09). A fence that fails on new compliance and passes
+    # when one compliant site is swapped for one that is not was measuring the wrong thing;
+    # `test_every_promoted_lot_call_site_passes_from_book` checks every call on the AST.
+    assert _GW_SRC.count('from_book=(s.get("sized_by") == "allocator_book")') >= 3
     assert 'art.get("book_fallback")' in _GW_SRC
     assert "import MetaTrader5 as mt5" in _GW_SRC
     assert "from mt5desk import decision_core as _core" in _GW_SRC

@@ -370,8 +370,26 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
     # of the slice it is a NameError the moment an armed pass reaches `order_send` -- which is
     # the one line these tests exist to reach. Repaired 2026-09-09; it had been red since the
     # identity was added, so the armed scalp path was going unmeasured, not merely unasserted.
-    return _exec(("run_scalp_sleeves", "close_sleeve_positions", "_retarget_sleeve_positions",
-                  "_sleeve_positions", "_sleeve_identity"), ns)
+    return _exec(("run_scalp_sleeves", "manage_scalp_baskets", "resolve_scalp_order",
+                  "scalp_open_basket_q", "close_sleeve_positions",
+                  "_retarget_sleeve_positions", "_sleeve_positions", "_sleeve_identity"), ns)
+
+
+def _run_scalp(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
+    """ALL THREE PHASES, IN THE ORDER `main` RUNS THEM: manage the open basket, resolve and
+    price the slice, then send what was resolved.
+
+    The lane was split on 2026-09-09 because `cap_by_heat` charged it `ramped_fraction` -- a
+    fraction fixed before any stop existed -- while the executor sized `promoted_lot` against
+    the plan's real stop and then cut it into venue-legal slices. The executor now sends only
+    what the pre-cap resolution priced, so a test that called it alone would be measuring a
+    sleeve the cap never saw.
+    """
+    ns["manage_scalp_baskets"](st, sleeves)
+    for s in sleeves:
+        if s.get("exec") == "scalp_market":
+            s["pending_order"] = ns["resolve_scalp_order"](st, s, equity)
+    ns["run_scalp_sleeves"](st, sleeves, equity)
 
 
 def _sleeve() -> dict:
@@ -392,7 +410,7 @@ def test_unarmed_the_scalp_executor_logs_the_order_and_places_nothing(tmp_path) 
     mt5 = _fake_mt5(_with_forming(_bars(recent=True)))
     ns = _ns(tmp_path, mt5, armed_file=False)
     st = {"armed": True}
-    ns["run_scalp_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_scalp(ns, st, [_sleeve()], 10_000.0)
     assert mt5.sent == [] and any("WOULD PLACE" in x for x in ns["_logs"])
     assert "basket" not in st["scalp"][_NAME]
 
@@ -402,7 +420,7 @@ def test_armed_the_first_slice_is_placed_with_the_plans_levels_once_per_bar(tmp_
     mt5 = _fake_mt5(bars)
     ns = _ns(tmp_path, mt5, armed_file=True)
     st = {"armed": True}
-    ns["run_scalp_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_scalp(ns, st, [_sleeve()], 10_000.0)
     (req,) = mt5.sent
     plan = sx.plan_entry(bars.iloc[:-1], tf="M15", family="anti_donchian_breakout",
                          session="all", stop_atr=1.0, target_atr=1.5, max_hold=6,
@@ -418,7 +436,7 @@ def test_armed_the_first_slice_is_placed_with_the_plans_levels_once_per_bar(tmp_
     # The same bar again: nothing new is placed.
     mt5.positions_get = lambda symbol=None: [SimpleNamespace(comment=f"DW{_NAME}", ticket=7,
                                                              volume=0.03, type=1)]
-    ns["run_scalp_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_scalp(ns, st, [_sleeve()], 10_000.0)
     assert len(mt5.sent) == 1
 
 
@@ -437,7 +455,7 @@ def test_the_time_exit_closes_only_this_sleeves_positions(tmp_path) -> None:
                                                       "target_atr": 1.5,
                                                       "mode": "bounded_structural",
                                                       "entries": [[2011.8, 0.03]]}}}}
-    ns["run_scalp_sleeves"](st, [_sleeve()], 10_000.0)
+    _run_scalp(ns, st, [_sleeve()], 10_000.0)
     closes = [r for r in mt5.sent if "position" in r]
     assert [r["position"] for r in closes] == [7]
     assert "basket" not in st["scalp"][_NAME] and "open_ttl_until" not in st["scalp"][_NAME]
