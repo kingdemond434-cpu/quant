@@ -22,9 +22,20 @@ WHAT IS MEASURED INSTEAD, from artifacts the desk already writes:
 
 A day with 200 statistical-only candidates and a day with 20 named, judgeable, class-diverse
 ones are NOT the same day, and this report is where that stops being invisible.
+
+THE RESEARCH COUNTERFACTUAL (2026-09-09, inventory A5). `--survivor <cert_key>` walks the
+hypothesis graph back from a certified cell and answers the question every trading
+counterfactual on this desk answers for a TRADE and none answered for a DISCOVERY: what
+process reached this region first, and how long before the certificate? It reports the
+lineage (`hypothesis_graph.lineage`), the earliest graph row in the same parameter REGION and
+the earliest in the same symbol+family, each with its source and date, and prices the delay in
+days. Where the graph holds no earlier reach -- today's state for every certificate, because
+the verdict rows were registered without their candidate rows -- the delay is BOUNDED by the
+graph's memory and said to be, never reported as zero.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from collections import Counter
@@ -34,6 +45,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
 OUT = ROOT / "data" / "dig_roi.json"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+#: The certificates, and the graph the counterfactual walks. `GRAPH_PATH` None means the
+#: hypothesis graph's own ledger.
+UNI = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
+CANON = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+GRAPH_PATH: Path | None = None
+#: One document per certificate key, merged on every `--survivor` run.
+CF_OUT = ROOT / "data" / "research_counterfactual.json"
 
 
 def _read(p: Path):
@@ -43,7 +64,165 @@ def _read(p: Path):
         return None
 
 
-def main() -> int:
+def _at(row: dict) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(row.get("at")))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def _brief(row: dict) -> dict:
+    return {"id": row.get("id"), "source": row.get("source"), "fate": row.get("fate"),
+            "at": row.get("at"), "parent": row.get("parent") or ""}
+
+
+def _earliest(rows: list[dict], pred) -> dict | None:
+    best, best_at = None, None
+    for r in rows:
+        if not pred(r):
+            continue
+        t = _at(r)
+        if t is None:
+            continue
+        if best_at is None or t < best_at:
+            best, best_at = r, t
+    return best
+
+
+def survivor_counterfactual(cert_key: str, *, survivors: dict | None = None,
+                            graph=None) -> dict:
+    """What found this survivor's region first, and how long before it was certified.
+
+    UNMEASURED with the missing input named when the key is not a certificate or its cell was
+    never registered in the graph; BOUNDED when the graph's earliest reach IS the certifying
+    pass, because the pre-gauntlet path (miner row -> candidate) was never recorded and the
+    delay is a lower bound set by the graph's memory, not a measured zero.
+    """
+    from libs.research.hypothesis_graph import Graph, node_id
+    if survivors is None:
+        survivors = ((_read(UNI) or {}).get("survivors")
+                     or (_read(CANON) or {}).get("survivors") or {})
+    doc: dict = {"cert_key": cert_key,
+                 "measured_at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
+    row = survivors.get(cert_key) if isinstance(survivors, dict) else None
+    if not isinstance(row, dict):
+        doc.update(status="UNMEASURED",
+                   missing_input=(f"{cert_key!r} is not a key of {UNI.name} "
+                                  f"({len(survivors or {})} certificate(s) held)"))
+        return doc
+    spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+    symbol = str(spec.get("symbol") or row.get("sym") or "")
+    family = str(spec.get("family") or "")
+    params = dict(spec.get("params") or {})
+    nid = node_id(symbol, family, params)
+    g = graph if graph is not None else (Graph(GRAPH_PATH) if GRAPH_PATH else Graph())
+    cur = g.current()
+    doc.update(node_id=nid, symbol=symbol, family=family, params=params,
+               hunt=row.get("hunt"))
+    node = cur.get(nid)
+    if node is None:
+        doc.update(status="UNMEASURED",
+                   missing_input=(f"no hypothesis_graph node for ({symbol}, {family}, "
+                                  f"{json.dumps(params, sort_keys=True, default=str)}) -- the "
+                                  f"certificate came from hunt {row.get('hunt')!r} by a path "
+                                  f"that never registered its candidate, so its research path "
+                                  f"is not in the graph"))
+        return doc
+    rows = g.rows()
+    lineage = g.lineage(nid)
+    root = lineage[-1] if lineage else node
+    unresolved = root.get("parent") if root.get("parent") and root["parent"] not in cur else ""
+    certified_at = _at(node) if node.get("fate") == "CERTIFIED" else None
+    cert_basis = "the node's CERTIFIED row"
+    if certified_at is None:
+        try:
+            certified_at = datetime.fromisoformat(str(row.get("gated_at")))
+            certified_at = certified_at if certified_at.tzinfo else certified_at.replace(tzinfo=UTC)
+            cert_basis = f"the certificate's gated_at (graph fate is {node.get('fate')})"
+        except (TypeError, ValueError):
+            certified_at, cert_basis = None, "UNMEASURED: no CERTIFIED row and no gated_at"
+    region = str(node.get("region") or "")
+    firsts = {
+        "node": _earliest(rows, lambda r: r.get("id") == nid),
+        "lineage_root": root,
+        "region": _earliest(rows, lambda r: str(r.get("region") or "") == region),
+        "family": _earliest(rows, lambda r: str(r.get("symbol") or "").upper() == symbol.upper()
+                            and str(r.get("family") or "") == family),
+    }
+    reach: dict = {}
+    for horizon, r in firsts.items():
+        if r is None:
+            reach[horizon] = None
+            continue
+        t = _at(r)
+        delay = (None if certified_at is None or t is None
+                 else round((certified_at - t).total_seconds() / 86400.0, 3))
+        reach[horizon] = {**_brief(r), "delay_days": delay}
+    earliest_h = min((h for h in reach if reach[h] and reach[h]["delay_days"] is not None),
+                     key=lambda h: -reach[h]["delay_days"], default=None)
+    first = reach[earliest_h] if earliest_h else None
+    delay = first["delay_days"] if first else None
+    doc.update(
+        region=region,
+        certified_at=certified_at.isoformat(timespec="seconds") if certified_at else None,
+        certified_at_basis=cert_basis,
+        lineage=[_brief(r) for r in lineage], lineage_depth=len(lineage),
+        unresolved_parent=unresolved,
+        first_reachable=reach,
+        earliest_horizon=earliest_h,
+    )
+    if delay is None:
+        doc.update(status="UNMEASURED",
+                   missing_input="the certification time or the graph rows carry no parseable "
+                                 "timestamp, so no delay can be priced")
+    elif delay > 0:
+        doc.update(status="MEASURED", delay_days=delay,
+                   counterfactual=(f"the {earliest_h.replace('_', ' ')} was first reachable on "
+                                   f"{first['at'][:10]} via source {first['source']!r}, "
+                                   f"{delay:.1f} day(s) before certification on "
+                                   f"{doc['certified_at'][:10]}"))
+    else:
+        doc.update(status="BOUNDED", delay_days=0.0,
+                   counterfactual=(f"reached and certified in the same pass ({first['at'][:10]}"
+                                   f", source {first['source']!r}); the graph holds no earlier "
+                                   f"row in this region or family"
+                                   + (f", and the lineage's root parent {unresolved!r} is not a "
+                                      f"registered node -- the pre-gauntlet path (miner row -> "
+                                      f"candidate) is unrecorded" if unresolved else
+                                      "; the lineage ends at a root with no parent")
+                                   + ", so the delay is bounded below by the graph's memory, "
+                                     "not measured as zero"))
+    return doc
+
+
+def _write_counterfactual(doc: dict) -> None:
+    CF_OUT.parent.mkdir(parents=True, exist_ok=True)
+    all_docs = _read(CF_OUT)
+    all_docs = all_docs if isinstance(all_docs, dict) else {}
+    all_docs[doc["cert_key"]] = doc
+    CF_OUT.write_text(json.dumps(all_docs, indent=1, default=str), "utf-8")
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="dig ROI, or one survivor's research counterfactual")
+    ap.add_argument("--survivor", metavar="CERT_KEY",
+                    help="walk the hypothesis graph back from this certificate and price the "
+                         "delay between first reach and certification")
+    args = ap.parse_args(argv)
+    if args.survivor:
+        doc = survivor_counterfactual(args.survivor)
+        _write_counterfactual(doc)
+        print(f"research counterfactual {doc['cert_key']}: {doc['status']}")
+        if doc.get("counterfactual"):
+            print(f"  {doc['counterfactual']}")
+            print(f"  lineage depth {doc['lineage_depth']}; node {doc['node_id']}; "
+                  f"region {doc['region']}")
+        if doc.get("missing_input"):
+            print(f"  missing input: {doc['missing_input']}")
+        print(f"  -> {CF_OUT}")
+        return 0 if doc["status"] in ("MEASURED", "BOUNDED") else 2
+
     now = datetime.now(tz=UTC)
     cutoff = now - timedelta(days=1)
     m: dict = {"measured_at": now.isoformat(timespec="seconds"), "window": "24h"}
