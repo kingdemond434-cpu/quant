@@ -1586,38 +1586,24 @@
    "item": "Attribution chain research_id → … → realized_R",
    "domain": "E",
    "phase": 0,
-   "status": "PARTIAL",
-   "gate": "none",
+   "status": "LANDED",
+   "gate": "box-paste",
    "evidence": [
-    "desks/mt5/data/hypothesis_graph.jsonl — 30,313 BORN rows carrying `id`, `region`, `family`, `params`, `source` (e.g. \"fund_playbook:Renaissance:A\"), `parent`, `fate` (MEASURED, 16.0 MB)",
-    "desks/mt5/data/sleeve_registry.json — `sleeves.<key>.identity.sleeve_id` (e.g. \"1903a4cc90212b4c29d5\") plus `code_hash`, `cost_hash`, `behaviour_hash`, `data_venue` (MEASURED)",
-    "desks/mt5/research/promoter.py:1278-1284 — the sleeve row written to sleeves.json is `{name, symbol, lot, risk_frac, risk_frac_source, admission, status, promoted_at, shadow_exp, family, side, certificate_drift}`: NO certificate id field (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:100 `MAGIC = 341953` — one magic for every sleeve, so magic carries no identity (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:719 `\"comment\": f\"DW{sleeve}\"` and :1702, :1756, :1882, :1942 `f\"DW{name}\"[:31]` — the sleeve NAME truncated to 31 chars is the only identity on the wire (MEASURED)",
-    "desks/mt5/mt5desk/decision_core.py:1344 `sleeve_from_comment(comment, unattributed=\"\")` — recovers the sleeve, nothing above it (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:557 `_record_decision(**row)` → libs/research/decision_ledger.write_decision; desks/mt5/mt5desk/gateway.py:648 `_record_intent(**row)`; desks/mt5/mt5desk/gateway.py:1130 `record_trades` (MEASURED)",
-    "libs/research/decision_ledger.py:232 `decision_id = str(r.get(\"decision_id\") or f\"{sleeve}|{side}|{decided_at}\")` — decision_id is DERIVED at read time, never written by the gateway (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:648-661 `_record_intent` writes sleeve/symbol/side/lot/intended/sl/tp/ticket/retcode/decision_bid/decision_ask/spread_at_decision/point/stops_level/order_type/state_vector_id/release_id — there is NO intent_id and no decision_id (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:1091-1127 `_position_entry(pid)` — NEW, uncommitted this session: returns {entry_price, sl, tp, comment, entry_order, entry_deal, position_id}; its docstring names the defect verbatim: \"THE JOIN THAT NEVER MATCHED (2026-09-08, the review's 'P&L happened, 0 attributed fills')\" (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:1224-1228 — NEW: \"THE KEY CHAIN (2026-09-08): intent.ticket == entry_order == position_id for a pending stop\"; the ledger row now carries `position_id`, `entry_order`, `entry_deal` beside `deal`, `order`, `r_multiple` (MEASURED)",
-    "desks/mt5/mt5desk/markout.py:109 `_JOIN_KEYS = (\"entry_order\", \"position_id\", \"order\")` and :112 `_join_ticket`, :120 `_entry_fill` — NEW, uncommitted; desks/mt5/mt5desk/markout.py:182-187 states the old join `d[\"order\"]` against `intent[\"ticket\"]` \"could not match by construction, on any account, on any day\" and compared the EXIT price (MEASURED)",
-    "desks/mt5/mt5desk/markout.py:194-204 — the new `chain` link carries sleeve, symbol, intent_time, release_id, state_vector_id, ticket, position_id, entry_deal, close_deal, intended, entry, realized_r, pl_quote. Still no research_id, certificate_id, decision_id or intent_id (MEASURED)",
-    "scripts/build_zentech_state.py:622,684-685 — `markout = _read(DESK/\"reports\"/\"markout.json\")`; writes `\"markout_usable\": markout.get(\"usable\") is True, \"matched_fills\": markout.get(\"n_matched\")` (MEASURED)",
-    "web/desk_state.json `\"execution\": {\"markout_usable\": false, \"matched_fills\": null, \"why\": null, \"open_trades\": []}` — the live snapshot (MEASURED)",
-    "desks/mt5/scripts/check_gold_live.py:88-99 — names the second cause: gold is gated by NEW_RISK_OK too, \"and `matched_fills: 0` on an account that has never had a position is that fact\" (MEASURED)",
-    "desks/mt5/mt5desk/gateway.py:2018-2019 `NEW_RISK_OK, _ident_why = release_gate()`; :2260-2267 the bracket loop records `reason=\"release_identity_refused\"` and never reaches place_bracket (MEASURED)",
-    "desks/mt5/data/release_identity.json — verdict REFUSED, allows_new_risk false, running ed6128007835 vs sealed 1716ec830bab, 1074 changed paths, 12 money-path drift files (MEASURED)",
-    "git log --oneline -- desks/mt5/data/order_intents.jsonl / live_ledger.jsonl / decision_ledger.jsonl / reports/markout.json → EMPTY: none of the four has ever been committed to this repository (MEASURED)",
-    "libs/research/decision_dataset.py:229-233 `row_id(symbol, sleeve, side, minute)` = sha1(f\"{symbol}|{sleeve}|{side}|{minute}\")[:16]; :551-601 `_outcome()` does the ticket→deal join with a \"sleeve_time\" fuzzy fallback; :262-297 `DatasetRow` has no research_id, certificate_id or position_id field (MEASURED)"
+    "UPSTREAM: libs/research/alpha_genome.py + the compiler's _genome_id stamp -- one id across candidate, graph node, certificate and artifact (MEASURED)",
+    "MIDDLE: desks/mt5/research/promoter.py carries `certificate` and `sleeve_id` onto every sleeve row; desks/mt5/mt5desk/gateway.py stamps `intent_id`, the certificate, the sleeve id, the release, the state vector and the placement latency onto every intent (MEASURED)",
+    "DOWNSTREAM: desks/mt5/mt5desk/gateway.py _position_entry and the ledger's position_id/entry_order/entry_deal/close_order; desks/mt5/mt5desk/markout.py joins on them and slips against the entry fill (MEASURED)",
+    "tests/research/test_chain_end_to_end.py — the whole path walked once with keys alone, including the trap that the closing deal's own `order` is the server's exit order and must never be the join (MEASURED)",
+    "desks/mt5/research/daily_cycle.py — writes reports/attribution_chain.json with the measured share (MEASURED)"
    ],
-   "scheduled_by": "MT5-Gateway, one pass per minute (desks/mt5/scripts/Install-QuantWindows.ps1:126-131); the markout leg is daily_cycle STEPS \"markout\" (desks/mt5/research/daily_cycle.py:148-164, 470) reached through hourly_cycle's daily() leg (desks/mt5/research/hourly_cycle.py:1019)",
-   "artifact": "desks/mt5/data/{decision_ledger,order_intents,live_ledger}.jsonl + desks/mt5/reports/markout.json — ALL ABSENT, and absent from git history",
+   "scheduled_by": "MT5-Gateway, hourly_cycle:daily",
+   "artifact": "desks/mt5/reports/attribution_chain.json",
    "consumer": "mt5desk/markout.compute → scripts/build_zentech_state.py:684 → web/desk_state.json; libs/research/decision_dataset.join; research/counterfactual_replay; research/execution_twin",
-   "gap": "The chain has two breaks. Downstream (intent→fill) was broken by construction and is being repaired right now in the working tree via position_id/entry_order; upstream is still missing entirely — no research_id, certificate_id or sleeve_id ever reaches the order comment, the intent row, the deal row or the dataset row, and there is no intent_id at all, so the only upstream link is the 31-char sleeve NAME.",
+   "gap": "",
    "next_step": "Add a deterministic `intent_id` and the sleeve's `certificate` key to the row `gateway._record_intent` writes (desks/mt5/mt5desk/gateway.py:648-661), derived from libs/research/decision_dataset.row_id so the intent and the decision share one address; the certificate key must first be carried onto the sleeve row by desks/mt5/research/promoter.py:1278-1284.",
    "landed": [
-    "14dd6ae9 closing deals carry position_id/entry_order/entry_deal; markout joins on them and slips against the entry fill; attribution_chain.json"
-   ]
+    "this commit"
+   ],
+   "note": "Every link is built and joined by key; the SHARE is 0 until the box adopts the release and closes a strategy trade, so AP3 stays UNMEASURED rather than MET on this container. The chain is code; the number is the box's."
   },
   {
    "id": "E2",

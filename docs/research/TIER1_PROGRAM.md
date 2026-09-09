@@ -21,7 +21,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 
 | phase | EXISTS-LIT | EXISTS-DARK | PARTIAL | MISSING | LANDED |
 |---|---|---|---|---|---|
-| 0 Close the truth loop: attribution, deadman, stable adoption, node separation, durable jobs, data freshness, research lineage | 1 | 0 | 3 | 0 | 18 |
+| 0 Close the truth loop: attribution, deadman, stable adoption, node separation, durable jobs, data freshness, research lineage | 1 | 0 | 2 | 0 | 19 |
 | 1 Remove the research throughput ceiling: worker queue, multi-fidelity screening, EVSI scheduler, research DAG, scalable forward clocks, content-addressed cache, experiment DB | 1 | 0 | 2 | 0 | 7 |
 | 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 1 | 0 | 18 | 1 | 4 |
 | 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 0 | 0 | 8 |
@@ -29,7 +29,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 3 | 0 | 16 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
-| **all** | 4 | 0 | 27 | 1 | 81 |
+| **all** | 4 | 0 | 26 | 1 | 82 |
 
 ## Items
 
@@ -86,15 +86,14 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:promoter · artifact: data/alpha_state_observations.jsonl · consumer: scripts/run_growth_audit.py:258,289 reads promotion_latency; scripts/run_wealth_report.py:52 reads conversion_velocity; desks/mt5/research/conversion_ledger.py:8 reads RESEARCH_PRODUCTIVITY
   - next: Have desks/mt5/research/promoter.py append an alpha_state.advance() row (via libs/research/alpha_state.Ledger, libs/research/alpha_state.py:205) at each door transition it already computes in _door_status, so data/alpha_state_ledger.jsonl carries real per-rung timestamps for every promoted sleeve.
   - landed: 989a1d73
-- **E1 Attribution chain research_id → … → realized_R** — PARTIAL
-  - gap: The chain has two breaks. Downstream (intent→fill) was broken by construction and is being repaired right now in the working tree via position_id/entry_order; upstream is still missing entirely — no research_id, certificate_id or sleeve_id ever reaches the order comment, the intent row, the deal row or the dataset row, and there is no intent_id at all, so the only upstream link is the 31-char sleeve NAME.
-  - desks/mt5/data/hypothesis_graph.jsonl — 30,313 BORN rows carrying `id`, `region`, `family`, `params`, `source` (e.g. "fund_playbook:Renaissance:A"), `parent`, `fate` (MEASURED, 16.0 MB)
-  - desks/mt5/data/sleeve_registry.json — `sleeves.<key>.identity.sleeve_id` (e.g. "1903a4cc90212b4c29d5") plus `code_hash`, `cost_hash`, `behaviour_hash`, `data_venue` (MEASURED)
-  - desks/mt5/research/promoter.py:1278-1284 — the sleeve row written to sleeves.json is `{name, symbol, lot, risk_frac, risk_frac_source, admission, status, promoted_at, shadow_exp, family, side, certificate_drift}`: NO certificate id field (MEASURED)
-  - desks/mt5/mt5desk/gateway.py:100 `MAGIC = 341953` — one magic for every sleeve, so magic carries no identity (MEASURED)
-  - clock: MT5-Gateway, one pass per minute (desks/mt5/scripts/Install-QuantWindows.ps1:126-131); the markout leg is daily_cycle STEPS "markout" (desks/mt5/research/daily_cycle.py:148-164, 470) reached through hourly_cycle's daily() leg (desks/mt5/research/hourly_cycle.py:1019) · artifact: desks/mt5/data/{decision_ledger,order_intents,live_ledger}.jsonl + desks/mt5/reports/markout.json — ALL ABSENT, and absent from git history · consumer: mt5desk/markout.compute → scripts/build_zentech_state.py:684 → web/desk_state.json; libs/research/decision_dataset.join; research/counterfactual_replay; research/execution_twin
+- **E1 Attribution chain research_id → … → realized_R** — LANDED · gate: box-paste
+  - UPSTREAM: libs/research/alpha_genome.py + the compiler's _genome_id stamp -- one id across candidate, graph node, certificate and artifact (MEASURED)
+  - MIDDLE: desks/mt5/research/promoter.py carries `certificate` and `sleeve_id` onto every sleeve row; desks/mt5/mt5desk/gateway.py stamps `intent_id`, the certificate, the sleeve id, the release, the state vector and the placement latency onto every intent (MEASURED)
+  - DOWNSTREAM: desks/mt5/mt5desk/gateway.py _position_entry and the ledger's position_id/entry_order/entry_deal/close_order; desks/mt5/mt5desk/markout.py joins on them and slips against the entry fill (MEASURED)
+  - tests/research/test_chain_end_to_end.py — the whole path walked once with keys alone, including the trap that the closing deal's own `order` is the server's exit order and must never be the join (MEASURED)
+  - clock: MT5-Gateway, hourly_cycle:daily · artifact: desks/mt5/reports/attribution_chain.json · consumer: mt5desk/markout.compute → scripts/build_zentech_state.py:684 → web/desk_state.json; libs/research/decision_dataset.join; research/counterfactual_replay; research/execution_twin
   - next: Add a deterministic `intent_id` and the sleeve's `certificate` key to the row `gateway._record_intent` writes (desks/mt5/mt5desk/gateway.py:648-661), derived from libs/research/decision_dataset.row_id so the intent and the decision share one address; the certificate key must first be carried onto the sleeve row by desks/mt5/research/promoter.py:1278-1284.
-  - landed: 14dd6ae9 closing deals carry position_id/entry_order/entry_deal; markout joins on them and slips against the entry fill; attribution_chain.json
+  - landed: this commit
 - **E5 Counterfactual live ledger** — LANDED · gate: box-paste
   - desks/mt5/scripts/sync_shadow_to_git.ps1 + .gitignore + libs/ops/release.py NON_CODE — the decision, intent and fill ledgers and the attribution chain are published, committable and declared non-code (MEASURED)
   - tests/ops/test_ledger_publication.py (MEASURED)
