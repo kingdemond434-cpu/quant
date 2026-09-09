@@ -76,6 +76,11 @@ LEDGER_TAIL = 4000
 #: hundreds of thousands of trees, so the pool per level is capped and the cap is declared.
 SYNTH_MAX_DEPTH = 2
 SYNTH_POOL = 900
+#: The weight every population keeps whatever its realised growth, so the ordering the
+#: dE[logW] feedback produces is a PREFERENCE and never a retirement. `_order` already gives
+#: every named population its draw; this is what stops one bad hour from putting a population
+#: last for good.
+ELOG_FLOOR = 0.25
 #: TPE split: the share of the history treated as the GOOD set whose feature density is chased.
 TPE_GAMMA = 0.25
 TPE_CANDIDATES = 200
@@ -106,6 +111,10 @@ class SearchContext:
     history: History = ()
     #: (expression, full term vector) rows the multi-objective populations select over.
     scored: Sequence[tuple[Expr, FitnessTerms]] = ()
+    #: (population name, full term vector) for every expression the caller has SCORED and can
+    #: attribute to the population that made it. This is what turns the yield ledger from "how
+    #: many did it draw" into "what did what it drew do for the book" -- see `elog_weights`.
+    attributed: Sequence[tuple[str, FitnessTerms]] = ()
     #: Trees worth breeding from: the elite, plus the canon.
     seeds: Sequence[Expr] = ()
     #: The cheap falsifier -- one call, one verdict, no side effects. None means "not screened
@@ -157,11 +166,21 @@ class PopulationYield:
     donated: int = 0
     seconds: float = 0.0
     note: str = ""
+    #: Expressions from this population the caller has SCORED, and the mean realised
+    #: `delta_elog` -- annual growth points the book gains -- across them. None is unmeasured:
+    #: a population whose draws have not been scored yet has no growth to report, which is a
+    #: different fact from a population whose draws were worth nothing.
+    scored: int = 0
+    delta_elog_mean: float | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {"population": self.name, "proposed": self.proposed, "unique": self.unique,
                 "well_formed": self.well_formed, "passed": self.passed,
-                "donated": self.donated, "seconds": round(self.seconds, 2), "note": self.note}
+                "donated": self.donated, "seconds": round(self.seconds, 2),
+                "scored": self.scored,
+                "delta_elog_mean": (None if self.delta_elog_mean is None
+                                    else round(self.delta_elog_mean, 6)),
+                "note": self.note}
 
 
 @dataclass
@@ -182,6 +201,35 @@ class SearchResult:
                 "unique": sum(y.unique for y in self.yields.values()),
                 "passed": sum(y.passed for y in self.yields.values()),
                 "populations": len(self.yields)}
+
+    def elog_weights(self, *, floor: float = ELOG_FLOOR) -> tuple[dict[str, float] | None, str]:
+        """The NEXT pass's population weights, from the realised dE[logW] of what each produced.
+
+        THE FEEDBACK THIS CLOSES (Tier-1 audit G4, 2026-09-08). The weights that decide which
+        population runs first under a short budget were fed by YIELD COUNTS -- how many trees a
+        population drew and how many were certified later. A count is not a contribution: a
+        population that draws ten cells the book cannot use outranks one that draws a single
+        tail diversifier, which is the ordering the whole fitness exists to invert.
+        `delta_elog` is the allocator's own marginal growth for the candidate; the mean of it
+        across a population's SCORED draws is what that population has actually been worth.
+
+        A population at or below the pooled mean keeps `floor` rather than zero, so the ordering
+        is a preference and never a retirement -- `_order` already guarantees every named
+        population its draw, and this keeps that true when the evidence is thin. Returns
+        (None, why) when nothing has been scored: uniform is the honest answer then, and the
+        caller's existing weight table stands.
+        """
+        rows = [(y.name, y.delta_elog_mean, y.scored) for y in self.yields.values()
+                if y.delta_elog_mean is not None and y.scored > 0]
+        if not rows:
+            return None, ("no scored draw carries a realised dE[logW] yet: population weights "
+                          "unmeasured, the caller's own table stands")
+        pooled = sum(m * n for _n0, m, n in rows) / max(1, sum(n for _n0, _m, n in rows))
+        out = {name: float(floor + max(0.0, mean - pooled)) for name, mean, _n in rows}
+        best = max(rows, key=lambda r: r[1])
+        return out, (f"realised dE[logW] over {sum(n for _n, _m, n in rows)} scored draw(s) in "
+                     f"{len(rows)} population(s), pooled mean {pooled:+.6f}; best "
+                     f"{best[0]} {best[1]:+.6f} over {best[2]}")
 
 
 Population = Callable[[SearchContext, int], list[Expr]]
@@ -243,10 +291,22 @@ def symreg(ctx: SearchContext, n: int) -> list[Expr]:
         return [ag.random_expr(ctx.rng, ctx.max_depth, ctx.allow_drivers,
                                terminals=ctx.terminals) for _ in range(n)]
     target = pd.Series(ctx.ret).shift(-1)
-    return [gen.symbolic_regression(ctx.rng, ctx.frames, target,
-                                    allow_drivers=ctx.allow_drivers, max_depth=ctx.max_depth,
-                                    terminals=ctx.terminals)
-            for _ in range(n)]
+    # SEEDED FROM WHAT THE DESK ALREADY KNOWS HOW TO SAY (2026-09-08). The seeds are the elite
+    # once there is one and `alpha_grammar.CANON` -- now fifteen published formulaic alphas
+    # beside the seven hand-written references -- before that. Sixty mutations from noise rarely
+    # reach a structure a published alpha already names; half the draws start from one and half
+    # still start from noise, so the population keeps finding shapes nobody wrote down.
+    seeds = [s for s in (ctx.seeds or tuple(ag.CANON.values()))
+             if ag.is_valid(s, ctx.allow_drivers, ctx.terminals)]
+    out: list[Expr] = []
+    for i in range(n):
+        seed = (seeds[int(ctx.rng.integers(len(seeds)))]
+                if seeds and i % 2 == 0 else None)
+        out.append(gen.symbolic_regression(ctx.rng, ctx.frames, target,
+                                           allow_drivers=ctx.allow_drivers,
+                                           max_depth=ctx.max_depth, terminals=ctx.terminals,
+                                           seed_expr=seed))
+    return out
 
 
 # --------------------------------------------------------------------------- program synthesis
@@ -750,6 +810,14 @@ def run(ctx: SearchContext, *, n_per_population: int = 8, budget_s: float = 120.
     """
     order = _order(names, weights, ctx.rng)
     result = SearchResult()
+    # WHAT EACH POPULATION'S EARLIER DRAWS WERE WORTH TO THE BOOK, attributed by the caller and
+    # summarised here, so `elog_weights` can hand the next pass an ordering by realised growth
+    # rather than by how many trees each population managed to draw.
+    by_pop: dict[str, list[float]] = {}
+    for pop_name, terms in ctx.attributed:
+        value = float(getattr(terms, "delta_elog", 0.0))
+        if math.isfinite(value):
+            by_pop.setdefault(str(pop_name), []).append(value)
     seen: set[str] = set()
     started = time.monotonic()
     for name in order:
@@ -788,6 +856,9 @@ def run(ctx: SearchContext, *, n_per_population: int = 8, budget_s: float = 120.
             y.passed += 1
             result.proposals.append((e, name))
         y.seconds = time.monotonic() - t0
+        vals = by_pop.get(name) or []
+        y.scored = len(vals)
+        y.delta_elog_mean = (sum(vals) / len(vals)) if vals else None
         if not y.note:
             y.note = ctx.notes.get(name) or (
                 "no falsifier: passed counts the well-formed" if ctx.falsifier is None

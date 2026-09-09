@@ -45,7 +45,12 @@ LIVE = BASE / "data" / "live_ledger.jsonl"
 #: liquidity needs the historical tape; labelling a January trade with today's regime fit or
 #: today's spread percentile would test whether the PRESENT predicts the past, which every
 #: dimension would pass.
-DEFAULT_DIMENSIONS = ("session", "weekday", "event")
+#:
+#: `rvol` (2026-09-08): the quintile of the trade's own symbol's trailing 24-bar realised vol,
+#: ranked point-in-time among that symbol's earlier readings and read off the last bar stamped
+#: strictly before the trade. Four dimensions, not three -- and every one is charged for the
+#: search of four (`judge` deflates by `dimensions_tried`); the judge and its bars are unchanged.
+DEFAULT_DIMENSIONS = ("session", "weekday", "event", "rvol")
 
 
 def _entry_time(row: dict) -> str:

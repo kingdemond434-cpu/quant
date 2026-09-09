@@ -193,13 +193,15 @@ def test_multiplicity_is_the_gauntlets_own_deflation() -> None:
 def test_the_score_is_the_declared_formula_and_penalties_subtract() -> None:
     t = af.FitnessTerms(delta_elog=1.0, oos=2.0, novelty=1.0, tail=1.0, state_breadth=1.0,
                         capacity=1.0, cost=1.0, fragility=1.0, complexity=10.0,
-                        multiplicity=1.0)
+                        multiplicity=1.0, turnover=1.0, crowding=1.0, existing_exposure=1.0)
     w = af.WEIGHTS
     expect = (w["delta_elog"] + 2 * w["oos"] + w["novelty"] + w["tail"] + w["state_breadth"]
               + w["capacity"] - w["cost"] - w["fragility"] - 10 * w["complexity"]
-              - w["multiplicity"])
+              - w["multiplicity"] - w["turnover"] - w["crowding"] - w["existing_exposure"])
     assert t.score() == pytest.approx(expect)
-    assert {"cost", "fragility", "complexity", "multiplicity"} == af.PENALTIES
+    # The three search-side pressures (2026-09-08) are PENALTIES: they subtract, never credit.
+    assert {"cost", "fragility", "complexity", "multiplicity",
+            "turnover", "crowding", "existing_exposure"} == af.PENALTIES
     assert set(af.WEIGHTS) == set(t.as_dict())
     # every penalty is signed negative as an objective, every credit positive
     obj = t.objectives()
@@ -212,7 +214,8 @@ def test_the_score_is_the_declared_formula_and_penalties_subtract() -> None:
 def test_every_unmeasured_term_is_named_rather_than_silently_zero() -> None:
     bare = af.evaluate(af.Candidate(daily=_book(60)), af.Book())
     assert bare.as_dict()["delta_elog"] == 0.0
-    for name in ("delta_elog", "tail", "capacity", "fragility", "state_breadth", "novelty"):
+    for name in ("delta_elog", "tail", "capacity", "fragility", "state_breadth", "novelty",
+                 "turnover", "crowding", "existing_exposure"):
         assert name in bare.unmeasured, (name, bare.unmeasured)
         assert bare.why[name]
     assert set(bare.why) == set(af.WEIGHTS)

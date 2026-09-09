@@ -105,6 +105,115 @@ REFINE_TOP = 6
 #: candidate would buy one generation an hour.
 SEARCH_WORLDS, SEARCH_ROWS = 64, 192
 
+# ==============================================================================================
+# THE ARCHIVE (Tier-1 audit G16, 2026-09-08): a descriptor-keyed MAP-Elites grid beside ELITE.
+#
+# The elite was ONE Pareto front of eight. A tree that is the best thing this desk has ever
+# found in "reversal x intraday x bull/high_vol x fx_major" was discarded the moment eight
+# globally-better trees existed, and the search forgot it had ever illuminated that cell. The
+# archive keeps the best expression PER CELL, where a cell is
+#
+#     (mechanism_class, horizon bucket, top regime label, symbol asset class)
+#
+# and its champions breed beside the elite (`_parents`). Occupancy -- cells filled over cells
+# possible -- is published in the report so "how much of the descriptor space has the search
+# ever lit" is a number rather than an impression. Nothing here has authority: an archive
+# champion is a parent and a row in a report; the gauntlet certifies.
+# ==============================================================================================
+STATE_VECTOR = _DESK / "data" / "state_vector.json"
+#: hold_bars -> horizon bucket, upper bounds inclusive; above the last is "position".
+HORIZON_BUCKETS: tuple[tuple[int, str], ...] = ((4, "scalp"), (24, "intraday"), (120, "swing"))
+HORIZON_NAMES: tuple[str, ...] = (*(n for _b, n in HORIZON_BUCKETS), "position")
+#: The SHAPES `alpha_grammar.describe` distinguishes, each on both sides: what the tree measures
+#: and whether it is followed or faded. "momentum" faded is a reversal and is named as one.
+SHAPES: tuple[str, ...] = ("state_conditional", "momentum", "normalised_extreme", "co_movement",
+                           "distance_from_extreme", "level")
+MECHANISM_CLASSES: tuple[str, ...] = tuple(
+    ("reversal" if (s == "momentum" and side == "fade") else f"{s}:{side}")
+    for s in SHAPES for side in SIDE_MODES)
+UNLABELLED = "UNLABELLED"
+
+
+def mechanism_class(expr: ag.Expr, side_mode: str) -> str:
+    """The tree's mechanism class from its structure -- the same op-set reading `describe` makes,
+    so the archive's rows and the mechanism sentence on a proposal can never disagree."""
+    ops: set[str] = set()
+
+    def _walk(x: ag.Expr) -> None:
+        if isinstance(x, (list, tuple)) and x:
+            ops.add(str(x[0]))
+            for c in x[1:]:
+                _walk(c)
+    _walk(expr)
+    if ops & {"group_rank", "group_zscore"}:
+        shape = "state_conditional"
+    elif ops & {"delta", "decay", "sum"} and "zscore" not in ops:
+        shape = "momentum"
+    elif ops & {"zscore", "ts_rank", "scale"}:
+        shape = "normalised_extreme"
+    elif ops & {"corr", "residual", "cov"}:
+        shape = "co_movement"
+    elif ops & {"bars_since_max", "bars_since_min", "max", "min"}:
+        shape = "distance_from_extreme"
+    else:
+        shape = "level"
+    side = side_mode if side_mode in SIDE_MODES else SIDE_MODES[0]
+    return "reversal" if (shape == "momentum" and side == "fade") else f"{shape}:{side}"
+
+
+def horizon_bucket(hold_bars: int) -> str:
+    h = int(hold_bars)
+    for bound, name in HORIZON_BUCKETS:
+        if h <= bound:
+            return name
+    return "position"
+
+
+def _read_state_vector() -> dict:
+    try:
+        doc = json.loads(STATE_VECTOR.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def regime_label(sym: str, doc: dict | None = None) -> str:
+    """The top regime label for `sym` from data/state_vector.json: the instrument's own H1 fit
+    when the vector carries one, else the global fit, else UNLABELLED -- which is a real answer,
+    never a guessed regime."""
+    d = _read_state_vector() if doc is None else doc
+    assets = d.get("assets") if isinstance(d.get("assets"), dict) else {}
+    for key in (f"{sym}@H1", f"{sym}@daily", f"{sym}@M15", f"{sym}@M5"):
+        row = assets.get(key)
+        if isinstance(row, dict) and row.get("top"):
+            return str(row["top"])
+    g = d.get("global")
+    if isinstance(g, dict) and g.get("top"):
+        return str(g["top"])
+    return UNLABELLED
+
+
+def regime_labels_known(doc: dict | None = None) -> tuple[str, ...]:
+    """Every regime label the state vector names, for the denominator of occupancy."""
+    d = _read_state_vector() if doc is None else doc
+    out: set[str] = set()
+    g = d.get("global")
+    if isinstance(g, dict):
+        out.update(str(x) for x in (g.get("labels") or []))
+    assets = d.get("assets") if isinstance(d.get("assets"), dict) else {}
+    for row in assets.values():
+        if isinstance(row, dict):
+            out.update(str(x) for x in (row.get("labels") or []))
+    return tuple(sorted(out)) or (UNLABELLED,)
+
+
+def _asset_class(sym: str) -> str:
+    try:
+        from mt5desk.universe import asset_class
+        return str(asset_class(sym) or "unknown")
+    except Exception:
+        return "unknown"
+
 
 def _book_symbols() -> list[str]:
     try:
@@ -147,19 +256,34 @@ def _survivor_daily_pnl(sym: str) -> pd.Series | None:
     return s.groupby(level=0).sum()
 
 
+def _position_path(z: pd.Series, entry_z: float, hold: int) -> pd.Series:
+    """The position the P&L proxy holds bar by bar: sign(z) when extreme, held `hold` bars.
+
+    Factored out so the SAME path the P&L was computed on is what the fitness charges turnover
+    for (`alpha_fitness.turnover_term`); a rate inferred from the signal's threshold elsewhere
+    would be a second definition of what was traded.
+    """
+    pos = np.sign(z.where(z.abs() >= entry_z, 0.0)).fillna(0.0)
+    if hold > 1:
+        return pos.rolling(hold, min_periods=1).apply(
+            lambda w: w[w != 0][-1] if (w != 0).any() else 0.0, raw=True)
+    return pos
+
+
 def _daily_pnl_proxy(z: pd.Series, ret: pd.Series, entry_z: float, hold: int,
-                     risk_frac: pd.Series | None = None) -> pd.Series:
+                     risk_frac: pd.Series | None = None,
+                     held: pd.Series | None = None) -> pd.Series:
     """Vectorised sign(z)-when-extreme position held `hold` bars, times next-bar return.
 
     `risk_frac` converts the bar's log return into R MULTIPLES -- the unit the book's own daily
     series is in and the unit `robust_elog.SleeveEvidence` documents. Without it the growth term
     would compare a log-return series against a book of R multiples and report a number in no
     unit at all. The risk per trade is the recipe's own stop: `stop_atr` ATRs of the price, which
-    is exactly what the family risks when it enters.
+    is exactly what the family risks when it enters. `held` is the position path when the caller
+    already built it (so turnover and P&L are read off one object).
     """
-    pos = np.sign(z.where(z.abs() >= entry_z, 0.0)).fillna(0.0)
-    held = pos.rolling(hold, min_periods=1).apply(
-        lambda w: w[w != 0][-1] if (w != 0).any() else 0.0, raw=True) if hold > 1 else pos
+    if held is None:
+        held = _position_path(z, entry_z, hold)
     pnl = held.shift(1) * ret
     if risk_frac is not None:
         pnl = pnl / risk_frac.where(risk_frac > 1e-9)
@@ -177,9 +301,17 @@ def _corr(a: pd.Series | None, b: pd.Series | None) -> float:
 
 class _Evaluator:
     def __init__(self, sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFrame],
-                 survivors: pd.Series | None, book: af.Book | None = None) -> None:
+                 survivors: pd.Series | None, book: af.Book | None = None,
+                 regime: str | None = None, asset_class: str | None = None) -> None:
         self.sym, self.d, self.cost, self.drivers = sym, d, cost, drivers
         self.unfillable = pc.artifact_hours(d)
+        # THE ARCHIVE'S TWO FIXED AXES for this instrument. The regime is the state vector's top
+        # label at sweep time and the asset class the registry's; both are read once so every
+        # cell of one sweep is keyed on one reading.
+        self.regime = regime if regime is not None else regime_label(sym)
+        self.asset_class = asset_class if asset_class is not None else _asset_class(sym)
+        #: descriptor cell -> (fitness, row key): the best expression per cell, kept beside ELITE.
+        self.archive: dict[tuple[str, str, str, str], tuple[float, str]] = {}
         # ONE SUBTREE CACHE FOR THE WHOLE INSTRUMENT, shared by all nine populations and by
         # every fitness evaluation on these bars: `delta(close, 24)` is computed once per
         # sweep rather than once per expression that contains it.
@@ -198,6 +330,9 @@ class _Evaluator:
         self.cut = int(len(d) * (1.0 - STAGE0_FRAC))
         self.rows: dict[str, dict] = {}                    # key -> row (one per expression)
         self.zs: dict[str, pd.Series] = {}
+        #: key -> daily P&L proxy of every promoted expression: the PEER POPULATION the
+        #: crowding term measures each candidate's edge against (alpha_fitness.crowding_term).
+        self.pnls: dict[str, pd.Series] = {}
         self.terms: dict[str, af.FitnessTerms] = {}        # key -> the full term vector
         self.origin: dict[str, str] = {}                   # key -> population that made it
         self.generator_weights: dict = {}
@@ -209,6 +344,52 @@ class _Evaluator:
     def _z(v: pd.Series, norm: int = RECIPE["norm"]) -> pd.Series:
         r = v.rolling(norm, min_periods=norm)
         return (v - r.mean()) / r.std()
+
+    # ------------------------------------------------------------------ the archive
+    def descriptor(self, expr: ag.Expr, side_mode: str,
+                   hold_bars: int | None = None) -> tuple[str, str, str, str]:
+        """The cell an expression lives in: (mechanism class, horizon bucket, regime, asset)."""
+        hold = int(RECIPE["hold_bars"]) if hold_bars is None else int(hold_bars)
+        return (mechanism_class(expr, side_mode), horizon_bucket(hold), self.regime,
+                self.asset_class)
+
+    def _archive_put(self, key: str, fitness: float) -> bool:
+        """Keep `key` as its cell's champion if it beats the incumbent. True when it did."""
+        row = self.rows.get(key)
+        if row is None or not math.isfinite(float(fitness)):
+            return False
+        params = row.get("params") or {}
+        cell = self.descriptor(params.get("expr"), str(params.get("side_mode") or "follow"),
+                               params.get("hold_bars"))
+        have = self.archive.get(cell)
+        if have is None or float(fitness) > have[0]:
+            self.archive[cell] = (float(fitness), key)
+            return True
+        return False
+
+    def champions(self) -> list[tuple[ag.Expr, str]]:
+        """Every cell's best expression, best cell first -- the archive's contribution to the
+        next generation's parents."""
+        out: list[tuple[ag.Expr, str]] = []
+        for _cell, (_fit, key) in sorted(self.archive.items(), key=lambda kv: -kv[1][0]):
+            row = self.rows.get(key)
+            if row is None:
+                continue
+            p = row.get("params") or {}
+            out.append((p.get("expr"), str(p.get("side_mode") or "follow")))
+        return out
+
+    def archive_report(self) -> dict:
+        """The archive as rows, keyed cell by cell, with the axes this instrument was keyed on."""
+        cells = []
+        for cell, (fit, key) in sorted(self.archive.items(), key=lambda kv: -kv[1][0]):
+            row = self.rows.get(key) or {}
+            cells.append({"mechanism_class": cell[0], "horizon": cell[1], "regime": cell[2],
+                          "asset_class": cell[3], "fitness": round(float(fit), 4),
+                          "expr": row.get("expr"), "side_mode": (row.get("params") or {}
+                                                                  ).get("side_mode")})
+        return {"regime": self.regime, "asset_class": self.asset_class,
+                "cells_filled": len(cells), "cells": cells}
 
     def screen(self, expr: ag.Expr, side_mode: str, stage0: bool) -> dict | None:
         params = {**RECIPE, "expr": expr, "side_mode": side_mode}
@@ -234,9 +415,16 @@ class _Evaluator:
 
     def _candidate(self, expr: ag.Expr, side_mode: str, row: dict, z: pd.Series,
                    pnl: pd.Series, refs: list[pd.Series], *,
-                   with_fragility: bool) -> af.Candidate:
+                   with_fragility: bool, key: str = "",
+                   position: pd.Series | None = None) -> af.Candidate:
         """The candidate record the fitness reads. Everything measurable is passed; anything
-        this sweep cannot measure is left None so the fitness NAMES it rather than assuming."""
+        this sweep cannot measure is left None so the fitness NAMES it rather than assuming.
+
+        The three search-side pressures (2026-09-08) read: `position`, the path the P&L was
+        computed on; `peer_daily`, every OTHER promoted expression's P&L on this instrument --
+        the cross-section crowding is measured against; and `family`, which is `formula` for
+        everything this proposer emits, so the existing-exposure charge is the canon's own count
+        of formula sleeves."""
         activity = self.frames.get("activity")
         return af.Candidate(
             daily=pnl, name=f"{self.sym}.formula.{side_mode}", symbol=self.sym, z=z,
@@ -247,7 +435,10 @@ class _Evaluator:
                       and activity.notna().any() else None),
             n_trials=max(1, len(self.rows)), sharpes=tuple(self.sharpes),
             params={k: v for k, v in RECIPE.items() if k in ("norm", "entry_z", "hold_bars")},
-            score_fn=(self._rescore(expr, side_mode) if with_fragility else None))
+            score_fn=(self._rescore(expr, side_mode) if with_fragility else None),
+            position=position,
+            peer_daily=tuple(v for kk, v in self.pnls.items() if kk != key),
+            family="formula")
 
     def _rescore(self, expr: ag.Expr, side_mode: str):
         """A stage-0 re-screen under perturbed recipe parameters, for the fragility sweep.
@@ -292,8 +483,10 @@ class _Evaluator:
         z = self._z(ag.evaluate(expr, self.frames, self.memo))
         self.zs[k] = z
         flip = 1.0 if side_mode == "follow" else -1.0
+        held = _position_path(z * flip, RECIPE["entry_z"], RECIPE["hold_bars"])
         pnl = _daily_pnl_proxy(z * flip, self.ret, RECIPE["entry_z"], RECIPE["hold_bars"],
-                               self.risk_frac)
+                               self.risk_frac, held=held)
+        self.pnls[k] = pnl
         corr_surv = _corr(pnl, self.survivors)
         refs = list(self.canon_z.values()) + pop_z
         novelty = 1.0 - max([abs(_corr(z, r)) for r in refs] or [0.0])
@@ -301,7 +494,8 @@ class _Evaluator:
         if sd > 1e-12:
             self.sharpes.append(float(pnl.mean() / sd))
         terms = af.evaluate(self._candidate(expr, side_mode, {**row, **full}, z, pnl, refs,
-                                            with_fragility=with_fragility),
+                                            with_fragility=with_fragility, key=k,
+                                            position=held),
                             self.book, cfg=_search_worlds())
         self.terms[k] = terms
         fit = terms.score()
@@ -314,6 +508,7 @@ class _Evaluator:
                     "unmeasured": list(terms.unmeasured),
                     "tail": terms.detail.get("tail", {}),
                     "book": terms.detail.get("book", "")})
+        self._archive_put(k, float(fit))
         return float(fit)
 
     def refine(self, top: int = REFINE_TOP) -> list[str]:
@@ -333,11 +528,13 @@ class _Evaluator:
             if z is None:
                 continue
             flip = 1.0 if side_mode == "follow" else -1.0
+            held = _position_path(z * flip, RECIPE["entry_z"], RECIPE["hold_bars"])
             pnl = _daily_pnl_proxy(z * flip, self.ret, RECIPE["entry_z"], RECIPE["hold_bars"],
-                                   self.risk_frac)
+                                   self.risk_frac, held=held)
+            self.pnls[k] = pnl
             refs = list(self.canon_z.values()) + [v for kk, v in self.zs.items() if kk != k]
             terms = af.evaluate(self._candidate(expr, side_mode, row, z, pnl, refs,
-                                                with_fragility=True),
+                                                with_fragility=True, key=k, position=held),
                                 self.book, cfg=_search_worlds())
             self.terms[k] = terms
             row.update({"fitness": round(terms.score(), 4), "refined": True,
@@ -345,6 +542,7 @@ class _Evaluator:
                         "unmeasured": list(terms.unmeasured),
                         "why": {n: terms.why.get(n, "") for n in af.WEIGHTS},
                         "tail": terms.detail.get("tail", {})})
+            self._archive_put(k, float(terms.score()))
             done.append(k)
         return done
 
@@ -368,6 +566,9 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
     pop_weights, pop_basis = _population_weights()
     ev.generator_weights = {"weights": weights, "basis": weights_basis,
                             "population_weights": pop_weights, "population_basis": pop_basis}
+    #: The dE[logW] ordering this sweep has earned so far. A one-element list because `_draw`
+    #: rebinds it; empty until something has been scored, and the file's table stands until then.
+    live_weights: list[dict[str, float] | None] = [None]
     ctx = spop.SearchContext(rng=rng, frames=ev.frames, ret=ev.ret, symbol=sym,
                              allow_drivers=allow_drivers, max_depth=DEPTH, cache=ev.cache,
                              seeds=list(ag.CANON.values()))
@@ -378,6 +579,10 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
                        if "fitness" in r]
         ctx.scored = [(ev.rows[k]["params"]["expr"], t) for k, t in ev.terms.items()
                       if k in ev.rows]
+        # WHAT EACH POPULATION'S DRAWS WERE WORTH, not how many it drew: the term vector of
+        # every scored expression, tagged with the population that made it. `search_populations`
+        # turns this into the next pass's ordering (`SearchResult.elog_weights`).
+        ctx.attributed = [(ev.origin.get(k, "unspecified"), t) for k, t in ev.terms.items()]
         elite = sorted((r for r in ev.rows.values() if r.get("stage") == 1),
                        key=lambda r: -float(r.get("fitness") or -9.0))[:ELITE]
         ctx.seeds = [r["params"]["expr"] for r in elite] or list(ag.CANON.values())
@@ -391,8 +596,17 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
         """
         _refresh_context()
         per = max(1, math.ceil(n / max(1, len(spop.POPULATIONS))))
+        # THE WEIGHTS ARE THE REALISED GROWTH OF WHAT EACH POPULATION PRODUCED once anything has
+        # been scored, and the file's table only until then. `live_weights` is rebound after
+        # every draw, so the ordering tracks the sweep rather than yesterday's certify counts.
         res = spop.run(ctx, n_per_population=per, budget_s=max(5.0, budget_s / 4.0),
-                       weights=pop_weights)
+                       weights=live_weights[0] if live_weights[0] else pop_weights)
+        got, basis = res.elog_weights()
+        if got:
+            live_weights[0] = got
+            ev.generator_weights["population_weights_live"] = {k: round(v, 5)
+                                                               for k, v in sorted(got.items())}
+        ev.generator_weights["population_basis_live"] = basis
         ev.population_yield.append({"at_rows": len(ev.rows), **{"rows": res.yield_rows()}})
         ev.generator_failures.extend(res.failures)
         out = [(e, who) for e, who in res.proposals]
@@ -433,6 +647,10 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
         # ordered by crowding distance, so the candidate that is extraordinary on the tail and
         # ordinary elsewhere is a parent instead of an average.
         elite = _elite(ev, keep)
+        # THE ARCHIVE BREEDS BESIDE THE ELITE. The elite survives into the next generation as
+        # before; the archive's champions are ADDITIONAL parents, so a cell the front no longer
+        # holds keeps contributing its genetic material rather than being forgotten.
+        parents = _parents(ev, elite)
         children: list[tuple[ag.Expr, str]] = list(elite)
         fresh = _draw(max(1, int(pop * FRESH_FRAC))) if elite else []
         while len(children) < pop and time.monotonic() - started <= budget_s:
@@ -440,10 +658,10 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
                 e, origin = fresh.pop()
                 sm = str(rng.choice(SIDE_MODES))
             else:
-                a = elite[int(rng.integers(len(elite)))] if elite else (
+                a = parents[int(rng.integers(len(parents)))] if parents else (
                     random_or_canon(rng, allow_drivers), str(rng.choice(SIDE_MODES)))
-                if rng.random() < 0.5 and len(elite) > 1:
-                    b = elite[int(rng.integers(len(elite)))]
+                if rng.random() < 0.5 and len(parents) > 1:
+                    b = parents[int(rng.integers(len(parents)))]
                     e, origin = ag.crossover(a[0], b[0], rng, allow_drivers), "crossover"
                 else:
                     e, origin = ag.mutate(a[0], rng, allow_drivers), "mutate"
@@ -472,6 +690,46 @@ def _elite(ev: _Evaluator, keep: list[tuple[ag.Expr, str]]) -> list[tuple[ag.Exp
         return [(have[i][0], have[i][1]) for i in order[:ELITE]]
     return sorted(keep, key=lambda es: -float(
         ev.rows.get(f"{ag.key(es[0])}|{es[1]}", {}).get("fitness") or -9.0))[:ELITE]
+
+
+def _parents(ev: _Evaluator, elite: list[tuple[ag.Expr, str]]) -> list[tuple[ag.Expr, str]]:
+    """The elite plus every archive champion the elite does not already hold, in that order."""
+    have = {f"{ag.key(e)}|{sm}" for e, sm in elite}
+    out = list(elite)
+    for e, sm in ev.champions():
+        k = f"{ag.key(e)}|{sm}"
+        if k not in have:
+            have.add(k)
+            out.append((e, sm))
+    return out
+
+
+def map_elites_summary(per_symbol: dict[str, dict], regimes_known: tuple[str, ...]) -> dict:
+    """Sweep-wide occupancy: cells filled over cells possible, with every axis's cardinality.
+
+    Possible = |mechanism classes| x |horizon buckets| x |regime labels the state vector names|
+    x |asset classes swept|. The regime axis is the STATE VECTOR's own vocabulary rather than
+    the labels that happened to be filled, so an occupancy of 100% means the search has lit
+    every regime the desk can name, not every regime it happened to see this hour.
+    """
+    filled: set[tuple[str, str, str, str]] = set()
+    classes: set[str] = set()
+    for info in per_symbol.values():
+        me = info.get("map_elites") or {}
+        if me.get("asset_class"):
+            classes.add(str(me["asset_class"]))
+        for c in me.get("cells") or []:
+            filled.add((str(c["mechanism_class"]), str(c["horizon"]), str(c["regime"]),
+                        str(c["asset_class"])))
+    possible = (len(MECHANISM_CLASSES) * len(HORIZON_NAMES) * max(1, len(regimes_known))
+                * max(1, len(classes)))
+    return {"cells_filled": len(filled), "cells_possible": possible,
+            "occupancy": round(len(filled) / possible, 4) if possible else 0.0,
+            "axes": {"mechanism_classes": list(MECHANISM_CLASSES),
+                     "horizons": list(HORIZON_NAMES), "regimes": list(regimes_known),
+                     "asset_classes": sorted(classes)},
+            "note": ("one Pareto front forgot every cell it left; the archive keeps the best "
+                     "expression per cell and its champions breed beside the elite")}
 
 
 def _population_weights() -> tuple[dict[str, float] | None, str]:
@@ -538,10 +796,17 @@ def population_yield(per_symbol: dict[str, dict]) -> dict[str, dict]:
             for row in batch.get("rows") or []:
                 name = str(row.get("population") or "unspecified")
                 acc = out.setdefault(name, {"proposed": 0, "unique": 0, "well_formed": 0,
-                                            "passed": 0, "seconds": 0.0, "note": ""})
+                                            "passed": 0, "seconds": 0.0, "note": "",
+                                            "scored": 0, "delta_elog_mean": None})
                 for k in ("proposed", "unique", "well_formed", "passed"):
                     acc[k] = int(acc[k]) + int(row.get(k) or 0)
                 acc["seconds"] = round(float(acc["seconds"]) + float(row.get("seconds") or 0), 2)
+                # THE LAST BATCH'S REALISED GROWTH IS THE SWEEP'S: each batch's mean is over
+                # every draw scored SO FAR, so the final one already pools the earlier ones and
+                # averaging the batches again would weight the early, thin means equally.
+                if row.get("delta_elog_mean") is not None:
+                    acc["delta_elog_mean"] = float(row["delta_elog_mean"])
+                    acc["scored"] = int(row.get("scored") or 0)
                 if row.get("note"):
                     acc["note"] = str(row["note"])
     return out
@@ -586,7 +851,8 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0, seed: int = 
                            "drivers": sorted(ev.drivers),
                            "generators": generator_yield(sym_rows),
                            "population_yield": ev.population_yield,
-                           "subtree_cache": ev.cache.stats()}
+                           "subtree_cache": ev.cache.stats(),
+                           "map_elites": ev.archive_report()}
         generator_weights = ev.generator_weights
         generator_failures.extend(f"{sym}: {f}" for f in ev.generator_failures)
     # Every distinct expression tried is a trial; stage-0-only rows may not be proposed.
@@ -622,6 +888,8 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0, seed: int = 
               # not: a fitness computed on an empty desk must never read like one computed
               # against a full book.
               "fitness_weights": dict(af.WEIGHTS),
+              # THE ARCHIVE'S OCCUPANCY: how much of the descriptor space the search has lit.
+              "map_elites": map_elites_summary(per_symbol, regime_labels_known()),
               "book": book.source,
               "unmeasured_terms": sorted({u for r in rows for u in (r.get("unmeasured") or [])}),
               "top": sorted((r for r in rows if r.get("stage") == 1
@@ -684,15 +952,22 @@ def main() -> int:
               f"nov={r.get('novelty', 0):.2f}  {r['params']['side_mode']}  {r['expr']}")
     for k, v in rep["skipped"].items():
         print(f"  skipped {k}: {v}")
-    print("populations (proposed/unique/well-formed/passed):")
+    print("populations (proposed/unique/well-formed/passed  dE[logW] over scored):")
     for name, y in sorted(rep.get("population_yield", {}).items()):
+        el = ("     --" if y.get("delta_elog_mean") is None
+              else f"{y['delta_elog_mean']:+6.3f}")
         print(f"  {name:20s} {y['proposed']:4d}/{y['unique']:4d}/{y['well_formed']:4d}/"
-              f"{y['passed']:4d}  {y['seconds']:6.1f}s  {y['note'][:70]}")
+              f"{y['passed']:4d}  {y['seconds']:6.1f}s  {el} over {y.get('scored', 0):3d}"
+              f"  {y['note'][:44]}")
+    print(f"  population ordering: {rep['generator_weights'].get('population_basis_live') or ''}")
     print("outcomes: " + ", ".join(
         f"{g}={y['tried']}/{y['full']}/{y['proposed']}" for g, y in rep["generator_yield"].items())
         + f"  (weights: {rep['generator_weights'].get('population_basis')})")
     print(f"book: {rep.get('book')}   unmeasured terms: "
           f"{', '.join(rep.get('unmeasured_terms') or []) or 'none'}")
+    me = rep.get("map_elites") or {}
+    print(f"archive: {me.get('cells_filled', 0)} / {me.get('cells_possible', 0)} descriptor "
+          f"cells lit ({100 * float(me.get('occupancy') or 0):.1f}%)")
     for f in rep["generator_failures"]:
         print(f"  population failed: {f}")
     print(f"written: {REPORT}")

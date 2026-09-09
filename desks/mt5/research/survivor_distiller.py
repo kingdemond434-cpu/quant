@@ -600,11 +600,21 @@ def run(budget_s: float = 900.0, symbols: list[str] | None = None,
     sv = _survivor_values(certified)
     todo = [c for c in certified if not symbols or c["symbol"] in {s.upper() for s in symbols}]
     neighbours: list[dict[str, Any]] = []
+    simplifications: list[dict[str, Any]] = []
     for c in sorted(todo, key=lambda x: (x["symbol"], x["family"], x["key"])):
         ns = neighbours_of(c, prior, grid, weights, sv, existing)
         existing.update(n["id"] for n in ns)
         neighbours.extend(ns)
+        # PARSIMONY THROUGH THE SAME DOOR (see `simplify` at the end of this file): one cell per
+        # optional condition, with that condition dropped. Screened, deflated and gated exactly
+        # like a stepped neighbour -- the only difference is the operator `mutation_yield` bills.
+        ss = simplify(c, existing, weights)
+        existing.update(s["id"] for s in ss)
+        simplifications.extend(ss)
+    neighbours.extend(simplifications)
     # STATE-CONDITIONED NEIGHBOURS go straight to the queue: they are not screened on bars.
+    # AFTER the simplifications join `neighbours`, so `existing` already holds their ids and a
+    # conditioned cell cannot be minted as a duplicate of one.
     conditioned = state_neighbours(sorted(todo, key=lambda x: (x["symbol"], x["family"],
                                                                x["key"])), by_state, existing)
 
@@ -648,7 +658,13 @@ def run(budget_s: float = 900.0, symbols: list[str] | None = None,
         "certified_cells": len(certified), "certified_swept": len(todo),
         "prior": prior, "motifs": mot, "motifs_by_state": by_state,
         "state_neighbours": len(conditioned), "weights": weights_note,
-        "neighbours_generated": len(neighbours), "tests_run": len(screened),
+        "neighbours_generated": len(neighbours),
+        # The parsimony arm, counted apart: a simpler certificate is a different kind of finding
+        # from a neighbour of one, and a run that generated no simplification at all is a fact
+        # about the certificates (every condition already at its default), not a silence.
+        "simplifications_generated": len(simplifications),
+        "dropped_params": dict(Counter(s["dropped"]["param"] for s in simplifications)),
+        "tests_run": len(screened),
         "cells_proposed": len(proposals), "n_unscreened": len(unscreened),
         "n_tasks": len(tasks), "skipped": skipped, "proposals": proposals,
         "by_operator": dict(Counter(r["operator"] for r in screened)),
@@ -675,8 +691,12 @@ def main() -> int:
     a = ap.parse_args()
     r = run(budget_s=a.budget_s, symbols=a.symbol)
     print(f"SURVIVOR DISTILLER  {r['certified_cells']} certified, {r['neighbours_generated']} "
-          f"neighbours, {r['tests_run']} tests, {r['cells_proposed']} proposed, "
+          f"neighbours ({r['simplifications_generated']} of them dropped conditions), "
+          f"{r['tests_run']} tests, {r['cells_proposed']} proposed, "
           f"{r['n_tasks']} tasks queued  ({r['weights']})")
+    if r["dropped_params"]:
+        print("  conditions dropped: " + ", ".join(f"{k}x{v}" for k, v in
+                                                   sorted(r["dropped_params"].items())))
     for fam, by in r["prior"].items():
         for k, v in by.items():
             print(f"  {fam:24s} {k:12s} cert={v['certified']['median']} "
@@ -686,6 +706,103 @@ def main() -> int:
               f"n={p['n_independent']}")
     print(f"written: {REPORT}")
     return 0
+
+
+# ==============================================================================================
+# PARSIMONY, PROPOSED THROUGH THE SAME DOOR AS EVERY OTHER MUTATION (Tier-1 audit G19).
+#
+# Everything above MOVES a certificate's parameters toward the survivor median. Nothing ever
+# REMOVED one. The audit put it plainly: "survivor_distiller only steps parameters toward the
+# survivor median (it adds neighbours, never subtracts terms)", so a certified cell carrying a
+# condition that contributes nothing keeps carrying it -- and every condition is a place the fit
+# could have been to noise, a parameter the forward sample has to reproduce, and a line in the
+# recipe the executor has to honour. Model-level distillation runs hourly in `ml_layer`; the
+# SURVIVOR was never distilled.
+#
+# WHAT "DROPPING A CONDITION" MEANS EXACTLY, because a vague version of this would be dangerous:
+# a param is droppable when the family's own signature declares a DEFAULT for it and the
+# certificate's value differs from that default. Dropping it means the cell falls back to what
+# the family does when nobody says otherwise -- which is precisely what the gauntlet, the
+# forward engine and the gateway will all do when the key is absent from the recipe. So the
+# proposed cell is EXECUTABLE by construction and its identity is the params that remain.
+#
+# WHAT IS NEVER DROPPED: `FROZEN` names (the instrument, its peers, its data source, the ATR
+# window every bracket is measured in) -- removing one produces a different hypothesis rather
+# than a simpler statement of this one -- and any key the family's signature does not accept,
+# which is identity (the chart) rather than a condition.
+#
+# THE OPERATOR IS `drop_<param>`, which `mutation_yield` bills exactly as it bills
+# `step_<param>_up` and `swap_<param>`: it joins the lineage row to its verdict by node id and
+# writes the posterior that biases which operator the distiller reaches for first. Nothing here
+# decides anything -- a dropped-condition cell is screened, deflated and gated like every other
+# candidate, and a simpler cell that does not clear the bar is not proposed.
+# ==============================================================================================
+
+
+def droppable(family: str, params: dict[str, Any]) -> dict[str, Any]:
+    """The optional conditions on this cell: param -> the default it would fall back to.
+
+    Read from the family's OWN signature rather than from a list here, so a family that changes
+    a default cannot leave this module proposing a cell that no longer means what it says.
+    """
+    fn = _family_fn(family)
+    if fn is None:
+        return {}
+    import inspect
+    try:
+        sig = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return {}
+    out: dict[str, Any] = {}
+    for name, value in (params or {}).items():
+        head = str(name).split(".")[0]
+        if head in FROZEN:
+            continue
+        p = sig.get(str(name))
+        if p is None or p.default is inspect.Parameter.empty:
+            continue                     # source evidence or identity, not a condition
+        if p.default == value:
+            continue                     # already the default: dropping it is the same cell
+        out[str(name)] = p.default
+    return out
+
+
+def simplify(cert: dict[str, Any], existing: set[str] | None = None,
+             weights: dict[str, float] | None = None) -> list[dict[str, Any]]:
+    """One candidate per optional condition of `cert`, with that condition dropped.
+
+    The parsimony arm of the distiller: same row shape as `neighbours_of`, same screening, same
+    deflation, same ten gates. A cell whose node the graph already holds -- at any fate -- is
+    not emitted: it is history, not a proposal.
+    """
+    from libs.research.hypothesis_graph import node_id
+
+    fam, sym = str(cert.get("family") or ""), str(cert.get("symbol") or "")
+    params = dict(cert.get("params") or {})
+    if not fam or not sym or not params:
+        return []
+    have = set(existing or ())
+    w = dict(weights or {})
+    out: list[dict[str, Any]] = []
+    for name, fallback in sorted(droppable(fam, params).items()):
+        reduced = {k: v for k, v in params.items() if k != name}
+        if not reduced:
+            continue                     # a cell with no parameters left is not a simpler cell
+        nid = node_id(sym, fam, reduced)
+        if nid in have:
+            continue
+        have.add(nid)
+        op = f"drop_{name}"
+        out.append({
+            "parent": cert.get("key"), "parent_id": cert.get("id"), "symbol": sym,
+            "family": fam, "params": reduced, "operator": op, "id": nid,
+            "score": round(float(w.get(op, 1.0)), 4),
+            "dropped": {"param": name, "was": params[name], "falls_back_to": fallback},
+            "mechanism": (f"{cert.get('mechanism') or f'{fam} on {sym}'} -- with {name}="
+                          f"{params[name]!r} dropped, so the family's own default "
+                          f"({fallback!r}) applies"),
+        })
+    return out
 
 
 if __name__ == "__main__":

@@ -65,6 +65,40 @@ MIN_ADMIT_GAIN = 0.01
 #: Minimum out-of-sample rows before any admission verdict is allowed to mean anything.
 MIN_OOS_ROWS = 200
 
+# ==============================================================================================
+# THE CONTEST P6 NEVER HELD (Tier-1 audit G13, 2026-09-08).
+#
+# `libs/models/embedding.py` carries a contrastive encoder with an InfoNCE objective, the
+# Wang-Isola alignment/uniformity diagnostics and `representation_gain` -- a walk-forward test
+# that refits the encoder per fold and asks whether its embedding forecasts better than the RAW
+# BARS it was cut from. It had no importer outside a test: a scored representation nothing ran,
+# while the desk's own frontier report ranked REPRESENTATION_LEARNING as its largest capability
+# gap. Meanwhile the live representation here was a k=4 PCA whose only reader was the dashboard.
+#
+# PCA and the contrastive encoder are the SAME function class -- a linear map of the
+# standardised window -- and differ only in what they are asked to keep: PCA keeps variance,
+# which in return data is owned by the loud bar, and the contrastive objective keeps what
+# survives jitter and bar-masking, which is a statement about the median window. Which one
+# forecasts better is an empirical question the desk can now answer per instrument, on the same
+# folds, by the same scorer.
+#
+# BOUNDED BY CONSTRUCTION, because this runs on the hourly leg: the window count is capped at
+# the most recent `CONTEST_MAX_WINDOWS`, the encoder is `CONTEST_STEPS` Adam steps of a
+# `CONTEST_DIM`-column projection, and the whole contest is skipped -- UNMEASURED, with the
+# reason -- when the series is too short for folds that mean anything.
+# ==============================================================================================
+#: Bars per window handed to the encoders. Short enough that a window is a market state rather
+#: than a season, long enough that masking a quarter of it still leaves a shape.
+CONTEST_WINDOW = 16
+CONTEST_DIM = 4
+CONTEST_STEPS = 120
+CONTEST_FOLDS = 3
+#: Most recent windows the contest runs on. The cost is linear in this and the hourly leg has
+#: six series to get through; the cap is stated rather than discovered as a timeout.
+CONTEST_MAX_WINDOWS = 4000
+#: Windows below which folds are not folds. Four times the OOS floor over three folds.
+CONTEST_MIN_WINDOWS = 800
+
 
 @dataclass(frozen=True)
 class Verdict:
@@ -115,8 +149,84 @@ def _standardise(x: np.ndarray, fit_rows: int) -> np.ndarray:
     return (x - mu) / sd
 
 
-def representation(close: np.ndarray, k: int = 4) -> dict[str, Any]:
-    """P6. Fit a k-dimensional projection on the TRAIN slice and apply it to everything."""
+def representation_contest(close: np.ndarray, *, window: int = CONTEST_WINDOW,
+                           dim: int = CONTEST_DIM, steps: int = CONTEST_STEPS,
+                           folds: int = CONTEST_FOLDS,
+                           max_windows: int = CONTEST_MAX_WINDOWS) -> dict[str, Any]:
+    """PCA against the contrastive encoder on the SAME folds, scored by `representation_gain`.
+
+    The gain is the embedding's out-of-sample R^2 minus that of a ridge on the raw last bar of
+    the same window: a representation is worth keeping only when it forecasts better than the
+    bars it was built from. Both encoders are refitted inside every fold by
+    `representation_gain`, so neither sees a later fold, and the two are handed identical
+    windows and an identical forward series -- the only difference is the objective.
+
+    UNMEASURED (with the reason) on a short series: a contest decided by three folds of noise
+    would be a verdict about the fixture.
+    """
+    try:
+        from libs.models.embedding import (
+            ContrastiveEncoder,
+            WindowPCA,
+            representation_gain,
+            windows_from_series,
+        )
+    except Exception as exc:                      # the module is optional on a stripped box
+        return {"status": "UNAVAILABLE", "why": f"libs.models.embedding: {type(exc).__name__}"}
+
+    x, _names = features(close)
+    logp = np.log(np.maximum(close, 1e-12))
+    fwd = np.full(len(close), np.nan)
+    fwd[:-1] = logp[1:] - logp[:-1]
+    ok = ~np.isnan(x).any(axis=1) & ~np.isnan(fwd)
+    x, y = x[ok], fwd[ok]
+    if len(x) < window + CONTEST_MIN_WINDOWS:
+        return {"status": "INSUFFICIENT", "rows": len(x),
+                "why": (f"{len(x)} usable rows; the contest needs {window + CONTEST_MIN_WINDOWS} "
+                        f"for {folds} folds that mean anything")}
+    w3 = windows_from_series(x, window)
+    # Window i ends at bar i + window - 1, so the forward value that follows it is y at that bar.
+    fwin = y[window - 1:]
+    n = min(len(w3), len(fwin), int(max_windows))
+    w3, fwin = w3[-n:], fwin[-n:]
+
+    out: dict[str, Any] = {"status": "MEASURED", "windows": int(n), "window_bars": int(window),
+                           "dim": int(dim), "folds": int(folds), "steps": int(steps),
+                           "bound": (f"most recent {max_windows} windows, {steps} Adam steps, "
+                                     f"{folds} expanding folds -- an hourly leg's budget")}
+    for name, enc in (("window_pca", WindowPCA(dim=dim)),
+                      ("contrastive", ContrastiveEncoder(dim=dim, steps=steps, seed=0))):
+        try:
+            got = representation_gain(w3, fwin, encoder=enc, n_folds=folds)
+        except Exception as exc:
+            out[name] = {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+            continue
+        out[name] = {kk: got[kk] for kk in ("embedding", "raw", "gain", "verdict", "folds", "n")
+                     if kk in got}
+        if got.get("why"):
+            out[name]["why"] = got["why"]
+    a, b = out.get("window_pca", {}), out.get("contrastive", {})
+    if isinstance(a.get("gain"), (int, float)) and isinstance(b.get("gain"), (int, float)):
+        out["better"] = "contrastive" if b["gain"] > a["gain"] else "window_pca"
+        out["gain_spread"] = round(float(b["gain"]) - float(a["gain"]), 6)
+    else:
+        out["better"] = None
+        out["gain_spread"] = None
+    out["rule"] = ("both encoders are refitted per fold on the same windows and scored by the "
+                   "same ridge against the same raw baseline; ADMIT needs a positive gain AND a "
+                   "positive embedding score -- beating a useless baseline by being less "
+                   "useless is not admission")
+    return out
+
+
+def representation(close: np.ndarray, k: int = 4, *, contest: bool = True) -> dict[str, Any]:
+    """P6. Fit a k-dimensional projection on the TRAIN slice and apply it to everything.
+
+    `contest=True` also runs `representation_contest`: the same question asked of the
+    contrastive encoder, on walk-forward folds, against the raw bars. It is reported under
+    `gain` and decides nothing -- the projection this function returns is the PCA one, exactly
+    as before, so every existing consumer reads what it always read.
+    """
     x, names = features(close)
     ok = ~np.isnan(x).any(axis=1)
     x, idx = x[ok], np.flatnonzero(ok)
@@ -131,13 +241,16 @@ def representation(close: np.ndarray, k: int = 4) -> dict[str, Any]:
     comp = vt[:k]
     emb = z @ comp.T
     var = (s[:k] ** 2).sum() / max((s ** 2).sum(), 1e-12)
-    return {"status": "FITTED", "k": k, "rows": len(x), "fit_rows": fit_rows,
-            "explained_variance": round(float(var), 4), "feature_names": names,
-            "embedding": emb, "index": idx, "components": comp,
-            "why_train_only": ("the projection is fitted on the training slice alone; fitting it "
-                               "on the whole series chooses components that already know the "
-                               "test period's variance structure, which is invisible in the "
-                               "result and looks exactly like a good model")}
+    out = {"status": "FITTED", "k": k, "rows": len(x), "fit_rows": fit_rows,
+           "explained_variance": round(float(var), 4), "feature_names": names,
+           "embedding": emb, "index": idx, "components": comp,
+           "why_train_only": ("the projection is fitted on the training slice alone; fitting it "
+                              "on the whole series chooses components that already know the "
+                              "test period's variance structure, which is invisible in the "
+                              "result and looks exactly like a good model")}
+    if contest:
+        out["gain"] = representation_contest(close)
+    return out
 
 
 # --------------------------------------------------------------------------- P8
@@ -251,7 +364,9 @@ def distil(close: np.ndarray, student_k: int = 3) -> Verdict:
     reproduces its teacher perfectly -- including every one of the teacher's errors -- has learned
     to imitate rather than to predict, and an agreement score admits it every time.
     """
-    rep = representation(close, k=student_k)
+    # The student needs the PROJECTION, not the contest: distillation is scored on its own
+    # out-of-sample skill and paying for two encoder fits here would buy nothing.
+    rep = representation(close, k=student_k, contest=False)
     if rep.get("status") != "FITTED":
         return Verdict("distilled_student", False, None, None, 0,
                        rep.get("why", "no representation to distil from"))

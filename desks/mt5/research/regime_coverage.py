@@ -350,6 +350,12 @@ def _merge_into_queue(tasks: list[dict], source: str = "regime_coverage") -> Non
     rows = doc.get("tasks") if isinstance(doc, dict) else doc
     rows = [r for r in (rows if isinstance(rows, list) else [])
             if not (isinstance(r, dict) and r.get("source") == source)]
+    # EVERY TASK NAMES A GENERATOR BEFORE IT IS WRITTEN (Tier-1 audit G21, 2026-09-08). All
+    # 47,150 rows of the research queue carried `kind: None` and no producer field, so a row
+    # saying "nothing pays in Asia + low vol" was addressed to a general audience and could not
+    # be routed to the engine that could answer it. `stamp_target_engine` reads the desk's own
+    # declared source -> arm map and writes the arm and the engines that serve it onto the task.
+    stamp_target_engine(tasks, source)
     rows.extend(tasks)
     if isinstance(doc, dict):
         doc["tasks"] = rows
@@ -358,6 +364,51 @@ def _merge_into_queue(tasks: list[dict], source: str = "regime_coverage") -> Non
         doc = rows
     QUEUE.parent.mkdir(parents=True, exist_ok=True)
     QUEUE.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+
+
+def stamp_target_engine(tasks: list[dict], source: str = "regime_coverage") -> list[dict]:
+    """Write `target_arm`, `target_engine` and `target_engines` onto every task, in place.
+
+    THE ROUTING THIS ADDS AND WHAT IT IS NOT. `libs.research.bandit` already declares which ARM
+    every hypothesis source belongs to (SOURCE_ARM) and which arm a task KIND belongs to
+    (KIND_ARM); `arm_of` is the desk's own answer and is imported read-only. What was missing is
+    the other direction: given the arm this task belongs to, WHICH engines serve it. That is the
+    same map inverted, and the whole list travels on the task -- `target_engine` is the first
+    engine the map declares for that arm and is a DEFAULT, never an exclusion.
+
+    THE TASK'S OWN SOURCE IS NEVER ITS TARGET. A coverage gap routed back to regime_coverage is
+    the engine being told to answer its own question; it is dropped from the candidates, and a
+    task whose arm no other engine serves carries `target_engine: None` -- unrouted and visibly
+    so, rather than sent somewhere arbitrary.
+
+    Nothing here allocates, gates or reorders anything: the bandit still sets the budget, the
+    deepening worker still decides what it can act on, and this only names an addressee.
+    """
+    try:
+        from libs.research.bandit import SOURCE_ARM, arm_of
+    except Exception as exc:                      # a routing outage must not lose the tasks
+        for t in tasks:
+            t.setdefault("target_arm", None)
+            t.setdefault("target_engine", None)
+            t.setdefault("target_engines", [])
+            t["target_engine_why"] = f"bandit unavailable ({type(exc).__name__}): unrouted"
+        return tasks
+    for t in tasks:
+        src = str(t.get("source") or source)
+        arm = arm_of(src, t.get("kind"))
+        # Declaration order, not alphabetical: the order the desk wrote its own map in is the
+        # only preference between engines that exists, and inventing another would be policy.
+        serving = [name for name, a in SOURCE_ARM.items() if a == arm and name != src]
+        t["target_arm"] = arm
+        t["target_engines"] = serving
+        t["target_engine"] = serving[0] if serving else None
+        t["target_engine_why"] = (
+            f"kind={t.get('kind')!r} source={src!r} -> arm {arm!r} "
+            f"({len(serving)} engine(s) serve it; the first is the default addressee)"
+            if serving else
+            f"kind={t.get('kind')!r} source={src!r} -> arm {arm!r}, which no OTHER engine "
+            f"declares in bandit.SOURCE_ARM: unrouted rather than sent somewhere arbitrary")
+    return tasks
 
 
 def main() -> int:

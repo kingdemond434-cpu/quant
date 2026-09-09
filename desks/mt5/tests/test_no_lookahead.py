@@ -100,6 +100,23 @@ def _all_families():
         if len(required) != 1:
             continue
         yield name, fn
+    # THE ORTHOGONAL REGISTRY TOO (2026-09-08). `vars(families)` never saw `families_orthogonal`,
+    # so the thirty-odd families registered there -- and every one added since -- were outside
+    # this invariant's reach while the docstring above promised "every registered family". Only
+    # the families the sweep can call from bars alone are covered here (`FAMILY_INPUTS` says
+    # "price only", or the family reads columns the bars already carry); a family needing a
+    # peer, a tape, a calendar or source evidence is covered by its own fixture, exactly as the
+    # COT rule above already says.
+    from mt5desk import families_orthogonal as fo
+
+    for name, fn in sorted(fo.ORTHOGONAL_FAMILIES.items()):
+        need = fo.FAMILY_INPUTS.get(name, ("price only", None))[0]
+        params = inspect.signature(fn).parameters
+        required_kw = [p for p in params.values()
+                       if p.default is inspect.Parameter.empty and p.kind is p.KEYWORD_ONLY]
+        if need != "price only" or required_kw:
+            continue
+        yield f"orthogonal:{name}", fn
 
 
 def _key(sigs):

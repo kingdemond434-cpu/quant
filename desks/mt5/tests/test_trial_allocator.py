@@ -93,7 +93,7 @@ def test_no_cell_type_is_ever_starved_to_zero_so_a_demotion_stays_reversible() -
     assert all(v > 0.0 for v in w.values())
     assert abs(sum(w.values()) - 1.0) < 1e-9
     # The explore mass is split equally, so the worst type still holds a real, named share.
-    assert w[("worse", "index")] >= ta.EXPLORE_SHARE / len(ys) - 1e-9
+    assert w[("worse", "index", ta.UNNAMED_EXIT)] >= ta.EXPLORE_SHARE / len(ys) - 1e-9
 
 
 def test_no_single_cell_type_can_take_the_whole_budget() -> None:
@@ -101,7 +101,7 @@ def test_no_single_cell_type_can_take_the_whole_budget() -> None:
     ys = [Y("dominant", "fx_exotic", 200, 190), Y("a", "equity", 5000, 1),
           Y("b", "index", 5000, 1)]
     w = ta.weights(ys)
-    assert w[("dominant", "fx_exotic")] <= ta.MAX_SHARE + 1e-9
+    assert w[("dominant", "fx_exotic", ta.UNNAMED_EXIT)] <= ta.MAX_SHARE + 1e-9
     assert abs(sum(w.values()) - 1.0) < 1e-9, "capping must redistribute, never shrink the budget"
 
 
@@ -109,7 +109,7 @@ def test_with_nothing_measured_the_allocation_is_the_incumbent_uniform_one() -> 
     """An allocator with no evidence must not invent a preference."""
     ys = [Y("a", "equity", 10, 0), Y("b", "fx_exotic", 10, 0)]
     w = ta.weights(ys)
-    assert w[("a", "equity")] == w[("b", "fx_exotic")] == 0.5
+    assert w[("a", "equity", ta.UNNAMED_EXIT)] == w[("b", "fx_exotic", ta.UNNAMED_EXIT)] == 0.5
     assert ta.weights([]) == {}
 
 

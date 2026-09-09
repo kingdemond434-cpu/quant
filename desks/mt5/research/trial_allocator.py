@@ -115,6 +115,52 @@ PRIOR_TRIALS = 100.0
 #: certificate and must not be counted as one.
 PASSED = "PASSED"
 
+# ==============================================================================================
+# THE EXIT IS THE THIRD AXIS (Tier-1 audit G11, 2026-09-08).
+#
+# The cell type was (family x asset class) and the exit was invisible in it. `exit_sweep` solves
+# 216 exit arms per sleeve and `exit_study` four; every one is a TRIAL, and the yield table --
+# the thing that decides where the next trial goes -- could not tell a trailing stop from a
+# fixed target, so a family whose certificates all came from one exit read as a family that
+# works. Adding the exit to the key makes "overnight_gap_decay pays on fx_exotic WITH A TRAILING
+# STOP" a statement the allocator can hold.
+#
+# A CLASS, NOT A PARAMETER VALUE, and that is the whole design decision. Keying on `rr=2.0`
+# rather than `target_rr` would make almost every cell type a singleton: the shrinkage would
+# never leave the pooled prior, the explore share would be split over thousands of cells, and
+# the table would stop being evidence about anything. Five named classes keep the axis coarse
+# enough to learn and fine enough to separate the exits the desk actually varies.
+# ==============================================================================================
+#: Param names that NAME an exit mechanism, most specific first. The first family matched wins,
+#: because a cell with both a trail and a target is a trail cell -- the trail is what closes it.
+_EXIT_MARKERS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("trail", ("trail", "runner_trail_k", "breakeven", "break_even", "be_at_r", "trail_atr",
+               "trail_after_r", "supertrend_trail")),
+    ("partial", ("bank_frac", "bank_protect_k", "tp2", "partial", "scale_out")),
+    ("target_rr", ("rr", "target_rr", "take_profit", "tp_atr", "true_break_tp_atr")),
+    ("time_only", ("ttl_bars", "hold_bars", "horizon", "hold_days", "ttl")),
+)
+#: A cell whose params name no exit at all. Not "no exit": the family's own default closes it,
+#: and what is unmeasured here is WHICH rule that is -- a naming gap, recorded as one.
+UNNAMED_EXIT = "unnamed"
+EXIT_RULES: tuple[str, ...] = (*(name for name, _keys in _EXIT_MARKERS), UNNAMED_EXIT)
+
+
+def exit_rule_of(params: Any) -> str:
+    """The exit CLASS a cell's params name: trail / partial / target_rr / time_only / unnamed.
+
+    Read off the params the queue already carries, so no producer has to be changed for the
+    axis to exist and a cell judged before this landed is classified by the same rule as one
+    judged after. Unknown shapes are `unnamed` rather than guessed into a class.
+    """
+    if not isinstance(params, dict) or not params:
+        return UNNAMED_EXIT
+    keys = {str(k).lower() for k in params}
+    for name, markers in _EXIT_MARKERS:
+        if any(m in k for k in keys for m in markers):
+            return name
+    return UNNAMED_EXIT
+
 
 def wilson_lower(certified: float, tried: float, z: float = WILSON_Z) -> float:
     """The 95% lower bound on a pass rate.
@@ -148,7 +194,7 @@ def shrunk_lower(certified: int, tried: int, pooled: float,
 
 @dataclass(frozen=True)
 class CellYield:
-    """One (family, asset class) cell type and what the gauntlet did with it."""
+    """One (family, asset class, exit rule) cell type and what the gauntlet did with it."""
 
     family: str
     asset_class: str
@@ -157,10 +203,13 @@ class CellYield:
     #: The desk's pooled certification rate, carried so a row can be shrunk toward it. Defaults
     #: to zero, which is the most pessimistic prior available and never flatters a thin count.
     pooled: float = 0.0
+    #: The exit CLASS this cell type closes with. Defaults to `unnamed` so a caller that has not
+    #: been taught the axis yet builds the same row it always did.
+    exit_rule: str = UNNAMED_EXIT
 
     @property
-    def key(self) -> tuple[str, str]:
-        return (self.family, self.asset_class)
+    def key(self) -> tuple[str, str, str]:
+        return (self.family, self.asset_class, self.exit_rule)
 
     @property
     def rate(self) -> float:
@@ -171,7 +220,8 @@ class CellYield:
         return shrunk_lower(self.certified, self.tried, self.pooled)
 
     def as_dict(self) -> dict[str, Any]:
-        return {"family": self.family, "asset_class": self.asset_class, "tried": self.tried,
+        return {"family": self.family, "asset_class": self.asset_class,
+                "exit_rule": self.exit_rule, "tried": self.tried,
                 "certified": self.certified, "rate": round(self.rate, 6),
                 "wilson_lower": round(wilson_lower(self.certified, self.tried), 6),
                 "shrunk_lower": round(self.lower, 6)}
@@ -221,8 +271,8 @@ def observed(queue_path: Path | None = None) -> list[CellYield]:
         return []
     if not isinstance(rows, list):
         return []
-    tried: Counter[tuple[str, str]] = Counter()
-    passed: Counter[tuple[str, str]] = Counter()
+    tried: Counter[tuple[str, str, str]] = Counter()
+    passed: Counter[tuple[str, str, str]] = Counter()
     for row in rows:
         if not isinstance(row, dict):
             continue
@@ -232,14 +282,15 @@ def observed(queue_path: Path | None = None) -> list[CellYield]:
         sym = _symbol_of(row)
         if sym is None:
             continue
-        key = (str(row.get("family") or "unknown"), asset_class_of(sym))
+        key = (str(row.get("family") or "unknown"), asset_class_of(sym),
+               exit_rule_of(row.get("params")))
         tried[key] += 1
         if verdict == PASSED:
             passed[key] += 1
     pooled = (sum(passed.values()) / sum(tried.values())) if sum(tried.values()) else 0.0
-    return sorted((CellYield(fam, cls, n, passed.get((fam, cls), 0), pooled)
-                   for (fam, cls), n in tried.items()),
-                  key=lambda y: (-y.lower, -y.tried, y.family, y.asset_class))
+    return sorted((CellYield(fam, cls, n, passed.get((fam, cls, ex), 0), pooled, ex)
+                   for (fam, cls, ex), n in tried.items()),
+                  key=lambda y: (-y.lower, -y.tried, y.family, y.asset_class, y.exit_rule))
 
 
 def pooled_rate(yields: list[CellYield]) -> float:
@@ -300,8 +351,23 @@ def class_weights(yields: list[CellYield], **kw: Any) -> dict[str, float]:
     """
     per_cell = weights(yields, **kw)
     out: dict[str, float] = {}
-    for (_fam, cls), w in per_cell.items():
+    for key, w in per_cell.items():
+        cls = key[1]
         out[cls] = out.get(cls, 0.0) + w
+    total = sum(out.values()) or 1.0
+    return {k: v / total for k, v in out.items()}
+
+
+def exit_weights(yields: list[CellYield], **kw: Any) -> dict[str, float]:
+    """Budget share per EXIT RULE -- the axis the table could not see until 2026-09-08.
+
+    Summed over families and asset classes, so "what has a trailing stop ever certified against
+    a fixed target" is a number the exit engines can be pointed at rather than a belief.
+    """
+    per_cell = weights(yields, **kw)
+    out: dict[str, float] = {}
+    for key, w in per_cell.items():
+        out[key[2]] = out.get(key[2], 0.0) + w
     total = sum(out.values()) or 1.0
     return {k: v / total for k, v in out.items()}
 
@@ -561,6 +627,11 @@ def run() -> dict[str, Any]:
         "n_cell_types": len(ys),
         "cell_type_yield": [y.as_dict() for y in ys],
         "class_weights": {k: round(v, 5) for k, v in sorted(cls.items())},
+        # THE EXIT AXIS, reported so 216-arm exit sweeps stop being invisible in the yield
+        # table. `exit_rules_seen` names what the docket actually varies; a docket whose cells
+        # all read `unnamed` is a naming gap in the producers, not an absence of exits.
+        "exit_weights": {k: round(v, 5) for k, v in sorted(exit_weights(ys).items())},
+        "exit_rules_seen": sorted({y.exit_rule for y in ys}),
         "class_share_received": {k: round(v, 5)
                                  for k, v in sorted(incumbent_class_share(ys).items())},
         "rent": rent(ys),
@@ -589,12 +660,14 @@ def main() -> int:
         # allocator never used.
         ys = observed()
         w = weights(ys)
-        print(f"{'family':28s} {'class':10s} {'cert':>5s} {'tried':>7s} {'rate':>9s} "
-              f"{'wilson_lo':>10s} {'shrunk_lo':>10s} {'weight':>8s}")
+        print(f"{'family':24s} {'class':10s} {'exit':10s} {'cert':>5s} {'tried':>7s} "
+              f"{'rate':>9s} {'wilson_lo':>10s} {'shrunk_lo':>10s} {'weight':>8s}")
         for y in ys[:25]:
-            print(f"{y.family:28s} {y.asset_class:10s} {y.certified:5d} "
+            print(f"{y.family:24s} {y.asset_class:10s} {y.exit_rule:10s} {y.certified:5d} "
                   f"{y.tried:7d} {y.rate:9.5f} {wilson_lower(y.certified, y.tried):10.5f} "
                   f"{y.lower:10.5f} {w.get(y.key, 0.0):8.4f}")
+        print("exit share: " + ", ".join(f"{k}={v:.1%}"
+                                         for k, v in sorted(rep["exit_weights"].items())))
         r = rep["rent"]
         print(f"\nrent: {r.get('rent')} {r.get('unit')} "
               f"(with {r.get('with')} vs without {r.get('without')}) -> {r.get('verdict')}")

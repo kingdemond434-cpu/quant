@@ -186,8 +186,14 @@ def test_native_step_reads_the_interval_the_bars_actually_carry():
 
 
 def test_the_builder_searches_finest_bars_first():
-    """A finer file serves every coarser clock; a coarser one cannot serve a finer clock at all."""
-    assert svb.BAR_SUFFIXES == ("M5", "M15", "H1")
+    """A finer file serves every coarser clock; a coarser one cannot serve a finer clock at all.
+
+    D1 joined the ladder in 2026-09 (`refresh_tail` derives it from H1) and is LAST because it is
+    coarsest -- which is also why finest-first stopped being the whole rule: see
+    `test_daily_clock_has_a_file.py` for the 73-day M5 file that was silently answering the daily
+    clock for gold, and `_close` for the per-clock choice that replaced it.
+    """
+    assert svb.BAR_SUFFIXES == ("M5", "M15", "H1", "D1")
     assert set(svb.ASSET_CLOCKS) <= set(CLOCKS)
 
 

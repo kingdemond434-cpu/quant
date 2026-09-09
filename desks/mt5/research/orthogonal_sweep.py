@@ -505,6 +505,27 @@ def _unsuppliable(fn, supplied: dict) -> str | None:
     return ", ".join(missing) if missing else None
 
 
+MICROSTRUCTURE_SURFACES = BASE / "reports" / "MICROSTRUCTURE_SURFACES.json"
+
+
+@lru_cache(maxsize=1)
+def _surfaces() -> dict:
+    """The venue's published spread/activity surface per symbol, read once. {} when absent.
+
+    `family_execution_state` refuses without it, so an absent report reads as "no signals (the
+    venue's spread/activity surface by weekday-hour)" in the gap census -- an ACQUISITION task
+    naming the artifact that is missing, which is what the miner writes on its own clock.
+    """
+    doc = _read(MICROSTRUCTURE_SURFACES)
+    syms = (doc or {}).get("symbols")
+    return syms if isinstance(syms, dict) else {}
+
+
+def _surface_for(symbol: str) -> dict | None:
+    got = _surfaces().get(str(symbol))
+    return got if isinstance(got, dict) and got else None
+
+
 @lru_cache(maxsize=1)
 def _event_index():
     """Recover point-in-time event timestamps already persisted by the calendar miner."""
@@ -680,6 +701,8 @@ def sweep() -> dict:
             "macro_conditional": {"macro": macro},
             "cot_positioning": {"cot": cot},
             "event_reaction": {"events": events},
+            # The venue's own fill surface: the one family whose ENTRY is an execution state.
+            "execution_state": {"surface": _surface_for(sym)},
         }
         # Runtime objects cannot be JSON identities. Persist exact provenance needed to rebuild
         # the same candidate in the universal gauntlet; an empty params object previously made
@@ -700,6 +723,15 @@ def sweep() -> dict:
                                   "publication_lag_d": MACRO_PUBLICATION_LAG_D},
             "cot_positioning": {"input_source": "cot_point_in_time"},
             "event_reaction": {"input_source": "ff_calendar_vintage"},
+            # THE SURFACE'S VINTAGE TRAVELS ON THE CANDIDATE. The eligible windows are a
+            # desk-wide published map rather than a per-cell fit, but it is computed over the
+            # venue's whole recorded history -- so which vintage selected them is part of what
+            # the gauntlet is rebuilding, and a certificate that does not name it could not be
+            # reproduced against a later surface.
+            "execution_state": {"input_source": "microstructure_surfaces",
+                                "surface_generated_at": str(
+                                    (_read(MICROSTRUCTURE_SURFACES) or {}).get("generated_at")
+                                    or "")},
         }
         m = meta.get(sym, {}) if isinstance(meta, dict) else {}
         try:

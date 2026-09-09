@@ -1505,6 +1505,176 @@ FAMILY_INPUTS["style_premia"] = ("swap_diff (broker_swaps) for carry; risk-drive
 
 
 # ==============================================================================================
+# TWO MECHANISM CLASSES THE ZOO COULD NOT EVEN TRY (2026-09-08): the opening range and the jump.
+#
+# The Tier-1 audit measured 76 registered = 76 executable families and only FIVE that have ever
+# produced a certificate -- and, separately, fifteen of the blueprint's mechanism classes with no
+# registered family at all, so those classes could not be tried at any bar. Two of them need
+# nothing but bars, and a class that is untried for want of a function is a research frontier
+# fixed by an omission rather than by evidence. Both come through this registry and no other
+# door: the sweep enumerates them next hour, the gauntlet judges them at the same ten gates, and
+# nothing here has authority.
+# ==============================================================================================
+
+
+def family_opening_range(
+    df: pd.DataFrame,
+    *,
+    open_hour: int = 10,
+    range_bars: int = 1,
+    window_bars: int = 12,
+    min_range_atr: float = 0.25,
+    max_range_atr: float = 3.0,
+    rr: float = 1.5,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+) -> list[Signal]:
+    """The opening-range breakout: the first bars after a named open define a range, and the
+    first close outside it within a window is the trade, stopped at the range's other side.
+
+    THE MECHANISM, and why it is not `session_range_breakout`. That family measures a range over
+    a SESSION WINDOW of stamp-hours (Asia, London) and rests an order at a later signal hour. This
+    trades the OPENING AUCTION: the price discovery in the first bars after a cash open, when
+    overnight orders are absorbed and the day's initial balance forms. A break of that balance
+    before the window closes is the market rejecting the auction's range -- an information claim
+    about the open itself, on a clock the session family does not use.
+
+    `open_hour` is a BROKER STAMP-HOUR (the desk's bars carry EET stamps under a UTC label --
+    see `families._h1`). Stamp 10 contains the London cash open in both DST regimes; stamp 16
+    contains the New York cash open for the index and share CFDs. `range_bars` is BAR-RELATIVE
+    on purpose (the file's Question 1): one bar is the five-minute range on M5, the fifteen-
+    minute range on M15 and the first-hour range on H1 -- the three classical opening ranges,
+    without a second family being written.
+
+    The stop is the range's opposite edge (classic ORB), so R is the range itself; a range under
+    `min_range_atr` ATRs is noise and one over `max_range_atr` is a range that already broke.
+    One trade per day, first break wins, next-open entry. No bar after the signal bar is read.
+    """
+    d = _h1(df)
+    if len(d) < atr_n + range_bars + window_bars + 2 or range_bars < 1 or window_bars < 1:
+        return []
+    atr_v = _atr(d, atr_n).to_numpy(dtype="float64", na_value=np.nan)
+    hi_v = d["high"].to_numpy(dtype="float64", na_value=np.nan)
+    lo_v = d["low"].to_numpy(dtype="float64", na_value=np.nan)
+    cl_v = d["close"].to_numpy(dtype="float64", na_value=np.nan)
+    idx = d.index
+    hours = idx.hour.to_numpy()
+    days = idx.normalize().asi8
+    n = len(d)
+    signals: list[Signal] = []
+    last_day = None
+    for i in range(atr_n, n - 1):
+        if hours[i] != int(open_hour) or days[i] == last_day:
+            continue
+        last_day = days[i]
+        end = i + int(range_bars)                       # exclusive: the range is bars [i, end)
+        if end >= n - 1 or days[end - 1] != days[i]:
+            continue
+        r_hi = float(np.nanmax(hi_v[i:end]))
+        r_lo = float(np.nanmin(lo_v[i:end]))
+        span = r_hi - r_lo
+        a = float(atr_v[end - 1])
+        if not (np.isfinite(a) and a > 0 and np.isfinite(span) and span > 0):
+            continue
+        if span < min_range_atr * a or span > max_range_atr * a:
+            continue
+        for j in range(end, min(end + int(window_bars), n - 1)):
+            if days[j] != days[i]:
+                break                                   # the range belongs to its own day
+            c = float(cl_v[j])
+            if not np.isfinite(c):
+                continue
+            if c > r_hi:
+                side, edge, stop = 1, r_hi, r_lo
+            elif c < r_lo:
+                side, edge, stop = -1, r_lo, r_hi
+            else:
+                continue
+            target = edge + side * span * rr
+            # A break so violent that the signal bar already closed beyond the target is the
+            # day's break, consumed, with no takeable trade: the engine would enter at the next
+            # open behind its own target. Refused here rather than handed over as a signal.
+            if side * (target - c) > 0:
+                signals.append(Signal(time=idx[j], side=side, stop=stop, target=target,
+                                      ttl_bars=int(ttl_bars), tag="opening_range",
+                                      trigger=None, wait_bars=1))
+            break
+    return signals
+
+
+def family_jump(
+    df: pd.DataFrame,
+    *,
+    lookback: int = 48,
+    jump_k: float = 4.0,
+    mode: str = "continue",
+    cooldown_bars: int = 8,
+    atr_n: int = 20,
+    stop_atr: float = 1.5,
+    rr: float = 1.5,
+    ttl_bars: int = 8,
+) -> list[Signal]:
+    """A single-bar DISCONTINUITY against the diffusive volatility of the bars before it.
+
+    THE MECHANISM, and why it is neither `vol_transition` nor `event_reaction`. A jump is a bar
+    whose return is too large to have come from the continuous process the recent bars describe:
+    Lee-Mykland's statistic |r_i| / sigma_i, with sigma_i^2 the Barndorff-Nielsen--Shephard
+    BIPOWER variation (pi/2) x mean(|r_j||r_{j-1}|) over the trailing `lookback` bars STRICTLY
+    BEFORE bar i -- bipower because a squared-return variance would contain the jumps it is
+    meant to detect and never flag a second one. `vol_transition` trades a rolling ratio crossing,
+    a change of REGIME; this trades one bar's break from the regime, whatever the regime. It needs
+    no calendar, so it catches the unscheduled shock the event family cannot see.
+
+    TWO CLAIMS, both economically real and both charged as trials: `continue` follows the jump
+    (information arrives in a jump and diffuses after it), `revert` fades it (a jump made into a
+    thin book is liquidity, not information). The gauntlet decides which holds per instrument.
+    `cooldown_bars` keeps a cluster of jump bars from being ten signals of one shock.
+    """
+    if mode not in ("continue", "revert") or lookback < 4:
+        return []
+    d = _h1(df)
+    if len(d) < lookback + atr_n + 3:
+        return []
+    close = d["close"].astype(float)
+    ret = np.log(close).diff()
+    absr = ret.abs()
+    # (pi/2) x trailing mean of |r_j||r_{j-1}|, then shifted ONE bar so bar i's own return is not
+    # in the variance it is tested against. Everything here is a trailing window; nothing reads
+    # a later bar.
+    bipower = (absr * absr.shift(1)).rolling(int(lookback), min_periods=int(lookback)).mean()
+    sigma = np.sqrt(bipower.shift(1) * (np.pi / 2.0))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        stat = (absr / sigma).to_numpy(dtype="float64", na_value=np.nan)
+    atr_v = _atr(d, atr_n).to_numpy(dtype="float64", na_value=np.nan)
+    ret_v = ret.to_numpy(dtype="float64", na_value=np.nan)
+    close_v = close.to_numpy(dtype="float64", na_value=np.nan)
+    idx = np.arange(len(d))
+    ok = (idx >= lookback + 1) & (idx < len(d) - 1)
+    ok &= np.isfinite(stat) & (stat >= float(jump_k)) & np.isfinite(ret_v) & (ret_v != 0.0)
+    ok &= np.isfinite(atr_v) & (atr_v > 0)
+    flip = 1 if mode == "continue" else -1
+    signals: list[Signal] = []
+    last = -(10 ** 9)
+    times = d.index
+    for i in idx[ok]:
+        if i - last < int(cooldown_bars):
+            continue
+        last = int(i)
+        side = flip * (1 if ret_v[i] > 0 else -1)
+        a, px = float(atr_v[i]), float(close_v[i])
+        signals.append(Signal(time=times[i], side=side, stop=px - side * stop_atr * a,
+                              target=px + side * stop_atr * a * rr, ttl_bars=int(ttl_bars),
+                              tag=f"jump:{mode}", trigger=None, wait_bars=1))
+    return signals
+
+
+ORTHOGONAL_FAMILIES["opening_range"] = family_opening_range
+FAMILY_INPUTS["opening_range"] = ("price only", "data/universe/*_H1.parquet")
+ORTHOGONAL_FAMILIES["jump"] = family_jump
+FAMILY_INPUTS["jump"] = ("price only", "data/universe/*_H1.parquet")
+
+
+# ==============================================================================================
 # EVERY MECHANISM ON EVERY CHART -- and the two questions that decides (2026-09-05)
 #
 # The principal's order is "m1 m5 m15 m30 h1 h4 d1 all possible every type of mechanism n chart
@@ -1630,6 +1800,13 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "trades the laggard against a DRIVER instrument bar for bar at a measured lag; a lag "
         "measured across instruments with different quoting hours below the hour is the quoting "
         "difference, not the information flow"),
+    # ---- bounded ABOVE, like the other stamp-hour families (added 2026-09-08).
+    "opening_range": (
+        ("M1", "M5", "M15", "M30", "H1"),
+        "the range forms in the first bars after ONE named stamp-hour (open_hour, the cash open); "
+        "a four-hour bar stamped 0/4/8/12/16/20 carries stamp 10 on no day and a daily bar "
+        "carries no hour at all, so the family would return [] on every symbol there and be "
+        "filed as a data gap rather than as an inexpressible claim"),
 }
 
 #: Parameters whose bar count expresses a WALL-CLOCK duration the mechanism's cause is dated by.
@@ -1663,6 +1840,213 @@ WALL_CLOCK_PARAMS: dict[str, tuple[str, ...]] = {
     #       session, which is a finer statement of the same claim rather than a broken one.
     #       (The naming is the family's to fix; scaling around it would hide it.)
 }
+
+
+# ==============================================================================================
+# THE DESK'S OWN FILL SURFACE AS AN ENTRY CONDITION (Tier-1 audit G8, 2026-09-08).
+#
+# Execution is the most thoroughly MEASURED thing on this desk and the least discovered:
+# `microstructure_miner` publishes spread and activity by (weekday, hour) for every instrument
+# in reports/MICROSTRUCTURE_SURFACES.json, `fill_surface` models P(fill | state) and E[slip |
+# state], the promotion gate reads execution_quality.json -- and the miner ran 83 tests and
+# proposed 0 cells, because no registered family's SIGNAL was an execution state. The surfaces
+# could describe a trade and never propose one.
+#
+# THE MECHANISM, in one sentence: the venue's surface says WHICH hours are cheap and deep, and
+# the bar's own book -- ranked against the instrument's recent history, strictly trailing -- has
+# to agree before anything is traded.
+#
+# A window the venue itself quotes cheap and deep is one where liquidity is
+# competing for the trade: a move made there is more likely to be information, because it was
+# paid for against a tight book. A window the venue quotes dear and thin is the opposite -- the
+# move was priced by absence, and it retraces when depth returns. `family_spread_state` asks a
+# neighbouring question from the instrument's OWN rolling percentile; this one asks it of the
+# VENUE'S PUBLISHED SURFACE, which is a fact about the broker's book rather than about this
+# instrument's recent bars, and it is the only family whose entry condition is an execution
+# state at all.
+#
+# WHAT IS POINT-IN-TIME AND WHAT IS NOT, said plainly. The percentiles that fire an entry are
+# computed inside the family from the bars' OWN spread and tick_volume over the previous
+# `norm_window` bars, so a bar is ranked against readings that had already printed and never
+# against itself or a later one. The surface file is used for one thing: to say WHICH buckets
+# are eligible. That is a calendar restriction of exactly the kind
+# `cross_asset_residual.active_hours` and every stamp-hour family already carry as source
+# evidence, and it is desk-wide rather than fitted per cell -- but it is computed over the
+# venue's whole recorded history, so the vintage travels on the candidate's identity and this
+# note is the honest statement of it.
+#
+# REFUSES WITHOUT THE SURFACE. No report, no eligible windows, no signals -- the same refusal
+# `family_carry` makes without swap terms, and for the same reason: a family that quietly falls
+# back to price-only behaviour is a price family wearing a better name.
+# ==============================================================================================
+EXECUTION_MODES = ("cheap_deep", "dear_thin")
+
+
+def _surface_windows(surface: dict, mode: str, spread_pct: float,
+                     activity_pct: float) -> set[tuple[int, int]]:
+    """The (weekday, hour) buckets this mode may trade, from the venue's published surface.
+
+    The miner's own `cheapest_deepest_windows` / `dearest_thinnest_windows` lists are read
+    first -- they are what it decided, and re-deriving them here would be a second opinion that
+    can silently drift from the producer's. When they are absent the buckets are recovered from
+    the `*_by_dow_hour` maps at the declared percentiles.
+    """
+    key = ("cheapest_deepest_windows" if mode == "cheap_deep" else "dearest_thinnest_windows")
+    out: set[tuple[int, int]] = set()
+    for token in surface.get(key) or []:
+        try:
+            dow, hour = str(token).split(":")
+            out.add((int(dow.removeprefix("dow")), int(hour.removeprefix("h"))))
+        except (TypeError, ValueError):
+            continue
+    if out:
+        return out
+    spreads = surface.get("spread_by_dow_hour") or {}
+    acts = surface.get("activity_by_dow_hour") or {}
+    if not spreads or not acts:
+        return out
+    def _parsed(m: dict) -> dict[tuple[int, int], float]:
+        got: dict[tuple[int, int], float] = {}
+        for k, v in m.items():
+            try:
+                d, h = str(k).split(":")
+                got[(int(d), int(h))] = float(v)
+            except (TypeError, ValueError):
+                continue
+        return got
+    sp, ac = _parsed(spreads), _parsed(acts)
+    both = sorted(set(sp) & set(ac))
+    if len(both) < 5:
+        return out
+    sv = np.array([sp[b] for b in both], dtype=float)
+    av = np.array([ac[b] for b in both], dtype=float)
+    s_rank = sv.argsort().argsort() / max(1, len(both) - 1)
+    a_rank = av.argsort().argsort() / max(1, len(both) - 1)
+    if mode == "cheap_deep":
+        keep = (s_rank <= spread_pct) & (a_rank >= activity_pct)
+    else:
+        keep = (s_rank >= 1.0 - spread_pct) & (a_rank <= 1.0 - activity_pct)
+    return {both[i] for i in np.flatnonzero(keep)}
+
+
+def _trailing_percentile(values: pd.Series, window: int) -> pd.Series:
+    """Each bar's percentile among the PREVIOUS `window` bars of the same series.
+
+    Strictly causal: the fraction of the preceding `window` readings at or below this one, with
+    the bar's own value never in its own reference set. The same construction
+    `family_spread_state` uses, hoisted here because both families need it.
+
+    WHY THE REFERENCE IS THE INSTRUMENT'S RECENT HISTORY AND NOT THE BUCKET'S. Ranking a bar
+    against its own (weekday, hour) bucket asks "was this Tuesday 09:00 cheap for a Tuesday
+    09:00" -- and the venue's spread inside one bucket is nearly constant, so the answer is
+    ~0.5 forever and the family would never fire. The question that has an answer is whether
+    THIS bar's book is cheap for this instrument at all, which is what the surface's window
+    claim is asserting about the hour.
+    """
+    v = values.to_numpy(dtype=float)
+    n = v.size
+    out = np.full(n, np.nan)
+    if n <= window:
+        return pd.Series(out, index=values.index)
+    from numpy.lib.stride_tricks import sliding_window_view
+    win = sliding_window_view(v, window + 1)
+    prev, cur = win[:, :-1], win[:, -1:]
+    with np.errstate(invalid="ignore"):
+        out[window:] = (prev <= cur).mean(axis=1)
+    return pd.Series(out, index=values.index)
+
+
+def family_execution_state(
+    df: pd.DataFrame,
+    *,
+    surface: dict | None = None,
+    mode: str = "cheap_deep",
+    spread_pct: float = 0.30,
+    activity_pct: float = 0.70,
+    norm_window: int = 240,
+    min_move_atr: float = 0.5,
+    hold_bars: int = 6,
+    atr_n: int = 20,
+    stop_atr: float = 2.0,
+    rr: float = 1.5,
+) -> list[Signal]:
+    """Trade a move made in a window the VENUE quotes cheap and deep -- or fade one made dear
+    and thin. The desk's first family whose entry condition is an execution state.
+
+    `cheap_deep` follows the move: a tight, competitive book means the move was paid for.
+    `dear_thin` fades it: a move into a hollow book was priced by absence, not information.
+    Both are economically real, both are charged as trials, and the gauntlet decides which holds
+    per instrument -- this file supplies the instrument, never the answer.
+
+    REFUSES without the surface, without a `spread` column, or when the surface names no
+    eligible window: returns nothing rather than degrading into a momentum sleeve.
+    """
+    if mode not in EXECUTION_MODES or not isinstance(surface, dict) or not surface:
+        return []
+    if "spread" not in df.columns:
+        return []
+    eligible = _surface_windows(surface, mode, spread_pct, activity_pct)
+    if not eligible:
+        return []
+    d = _h1(df)
+    raw = df.copy()
+    raw.index = pd.DatetimeIndex(pd.to_datetime(raw.index, utc=True, errors="coerce"))
+    spread = raw["spread"].astype(float).reindex(d.index).ffill()
+    if not np.isfinite(spread.to_numpy()).any():
+        return []
+    has_vol = "tick_volume" in raw.columns
+    activity = (raw["tick_volume"].astype(float).reindex(d.index).ffill() if has_vol
+                else pd.Series(np.nan, index=d.index))
+    in_window = pd.Series([(t.dayofweek, t.hour) in eligible for t in d.index], index=d.index)
+    if not bool(in_window.any()):
+        return []
+    sp_rank = _trailing_percentile(spread, int(norm_window))
+    ac_rank = (_trailing_percentile(activity, int(norm_window)) if has_vol
+               else pd.Series(np.nan, index=d.index))
+    close = d["close"].astype(float)
+    ret = close.diff()
+    atr = _atr(d, atr_n)
+
+    follow = mode == "cheap_deep"
+    signals: list[Signal] = []
+    last = -10 ** 9
+    idx = d.index
+    for i in range(atr_n, len(idx) - 1):
+        if i - last < hold_bars or not bool(in_window.iloc[i]):
+            continue
+        a = float(atr.iloc[i])
+        mv = float(ret.iloc[i])
+        if not (np.isfinite(a) and a > 0 and np.isfinite(mv)) or abs(mv) < min_move_atr * a:
+            continue
+        sr = float(sp_rank.iloc[i])
+        if not np.isfinite(sr):
+            continue
+        ar = float(ac_rank.iloc[i]) if has_vol else np.nan
+        if follow:
+            # The venue's cheap-deep window AND this bar's own book agreeing with it.
+            if sr > spread_pct or (has_vol and (not np.isfinite(ar) or ar < activity_pct)):
+                continue
+        else:
+            if sr < 1.0 - spread_pct or (has_vol and (not np.isfinite(ar)
+                                                      or ar > 1.0 - activity_pct)):
+                continue
+        side = (1 if mv > 0 else -1) if follow else (-1 if mv > 0 else 1)
+        px = float(close.iloc[i])
+        signals.append(Signal(time=idx[i], side=side, stop=px - side * stop_atr * a,
+                              target=px + side * stop_atr * a * rr, ttl_bars=int(hold_bars),
+                              tag=f"execution_state:{mode}", trigger=None, wait_bars=1))
+        last = i
+    return signals
+
+
+ORTHOGONAL_FAMILIES["execution_state"] = family_execution_state
+FAMILY_INPUTS["execution_state"] = ("the venue's spread/activity surface by weekday-hour",
+                                    "reports/MICROSTRUCTURE_SURFACES.json")
+FAMILY_TIMEFRAMES["execution_state"] = (
+    ("M1", "M5", "M15", "M30", "H1"),
+    "the surface it reads is published by (weekday, STAMP HOUR), so a bar spanning four hours "
+    "or a day cannot be placed in one of its buckets -- the family would return [] on every "
+    "symbol there and be filed as a data gap rather than as an inexpressible claim")
 
 
 def timeframe_domain(family: str) -> tuple[str, ...]:

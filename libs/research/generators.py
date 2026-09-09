@@ -943,13 +943,21 @@ def _mse(z: np.ndarray, y: np.ndarray, sl: slice) -> float:
 def symbolic_regression(rng: np.random.Generator, frames: dict[str, pd.Series],
                         target: pd.Series, *, iters: int = 60, allow_drivers: bool = True,
                         max_depth: int = 3, train_frac: float = TRAIN_FRAC,
-                        terminals: Sequence[str] | None = None) -> Expr:
+                        terminals: Sequence[str] | None = None,
+                        seed_expr: Expr | None = None) -> Expr:
     """Hill-climb from a random tree by `mutate`, accepting a move when the train-slice error
     falls. The holdout error is measured for the report and never consulted for a decision.
 
     `terminals` narrows the leaf pool to what the caller actually has a series for -- a driver
     the frames do not carry evaluates to NaN, so a hill-climb that may reach it spends its
-    iterations on trees that cannot score."""
+    iterations on trees that cannot score.
+
+    `seed_expr` STARTS the climb somewhere known instead of at noise (2026-09-08). Sixty
+    mutations from a random tree rarely reach a structure a published alpha already names, and
+    the desk now carries fifteen of them in `alpha_grammar.CANON`; starting from one makes the
+    population a search around known shapes rather than only a search from scratch. It is a
+    STARTING POINT and nothing more -- every accepted move is still a measured improvement on
+    the train slice, and an unusable seed falls back to the random draw."""
     LAST_FIT.clear()
     if not frames:
         LAST_FIT["why"] = "no frames: fell back to random_expr"
@@ -972,6 +980,8 @@ def symbolic_regression(rng: np.random.Generator, frames: dict[str, pd.Series],
         return _mse(z, yz, slice(0, cut)), _mse(z, yz, slice(cut, n))
 
     best = ag.random_expr(rng, max_depth, allow_drivers, terminals=terminals)
+    if seed_expr is not None and ag.is_valid(seed_expr, allow_drivers, terminals):
+        best = json.loads(json.dumps(seed_expr))       # never mutate the caller's tree in place
     best_s = score(best)
     accepted = 0
     for _ in range(int(iters)):

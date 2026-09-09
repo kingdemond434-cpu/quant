@@ -218,6 +218,73 @@ def _aligned_h1(a: pd.Series, b: pd.Series, sa: float, sb: float, clock: str
     return j["x"].to_numpy(dtype=float), j["y"].to_numpy(dtype=float)
 
 
+def _aligned_many(x: pd.Series, y: pd.Series, sx: float, sy: float,
+                  confounders: list[tuple[pd.Series, float]], clock: str
+                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """x, y and every confounder on ONE index and one clock -- the same inner join and the same
+    D1/W1 aggregation `_aligned_h1` applies, so the conditioned test sees the bars the pairwise
+    test saw. Returns (x, y, Z) with Z of shape (n, k)."""
+    cols = {"x": x.rename("x") * sx, "y": y.rename("y") * sy}
+    for i, (s, sg) in enumerate(confounders):
+        cols[f"z{i}"] = s.rename(f"z{i}") * sg
+    j = pd.concat(list(cols.values()), axis=1, join="inner").dropna()
+    if clock == "D1" and not j.empty:
+        j = j.groupby(j.index.floor("D")).sum()
+    elif clock == "W1" and not j.empty:
+        day = j.index.floor("D")
+        j = j.groupby(day - pd.to_timedelta(day.dayofweek, unit="D")).sum()
+    zc = [c for c in j.columns if c.startswith("z")]
+    return (j["x"].to_numpy(dtype=float), j["y"].to_numpy(dtype=float),
+            j[zc].to_numpy(dtype=float).reshape(len(j), len(zc)))
+
+
+def admitted_parents(graph: cg.CausalGraph, e: cg.Edge) -> list[cg.Edge]:
+    """The ADMITTED claim edges into `e.dst` from any source but `e.src` -- the parents the
+    graph already believes in, which a new edge into the same target must add to."""
+    return sorted((p for p in graph.edges_into(e.dst)
+                   if p.status == cg.ADMITTED and p.src != e.src),
+                  key=lambda p: (p.src, p.lag))
+
+
+def _condition(graph: cg.CausalGraph, e: cg.Edge, a: tuple[str, str, float],
+               b: tuple[str, str, float], series: Series, clock: str) -> None:
+    """Re-test an ADMITTED edge with its target's admitted parents in the base regression and
+    write the answer onto `e.evidence["conditional"]`. PUBLISHES, NEVER RULES: the edge's status
+    is what the pairwise admission made it; whether it SURVIVES conditioning is a second column
+    the report carries, so a common-driver confound is visible rather than silently admitted.
+    """
+    if e.status != cg.ADMITTED:
+        return
+    parents = admitted_parents(graph, e)
+    if not parents:
+        e.evidence["conditional"] = {"status": "UNCONDITIONED",
+                                     "why": f"no admitted parent of {e.dst} other than {e.src}"}
+        return
+    used: list[dict[str, Any]] = []
+    confounders: list[tuple[pd.Series, float]] = []
+    skipped: list[str] = []
+    for p in parents:
+        r = series.resolve(p.src, graph)
+        if r is None or r[0] != "h1" or series.h1(r[1]) is None:
+            skipped.append(f"{p.src} (no H1 series on this box)")
+            continue
+        confounders.append((series.h1(r[1]), r[2]))
+        used.append({"src": p.src, "lag": int(p.lag), "via": r[1]})
+    if not confounders:
+        e.evidence["conditional"] = {"status": "UNCONDITIONED", "parents_skipped": skipped,
+                                     "why": "no admitted parent has an H1 series here"}
+        return
+    xa, yb = series.h1(a[1]), series.h1(b[1])
+    if xa is None or yb is None:
+        return
+    x, y, zmat = _aligned_many(xa, yb, a[2], b[2], confounders, clock)
+    got = cg.conditional_information(x, y, zmat, e.lag, z_lags=[u["lag"] for u in used])
+    survives = (float(got.get("delta_r2") or 0.0) > 0.0
+                and float(got.get("p_value", 1.0)) <= cg.ALPHA)
+    e.evidence["conditional"] = {"status": "SURVIVES" if survives else "FAILS",
+                                 "parents": used, "parents_skipped": skipped, **got}
+
+
 def _weekly_cot_pairs(z: pd.Series, close: pd.Series, sign: float
                       ) -> tuple[np.ndarray, np.ndarray]:
     """x_i = the positioning z knowable at availability time a_i; y_i = the instrument's log
@@ -418,9 +485,14 @@ def measure(graph: cg.CausalGraph, e: cg.Edge, a: tuple[str, str, float],
     floor = MIN_BARS if clock == "H1" else MIN_REPORTS
     if x.size < floor:
         return f"{x.size} aligned {clock} bars below {floor}"
-    return cg.measure_edge(x, y, src=e.src, dst=e.dst, clock=clock,
-                           decay_cls=e.decay_cls or _decay_for(clock), n_tests=bar,
-                           lags=lags, plausibility=e.plausibility, min_n=floor, evidence=ev)
+    got = cg.measure_edge(x, y, src=e.src, dst=e.dst, clock=clock,
+                          decay_cls=e.decay_cls or _decay_for(clock), n_tests=bar,
+                          lags=lags, plausibility=e.plausibility, min_n=floor, evidence=ev)
+    # CONDITIONED ON THE PARENTS THE GRAPH ALREADY ADMITS (2026-09-08). Same bars, same
+    # clock, the target's admitted parents in the base regression; the answer is published on
+    # the edge and in the report. The admission above is untouched.
+    _condition(graph, got, a, b, series, clock)
+    return got
 
 
 # --------------------------------------------------------------------------------- run
@@ -568,6 +640,22 @@ def run(symbols: list[str] | None = None, budget_s: float = DEFAULT_BUDGET_S) ->
     admitted = [e for e in graph.edges.values() if e.status == cg.ADMITTED]
     not_adm = [e for e in graph.edges.values() if e.status == cg.RECORDED_NOT_ADMITTED]
     new_edges = {f"{e.src}->{e.dst}@{e.lag}" for e in admitted} - prev_admitted
+    # WHICH ADMITTED EDGES SURVIVE CONDITIONING on their target's other admitted parents. A
+    # pairwise admission that FAILS here is the common-driver confound the audit named; it is
+    # published, not demoted -- the graph's admission rule is unchanged.
+    cond = {f"{e.src}->{e.dst}@{e.lag}": (e.evidence.get("conditional") or {})
+            for e in admitted}
+    conditioning = {
+        "edges_conditioned": sum(1 for c in cond.values()
+                                 if c.get("status") in ("SURVIVES", "FAILS")),
+        "edges_surviving": sorted(k for k, c in cond.items() if c.get("status") == "SURVIVES"),
+        "edges_failing": sorted(k for k, c in cond.items() if c.get("status") == "FAILS"),
+        "edges_unconditioned": sum(1 for c in cond.values()
+                                   if c.get("status") not in ("SURVIVES", "FAILS")),
+        "rule": ("deltaR2 of X_{t-lag} over [1, Y own lags, each admitted parent at its own "
+                 "lag], circular-shift null; SURVIVES when deltaR2 > 0 and p <= ALPHA; "
+                 "published beside the pairwise admission, which it does not change"),
+    }
     report: dict[str, Any] = {
         "generated_at": now.isoformat(), "source": SOURCE, "status": status, "why": why,
         "budget_s": budget_s, "spent_s": round(time.monotonic() - started, 1),
@@ -592,6 +680,7 @@ def run(symbols: list[str] | None = None, budget_s: float = DEFAULT_BUDGET_S) ->
         "recorded_not_admitted": [_edge_row(e) for e in
                                   sorted(not_adm, key=lambda e: -abs(e.strength))[:80]],
         "paths": top_paths(graph),
+        "conditioning": conditioning,
         "conditioning_hints": hints,
         "claims": {"rows_read": len(claim_rows), "edges_from_claims": len(claim_edges),
                    "unmapped_by_class": unmapped,
@@ -627,7 +716,8 @@ def _edge_row(e: cg.Edge) -> dict[str, Any]:
             "prior_direction": e.evidence.get("prior_direction"),
             "prior_source": e.evidence.get("prior_source"), "decay_cls": e.decay_cls,
             "measured_via": e.evidence.get("measured_via"), "status": e.status,
-            "reason": e.reason, "measured_at": e.measured_at}
+            "reason": e.reason, "measured_at": e.measured_at,
+            "conditional": e.evidence.get("conditional")}
 
 
 def main() -> int:
