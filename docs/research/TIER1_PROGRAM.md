@@ -20,12 +20,12 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 0 Close the truth loop: attribution, deadman, stable adoption, node separation, durable jobs, data freshness, research lineage | 1 | 1 | 5 | 0 | 15 |
 | 1 Remove the research throughput ceiling: worker queue, multi-fidelity screening, EVSI scheduler, research DAG, scalable forward clocks, content-addressed cache, experiment DB | 1 | 0 | 2 | 0 | 7 |
 | 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 1 | 1 | 20 | 1 | 1 |
-| 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 8 | 0 | 0 |
+| 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 7 | 0 | 1 |
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 2 | 0 | 12 |
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 9 | 1 | 9 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 1 | 1 | 0 | 8 |
-| **all** | 4 | 3 | 48 | 2 | 56 |
+| **all** | 4 | 3 | 47 | 2 | 57 |
 
 ## Items
 
@@ -282,7 +282,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: mechanism_claims via desks/mt5/research/hourly_cycle.py:1288 world_crawler + desks/mt5/research/daily_cycle.py:293 deep_forest_miner/repo_miner; mechanism_board via scripts/daily_research_cycle.py:244 (ops/crontab.manifest:977); mechanism_census via ops/crontab.manifest:2439 (`35 9 * * *`) · artifact: libs/research/mechanism_claims outputs land in desks/mt5/data/intelligence/*/ ; data/mechanism_board.json and data/mechanism_census.json ABSENT on this tree · consumer: desks/mt5/side_channels/world_crawler.py:504, desks/mt5/research/deep_forest_miner.py:65, desks/mt5/research/repo_miner.py:123 consume extract_claims; libs/autodiscovery/generators.py:95 and libs/validation/family_multiplicity.py:56 consume mechanism_census.CONSTRUCTION_CLASS
   - next: Make scripts/mechanism_board.py fall back to libs/research/mechanism_census.TAXONOMY when data/research_erv.json and data/research_autopsy.json are absent, so data/mechanism_board.json exists for its five readers instead of silently never appearing.
 - **G1 Engine A — mechanism-driven LLM synthesis seats** — PARTIAL
-  - gap: Both LLM seats are scheduled hourly, yet neither has ever landed a row in the compiler's tree: kimi's donation door was only wired on 2026-09-08 and its target dir does not exist, and deepseek's YAML hypotheses live at data/intelligence/hypotheses/ where the compiler's `_rows` finds no `discoveries` list. meta_architect and research_exchange (the arbitration/attribution half) are on no scheduler at all.
+  - gap: Both seat doors are wired and write where the compiler reads (kimi_hunter._donate -> data/intelligence/kimi, deepseek_cycle._donate -> data/intelligence/deepseek, both globbed by recent_rows and synced hourly by ops/run_seed_miners_hourly.sh). Neither has landed a compiled row yet: that needs the box to run a seat pass after adoption.
   - libs/ops/deepseek_cycle.py:73 — `SEED_ROLES: tuple[tuple[str, str], ...]` declares 36 seat roles (cold_alpha_inventor, survivor_assassin, graveyard_resurrection, regime_specialist, validation_red_team, multilingual_intelligence, cross_domain_transfer, negative_space_miner, unknown_unknown_explorer, alpha_recombination, portfolio_complementarity_hunter, experiment_designer, natural_experiment_hunter, …) (MEASURED)
   - libs/ops/deepseek_cycle.py:706 — `DONATE_DIR = "data/intelligence/deepseek"`; `_donate()` at :709 writes `discoveries_<ts>.json` in the miner contract (MEASURED)
   - ops/quant-deepseek.timer — `OnCalendar=*-*-* *:20:00 UTC`, `Persistent=true`; ops/quant-deepseek.service `ExecStart=/bin/bash .../ops/run_deepseek_factory.sh` (MEASURED)
@@ -451,11 +451,11 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 
 ### Phase 3 — Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory
 
-- **A1 AlphaGenome — one canonical object every strategy compiles into** — PARTIAL
-  - gap: Producers do not yet call stamp() at their pens; the read view and the one id exist, the stamping is the next commit per pen.
-  - libs/research/alpha_genome.py — genome_id == hypothesis_graph.node_id; from_candidate/from_node/from_certificate/from_artifact; stamp(); chain() (MEASURED)
-  - tests/research/test_alpha_genome.py (MEASURED)
-  - clock: desks/mt5/ops/box_tasks.manifest:63 TASK MT5-Hourly -> desks/mt5/research/hourly_cycle.py; alpha_genome via desks/mt5/research/daily_cycle.py:324 (_state_research_feedback, STEPS line 472); promoter via desks/mt5/research/daily_cycle.py:470 and desks/mt5/research/hourly_cycle.py:1176 · artifact: desks/mt5/reports/ALPHA_GENOME.json + desks/mt5/data/sleeves.json (row['artifact'] = version_hash only) · consumer: desks/mt5/research/regime_coverage.py:63 (GENOME) reads ALPHA_GENOME.json; libs/ops/module_rent.py:216 rents it; nothing reads a full StrategyArtifact
+- **A1 AlphaGenome — one canonical object every strategy compiles into** — LANDED
+  - libs/research/alpha_genome.py — one id across the four shapes, from_any/stamp/chain (MEASURED)
+  - desks/mt5/research/miner_candidate_compiler.py — _genome_id stamps every compiled candidate at the pen (MEASURED)
+  - tests/research/test_alpha_genome.py, desks/mt5/tests/test_compiler_agreement_and_intake.py (MEASURED)
+  - clock: hourly_cycle:compile_candidates · artifact: desks/mt5/data/hypotheses/miner_candidates.json genome_id · consumer: desks/mt5/research/regime_coverage.py:63 (GENOME) reads ALPHA_GENOME.json; libs/ops/module_rent.py:216 rents it; nothing reads a full StrategyArtifact
   - next: Add a `strategy_artifacts.jsonl` writer inside desks/mt5/research/promoter.py:239 `save_sleeves` that persists `a.to_dict()` (not just version_hash) for every LIVE row, so one full genome per traded sleeve exists on disk.
   - landed: this commit
 - **A2 Alpha Knowledge Graph — typed nodes/edges and queryability** — PARTIAL

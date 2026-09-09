@@ -1357,16 +1357,17 @@
    "item": "AlphaGenome — one canonical object every strategy compiles into",
    "domain": "A",
    "phase": 3,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/alpha_genome.py — genome_id == hypothesis_graph.node_id; from_candidate/from_node/from_certificate/from_artifact; stamp(); chain() (MEASURED)",
-    "tests/research/test_alpha_genome.py (MEASURED)"
+    "libs/research/alpha_genome.py — one id across the four shapes, from_any/stamp/chain (MEASURED)",
+    "desks/mt5/research/miner_candidate_compiler.py — _genome_id stamps every compiled candidate at the pen (MEASURED)",
+    "tests/research/test_alpha_genome.py, desks/mt5/tests/test_compiler_agreement_and_intake.py (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/ops/box_tasks.manifest:63 TASK MT5-Hourly -> desks/mt5/research/hourly_cycle.py; alpha_genome via desks/mt5/research/daily_cycle.py:324 (_state_research_feedback, STEPS line 472); promoter via desks/mt5/research/daily_cycle.py:470 and desks/mt5/research/hourly_cycle.py:1176",
-   "artifact": "desks/mt5/reports/ALPHA_GENOME.json + desks/mt5/data/sleeves.json (row['artifact'] = version_hash only)",
+   "scheduled_by": "hourly_cycle:compile_candidates",
+   "artifact": "desks/mt5/data/hypotheses/miner_candidates.json genome_id",
    "consumer": "desks/mt5/research/regime_coverage.py:63 (GENOME) reads ALPHA_GENOME.json; libs/ops/module_rent.py:216 rents it; nothing reads a full StrategyArtifact",
-   "gap": "Producers do not yet call stamp() at their pens; the read view and the one id exist, the stamping is the next commit per pen.",
+   "gap": "",
    "next_step": "Add a `strategy_artifacts.jsonl` writer inside desks/mt5/research/promoter.py:239 `save_sleeves` that persists `a.to_dict()` (not just version_hash) for every LIVE row, so one full genome per traded sleeve exists on disk.",
    "landed": [
     "this commit"
@@ -2007,7 +2008,7 @@
    "scheduled_by": "ops/quant-deepseek.timer (:20 hourly); ops/quant-kimi-hunter.timer (:40 hourly) + ops/crontab.research.manifest 3-hourly/2x-week rows; desks/mt5/research/hourly_cycle.py:1193 'frontier' and :1242 'frontier_implementer' legs. meta_architect + research_exchange: NONE",
    "artifact": "data/intelligence/hypotheses/H-*.yaml (72 files, deepseek); data/intelligence/deepseek/discoveries_*.json and data/intelligence/kimi/*.json (both ABSENT); desks/mt5/reports/FRONTIER_INTELLIGENCE.json + FRONTIER_GAPS.json",
    "consumer": "desks/mt5/research/miner_candidate_compiler.py (walks data/intelligence/**) → desks/mt5/data/hypotheses/miner_candidates.json → desks/mt5/research/merge_hypotheses.py / desks/mt5/research/research_productivity.py / desks/mt5/research/nightly_catchup.py. But the compiler has recorded ZERO rows from either seat.",
-   "gap": "Both LLM seats are scheduled hourly, yet neither has ever landed a row in the compiler's tree: kimi's donation door was only wired on 2026-09-08 and its target dir does not exist, and deepseek's YAML hypotheses live at data/intelligence/hypotheses/ where the compiler's `_rows` finds no `discoveries` list. meta_architect and research_exchange (the arbitration/attribution half) are on no scheduler at all.",
+   "gap": "Both seat doors are wired and write where the compiler reads (kimi_hunter._donate -> data/intelligence/kimi, deepseek_cycle._donate -> data/intelligence/deepseek, both globbed by recent_rows and synced hourly by ops/run_seed_miners_hourly.sh). Neither has landed a compiled row yet: that needs the box to run a seat pass after adoption.",
    "next_step": "Add a `SYSTEMD`/timer row for scripts/research_exchange.py `score` and assert in desks/mt5/research/miner_candidate_compiler.py that `seat_summary()` writes a non-null `seats` block with a row count per SEAT_SOURCES entry, failing loud when both are 0 — the file to touch is desks/mt5/research/miner_candidate_compiler.py (seat_summary/main).",
    "landed": [
     "8934dacd kimi donates to data/intelligence/kimi; STRUCTURED_HYPOTHESIS; seats block",

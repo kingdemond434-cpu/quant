@@ -234,9 +234,26 @@ def _lead_lag_lag(row: dict) -> int | None:
     return None
 
 
+def _genome_id(symbol: str, family: str, params: dict) -> str | None:
+    """The one identity a strategy carries from here to the deal (libs/research/alpha_genome).
+
+    STAMPED AT THE PEN, not derived later by a matcher: the graph node, the certificate and the
+    StrategyArtifact all hash the same (symbol, family, params) through `hypothesis_graph.node_id`,
+    so a candidate that carries the id joins to every later shape by key. Absent libs (this file
+    also runs from the desk root on the box) means no id rather than a crash.
+    """
+    try:
+        from libs.research.alpha_genome import genome_id
+        return genome_id(symbol, family, params)
+    except Exception:
+        return None
+
+
 def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
                mechanism: str) -> dict:
+    gid = _genome_id(symbol, family, params)
     return {
+        **({"genome_id": gid} if gid else {}),
         "symbol": symbol,
         "family": family,
         "params": params,

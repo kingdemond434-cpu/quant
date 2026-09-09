@@ -138,3 +138,13 @@ def test_a_graph_failure_is_named_in_the_artifact_not_swallowed() -> None:
     assert "except Exception:\n            pass" not in block, "the silent pass is back"
     assert 'graph_note["premortem_why"]' in block and 'graph_note["why"]' in block
     assert '"graph": graph_note' in src
+
+
+def test_the_candidate_carries_the_genome_id_the_graph_will_use() -> None:
+    """A1: stamped at the pen, so the funnel joins by key rather than by matcher."""
+    from libs.research.hypothesis_graph import node_id
+    rows, _ = mcc.compile_row("deepseek", {"kind": "hypothesis", "family": "overnight_gap_decay",
+                                           "symbols": ["EURUSD"], "title": "a"}, UNI)
+    assert rows and all(c.get("genome_id") for c in rows)
+    for c in rows:
+        assert c["genome_id"] == node_id(c["symbol"], c["family"], c["params"])
