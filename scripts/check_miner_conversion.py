@@ -26,6 +26,15 @@ WHAT IS MEASURED FOR THE BOOK:
   value, cross-asset residuals, volatility/liquidity transitions, event reactions, COT
   positioning, macro conditionality, execution-derived effects.
 
+WHAT IS MEASURED PER AGENT (2026-09-09, inventory I10). The numerator above -- survivors per
+miner -- is handed to `libs.ops.compute_ledger.rank`, the module that exists to be the
+denominator and refuses to invent a numerator, and the result is `data/agent_value.json`:
+survivors per compute-hour for every miner and LLM seat the ledger has costed, an UNPRICED list
+(costed, no survivor count) and an UNCOSTED list (survivor count, no ledger row). A miner whose
+rows never reached a backtest is UNJUDGED, not zero-valued: its survivor count is not a
+measurement. Today every miner is UNCOSTED, because the ledger names hourly legs and no leg is
+a miner -- and the artifact says exactly that, which is the join's first honest reading.
+
 This file MEASURES and REPORTS. It does not retire miners on its own: killing a research line is
 a decision with a cost, and the register plus the gap-wirer are where that decision belongs.
 """
@@ -56,6 +65,14 @@ CERTS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 HYP = DESK / "data" / "hypotheses" / "external_backtest_results.json"
 OUT = ROOT / "data" / "miner_conversion.json"
 ALARM = ROOT / "data" / "MINER_YIELD_ALARM.txt"
+#: The compiler's artifact: `per_source` rows/candidates/deepening per miner and the `seats`
+#: block (the LLM seats, reported with zeros when they donated nothing in the window).
+COMPILED = DESK / "data" / "hypotheses" / "miner_candidates.json"
+#: AgentValue -- survivors per compute-hour per miner and seat -- ALARM's sibling artifact.
+AGENT_VALUE = ROOT / "data" / "agent_value.json"
+#: Mirrors `miner_candidate_compiler.SEAT_SOURCES`; the compiled `seats` block's own keys win
+#: whenever it is present, this is only the list to report as UNMEASURED when it is not.
+SEATS = ("deepseek", "kimi_k3_deep_forest")
 
 WINDOW_DAYS = 14
 #: Families that would each add a genuinely different bet, ordered by independence from a
@@ -197,6 +214,115 @@ def miner_rows(cutoff: datetime) -> dict[str, list[dict]]:
     return out
 
 
+def _short(p: Path) -> str:
+    try:
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
+
+
+def _survivor_value(miner: str, per_miner: dict[str, dict]) -> tuple[float | None, str]:
+    """A miner's survivor count as a numerator, or None with the reason it is not one."""
+    m = per_miner.get(miner)
+    if not isinstance(m, dict):
+        return None, "no discovery rows from this source inside the window"
+    if int(m.get("reached_backtest") or 0) <= 0:
+        return None, ("no tested row carries this source's provenance -- its rows were never "
+                      "judged, so 0 survivors is not a measured zero")
+    return float(m.get("survivors") or 0), "survivors among rows that reached a backtest"
+
+
+def agent_value(per_miner: dict[str, dict], compiled: dict | None, *,
+                ledger: Path | None = None) -> dict:
+    """AgentValue = survivors / compute-hours, per miner and per LLM seat, via compute_ledger.rank.
+
+    THE NUMERATOR IS THIS FILE'S OWN SURVIVOR COUNT and it is handed over only for sources whose
+    rows reached a backtest; `rank` supplies the denominator from the ledger and lists what it
+    could not price. Nothing here divides by a guessed hour or fills a missing count with zero.
+    """
+    from libs.ops.compute_ledger import LEDGER, rank
+    value_by_run: dict[str, float] = {}
+    unjudged: dict[str, str] = {}
+    for miner in sorted(per_miner):
+        v, why = _survivor_value(miner, per_miner)
+        if v is None:
+            unjudged[miner] = why
+        else:
+            value_by_run[miner] = v
+    table = rank(value_by_run, path=ledger)
+
+    per_source = (compiled or {}).get("per_source") if isinstance(compiled, dict) else None
+    per_source = per_source if isinstance(per_source, dict) else {}
+    seats_block = (compiled or {}).get("seats") if isinstance(compiled, dict) else None
+    seats: dict = {}
+    if not isinstance(compiled, dict):
+        seats = {"status": "UNMEASURED",
+                 "missing_input": f"{_short(COMPILED)} is absent or unreadable -- the "
+                                  f"compiler has not written a per-source table on this host"}
+    elif not isinstance(seats_block, dict):
+        seats = {"status": "UNMEASURED",
+                 "missing_input": (f"{COMPILED.name} (compiled_at "
+                                   f"{compiled.get('compiled_at')}) carries no `seats` block -- "
+                                   f"it was compiled before miner_candidate_compiler.seat_summary "
+                                   f"existed; re-run the compiler"),
+                 "per_source_fallback": {s: per_source[s] for s in SEATS if s in per_source}}
+    else:
+        rows = {}
+        for seat, st in sorted(seats_block.items()):
+            v, why = _survivor_value(seat, per_miner)
+            rows[seat] = {**(st if isinstance(st, dict) else {}),
+                          "survivors": v, "survivors_basis": why,
+                          "cost": ("UNCOSTED: no compute_ledger row is named after this seat; "
+                                   "its runs are outside the costed hourly legs")}
+            if seat in table.get("uncosted", []):
+                rows[seat]["cost"] = "UNCOSTED: survivor count supplied, no ledger row"
+        seats = {"status": "MEASURED" if rows else "UNMEASURED", "seats": rows}
+
+    ranked = table.get("ranked") or []
+    if ranked:
+        status, missing = "MEASURED", ""
+    elif not table.get("costed_runs"):
+        status, missing = "UNMEASURED", table.get("why") or "nothing has been costed"
+    else:
+        status = "UNMEASURED"
+        missing = ("compute_ledger rows are named after hourly-cycle legs "
+                   f"({', '.join(sorted(table.get('unpriced') or [])[:6])}...), none after a "
+                   "miner or a seat, so no agent's hours are known; per-agent value per hour "
+                   "needs the miner runner to open a costed run per miner "
+                   "(libs.ops.compute_ledger.costed(<miner>))")
+    return {
+        "measured_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "status": status,
+        "missing_input": missing,
+        "numerator": {
+            "unit": "survivors",
+            "basis": (f"certificates whose mechanism key matches a row of the source inside the "
+                      f"{WINDOW_DAYS}d window (this file's per-miner SURVIVORS); only sources "
+                      f"whose rows reached a backtest are priced -- a source never judged has "
+                      f"no measured zero. Not dE[log W]: the allocator's marginal growth per "
+                      f"certificate is not yet joined per source"),
+            "sources_priced": len(value_by_run),
+            "sources_unjudged": len(unjudged),
+        },
+        "denominator": {
+            "unit": "compute_ledger hours (wall-clock)",
+            "ledger": _short(ledger or LEDGER),
+            "window_days": table.get("window_days"),
+            "costed_runs": table.get("costed_runs"),
+            "total_hours": table.get("total_hours"),
+        },
+        "value_by_run": value_by_run,
+        "unjudged": unjudged,
+        "per_source_rows": {s: per_source[s] for s in sorted(per_source) if s in per_miner},
+        "table": table,
+        "seats": seats,
+        "rule": ("AgentValue = realised survivors / compute-hours, from libs.ops.compute_ledger."
+                 "rank; UNPRICED = costed with no survivor count, UNCOSTED = survivor count with "
+                 "no ledger row, UNJUDGED = rows never reached a backtest. None of the three is "
+                 "a ranking position and none is a zero"),
+    }
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     cutoff = now - timedelta(days=WINDOW_DAYS)
@@ -300,8 +426,16 @@ def main() -> int:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, indent=1, default=str), "utf-8")
 
+    av = agent_value(per_miner, _read(COMPILED))
+    AGENT_VALUE.write_text(json.dumps(av, indent=1, default=str), "utf-8")
+
     print(f"miner conversion: {len(per_miner)} miner(s) with rows in {WINDOW_DAYS}d; "
           f"{len(zero_yield)} zero-yield")
+    print(f"agent value: {av['status']} -- {len(av['table'].get('ranked') or [])} priced, "
+          f"{len(av['table'].get('uncosted') or [])} uncosted, "
+          f"{len(av['table'].get('unpriced') or [])} unpriced, {len(av['unjudged'])} unjudged; "
+          f"seats {av['seats'].get('status')}"
+          + (f"\n   missing input: {av['missing_input']}" if av["missing_input"] else ""))
     print(f"book breadth: {total_certs} certificate(s), largest family '{top_family}' "
           f"= {concentration} of the book; {len(missing)} target family(ies) absent")
     for row in missing[:8]:
