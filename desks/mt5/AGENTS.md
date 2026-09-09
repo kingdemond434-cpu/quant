@@ -17,3 +17,16 @@
 7. VPS (quant@95.216.191.70, desks/mt5) is the always-on research authority
    when this box is off; changes must be synced (scripts/sync_to_vps.ps1)
    and pushed so every brain sees them.
+## Growth governance (binding, principal order 2026-09-04)
+
+Two rules, applied everywhere, now and in future. `scripts/check_growth_governance.py` requires
+them verbatim on this surface and breaches when they are absent -- which is what happened when a
+VPS runtime-state push (c2703fbd) overwrote this file without them, and the fence read red until
+2026-09-09. The canonical statement, with what they mean, is `docs/GROWTH_GOVERNANCE.md`.
+
+> **Rule 1.** Every risk reduction mechanism must prove that it increases robust forward E[log W].
+>
+> **Rule 2.** Every strong opportunity must be allowed to increase capital above normal when the evidence supports it.
+
+Neither rule is a licence to raise leverage by fiat: Rule 2 is permission for EVIDENCE to raise
+size, and Rule 1 is the burden of proof any shrink, cap or veto has to discharge first.

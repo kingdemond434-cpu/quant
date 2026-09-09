@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -233,9 +233,16 @@ def test_demotion_and_restoration_are_observed_with_no_rung_and_the_live_rung(de
     promoter.main()                                     # LIVE -> STANDBY on one reading
     assert desk.sleeves()[0]["status"] == "STANDBY"
     # two consecutive admitting readings on two DIFFERENT scans restore it
-    desk.allocation(["CADJPY.asia"], admit=True, at=datetime(2026, 9, 8, 1, tzinfo=UTC))
+    # TWO DIFFERENT SCANS, DATED RELATIVE TO NOW. These were the fixed timestamps 2026-09-08
+    # 01:00 and 02:00, which made the test a function of the calendar: the promoter refuses an
+    # allocation older than 26 hours ("it describes a book that no longer exists"), so it passed
+    # on the day it was written and has read STANDBY every day since. What it is about is that
+    # two admitting readings on DISTINCT scans restore a demoted sleeve, so the two scans are an
+    # hour apart and both inside the freshness window, wherever the clock happens to be.
+    _now = datetime.now(tz=UTC)
+    desk.allocation(["CADJPY.asia"], admit=True, at=_now - timedelta(hours=2))
     promoter.main()
-    desk.allocation(["CADJPY.asia"], admit=True, at=datetime(2026, 9, 8, 2, tzinfo=UTC))
+    desk.allocation(["CADJPY.asia"], admit=True, at=_now - timedelta(hours=1))
     promoter.main()
     assert desk.sleeves()[0]["status"] == "LIVE"
     obs = desk.observations()

@@ -92,19 +92,33 @@ def test_the_heat_ledger_bills_the_floored_lot_not_the_policy_lot() -> None:
 
     Source-level, because the branch lives in `gateway.main`'s pre-cap loop and standing that
     whole function up needs a terminal. What is asserted is the property that matters: the gold
-    branch prices `gold_lot`, so the ledger and the order path call the same sizer. Without it
-    the cap falls through to `cap_by_heat`'s own `realised_q(equity, None, XAUUSD)` -- the POLICY
-    lot -- and a floored book runs at up to twice the risk the budget reserved for it.
+    branch prices the lot it will send, so the ledger and the order path call the same sizer.
+    Without it the cap falls through to `cap_by_heat`'s own `realised_q(equity, None, XAUUSD)` --
+    the POLICY lot -- and a floored book runs at up to twice the risk the budget reserved for it.
+
+    THE SPELLING CHANGED TWICE AND THIS PIN WENT RED WITH IT (repaired 2026-09-09). It read
+    `elif _s.get("lot") == "auto":` and `gold_lot(equity)`; the gold branch then had to move in
+    FRONT of `from_book` (an `elif` meant a gold row the allocator held never reached it) and the
+    sizer became `gold_book_lot`. The property is unchanged and is now stronger -- the charge is
+    computed at the pending bracket's own stop, not at the house nominal -- so the assertions are
+    rewritten against what they defend rather than against the old text.
     """
     src = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
-    assert 'elif _s.get("lot") == "auto":' in src, (
+    assert 'if _s.get("lot") == "auto":' in src, (
         "the pre-cap loop has no branch for the gold book's lot mode")
-    head = src.split('elif _s.get("lot") == "auto":', 1)[1][:1200]
-    assert "gold_lot(equity)" in head, (
-        "the gold heat charge must be priced from gold_lot -- the lot that will be sent")
-    assert 'lot = gold_lot(equity, dist, sym) if s["lot"] == "auto"' in src, (
-        "the placement path must size the gold book through gold_lot, or the ledger and the "
-        "order disagree about the same leg")
+    assert 'elif _s.get("lot") == "auto":' not in src, (
+        "the gold charge branch is an `elif` again: a gold row the allocator's book holds takes "
+        "the `from_book` branch first and is never billed at the lot it sends")
+    # THE WHOLE BRANCH, not a fixed slice of characters: the comment above it explains a
+    # money-path defect at length, and a 1,200-character window stopped reaching the code.
+    head = src.split('if _s.get("lot") == "auto":', 1)[1].split("elif from_book:", 1)[0]
+    assert "gold_book_lot(" in head, (
+        "the gold heat charge must be priced from the same sizer the send calls")
+    assert "realised_q(equity, _pend[\"dist\"]" in head, (
+        "the charge must be billed at the pending bracket's own stop, not the house nominal")
+    assert "lot, _lot_basis = gold_book_lot(" in src, (
+        "the placement path must size the gold book through gold_book_lot, or the ledger and "
+        "the order disagree about the same leg")
 
 
 def test_promoted_sleeves_get_the_floor_too() -> None:
@@ -238,8 +252,16 @@ def test_the_heat_ledger_bills_gold_at_its_own_floor() -> None:
     so the book would run at up to twice the risk the budget reserved for it.
     """
     src = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
-    head = src.split('elif _s.get("lot") == "auto":', 1)[1][:1200]
-    assert "gold_lot(equity)" in head, "the gold heat charge is not priced from gold_lot"
-    assert 'lot = gold_lot(equity, dist, sym) if s["lot"] == "auto"' in src
+    # THE WHOLE BRANCH, not a fixed slice of characters: the comment above it explains a
+    # money-path defect at length, and a 1,200-character window stopped reaching the code.
+    head = src.split('if _s.get("lot") == "auto":', 1)[1].split("elif from_book:", 1)[0]
+    assert "gold_book_lot(" in head, "the gold heat charge is not priced from the send's sizer"
+    assert "lot, _lot_basis = gold_book_lot(" in src
+    # And the sizer both sides call still floors at the GOLD minimum, at every stop and every
+    # allocator fraction -- checked in arithmetic, because that is the claim, not the spelling.
+    for dist in (2.0, 19.1, 60.0, 200.0):
+        for h_i in (None, 0.0, 0.001, 0.5):
+            lot, _basis = dc.gold_book_lot(3_000.0, dist, None, h_i)
+            assert lot >= dc.gold_min_lot() - 1e-12, (dist, h_i, lot)
     assert '_floor = gold_min_lot() if s.get("lot") == "auto" else min_lot()' in src, (
         "the floor-binding log line reports the wrong floor for the gold lane")

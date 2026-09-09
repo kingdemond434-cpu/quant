@@ -365,8 +365,13 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
           # executor on a box whose code matches its seal.
           "NEW_RISK_OK": True,
           "_logs": logs, "_intents": intents, "_book": book}
+    # `_sleeve_identity` rides along: the scalp send site spreads it onto the intent row so a
+    # fill is attributable above the sleeve's name. It is pure over the sleeve dict, and left out
+    # of the slice it is a NameError the moment an armed pass reaches `order_send` -- which is
+    # the one line these tests exist to reach. Repaired 2026-09-09; it had been red since the
+    # identity was added, so the armed scalp path was going unmeasured, not merely unasserted.
     return _exec(("run_scalp_sleeves", "close_sleeve_positions", "_retarget_sleeve_positions",
-                  "_sleeve_positions"), ns)
+                  "_sleeve_positions", "_sleeve_identity"), ns)
 
 
 def _sleeve() -> dict:

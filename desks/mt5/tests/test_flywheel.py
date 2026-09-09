@@ -23,6 +23,7 @@ What is pinned:
 from __future__ import annotations
 
 import ast
+import contextlib
 import importlib.util
 import json
 import sys
@@ -194,7 +195,15 @@ def _gw_ns(tmp_path: Path) -> dict:
     # The bracket arithmetic (`day_range`, `bracket_spec`, `bracket_from_bars`) is the decision
     # core's since the 2026-09-05 split; the ledger writers stay in the gateway and are exec'd
     # here over the real core.
+    # `contextlib` RIDES ALONG BECAUSE THE WRITERS USE IT. `_record_decision` wraps its optional
+    # enrichments in `contextlib.suppress(Exception)`; the harness carries no imports, so the
+    # name resolved to nothing and all three of these tests failed on a NameError inside `<gw>`.
+    # That is a harness gap reported as a product failure -- the same class as the missing
+    # `_sleeve_identity` (2026-09-09), which hid a live NameError in the gold placement path for
+    # a whole session because the test that should have caught it was already red for a reason
+    # of its own. A red test nobody can attribute is a test that has stopped working.
     ns: dict = {"json": json, "pd": pd, "np": np, "datetime": datetime, "UTC": UTC,
+                "contextlib": contextlib,
                 "timedelta": timedelta, "log": logs.append, "_logs": logs,
                 "now": lambda: "2026-09-04T07:05:00+00:00", "_state_vector_id": lambda: "sv1",
                 "_release_id": lambda: "rel1",

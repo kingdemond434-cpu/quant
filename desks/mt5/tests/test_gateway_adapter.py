@@ -14,8 +14,11 @@ logged; the family executor marks, logs, sizes and sends exactly as the core's s
 from __future__ import annotations
 
 import ast
+import contextlib
+import hashlib
 import json
 import sys
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -66,6 +69,15 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     """
     seed = {k: v for k, v in vars(dc).items() if not k.startswith("__")}
     seed["_core"] = dc
+    # THE STDLIB MODULES THE GATEWAY IMPORTS COME TOO, for exactly the reason the module-level
+    # literals do. `contextlib.suppress` is the gateway's idiom for an enrichment that must never
+    # take a pass down; with the name unbound it raises NameError inside `<gw>` and the harness
+    # reports the product broken at a line the change under test never touched. Restricted to
+    # pure standard-library modules with no venue in them -- `MetaTrader5` is what each test
+    # fakes for itself, and seeding it here would hand every test a terminal it did not ask for.
+    seed.update({"contextlib": contextlib, "hashlib": hashlib, "json": json, "time": time,
+                 "datetime": datetime, "UTC": UTC, "timedelta": timedelta, "Path": Path,
+                 "pd": pd, "np": np})
     for node in _GW_TREE.body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 \
                 and isinstance(node.targets[0], ast.Name) and _is_literal(node.value):
@@ -855,9 +867,13 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     # branch called an IMPORTED helper instead, the slice resolved it, the real path ran, and the
     # missing name surfaced. A green test that never reached the code it names is worse than a
     # red one.
+    # `resolve_pending_bracket` rides along for the same reason: `main` calls it BEFORE the heat
+    # cap (to bill gold at the bracket it will actually send) and again at the placement site for
+    # anything not already resolved. Left out of the slice it is a NameError on every pass, and
+    # this test would once again pass by never reaching the code it names.
     return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
                   "_rejection_streak_expired", "load_state", "save_state", "now",
-                  "_sleeve_identity"), ns)
+                  "_sleeve_identity", "resolve_pending_bracket"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(

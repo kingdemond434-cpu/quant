@@ -268,15 +268,28 @@ def test_an_explicit_scalar_q_still_applies_to_every_sleeve():
 def test_the_trade_loop_passes_the_sleeve_s_own_symbol_and_live_info():
     """The fix is only real if the trade loop hands over the instrument. A source check,
     because the loop itself needs a live terminal to run."""
-    # THE GOLD BRANCH SIZES THROUGH `gold_lot`, WHICH TAKES NO SYMBOL ON PURPOSE. `"auto"` is
-    # emitted by exactly one place -- decision_core's `for label, sig_hour, rng in GOLD_WINDOWS`
-    # loop, where every row is `"symbol": "XAUUSD"` -- so the instrument is structurally XAUUSD
-    # and `gold_lot` hardcodes GOLD_SYMBOL rather than accepting one it could be handed wrongly.
-    # What this test is actually about survives intact: the LIVE INFO (`sym`) is still passed, so
-    # sizing uses the venue's real contract specs rather than a default. That invariant is pinned
-    # by `test_the_auto_branch_is_gold_only` below -- without it, hardcoding the symbol would be
-    # a silent mis-size the moment any non-gold sleeve was given "auto".
-    assert 'gold_lot(equity, dist, sym)' in _SRC
+    # THE GOLD BRANCH SIZES THROUGH `gold_book_lot`, WHICH TAKES NO SYMBOL ON PURPOSE. `"auto"`
+    # is emitted by exactly one place -- decision_core's `for label, sig_hour, rng in
+    # GOLD_WINDOWS` loop, where every row is `"symbol": "XAUUSD"` -- so the instrument is
+    # structurally XAUUSD and the sizer hardcodes GOLD_SYMBOL rather than accepting one it could
+    # be handed wrongly. What this test is actually about survives intact: the LIVE INFO (`sym`)
+    # is still passed, so sizing uses the venue's real contract specs rather than a default. That
+    # invariant is pinned by `test_the_auto_branch_is_gold_only` below -- without it, hardcoding
+    # the symbol would be a silent mis-size the moment any non-gold sleeve was given "auto".
+    #
+    # THE SPELLING MOVED TWICE AND THIS PIN DID NOT FOLLOW (found 2026-09-09). It read
+    # `gold_lot(equity, dist, sym)`; P1 routed the branch through `gold_book_lot` so the
+    # allocator's fraction could raise the gold lot, and the pin went red and stayed red for a
+    # commit without anyone attributing it. What it defends is the ARGUMENT, not the callee, so
+    # it is now written against the argument.
+    _sizings = [n for n in ast.walk(ast.parse(_SRC))
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+                and n.func.id == "gold_book_lot"]
+    assert _sizings, "the gold branch no longer sizes through gold_book_lot at all"
+    assert any([getattr(a, "id", None) for a in c.args[:3]] == ["equity", "dist", "sym"]
+               for c in _sizings), (
+        "the gold placement branch no longer hands the sizer this pass's stop and the live "
+        "symbol_info; it would price a live order off a default contract spec")
     # canon also hands over the sleeve's own risk_frac (clamped inside promoted_lot)
     assert 'promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym' in _SRC
     assert 'realised_q(equity, dist, s["symbol"], sym, lot=lot)' in _SRC

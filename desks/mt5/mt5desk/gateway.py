@@ -2123,6 +2123,65 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             srec["basket"] = basket_record(plan, per, mode, target_atr)
 
 
+def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
+    """The bracket this sleeve would place THIS pass -- resolved once, read-only, no side effects.
+
+    WHY THIS EXISTS AS A FUNCTION (external audit, 2026-09-09). The heat cap runs before the
+    placement loop, so until now it had to price a gold leg at the HOUSE NOMINAL stop
+    (`realised_q(equity, None, ...)`) while the loop, minutes of code later, sized and sent that
+    same leg against the bracket's REAL stop (`stop_distance(spec)`). `auto_lot` is a function of
+    the stop distance, so those are two different trades: the desk's own source records what that
+    class of gap costs -- "sizing from the house DIST_USD while the real bracket was in hand made
+    every wide-session sleeve trade 2.5-2.8x its budget". Charging one number and sending another
+    is precisely what a heat budget exists to prevent, and no `max` can paper over it, because the
+    0.02 floor can make BOTH calls return the same lot while the wider real stop makes the
+    realised fraction of that identical lot substantially larger than the fraction reserved.
+
+    So the resolution moves in FRONT of the cap: the roster loop calls this, sizes at the returned
+    `dist` and live `sym`, charges exactly that, and hands the resolved dict back to the placement
+    loop, which sends it unchanged. The cap then admits or rejects the exact trade that will be
+    sent, which is the invariant `test_gold_charge_equals_the_trade_that_is_sent` pins.
+
+    Returns a dict that ALWAYS carries `ok`, `stage` and `why`; on `ok` it also carries `sym`,
+    `df`, `hi`, `lo`, `spec` and `dist`. `stage` is what the placement loop keys its logging and
+    its veto record off, so a refusal reads the same as it did when the guards were inline.
+    """
+    if hour < s["sig_hour"]:
+        return {"ok": False, "stage": "signal_hour",
+                "why": f"signal hour {s['sig_hour']} not reached at {hour:.1f}"}
+    sym = mt5.symbol_info(s["symbol"])
+    if sym is None:
+        return {"ok": False, "stage": "no_symbol_info", "why": f"no symbol_info {s['symbol']}"}
+    h1 = mt5.copy_rates_from_pos(s["symbol"], mt5.TIMEFRAME_H1, 0, 400)
+    if h1 is None:
+        return {"ok": False, "stage": "no_bars", "sym": sym,
+                "why": f"copy_rates failed {s['symbol']}: {mt5.last_error()}"}
+    df = h1_frame(h1)
+    # THE STATE GATE, applied before any bracket is computed. A conditioned sleeve that cannot
+    # confirm its state does not trade -- see `state_allows`.
+    ok_state, why_state = state_allows(s, df, today)
+    if not ok_state:
+        return {"ok": False, "stage": "state_gate", "sym": sym, "df": df, "why": why_state}
+    # THE RANGE, THE ATR AND THE BRACKET are one computation in the core, shared with the veto
+    # record so the ledger's "would have placed" is exactly this.
+    built = bracket_from_bars(df, s["rng"], s["sig_hour"], sym.trade_tick_size,
+                              int(getattr(sym, "trade_stops_level", 0) or 20))
+    if built is None:
+        return {"ok": False, "stage": "range_not_ready", "sym": sym, "df": df,
+                "why": f"range not ready at {hour:.1f}"}
+    hi, lo, spec = built
+    # SIZE AGAINST THIS SLEEVE'S OWN STOP, which `spec` holds one line above. Sizing from the
+    # house DIST_USD while the real bracket was in hand made every wide-session sleeve trade
+    # 2.5-2.8x its budget -- see `auto_lot`.
+    dist = stop_distance(spec)
+    if dist is None:
+        return {"ok": False, "stage": "no_stop", "sym": sym, "df": df,
+                "why": "bracket spec has no usable stop distance; refusing to size from the "
+                       "house average"}
+    return {"ok": True, "stage": "ok", "why": "resolved", "sym": sym, "df": df,
+            "hi": hi, "lo": lo, "spec": spec, "dist": dist}
+
+
 def main() -> None:
     if gateway_paused():
         log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
@@ -2273,17 +2332,70 @@ def main() -> None:
             # external audit 2026-09-09 and it PREDATES the allocator wiring: before it, a gold
             # row in the book was charged h_i and always sent the policy lot.
             #
-            # THE CHARGE CALLS THE SAME SIZER THE SEND WILL CALL, with the house nominal, exactly
-            # as the old branch did -- the sleeve's own stop is not known until
-            # `stop_distance(spec)` inside the placement loop, and `cap_by_heat` prices this
-            # symbol the same way. The `max` is what guarantees the charge cannot fall below the
-            # policy component of the lot that is sent.
-            _lot_charge, _charge_basis = gold_book_lot(
-                equity, None, None,
-                _s.get("risk_frac") if from_book else None, _s.get("decay_faded"))
-            _s["q_charge"] = realised_q(equity, None, _s.get("symbol", GOLD_SYMBOL),
-                                        lot=_lot_charge)
-            _s["q_charge_basis"] = _charge_basis
+            # THE CHARGE IS THE TRADE, NOT AN ESTIMATE OF IT (external audit, 2026-09-09). The
+            # first version of this branch called the same sizer the send calls but with the
+            # HOUSE NOMINAL stop, because the sleeve's own stop was not known until
+            # `stop_distance(spec)` inside the placement loop. That is still two different
+            # trades: `auto_lot` is a function of the stop distance, and with the 0.02 floor
+            # binding both calls can return the SAME lot while the wider real stop makes the
+            # realised fraction of that identical lot much larger than the fraction reserved --
+            # the same shape as the 2.5-2.8x overshoot `auto_lot` documents. So the bracket is
+            # resolved HERE, in front of the cap, and the resolution is handed to the placement
+            # loop to send unchanged: the cap admits or rejects the exact trade that goes out.
+            #
+            # A bracket that cannot be resolved yet (before the signal hour, bars unreadable,
+            # range not ready, state gate refusing) falls back to the house nominal exactly as
+            # before and SAYS so in the basis -- no sleeve loses its charge because a read failed.
+            if _spec and _d:
+                # ALREADY ON THE BOOK. When today's bracket is placed, the leg the cap must price
+                # is the one the venue is holding -- its recorded stop, read at the top of this
+                # loop -- and not a fresh range built from bars that have moved since. No second
+                # resolution is attempted and nothing is cached for the placement loop, which
+                # skips a sleeve that already has a bracket anyway.
+                _live_info = None
+                with contextlib.suppress(Exception):
+                    _live_info = mt5.symbol_info(_s["symbol"])
+                _pend = {"ok": True, "stage": "placed", "why": "today's bracket is on the book",
+                         "dist": _d, "sym": _live_info}
+            else:
+                try:
+                    # THE SAME DAY THE PLACEMENT LOOP WILL ASK ABOUT. `state_allows` is dated,
+                    # and the placement site has always dated it from the wall clock; passing
+                    # the broker tick's day here instead would let the two sites disagree across
+                    # midnight -- and since the cached resolution is what gets SENT, the charge
+                    # site's answer would quietly become the trading rule.
+                    _pend = resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date())
+                except Exception as _exc:
+                    # A FAILED READ NEVER COSTS A SLEEVE ITS CHARGE. The fallback below bills the
+                    # house nominal, exactly as this branch did before the resolution moved here.
+                    _pend = {"ok": False, "stage": "resolve_failed",
+                             "why": f"{type(_exc).__name__}: {_exc}"}
+            if _pend.get("ok"):
+                _lot_charge, _charge_basis = gold_book_lot(
+                    equity, _pend["dist"], _pend["sym"],
+                    _s.get("risk_frac") if from_book else None, _s.get("decay_faded"))
+                _s["q_charge"] = realised_q(equity, _pend["dist"], _s["symbol"], _pend["sym"],
+                                            lot=_lot_charge)
+                # The sleeve's own stop also replaces the last-bracket `dist` read above, so
+                # every reader that prices this row -- `cap_by_heat`'s fallback included --
+                # sees this pass's stop and not the previous pass's.
+                _s["dist"] = _pend["dist"]
+                _pend.update({"date": day_key, "lot": _lot_charge, "q_real": _s["q_charge"],
+                              "basis": _charge_basis})
+                if _pend["stage"] == "ok":
+                    _s["pending_bracket"] = _pend
+                _s["q_charge_basis"] = (
+                    f"{_charge_basis}; charged at the bracket this pass will send "
+                    f"({_pend['stage']}: stop {_pend['dist']:.5g}, lot {_lot_charge:.2f})")
+            else:
+                _lot_charge, _charge_basis = gold_book_lot(
+                    equity, None, None,
+                    _s.get("risk_frac") if from_book else None, _s.get("decay_faded"))
+                _s["q_charge"] = realised_q(equity, None, _s.get("symbol", GOLD_SYMBOL),
+                                            lot=_lot_charge)
+                _s["q_charge_basis"] = (f"{_charge_basis}; house nominal stop because no bracket "
+                                        f"resolved this pass ({_pend.get('stage')}: "
+                                        f"{_pend.get('why')})")
         elif from_book:
             # BILLED AT EXACTLY THE FRACTION IT IS SIZED AT (see promoted_lot from_book): the
             # heat cap and the sizer must price the same leg at the same number.
@@ -2340,42 +2452,34 @@ def main() -> None:
                 # terminal with AutoTrading off, two total rejections in one pass. A bracket the
                 # cancel hour would take back is never sent.
                 continue
-            sym = mt5.symbol_info(s["symbol"])
-            if sym is None:
+            # THE BRACKET THE HEAT CAP PRICED IS THE BRACKET THAT IS SENT. A gold row resolved
+            # its bracket before `cap_by_heat` so it could be charged at its real stop; reusing
+            # that resolution here -- rather than re-reading bars and rebuilding the range -- is
+            # what makes the sent trade byte-identical to the charged one. A bar can close
+            # between the two loops, and a second resolution would size against a range the cap
+            # never saw. Everything else resolves now, through the same function, so the guards
+            # and the veto record read exactly as they did when they were inline.
+            _pend = s.get("pending_bracket")
+            if not (isinstance(_pend, dict) and _pend.get("ok") and _pend.get("date") == day_key):
+                _pend = resolve_pending_bracket(s, hour, datetime.now(tz=UTC).date())
+            if not _pend.get("ok"):
+                if _pend["stage"] == "state_gate":
+                    log(f"[{s['name']}] no trade today: {_pend['why']}")
+                    # The gate's refusal is a decision with a P&L; write what it refused, once.
+                    _vetoed = st.setdefault("vetoed_today", {})
+                    if _vetoed.get(s["name"]) != day_key and _record_vetoed_bracket(
+                            s, _pend["df"], _pend["sym"], "state_gate", _pend["why"]):
+                        _vetoed[s["name"]] = day_key
+                        save_state(st)
+                elif _pend["stage"] == "no_bars":
+                    log(_pend["why"])
+                elif _pend["stage"] == "range_not_ready":
+                    log(f"[{s['name']}] {_pend['why']}")
+                elif _pend["stage"] == "no_stop":
+                    log(f"[{s['name']}] SKIPPED: {_pend['why']}")
                 continue
-            h1 = mt5.copy_rates_from_pos(s["symbol"], mt5.TIMEFRAME_H1, 0, 400)
-            if h1 is None:
-                log(f"copy_rates failed {s['symbol']}: {mt5.last_error()}")
-                continue
-            df = h1_frame(h1)
-            # THE STATE GATE, applied before any bracket is computed. A conditioned sleeve that
-            # cannot confirm its state does not trade -- see `state_allows`.
-            ok_state, why_state = state_allows(s, df, datetime.now(tz=UTC).date())
-            if not ok_state:
-                log(f"[{s['name']}] no trade today: {why_state}")
-                # The gate's refusal is a decision with a P&L; write what it refused, once.
-                _vetoed = st.setdefault("vetoed_today", {})
-                if _vetoed.get(s["name"]) != day_key and _record_vetoed_bracket(
-                        s, df, sym, "state_gate", why_state):
-                    _vetoed[s["name"]] = day_key
-                    save_state(st)
-                continue
-            # THE RANGE, THE ATR AND THE BRACKET are one computation in the core, shared with
-            # the veto record so the ledger's "would have placed" is exactly this.
-            built = bracket_from_bars(df, s["rng"], s["sig_hour"], sym.trade_tick_size,
-                                      int(getattr(sym, "trade_stops_level", 0) or 20))
-            if built is None:
-                log(f"[{s['name']}] range not ready at {hour:.1f}")
-                continue
-            hi, lo, spec = built
-            # SIZE AGAINST THIS SLEEVE'S OWN STOP, which `spec` holds one line above.
-            # Sizing from the house DIST_USD while the real bracket was in hand made every
-            # wide-session sleeve trade 2.5-2.8x its budget -- see `auto_lot`.
-            dist = stop_distance(spec)
-            if dist is None:
-                log(f"[{s['name']}] SKIPPED: bracket spec has no usable stop distance; "
-                    f"refusing to size from the house average")
-                continue
+            sym, df = _pend["sym"], _pend["df"]
+            hi, lo, spec, dist = _pend["hi"], _pend["lo"], _pend["spec"], _pend["dist"]
             # SIZE IN THIS SLEEVE'S OWN INSTRUMENT, from the LIVE symbol_info already in hand.
             # `sym` carries trade_tick_value, which is what the venue will actually credit for
             # one tick in the account currency at today's FX -- the quantity `CONTRACT_OZ *
@@ -2413,6 +2517,30 @@ def main() -> None:
                 continue
             log(f"[{s['name']}] stop {dist:.5g} -> lot {lot:.2f} "
                 f"(realised q {q_real:.2%})")
+            # THE INVARIANT, CHECKED WHERE THE MONEY IS: the fraction the cap reserved must be
+            # the fraction this order runs. For a gold row whose bracket resolved before the cap
+            # both sides are the SAME expression at the SAME arguments, so this cannot fire; it
+            # fires when the charge fell back to the house nominal and a bracket then resolved
+            # here -- a transient read failure between the two loops, the one path the caching
+            # cannot close -- and that is exactly the case worth a line in the log.
+            #
+            # A PROMOTED SLEEVE IS EXPECTED TO DIFFER, and that is not noise -- it is the same
+            # defect one lane over, measured instead of assumed. `auto_ramp` rows are billed
+            # `ramped_fraction`, computed before this sleeve's stop was known, exactly as gold
+            # was until this pass; the comment below has said so for a while without anything
+            # ever putting a number on it. Now every such leg prints its own multiple.
+            #
+            # IT IS A TRIPWIRE AND NOT A GATE. It never refuses, resizes or defers a trade: the
+            # desk's aggressiveness is the principal's to set, and a heat check that quietly
+            # shrinks an order is how a budget becomes a size cut nobody authorised. What it
+            # buys is that a charge/send divergence can never again be invisible.
+            _billed_q = s.get("q_charge")
+            if isinstance(_billed_q, (int, float)) and not isinstance(_billed_q, bool) \
+                    and float(_billed_q) > 0 and abs(float(_billed_q) - q_real) > 1e-9:
+                log(f"[{s['name']}] HEAT RECONCILE: the cap reserved {float(_billed_q):.4%} and "
+                    f"this order runs {q_real:.4%} "
+                    f"({q_real / float(_billed_q):.2f}x); charge basis was "
+                    f"{s.get('q_charge_basis') or 'unstated'}")
             # WHEN THE FLOOR IS WHAT SET THE SIZE, SAY SO AND SAY WHAT IT COST. A leg at the
             # venue minimum is not sized by policy at all -- there is nothing smaller to send --
             # and it runs a LARGER fraction of a small account than policy asked for, which is
