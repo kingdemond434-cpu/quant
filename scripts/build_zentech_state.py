@@ -7,6 +7,7 @@ is retired.)
 """
 from __future__ import annotations
 
+import itertools
 import json
 import math
 import os
@@ -258,6 +259,72 @@ def _certificate_census(certs: dict[str, Any]) -> dict[str, Any]:
     return {"basis": "ten_gate_verdict", "certified": len(passed),
             "gate_failed": len(failed), "gate_failed_names": sorted(failed),
             "unrunnable_names": sorted(unrunnable)}
+
+
+_STAGES = ("SOURCE", "COMPILER", "DOCKET", "GAUNTLET", "CERTIFIED", "FORWARD", "PROMOTER",
+           "ALLOCATOR", "LIVE", "BROKER", "ATTRIBUTED", "PNL")
+
+
+def _funded(allocator: dict[str, Any]) -> int | None:
+    """Sleeves the allocator gave a positive fraction, whatever the report calls the map."""
+    for key in ("fractions", "allocations", "sleeves", "weights"):
+        m = allocator.get(key)
+        if isinstance(m, dict):
+            vals = [v.get("fraction", v.get("weight")) if isinstance(v, dict) else v
+                    for v in m.values()]
+            return sum(1 for v in vals if isinstance(v, (int, float)) and v > 0)
+    return None
+
+
+def _observability_graph(payload: dict[str, Any], allocator: dict[str, Any] | None = None,
+                         compiled: dict[str, Any] | None = None) -> dict[str, Any]:
+    """ONE path from SOURCE to P&L, as nodes with counts and edges with conversions.
+
+    Tier-1 item I6 (2026-09-09): the page carried flat counters and no edges -- SCREEN, PROMOTER,
+    ALLOCATOR and BROKER were not stages in the JSON at all, so "where does the funnel leak" was
+    a question the artifact could not be asked. Every node here names the artifact its count
+    came from; an edge whose downstream count is None is a BREAK -- a stage the desk cannot
+    see -- and the breaks are listed, because an observability graph's first job is to say
+    where observation stops.
+    """
+    pipe = payload.get("pipeline") or {}
+    ex = payload.get("execution") or {}
+    acct = payload.get("account") or {}
+    comp = compiled or {}
+    alloc = allocator or {}
+    counts: dict[str, tuple[Any, str]] = {
+        "SOURCE": (comp.get("rows_accounted"), "data/hypotheses/miner_candidates.json rows_accounted"),
+        "COMPILER": (comp.get("executable_candidates"), "miner_candidates.json executable_candidates"),
+        "DOCKET": (pipe.get("docket_candidates"), "data/hypotheses/external_survivors.json"),
+        "GAUNTLET": (pipe.get("gauntlet_last_judged"), "reports/universal_gates_external.json n_judged"),
+        "CERTIFIED": (pipe.get("certified"), "reports/UNIVERSAL_SURVIVORS.json ten-gate census"),
+        "FORWARD": (pipe.get("forward_clocks"), "reports/shadow/*_state.json non-terminal clocks"),
+        "PROMOTER": (pipe.get("promotion_ready"), "shadow state rows at PROMOTION CANDIDATE"),
+        "ALLOCATOR": (_funded(alloc), "reports/pf_allocator.json sleeves with fraction > 0"),
+        "LIVE": (pipe.get("live"), "data/sleeves.json"),
+        "BROKER": (ex.get("deals"), "reports/markout.json n_deals (magic-filtered deals)"),
+        "ATTRIBUTED": (ex.get("attributed_deals"), "reports/attribution_chain.json attributed"),
+        "PNL": (acct.get("today_pnl"), "account today_pnl"),
+    }
+    nodes = [{"id": s, "count": counts[s][0], "from": counts[s][1]} for s in _STAGES]
+    edges = []
+    breaks = ["SOURCE"] if counts["SOURCE"][0] is None else []
+    for up, down in itertools.pairwise(_STAGES):
+        a, b = counts[up][0], counts[down][0]
+        if down == "PNL":
+            conv = None
+        elif isinstance(a, (int, float)) and isinstance(b, (int, float)) and a > 0:
+            conv = round(float(b) / float(a), 4)
+        else:
+            conv = None
+        edge = {"from": up, "to": down, "conversion": conv}
+        if b is None:
+            edge["break"] = f"{down} is unobserved ({counts[down][1]} absent on this host)"
+            breaks.append(down)
+        edges.append(edge)
+    return {"nodes": nodes, "edges": edges, "breaks": breaks,
+            "observed": sum(1 for n in nodes if n["count"] is not None), "of": len(nodes),
+            "why": "one SOURCE->P&L path; a break is a stage the desk cannot see, not a zero"}
 
 
 def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
@@ -771,6 +838,9 @@ def build() -> dict[str, Any]:
     payload["stats"] = _ledger_stats(rows)
     payload["stats"]["today_pnl"] = payload["account"]["today_pnl"]
     payload["pipeline"] = _funnel(universal)
+    payload["graph"] = _observability_graph(
+        payload, _read(DESK / "reports" / "pf_allocator.json"),
+        _read(DESK / "data" / "hypotheses" / "miner_candidates.json"))
     decay = _read(DESK / "data" / "decay_live.json")
     payload["decay"] = {
         "checked_at": decay.get("checked_at"), "live_sleeves": decay.get("live_sleeves"),

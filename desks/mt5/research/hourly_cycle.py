@@ -1304,6 +1304,16 @@ def main() -> None:
     # true. The review's bar for "deployment is boring" is thirty days of it with fills; this is
     # the file that makes that a subtraction rather than a memory (reports/burn_in.json).
     bi = _costed("burn_in", lambda: _producer("burn_in", "research/burn_in.py"))
+    # THREE MEASUREMENTS OF THE MACHINE ITSELF (Tier-1 items G14, A13, I18; 2026-09-09), read
+    # from what the legs above wrote, so they see this pass and not the last one:
+    #   layer_census      which of the seven strategy layers the hour's compute went to
+    #   opportunity_cost  what the hour therefore did NOT test, by name
+    #   acceptance        the five acceptance properties, measured or UNMEASURED
+    lc = _costed("layer_census", lambda: _producer("layer_census", "libs/research/layers.py"))
+    oc = _costed("opportunity_cost", lambda: _producer(
+        "opportunity_cost", "research/opportunity_cost.py"))
+    ac = _costed("acceptance", lambda: _producer(
+        "acceptance", "scripts/check_acceptance_properties.py"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -1321,7 +1331,8 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "release_identity": ri, "burn_in": bi, "publish_state": pub,
+                    "release_identity": ri, "burn_in": bi, "layer_census": lc,
+                    "opportunity_cost": oc, "acceptance": ac, "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "external_gauntlet": gt, "merge_docket": mh, "backtest": bt,

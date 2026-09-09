@@ -76,6 +76,62 @@ def test_two_engines_naming_the_same_cell_are_counted_as_agreement() -> None:
     assert "n_independent_sources" in src and '"agreement":' in src
 
 
+class _GraphStub:
+    def prior_failures(self, *_a, **_k):
+        return {"n_failed": 0, "region": ""}
+
+    def rows(self):
+        return []
+
+
+def _run_main(tmp_path, monkeypatch, rows_by_source: dict[str, list[dict]]) -> dict:
+    """Drive `main()` end to end against a temporary tree: no graph, no real universe."""
+    import libs.research.hypothesis_graph as hg
+    root = tmp_path / "intel"
+    for src, rows in rows_by_source.items():
+        _write(root, f"{src}/discoveries_1.json", rows)
+    monkeypatch.setattr(mcc, "INTEL_ROOTS", (root,))
+    monkeypatch.setattr(mcc, "OUT", tmp_path / "out.json")
+    monkeypatch.setattr(mcc, "DEEPEN", tmp_path / "deepen.json")
+    monkeypatch.setattr(mcc, "known_symbols", lambda: set(UNI))
+    monkeypatch.setattr(mcc, "structurally_untestable_families", dict)
+    monkeypatch.setattr(hg, "Graph", _GraphStub)
+    monkeypatch.setattr(hg, "record_candidates", lambda *a, **k: 0)
+    assert mcc.main() == 0
+    return {"out": json.loads((tmp_path / "out.json").read_text("utf-8")),
+            "deepen": json.loads((tmp_path / "deepen.json").read_text("utf-8"))}
+
+
+def test_a_prose_row_that_compiles_to_nothing_is_still_deepened(tmp_path, monkeypatch) -> None:
+    """REGRESSION for 4aaede35: the per-candidate agreement loop was placed between the
+    intake loop's candidate loop and its `if not produced` block, so every non-producing row
+    was dropped instead of deepened (and the last row's `produced` decided for all)."""
+    res = _run_main(tmp_path, monkeypatch, {"reddit": [
+        {"title": "vague EURUSD idea", "text": "EURUSD something happens sometimes"},
+        {"kind": "hypothesis", "family": "overnight_gap_decay", "symbols": ["XAUUSD"],
+         "title": "structured"}]})
+    assert res["out"]["executable_candidates"] == 1
+    assert res["out"]["deepening_tasks"] == 1 and len(res["deepen"]["tasks"]) == 1
+    assert res["out"]["per_source"]["reddit"] == {"rows": 2, "candidates": 1, "deepening": 1}
+
+
+def test_two_engines_naming_one_symbol_under_different_families_is_contested(
+        tmp_path, monkeypatch) -> None:
+    res = _run_main(tmp_path, monkeypatch, {
+        "deepseek": [{"kind": "hypothesis", "family": "overnight_gap_decay",
+                      "symbols": ["EURUSD"], "title": "a"}],
+        "kimi": [{"kind": "hypothesis", "family": "session_range_breakout",
+                  "symbols": ["EURUSD"], "title": "b"}],
+        "reddit": [{"kind": "hypothesis", "family": "overnight_gap_decay",
+                    "symbols": ["XAUUSD"], "title": "c"}]})
+    dis = res["out"]["disagreement"]
+    assert dis["contested_symbols"] == 1 and set(dis["cells"]) == {"EURUSD"}
+    assert set(dis["cells"]["EURUSD"]) == {"overnight_gap_decay", "session_range_breakout"}
+    by_sym = {h["symbol"]: h for h in res["out"]["hypotheses"]}
+    assert all(h.get("contested") for h in res["out"]["hypotheses"] if h["symbol"] == "EURUSD")
+    assert "contested" not in by_sym["XAUUSD"], "one engine, one family: nothing to settle"
+
+
 def test_a_graph_failure_is_named_in_the_artifact_not_swallowed() -> None:
     src = Path(mcc.__file__).read_text("utf-8")
     block = src.split("THE GRAPH REMEMBERS WHAT WAS BURIED", 1)[1].split("OUT.parent.mkdir", 1)[0]

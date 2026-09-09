@@ -758,11 +758,6 @@ def main() -> int:
             if identity not in candidates:
                 candidates[identity] = candidate
                 stats["candidates"] += 1
-    for identity, candidate in candidates.items():
-        srcs = sorted(sources_by_identity.get(identity, ()))
-        candidate["n_independent_sources"] = len(srcs)
-        if len(srcs) > 1:
-            candidate["agreeing_sources"] = srcs
         if not produced:
             compact = {
                 "source": source,
@@ -776,6 +771,15 @@ def main() -> int:
                 json.dumps(compact, sort_keys=True, default=str).encode()).hexdigest()
             deepening[key] = compact
             stats["deepening"] += 1
+    # AFTER the intake loop, never inside it: 4aaede35 placed this loop between the candidate
+    # loop and the `if not produced` block, which moved the deepening of non-producing rows
+    # into the per-candidate loop -- every prose row that compiled to nothing was dropped
+    # instead of deepened, and the last row's `produced` decided it for all of them.
+    for identity, candidate in candidates.items():
+        srcs = sorted(sources_by_identity.get(identity, ()))
+        candidate["n_independent_sources"] = len(srcs)
+        if len(srcs) > 1:
+            candidate["agreeing_sources"] = srcs
 
     seats = seat_summary(per_source)
     seats_dark = [s for s, st in seats.items() if not st["rows"]]
@@ -789,6 +793,24 @@ def main() -> int:
         print(f"SEATS DARK inside the {WINDOW_DAYS}-day window: {', '.join(seats_dark)}",
               flush=True)
     agreement = sum(1 for c in candidates.values() if c.get("n_independent_sources", 0) > 1)
+    # DISAGREEMENT IS A SIGNAL TOO (Tier-1 item G20, 2026-09-09). Two engines naming the same
+    # symbol under DIFFERENT families is not a tie to discard: it is the cell whose test settles
+    # which engine was right, which is the highest-information trial the hour can buy. The cell
+    # is named here (`contested`) so the trial allocator can weight it; the compiler itself
+    # allocates nothing.
+    families_by_symbol: dict[str, dict[str, set[str]]] = {}
+    for c in candidates.values():
+        srcs = set(c.get("agreeing_sources") or [str(c.get("source") or "")])
+        families_by_symbol.setdefault(str(c.get("symbol")), {}) \
+            .setdefault(str(c.get("family")), set()).update(srcs)
+    contested = {sym: {f: sorted(s) for f, s in fams.items()}
+                 for sym, fams in families_by_symbol.items()
+                 if len(fams) > 1 and len(set().union(*fams.values())) > 1}
+    for c in candidates.values():
+        if str(c.get("symbol")) in contested:
+            c["contested"] = True
+    disagreement = {"contested_symbols": len(contested),
+                    "cells": dict(sorted(contested.items())[:40])}
 
     # THE GRAPH REMEMBERS WHAT WAS BURIED. Every compiled candidate is registered as BORN with
     # its miner row as parent, and every one that lands in a parameter region the gauntlet has
@@ -838,6 +860,7 @@ def main() -> int:
         "seats": seats,
         "seats_dark": seats_dark,
         "agreement": {"candidates_with_2plus_sources": agreement},
+        "disagreement": disagreement,
         "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
         "graph": graph_note,
         "rows_accounted": sum(v["rows"] for v in per_source.values()),
