@@ -39,6 +39,7 @@ import json
 import math
 import sys
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -950,6 +951,84 @@ def _competing_pairs(d: dict[str, Any], top: int = 10) -> list[dict[str, Any]]:
                         "raw": round(float(m[i, j]), 10)})
     out.sort(key=lambda r: r["normalised_cross_partial"])
     return out[:top]
+
+
+def margin_use_from(margin: float, equity: float, deployed_heat: float,
+                    heats: Any) -> tuple[dict[float, float] | None, str]:
+    """Margin use at each sampled heat, extrapolated from ONE measured point. Pure arithmetic.
+
+    The broker charges margin per LOT and the book's lots scale with its heat, so margin use is
+    linear in heat through the origin: at deployed heat h0 the account uses m0/equity of its
+    margin, therefore at heat h it would use (m0/equity) * (h/h0). One measured point and a
+    proportion -- no model, and nothing here is extrapolated past what the surface sampled.
+
+    Returns (None, why) on every input that cannot support the proportion: no equity, no
+    deployed heat, or -- the common case on a flat book -- no margin in use, which is 0/0 and
+    not "margin is free". A refusal here means the envelope carries NO margin clause and binds
+    exactly as it does today.
+    """
+    try:
+        m, eq, h0 = float(margin), float(equity), float(deployed_heat)
+    except (TypeError, ValueError):
+        return None, "account figures are not numbers"
+    if not (math.isfinite(m) and math.isfinite(eq) and math.isfinite(h0)):
+        return None, "account figures are not finite"
+    if eq <= 0.0:
+        return None, f"equity is {eq}: no denominator for margin use"
+    if h0 <= 0.0:
+        return None, "the book deploys no heat: margin per unit heat is 0/0"
+    if m <= 0.0:
+        return None, ("no margin in use (the book is flat or the positions are not open yet): "
+                      "0/0 is not a measurement of margin per unit heat, and an unmeasured "
+                      "margin never licenses heat")
+    per_unit = (m / eq) / h0
+    out: dict[float, float] = {}
+    for h in heats:
+        try:
+            hv = float(h)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(hv) and hv > 0.0:
+            out[round(hv, 6)] = per_unit * hv
+    if not out:
+        return None, "no sampled heat to price margin at"
+    return out, (f"margin {m:.2f} on equity {eq:.2f} at {h0:.2%} deployed heat = "
+                 f"{m / eq:.2%} of the account, i.e. {per_unit:.4f} of margin per unit of heat")
+
+
+def account_margin() -> tuple[float | None, float | None, str]:
+    """(margin, equity) from the live terminal, or (None, None) with the reason. Never raises.
+
+    Measured the way `promoter.account_in_hand` measures the account: an existing connection is
+    used and left alone, otherwise one is opened from `data/terminal_path.txt` and closed again.
+    A host without MetaTrader5, without a terminal, or without an account is UNMEASURED -- which
+    is the honest answer and the one that leaves the survival envelope exactly as it is.
+    """
+    try:
+        import MetaTrader5 as mt5
+    except ImportError:
+        return None, None, "MetaTrader5 is not importable on this host"
+    opened = False
+    try:
+        if mt5.terminal_info() is None:
+            try:
+                from mt5desk.config import terminal_path
+                path = terminal_path()
+            except Exception:
+                path = ""
+            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
+            if not opened:
+                return None, None, f"terminal unreachable ({mt5.last_error()})"
+        acc = mt5.account_info()
+        if acc is None:
+            return None, None, "the terminal reports no account"
+        return float(acc.margin), float(acc.equity), "measured from the live terminal"
+    except Exception as exc:
+        return None, None, f"{type(exc).__name__}: {exc}"
+    finally:
+        if opened:
+            with suppress(Exception):
+                mt5.shutdown()
 
 
 def _capacity_ceiling() -> float | None:
@@ -2470,6 +2549,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     try:
         from mt5desk.gateway_config_fallback import MAX_DRAWDOWN_TOLERANCE as _DD_TOL
 
+        from libs.portfolio.kelly_surface import MAX_MARGIN_USE as _MAX_MARGIN_USE
         from libs.portfolio.kelly_surface import envelope as _envelope
         from libs.portfolio.kelly_surface import surface as _surface
         _free_total = float(free.total_heat)
@@ -2478,9 +2558,41 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _fr = tuple(round(x, 4) for x in np.linspace(0.0, _top, 21))
             _pre_surface = _surface(worlds, free.heat, tolerance=_DD_TOL, alpha=cfg.cvar_alpha,
                                     fractions=_fr)
+            # THE MARGIN CLAUSE, FED FROM THE BROKER (2026-09-09). `envelope` has carried a
+            # `margin_use` clause and a MAX_MARGIN_USE since it was written and NOTHING had ever
+            # passed the argument -- the one clause that is a fact about the venue rather than
+            # about the desk's own worlds was inert. It is measured from `mt5.account_info()`
+            # (margin over equity at the heat currently deployed, extrapolated linearly across
+            # the sampled heats) and OMITTED whenever the terminal, the account or an open
+            # position is missing, in which case the envelope binds exactly as it does today.
+            #
+            # THIS IS THE INTEGRITY CLAUSE, NOT A PREFERENCE. Past the broker's own feasibility
+            # a margin call liquidates positions the desk chose to hold, which no growth
+            # argument survives; it is the same class as `margin_guard` and it is why
+            # `survival_ceiling` is registered integrity rather than tunable.
+            _mu, _mu_why = (None, "not measured")
+            _mu_heats = [r.get("heat") for r in (_pre_surface.get("rows") or [])]
+            _acc_margin, _acc_equity, _acc_why = account_margin()
+            if _acc_margin is not None and _acc_equity is not None:
+                _mu, _mu_why = margin_use_from(_acc_margin, _acc_equity, _free_total, _mu_heats)
+            else:
+                _mu_why = f"margin unmeasured: {_acc_why}"
+            _log(f"margin use: {_mu_why}")
             survival = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
                                  fallback=HEAT_HARD_CEILING,
+                                 margin_use=_mu,
                                  capacity_max=_capacity_ceiling())
+            survival["margin_use"] = {
+                "status": "MEASURED" if _mu else "UNMEASURED", "why": _mu_why,
+                "account_margin": _acc_margin, "account_equity": _acc_equity,
+                "deployed_heat": round(_free_total, 6),
+                "max_margin_use": _MAX_MARGIN_USE,
+                "by_heat": ({round(k, 6): round(v, 6) for k, v in sorted(_mu.items())}
+                            if _mu else {}),
+                "rule": ("margin use is linear in heat through the origin (lots scale with "
+                         "heat); an unmeasured margin carries NO clause, so the envelope binds "
+                         "exactly as it did before this was fed"),
+            }
             if survival.get("status") == "MEASURED":
                 surv_ceiling = float(survival["ceiling"])
             surv_why = str(survival.get("why") or "")
@@ -2889,10 +3001,20 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # UNUSED_UPSIDE every pass and send `missed_growth` hunting a rail that did not bind.
         _op_ceiling = min(float(ceiling_now),
                           float(surv_ceiling) if surv_ceiling is not None else float("inf"))
+        # MARGIN HEADROOM, from the same broker reading the survival envelope's clause used.
+        # `aggression.explain` has carried a `margin_headroom` component since it was written
+        # and every pass reported it as a GAP ("no account margin reading on this host"); it is
+        # an audit input and moves nothing.
+        _headroom = None
+        _srv_mu = (survival.get("margin_use") or {}) if isinstance(survival, dict) else {}
+        if _srv_mu.get("status") == "MEASURED" and _srv_mu.get("account_equity"):
+            _headroom = 1.0 - (float(_srv_mu["account_margin"])
+                               / float(_srv_mu["account_equity"]))
         aggression = _explain(floor=HEAT_TARGET, ceiling=_op_ceiling,
                               total_heat=book.total_heat, free_optimum=free.total_heat,
                               readiness=ready, proof_passed=bool(proof.get("passed")),
-                              surface=ks_doc, book=funded, ev=ev)
+                              surface=ks_doc, book=funded, ev=ev,
+                              margin_headroom=_headroom)
         _log(f"aggression: A={aggression['A']:.2f} {aggression['verdict']} "
              f"tail_max={ (aggression['components']['tail_safety'] or {}).get('heat_tail_max')}")
     except Exception as exc:
