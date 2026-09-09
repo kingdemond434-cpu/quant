@@ -179,6 +179,51 @@ def revise(row: dict[str, Any], *, revision_of: str, reason: str, source: str,
     return out
 
 
+def stamp_or_refuse(rows: Iterable[dict[str, Any]], source: str,
+                    source_version: str | None = None,
+                    now: datetime | None = None) -> tuple[list[dict[str, Any]],
+                                                          list[dict[str, Any]]]:
+    """The DOOR: `(stamped, refused)`. The stamp is required, never attempted.
+
+    ONE DOOR, ONE STAMPER. This is `proposer_common._stamped` lifted here so every producer that
+    writes a discovery row shares it, and so there is exactly one place that decides what an
+    unstampable row does. It calls `stamp` above -- it is not a second stamper, and a producer
+    that wants its own is wrong by construction.
+
+    WHY REFUSAL RATHER THAN BEST EFFORT (measured 2026-09-05, re-measured 2026-09-09). When the
+    stamp sat inside a bare `try/except: pass` the census read 0 of 4,768 rows stamped, because a
+    failure produced an unstamped donation that looked downstream exactly like a stamped one. Over
+    the compiler's BOTH trees on 2026-09-09 the fraction is 190 of 2,816 rows (6.8%), and every
+    stamped row comes from one of the four producers already behind a door -- fund_playbook (177),
+    alpha_evolution (6), survivor_distiller (4), microstructure (3). The other 41 sources write
+    their files directly. A row that cannot carry an `available_time` cannot be refused for a
+    decision earlier than the desk could have known it, so admitting one is worse than donating
+    nothing: it is a silent claim of knowledge.
+
+    Each refusal carries `why` and enough of the row to find it again. Callers COUNT them onto the
+    artifact; a refusal only the door knows about is a refusal nobody acts on.
+    """
+    ok: list[dict[str, Any]] = []
+    refused: list[dict[str, Any]] = []
+    for c in rows:
+        if not isinstance(c, dict):
+            refused.append({"why": f"not a row: {type(c).__name__}", "title": str(c)[:120]})
+            continue
+        title = str(c.get("title") or c.get("cell") or c.get("id") or "")[:200]
+        try:
+            row = stamp(c, source, source_version=source_version, now=now)
+        except Exception as exc:                            # the door catches everything
+            refused.append({"why": f"stamp raised {type(exc).__name__}: {exc}", "title": title})
+            continue
+        if not is_stamped(row):
+            missing = [k for k in ("available_time", "ingested_time", "source_version",
+                                   "payload_hash") if not row.get(k)]
+            refused.append({"why": f"stamp produced no {', '.join(missing)}", "title": title})
+            continue
+        ok.append(row)
+    return ok, refused
+
+
 def latest_as_of(rows: Iterable[dict[str, Any]], key_fields: tuple[str, ...],
                  decision_time: datetime) -> list[dict[str, Any]]:
     """Per key, the newest revision the desk could have known at `decision_time`.
