@@ -375,16 +375,29 @@ def _state_research_feedback() -> None:
                                              if k in out))
         except Exception as exc:
             dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
-    # THE TYPED RESEARCH MEMORY is rebuilt from the artifacts the steps above refreshed, so the
-    # deepening worker's next prompt carries today's failures, survivors and methods (idempotent;
-    # a re-run adds nothing).
-    try:
-        from libs.research.memory import build_from_artifacts
-        m = build_from_artifacts()
-        dlog(f"research memory: {m.get('added', m)}" if isinstance(m, dict)
-             else "research memory built")
-    except Exception as exc:
-        dlog(f"research memory FAILED (non-fatal): {type(exc).__name__}: {exc}")
+
+
+def _research_memory() -> None:
+    """THE TYPED RESEARCH MEMORY, rebuilt from the artifacts the feedback step just refreshed.
+
+    Its own STEP, not a trailing try/except (2026-09-08). It sat at the tail of
+    `_state_research_feedback` inside a bare except that logged one line and moved on, and
+    measured on this tree its output directory `desks/mt5/data/memory` had never been created:
+    the deepening worker's prompt carried doctrine and lessons but no graveyard or certificate
+    retrieval, and nothing said so. As a named step its failure is recorded in the chain and the
+    stamp like any other, so "never ran" and "ran and failed" stop reading identically.
+    Idempotent -- a re-run adds nothing.
+    """
+    from libs.research.memory import build_from_artifacts
+    m = build_from_artifacts()
+    if not isinstance(m, dict):
+        raise RuntimeError(f"build_from_artifacts returned {type(m).__name__}, not a report")
+    failed = {k: v for k, v in (m.get("inputs") or {}).items()
+              if isinstance(v, str) and v.startswith("FAILED")}
+    dlog(f"research memory: added={m.get('added')} seen={m.get('seen')} "
+         f"inputs={m.get('inputs')}")
+    if failed and len(failed) == len(m.get("inputs") or {}):
+        raise RuntimeError(f"every memory input failed: {failed}")
 
 
 def _futures_curves() -> None:
@@ -482,6 +495,7 @@ STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("decay", _decay),
          ("state_research_feedback", _state_research_feedback),
+         ("research_memory", _research_memory),
          ("module_rent", _module_rent), ("zentech", _zentech), ("conservation", _conservation),
          ("export_aurum", _export_aurum))
 
