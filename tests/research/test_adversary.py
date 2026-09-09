@@ -273,6 +273,88 @@ def test_main_still_raises_the_alarm_when_the_injected_judge_admits_a_canary(
     assert text.startswith("CANARY ") and "lookahead passed" in text
 
 
+# ------------------------------------------------------------- P49 against the promoter
+@pytest.fixture(scope="module")
+def gaming(adv):
+    out = adv.promoter_gaming()
+    assert out["status"] == "MEASURED", out.get("why")
+    return out
+
+
+def test_the_gaming_ledger_satisfies_the_promotion_bar_exactly(adv, gaming) -> None:
+    """Built to the bar and not past it: the bar's weakness is a hair over it."""
+    bar, led = gaming["bar"], gaming["ledger"]
+    assert led["n"] == int(bar["min_trades"]) and led["days_active"] == int(bar["min_days_active"])
+    floor = float(bar["min_exp_r"])
+    assert floor < led["exp_r"] < floor + 2 * adv.GAMING_EXCESS_R
+    assert led["max_dd_r"] > float(bar["max_dd_r"])
+    assert led["satisfies_bar"] is True
+    assert gaming["canary"] not in {c.name for c in adv.CANARIES}, (
+        "the gaming canary must not sit in the 100% constant: a ledger built to a bar passing "
+        "that bar is the bar's definition, not a gate that stopped gating")
+
+
+def test_every_promoter_door_is_read_and_says_whether_it_admits(gaming) -> None:
+    r = gaming["readings"]
+    assert all(isinstance(v["admits"], bool) and v["how_called"] for v in r.values())
+    # The forward clock admits a ledger built to its bar; the capital door refuses it without an
+    # allocator reading, writes the row STANDBY at 0%, and opens only on an admitting reading.
+    assert r["forward_verdict.verdict"]["admits"] is True
+    cap0 = r["promoter.capital_verdict (no allocator reading)"]
+    assert cap0["admits"] is False and cap0["status"] == "UNMEASURED"
+    assert cap0["row_status_written"] == "STANDBY" and cap0["risk_frac"] == 0.0
+    cap1 = r["promoter.capital_verdict (manufactured admitting dE[log W])"]
+    assert cap1["admits"] is True and cap1["status"] == "LIVE"
+    assert cap1["risk_frac"] == pytest.approx(0.02)
+    assert r["promoter.promote_generic certificate door"]["admits"] is False
+    # MEASURED, NOT ASSUMED: the promotion bar and the retirement clauses disagree about the
+    # same ledger. Fifty trades at +0.055R satisfy the bar while the last twenty average
+    # -0.038R, so the rolling-20 clause would retire the sleeve on the reading that admitted it.
+    ret = r["promoter retirement clauses"]
+    assert ret["admits"] is False and "roll20" in ret["reason"], ret
+    assert ret["stats"]["exp"] > float(gaming["bar"]["min_exp_r"]) > ret["stats"]["roll20_exp"]
+    assert set(gaming["admitted_by"]) | set(gaming["refused_by"]) == set(r)
+    assert not set(gaming["admitted_by"]) & set(gaming["refused_by"])
+
+
+def test_fourteen_days_of_trades_cannot_be_twenty_independent_days(adv, gaming) -> None:
+    """Handed one cluster label per calendar day, the canonical verdict finds at most 14
+    independent observations in a 14-day ledger and refuses it on the n_eff floor -- a bar the
+    engines never ask it to apply, which is the measured half of this reading."""
+    import forward_verdict
+    day = gaming["readings"]["forward_verdict.verdict(day_clusters)"]
+    assert day["admits"] is False
+    assert day["n_eff"] == int(gaming["bar"]["min_days_active"]) < forward_verdict.MIN_EFFECTIVE_N
+    engines = gaming["engines_calling_canonical_verdict"]
+    assert set(engines) == set(adv.FORWARD_ENGINES)
+    assert all(isinstance(v, int) for v in engines.values()), engines
+
+
+def test_the_gaming_canary_promotes_nothing_and_writes_no_log(adv, gaming, monkeypatch) -> None:
+    import promoter
+
+    def _boom(*a, **k):
+        raise AssertionError("the gaming canary touched the promoter's state or log")
+    monkeypatch.setattr(promoter, "save_sleeves", _boom)
+    monkeypatch.setattr(promoter, "plog", _boom)
+    out = adv.promoter_gaming()
+    assert out["status"] == "MEASURED" and out["nothing_promoted"] is True
+
+
+def test_the_gaming_canary_is_blocked_with_a_reason_when_the_promoter_is_unreachable(
+        adv, monkeypatch) -> None:
+    monkeypatch.setitem(sys.modules, "forward_verdict", None)   # import raises ImportError
+    out = adv.promoter_gaming()
+    assert out["status"] == "BLOCKED" and "not importable" in out["why"]
+
+
+def test_the_report_carries_the_gaming_measurement_beside_the_canaries(adv, monkeypatch) -> None:
+    monkeypatch.setattr(adv, "hunt_silent_defects", lambda *a, **k: [])
+    doc = adv.run()
+    assert doc["promoter_gaming"]["status"] == "MEASURED"
+    assert doc["canaries"]["intact"] is True and len(doc["canaries"]["canaries"]) == 5
+
+
 # --------------------------------------------------------------------------- P58
 def test_reposts_of_one_source_count_once(adv) -> None:
     claims = [{"primary_source": "doi:10.1/abc", "title": t}

@@ -31,6 +31,13 @@ desks/mt5/scripts/external_gauntlet.run_gauntlet, the same ten gates every certi
 about those gates. On a host where the certifier cannot be imported the report says BLOCKED and
 why, and claims nothing.
 
+THE PROMOTER IS ATTACKED TOO (`promoter_gaming`, 2026-09-08). A sleeve that never traded, with a
+forward ledger manufactured to satisfy the promotion bar exactly, is put to every predicate the
+promoter itself applies -- the canonical forward verdict, the retirement clauses, the capital door
+with and without an allocator reading, the certificate door -- and ADVERSARY.json says which of
+them would have admitted it. A measurement, not a canary in the 100% constant: a ledger built to a
+bar passing that bar is the bar's definition, and the finding is what ELSE stands in the way.
+
 P48 -- THE SILENT-DEFECT HUNTER. Not a linter. It looks for the specific shapes this desk has
 actually been bitten by, each of which passes review, passes tests, and reports success while
 doing nothing:
@@ -480,9 +487,174 @@ def real_gate() -> tuple[GauntletGate | None, str | None]:
     return GauntletGate(external_gauntlet), None
 
 
+# --------------------------------------------------------------------- P49 against the promoter
+#: The promoter-gaming canary: a sleeve that never traded, carrying a forward ledger MANUFACTURED
+#: to satisfy the promotion bar exactly. Not in CANARIES, and deliberately not: the forward bar is
+#: a definition, and a ledger built to its definition passing it is not a gate that stopped
+#: gating -- it is the question "what, besides the bar, stands between a manufactured ledger and
+#: the book". This measures that and moves no threshold, promotes nothing, writes nothing.
+GAMING_NAME = "CANARY.promoter_gaming"
+#: How far above the expectancy bar the manufactured ledger sits. Small on purpose: the canary
+#: SATISFIES the bar, it does not exceed it, because the bar's weakness is a hair over it.
+GAMING_EXCESS_R = 0.005
+#: The three forward engines the canonical verdict's own docstring says call it.
+FORWARD_ENGINES = ("shadow_forward", "qquant_shadow", "scalp_shadow")
+
+
+def _gaming_ledger(bar: dict[str, Any]) -> tuple[list[float], list[int]]:
+    """R-multiples and a calendar-day label per trade, built to the bar and nothing more.
+
+    Bracket-shaped outcomes (uniform on -1R..+2R, a stop and a 2:1 target) with the sample mean
+    shifted onto `min_exp_r + GAMING_EXCESS_R`, `min_trades` of them spread over exactly
+    `min_days_active` days. Seeded like every canary, so a change in any reading is a change in
+    the promoter, never in the draw.
+    """
+    n = int(bar["min_trades"])
+    days = int(bar["min_days_active"])
+    target = float(bar["min_exp_r"]) + GAMING_EXCESS_R
+    rng = random.Random(CANARY_SEED + _canary_offset("promoter_gaming"))  # noqa: S311
+    raw = [rng.uniform(-1.0, 2.0) for _ in range(n)]
+    mean = sum(raw) / n
+    rs = [round(x - mean + target, 6) for x in raw]
+    return rs, [i * days // n for i in range(n)]
+
+
+def _max_drawdown_r(rs: list[float]) -> float:
+    acc, peak, worst = 0.0, 0.0, 0.0
+    for r in rs:
+        acc += r
+        peak = max(peak, acc)
+        worst = min(worst, acc - peak)
+    return worst
+
+
+def promoter_gaming() -> dict[str, Any]:
+    """Would the promoter have admitted a manufactured forward ledger, and on which reading?
+
+    Every reading is the promoter's OWN predicate, imported and called as the promoter calls it:
+    `forward_verdict.verdict` (the canonical clock verdict), the retirement clauses, the capital
+    door `capital_verdict` with and without an allocator reading, and the certificate door. Each
+    is reported with `admits`, so the answer is a list of doors and not an adjective. BLOCKED,
+    with the reason, when the promoter cannot be imported on this host.
+    """
+    for p in (BASE, BASE / "research"):
+        if str(p) not in sys.path:
+            sys.path.insert(0, str(p))
+    try:
+        import forward_verdict
+        import promoter
+        from gate_policy import get_promotion_thresholds
+    except Exception as exc:
+        return {"status": "BLOCKED", "canary": GAMING_NAME,
+                "why": f"the promoter's predicates are not importable on this host "
+                       f"({type(exc).__name__}: {exc})"}
+    bar = dict((get_promotion_thresholds() or {}).get("forward_cure_thresholds") or {})
+    missing = [k for k in ("min_trades", "min_exp_r", "max_dd_r", "min_days_active")
+               if k not in bar]
+    if missing:
+        return {"status": "BLOCKED", "canary": GAMING_NAME,
+                "why": f"gate_spec.yaml promotion.forward_cure_thresholds lacks {missing}"}
+
+    rs, day_of = _gaming_ledger(bar)
+    n, days = len(rs), int(bar["min_days_active"])
+    exp_r = sum(rs) / n
+    max_dd = _max_drawdown_r(rs)
+    ledger = {
+        "n": n, "days_active": days, "exp_r": round(exp_r, 6), "max_dd_r": round(max_dd, 4),
+        "satisfies_bar": bool(n >= int(bar["min_trades"]) and days >= int(bar["min_days_active"])
+                              and exp_r > float(bar["min_exp_r"])
+                              and max_dd > float(bar["max_dd_r"])),
+        "construction": (f"{n} bracket-shaped R-multiples over {days} calendar days, mean "
+                         f"pinned {GAMING_EXCESS_R}R above min_exp_r; seed {CANARY_SEED}"),
+    }
+    readings: dict[str, dict[str, Any]] = {}
+
+    fv = forward_verdict.verdict(rs, days)
+    readings["forward_verdict.verdict"] = {
+        "admits": bool(fv["promote"]), "status": fv["status"], "n_eff": fv["n_eff"],
+        "n_eff_basis": fv["n_eff_basis"], "reason": fv["reason"],
+        "how_called": "verdict(rs, days_active) with no cluster labels, as scalp_shadow calls it"}
+    fvc = forward_verdict.verdict(rs, days, clusters=day_of)
+    readings["forward_verdict.verdict(day_clusters)"] = {
+        "admits": bool(fvc["promote"]), "status": fvc["status"], "n_eff": fvc["n_eff"],
+        "n_eff_basis": fvc["n_eff_basis"], "reason": fvc["reason"],
+        "how_called": "the same predicate handed one cluster label per calendar day; no engine "
+                      "calls it this way (see engines_calling_canonical_verdict)"}
+
+    fs = promoter.sleeve_forward_stats(
+        [{"sleeve": GAMING_NAME, "r_multiple": r} for r in rs], GAMING_NAME)
+    # The three retirement clauses, as promoter.main() applies them inline to every LIVE and
+    # STANDBY row; they are not callable on their own, so they are reproduced here verbatim
+    # against the promoter's own constants and stats function.
+    retire_why = None
+    if fs["n"] >= promoter.RETIRE_MIN_N and fs["roll20_exp"] <= 0.0:
+        retire_why = f"roll20 exp {fs['roll20_exp']:.3f}R <= 0"
+    elif fs["max_dd"] < promoter.RETIRE_MAX_DD:
+        retire_why = f"maxDD {fs['max_dd']:.1f}R < {promoter.RETIRE_MAX_DD}R"
+    elif fs["n"] >= 50 and fs["exp"] < promoter.RETIRE_MIN_EXP:
+        retire_why = f"exp {fs['exp']:.3f}R < {promoter.RETIRE_MIN_EXP}R"
+    readings["promoter retirement clauses"] = {
+        "admits": retire_why is None, "stats": fs,
+        "reason": retire_why or "no retirement clause fires on the manufactured ledger",
+        "how_called": "sleeve_forward_stats + the three retire clauses of promoter.main()"}
+
+    cap0 = promoter.capital_verdict({}, GAMING_NAME)
+    readings["promoter.capital_verdict (no allocator reading)"] = {
+        "admits": cap0["status"] == "LIVE", "status": cap0["status"],
+        "row_status_written": promoter._door_status(cap0), "risk_frac": cap0["risk_frac"],
+        "reason": cap0.get("why"),
+        "how_called": "capital_verdict(view={}, name): the allocation view the promoter reads "
+                      "when pf_allocation.json is absent, stale or unmeasured"}
+    view = {"fresh": True, "why": "MANUFACTURED admitting reading (canary)",
+            "candidates": {GAMING_NAME.lower(): {
+                "admit": True, "heat_earned": 0.02, "delta_elogw_per_day": 1e-4,
+                "why": "manufactured dE[log W] > 0"}},
+            "book": {}, "zeroed": {}}
+    cap1 = promoter.capital_verdict(view, GAMING_NAME)
+    readings["promoter.capital_verdict (manufactured admitting dE[log W])"] = {
+        "admits": cap1["status"] == "LIVE", "status": cap1["status"],
+        "row_status_written": promoter._door_status(cap1), "risk_frac": cap1["risk_frac"],
+        "reason": cap1.get("why"),
+        "how_called": "capital_verdict with a fresh view whose admission scan admits the "
+                      "canary at 2% heat -- what a gamed allocator reading would look like"}
+
+    certs = promoter.load_cert_specs()
+    readings["promoter.promote_generic certificate door"] = {
+        "admits": GAMING_NAME in certs, "certificates_on_this_host": len(certs),
+        "reason": ("no exact-policy shadow_spec for this key: refused before any forward "
+                   "number is read" if GAMING_NAME not in certs else "a certificate exists"),
+        "how_called": "load_cert_specs() membership, the check promote_generic makes first"}
+
+    engines: dict[str, int | None] = {}
+    for eng in FORWARD_ENGINES:
+        try:
+            src = (BASE / "research" / f"{eng}.py").read_text("utf-8")
+        except OSError:
+            engines[eng] = None
+            continue
+        engines[eng] = src.count("forward_verdict.verdict(")
+
+    admitted_by = [k for k, r in readings.items() if r["admits"]]
+    refused_by = [k for k, r in readings.items() if not r["admits"]]
+    return {
+        "status": "MEASURED", "canary": GAMING_NAME, "bar": bar, "ledger": ledger,
+        "readings": readings, "admitted_by": admitted_by, "refused_by": refused_by,
+        "engines_calling_canonical_verdict": engines,
+        "nothing_promoted": True,
+        "verdict": (
+            "A ledger built to the forward bar passes the forward bar; that is the bar's "
+            "definition, not a defect. What stands between it and the book: the row is written "
+            f"{promoter._door_status(cap0)} at {cap0['risk_frac']:.0%} without a fresh admitting "
+            f"dE[log W] reading and {promoter._door_status(cap1)} only with one, and the "
+            "certificate door refuses a sleeve no certificate enrolled. The bar is gameable by a "
+            "ledger; the book is gameable only if the allocator's reading is too."),
+    }
+
+
 def run(gate=None) -> dict[str, Any]:
     g = gate or _default_gate
     canaries = run_canaries(g)
+    gaming = promoter_gaming()
     defects = hunt_silent_defects()
     by_shape: dict[str, int] = {}
     for h in defects:
@@ -498,6 +670,7 @@ def run(gate=None) -> dict[str, Any]:
         # the gates they were built to test; the difference is the whole measurement.
         "gate_detail": getattr(gate, "detail", None) if gate else None,
         "docket": getattr(gate, "docket", None) if gate else None,
+        "promoter_gaming": gaming,
         "silent_defects": {"total": len(defects), "by_shape": by_shape,
                            "top": defects[:25]},
         "seed": CANARY_SEED,
