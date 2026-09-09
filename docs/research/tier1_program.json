@@ -1332,25 +1332,22 @@
    "item": "Negative-knowledge moat / graveyard queried before generation",
    "domain": "A",
    "phase": 3,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/hypothesis_graph.py:141-159 — `buried()` indexes FAILED/BURIED rows by coarsened parameter region (REGION_WIDTH at libs/research/hypothesis_graph.py:38-42), and `prior_failures(symbol, family, params)` returns {region, n_failed, gates_failed, last_why} (MEASURED)",
-    "libs/research/graveyard_model.py:98-159 — `GraveyardModel.fit()/premortem()` over ten declared failure classes (CLASSES at line 37) with `first_test` falsifier per class (FIRST_TEST at line 50) (MEASURED)",
-    "desks/mt5/research/miner_candidate_compiler.py:765-786 — the generator-side query: prior_failures stamps `prior_failures_in_region` and `region`, then GraveyardModel().fit(g.rows()) stamps `premortem` on every candidate, then record_candidates registers them BORN (MEASURED)",
-    "MEASURED CONTRADICTION: desks/mt5/data/hypotheses/miner_candidates.json (mtime 2026-09-08 21:05) contains 632 candidates and ZERO carry `premortem`, `prior_failures_in_region` or `region` — the per-key count is exactly 632 for the eight base fields and 0 for all three enrichment fields. The whole try-block at desks/mt5/research/miner_candidate_compiler.py:765 is therefore not landing",
-    "MEASURED: desks/mt5/data/hypothesis_graph.jsonl contains zero rows whose source starts with `miner:` or equals `miner_candidate_compiler` — sources are only `external` (30,256) and `fund_playbook:*` (57). record_candidates has never appended a compiler row",
-    "libs/research/hypothesis_graph.py:204-219 `record_verdicts()` — repo-wide grep finds NO caller; the only other mention is a docstring line in libs/research/preregistration.py:14 (MEASURED). Gauntlet verdicts therefore never enter the graph live",
-    "scripts/backfill_hypothesis_graph.py:1-13 — the one-shot backfill that produced the 30k rows; grep across ops/, desks/mt5/ops/box_tasks.manifest, desks/mt5/scripts/Install-QuantWindows.ps1, desks/mt5/research/hourly_cycle.py and desks/mt5/research/daily_cycle.py returns zero hits, so it is unscheduled (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1286-1287 — `_costed('graveyard_model', lambda: _producer('graveyard_model', 'libs/research/graveyard_model.py'))`. MEASURED: libs/research/graveyard_model.py has no `def main` and no `if __name__ == \"__main__\"` block, so this scheduled leg executes a module body and exits 0 having written nothing",
-    "desks/mt5/research/mined_ground.py:181-221 — mining supplies ATTENTION only; writes desks/mt5/data/hypotheses/mined_targets.json (present, 2026-09-04) with per-symbol scores and `miners_naming_no_symbol` (MEASURED)",
-    "docs/graveyard.md — 251 KB, 84 sections, rich prose kills carrying mechanism, tag, verdict, why, and reopening conditions (e.g. 'Reopening any row below requires a materially new mechanism or dataset'), but only machine-read by scripts/build_graveyard_priors.py (unscheduled; its output data/graveyard_priors.json does not exist) and by scripts/mechanism_board.py / scripts/knowledge_engine.py (MEASURED)"
+    "libs/research/hypothesis_graph.py — death_profile(): terminal gate in the ten-gate order, the gates that passed (where the idea worked), the numeric reading each gate left, and the sample size; stamped on every FAILED/BURIED/RETIRED row as `death` (MEASURED)",
+    "libs/research/hypothesis_graph.py — prior_failures() now returns terminal_gates and best_readings per region, rebuilt from `gates` for rows written before this landed (MEASURED)",
+    "tests/research/test_death_profile.py (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1063 compile_candidates leg + desks/mt5/ops/box_tasks.manifest:64 MT5-Deepening (deepening_worker.voi_order reads prior_failures at desks/mt5/research/deepening_worker.py:463)",
-   "artifact": "desks/mt5/data/hypothesis_graph.jsonl; docs/graveyard.md",
-   "consumer": "desks/mt5/research/deepening_worker.py:416-470 (VOI ordering), libs/research/bandit.py:313 (arm posteriors), desks/mt5/research/mutation_yield.py:81, desks/mt5/research/revival_engine.py:93",
-   "gap": "The per-failure record keeps symbol/family/params/region/source/parent/fate/why/gates but NOT sample size, cost sensitivity, correlation profile, where it worked vs broke, or a reopening condition; and the generator-side annotation demonstrably is not landing (632/632 candidates carry no premortem, and no compiler row has ever reached the ledger).",
-   "next_step": "Replace the bare `except Exception: pass` around the premortem block in desks/mt5/research/miner_candidate_compiler.py:777-783 with a printed reason, and log the outer exception at line 785 to the compiled artifact so the reason the graph write fails is visible."
+   "scheduled_by": "hourly_cycle:external_gauntlet, hourly_cycle:compile_candidates",
+   "artifact": "desks/mt5/data/hypothesis_graph.jsonl death",
+   "consumer": "the compiler's premortem and prior-failure stamp; the novelty gate",
+   "gap": "",
+   "next_step": "Replace the bare `except Exception: pass` around the premortem block in desks/mt5/research/miner_candidate_compiler.py:777-783 with a printed reason, and log the outer exception at line 785 to the compiled artifact so the reason the graph write fails is visible.",
+   "landed": [
+    "this commit"
+   ],
+   "note": "A correlation profile against the live book is recorded ABSENT rather than omitted: the gauntlet judges a cell against its own returns and never against the book, so no organ here holds both series."
   },
   {
    "id": "A4",

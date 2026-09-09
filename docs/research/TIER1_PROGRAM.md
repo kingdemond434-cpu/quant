@@ -24,12 +24,12 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 0 Close the truth loop: attribution, deadman, stable adoption, node separation, durable jobs, data freshness, research lineage | 1 | 0 | 3 | 0 | 18 |
 | 1 Remove the research throughput ceiling: worker queue, multi-fidelity screening, EVSI scheduler, research DAG, scalable forward clocks, content-addressed cache, experiment DB | 1 | 0 | 2 | 0 | 7 |
 | 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 1 | 0 | 18 | 1 | 4 |
-| 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 1 | 0 | 7 |
+| 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 0 | 0 | 8 |
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 1 | 0 | 13 |
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 4 | 0 | 15 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
-| **all** | 4 | 0 | 30 | 1 | 78 |
+| **all** | 4 | 0 | 29 | 1 | 79 |
 
 ## Items
 
@@ -452,14 +452,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:compile_candidates · artifact: desks/mt5/data/hypothesis_graph.jsonl · consumer: desks/mt5/research/deepening_worker.py:416,463 (prior_failures in voi_order); libs/research/bandit.py:313,334 (per-arm Beta evidence); desks/mt5/research/mutation_yield.py:81; desks/mt5/research/revival_engine.py:93; libs/research/memory.py:275
   - next: Add a typed `edges: list[dict]` field to `Node` in libs/research/hypothesis_graph.py:48 and have record_candidates emit `uses_data`/`applies_to_symbol`/`mutated_from` edges from fields the compiler already has (source_url, symbol, parent).
   - landed: 15ef0170
-- **A3 Negative-knowledge moat / graveyard queried before generation** — PARTIAL
-  - gap: The per-failure record keeps symbol/family/params/region/source/parent/fate/why/gates but NOT sample size, cost sensitivity, correlation profile, where it worked vs broke, or a reopening condition; and the generator-side annotation demonstrably is not landing (632/632 candidates carry no premortem, and no compiler row has ever reached the ledger).
-  - libs/research/hypothesis_graph.py:141-159 — `buried()` indexes FAILED/BURIED rows by coarsened parameter region (REGION_WIDTH at libs/research/hypothesis_graph.py:38-42), and `prior_failures(symbol, family, params)` returns {region, n_failed, gates_failed, last_why} (MEASURED)
-  - libs/research/graveyard_model.py:98-159 — `GraveyardModel.fit()/premortem()` over ten declared failure classes (CLASSES at line 37) with `first_test` falsifier per class (FIRST_TEST at line 50) (MEASURED)
-  - desks/mt5/research/miner_candidate_compiler.py:765-786 — the generator-side query: prior_failures stamps `prior_failures_in_region` and `region`, then GraveyardModel().fit(g.rows()) stamps `premortem` on every candidate, then record_candidates registers them BORN (MEASURED)
-  - MEASURED CONTRADICTION: desks/mt5/data/hypotheses/miner_candidates.json (mtime 2026-09-08 21:05) contains 632 candidates and ZERO carry `premortem`, `prior_failures_in_region` or `region` — the per-key count is exactly 632 for the eight base fields and 0 for all three enrichment fields. The whole try-block at desks/mt5/research/miner_candidate_compiler.py:765 is therefore not landing
-  - clock: desks/mt5/research/hourly_cycle.py:1063 compile_candidates leg + desks/mt5/ops/box_tasks.manifest:64 MT5-Deepening (deepening_worker.voi_order reads prior_failures at desks/mt5/research/deepening_worker.py:463) · artifact: desks/mt5/data/hypothesis_graph.jsonl; docs/graveyard.md · consumer: desks/mt5/research/deepening_worker.py:416-470 (VOI ordering), libs/research/bandit.py:313 (arm posteriors), desks/mt5/research/mutation_yield.py:81, desks/mt5/research/revival_engine.py:93
+- **A3 Negative-knowledge moat / graveyard queried before generation** — LANDED
+  - libs/research/hypothesis_graph.py — death_profile(): terminal gate in the ten-gate order, the gates that passed (where the idea worked), the numeric reading each gate left, and the sample size; stamped on every FAILED/BURIED/RETIRED row as `death` (MEASURED)
+  - libs/research/hypothesis_graph.py — prior_failures() now returns terminal_gates and best_readings per region, rebuilt from `gates` for rows written before this landed (MEASURED)
+  - tests/research/test_death_profile.py (MEASURED)
+  - clock: hourly_cycle:external_gauntlet, hourly_cycle:compile_candidates · artifact: desks/mt5/data/hypothesis_graph.jsonl death · consumer: the compiler's premortem and prior-failure stamp; the novelty gate
   - next: Replace the bare `except Exception: pass` around the premortem block in desks/mt5/research/miner_candidate_compiler.py:777-783 with a printed reason, and log the outer exception at line 785 to the compiled artifact so the reason the graph write fails is visible.
+  - landed: this commit
 - **A4 Research memory — retrieval-conditioning / lesson injection at runtime** — LANDED
   - desks/mt5/research/daily_cycle.py — the research memory build is its own named STEP rather than a side effect (MEASURED)
   - clock: hourly_cycle:daily · artifact: desks/mt5/data/research_memory.json · consumer: every organ that sources ops/brain_env.sh (doctrine injection); scripts/max_audit.py:2571 reads desk_memory.unreached; desks/mt5/research/deepening_worker.py:236 would read memory.prompt_context

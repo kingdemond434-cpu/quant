@@ -92,11 +92,84 @@ class Node:
         return region_key(self.symbol, self.family, self.params)
 
     def to_row(self) -> dict[str, Any]:
-        return {"id": self.id, "region": self.region, "symbol": self.symbol,
-                "family": self.family, "params": self.params, "source": self.source,
-                "parent": self.parent, "fate": self.fate, "why": self.why, "gates": self.gates,
-                "at": self.at or datetime.now(tz=UTC).isoformat(),
-                "edges": [dict(e) for e in self.edges]}
+        row = {"id": self.id, "region": self.region, "symbol": self.symbol,
+               "family": self.family, "params": self.params, "source": self.source,
+               "parent": self.parent, "fate": self.fate, "why": self.why, "gates": self.gates,
+               "at": self.at or datetime.now(tz=UTC).isoformat(),
+               "edges": [dict(e) for e in self.edges]}
+        profile = death_profile(self.gates, self.fate)
+        if profile:
+            row["death"] = profile
+        return row
+
+
+#: The numeric reading each gate leaves behind, and where it sits inside that gate's dict.
+#: Tier-1 item A3: the burial record kept symbol/family/params/region/source/parent/fate/why and
+#: the whole `gates` blob, so WHAT it died of was a prose string and HOW BADLY was buried inside
+#: a nested dict nothing read. A generator asking "has this region been tried, and how close did
+#: it come?" could get the first answer and never the second, so a cell that missed the deflated
+#: Sharpe by a hair and one that failed every gate were the same row to the novelty gate.
+#: The ten gates in the order external_gauntlet runs them, plus the two pre-gates and the
+#: observations check. THE ORDER IS SEPARATE FROM THE READINGS because two gates refuse without
+#: leaving a number -- `economic_prior` and `symbol_eligibility` are terminal Gate-1 rejections
+#: -- and deriving the order from the readings table put them last, so a cell rejected before it
+#: was ever built was reported as dying of its deflated Sharpe.
+GATE_ORDER = ("symbol_eligibility", "economic_prior", "observations", "in_sample_screen",
+              "deflated_sharpe", "pbo", "reality_check_spa", "cpcv", "walk_forward",
+              "stress_costs", "lockbox", "expected_value")
+
+_READINGS = {
+    "deflated_sharpe": ("dsr", ("dsr", "value", "deflated_sharpe")),
+    "in_sample_screen": ("sharpe", ("sharpe", "value", "sharpe_ratio")),
+    "pbo": ("pbo", ("pbo", "value")),
+    "reality_check_spa": ("spa_p", ("p_value", "p", "value")),
+    "cpcv": ("cpcv_oos_sharpe", ("mean_oos_sharpe", "oos_sharpe", "value")),
+    "walk_forward": ("wf_oos_sharpe", ("oos_sharpe", "value")),
+    "stress_costs": ("cost_stress_mean", ("mean", "value")),
+    "lockbox": ("lockbox_sharpe", ("lockbox_sharpe", "value")),
+    "expected_value": ("ev", ("ev", "mean", "value")),
+    "observations": ("days", ("days",)),
+}
+
+
+def death_profile(gates: dict[str, Any], fate: str) -> dict[str, Any]:
+    """What this cell died of, with the numbers -- not a sentence.
+
+    Returns {} for a fate that is not a death and for a gates blob with nothing in it, so an
+    absent profile means "never judged", never "judged and fine". `terminal_gate` is the FIRST
+    gate that refused in the ten-gate order, because that is the one a generator must beat;
+    `passed` names the gates it did clear, which is where the idea worked.
+
+    ABSENT BY CONSTRUCTION, and named rather than omitted: a correlation profile against the live
+    book cannot be computed here (the gauntlet judges a cell against its own returns, never
+    against the book), so `correlation_profile` reads ABSENT until an organ that holds both
+    writes it.
+    """
+    if fate not in (FAILED, BURIED, RETIRED) or not isinstance(gates, dict) or not gates:
+        return {}
+    passed, failed, readings = [], [], {}
+    for name, g in gates.items():
+        if not isinstance(g, dict):
+            continue
+        if g.get("passed") is True:
+            passed.append(name)
+        elif g.get("passed") is False:
+            failed.append(name)
+        spec = _READINGS.get(name)
+        if spec:
+            key, fields = spec
+            for f in fields:
+                v = g.get(f)
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    readings[key] = round(float(v), 6)
+                    break
+    terminal = next((k for k in GATE_ORDER if k in failed), failed[0] if failed else "")
+    return {"terminal_gate": terminal, "failed": sorted(failed), "passed": sorted(passed),
+            "n_gates": len(passed) + len(failed), "readings": readings,
+            "unmeasured": bool(gates.get("observations", {}).get("passed") is False),
+            "correlation_profile": ("ABSENT: the gauntlet judges a cell against its own returns, "
+                                    "never against the live book"),
+            "sample_days": readings.get("days")}
 
 
 def edges_for(symbol: str, params: dict[str, Any], *, parent: str = "", operator: str = "",
@@ -220,10 +293,28 @@ class Graph:
         """What the desk already knows about this region. Empty means: never tried."""
         key = region_key(symbol, family, params)
         rows = self.buried().get(key, [])
+        # HOW CLOSE IT CAME, NOT JUST THAT IT DIED (A3). A region whose best deflated Sharpe was
+        # 0.94 against a 0.95 bar is a different object from one that failed every gate, and a
+        # novelty gate that cannot tell them apart discards the desk's most promising ground.
+        profiles = [p for p in (r.get("death") or death_profile(r.get("gates") or {},
+                                                                str(r.get("fate") or ""))
+                                for r in rows) if p]
+        terminal: dict[str, int] = {}
+        best: dict[str, float] = {}
+        for p in profiles:
+            t = str(p.get("terminal_gate") or "")
+            if t:
+                terminal[t] = terminal.get(t, 0) + 1
+            for k, v in (p.get("readings") or {}).items():
+                if isinstance(v, (int, float)):
+                    best[k] = max(best.get(k, float(v)), float(v))
         return {"region": key, "n_failed": len(rows),
                 "gates_failed": sorted({g for r in rows for g, v in (r.get("gates") or {}).items()
                                         if isinstance(v, dict) and v.get("passed") is False}),
-                "last_why": (rows[-1].get("why") if rows else "")}
+                "last_why": (rows[-1].get("why") if rows else ""),
+                "terminal_gates": dict(sorted(terminal.items(), key=lambda kv: -kv[1])),
+                "best_readings": {k: round(v, 6) for k, v in sorted(best.items())},
+                "profiles": len(profiles)}
 
     def lineage(self, node_id_: str) -> list[dict[str, Any]]:
         """Walk parents back to the root. A cycle or a missing parent ends the walk."""
