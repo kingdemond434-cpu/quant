@@ -238,6 +238,22 @@ $tasks = @(
        # correct watchdog for a process whose failure mode is "died quietly at 02:00".
        TimeLimit = (New-TimeSpan -Days 3650)
        Desc = "The permanent Fusion tick tape -- restarts itself within 10 minutes of any death." },
+    # ---- THE MT5 DEADMAN, DRY-RUN ONLY ---------------------------------------------------------
+    # MEASURED 2026-09-08: the only deadman on this desk (scripts/run_deadman_switch.py, Tier-3,
+    # untouched) polls pinned Binance testnet endpoints and protects no live MT5 risk, and the
+    # drafted MT5 rail (proposals/fusion_deadman.py) had sat complete and unscheduled since
+    # 2026-08-26. This row runs it on its DEFAULT -- dry-run: it reads gateway_state.json, the
+    # live and intent ledgers, evaluates every rail and writes data/fusion_deadman_state.json
+    # saying what it WOULD do. It writes no pause file and sends nothing. There is deliberately
+    # no `Args` here: `--live` is the arming switch and arming is the principal's decision, taken
+    # after the dry-run stamps have proved the readings against the box for a period.
+    # test_fusion_deadman_dry_run pins that this registration carries no `--live`.
+    @{ Name = "MT5-FusionDeadmanDryRun"
+       Script = "proposals\\fusion_deadman.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 5) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       Desc = "MT5 ruin rail in DRY-RUN: evaluates every rail every 5 minutes and stamps what it would do; arms nothing." },
     # ---- THE DAILY CYCLE, TWO LANES TWELVE HOURS APART --------------------------------------
     # Both execute docs\DESK_CYCLE_PROMPT.md; the lane decides which half they own. The split is
     # what stops two agents editing the same files twelve hours apart and calling it progress:
@@ -277,6 +293,18 @@ $tasks = @(
                      -RepetitionDuration (New-TimeSpan -Hours 11) }
        TimeLimit = (New-TimeSpan -Hours 10)
        Desc = "Daily wiring pass: schedule the unwired, repair staleness and failing tasks." },
+    # THE ONE REAL DRILL, ON A CLOCK (2026-09-08). ops\reboot_drill.ps1 has always been the box's
+    # post-reboot check -- terminal64 running, the eleven required tasks present and enabled, the
+    # account read fresh -- and it was scheduled NOWHERE: grep for reboot_drill found only source
+    # comments and its test. Read-only apart from re-enabling a task Windows left Disabled, so it
+    # is safe beside live trading. It writes desks\mt5\reports\REBOOT_DRILL.json every run and
+    # data\REBOOT_DRILL_ALARM.txt on a FAIL, both of which research\issue_board.py reads.
+    # Resolved under the REPOSITORY root, like scripts\build_zentech_state.py above.
+    @{ Name = "MT5-RebootDrill"
+       Kind = "ps1"
+       Script = "ops\\reboot_drill.ps1"
+       Trigger = { New-ScheduledTaskTrigger -Daily -At "06:30" }
+       Desc = "Daily post-reboot drill: terminal, required tasks and account freshness; records PASS/FAIL for the issue board." },
     @{ Name = "MT5-StallWatch"
        Kind = "ps1"
        Script = "scripts\\stall_watch.ps1"

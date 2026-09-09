@@ -95,6 +95,11 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "scripts/check_miner_conversion.py"),
     ("ceiling_audit", "desks/mt5/reports/ABSOLUTE_CEILING_STATUS.json", 86400,
      "scripts/check_absolute_ceiling.py"),
+    # THE REBOOT DRILL'S VERDICT (2026-09-08). ops/reboot_drill.ps1 runs daily as MT5-RebootDrill
+    # and writes this every run; a missing or stale file means the drill itself has stopped, which
+    # is the failure this table exists to notice. No producer command: it is a Windows task on the
+    # box, and inventing a repair here would be a task that reports success and runs nothing.
+    ("reboot_drill", "desks/mt5/reports/REBOOT_DRILL.json", 86400, None),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line
@@ -108,6 +113,9 @@ ALARMS: tuple[tuple[str, str, str], ...] = (
     ("MINER_YIELD_ALARM.txt", "DEGRADED", "miners are producing rows and no survivors"),
     ("JOB_MANIFEST_ALARM.txt", "STALLED", "the job manifest disagrees with what runs"),
     ("DESK_TASKS_ALARM.txt", "STALLED", "a scheduled desk task is missing or failing"),
+    ("REBOOT_DRILL_ALARM.txt", "STALLED",
+     "the post-reboot drill FAILED: the terminal, a required task or the account read did not "
+     "recover"),
     ("SAMEDAY_ALARM.txt", "BLIND", "the same-day pipeline fence is breached"),
     ("FENCE_ALARM.txt", "BLIND", "a standing fence is breached"),
     ("PROMPT_PREFIX_ALARM.txt", "DEGRADED", "the prompt prefix drifted"),

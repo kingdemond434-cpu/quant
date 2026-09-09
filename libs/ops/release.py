@@ -111,6 +111,13 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/shadow/qquant_shadow_state.json",
     "desks/mt5/reports/shadow/external_shadow_state.json",
     "desks/mt5/data/account_state.json",
+    # The attribution chain's ledgers (2026-09-08): decisions, intents, fills and the chain the
+    # markout leg materialises. Append-only outputs of the running code, published on the same
+    # fifteen-minute clock; a seal that refused them would refuse the desk on its first fill.
+    "desks/mt5/data/decision_ledger.jsonl",
+    "desks/mt5/data/order_intents.jsonl",
+    "desks/mt5/data/live_ledger.jsonl",
+    "desks/mt5/reports/attribution_chain.json",
 })
 
 SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --name-only "
@@ -311,6 +318,13 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
     hashes HEAD's blobs, and on the box state is dirty by design between syncs -- see
     `dirty_paths`). Every dirty path, state included, is recorded rather than hidden: the seal
     is still exact, but the operator should know their screen is not what they sealed.
+
+    THE ROLLBACK TARGET (2026-09-08). `previous_code_sha` and `previous_release_id` name the
+    record this seal replaces, so that "go back to the last release" has an address to name;
+    until now nothing anywhere restored a previous seal and nothing recorded which one that
+    was. When the replaced record already names this HEAD (a re-seal of the same code) its own
+    previous target is carried forward, so a re-seal never points the rollback at itself. The
+    rollback script itself is principal-gated and is not written here.
     """
     r = _root(root)
     head = git_head(r)
@@ -321,11 +335,18 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
     if dirty_code and not allow_dirty:
         raise RuntimeError(f"cannot seal a dirty tree ({len(dirty_code)} tracked code path(s) "
                            f"differ from HEAD: {dirty_code[:5]}); commit them or pass allow_dirty")
+    prev = load(root) or {}
+    prev_sha = str(prev.get("code_sha") or prev.get("live_sha") or "") or None
+    prev_id = str(prev.get("release_id") or "") or None
+    if prev_sha == head:
+        prev_sha = str(prev.get("previous_code_sha") or "") or None
+        prev_id = str(prev.get("previous_release_id") or "") or None
     doc = _describe(r, head)
     doc.update(sealed=True, sealed_at=doc["generated_utc"],
                sealed_by=by or os.environ.get("GITHUB_ACTOR") or "operator",
                ci_run_id=os.environ.get("GITHUB_RUN_ID"),
-               tested_sha=head if tested else None, worktree_dirty=dirty)
+               tested_sha=head if tested else None, worktree_dirty=dirty,
+               previous_code_sha=prev_sha, previous_release_id=prev_id)
     if write:
         _write(doc, root)
     return doc

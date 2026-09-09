@@ -315,7 +315,18 @@ $relPaths = @(
     # entitled to publish an equity figure -- build_zentech_state refuses to invent one without a
     # terminal, and until now had nothing to fall back on but a pulled copy of its own last
     # output.
-    "desks/mt5/data/account_state.json"
+    "desks/mt5/data/account_state.json",
+    # THE ATTRIBUTION CHAIN (2026-09-08). None of these four had ever reached this branch, so
+    # the chain research_id -> decision -> intent -> fill -> realised R could not be verified
+    # off the box, and every counterfactual organ that reads the decision and intent ledgers
+    # (counterfactual_replay, action_counterfactuals, missed_growth, execution_intelligence)
+    # has reported n=0 since it was written -- not because it is wrong, because it was never
+    # given an input. Small append-only JSONL the running code writes and reports/markout.json's
+    # sibling; outputs of the release, never inputs that change what it does.
+    "desks/mt5/data/decision_ledger.jsonl",
+    "desks/mt5/data/order_intents.jsonl",
+    "desks/mt5/data/live_ledger.jsonl",
+    "desks/mt5/reports/attribution_chain.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {

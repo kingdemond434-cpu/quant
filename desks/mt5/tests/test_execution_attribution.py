@@ -226,18 +226,159 @@ def test_the_state_vector_id_is_stamped_and_never_raises(tmp_path):
     assert sid() == "", "a corrupt artifact must not reach the money path"
 
 
+#: The names the id helpers need beyond `_gateway_func`'s seed: the gateway's own imports.
+_ID_NS = {"contextlib": __import__("contextlib"), "hashlib": __import__("hashlib"),
+          "datetime": __import__("datetime").datetime, "UTC": __import__("datetime").UTC}
+_STAMP = "2026-09-08T10:15:33+00:00"
+
+
 def test_record_intent_stamps_the_state_and_never_raises(tmp_path):
-    env = _gateway_func("_record_intent",
+    env = _gateway_func("_record_intent", "_intent_id", "_minute_of",
                         ns={"INTENTS": tmp_path / "intents.jsonl",
-                            "_state_vector_id": lambda: "sv999"})
-    env["_record_intent"](sleeve="S", symbol="XAUUSD", intended=1.0)
+                            "_state_vector_id": lambda: "sv999", "now": lambda: _STAMP,
+                            **_ID_NS})
+    iid = env["_record_intent"](sleeve="S", symbol="XAUUSD", side="buy_stop", intended=1.0)
     row = json.loads((tmp_path / "intents.jsonl").read_text("utf-8").strip())
     assert row["state_vector_id"] == "sv999"
-    assert "time" in row
+    assert row["time"] == _STAMP
+    # THE ADDRESS: derived from the row's own time and returned to the caller, so the decision
+    # written beside the placement can carry the identical key.
+    assert row["intent_id"] == iid and len(iid) == 16
 
     # An unwritable path must be swallowed: telemetry may never break the money path.
     env["INTENTS"] = Path("/proc/definitely/not/writable/x.jsonl")
-    env["_record_intent"](sleeve="S")
+    assert env["_record_intent"](sleeve="S") is None
+
+
+def test_the_intent_id_is_the_decision_datasets_row_id():
+    """Formula parity, executed: the gateway's copy must hash exactly what `decision_dataset`
+    hashes, including the minute floor, the 'Z' and naive spellings, and a side-less refusal."""
+    from libs.research.decision_dataset import minute_of, row_id
+
+    env = _gateway_func("_intent_id", "_minute_of", ns=_ID_NS)
+    for stamp in (_STAMP, "2026-09-08T10:15:33Z", "2026-09-08T10:15:33",
+                  "2026-09-08T12:15:33.250+02:00"):
+        want = row_id("XAUUSD", "gold_asia", "buy_stop", minute_of(stamp))
+        assert env["_intent_id"]("XAUUSD", "gold_asia", "buy_stop", stamp) == want, stamp
+    assert env["_intent_id"]("XAUUSD", "gold_asia", None, _STAMP) == \
+        row_id("XAUUSD", "gold_asia", "", minute_of(_STAMP))
+    # Two stamps inside one minute share the address; the next minute is another one.
+    a = env["_intent_id"]("X", "s", "buy", "2026-09-08T10:15:01+00:00")
+    assert a == env["_intent_id"]("X", "s", "buy", "2026-09-08T10:15:59+00:00")
+    assert a != env["_intent_id"]("X", "s", "buy", "2026-09-08T10:16:00+00:00")
+    # A stamp the helper cannot parse raises here and is suppressed by the recorders.
+    with pytest.raises(ValueError):
+        env["_intent_id"]("X", "s", "buy", "T")
+
+
+class _BracketMT5:
+    """A terminal that accepts a pending stop and remembers exactly what it was asked for."""
+    TRADE_ACTION_PENDING = 5
+    ORDER_TYPE_BUY_STOP = 4
+    ORDER_TYPE_SELL_STOP = 5
+    ORDER_FILLING_RETURN = 2
+
+    def __init__(self):
+        self.sent = []
+
+    @staticmethod
+    def symbol_info_tick(symbol):
+        from types import SimpleNamespace
+        return SimpleNamespace(bid=2000.0, ask=2000.3)
+
+    @staticmethod
+    def symbol_info(symbol):
+        from types import SimpleNamespace
+        return SimpleNamespace(point=0.01, trade_stops_level=0)
+
+    def order_send(self, req):
+        from types import SimpleNamespace
+        self.sent.append(dict(req))
+        return SimpleNamespace(retcode=10009, order=700 + len(self.sent), comment="done")
+
+
+def _bracket_env(tmp_path, mt5):
+    import time
+    decisions: list[dict] = []
+    env = _gateway_func("place_bracket", "_record_intent", "_intent_id", "_minute_of",
+                        "_sleeve_identity",
+                        ns={"mt5": mt5, "time": time, "MAGIC": 341953, "now": lambda: _STAMP,
+                            "INTENTS": tmp_path / "intents.jsonl",
+                            "_state_vector_id": lambda: "sv1", "_release_id": lambda: "rel1",
+                            "entry_is_legal": lambda *a: (True, ""),
+                            "diagnose": lambda *a: "",
+                            "_expiry_request": lambda *a, **k: {},
+                            "_record_decision": lambda **row: decisions.append(row),
+                            "note_placement": lambda *a: True, **_ID_NS})
+    env["_decisions"] = decisions
+    return env
+
+
+_SPEC = {"buy_stop": {"price": 2005.0, "sl": 1995.0, "tp": 2025.0},
+         "sell_stop": {"price": 1995.0, "sl": 2005.0, "tp": 1975.0}}
+
+
+def test_place_bracket_sends_the_same_request_and_records_latency_identity_and_one_address(
+        tmp_path):
+    """Executed, not pattern-matched. The request dict that reaches the venue keeps exactly the
+    keys it had; the intent row gains `latency_ms`, the sleeve's `certificate` and `sleeve_id`,
+    and an `intent_id`; and the decision written beside it carries that same id."""
+    mt5 = _BracketMT5()
+    env = _bracket_env(tmp_path, mt5)
+    row = {"name": "gold_asia", "symbol": "XAUUSD", "certificate": "XAUUSD.session_bracket.asia",
+           "sleeve_id": "1903a4cc90212b4c29d5"}
+    out = env["place_bracket"]({"armed": True}, _SPEC, "gold_asia", "XAUUSD", 0.06,
+                               sleeve_row=row)
+    assert [o["retcode"] for o in out["orders"]] == [10009, 10009]
+    for req in mt5.sent:
+        assert set(req) == {"action", "symbol", "volume", "type", "price", "sl", "tp",
+                            "type_filling", "deviation", "magic", "comment"}
+        assert req["volume"] == 0.06 and req["comment"] == "DWgold_asia"
+    intents = [json.loads(ln) for ln in
+               (tmp_path / "intents.jsonl").read_text("utf-8").splitlines() if ln.strip()]
+    assert [i["side"] for i in intents] == ["buy_stop", "sell_stop"]
+    for i in intents:
+        assert isinstance(i["latency_ms"], float) and i["latency_ms"] >= 0.0
+        assert i["certificate"] == row["certificate"] and i["sleeve_id"] == row["sleeve_id"]
+        assert i["order_type"] == "pending_stop" and i["decision_bid"] == 2000.0
+    # ONE ADDRESS: the decision row beside each leg carries the intent's own id, and the two
+    # legs of one bracket are two addresses (the side is in the key).
+    placed = [d for d in env["_decisions"] if d["reason"] == "placed"]
+    assert [d["intent_id"] for d in placed] == [i["intent_id"] for i in intents]
+    assert intents[0]["intent_id"] != intents[1]["intent_id"]
+
+
+def test_place_bracket_without_a_roster_row_claims_no_identity(tmp_path):
+    mt5 = _BracketMT5()
+    env = _bracket_env(tmp_path, mt5)
+    env["place_bracket"]({"armed": True}, _SPEC, "gold_asia", "XAUUSD", 0.06)
+    intents = [json.loads(ln) for ln in
+               (tmp_path / "intents.jsonl").read_text("utf-8").splitlines() if ln.strip()]
+    assert len(intents) == 2 and len(mt5.sent) == 2
+    for i in intents:
+        assert "certificate" not in i and "sleeve_id" not in i
+        assert i["intent_id"] and "latency_ms" in i
+
+
+def test_a_decision_row_carries_the_intent_id_through_the_ledger_writer(tmp_path):
+    """The writer normalises the gateway's keyword dict; the address must survive it, and a
+    refusal recorded with no intent derives the same formula from its own row."""
+    from libs.research.decision_ledger import write_decision
+
+    path = tmp_path / "decisions.jsonl"
+    assert write_decision(path, {"sleeve": "s", "symbol": "X", "side": "buy_stop", "taken": True,
+                                 "reason": "placed", "time": _STAMP, "intent_id": "abc"})
+    assert json.loads(path.read_text("utf-8").strip())["intent_id"] == "abc"
+
+    env = _gateway_func("_record_decision", "_intent_id", "_minute_of",
+                        ns={"DECISIONS": path, "now": lambda: _STAMP,
+                            "_state_vector_id": lambda: "sv1", "_release_id": lambda: "rel1",
+                            "_decision_portfolio_context": lambda s: {}, **_ID_NS})
+    env["_record_decision"](sleeve="gold_asia", symbol="XAUUSD", side="buy_stop", lot=0.06,
+                            price=1.0, sl=0.9, tp=1.2, taken=False, reason="margin_guard")
+    veto = json.loads(path.read_text("utf-8").splitlines()[-1])
+    assert veto["intent_id"] == env["_intent_id"]("XAUUSD", "gold_asia", "buy_stop", _STAMP)
+    assert veto["taken"] is False and veto["veto_reason"] == "margin_guard"
 
 
 def test_markout_still_reports_slippage_as_a_share_of_the_edge():
