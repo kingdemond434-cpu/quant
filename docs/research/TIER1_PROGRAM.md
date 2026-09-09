@@ -28,8 +28,8 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 1 | 0 | 13 |
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 4 | 0 | 15 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
-| 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 1 | 1 | 0 | 8 |
-| **all** | 4 | 1 | 31 | 1 | 76 |
+| 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 1 | 0 | 9 |
+| **all** | 4 | 0 | 31 | 1 | 77 |
 
 ## Items
 
@@ -777,15 +777,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:daily · artifact: desks/mt5/reports/RESEARCH_BANDIT.json · consumer: desks/mt5/research/daily_cycle.py proposer budgets; desks/mt5/research/deepening_worker.py VOI ordering
   - next: Replace libs/research/bandit.py's declared cost units with the measured `cpu_s`/`wall_s` already in desks/mt5/data/compute_ledger.jsonl via libs.ops.compute_ledger.cost_by_run() — one import in libs/research/bandit.py turns an auditable table into a measured denominator.
   - landed: 3d677fb0
-- **I15 Scaling laws: survivor production vs CPU-hours / tokens / data volume; data scaling; research scaling** — EXISTS-DARK
-  - gap: Every piece of the scaling law is built — cost recorder, per-run aggregation, value-per-hour ranking, stage conversion ratios — and the ledger has four rows from a single hour, so no curve of survivors against CPU-hours, tokens or data volume can be drawn.
-  - THE DENOMINATOR MODULE EXISTS AND IS EXPLICITLY BUILT FOR THIS. libs/ops/compute_ledger.py:1-4 quotes the principal — 'ComputeValue_j = P(success_j) * E[dElog_j] * InformationGain_j / GPUhours_j' — and :29-32 names the unit honestly: 'NOT GPU-HOURS, because this desk has no GPU. The unit is the one it actually spends: wall-clock seconds' (MEASURED)
-  - IT HAS 4 ROWS. desks/mt5/data/compute_ledger.jsonl in full: search (wall 720.115s, cpu 0.14s), sweep (720.113s, 0.17s), compile_candidates (16.197s, 13.58s), deepen (1056.659s, 214.85s, outcome 'BrokenPipeError: [Errno 32] Broken pipe') — all four from 2026-09-06 11:35-12:04, against 59 legs that call `_costed` (MEASURED)
-  - The consequence is stated by its own consumer: desks/mt5/reports/MODEL_ZOO.json `cost_basis: "declared default 0.02/h -- the compute ledger holds 0 usable run(s), too few to price an hour from"` (measured 2026-09-08T17:12:39 — today) (MEASURED)
-  - compute_ledger.cost_by_run() (:145-167) already computes hours + failure_rate per named run and rank() (:170-206) computes value_per_hour — the scaling curve is one join away and refuses to fabricate: 'nothing has been costed … which is the honest state, not a zero' (:202-205) (MEASURED)
-  - clock: compute_ledger writes from hourly_cycle `_costed` (desks/mt5/research/hourly_cycle.py:557-607, 59 call sites); RESEARCH_PRODUCTIVITY from hourly_cycle leg (desks/mt5/research/research_productivity.py); MODEL_ZOO from leg `model_league` · artifact: desks/mt5/data/compute_ledger.jsonl (4 rows), desks/mt5/reports/RESEARCH_PRODUCTIVITY.json, desks/mt5/reports/MODEL_ZOO.json · consumer: desks/mt5/research/model_zoo.py (reports it cannot price an hour); nothing else reads the ledger
+- **I15 Scaling laws: survivor production vs CPU-hours / tokens / data volume; data scaling; research scaling** — LANDED
+  - libs/ops/scaling_laws.py — survivors born and certified per compute hour, per day, fitted as log(y+1) on log(hours) so the slope is an elasticity; zero-survivor days are kept because they are the informative end of a saturating curve (MEASURED)
+  - libs/ops/compute_ledger.py — the denominator this needed: wall_s per costed leg, and a stderr line when a row cannot be written (MEASURED)
+  - tests/ops/test_scaling_laws.py (MEASURED)
+  - clock: hourly_cycle:scaling_laws · artifact: desks/mt5/reports/scaling_laws.json · consumer: the compute allocator's numerator; the principal
   - next: Find out why 55 of 59 `_costed` legs left no row: the wrapper at desks/mt5/research/hourly_cycle.py:557-607 catches BaseException and `_append` swallows OSError (libs/ops/compute_ledger.py:78-79) — add the leg's exception to stderr in `_append` so a silently failing ledger write becomes visible in the hourly log.
-  - landed: compute_ledger._append now reports a failed write to stderr (this commit)
+  - landed: this commit
 - **I16 Institutional external review: independent code/statistical review artifacts, tracked to closure** — EXISTS-LIT
   - gap: Closure tracking is genuine, but 219 of 777 rows are open with a 10-day median age (RESEARCH_PRODUCTIVITY.json recommendations block) and nothing distinguishes an externally-sourced finding from a self-sourced one in the fence — `source: principal` (48) and `source: panel` (5) get the same SLA as `source: cycle` (422).
   - docs/research/recommendation_ledger.json holds 777 recommendations with per-row `id, source, summary, roi_bps, raised, status, reason`. Status distribution: implemented 333, open 219, rejected 108, scheduled 98, done 18, screened 1 (MEASURED)

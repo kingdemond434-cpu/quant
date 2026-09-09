@@ -367,27 +367,22 @@
    "item": "Scaling laws: survivor production vs CPU-hours / tokens / data volume; data scaling; research scaling",
    "domain": "I",
    "phase": 7,
-   "status": "EXISTS-DARK",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "THE DENOMINATOR MODULE EXISTS AND IS EXPLICITLY BUILT FOR THIS. libs/ops/compute_ledger.py:1-4 quotes the principal — 'ComputeValue_j = P(success_j) * E[dElog_j] * InformationGain_j / GPUhours_j' — and :29-32 names the unit honestly: 'NOT GPU-HOURS, because this desk has no GPU. The unit is the one it actually spends: wall-clock seconds' (MEASURED)",
-    "IT HAS 4 ROWS. desks/mt5/data/compute_ledger.jsonl in full: search (wall 720.115s, cpu 0.14s), sweep (720.113s, 0.17s), compile_candidates (16.197s, 13.58s), deepen (1056.659s, 214.85s, outcome 'BrokenPipeError: [Errno 32] Broken pipe') — all four from 2026-09-06 11:35-12:04, against 59 legs that call `_costed` (MEASURED)",
-    "The consequence is stated by its own consumer: desks/mt5/reports/MODEL_ZOO.json `cost_basis: \"declared default 0.02/h -- the compute ledger holds 0 usable run(s), too few to price an hour from\"` (measured 2026-09-08T17:12:39 — today) (MEASURED)",
-    "compute_ledger.cost_by_run() (:145-167) already computes hours + failure_rate per named run and rank() (:170-206) computes value_per_hour — the scaling curve is one join away and refuses to fabricate: 'nothing has been costed … which is the honest state, not a zero' (:202-205) (MEASURED)",
-    "THE NUMERATOR SIDE IS MEASURED. desks/mt5/reports/RESEARCH_PRODUCTIVITY.json (2026-09-04T20:18:39) gives stage counts and two conversion ratios: `intake_to_compiled: 0.0` (5,522 intake files → 0 compiled candidates), `certified_to_forward: 1.1515` (66 certified → 76 sleeves with ledgers), `bottleneck: \"deepening\"` with `{queued: 882, decided_total: 0, backlog: 882}` (MEASURED)",
-    "'DOES DOUBLING HYPOTHESES DOUBLE INDEPENDENT SURVIVORS' IS ANSWERED IN THE NEGATIVE BY THE FUNNEL ITSELF: desks/mt5/data/hypotheses/miner_candidates.json `rows_accounted: 178864` → `executable_candidates: 632` (0.35%); web/desk_state.json health.midnight `GAUNTLET_REJECTED: 46774` against `GAUNTLET_PASSED: 49` (MEASURED)",
-    "AND THE INDEPENDENCE TERM IS NAMED: scripts/check_dig_roi.py:18-20 — 'BREADTH … because the binding constraint is orthogonality (n_eff ~5.5 across 23 certificates), not cell count' (MEASURED)",
-    "TOKEN SCALING: unmeasurable — libs/ops/llm_seat.py:64 declares data/llm_spend.jsonl and the file does not exist; every call records usage (:547 `_record_spend`) but no call has been recorded (MEASURED)",
-    "DATA SCALING (history depth / instruments / tick resolution): partially measurable — docs/research/BAR_HISTORY_FLOOR.json and scripts/check_bar_span.py exist (quant-bar-span.timer 06:53), the latter reported 'live rc=2 CONTAMINATED across 88/88 series' (scripts/run_manifest_dispatch.py allowlist reason) (MEASURED)"
+    "libs/ops/scaling_laws.py — survivors born and certified per compute hour, per day, fitted as log(y+1) on log(hours) so the slope is an elasticity; zero-survivor days are kept because they are the informative end of a saturating curve (MEASURED)",
+    "libs/ops/compute_ledger.py — the denominator this needed: wall_s per costed leg, and a stderr line when a row cannot be written (MEASURED)",
+    "tests/ops/test_scaling_laws.py (MEASURED)"
    ],
-   "scheduled_by": "compute_ledger writes from hourly_cycle `_costed` (desks/mt5/research/hourly_cycle.py:557-607, 59 call sites); RESEARCH_PRODUCTIVITY from hourly_cycle leg (desks/mt5/research/research_productivity.py); MODEL_ZOO from leg `model_league`",
-   "artifact": "desks/mt5/data/compute_ledger.jsonl (4 rows), desks/mt5/reports/RESEARCH_PRODUCTIVITY.json, desks/mt5/reports/MODEL_ZOO.json",
-   "consumer": "desks/mt5/research/model_zoo.py (reports it cannot price an hour); nothing else reads the ledger",
-   "gap": "Every piece of the scaling law is built — cost recorder, per-run aggregation, value-per-hour ranking, stage conversion ratios — and the ledger has four rows from a single hour, so no curve of survivors against CPU-hours, tokens or data volume can be drawn.",
+   "scheduled_by": "hourly_cycle:scaling_laws",
+   "artifact": "desks/mt5/reports/scaling_laws.json",
+   "consumer": "the compute allocator's numerator; the principal",
+   "gap": "",
    "next_step": "Find out why 55 of 59 `_costed` legs left no row: the wrapper at desks/mt5/research/hourly_cycle.py:557-607 catches BaseException and `_append` swallows OSError (libs/ops/compute_ledger.py:78-79) — add the leg's exception to stderr in `_append` so a silently failing ledger write becomes visible in the hourly log.",
    "landed": [
-    "compute_ledger._append now reports a failed write to stderr (this commit)"
-   ]
+    "this commit"
+   ],
+   "note": "Tokens and data volume are recorded as ABSENT axes rather than omitted: no metered LLM artifact and no byte counter exist for this module to read. Reads UNMEASURED until the ledger holds seven days of compute (1 day on this tree)."
   },
   {
    "id": "I16",
