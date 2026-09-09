@@ -725,6 +725,82 @@ def incremental_information(x: np.ndarray, y: np.ndarray, lag: int, *, own_lags:
             "own_lags": p, "n_perm": int(n_perm)}
 
 
+def conditional_information(x: np.ndarray, y: np.ndarray, z: np.ndarray, lag: int, *,
+                            z_lags: Sequence[int] | None = None, own_lags: int = OWN_LAGS,
+                            n_perm: int = N_PERM, seed: int = 0) -> dict[str, Any]:
+    """Does X_{t-lag} add to Y's own lags AND the confounder(s) Z? deltaR2 of the regression of
+    Y_t on [1, Y_{t-1..t-p}, Z_{t-lz}, X_{t-lag}] over [1, Y_{t-1..t-p}, Z_{t-lz}], with the
+    same circular-shift permutation null `incremental_information` uses.
+
+    THE QUESTION THE PAIRWISE TEST CANNOT ASK (Tier-1 audit G7, 2026-09-08). Every edge in the
+    graph was a lagged test with Y's own lags as the only control, so a common driver Z that
+    moves X first and Y later makes X look like a cause of Y -- and `incremental_information`
+    admits it, because X_{t-lag} genuinely carries Z's information that Y's own lags do not.
+    Putting Z's admitted lag into the BASE regression asks the constraint-based question: once
+    the parent the graph already believes in is held fixed, does X still add anything?
+
+    `z` is one series or an (n, k) matrix of k confounders aligned with x and y; `z_lags` gives
+    each confounder's own lag (default: `lag` for all), so an admitted parent enters at the lag
+    it was admitted at. Nothing here admits or refuses an edge: the caller publishes the answer.
+    """
+    rng = np.random.default_rng(seed)
+    a = np.asarray(x, dtype="float64")
+    b = np.asarray(y, dtype="float64")
+    zm = np.asarray(z, dtype="float64")
+    if zm.ndim == 1:
+        zm = zm[:, None]
+    if a.shape != b.shape or a.ndim != 1 or zm.ndim != 2 or zm.shape[0] != a.size:
+        raise ValueError("x, y and z must be aligned series of the same length")
+    if lag < 1:
+        raise ValueError("lag must be >= 1")
+    k = int(zm.shape[1])
+    zl = [int(v) for v in (z_lags if z_lags is not None else [lag] * k)]
+    if len(zl) != k or any(v < 1 for v in zl):
+        raise ValueError("z_lags must name one lag >= 1 per confounder column")
+    p = max(1, int(own_lags))
+    start = max(lag, p, *zl)
+    n_all = a.size - start
+    if n_all < 30:
+        return {"delta_r2": 0.0, "n": int(max(0, n_all)), "p_value": 1.0,
+                "note": "too few observations"}
+    yt = b[start:]
+    cols = [np.ones(n_all)]
+    for j in range(1, p + 1):
+        cols.append(b[start - j:a.size - j])
+    for c, lz in enumerate(zl):
+        cols.append(zm[start - lz:a.size - lz, c])
+    xl = a[start - lag:a.size - lag]
+    zmat = np.column_stack(cols)
+    ok = np.isfinite(yt) & np.isfinite(xl) & np.all(np.isfinite(zmat), axis=1)
+    yt, xl, zmat = yt[ok], xl[ok], zmat[ok]
+    if yt.size > MAX_N:
+        yt, xl, zmat = yt[-MAX_N:], xl[-MAX_N:], zmat[-MAX_N:]
+    n = int(yt.size)
+    if n < 30:
+        return {"delta_r2": 0.0, "n": n, "p_value": 1.0, "note": "too few finite observations"}
+    q, _ = np.linalg.qr(zmat)
+    ey = yt - q @ (q.T @ yt)
+    tss = float(((yt - yt.mean()) ** 2).sum())
+    r2_base = 1.0 - float(ey @ ey) / tss if tss > _EPS else 0.0
+
+    def _delta(xv: np.ndarray) -> float:
+        ex = xv - q @ (q.T @ xv)
+        return _corr(ey, ex) ** 2 * (1.0 - r2_base)
+
+    obs = _delta(xl)
+    lo_shift = p + max(lag, *zl) + 10
+    if n - lo_shift <= lo_shift:
+        return {"delta_r2": round(obs, 8), "n": n, "p_value": 1.0, "r2_base": round(r2_base, 6),
+                "note": "too short for a circular-shift null", "confounders": k,
+                "z_lags": zl}
+    shifts = rng.integers(lo_shift, n - lo_shift, size=int(n_perm))
+    null = np.array([_delta(np.roll(xl, int(s))) for s in shifts])
+    pv = (1.0 + float((null >= obs).sum())) / (1.0 + null.size)
+    return {"delta_r2": round(obs, 8), "n": n, "p_value": round(pv, 4),
+            "r2_base": round(r2_base, 6), "null_q95": round(float(np.quantile(null, 0.95)), 8),
+            "own_lags": p, "n_perm": int(n_perm), "confounders": k, "z_lags": zl}
+
+
 def _vol_regime(y: np.ndarray, window: int = 48) -> np.ndarray:
     """HIGH_VOL / LOW_VOL by a trailing standard deviation against its own median -- the split
     lead_lag uses, so a state dependence measured here is comparable with one measured there."""
