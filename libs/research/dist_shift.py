@@ -20,6 +20,41 @@ level shift in robust units, computed reference-window vs recent-window. No scip
 KS critical value at 5% is the standard 1.36*sqrt((n+m)/nm) asymptotic form), so this runs in any
 organ including the quota-free ones.
 
+A SECOND, INDEPENDENT DETECTOR (2026-09-08) -- AND THE HAIRCUT NOW NEEDS BOTH. The KS/variance-
+ratio composite is a two-sample comparison: it asks whether the recent window, taken as a bag,
+looks like the reference bag. The second detector is SEQUENTIAL: a two-sided Page CUSUM run
+through the recent window on the series standardised by the reference window. It accumulates a
+persistent drift observation by observation, so it can say WHEN the stick moved
+(`cusum_crossed_at`) rather than only whether, and it is a different mechanism from a bag
+comparison rather than the same evidence re-weighed. Two charts, both on the one standardised
+series: a level chart on z and a scale chart on |z|, each centred and scaled by the REFERENCE
+window's own moments of the same quantity, so under no-shift the increments are mean-zero for ANY
+tail shape and not only for a normal one. Standardised values are winsorised at 3 reference SDs:
+one fat-tailed print is one observation, not a break.
+
+MEASURED NULL (Monte Carlo 2026-09-08, 3000 pairs per cell, both windows drawn from one law):
+  P(max chart > 9)   normal n=20/60/200/400: 4.8/4.8/5.1/7.7%    t(3): 4.9/5.0/6.9/9.6%
+                     chi2(3): 5.0/4.9/8.1/11.8%
+  P(max chart > 12)  normal: 1.8/0.9/0.8/1.0%   t(3): 1.9/0.9/1.2/1.2%   chi2(3): 2.0/1.0/1.5/1.2%
+  The same charts on raw (z^2 - 1)/sqrt(2) with normal-theory constants alarmed 72% of the time on
+  STATIONARY t(3) noise at n=60. A detector that always fires is one that always agrees, and a
+  detector that always agrees is not a second detector -- which is why the constants are read
+  from the reference window rather than assumed.
+MEASURED POWER (normal reference, recent n=60 / n=200, P(max chart > 12)): level +1 SD 0.96/1.00;
+  variance x4 0.99/1.00; variance x2 0.51/0.91; SD x0.15 0.98/1.00. BLIND SPOT, STATED: a variance
+  HALVING sits below the chart's allowance (k=0.5) and is caught 1%/4%, so a bare variance-ratio
+  flag at 0.5x from the KS side will generally NOT be corroborated and its haircut is withheld.
+  That is strictly more evidence required to haircut, never less -- the only direction this
+  change was permitted to move.
+
+AGREEMENT RULE. `verdict` REMAINS the KS/variance-ratio composite, so every reader that flags an
+axis for re-validation on it is unchanged. `cusum_verdict` is the second opinion, `agreement` is
+whether the two coincide exactly, and `agreed_verdict` is the severity BOTH reach (STABLE < DRIFT
+< SHIFT). The recommended `haircut` now follows `agreed_verdict`: it is never larger than what the
+single detector recommended before (`haircut_single_detector` is kept beside it for the reader),
+and it is zero unless both detectors see a move. Downward-only confidence, advisory, unchanged in
+kind -- it is a haircut on confidence, never on size.
+
 Pure numpy. import from libs.research.dist_shift.
 """
 from __future__ import annotations
@@ -40,6 +75,22 @@ _LEVEL_BAND = 1.0      # median move, in reference-window MADs
 _LEVEL_BREAK = 2.5
 _MIN_WIN = 20
 
+# CUSUM (detector 2). k is Page's allowance -- half the shift, in reference SDs, the chart is tuned
+# to catch; below it a drift is absorbed rather than accumulated. The two h's are the DRIFT and
+# SHIFT boundaries on the largest excursion of either chart, set from the measured null in the
+# header (~5% and ~1% at the window lengths the desk uses) rather than from a textbook ARL that
+# assumes a known-normal reference. Raising either only withholds haircuts; lowering either is a
+# policy change and moves by a ledgered decision or not at all.
+_CUSUM_K = 0.5
+_CUSUM_CLIP = 3.0
+_CUSUM_DRIFT = 9.0
+_CUSUM_BREAK = 12.0
+_MAD_TO_SD = 1.4826    # MAD of a normal -> its SD
+
+_SEVERITY = {"INSUFFICIENT-DATA": 0, "STABLE": 0, "DRIFT": 1, "SHIFT": 2}
+_BY_SEVERITY = {0: "STABLE", 1: "DRIFT", 2: "SHIFT"}
+_HAIRCUT = {"STABLE": 0.0, "DRIFT": 0.15, "SHIFT": 0.35, "INSUFFICIENT-DATA": 0.0}
+
 
 def _ks(a: np.ndarray, b: np.ndarray) -> tuple[float, float]:
     """Two-sample KS statistic and its 5% asymptotic critical value."""
@@ -56,21 +107,107 @@ def _mad(x: np.ndarray) -> float:
     return float(np.median(np.abs(x - np.median(x))))
 
 
+def _page_cusum(x: np.ndarray, *, k: float = _CUSUM_K,
+                h: float = _CUSUM_DRIFT) -> tuple[float, int | None]:
+    """Two-sided Page CUSUM through `x`.
+
+    Returns the largest excursion of either one-sided chart and the 1-based index of the FIRST
+    step at which it exceeded `h` (None if never) -- the latter is the "when", which a bag
+    comparison cannot give.
+    """
+    up = down = best = 0.0
+    first: int | None = None
+    for i, xi in enumerate(x.tolist(), 1):
+        up = max(0.0, up + xi - k)
+        down = max(0.0, down - xi - k)
+        cur = max(up, down)
+        if cur > best:
+            best = cur
+        if first is None and cur > h:
+            first = i
+    return best, first
+
+
+def cusum_shift(reference: np.ndarray, recent: np.ndarray, *,
+                name: str = "series") -> dict[str, Any]:
+    """Detector 2: a two-sided Page CUSUM of the recent window standardised by the reference.
+
+    Level chart on z, scale chart on |z|; each chart's increments are centred and scaled by the
+    reference window's own moments of the same quantity, so the null is distribution-free up to
+    the sampling error of those moments (see the measured table in the module header). The
+    verdict is on the larger excursion of the two charts.
+    """
+    a = np.asarray(reference, dtype="float64")
+    b = np.asarray(recent, dtype="float64")
+    a, b = a[np.isfinite(a)], b[np.isfinite(b)]
+    base: dict[str, Any] = {
+        "name": name, "n_ref": len(a), "n_recent": len(b), "cusum_k": _CUSUM_K,
+        "cusum_clip_sd": _CUSUM_CLIP, "cusum_h_drift": _CUSUM_DRIFT, "cusum_h_break": _CUSUM_BREAK,
+        "cusum_level": None, "cusum_scale": None, "cusum_stat": None, "cusum_crossed_at": None,
+    }
+    if len(a) < _MIN_WIN or len(b) < _MIN_WIN:
+        return {**base, "verdict": "INSUFFICIENT-DATA",
+                "detail": f"need >={_MIN_WIN} finite points per window"}
+
+    med = float(np.median(a))
+    scale = _mad(a) * _MAD_TO_SD
+    if scale <= 0.0:
+        # More than half the reference is one value; fall back to the SD before giving up.
+        scale = float(a.std(ddof=1))
+    if not scale > 0.0:
+        return {**base, "verdict": "INSUFFICIENT-DATA",
+                "detail": "reference window has no spread; nothing can be standardised against it"}
+    za = np.clip((a - med) / scale, -_CUSUM_CLIP, _CUSUM_CLIP)
+    zb = np.clip((b - med) / scale, -_CUSUM_CLIP, _CUSUM_CLIP)
+
+    charts: dict[str, tuple[float, int | None]] = {}
+    for chart, ra, rb in (("level", za, zb), ("scale", np.abs(za), np.abs(zb))):
+        sd = float(ra.std(ddof=1))
+        if not sd > 0.0:
+            return {**base, "verdict": "INSUFFICIENT-DATA",
+                    "detail": f"reference {chart} series is degenerate after winsorisation"}
+        charts[chart] = _page_cusum((rb - float(ra.mean())) / sd)
+    level, level_at = charts["level"]
+    scl, scale_at = charts["scale"]
+    stat = max(level, scl)
+    verdict: Verdict = ("SHIFT" if stat > _CUSUM_BREAK
+                        else "DRIFT" if stat > _CUSUM_DRIFT else "STABLE")
+    firsts = [i for i in (level_at, scale_at) if i is not None]
+    return {**base, "verdict": verdict, "cusum_level": round(level, 3),
+            "cusum_scale": round(scl, 3), "cusum_stat": round(stat, 3),
+            "cusum_crossed_at": min(firsts) if firsts else None}
+
+
+def agreed_verdict(first: str, second: str) -> str:
+    """The severity BOTH detectors reach: the weaker of the two readings.
+
+    SHIFT+DRIFT is DRIFT (both saw a move; only one saw a break), anything+STABLE is STABLE, and
+    INSUFFICIENT-DATA counts as no evidence rather than as a move. A haircut keyed on this can
+    never exceed the haircut either detector would have recommended alone.
+    """
+    lo = min(_SEVERITY.get(first, 0), _SEVERITY.get(second, 0))
+    return _BY_SEVERITY[lo]
+
+
 def distribution_shift(reference: np.ndarray, recent: np.ndarray, *,
                        name: str = "series") -> dict[str, Any]:
     """Compare a recent window against a reference window on shape, spread and level.
 
     reference: the window the signal/threshold was calibrated in.
     recent:    the window the desk is trading in now.
-    Returns a verdict plus a RECOMMENDED confidence haircut in [0, 0.5] -- downward only, and
-    advisory: the caller decides, and the caller logs the decision.
+    Returns the KS/variance-ratio `verdict` (unchanged), the independent `cusum_verdict`, their
+    `agreement`, and a RECOMMENDED confidence haircut in [0, 0.5] that follows `agreed_verdict`
+    -- downward only, requiring both detectors, and advisory: the caller decides, and the caller
+    logs the decision.
     """
     a = np.asarray(reference, dtype="float64")
     b = np.asarray(recent, dtype="float64")
     a, b = a[np.isfinite(a)], b[np.isfinite(b)]
     if len(a) < _MIN_WIN or len(b) < _MIN_WIN:
-        return {"name": name, "verdict": "INSUFFICIENT-DATA", "n_ref": len(a),
-                "n_recent": len(b), "haircut": 0.0,
+        return {"name": name, "verdict": "INSUFFICIENT-DATA",
+                "cusum_verdict": "INSUFFICIENT-DATA", "agreement": True,
+                "agreed_verdict": "INSUFFICIENT-DATA", "n_ref": len(a),
+                "n_recent": len(b), "haircut": 0.0, "haircut_single_detector": 0.0,
                 "detail": f"need >={_MIN_WIN} finite points per window"}
 
     d, crit = _ks(a, b)
@@ -96,16 +233,37 @@ def distribution_shift(reference: np.ndarray, recent: np.ndarray, *,
     else:
         verdict = "STABLE"
 
-    haircut = {"STABLE": 0.0, "DRIFT": 0.15, "SHIFT": 0.35,
-               "INSUFFICIENT-DATA": 0.0}[verdict]
+    # DETECTOR 2, AND THE HAIRCUT FOLLOWS WHAT BOTH REACH. `verdict` above is untouched so the
+    # re-validation flag readers key on is exactly what it was; only the haircut got stricter.
+    cus = cusum_shift(a, b, name=name)
+    cusum_verdict = str(cus["verdict"])
+    agreed = agreed_verdict(verdict, cusum_verdict)
+    haircut = _HAIRCUT[agreed]
+    single = _HAIRCUT[verdict]
+    if verdict == "STABLE" and agreed == "STABLE":
+        action = ("none" if cusum_verdict == "STABLE" else
+                  f"none (CUSUM alone reads {cusum_verdict}; one detector flags, it does not "
+                  "conclude, and no haircut is recommended)")
+    elif agreed == "STABLE":
+        action = ("flag-for-revalidation (KS/variance-ratio only); confidence haircut WITHHELD "
+                  f"-- the CUSUM reads {cusum_verdict} and does not corroborate")
+    else:
+        action = (f"flag-for-revalidation + confidence haircut at {agreed} (both detectors "
+                  "reach it; advisory, downward only)")
     return {"name": name, "verdict": verdict, "haircut": haircut,
+            "haircut_single_detector": single,
             "ks_d": round(d, 4), "ks_crit_5pct": round(crit, 4), "ks_flag": ks_flag,
             "var_ratio": round(var_ratio, 3) if np.isfinite(var_ratio) else None,
             "level_move_mads": round(level_move, 3),
+            "cusum_verdict": cusum_verdict, "cusum_level": cus["cusum_level"],
+            "cusum_scale": cus["cusum_scale"], "cusum_stat": cus["cusum_stat"],
+            "cusum_crossed_at": cus["cusum_crossed_at"],
+            "agreement": verdict == cusum_verdict, "agreed_verdict": agreed,
             "n_ref": len(a), "n_recent": len(b),
-            "action": ("none" if verdict == "STABLE" else
-                       "flag-for-revalidation + confidence haircut (advisory, downward only)"),
-            "note": "regime labels say WHICH state; this says whether the measuring stick moved"}
+            "action": action,
+            "note": ("regime labels say WHICH state; this says whether the measuring stick "
+                     "moved. verdict = KS/variance-ratio composite; the haircut needs the CUSUM "
+                     "to reach the same severity")}
 
 
 def split_and_check(series: np.ndarray, *, recent_frac: float = 0.25,
