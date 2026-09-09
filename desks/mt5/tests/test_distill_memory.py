@@ -237,7 +237,9 @@ def test_run_counts_every_trial_and_donates_with_parent_and_operator(ground):
     assert ground.donated[0]["tests_run"] == rep["tests_run"]
     for c in ground.donated[0]["candidates"]:
         assert c["evidence"]["parent"] in dict(ground.certs)
-        assert c["evidence"]["operator"].startswith(("step_", "swap_"))
+        # `drop_` joined the vocabulary 2026-09-08: the distiller now also proposes a
+        # certificate with one optional condition REMOVED, through this same door.
+        assert c["evidence"]["operator"].startswith(("step_", "swap_", "drop_"))
         assert c["mechanism"].endswith(f"(mutation: {c['evidence']['operator']})")
         assert c["family"] == FAM and c["source"] == sd.SOURCE
     # the symbol with no bars became deepening tasks of kind "mutation", owned by this source
