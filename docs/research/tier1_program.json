@@ -1918,7 +1918,7 @@
    "item": "Engine D — RL alpha search with marginal portfolio-utility reward",
    "domain": "G",
    "phase": 2,
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "evidence": [
     "The RL populations are ordered by the growth their draws realised, not by how many trees they drew (MEASURED)"
@@ -1926,7 +1926,7 @@
    "scheduled_by": "hourly_cycle:search",
    "artifact": "desks/mt5/reports/EVOLUTION.json",
    "consumer": "desks/mt5/research/hourly_discovery.py:126 `_weight()` and desks/mt5/research/daily_cycle.py:255 `arm_weight()` set per-proposer `budget_s`",
-   "gap": "",
+   "gap": "DEMOTED 2026-09-09 on an external audit that was right. This row was marked LANDED on 6908d8e6, which orders POPULATIONS by the growth their draws realised -- that is bandit-style credit assignment over finished candidates, not sequential control. A grep for q_learning / policy_gradient / actor_critic / replay_buffer / ppo across libs and desks returns one irrelevant hit in a scraper. A bandit cannot assign credit to an EARLY choice in the construction sequence, which is the property that makes RL search cheaper than enumeration.",
    "next_step": "Make `libs/research/search_populations.run()` return per-population realised dE[log W] of what it produced and feed it back as the population weights (the `weights` arg at :738 is already there but is fed by yield counts, not by the allocator's marginal) — the file to touch is libs/research/search_populations.py `_order`.",
    "landed": [
     "6908d8e6"
@@ -1975,7 +1975,7 @@
    "item": "Engine G — causal / mechanism discovery",
    "domain": "G",
    "phase": 2,
-   "status": "LANDED",
+   "status": "PARTIAL",
    "gate": "none",
    "evidence": [
     "The causal graph asks whether an admitted edge survives conditioning on its target's other admitted parents, and publishes the answer beside the admission (MEASURED)"
@@ -1983,7 +1983,7 @@
    "scheduled_by": "hourly_cycle:causal_graph",
    "artifact": "desks/mt5/reports/CAUSAL_GRAPH.json",
    "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning → StateVector.conditioning; libs/research/search_populations.causal_derived; miner_candidate_compiler (anomalies)",
-   "gap": "",
+   "gap": "DEMOTED 2026-09-09 on an external audit that was right. Granger-style incremental information, lagged cross-correlation, state dependence and bootstrap/permutation machinery all exist, and 600df84f added conditioning on a target's other admitted parents -- but TRANSFER ENTROPY and CONDITIONAL MUTUAL INFORMATION are absent (one hit repo-wide, in alpha_recombination.py, not an implementation). Granger is linear; the desk trades a book where nearly every pair shares the dollar as a driver, so the nonlinear directed measure and the conditional one are the two that matter.",
    "next_step": "Add a `conditional_information(x, y, z, lag)` function beside `incremental_information` in libs/research/causal_graph.py (same ΔR² + circular-shift null, with the candidate confounder z in the base regression) and have `world_causal_graph.measure` call it against the already-admitted parents of the target.",
    "landed": [
     "600df84f"
@@ -2369,5 +2369,6 @@
     "848c7424"
    ]
   }
- ]
+ ],
+ "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
 }

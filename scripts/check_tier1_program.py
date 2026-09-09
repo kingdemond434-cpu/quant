@@ -174,7 +174,13 @@ def render(ledger: dict, census: dict) -> str:
            "Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has a "
            "consumer; EXISTS-DARK = code exists, no clock or no consumer; PARTIAL = part exists "
            "(gap named); MISSING = nothing; LANDED = built in this programme, with commit.", "",
-           "## Acceptance properties", ""]
+           "> **What LANDED does not mean.** " + (
+               ledger.get("status_vocabulary_note")
+               or "LANDED is build coverage in this repository, not operational proof."), "",
+           "## Acceptance properties", "",
+           "*These are the operational half. They are measured from artifacts by "
+           "`scripts/check_acceptance_properties.py`, hourly; an absent artifact reads UNMEASURED "
+           "and never MET.*", ""]
     for ap in ledger.get("acceptance_properties", []):
         out.append(f"- **{ap['id']} {ap['name']}** — {ap['status']}. Measure: {ap['measure']}")
         for ev in ap.get("evidence") or []:
