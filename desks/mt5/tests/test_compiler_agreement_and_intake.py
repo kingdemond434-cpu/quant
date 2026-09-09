@@ -148,3 +148,37 @@ def test_the_candidate_carries_the_genome_id_the_graph_will_use() -> None:
     assert rows and all(c.get("genome_id") for c in rows)
     for c in rows:
         assert c["genome_id"] == node_id(c["symbol"], c["family"], c["params"])
+
+
+def test_a_deepening_task_for_a_contested_symbol_carries_the_flag(tmp_path, monkeypatch) -> None:
+    """G20: the scorer weights a contested cell above an uncontested one, so a task that reached
+    the queue without the field would be scored as uncontested -- a silent zero."""
+    res = _run_main(tmp_path, monkeypatch, {
+        "deepseek": [{"kind": "hypothesis", "family": "overnight_gap_decay",
+                      "symbols": ["EURUSD"], "title": "a"}],
+        "kimi": [{"kind": "hypothesis", "family": "session_range_breakout",
+                  "symbols": ["EURUSD"], "title": "b"}],
+        # A row whose SYMBOL resolves but whose rule does not: it is deepened, and the
+        # symbol is what ties it to the contest. A prose row naming EURUSD only in its text
+        # resolves to no symbol at all, so it carries no flag -- no symbol, no group.
+        "reddit": [{"symbol": "EURUSD", "title": "vague", "text": "something happens"}]})
+    assert res["out"]["disagreement"]["contested_symbols"] == 1
+    tasks = res["deepen"]["tasks"]
+    assert tasks, "the prose row must have been deepened"
+    assert any(t.get("contested") for t in tasks), \
+        "a deepening row naming a contested symbol must carry the flag"
+
+
+def test_the_scorer_rewards_disagreement_and_leaves_a_lone_task_where_it_was() -> None:
+    import sys as _sys
+    _sys.path.insert(0, str(_DESK / "research"))
+    from research import deepening_worker as dw
+    score = dw._scorer()
+    base = {"family": "overnight_gap_decay", "symbols": ["EURUSD"], "source": "reddit"}
+    lone = score(dict(base))
+    agreed = score(dict(base, n_independent_sources=3))
+    contested = score(dict(base, contested=True))
+    assert lone > 0 and agreed > lone, "three engines naming one cell outrank one"
+    assert contested > agreed, "settling a disagreement is worth more than confirming an echo"
+    assert score(dict(base, n_independent_sources=1)) == lone, \
+        "one source multiplies by 1.0: an uncontested task sits exactly where it sat"

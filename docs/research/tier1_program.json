@@ -2235,20 +2235,22 @@
    "item": "Research-ensemble disagreement rewarded",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/miner_candidate_compiler.py — n_independent_sources / agreeing_sources per candidate; contested symbols (two engines, different families) named under `disagreement` and `contested` on the candidate (MEASURED)",
+    "desks/mt5/research/miner_candidate_compiler.py — n_independent_sources and agreeing_sources per candidate; contested symbols (two engines, different families) named under `disagreement` and stamped on the candidate AND on the deepening task, so the signal survives the door it was measured for (MEASURED)",
+    "desks/mt5/research/deepening_worker.py — _scorer multiplies by agreement (1 + 0.25 per extra source) and by 1.75 when contested, so settling a disagreement outranks confirming an echo; a lone uncontested task multiplies by 1.0 and sits where it sat (MEASURED)",
     "desks/mt5/tests/test_compiler_agreement_and_intake.py (MEASURED)"
    ],
-   "scheduled_by": "NONE",
-   "artifact": "NONE",
+   "scheduled_by": "hourly_cycle:compile_candidates, hourly_cycle:deepen",
+   "artifact": "desks/mt5/data/hypotheses/miner_candidates.json disagreement",
    "consumer": "NONE",
-   "gap": "Named, not yet weighted: the compiled `contested`/`n_independent_sources` fields do not survive merge_docket into the gauntlet's build rotation, and deepening tasks never carry them; weighting is the next commit once the docket keeps the fields.",
+   "gap": "",
    "next_step": "In `desks/mt5/research/miner_candidate_compiler.py`, after `record_candidates(...)`, count distinct `source` values per compiled `node_id` and write it onto the candidate as `n_independent_sources` — one field turns the existing dedup collision into a measurable agreement signal that `trial_allocator` can order on.",
    "landed": [
     "this commit"
-   ]
+   ],
+   "note": "Nothing is dropped or capped: the multiplier orders a queue that is worked to a time budget, so the same tasks are worked, highest information first. A row whose symbol does not resolve carries no flag -- no symbol, no group."
   },
   {
    "id": "G21",

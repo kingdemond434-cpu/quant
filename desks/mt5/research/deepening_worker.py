@@ -559,7 +559,23 @@ def _scorer():
             direction = arm_weight(src, str(t.get("kind") or "") or None)
         except Exception:
             direction = 1.0
-        return p * worth * novelty * direction
+        # ENSEMBLE DISAGREEMENT IS INFORMATION (Tier-1 item G20). The compiler already measures
+        # two things nothing acted on: how many independent engines named a cell, and whether a
+        # symbol is CONTESTED -- two engines proposing DIFFERENT families for it. Agreement is
+        # the ordinary signal, and it is deliberately the weaker multiplier here: several
+        # crawlers naming one cell is often one story reprinted. A CONTESTED cell is the more
+        # valuable trial, because testing it SETTLES which engine was right about that symbol,
+        # and that answer prices every future proposal from both of them.
+        #
+        # NOTHING IS DROPPED AND NOTHING IS CAPPED. This multiplies a score that only orders the
+        # queue; an uncontested task with one source multiplies by 1.0 and sits exactly where it
+        # sat before. The same tasks are worked, highest information first.
+        agree = 1.0 + 0.25 * max(0, int(t.get("n_independent_sources") or 1) - 1)
+        # 1.75, so a contested cell always outranks even three engines agreeing
+        # (1 + 0.25 x 2 = 1.5). The ordering is the claim: settling a disagreement
+        # beats confirming an echo, and the constants must not make them a tie.
+        contested = 1.75 if t.get("contested") else 1.0
+        return p * worth * novelty * direction * agree * contested
 
     return _score
 

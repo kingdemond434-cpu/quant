@@ -23,13 +23,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 |---|---|---|---|---|---|
 | 0 Close the truth loop: attribution, deadman, stable adoption, node separation, durable jobs, data freshness, research lineage | 1 | 0 | 2 | 0 | 19 |
 | 1 Remove the research throughput ceiling: worker queue, multi-fidelity screening, EVSI scheduler, research DAG, scalable forward clocks, content-addressed cache, experiment DB | 1 | 0 | 2 | 0 | 7 |
-| 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 0 | 0 | 2 | 0 | 22 |
+| 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 0 | 0 | 1 | 0 | 23 |
 | 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 0 | 0 | 8 |
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 0 | 0 | 14 |
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 3 | 0 | 16 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
-| **all** | 3 | 0 | 10 | 0 | 100 |
+| **all** | 3 | 0 | 9 | 0 | 101 |
 
 ## Items
 
@@ -370,11 +370,11 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:daily · artifact: desks/mt5/reports/SURVIVOR_MOTIFS.json simplifications_generated · consumer: ML_LAYER.json → scripts/build_zentech_state.py (dashboard only). survivor_distiller donations → miner_candidate_compiler → the gauntlet.
   - next: Add a `simplify(cert)` generator to desks/mt5/research/survivor_distiller.py that emits, per certificate, the cells with each optional condition dropped in turn (tagged operator `drop_<param>`, which mutation_yield already knows how to bill), so parsimony is proposed through the same door as every other mutation.
   - landed: 13caf00e
-- **G20 Research-ensemble disagreement rewarded** — PARTIAL
-  - gap: Named, not yet weighted: the compiled `contested`/`n_independent_sources` fields do not survive merge_docket into the gauntlet's build rotation, and deepening tasks never carry them; weighting is the next commit once the docket keeps the fields.
-  - desks/mt5/research/miner_candidate_compiler.py — n_independent_sources / agreeing_sources per candidate; contested symbols (two engines, different families) named under `disagreement` and `contested` on the candidate (MEASURED)
+- **G20 Research-ensemble disagreement rewarded** — LANDED
+  - desks/mt5/research/miner_candidate_compiler.py — n_independent_sources and agreeing_sources per candidate; contested symbols (two engines, different families) named under `disagreement` and stamped on the candidate AND on the deepening task, so the signal survives the door it was measured for (MEASURED)
+  - desks/mt5/research/deepening_worker.py — _scorer multiplies by agreement (1 + 0.25 per extra source) and by 1.75 when contested, so settling a disagreement outranks confirming an echo; a lone uncontested task multiplies by 1.0 and sits where it sat (MEASURED)
   - desks/mt5/tests/test_compiler_agreement_and_intake.py (MEASURED)
-  - clock: NONE · artifact: NONE · consumer: NONE
+  - clock: hourly_cycle:compile_candidates, hourly_cycle:deepen · artifact: desks/mt5/data/hypotheses/miner_candidates.json disagreement · consumer: NONE
   - next: In `desks/mt5/research/miner_candidate_compiler.py`, after `record_candidates(...)`, count distinct `source` values per compiled `node_id` and write it onto the candidate as `n_independent_sources` — one field turns the existing dedup collision into a measurable agreement signal that `trial_allocator` can order on.
   - landed: this commit
 - **G21 Portfolio-generated research missions / unused-heat intelligence** — LANDED

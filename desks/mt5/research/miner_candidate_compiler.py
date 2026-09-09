@@ -831,6 +831,15 @@ def main() -> int:
     for c in candidates.values():
         if str(c.get("symbol")) in contested:
             c["contested"] = True
+    # THE DEEPENING QUEUE CARRIES IT TOO, or the signal dies at the door it was measured for.
+    # `deepening_worker._scorer` weights a contested cell above an uncontested one, and a task
+    # that reached the queue without the field would be scored as uncontested -- which is the
+    # silent-zero shape this desk keeps paying for. A deepening row for a contested symbol is
+    # exactly the row whose answer settles the disagreement.
+    for t in deepening.values():
+        syms = t.get("symbols") or ([t["symbol"]] if t.get("symbol") else [])
+        if any(str(s) in contested for s in syms):
+            t["contested"] = True
     disagreement = {"contested_symbols": len(contested),
                     "cells": dict(sorted(contested.items())[:40])}
 
