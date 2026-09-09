@@ -86,6 +86,9 @@ TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="UNKNOWN
 
 # -------------------------------------------------------------------------------------- ops
 TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="NONE" lane="ops"
+# The post-reboot drill (2026-09-08): read-only apart from re-enabling a Disabled task; records
+# PASS/FAIL to desks/mt5/reports/REBOOT_DRILL.json and raises data/REBOOT_DRILL_ALARM.txt on FAIL.
+TASK name="MT5-RebootDrill"        trigger="daily at 06:30"   runs="ops/reboot_drill.ps1"                     installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
 TASK name="MT5-DeskState"          trigger="UNDECLARED"       runs="scripts/build_zentech_state.py" installer="NONE" lane="ops"
 TASK name="MT5-LocalDashboard"     trigger="at startup"       runs="scripts/serve_dashboard.py"         installer="desks/mt5/scripts/install_local_dashboard.ps1" lane="ops"
 TASK name="MT5-ShadowSync"         trigger="UNDECLARED"       runs="desks/mt5/scripts/MT5Sync.cmd"            installer="NONE" lane="ops"

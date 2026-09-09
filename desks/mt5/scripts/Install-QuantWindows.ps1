@@ -293,6 +293,18 @@ $tasks = @(
                      -RepetitionDuration (New-TimeSpan -Hours 11) }
        TimeLimit = (New-TimeSpan -Hours 10)
        Desc = "Daily wiring pass: schedule the unwired, repair staleness and failing tasks." },
+    # THE ONE REAL DRILL, ON A CLOCK (2026-09-08). ops\reboot_drill.ps1 has always been the box's
+    # post-reboot check -- terminal64 running, the eleven required tasks present and enabled, the
+    # account read fresh -- and it was scheduled NOWHERE: grep for reboot_drill found only source
+    # comments and its test. Read-only apart from re-enabling a task Windows left Disabled, so it
+    # is safe beside live trading. It writes desks\mt5\reports\REBOOT_DRILL.json every run and
+    # data\REBOOT_DRILL_ALARM.txt on a FAIL, both of which research\issue_board.py reads.
+    # Resolved under the REPOSITORY root, like scripts\build_zentech_state.py above.
+    @{ Name = "MT5-RebootDrill"
+       Kind = "ps1"
+       Script = "ops\\reboot_drill.ps1"
+       Trigger = { New-ScheduledTaskTrigger -Daily -At "06:30" }
+       Desc = "Daily post-reboot drill: terminal, required tasks and account freshness; records PASS/FAIL for the issue board." },
     @{ Name = "MT5-StallWatch"
        Kind = "ps1"
        Script = "scripts\\stall_watch.ps1"

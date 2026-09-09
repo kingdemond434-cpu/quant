@@ -1,5 +1,14 @@
 # POST-REBOOT VERIFICATION. Run after the desk box restarts; prints one PASS/FAIL block.
 # Everything here is READ-ONLY except re-enabling a task Windows left Disabled.
+#
+# ON A CLOCK SINCE 2026-09-08 (Install-QuantWindows.ps1: MT5-RebootDrill, daily). Until then this
+# ran only when a person remembered to, so a box that lost a task on reboot stayed that way until
+# the next time somebody looked. Every run now leaves two records the issue board reads:
+#   desks\mt5\reports\REBOOT_DRILL.json  -- the latest verdict (missing or stale = the drill has
+#                                           stopped running, which the board grades STALLED)
+#   data\REBOOT_DRILL_ALARM.txt          -- present only after a FAIL, first line the reason;
+#                                           removed by the next PASS (the board's alarm contract)
+$root = Split-Path -Parent $PSScriptRoot
 $fail = @()
 $term = Get-Process terminal64 -ErrorAction SilentlyContinue
 if ($term) { "TERMINAL: running (pid " + $term.Id + ", up " + [math]::Round(((Get-Date) - $term.StartTime).TotalMinutes) + "m)" }
@@ -30,3 +39,21 @@ try {
 
 if ($fail.Count -eq 0) { "`nREBOOT DRILL: PASS -- terminal, tasks and account read all recovered" }
 else { "`nREBOOT DRILL: FAIL"; $fail | ForEach-Object { "  - $_" } }
+
+# THE RECORD, so the verdict reaches the issue board rather than a console nobody reads.
+$stamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+$verdict = if ($fail.Count -eq 0) { "PASS" } else { "FAIL" }
+$drillJson = Join-Path $root "desks\mt5\reports\REBOOT_DRILL.json"
+$alarm = Join-Path $root "data\REBOOT_DRILL_ALARM.txt"
+try {
+  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $drillJson) | Out-Null
+  @{ checked_at = $stamp; verdict = $verdict; failures = @($fail); required = @($required)
+     terminal_running = [bool]$term } | ConvertTo-Json -Depth 4 | Set-Content -Path $drillJson -Encoding UTF8
+  if ($fail.Count -eq 0) {
+    Remove-Item -Path $alarm -ErrorAction SilentlyContinue
+  } else {
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $alarm) | Out-Null
+    $body = @("REBOOT DRILL FAIL $stamp -- " + ($fail -join "; ")) + ($fail | ForEach-Object { "  - $_" })
+    Set-Content -Path $alarm -Value $body -Encoding UTF8
+  }
+} catch { "RECORD: could not write the drill record ($($_.Exception.Message))" }
