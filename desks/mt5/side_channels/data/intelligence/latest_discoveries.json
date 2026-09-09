@@ -4,7 +4,7 @@
     "discoveries": []
   },
   "github": {
-    "count": 15,
+    "count": 18,
     "discoveries": [
       {
         "source": "github",
@@ -48,16 +48,17 @@
       },
       {
         "source": "github",
-        "repo": "goodie1972/algoforge",
-        "url": "https://github.com/goodie1972/algoforge",
-        "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
-        "stars": 5,
-        "language": "HTML",
-        "symbols": [
-          "XAUUSD"
+        "repo": "moss-site/moss-trade-bot-skills",
+        "url": "https://github.com/moss-site/moss-trade-bot-skills",
+        "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
+        "stars": 382,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "momentum",
+          "RSI"
         ],
-        "patterns": [],
-        "confidence": 0.20500000000000002
+        "confidence": 0.6819999999999999
       },
       {
         "source": "github",
@@ -78,13 +79,13 @@
         "repo": "Gharrr544/hyperliquid-mean-reversion-bot",
         "url": "https://github.com/Gharrr544/hyperliquid-mean-reversion-bot",
         "description": "hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot",
-        "stars": 8,
+        "stars": 9,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "RSI"
         ],
-        "confidence": 0.158
+        "confidence": 0.159
       },
       {
         "source": "github",
@@ -144,13 +145,13 @@
         "repo": "ChypherFish3r/coinbase-trading-bot",
         "url": "https://github.com/ChypherFish3r/coinbase-trading-bot",
         "description": "coinbase trading bot for momentum strategies with optional profit transfers, CSV backtests, and a clean CLI",
-        "stars": 148,
+        "stars": 150,
         "language": "JavaScript",
         "symbols": [],
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.298
+        "confidence": 0.30000000000000004
       },
       {
         "source": "github",
@@ -164,20 +165,6 @@
           "momentum"
         ],
         "confidence": 0.161
-      },
-      {
-        "source": "github",
-        "repo": "moss-site/moss-trade-bot-skills",
-        "url": "https://github.com/moss-site/moss-trade-bot-skills",
-        "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
-        "stars": 382,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "momentum",
-          "RSI"
-        ],
-        "confidence": 0.6819999999999999
       },
       {
         "source": "github",
@@ -208,6 +195,61 @@
           "momentum"
         ],
         "confidence": 0.316
+      },
+      {
+        "source": "github",
+        "repo": "ashikscreativemath-commits/Paldo-ALM",
+        "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+        "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+        "stars": 21,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "scalping",
+          "swing"
+        ],
+        "confidence": 0.321
+      },
+      {
+        "source": "github",
+        "repo": "ELOSPO/algorithmic-tradingUR2023I",
+        "url": "https://github.com/ELOSPO/algorithmic-tradingUR2023I",
+        "description": "Este repositorio contiene las funciones b\u00e1sicas del curso de Trading Algor\u00edtmico con Python y MT5 dictado en la Universidad del Rosario as\u00ed como los robots desarrollados durante el curso",
+        "stars": 38,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "RSI"
+        ],
+        "confidence": 0.188
+      },
+      {
+        "source": "github",
+        "repo": "JustinGuese/python_tradingbot_framework",
+        "url": "https://github.com/JustinGuese/python_tradingbot_framework",
+        "description": "Python algorithmic trading bot framework for Kubernetes: backtesting, hyperparameter optimization, 150+ technical analysis indicators (RSI, MACD, Bollinger Bands, ADX), portfolio management, PostgreSQL integration, Helm deployment, CronJob scheduling. Minimal overhead, production-ready, Yahoo Finance data.",
+        "stars": 39,
+        "language": "Jupyter Notebook",
+        "symbols": [],
+        "patterns": [
+          "bollinger",
+          "RSI",
+          "MACD"
+        ],
+        "confidence": 0.489
+      },
+      {
+        "source": "github",
+        "repo": "griddaimyorun/Metatraider-Traiding-Bot",
+        "url": "https://github.com/griddaimyorun/Metatraider-Traiding-Bot",
+        "description": "Production-ready MetaTrader 5 (MT5) algorithmic trading bot framework. Features automated execution, real-time market data integration via Python API, risk management, and backtesting infrastructure for systematic strategies.",
+        "stars": 1028,
+        "language": null,
+        "symbols": [],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 1.0
       }
     ]
   },
@@ -321,8 +363,71 @@
     ]
   },
   "reddit": {
-    "count": 18,
+    "count": 21,
     "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "XAUUSD SETUP 9 SEPT 2026",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "pullback",
+          "retest",
+          "support",
+          "EMA",
+          "momentum"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "100k FTMO 2 step Challenge.",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "forex community",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Excessive slippage?",
+        "url": "",
+        "symbols": [
+          "AUDNZD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "What pairs have smooth moves without being too volatile",
+        "url": "",
+        "symbols": [
+          "EURUSD"
+        ],
+        "patterns": [
+          "SMA"
+        ],
+        "confidence": 0.3
+      },
       {
         "source": "reddit",
         "subreddit": "Forex",
@@ -339,11 +444,11 @@
       {
         "source": "reddit",
         "subreddit": "Forex",
-        "title": "Gotta love choppy NY session XAUUSD.",
+        "title": "Account management",
         "url": "",
         "symbols": [
-          "NAS100",
-          "XAUUSD"
+          "XAUUSD",
+          "NAS100"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -351,11 +456,11 @@
       {
         "source": "reddit",
         "subreddit": "Forex",
-        "title": "Account management",
+        "title": "Gotta love choppy NY session XAUUSD.",
         "url": "",
         "symbols": [
-          "NAS100",
-          "XAUUSD"
+          "XAUUSD",
+          "NAS100"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -390,8 +495,8 @@
         "title": "Trade",
         "url": "",
         "symbols": [
-          "GBPUSD",
-          "XAUUSD"
+          "XAUUSD",
+          "GBPUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -435,9 +540,9 @@
         "title": "I built an open-source MT5 visual replacer for backtesting \u2014 looking for honest feedback before I take it further",
         "url": "",
         "symbols": [
+          "XAUUSD",
           "EURUSD",
-          "GBPUSD",
-          "XAUUSD"
+          "GBPUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -459,12 +564,23 @@
         "title": "FINAL UPDATE: Turning Around a 1$ blown account",
         "url": "",
         "symbols": [
-          "DXY",
-          "XAUUSD"
+          "XAUUSD",
+          "DXY"
         ],
         "patterns": [
           "EMA"
         ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Gold Algo",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
         "confidence": 0.3
       },
       {
@@ -494,17 +610,6 @@
       {
         "source": "reddit",
         "subreddit": "Forex",
-        "title": "Gold Algo",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
         "title": "NFP Forecast: September 4, 2026 | August Employment Data",
         "url": "",
         "symbols": [
@@ -512,30 +617,6 @@
         ],
         "patterns": [
           "RSI"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "wallstreetbets",
-        "title": "I think MSTR is set for a good week",
-        "url": "",
-        "symbols": [
-          "BTCUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "wallstreetbets",
-        "title": "Road to recovery 696k -> 816k",
-        "url": "",
-        "symbols": [
-          "NAS100"
-        ],
-        "patterns": [
-          "support"
         ],
         "confidence": 0.3
       }
@@ -881,14 +962,14 @@
         "source": "cnn_fear_greed",
         "type": "sentiment_reading",
         "reading": "neutral",
-        "score": 41.5142857142857,
+        "score": 40.8857142857143,
         "rating": "fear",
         "symbols": [
           "US500",
           "NAS100"
         ],
         "confidence": 0.3,
-        "description": "Fear & Greed: 41.5142857142857 (fear)"
+        "description": "Fear & Greed: 40.8857142857143 (fear)"
       }
     ]
   },
@@ -901,35 +982,8 @@
     "discoveries": []
   },
   "academic": {
-    "count": 2,
-    "discoveries": [
-      {
-        "source": "arxiv",
-        "type": "academic_paper",
-        "title": "Dust Substructures and Line Perturbations driven by a Forming Planet in J16120",
-        "summary": "Hints of planet formation have been independently reported within the gap of the disc around 2MASS J16120668-301027 from millimetre continuum, infrared, and H-alpha observations. In this work, we pres",
-        "url": "https://arxiv.org/abs/2609.05366v1",
-        "published": "2026-09-04T17:11:12Z",
-        "trading_terms": [
-          "alpha"
-        ],
-        "symbols": [],
-        "confidence": 0.1
-      },
-      {
-        "source": "arxiv",
-        "type": "academic_paper",
-        "title": "Electromagnetic alignment and jet precession around supermassive black holes: Quasi-periodic oscillations in tidal disruption events",
-        "summary": "We evaluate quasi-periodic oscillations and jet formation in tidal disruption events using the covariant formulation of electromagnetic angular-momentum transfer. General-relativistic frame-dragging t",
-        "url": "https://arxiv.org/abs/2609.05350v1",
-        "published": "2026-09-04T16:58:18Z",
-        "trading_terms": [
-          "momentum"
-        ],
-        "symbols": [],
-        "confidence": 0.1
-      }
-    ]
+    "count": 0,
+    "discoveries": []
   },
   "correlations": {
     "count": 0,
@@ -2229,19 +2283,8 @@
     ]
   },
   "weather": {
-    "count": 2,
+    "count": 1,
     "discoveries": [
-      {
-        "source": "weather",
-        "type": "hurricane",
-        "name": "Marie",
-        "symbols": [
-          "USOIL",
-          "NATGAS"
-        ],
-        "confidence": 0.5,
-        "description": "Active hurricane Marie - may impact energy prices"
-      },
       {
         "source": "weather",
         "type": "hurricane",
@@ -2261,7 +2304,7 @@
       {
         "source": "shipping",
         "type": "bdi",
-        "value": 3584,
+        "value": 3620,
         "signal": "strong_expansion",
         "symbols": [
           "US500",
@@ -2270,7 +2313,7 @@
           "NZDUSD"
         ],
         "confidence": 0.6,
-        "description": "BDI: 3584 (strong_expansion)"
+        "description": "BDI: 3620 (strong_expansion)"
       }
     ]
   },

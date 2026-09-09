@@ -1,18 +1,32 @@
 {
-    "free_gb":  17.8,
-    "checked_at":  "2026-09-08T15:10:46.0001577Z",
+    "free_gb":  12.7,
+    "checked_at":  "2026-09-09T15:44:22.8085959Z",
     "actions":  [
-                    "RAM-LOW: 270MB free (phys 270MB / virt 6246MB, strike 1 of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box"
+                    "FAILING MT5-Shadow: last result 1 twice in a row -- re-run",
+                    "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
+                    "FAILING MT5-ResearchSupervisor: last result 1 twice in a row -- re-run"
                 ],
-    "low_mem_strikes":  1,
+    "low_mem_strikes":  0,
     "procs":  {
-                  "edge_search.7364":  {
-                                           "cpu":  0.359375,
-                                           "at":  "2026-09-08T17:10:36.7139019+02:00"
+                  "fail.MT5-Shadow":  {
+                                          "cpu":  1,
+                                          "at":  "2026-09-09T17:40:43.5230150+02:00"
+                                      },
+                  "fail.MT5-MoatRecorder":  {
+                                                "cpu":  1,
+                                                "at":  "2026-09-09T17:40:43.5230150+02:00"
+                                            },
+                  "external_gauntlet.2056":  {
+                                                 "cpu":  218.84375,
+                                                 "at":  "2026-09-09T17:40:43.5230150+02:00"
+                                             },
+                  "moat_silver.2716":  {
+                                           "cpu":  298.875,
+                                           "at":  "2026-09-09T17:40:43.5230150+02:00"
                                        },
-                  "external_gauntlet.5492":  {
-                                                 "cpu":  274.109375,
-                                                 "at":  "2026-09-08T17:10:36.7139019+02:00"
-                                             }
+                  "fail.MT5-ResearchSupervisor":  {
+                                                      "cpu":  1,
+                                                      "at":  "2026-09-09T17:40:43.5230150+02:00"
+                                                  }
               }
 }

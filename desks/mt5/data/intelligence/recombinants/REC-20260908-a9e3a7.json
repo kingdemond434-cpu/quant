@@ -14,20 +14,21 @@
     {
       "type": "stop",
       "value": "atr",
-      "source": "external.EURCHF.discovered.p=4cba1afa572a99cd"
+      "source": "external.EURCHF.discovered.p=e266baf78567bef3"
     },
     {
       "type": "horizon",
       "value": "intraday",
-      "source": "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}"
+      "source": "external.EURGBP.discovered.p=8e61ea22743f15b7"
     }
   ],
   "mechanism_class": "relative_value",
   "expected_orthogonality": 0.7999999999999999,
   "estimated_edge_bps": 11.5,
   "source_strategies": [
+    "external.EURCHF.discovered.p=e266baf78567bef3",
     "external.EURCHF.discovered.p=4cba1afa572a99cd",
-    "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}"
+    "external.EURGBP.discovered.p=8e61ea22743f15b7"
   ],
   "recombination_type": "orthogonal",
   "falsifier": "edge disappears in forward test",

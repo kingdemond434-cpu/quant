@@ -1,20 +1,1695 @@
 {
-  "n": 39,
+  "n": 58,
   "survivors": {
-    "external.EURCHF.discovered.p=4cba1afa572a99cd": {
-      "hunt": "external_discoveries",
-      "cell": "EURCHF.discovered.p=4cba1afa572a99cd",
-      "sym": "EURCHF",
-      "days": 2245,
+    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
+      "hunt": "hunt16.json",
+      "cell": "AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+      "sym": "AUDNZD",
+      "days": 179,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price",
+          "message": "mechanism documented at hunt registration"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.3177
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9929,
+          "sr0": 0.131,
+          "n_trials": 3001
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.1378
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.03
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.3184,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.3708,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.1116
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.3708
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.3931
+        }
+      },
+      "shadow_spec": {
+        "symbol": "AUDNZD",
+        "family": "dav_range_filter_adx",
+        "side": "SHORT",
+        "selector": "afternoon",
+        "condition": "NORMAL_DAY",
+        "is_universe": true,
+        "hunt": "hunt16.json"
+      },
+      "gated_at": "2026-08-23T13:51:10.738675+00:00",
+      "status": "UNIVERSAL"
+    },
+    "external.XAUUSD.session_range_breakout": {
+      "hunt": "external_discoveries",
+      "cell": "XAUUSD.session_range_breakout",
+      "sym": "XAUUSD",
+      "days": 2101,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1914
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.081,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0442
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1926,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.2013,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2166
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.2013
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2371
+        }
+      },
+      "gated_at": "2026-08-25T22:00:42.895347+00:00",
+      "shadow_spec": {
+        "symbol": "XAUUSD",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null
+      }
+    },
+    "external.USDJPY.session_range_breakout": {
+      "hunt": "external_discoveries",
+      "cell": "USDJPY.session_range_breakout",
+      "sym": "USDJPY",
+      "days": 2107,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1614
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9999,
+          "sr0": 0.081,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0442
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1611,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1741,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0853
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1741
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1641
+        }
+      },
+      "gated_at": "2026-08-25T22:00:42.895358+00:00",
+      "shadow_spec": {
+        "symbol": "USDJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null
+      }
+    },
+    "external.CADJPY.session_range_breakout": {
+      "hunt": "external_discoveries",
+      "cell": "CADJPY.session_range_breakout",
+      "sym": "CADJPY",
+      "days": 2142,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1488
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9995,
+          "sr0": 0.081,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0442
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1484,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1513,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0587
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1513
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1595
+        }
+      },
+      "gated_at": "2026-08-25T22:00:42.895369+00:00",
+      "shadow_spec": {
+        "symbol": "CADJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null
+      }
+    },
+    "external.GBPJPY.session_range_breakout": {
+      "hunt": "external_discoveries",
+      "cell": "GBPJPY.session_range_breakout",
+      "sym": "GBPJPY",
+      "days": 2170,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1152
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.951,
+          "sr0": 0.081,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0442
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1153,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.124,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0749
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.124
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1277
+        }
+      },
+      "gated_at": "2026-08-25T22:00:42.895377+00:00",
+      "shadow_spec": {
+        "symbol": "GBPJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null
+      }
+    },
+    "external.EURJPY.session_range_breakout": {
+      "hunt": "external_discoveries",
+      "cell": "EURJPY.session_range_breakout",
+      "sym": "EURJPY",
+      "days": 2148,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1319
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.993,
+          "sr0": 0.081,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0442
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1314,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1457,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0714
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1457
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.138
+        }
+      },
+      "gated_at": "2026-08-25T22:00:42.895390+00:00",
+      "shadow_spec": {
+        "symbol": "EURJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null
+      }
+    },
+    "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "XAUUSD.session_range_breakout.rr=1.5_wb=12",
+      "sym": "XAUUSD",
+      "days": 2101,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1797
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1814,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1921,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.1666
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1921
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.187
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109357+00:00",
+      "shadow_spec": {
+        "symbol": "XAUUSD",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 1.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "XAUUSD.session_range_breakout.rr=2.0_wb=12",
+      "sym": "XAUUSD",
+      "days": 2101,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1845
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1859,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1929,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.1928
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1929
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2132
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109366+00:00",
+      "shadow_spec": {
+        "symbol": "XAUUSD",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 2.0,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "XAUUSD.session_range_breakout.rr=2.5_wb=12",
+      "sym": "XAUUSD",
+      "days": 2101,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1914
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1926,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.2013,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2166
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.2013
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2371
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109372+00:00",
+      "shadow_spec": {
+        "symbol": "XAUUSD",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 2.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.USDJPY.session_range_breakout.rr=1.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "USDJPY.session_range_breakout.rr=1.5_wb=12",
+      "sym": "USDJPY",
+      "days": 2107,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1588
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9998,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1589,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1669,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0642
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1669
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.143
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109378+00:00",
+      "shadow_spec": {
+        "symbol": "USDJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 1.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.USDJPY.session_range_breakout.rr=2.0_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "USDJPY.session_range_breakout.rr=2.0_wb=12",
+      "sym": "USDJPY",
+      "days": 2107,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1632
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1629,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1755,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0798
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1755
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1586
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109383+00:00",
+      "shadow_spec": {
+        "symbol": "USDJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 2.0,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.USDJPY.session_range_breakout.rr=2.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "USDJPY.session_range_breakout.rr=2.5_wb=12",
+      "sym": "USDJPY",
+      "days": 2107,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1605
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9999,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1602,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1729,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0842
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1729
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.163
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109388+00:00",
+      "shadow_spec": {
+        "symbol": "USDJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 2.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.CADJPY.session_range_breakout.rr=2.0_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "CADJPY.session_range_breakout.rr=2.0_wb=12",
+      "sym": "CADJPY",
+      "days": 2142,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1575
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9999,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1573,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1602,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0624
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1602
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1631
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109400+00:00",
+      "shadow_spec": {
+        "symbol": "CADJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 2.0,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.CADJPY.session_range_breakout.rr=2.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "CADJPY.session_range_breakout.rr=2.5_wb=12",
+      "sym": "CADJPY",
+      "days": 2142,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1487
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9995,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1483,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1511,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0586
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1511
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1593
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109406+00:00",
+      "shadow_spec": {
+        "symbol": "CADJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 2.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": {
+      "hunt": "external_discoveries",
+      "cell": "XAUUSD.session_range_breakout.rr=1.5_wb=8",
+      "sym": "XAUUSD",
+      "days": 2046,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1422
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9975,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1433,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1519,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.13
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1519
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1508
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109329+00:00",
+      "shadow_spec": {
+        "symbol": "XAUUSD",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 1.5,
+          "wait_bars": 8
+        }
+      }
+    },
+    "external.CADJPY.session_range_breakout.rr=1.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "CADJPY.session_range_breakout.rr=1.5_wb=12",
+      "sym": "CADJPY",
+      "days": 2142,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1473
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.999,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1472,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1588,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.04
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1588
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1408
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109395+00:00",
+      "shadow_spec": {
+        "symbol": "CADJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 1.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.GBPJPY.session_range_breakout.rr=1.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "GBPJPY.session_range_breakout.rr=1.5_wb=12",
+      "sym": "GBPJPY",
+      "days": 2170,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1171
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9563,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1174,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1333,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0625
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1333
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1154
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109412+00:00",
+      "shadow_spec": {
+        "symbol": "GBPJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 1.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.GBPJPY.session_range_breakout.rr=2.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "GBPJPY.session_range_breakout.rr=2.5_wb=12",
+      "sym": "GBPJPY",
+      "days": 2170,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1152
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9522,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1153,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.124,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0749
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.124
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1277
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109417+00:00",
+      "shadow_spec": {
+        "symbol": "GBPJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 2.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.EURJPY.session_range_breakout.rr=1.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "EURJPY.session_range_breakout.rr=1.5_wb=12",
+      "sym": "EURJPY",
+      "days": 2148,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1405
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9974,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1403,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1575,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0666
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1575
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1332
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109423+00:00",
+      "shadow_spec": {
+        "symbol": "EURJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 1.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.EURJPY.session_range_breakout.rr=2.0_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "EURJPY.session_range_breakout.rr=2.0_wb=12",
+      "sym": "EURJPY",
+      "days": 2148,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1409
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9979,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1405,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1566,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.076
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1566
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1426
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109428+00:00",
+      "shadow_spec": {
+        "symbol": "EURJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 2.0,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.EURJPY.session_range_breakout.rr=2.5_wb=12": {
+      "hunt": "external_discoveries",
+      "cell": "EURJPY.session_range_breakout.rr=2.5_wb=12",
+      "sym": "EURJPY",
+      "days": 2148,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "discovered via external channel"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.1319
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9932,
+          "sr0": 0.0808,
+          "n_trials": 203
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0462
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.1314,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.1457,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.0714
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.1457
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.138
+        }
+      },
+      "gated_at": "2026-08-26T01:44:33.109433+00:00",
+      "shadow_spec": {
+        "symbol": "EURJPY",
+        "selector": "asia",
+        "family": "session_range_breakout",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "rr": 2.5,
+          "wait_bars": 12
+        }
+      }
+    },
+    "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "EURZAR",
+      "days": 561,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.4387
+          "sharpe": 0.7029
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 2.021346
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.7359,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7342,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2867
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7342
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.3692
+        }
+      },
+      "gated_at": "2026-09-02T23:37:32.826633+00:00",
+      "shadow_spec": {
+        "symbol": "EURZAR",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "USDZAR",
+      "days": 489,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.6904
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.656287
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0004
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6993,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7069,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2442
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7069
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.3321
+        }
+      },
+      "gated_at": "2026-09-02T02:29:50.591219+00:00",
+      "shadow_spec": {
+        "symbol": "USDZAR",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.CHFNOK.carry.p=98d776f3e210d3e2": {
+      "hunt": "external_discoveries",
+      "cell": "CHFNOK.carry.p=98d776f3e210d3e2",
+      "sym": "CHFNOK",
+      "days": 1120,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "broker-native swap differential is a directly measured carry premium",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.4434
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9744,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 2.021346
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.456,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5931,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.4261
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5931
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.5484
+        }
+      },
+      "gated_at": "2026-09-02T23:37:32.828935+00:00",
+      "shadow_spec": {
+        "symbol": "CHFNOK",
+        "selector": "asia",
+        "family": "carry",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "input_symbol": "CHFNOK"
+        }
+      }
+    },
+    "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "AUDCHF",
+      "days": 658,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5033
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9969,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.613032
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0005
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.55,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.6246,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2377
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.6246
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2377
+        }
+      },
+      "gated_at": "2026-09-01T00:13:35.223752+00:00",
+      "shadow_spec": {
+        "symbol": "AUDCHF",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "CADCHF",
+      "days": 543,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.6363
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.613406
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0005
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6538,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7452,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2269
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7452
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2269
+        }
+      },
+      "gated_at": "2026-08-30T23:50:19.808274+00:00",
+      "shadow_spec": {
+        "symbol": "CADCHF",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "CHFDKK",
+      "days": 834,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5031
         },
         "deflated_sharpe": {
           "passed": true,
@@ -23,7 +1698,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.278488
+          "variance_measured_this_sweep": 2.021346
         },
         "pbo": {
           "passed": true,
@@ -35,28 +1710,556 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.4333,
+          "mean_oos_sharpe": 0.5361,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.5603,
+          "oos_sharpe": 0.5643,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.2961
+          "exp_x3": 0.1401
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.5603
+          "lockbox_sharpe": 0.5643
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.2271
+          "ev": 0.1871
         }
       },
-      "gated_at": "2026-09-08T00:41:44.203283+00:00",
+      "gated_at": "2026-09-02T23:37:32.828824+00:00",
+      "shadow_spec": {
+        "symbol": "CHFDKK",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "EURNOK",
+      "days": 689,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5065
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9741,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 2.021346
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5306,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5474,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.3889
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5474
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.49
+        }
+      },
+      "gated_at": "2026-09-02T23:37:32.829569+00:00",
+      "shadow_spec": {
+        "symbol": "EURNOK",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPCHF",
+      "days": 426,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.6538
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.613406
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0005
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6809,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7771,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2685
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7771
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2685
+        }
+      },
+      "gated_at": "2026-08-30T23:50:19.808289+00:00",
+      "shadow_spec": {
+        "symbol": "GBPCHF",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPMXN",
+      "days": 680,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.601
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 2.021346
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6313,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7795,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2837
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7795
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.3652
+        }
+      },
+      "gated_at": "2026-09-02T23:37:32.826905+00:00",
+      "shadow_spec": {
+        "symbol": "GBPMXN",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPNOK",
+      "days": 766,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5194
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9993,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 2.021346
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5383,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5465,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.3288
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5465
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.4724
+        }
+      },
+      "gated_at": "2026-09-02T23:37:32.826945+00:00",
+      "shadow_spec": {
+        "symbol": "GBPNOK",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPSEK",
+      "days": 704,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.582
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9999,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 2.021346
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6098,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7142,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2701
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7142
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.4005
+        }
+      },
+      "gated_at": "2026-09-02T23:37:32.826966+00:00",
+      "shadow_spec": {
+        "symbol": "GBPSEK",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPZAR",
+      "days": 609,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.6253
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 2.021346
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6435,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.6407,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.3345
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.6407
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.4205
+        }
+      },
+      "gated_at": "2026-09-02T23:37:32.827067+00:00",
+      "shadow_spec": {
+        "symbol": "GBPZAR",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "USDMXN",
+      "days": 459,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5719
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9999,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.656287
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0004
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5758,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.6334,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.1947
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.6334
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2587
+        }
+      },
+      "gated_at": "2026-09-02T02:29:50.591182+00:00",
+      "shadow_spec": {
+        "symbol": "USDMXN",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.EURCHF.discovered.p=6c7943b997558157": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=6c7943b997558157",
+      "sym": "EURCHF",
+      "days": 2085,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.427
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9947,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.4318,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.4352,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2028
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.4352
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2028
+        }
+      },
+      "gated_at": "2026-09-03T11:06:39.719994+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -65,39 +2268,39 @@
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "feature": "hour",
+          "feature": "dd_12",
           "band": [
-            0.9,
-            1.0
+            0.75,
+            0.9
           ],
-          "horizon": 3,
+          "horizon": 1,
           "side": -1
         }
       }
     },
-    "external.EURCHF.discovered.p=9bc1f7c40f200e78": {
+    "external.EURCHF.discovered.p=a5bbf78b5c8595c0": {
       "hunt": "external_discoveries",
-      "cell": "EURCHF.discovered.p=9bc1f7c40f200e78",
+      "cell": "EURCHF.discovered.p=a5bbf78b5c8595c0",
       "sym": "EURCHF",
-      "days": 2246,
+      "days": 1757,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price",
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.418
+          "sharpe": 0.5028
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9813,
+          "dsr": 1.0,
           "sr0": 0.3786,
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.278488
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -109,28 +2312,102 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.4115,
+          "mean_oos_sharpe": 0.5067,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.5291,
+          "oos_sharpe": 0.5032,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.2853
+          "exp_x3": 0.2306
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.5291
+          "lockbox_sharpe": 0.5032
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.2164
+          "ev": 0.2306
         }
       },
-      "gated_at": "2026-09-08T00:41:44.203405+00:00",
+      "gated_at": "2026-09-03T11:06:39.720010+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_24",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 1,
+          "side": -1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=9bc1f7c40f200e78": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=9bc1f7c40f200e78",
+      "sym": "EURCHF",
+      "days": 2253,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.42
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9858,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.134904
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.4136,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5322,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2866
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5322
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2175
+        }
+      },
+      "gated_at": "2026-09-09T14:41:01.623916+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -149,29 +2426,29 @@
         }
       }
     },
-    "external.EURCHF.discovered.p=16bd35526c7f3515": {
+    "external.EURCHF.discovered.p=c14e361e680e6d0b": {
       "hunt": "external_discoveries",
-      "cell": "EURCHF.discovered.p=16bd35526c7f3515",
+      "cell": "EURCHF.discovered.p=c14e361e680e6d0b",
       "sym": "EURCHF",
-      "days": 1755,
+      "days": 2236,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "message": "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.6707
+          "sharpe": 0.4526
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 1.0,
+          "dsr": 0.9996,
           "sr0": 0.3786,
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.278488
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
@@ -183,28 +2460,250 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.6709,
+          "mean_oos_sharpe": 0.4537,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.6516,
+          "oos_sharpe": 0.5066,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.547
+          "exp_x3": 0.2019
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.6516
+          "lockbox_sharpe": 0.5066
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.4763
+          "ev": 0.2019
         }
       },
-      "gated_at": "2026-09-08T00:41:44.203455+00:00",
+      "gated_at": "2026-09-03T11:06:39.720035+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "hour",
+          "band": [
+            0.0,
+            0.1
+          ],
+          "horizon": 6,
+          "side": 1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=c7d53510458ba32c": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=c7d53510458ba32c",
+      "sym": "EURCHF",
+      "days": 705,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance above a rolling trough measures chase intensity -- late-crowd entries whose stops sit below, an exhaustible flow with a known unwind path",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5032
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9999,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5056,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.4945,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.22
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.4945
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.22
+        }
+      },
+      "gated_at": "2026-09-03T11:06:39.720049+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "ru_24",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 1,
+          "side": -1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=e266baf78567bef3": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=e266baf78567bef3",
+      "sym": "EURCHF",
+      "days": 2088,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5967
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.134904
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5969,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.6075,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.4861
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.6075
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.4162
+        }
+      },
+      "gated_at": "2026-09-09T14:41:01.623951+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_12",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 6,
+          "side": -1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=16bd35526c7f3515": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=16bd35526c7f3515",
+      "sym": "EURCHF",
+      "days": 1758,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.6699
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.134904
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6701,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.6544,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.5471
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.6544
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.4764
+        }
+      },
+      "gated_at": "2026-09-09T14:41:01.623972+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -223,85 +2722,11 @@
         }
       }
     },
-    "external.EURCHF.discovered.p=e266baf78567bef3": {
-      "hunt": "external_discoveries",
-      "cell": "EURCHF.discovered.p=e266baf78567bef3",
-      "sym": "EURCHF",
-      "days": 2082,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.5945
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.3786,
-          "n_trials": 597,
-          "variance_of_sharpes": 0.014863,
-          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.278488
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.0
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.0
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.5948,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.6053,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.4844
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.6053
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.4146
-        }
-      },
-      "gated_at": "2026-09-08T00:41:44.203437+00:00",
-      "shadow_spec": {
-        "symbol": "EURCHF",
-        "selector": "asia",
-        "family": "discovered",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "feature": "dd_12",
-          "band": [
-            0.75,
-            0.9
-          ],
-          "horizon": 6,
-          "side": -1
-        }
-      }
-    },
     "external.EURGBP.discovered.p=8e61ea22743f15b7": {
       "hunt": "external_discoveries",
       "cell": "EURGBP.discovered.p=8e61ea22743f15b7",
       "sym": "EURGBP",
-      "days": 2097,
+      "days": 2105,
       "gates": {
         "economic_prior": {
           "passed": true,
@@ -310,7 +2735,7 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.4775
+          "sharpe": 0.4771
         },
         "deflated_sharpe": {
           "passed": true,
@@ -319,7 +2744,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.278488
+          "variance_measured_this_sweep": 1.134904
         },
         "pbo": {
           "passed": true,
@@ -331,28 +2756,28 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.4777,
+          "mean_oos_sharpe": 0.4773,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.4683,
+          "oos_sharpe": 0.4678,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.3631
+          "exp_x3": 0.3628
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.4683
+          "lockbox_sharpe": 0.4678
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.2837
+          "ev": 0.2831
         }
       },
-      "gated_at": "2026-09-08T00:41:44.203482+00:00",
+      "gated_at": "2026-09-09T14:41:01.624009+00:00",
       "shadow_spec": {
         "symbol": "EURGBP",
         "selector": "asia",
@@ -371,2621 +2796,1187 @@
         }
       }
     },
-    "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}": {
+    "external.EURCHF.discovered.p=4cba1afa572a99cd": {
       "hunt": "external_discoveries",
-      "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
-      "sym": "XAUUSD",
-      "days": 2050,
+      "cell": "EURCHF.discovered.p=4cba1afa572a99cd",
+      "sym": "EURCHF",
+      "days": 2253,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1206
+          "sharpe": 0.4405
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9971,
-          "sr0": 0.0602,
-          "n_trials": 177
+          "dsr": 0.9996,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.134904
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1218,
+          "mean_oos_sharpe": 0.435,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.124,
+          "oos_sharpe": 0.5623,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0729
+          "exp_x3": 0.2971
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.2533,
-          "holdout_bars": 410
+          "lockbox_sharpe": 0.5623
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.1278
+          "ev": 0.2281
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348305+00:00",
+      "gated_at": "2026-09-09T14:41:01.623788+00:00",
       "shadow_spec": {
-        "symbol": "XAUUSD",
+        "symbol": "EURCHF",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 8,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 1.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "hour",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 3,
+          "side": -1
         }
       }
     },
-    "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}": {
+    "external.EURGBP.discovered.p=f31f02aa2b9d79b1": {
       "hunt": "external_discoveries",
-      "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
-      "sym": "XAUUSD",
-      "days": 2050,
+      "cell": "EURGBP.discovered.p=f31f02aa2b9d79b1",
+      "sym": "EURGBP",
+      "days": 1769,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "distance above a rolling trough measures chase intensity -- late-crowd entries whose stops sit below, an exhaustible flow with a known unwind path",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1234
+          "sharpe": 0.45
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9986,
-          "sr0": 0.0602,
-          "n_trials": 177
+          "dsr": 0.9984,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1242,
+          "mean_oos_sharpe": 0.4551,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1262,
+          "oos_sharpe": 0.4102,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0991
+          "exp_x3": 0.29
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.2219,
-          "holdout_bars": 410
+          "lockbox_sharpe": 0.4102
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.1541
+          "ev": 0.29
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348353+00:00",
+      "gated_at": "2026-09-03T11:06:39.720124+00:00",
       "shadow_spec": {
-        "symbol": "XAUUSD",
+        "symbol": "EURGBP",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 8,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "ru_24",
+          "band": [
+            0.1,
+            0.25
+          ],
+          "horizon": 3,
+          "side": 1
         }
       }
     },
-    "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
+    "external.AUDCAD.discovered.p=7c996ac8456c8919": {
       "hunt": "external_discoveries",
-      "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "XAUUSD",
-      "days": 2105,
+      "cell": "AUDCAD.discovered.p=7c996ac8456c8919",
+      "sym": "AUDCAD",
+      "days": 576,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "cross-instrument pricing residuals can converge when common risk is re-arbitraged",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1588
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0594,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1605,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1628,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1111
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.3093,
-          "holdout_bars": 421
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1651
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348367+00:00",
-      "shadow_spec": {
-        "symbol": "XAUUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 1.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "XAUUSD",
-      "days": 2105,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1646
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0594,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.166,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1684,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1357
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.283,
-          "holdout_bars": 421
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1897
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348381+00:00",
-      "shadow_spec": {
-        "symbol": "XAUUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "XAUUSD",
-      "days": 2105,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1708
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0594,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1722,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1745,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1565
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.28,
-          "holdout_bars": 421
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.2105
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348391+00:00",
-      "shadow_spec": {
-        "symbol": "XAUUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "XAUUSD",
-      "days": 2086,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1578
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0597,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1594,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1612,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1093
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.3057,
-          "holdout_bars": 417
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1632
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348403+00:00",
-      "shadow_spec": {
-        "symbol": "XAUUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 1.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "XAUUSD",
-      "days": 2086,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1645
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0597,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1657,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1675,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1349
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.2798,
-          "holdout_bars": 417
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1888
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348413+00:00",
-      "shadow_spec": {
-        "symbol": "XAUUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "XAUUSD",
-      "days": 2086,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1698
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0597,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.171,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1725,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1542
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.2763,
-          "holdout_bars": 417
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.2081
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348425+00:00",
-      "shadow_spec": {
-        "symbol": "XAUUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "GBPUSD",
-      "days": 2209,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.0968
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9688,
-          "sr0": 0.058,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.0968,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.0969,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0492
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1045,
-          "holdout_bars": 441
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.121
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348438+00:00",
-      "shadow_spec": {
-        "symbol": "GBPUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "GBPUSD",
-      "days": 2209,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1115
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9954,
-          "sr0": 0.058,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1114,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1115,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0792
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.0963,
-          "holdout_bars": 441
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.151
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348521+00:00",
-      "shadow_spec": {
-        "symbol": "GBPUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "GBPUSD",
-      "days": 2194,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1096
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9937,
-          "sr0": 0.0582,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1096,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1101,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0763
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.0974,
-          "holdout_bars": 438
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.148
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348530+00:00",
-      "shadow_spec": {
-        "symbol": "GBPUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "EURUSD",
-      "days": 2226,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.0962
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9682,
-          "sr0": 0.0578,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.0962,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.0956,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1192
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1335,
-          "holdout_bars": 445
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1192
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348541+00:00",
-      "shadow_spec": {
-        "symbol": "EURUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "EURUSD",
-      "days": 2226,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.103
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9865,
-          "sr0": 0.0578,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1029,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1025,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1364
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1401,
-          "holdout_bars": 445
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1364
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348549+00:00",
-      "shadow_spec": {
-        "symbol": "EURUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "EURUSD",
-      "days": 2214,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.0967
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9692,
-          "sr0": 0.0579,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.0967,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.0962,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1197
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.129,
-          "holdout_bars": 442
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1197
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348557+00:00",
-      "shadow_spec": {
-        "symbol": "EURUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "EURUSD",
-      "days": 2214,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1047
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9888,
-          "sr0": 0.0579,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1047,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1043,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.1385
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1445,
-          "holdout_bars": 442
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1385
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348565+00:00",
-      "shadow_spec": {
-        "symbol": "EURUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "EURJPY",
-      "days": 2151,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1106
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9922,
-          "sr0": 0.0588,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1105,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1101,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0233
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1131,
-          "holdout_bars": 430
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1048
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348573+00:00",
-      "shadow_spec": {
-        "symbol": "EURJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 1.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "EURJPY",
-      "days": 2151,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1123
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9945,
-          "sr0": 0.0588,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1119,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1112,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.032
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.0994,
-          "holdout_bars": 430
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1135
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348580+00:00",
-      "shadow_spec": {
-        "symbol": "EURJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "EURJPY",
-      "days": 2151,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1045
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9857,
-          "sr0": 0.0588,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.104,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1037,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0277
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1086,
-          "holdout_bars": 430
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1092
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348587+00:00",
-      "shadow_spec": {
-        "symbol": "EURJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "EURJPY",
-      "days": 2135,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1048
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9857,
-          "sr0": 0.059,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1044,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1039,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0277
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.0916,
-          "holdout_bars": 427
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1089
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348595+00:00",
-      "shadow_spec": {
-        "symbol": "EURJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "AUDUSD",
-      "days": 2119,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.102
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9766,
-          "sr0": 0.0592,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1021,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1017,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0447
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.0786,
-          "holdout_bars": 423
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.0904
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348606+00:00",
-      "shadow_spec": {
-        "symbol": "AUDUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 1.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "AUDUSD",
-      "days": 2114,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.0949
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9525,
-          "sr0": 0.0593,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.0949,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.0951,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0425
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.0875,
-          "holdout_bars": 422
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.0883
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348612+00:00",
-      "shadow_spec": {
-        "symbol": "AUDUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "NZDUSD",
-      "days": 2127,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1063
+          "sharpe": 0.4596
         },
         "deflated_sharpe": {
           "passed": true,
           "dsr": 0.9861,
-          "sr0": 0.0591,
-          "n_trials": 177
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.681421
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1063,
+          "mean_oos_sharpe": 0.461,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1064,
+          "oos_sharpe": 0.4425,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0695
+          "exp_x3": 0.1661
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.118,
-          "holdout_bars": 425
+          "lockbox_sharpe": 0.4425
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.0926
+          "ev": 0.1661
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348623+00:00",
+      "gated_at": "2026-09-03T07:49:10.786443+00:00",
       "shadow_spec": {
-        "symbol": "NZDUSD",
+        "symbol": "AUDCAD",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 1.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "ext_resid_EURGBP_z",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 1,
+          "side": -1
         }
       }
     },
-    "external.NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
+    "external.AUDCAD.discovered.p=8030fb339510dceb": {
       "hunt": "external_discoveries",
-      "cell": "NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "NZDUSD",
-      "days": 2127,
+      "cell": "AUDCAD.discovered.p=8030fb339510dceb",
+      "sym": "AUDCAD",
+      "days": 1411,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1015
+          "sharpe": 0.6069
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9774,
-          "sr0": 0.0591,
-          "n_trials": 177
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1012,
+          "mean_oos_sharpe": 0.6072,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1006,
+          "oos_sharpe": 0.6376,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0694
+          "exp_x3": 0.3239
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1206,
-          "holdout_bars": 425
+          "lockbox_sharpe": 0.6376
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.0925
+          "ev": 0.3239
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348630+00:00",
+      "gated_at": "2026-09-03T11:06:39.719143+00:00",
       "shadow_spec": {
-        "symbol": "NZDUSD",
+        "symbol": "AUDCAD",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "dd_24",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 3,
+          "side": -1
         }
       }
     },
-    "external.NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
+    "external.AUDNZD.discovered.p=c76b860ff91ee920": {
       "hunt": "external_discoveries",
-      "cell": "NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "NZDUSD",
-      "days": 2127,
+      "cell": "AUDNZD.discovered.p=c76b860ff91ee920",
+      "sym": "AUDNZD",
+      "days": 1771,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1026
+          "sharpe": 0.5392
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9808,
-          "sr0": 0.0591,
-          "n_trials": 177
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1023,
+          "mean_oos_sharpe": 0.5413,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1017,
+          "oos_sharpe": 0.5734,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0728
+          "exp_x3": 0.2828
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1176,
-          "holdout_bars": 425
+          "lockbox_sharpe": 0.5734
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.0959
+          "ev": 0.2918
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348648+00:00",
+      "gated_at": "2026-09-03T11:06:39.719330+00:00",
       "shadow_spec": {
-        "symbol": "NZDUSD",
+        "symbol": "AUDNZD",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "hour",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 6,
+          "side": -1
         }
       }
     },
-    "external.NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
+    "external.AUDUSD.discovered.p=de80ad4f2ef91116": {
       "hunt": "external_discoveries",
-      "cell": "NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "NZDUSD",
-      "days": 2117,
+      "cell": "AUDUSD.discovered.p=de80ad4f2ef91116",
+      "sym": "AUDUSD",
+      "days": 495,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1179
+          "sharpe": 0.4691
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9968,
-          "sr0": 0.0592,
-          "n_trials": 177
+          "dsr": 0.9836,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.118,
+          "mean_oos_sharpe": 0.4693,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1187,
+          "oos_sharpe": 0.471,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0799
+          "exp_x3": 0.1804
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.129,
-          "holdout_bars": 423
+          "lockbox_sharpe": 0.471
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.1029
+          "ev": 0.1804
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348657+00:00",
+      "gated_at": "2026-09-03T11:06:39.719383+00:00",
       "shadow_spec": {
-        "symbol": "NZDUSD",
+        "symbol": "AUDUSD",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 1.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "dd_240",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 1,
+          "side": -1
         }
       }
     },
-    "external.NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
+    "external.AUDUSD.discovered.p=cf0368e026d6b477": {
       "hunt": "external_discoveries",
-      "cell": "NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "NZDUSD",
-      "days": 2115,
+      "cell": "AUDUSD.discovered.p=cf0368e026d6b477",
+      "sym": "AUDUSD",
+      "days": 488,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1135
+          "sharpe": 0.6293
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9947,
-          "sr0": 0.0593,
-          "n_trials": 177
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1132,
+          "mean_oos_sharpe": 0.6326,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1126,
+          "oos_sharpe": 0.6406,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0807
+          "exp_x3": 0.4294
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1343,
-          "holdout_bars": 423
+          "lockbox_sharpe": 0.6406
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.1037
+          "ev": 0.4294
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348665+00:00",
+      "gated_at": "2026-09-03T11:06:39.719403+00:00",
       "shadow_spec": {
-        "symbol": "NZDUSD",
+        "symbol": "AUDUSD",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "dd_240",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 6,
+          "side": -1
         }
       }
     },
-    "external.NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
+    "external.AUDUSD.discovered.p=8e61ea22743f15b7": {
       "hunt": "external_discoveries",
-      "cell": "NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "NZDUSD",
-      "days": 2115,
+      "cell": "AUDUSD.discovered.p=8e61ea22743f15b7",
+      "sym": "AUDUSD",
+      "days": 1649,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1148
+          "sharpe": 0.497
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.4969,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5154,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2652
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5154
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2652
+        }
+      },
+      "gated_at": "2026-09-03T11:06:39.719422+00:00",
+      "shadow_spec": {
+        "symbol": "AUDUSD",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_12",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 3,
+          "side": -1
+        }
+      }
+    },
+    "external.AUDUSD.discovered.p=a5bbf78b5c8595c0": {
+      "hunt": "external_discoveries",
+      "cell": "AUDUSD.discovered.p=a5bbf78b5c8595c0",
+      "sym": "AUDUSD",
+      "days": 1413,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.4754
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.4755,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.48,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.1777
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.48
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1777
+        }
+      },
+      "gated_at": "2026-09-03T11:06:39.719441+00:00",
+      "shadow_spec": {
+        "symbol": "AUDUSD",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_24",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 1,
+          "side": -1
+        }
+      }
+    },
+    "external.EURUSD.discovered.p=6d034b421914e1a2": {
+      "hunt": "external_discoveries",
+      "cell": "EURUSD.discovered.p=6d034b421914e1a2",
+      "sym": "EURUSD",
+      "days": 494,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5043
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9955,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5052,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5032,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.3871
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5032
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.3871
+        }
+      },
+      "gated_at": "2026-09-03T11:06:39.720286+00:00",
+      "shadow_spec": {
+        "symbol": "EURUSD",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_48",
+          "band": [
+            0.0,
+            0.1
+          ],
+          "horizon": 12,
+          "side": 1
+        }
+      }
+    },
+    "external.EURUSD.discovered.p=f8bd412f38e33d20": {
+      "hunt": "external_discoveries",
+      "cell": "EURUSD.discovered.p=f8bd412f38e33d20",
+      "sym": "EURUSD",
+      "days": 412,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5077
         },
         "deflated_sharpe": {
           "passed": true,
           "dsr": 0.9959,
-          "sr0": 0.0593,
-          "n_trials": 177
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1145,
+          "mean_oos_sharpe": 0.5118,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1139,
+          "oos_sharpe": 0.4731,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0848
+          "exp_x3": 0.3324
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1308,
-          "holdout_bars": 423
+          "lockbox_sharpe": 0.4731
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.1079
+          "ev": 0.3324
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348671+00:00",
+      "gated_at": "2026-09-03T11:06:39.720776+00:00",
       "shadow_spec": {
-        "symbol": "NZDUSD",
+        "symbol": "EURUSD",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "dd_96",
+          "band": [
+            0.0,
+            0.1
+          ],
+          "horizon": 6,
+          "side": 1
         }
       }
     },
-    "external.USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}": {
+    "external.AUDCAD.discovered.p=a7324e7affe1f80a": {
       "hunt": "external_discoveries",
-      "cell": "USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
-      "sym": "USDJPY",
-      "days": 1977,
+      "cell": "AUDCAD.discovered.p=a7324e7affe1f80a",
+      "sym": "AUDCAD",
+      "days": 505,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "cross-instrument pricing residuals can converge when common risk is re-arbitraged",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.0999
+          "sharpe": 0.5216
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9604,
-          "sr0": 0.0613,
-          "n_trials": 177
+          "dsr": 0.9998,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.0996,
+          "mean_oos_sharpe": 0.5215,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.0993,
+          "oos_sharpe": 0.5509,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0393
+          "exp_x3": 0.1737
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1502,
-          "holdout_bars": 395
+          "lockbox_sharpe": 0.5509
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.1002
+          "ev": 0.182
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348680+00:00",
+      "gated_at": "2026-09-03T11:06:39.719117+00:00",
       "shadow_spec": {
-        "symbol": "USDJPY",
+        "symbol": "AUDCAD",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 8,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "ext_resid_EURDKK_z",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 1,
+          "side": -1
         }
       }
     },
-    "external.USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
+    "external.USDCHF.discovered.p=19dd11ec392fa005": {
       "hunt": "external_discoveries",
-      "cell": "USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "USDJPY",
-      "days": 2111,
+      "cell": "USDCHF.discovered.p=19dd11ec392fa005",
+      "sym": "USDCHF",
+      "days": 390,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "cross-instrument pricing residuals can converge when common risk is re-arbitraged",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1422
+          "sharpe": 0.5483
         },
         "deflated_sharpe": {
           "passed": true,
           "dsr": 0.9999,
-          "sr0": 0.0593,
-          "n_trials": 177
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1423,
+          "mean_oos_sharpe": 0.5511,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1416,
+          "oos_sharpe": 0.5847,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0677
+          "exp_x3": 0.2872
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1659,
-          "holdout_bars": 422
+          "lockbox_sharpe": 0.5847
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.128
+          "ev": 0.2872
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348687+00:00",
+      "gated_at": "2026-09-03T11:06:39.719050+00:00",
       "shadow_spec": {
-        "symbol": "USDJPY",
+        "symbol": "USDCHF",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 1.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "ext_residz_AUDCAD",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 3,
+          "side": -1
         }
       }
     },
-    "external.USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
+    "external.USDCAD.discovered.p=56aadf0a3018c790": {
       "hunt": "external_discoveries",
-      "cell": "USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "USDJPY",
-      "days": 2111,
+      "cell": "USDCAD.discovered.p=56aadf0a3018c790",
+      "sym": "USDCAD",
+      "days": 410,
       "gates": {
         "economic_prior": {
           "passed": true,
-          "message": "discovered via external channel",
+          "message": "distance above a rolling trough measures chase intensity -- late-crowd entries whose stops sit below, an exhaustible flow with a known unwind path",
           "mechanism_status": "NAMED"
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1481
+          "sharpe": 0.5167
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9974,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5164,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5548,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.351
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5548
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.351
+        }
+      },
+      "gated_at": "2026-09-03T11:06:39.718163+00:00",
+      "shadow_spec": {
+        "symbol": "USDCAD",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "ru_96",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 6,
+          "side": -1
+        }
+      }
+    },
+    "external.USDCAD.discovered.p=193aadf2caba3698": {
+      "hunt": "external_discoveries",
+      "cell": "USDCAD.discovered.p=193aadf2caba3698",
+      "sym": "USDCAD",
+      "days": 356,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance above a rolling trough measures chase intensity -- late-crowd entries whose stops sit below, an exhaustible flow with a known unwind path",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.4737
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9601,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.4733,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.4655,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2574
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.4655
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.3324
+        }
+      },
+      "gated_at": "2026-09-03T11:06:39.719003+00:00",
+      "shadow_spec": {
+        "symbol": "USDCAD",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "ru_240",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 6,
+          "side": -1
+        }
+      }
+    },
+    "external.NZDCAD.discovered.p=0ffb1e19a04f260e": {
+      "hunt": "external_discoveries",
+      "cell": "NZDCAD.discovered.p=0ffb1e19a04f260e",
+      "sym": "NZDCAD",
+      "days": 1043,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5803
         },
         "deflated_sharpe": {
           "passed": true,
           "dsr": 1.0,
-          "sr0": 0.0593,
-          "n_trials": 177
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 1.668748
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.3534
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
-          "p_value": 0.01
+          "p_value": 0.0
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1478,
+          "mean_oos_sharpe": 0.5807,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1474,
+          "oos_sharpe": 0.6383,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0837
+          "exp_x3": 0.3241
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1786,
-          "holdout_bars": 422
+          "lockbox_sharpe": 0.6383
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.144
+          "ev": 0.3241
         }
       },
-      "gated_at": "2026-09-08T02:46:35.348695+00:00",
+      "gated_at": "2026-09-03T11:06:39.722089+00:00",
       "shadow_spec": {
-        "symbol": "USDJPY",
+        "symbol": "NZDCAD",
         "selector": "asia",
-        "family": "session_range_breakout",
+        "family": "discovered",
         "is_universe": true,
         "hunt": "external_discoveries",
         "condition": null,
         "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}": {
-      "hunt": "external_discoveries",
-      "cell": "USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
-      "sym": "USDJPY",
-      "days": 2111,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1461
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0593,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1457,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1453,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0881
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.18,
-          "holdout_bars": 422
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1485
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348701+00:00",
-      "shadow_spec": {
-        "symbol": "USDJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 12,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "USDJPY",
-      "days": 2101,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1416
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9999,
-          "sr0": 0.0595,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1416,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1414,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0671
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1567,
-          "holdout_bars": 420
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1274
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348707+00:00",
-      "shadow_spec": {
-        "symbol": "USDJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 1.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "USDJPY",
-      "days": 2098,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1476
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0595,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1473,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1467,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0831
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1732,
-          "holdout_bars": 419
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1433
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348713+00:00",
-      "shadow_spec": {
-        "symbol": "USDJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.0,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
-        }
-      }
-    },
-    "external.USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}": {
-      "hunt": "external_discoveries",
-      "cell": "USDJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
-      "sym": "USDJPY",
-      "days": 2097,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel",
-          "mechanism_status": "NAMED"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1473
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0595,
-          "n_trials": 177
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.3534
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.01
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.147,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1467,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0893
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1819,
-          "holdout_bars": 419
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1495
-        }
-      },
-      "gated_at": "2026-09-08T02:46:35.348720+00:00",
-      "shadow_spec": {
-        "symbol": "USDJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "range_start": 7,
-          "range_end": null,
-          "signal_at": null,
-          "wait_bars": 16,
-          "atr_n": 20,
-          "ttl_bars": 12,
-          "rr": 2.5,
-          "spread_gate": false,
-          "trend_filter": "none",
-          "range_filter": "all",
-          "vol_filter": "all",
-          "midpoint_filter": "off"
+          "feature": "dd_48",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 3,
+          "side": -1
         }
       }
     }
@@ -3021,5 +4012,5 @@
     "expected_value_min_exclusive": 0.0
   },
   "note": "UNIVERSAL 10-GATE PASS ONLY.",
-  "swept_at": "2026-09-08T13:46:05.105843+00:00"
+  "swept_at": "2026-09-09T14:50:47.556022+00:00"
 }
