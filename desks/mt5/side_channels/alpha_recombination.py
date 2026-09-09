@@ -66,12 +66,23 @@ class AtomLibrary:
         self.atoms: dict[str, list[AlphaAtom]] = {}  # atom_type -> list of atoms
         self.atom_index: dict[str, AlphaAtom] = {}    # atom_id -> atom
         self.strategy_atoms: dict[str, list[str]] = {}  # strategy_id -> list of atom_ids
-    
+        # WHAT THE ATOMS WERE CUT FROM (2026-09-08). The miner contract needs an instrument on
+        # every row, and a survivor's shadow_spec names one; without this the recombinant reached
+        # the compiler as prose with no symbol and was filed NEEDS_SYMBOL_EXTRACTION.
+        self.strategy_symbols: dict[str, str] = {}      # strategy_id -> symbol
+        self.strategy_families: dict[str, str] = {}     # strategy_id -> family
+
     def extract_atoms_from_strategy(self, strategy_spec: dict) -> list[AlphaAtom]:
         """Decompose a strategy into atomic pieces."""
         atoms = []
         strategy_id = strategy_spec.get("id", "unknown")
-        
+        sym = strategy_spec.get("symbol") or strategy_spec.get("sym")
+        if isinstance(sym, str) and sym:
+            self.strategy_symbols[strategy_id] = sym.upper()
+        fam = strategy_spec.get("family")
+        if isinstance(fam, str) and fam:
+            self.strategy_families[strategy_id] = fam
+
         # Trigger / Entry
         trigger = strategy_spec.get("trigger", strategy_spec.get("entry_condition", ""))
         if trigger:
@@ -479,11 +490,58 @@ def build_full_atom_library(base_path: Path) -> AtomLibrary:
     return library
 
 
+#: The source name the compiler files these under -- one per_source key for the engine, never
+#: one per atom's parent cell.
+SOURCE = "alpha_recombination"
+
+
+def discovery_row(r: RecombinantHypothesis, library: AtomLibrary | None = None) -> dict:
+    """The recombinant as ONE row in the miner-discovery contract.
+
+    WHY THIS EXISTS (Tier-1 audit G12, 2026-09-08). `miner_candidate_compiler._rows` takes a
+    document's `discoveries` list or, failing that, EVERY list value in the document. A REC-*.json
+    carried no `discoveries`, so the compiler read its `atoms` list: sixty artifacts became rows
+    whose `source` was the atom's PARENT CELL NAME ("qquant.hunt16.json.AUDNZD dav_range_filter_adx
+    ..."), the per_source table grew four keys that were survivor cells rather than miners, and the
+    recombination itself -- the only thing the engine exists to propose -- was never compiled.
+
+    The row is a HYPOTHESIS, not a recipe: a recombinant names which atoms to combine, not the
+    executable parameters of a family, so it carries no `params` and goes to deepening with its
+    instrument and mechanism on it, exactly as a seat's hypothesis does
+    (libs/ops/deepseek_cycle._donate). The compiler's EXACT_RECIPE path is untouched.
+    """
+    lib = library
+    symbols = sorted({lib.strategy_symbols[s] for s in r.source_strategies
+                      if lib is not None and s in lib.strategy_symbols})
+    families = sorted({lib.strategy_families[s] for s in r.source_strategies
+                       if lib is not None and s in lib.strategy_families})
+    atoms = ", ".join(f"{a.atom_type}={a.value}" for a in r.atoms)
+    return {
+        "source": SOURCE,
+        "kind": "hypothesis",
+        "recombinant_id": r.id,
+        "title": f"{r.id}: {r.mechanism_class} recombinant of {atoms}",
+        "symbols": symbols,
+        "mechanism": (f"{r.mechanism_class}: orthogonal recombination of {atoms} cut from "
+                      f"{', '.join(r.source_strategies)} (expected orthogonality "
+                      f"{r.expected_orthogonality:.2f})"),
+        "testable_claim": r.falsifier,
+        "mechanism_tags": [t for t in [r.mechanism_class, str(r.metadata.get("group") or "")]
+                           if t],
+        "source_families": families,
+        "atoms": [{"type": a.atom_type, "value": a.value, "source": a.source_strategy}
+                  for a in r.atoms],
+        "expected_orthogonality": r.expected_orthogonality,
+        "estimated_edge_bps": r.estimated_edge_bps,
+        "url": f"recombinant://{r.id}",
+    }
+
+
 def run_recombination_pipeline(base_path: Path) -> list[RecombinantHypothesis]:
     """Run full recombination pipeline."""
     print("Building atom library...")
     library = build_full_atom_library(base_path)
-    
+
     print("\nGenerating recombinants...")
     engine = RecombinationEngine(library)
     recombinants = engine.generate_orthogonal_recombinants(
@@ -491,13 +549,14 @@ def run_recombination_pipeline(base_path: Path) -> list[RecombinantHypothesis]:
         min_orthogonality=0.6,
         max_combinations=100,
     )
-    
+
     print(f"\nGenerated {len(recombinants)} recombinant hypotheses")
-    
+
     # Save recombinants
     output_dir = base_path / "desks" / "mt5" / "data" / "intelligence" / "recombinants"
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
+    generated_at = datetime.now(UTC).isoformat()
     for r in recombinants:
         out_file = output_dir / f"{r.id}.json"
         with open(out_file, "w") as f:
@@ -511,10 +570,16 @@ def run_recombination_pipeline(base_path: Path) -> list[RecombinantHypothesis]:
                 "recombination_type": r.recombination_type,
                 "falsifier": r.falsifier,
                 "metadata": r.metadata,
+                # THE MINER CONTRACT. `discoveries` is the key the compiler reads FIRST, so the
+                # recombinant is compiled as one row under this engine's own source name and its
+                # `atoms` list above is never mistaken for a list of discoveries again.
+                "source": SOURCE,
+                "generated_at": generated_at,
+                "discoveries": [discovery_row(r, library)],
             }, f, indent=2)
-    
+
     print(f"Saved {len(recombinants)} recombinants to {output_dir}")
-    
+
     return recombinants
 
 
