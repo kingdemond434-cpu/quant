@@ -25,11 +25,11 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 1 Remove the research throughput ceiling: worker queue, multi-fidelity screening, EVSI scheduler, research DAG, scalable forward clocks, content-addressed cache, experiment DB | 1 | 0 | 2 | 0 | 7 |
 | 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 1 | 0 | 18 | 1 | 4 |
 | 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 0 | 0 | 8 |
-| 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 1 | 0 | 13 |
+| 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 0 | 0 | 14 |
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 3 | 0 | 16 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
-| **all** | 4 | 0 | 28 | 1 | 80 |
+| **all** | 4 | 0 | 27 | 1 | 81 |
 
 ## Items
 
@@ -540,14 +540,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:external_gauntlet · artifact: certificate row baseline_scorecard / random_baseline · consumer: NONE for the tournament
   - next: Compute `libs.validation.baselines.baseline_scorecard` and `libs.validation.random_baseline`'s exposure-matched monkey beat-rate for each passing cell in desks/mt5/scripts/external_gauntlet.py and store them on the certificate as a `baselines` block (recorded, not gating) — the buy-and-hold series for a cell's own symbol is already in the frame cache.
   - landed: fac5f1ab
-- **V16 Independent validator — production code cannot certify itself** — PARTIAL
-  - gap: Independence is enforced over the JUDGE'S BYTES (hash manifests, cross-box code identity, a reproduction mode that cannot write authority) but never over the JUDGE'S NUMBERS — no second implementation reproduces a certificate's gate statistics, so an arithmetic error in the judge is invisible to every fence.
-  - scripts/check_immutable_evaluator.py:1-15 — 'research agents may not modify the test they failed'; :28-41 `IMMUTABLE` hashes desks/mt5/scripts/external_gauntlet.py, desks/mt5/research/universal_gate.py, libs/validation/redteam.py, libs/validation/replay2.py etc. into desks/mt5/data/IMMUTABLE_MANIFEST.json; a change requires a human `--sign` (MEASURED)
-  - desks/mt5/research/verify_universal_state.py:1-12 and :27-30 — hashes eight promotion-critical files against `origin/<branch>` blobs, fail-closed `ok=false` on ANY discrepancy, writes reports/UNIVERSAL_STATE_VERIFY.json plus an append-only log; MEASURED note at :83-99 that the box now REPORTS drift rather than merging (MEASURED)
-  - desks/mt5/scripts/external_gauntlet.py:1615-1632 — 'A REPRODUCER THAT CAN WRITE CERTIFICATES IS NOT A REPRODUCER. Its verdict must be able to DISAGREE with the record without altering it' — the `--only` path exits before the authority block and writes only to the caller's path (MEASURED)
-  - desks/mt5/research/hourly_cycle.py:1106 `recertify_canon` leg + ops/quant-recertify-canon.timer — canonical recertification is scheduled (MEASURED)
-  - clock: check_immutable_evaluator: CI / fence battery (ops/run_fence_battery.sh); verify_universal_state: supervisor loop on every box per its docstring; recertify_canon: desks/mt5/research/hourly_cycle.py:1106 + ops/quant-recertify-canon.timer · artifact: desks/mt5/data/IMMUTABLE_MANIFEST.json; desks/mt5/reports/UNIVERSAL_STATE_VERIFY.json + reports/universal_state_verify.log · consumer: IMMUTABLE_MANIFEST.json -> scripts/check_immutable_evaluator.py (fence, rc=1 on drift); UNIVERSAL_STATE_VERIFY.json -> read at every brain session start per CLAUDE.md / AGENTS.md / docs/UNIVERSAL_PROMOTION_PROTOCOL.md
+- **V16 Independent validator — production code cannot certify itself** — LANDED
+  - libs/data/input_identity.py — one digest per bar file the gauntlet reads plus a roll-up, so a certificate can be re-run against the same bars or told which instruments' data moved; MEASURED 2026-09-09: 107 files, rollup 7359c0cf05ebf103, 9 seconds (MEASURED)
+  - libs/ops/release.py — the existing half: the code a verdict came from is sealed and cross-checked (MEASURED)
+  - tests/data/test_input_identity.py — an appended bar, a middle edit of a small file, an unreadable input and two incomparable methods are each pinned (MEASURED)
+  - clock: hourly_cycle:input_identity · artifact: desks/mt5/data/input_identity.json · consumer: any re-run of a certificate; the principal
   - next: Add a CI job to .github/workflows/ci.yml that runs `desks/mt5/scripts/external_gauntlet.py --only <cell>` for one canon certificate and asserts the reproduced `stages` dict equals the stored one bit-for-bit — turning the existing reproduction mode into a scheduled, consumed check rather than an operator tool.
+  - landed: this commit
 - **V17 Model-risk red team, and the infrastructure that defeats it** — LANDED
   - gap: Measured: shadow_forward/qquant_shadow do not call forward_verdict.verdict; the roll20 retirement clause and the promotion bar disagree on the same ledger (principal).
   - desks/mt5/research/adversary.py — promoter_gaming(): the promotion bar, retirement clauses and capital door probed with a manufactured ledger; measurement only, promotes nothing (MEASURED)

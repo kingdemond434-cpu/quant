@@ -43,6 +43,7 @@ LEG_LAYER: dict[str, str] = {
     "frontier_ontology": "information", "frontier_unknowns": "information",
     "frontier_implementer": "information", "frontier_report": "information",
     "state_vector": "information", "causal_graph": "information",
+    "input_identity": "information",
     # prediction: turning information into a claim about returns
     "compile_candidates": "prediction", "merge_docket": "prediction", "search": "prediction",
     "sweep": "prediction", "backtest": "prediction", "external_gauntlet": "prediction",

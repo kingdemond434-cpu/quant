@@ -1355,6 +1355,10 @@ def main() -> None:
     # disabled, masked or deleted -- organs are retired by a person, on this evidence.
     dac = _costed("dead_architecture", lambda: _producer(
         "dead_architecture", "scripts/check_dead_architecture.py"))
+    # THE BARS THE VERDICTS WERE MEASURED ON (Tier-1 item V16). The release seal pins the code a
+    # verdict came from; this pins its inputs, so a re-run can tell a code change from a data one.
+    iid = _costed("input_identity", lambda: _producer(
+        "input_identity", "libs/data/input_identity.py"))
     scap = _costed("session_capital", lambda: _producer(
         "session_capital", "research/session_capital.py"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
@@ -1378,7 +1382,7 @@ def main() -> None:
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac,
+                    "dead_architecture": dac, "input_identity": iid,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
