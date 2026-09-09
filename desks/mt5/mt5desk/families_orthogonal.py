@@ -1505,6 +1505,176 @@ FAMILY_INPUTS["style_premia"] = ("swap_diff (broker_swaps) for carry; risk-drive
 
 
 # ==============================================================================================
+# TWO MECHANISM CLASSES THE ZOO COULD NOT EVEN TRY (2026-09-08): the opening range and the jump.
+#
+# The Tier-1 audit measured 76 registered = 76 executable families and only FIVE that have ever
+# produced a certificate -- and, separately, fifteen of the blueprint's mechanism classes with no
+# registered family at all, so those classes could not be tried at any bar. Two of them need
+# nothing but bars, and a class that is untried for want of a function is a research frontier
+# fixed by an omission rather than by evidence. Both come through this registry and no other
+# door: the sweep enumerates them next hour, the gauntlet judges them at the same ten gates, and
+# nothing here has authority.
+# ==============================================================================================
+
+
+def family_opening_range(
+    df: pd.DataFrame,
+    *,
+    open_hour: int = 10,
+    range_bars: int = 1,
+    window_bars: int = 12,
+    min_range_atr: float = 0.25,
+    max_range_atr: float = 3.0,
+    rr: float = 1.5,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+) -> list[Signal]:
+    """The opening-range breakout: the first bars after a named open define a range, and the
+    first close outside it within a window is the trade, stopped at the range's other side.
+
+    THE MECHANISM, and why it is not `session_range_breakout`. That family measures a range over
+    a SESSION WINDOW of stamp-hours (Asia, London) and rests an order at a later signal hour. This
+    trades the OPENING AUCTION: the price discovery in the first bars after a cash open, when
+    overnight orders are absorbed and the day's initial balance forms. A break of that balance
+    before the window closes is the market rejecting the auction's range -- an information claim
+    about the open itself, on a clock the session family does not use.
+
+    `open_hour` is a BROKER STAMP-HOUR (the desk's bars carry EET stamps under a UTC label --
+    see `families._h1`). Stamp 10 contains the London cash open in both DST regimes; stamp 16
+    contains the New York cash open for the index and share CFDs. `range_bars` is BAR-RELATIVE
+    on purpose (the file's Question 1): one bar is the five-minute range on M5, the fifteen-
+    minute range on M15 and the first-hour range on H1 -- the three classical opening ranges,
+    without a second family being written.
+
+    The stop is the range's opposite edge (classic ORB), so R is the range itself; a range under
+    `min_range_atr` ATRs is noise and one over `max_range_atr` is a range that already broke.
+    One trade per day, first break wins, next-open entry. No bar after the signal bar is read.
+    """
+    d = _h1(df)
+    if len(d) < atr_n + range_bars + window_bars + 2 or range_bars < 1 or window_bars < 1:
+        return []
+    atr_v = _atr(d, atr_n).to_numpy(dtype="float64", na_value=np.nan)
+    hi_v = d["high"].to_numpy(dtype="float64", na_value=np.nan)
+    lo_v = d["low"].to_numpy(dtype="float64", na_value=np.nan)
+    cl_v = d["close"].to_numpy(dtype="float64", na_value=np.nan)
+    idx = d.index
+    hours = idx.hour.to_numpy()
+    days = idx.normalize().asi8
+    n = len(d)
+    signals: list[Signal] = []
+    last_day = None
+    for i in range(atr_n, n - 1):
+        if hours[i] != int(open_hour) or days[i] == last_day:
+            continue
+        last_day = days[i]
+        end = i + int(range_bars)                       # exclusive: the range is bars [i, end)
+        if end >= n - 1 or days[end - 1] != days[i]:
+            continue
+        r_hi = float(np.nanmax(hi_v[i:end]))
+        r_lo = float(np.nanmin(lo_v[i:end]))
+        span = r_hi - r_lo
+        a = float(atr_v[end - 1])
+        if not (np.isfinite(a) and a > 0 and np.isfinite(span) and span > 0):
+            continue
+        if span < min_range_atr * a or span > max_range_atr * a:
+            continue
+        for j in range(end, min(end + int(window_bars), n - 1)):
+            if days[j] != days[i]:
+                break                                   # the range belongs to its own day
+            c = float(cl_v[j])
+            if not np.isfinite(c):
+                continue
+            if c > r_hi:
+                side, edge, stop = 1, r_hi, r_lo
+            elif c < r_lo:
+                side, edge, stop = -1, r_lo, r_hi
+            else:
+                continue
+            target = edge + side * span * rr
+            # A break so violent that the signal bar already closed beyond the target is the
+            # day's break, consumed, with no takeable trade: the engine would enter at the next
+            # open behind its own target. Refused here rather than handed over as a signal.
+            if side * (target - c) > 0:
+                signals.append(Signal(time=idx[j], side=side, stop=stop, target=target,
+                                      ttl_bars=int(ttl_bars), tag="opening_range",
+                                      trigger=None, wait_bars=1))
+            break
+    return signals
+
+
+def family_jump(
+    df: pd.DataFrame,
+    *,
+    lookback: int = 48,
+    jump_k: float = 4.0,
+    mode: str = "continue",
+    cooldown_bars: int = 8,
+    atr_n: int = 20,
+    stop_atr: float = 1.5,
+    rr: float = 1.5,
+    ttl_bars: int = 8,
+) -> list[Signal]:
+    """A single-bar DISCONTINUITY against the diffusive volatility of the bars before it.
+
+    THE MECHANISM, and why it is neither `vol_transition` nor `event_reaction`. A jump is a bar
+    whose return is too large to have come from the continuous process the recent bars describe:
+    Lee-Mykland's statistic |r_i| / sigma_i, with sigma_i^2 the Barndorff-Nielsen--Shephard
+    BIPOWER variation (pi/2) x mean(|r_j||r_{j-1}|) over the trailing `lookback` bars STRICTLY
+    BEFORE bar i -- bipower because a squared-return variance would contain the jumps it is
+    meant to detect and never flag a second one. `vol_transition` trades a rolling ratio crossing,
+    a change of REGIME; this trades one bar's break from the regime, whatever the regime. It needs
+    no calendar, so it catches the unscheduled shock the event family cannot see.
+
+    TWO CLAIMS, both economically real and both charged as trials: `continue` follows the jump
+    (information arrives in a jump and diffuses after it), `revert` fades it (a jump made into a
+    thin book is liquidity, not information). The gauntlet decides which holds per instrument.
+    `cooldown_bars` keeps a cluster of jump bars from being ten signals of one shock.
+    """
+    if mode not in ("continue", "revert") or lookback < 4:
+        return []
+    d = _h1(df)
+    if len(d) < lookback + atr_n + 3:
+        return []
+    close = d["close"].astype(float)
+    ret = np.log(close).diff()
+    absr = ret.abs()
+    # (pi/2) x trailing mean of |r_j||r_{j-1}|, then shifted ONE bar so bar i's own return is not
+    # in the variance it is tested against. Everything here is a trailing window; nothing reads
+    # a later bar.
+    bipower = (absr * absr.shift(1)).rolling(int(lookback), min_periods=int(lookback)).mean()
+    sigma = np.sqrt(bipower.shift(1) * (np.pi / 2.0))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        stat = (absr / sigma).to_numpy(dtype="float64", na_value=np.nan)
+    atr_v = _atr(d, atr_n).to_numpy(dtype="float64", na_value=np.nan)
+    ret_v = ret.to_numpy(dtype="float64", na_value=np.nan)
+    close_v = close.to_numpy(dtype="float64", na_value=np.nan)
+    idx = np.arange(len(d))
+    ok = (idx >= lookback + 1) & (idx < len(d) - 1)
+    ok &= np.isfinite(stat) & (stat >= float(jump_k)) & np.isfinite(ret_v) & (ret_v != 0.0)
+    ok &= np.isfinite(atr_v) & (atr_v > 0)
+    flip = 1 if mode == "continue" else -1
+    signals: list[Signal] = []
+    last = -(10 ** 9)
+    times = d.index
+    for i in idx[ok]:
+        if i - last < int(cooldown_bars):
+            continue
+        last = int(i)
+        side = flip * (1 if ret_v[i] > 0 else -1)
+        a, px = float(atr_v[i]), float(close_v[i])
+        signals.append(Signal(time=times[i], side=side, stop=px - side * stop_atr * a,
+                              target=px + side * stop_atr * a * rr, ttl_bars=int(ttl_bars),
+                              tag=f"jump:{mode}", trigger=None, wait_bars=1))
+    return signals
+
+
+ORTHOGONAL_FAMILIES["opening_range"] = family_opening_range
+FAMILY_INPUTS["opening_range"] = ("price only", "data/universe/*_H1.parquet")
+ORTHOGONAL_FAMILIES["jump"] = family_jump
+FAMILY_INPUTS["jump"] = ("price only", "data/universe/*_H1.parquet")
+
+
+# ==============================================================================================
 # EVERY MECHANISM ON EVERY CHART -- and the two questions that decides (2026-09-05)
 #
 # The principal's order is "m1 m5 m15 m30 h1 h4 d1 all possible every type of mechanism n chart
@@ -1630,6 +1800,13 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "trades the laggard against a DRIVER instrument bar for bar at a measured lag; a lag "
         "measured across instruments with different quoting hours below the hour is the quoting "
         "difference, not the information flow"),
+    # ---- bounded ABOVE, like the other stamp-hour families (added 2026-09-08).
+    "opening_range": (
+        ("M1", "M5", "M15", "M30", "H1"),
+        "the range forms in the first bars after ONE named stamp-hour (open_hour, the cash open); "
+        "a four-hour bar stamped 0/4/8/12/16/20 carries stamp 10 on no day and a daily bar "
+        "carries no hour at all, so the family would return [] on every symbol there and be "
+        "filed as a data gap rather than as an inexpressible claim"),
 }
 
 #: Parameters whose bar count expresses a WALL-CLOCK duration the mechanism's cause is dated by.
