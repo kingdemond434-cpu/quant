@@ -13,6 +13,14 @@ measured t does not become money, and the search was blind to all of them.
 
     Fitness = w1 dE[logW_P] + w2 OOS + w3 Novelty + w4 Tail + w5 StateBreadth + w6 Capacity
               - w7 Cost - w8 Fragility - w9 Complexity - w10 Multiplicity
+              - w11 Turnover - w12 Crowding - w13 ExistingExposure
+
+THE LAST THREE ARE SEARCH-SIDE PRESSURE (Tier-1 audit G3/G9, 2026-09-08). Turnover is the
+candidate's own position-change rate; crowding is `libs.research.crowding`'s residual/percentile
+compression test applied to the candidate's realised edge against its peer population; existing
+exposure is the candidate family's share of the certified canon, so the eleventh signal into a
+family that already holds half the book is charged for arriving there. None is a gate: they move
+where the search looks, and a candidate that pays them still faces the same ten gates.
 
 WHAT MAKES THIS PORTFOLIO-AWARE RATHER THAN PORTFOLIO-FLAVOURED. `dE[logW_P]` is not a
 correlation penalty standing in for growth: it is `libs.portfolio.robust_elog.marginal_delta_elog`
@@ -37,6 +45,7 @@ import json
 import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -104,13 +113,36 @@ FRAGILITY_PCT = 0.20
 #:   multiplicity  0.5  the deflated-Sharpe hurdle E[max Sharpe over N trials] the gauntlet will
 #:                      charge anyway. Half weight because the gauntlet charges it in full later;
 #:                      here it only has to stop the search preferring the wider haystack.
+#:   turnover      0.5  position changes per bar, in [0, 1] (a full flip is 1, entering or
+#:                      leaving flat is 0.5). An expression that flips every bar pays half a
+#:                      point of growth; one that holds a week pays a hundredth. The cost term
+#:                      prices the round trip against the edge; this prices HOW OFTEN the desk
+#:                      has to be right about the fill, which is capacity and impact, not spread.
+#:   crowding      1.0  the fall in the candidate's cross-sectional percentile among its peers
+#:                      from the early half of its sample to the late half, in [0, 1], charged
+#:                      only when `libs.research.crowding`'s drift test finds the residual
+#:                      compression significant. A candidate whose rank fell from top to bottom
+#:                      over its own history is an edge already being competed away.
+#:   existing_exposure 1.0  the candidate family's share of certified sleeves in the canon, in
+#:                      [0, 1]. A proposal into a family holding half the book pays half a point
+#:                      of growth -- the hurdle for the eleventh trend signal, said as a number.
 WEIGHTS: dict[str, float] = {
     "delta_elog": 1.0, "oos": 0.5, "novelty": 0.5, "tail": 2.0, "state_breadth": 0.5,
     "capacity": 0.5, "cost": 1.0, "fragility": 1.0, "complexity": 0.03, "multiplicity": 0.5,
+    "turnover": 0.5, "crowding": 1.0, "existing_exposure": 1.0,
 }
 #: The terms the fitness SUBTRACTS. Held as data so `score` cannot disagree with the formula in
 #: this module's docstring.
-PENALTIES: frozenset[str] = frozenset({"cost", "fragility", "complexity", "multiplicity"})
+PENALTIES: frozenset[str] = frozenset({"cost", "fragility", "complexity", "multiplicity",
+                                       "turnover", "crowding", "existing_exposure"})
+#: The certified canon the existing-exposure term counts families in.
+CANON_PATH = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+#: Crowding snapshots: the aligned candidate/peer calendar is cut into this many equal blocks and
+#: each block's mean daily R is one snapshot. Twenty, because `crowding.symbol_crowding` tests
+#: the LATE half against the early half and needs `MIN_SNAPSHOTS` (8) observations there.
+CROWDING_BLOCKS = 20
+#: Fewest peer series before "the cross-section" is a cross-section rather than a comparison.
+MIN_CROWDING_PEERS = 3
 
 
 # --------------------------------------------------------------------------- the book
@@ -496,6 +528,130 @@ def multiplicity_term(n_trials: int, *, sharpes: Sequence[float] | None = None,
     return hurdle, f"E[max Sharpe | {n} trials, var={var:.6f}] ({basis})"
 
 
+def turnover_term(position: pd.Series | np.ndarray | None) -> tuple[float, str]:
+    """Position changes per bar, in [0, 1]: a full flip counts 1, entering or leaving flat 0.5.
+
+    Read from the POSITION PATH the P&L was computed on, never inferred from the signal's
+    threshold here, so what is charged is exactly what would have been traded. A NaN in the path
+    is flat. No path is unmeasured, not zero: a fitness that could not see the trading rate must
+    not read as one that saw a strategy which never trades.
+    """
+    if position is None:
+        return 0.0, "no position path: turnover unmeasured"
+    arr = np.nan_to_num(np.sign(np.asarray(position, dtype=float)))
+    if arr.size < MIN_OBS:
+        return 0.0, f"under {MIN_OBS} bars of position path: turnover unmeasured"
+    rate = float(np.abs(np.diff(arr)).mean() / 2.0)
+    return rate, f"{rate:.4f} position changes per bar over {arr.size} bars"
+
+
+def crowding_term(candidate_daily: pd.Series, peer_daily: Sequence[pd.Series], *,
+                  name: str = "candidate", blocks: int = CROWDING_BLOCKS,
+                  ) -> tuple[float, dict[str, Any], str]:
+    """Is this candidate's edge being competed away over its own sample, relative to its peers?
+
+    `libs.research.crowding.symbol_crowding`, unchanged: the candidate's mean daily R per block
+    is the "rate", every peer's mean per block is the "universe" at the same instant, and the
+    module tests the LATE half's residual (rate minus cross-section median) against the EARLY
+    half's with `evidence_clock.sufficient`. The term is the fall in cross-sectional PERCENTILE
+    -- the module's unit-free tell, so R multiples and log returns are charged alike -- and it
+    is charged only when the residual compression is significant: a rank that wandered is not
+    a competitor. Too few peers or too short an overlap is unmeasured and says so.
+    """
+    detail: dict[str, Any] = {"peers": 0, "snapshots": 0, "residual_drift_r": None,
+                              "percentile_drift": None, "t": None, "sufficient": None}
+    peers = [pd.Series(p) for p in peer_daily if p is not None and len(pd.Series(p))]
+    detail["peers"] = len(peers)
+    if len(peers) < MIN_CROWDING_PEERS:
+        return 0.0, detail, (f"{len(peers)} peer series, needs {MIN_CROWDING_PEERS} for a "
+                             f"cross-section: crowding unmeasured")
+    cols = [pd.Series(candidate_daily).rename("c")]
+    cols += [p.rename(f"p{i}") for i, p in enumerate(peers)]
+    frame = pd.concat(cols, axis=1, join="inner").dropna()
+    if len(frame) < blocks * 10:
+        return 0.0, detail, (f"{len(frame)} shared days, needs {blocks * 10} for {blocks} "
+                             f"snapshots: crowding unmeasured")
+    try:
+        from libs.research.crowding import symbol_crowding
+    except Exception as exc:
+        return 0.0, detail, f"crowding module unavailable ({type(exc).__name__}): unmeasured"
+    edges = np.linspace(0, len(frame), blocks + 1).astype(int)
+    rates: list[float] = []
+    universes: list[list[float]] = []
+    for a, b in pairwise(edges):
+        if b - a < 2:
+            continue
+        blk = frame.iloc[a:b]
+        rates.append(float(blk["c"].mean()))
+        universes.append([float(blk[col].mean()) for col in frame.columns if col != "c"])
+    sc = symbol_crowding(name, rates, universes)
+    if sc is None:
+        return 0.0, detail, "too few aligned snapshots for the drift test: crowding unmeasured"
+    detail.update({"snapshots": sc.n_snapshots, "residual_drift_r": round(
+        sc.residual_drift_bps / 1e4, 8), "percentile_drift": sc.percentile_drift,
+        "t": sc.t_stat, "sufficient": sc.sufficient})
+    if not sc.sufficient or sc.residual_drift_bps >= 0.0:
+        return 0.0, detail, (f"no significant compression against {len(peers)} peers "
+                             f"(t={sc.t_stat:+.2f}, percentile drift {sc.percentile_drift:+.3f}): "
+                             f"{sc.reason}")
+    value = float(max(0.0, -sc.percentile_drift))
+    return value, detail, (f"edge compressed against {len(peers)} peers: percentile fell "
+                           f"{sc.percentile_drift:+.3f} (t={sc.t_stat:+.2f}) over "
+                           f"{sc.n_snapshots} snapshots")
+
+
+_CANON_CACHE: dict[str, tuple[float, dict[str, float], int]] = {}
+
+
+def certified_family_shares(canon: Path | None = None) -> tuple[dict[str, float], int]:
+    """family -> share of certified sleeves in the canon, and the sleeve count. Cached on mtime:
+    `evaluate` runs once per candidate per generation and the canon changes once a sweep.
+    `canon` defaults to `CANON_PATH` AT CALL TIME, so a test can point the module elsewhere."""
+    canon = CANON_PATH if canon is None else canon
+    key = str(canon)
+    try:
+        mtime = float(Path(canon).stat().st_mtime)
+    except OSError:
+        return {}, 0
+    hit = _CANON_CACHE.get(key)
+    if hit is not None and hit[0] == mtime:
+        return hit[1], hit[2]
+    doc = _read_json(canon)
+    counts: dict[str, int] = {}
+    for cert in (doc.get("survivors") or {}).values():
+        if not isinstance(cert, dict):
+            continue
+        spec = cert.get("shadow_spec") if isinstance(cert.get("shadow_spec"), dict) else {}
+        fam = spec.get("family") or cert.get("family")
+        if isinstance(fam, str) and fam:
+            counts[fam] = counts.get(fam, 0) + 1
+    n = sum(counts.values())
+    shares = {f: c / n for f, c in counts.items()} if n else {}
+    _CANON_CACHE[key] = (mtime, shares, n)
+    return shares, n
+
+
+def existing_exposure_term(family: str, *, canon: Path | None = None) -> tuple[float, str]:
+    """The candidate family's share of certified sleeves, in [0, 1].
+
+    The hurdle that scales with how much of this KIND the book already owns: novelty prices
+    correlation and the growth solve prices the marginal heat, but neither rises because the
+    canon already holds twenty session-range breakouts. This does, by the count. No family on
+    the candidate, or no canon, is unmeasured -- an unknown exposure is not a zero exposure.
+    """
+    fam = str(family or "")
+    canon = CANON_PATH if canon is None else canon
+    if not fam:
+        return 0.0, "no family on the candidate: existing exposure unmeasured"
+    shares, n = certified_family_shares(canon)
+    if n == 0:
+        return 0.0, (f"no certified sleeves readable at {Path(canon).name}: existing exposure "
+                     f"unmeasured")
+    share = float(shares.get(fam, 0.0))
+    return share, (f"{fam} holds {round(share * n)} of {n} certified sleeves in "
+                   f"{Path(canon).name}")
+
+
 # --------------------------------------------------------------------------- the vector
 @dataclass(frozen=True)
 class FitnessTerms:
@@ -511,6 +667,9 @@ class FitnessTerms:
     fragility: float = 0.0
     complexity: float = 0.0
     multiplicity: float = 0.0
+    turnover: float = 0.0
+    crowding: float = 0.0
+    existing_exposure: float = 0.0
     #: Term name -> why it is what it is. Every term has one, measured or not.
     why: dict[str, str] = field(default_factory=dict)
     #: Terms that could NOT be measured and are therefore 0.0 by absence, not by measurement.
@@ -566,6 +725,13 @@ class Candidate:
     sharpes: tuple[float, ...] = ()
     params: Mapping[str, Any] = field(default_factory=dict)
     score_fn: Callable[[Mapping[str, Any]], float] | None = None
+    #: The position path the daily P&L was computed on (turnover). None is unmeasured.
+    position: pd.Series | None = None
+    #: The PEER population's daily P&L -- the other candidates of the same sweep, the canon's
+    #: proxies, whatever the caller treats as the cross-section crowding is measured against.
+    peer_daily: tuple[pd.Series, ...] = ()
+    #: The family the candidate would be certified under (existing exposure). "" is unmeasured.
+    family: str = ""
 
 
 def evaluate(candidate: Candidate, book: Book | None = None, *, cfg: Any = None,
@@ -614,9 +780,16 @@ def evaluate(candidate: Candidate, book: Book | None = None, *, cfg: Any = None,
                f"{int(candidate.complexity)} nodes")
     mult = _take("multiplicity", *multiplicity_term(candidate.n_trials,
                                                     sharpes=candidate.sharpes))
+    turn = _take("turnover", *turnover_term(candidate.position))
+    cr_value, cr_detail, cr_why = crowding_term(candidate.daily, candidate.peer_daily,
+                                                name=candidate.name)
+    detail["crowding"] = cr_detail
+    crowd = _take("crowding", cr_value, cr_why)
+    expo = _take("existing_exposure", *existing_exposure_term(candidate.family))
     terms = FitnessTerms(delta_elog=d_elog, oos=oos, novelty=nov, tail=tail,
                          state_breadth=breadth, capacity=cap, cost=cost, fragility=frag,
-                         complexity=cx, multiplicity=mult, why=why,
+                         complexity=cx, multiplicity=mult, turnover=turn, crowding=crowd,
+                         existing_exposure=expo, why=why,
                          unmeasured=tuple(sorted(set(unmeasured))), detail=detail)
     detail["score"] = round(score(terms, weights), 6)
     detail["book"] = bk.source

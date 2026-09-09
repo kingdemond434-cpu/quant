@@ -147,19 +147,34 @@ def _survivor_daily_pnl(sym: str) -> pd.Series | None:
     return s.groupby(level=0).sum()
 
 
+def _position_path(z: pd.Series, entry_z: float, hold: int) -> pd.Series:
+    """The position the P&L proxy holds bar by bar: sign(z) when extreme, held `hold` bars.
+
+    Factored out so the SAME path the P&L was computed on is what the fitness charges turnover
+    for (`alpha_fitness.turnover_term`); a rate inferred from the signal's threshold elsewhere
+    would be a second definition of what was traded.
+    """
+    pos = np.sign(z.where(z.abs() >= entry_z, 0.0)).fillna(0.0)
+    if hold > 1:
+        return pos.rolling(hold, min_periods=1).apply(
+            lambda w: w[w != 0][-1] if (w != 0).any() else 0.0, raw=True)
+    return pos
+
+
 def _daily_pnl_proxy(z: pd.Series, ret: pd.Series, entry_z: float, hold: int,
-                     risk_frac: pd.Series | None = None) -> pd.Series:
+                     risk_frac: pd.Series | None = None,
+                     held: pd.Series | None = None) -> pd.Series:
     """Vectorised sign(z)-when-extreme position held `hold` bars, times next-bar return.
 
     `risk_frac` converts the bar's log return into R MULTIPLES -- the unit the book's own daily
     series is in and the unit `robust_elog.SleeveEvidence` documents. Without it the growth term
     would compare a log-return series against a book of R multiples and report a number in no
     unit at all. The risk per trade is the recipe's own stop: `stop_atr` ATRs of the price, which
-    is exactly what the family risks when it enters.
+    is exactly what the family risks when it enters. `held` is the position path when the caller
+    already built it (so turnover and P&L are read off one object).
     """
-    pos = np.sign(z.where(z.abs() >= entry_z, 0.0)).fillna(0.0)
-    held = pos.rolling(hold, min_periods=1).apply(
-        lambda w: w[w != 0][-1] if (w != 0).any() else 0.0, raw=True) if hold > 1 else pos
+    if held is None:
+        held = _position_path(z, entry_z, hold)
     pnl = held.shift(1) * ret
     if risk_frac is not None:
         pnl = pnl / risk_frac.where(risk_frac > 1e-9)
@@ -198,6 +213,9 @@ class _Evaluator:
         self.cut = int(len(d) * (1.0 - STAGE0_FRAC))
         self.rows: dict[str, dict] = {}                    # key -> row (one per expression)
         self.zs: dict[str, pd.Series] = {}
+        #: key -> daily P&L proxy of every promoted expression: the PEER POPULATION the
+        #: crowding term measures each candidate's edge against (alpha_fitness.crowding_term).
+        self.pnls: dict[str, pd.Series] = {}
         self.terms: dict[str, af.FitnessTerms] = {}        # key -> the full term vector
         self.origin: dict[str, str] = {}                   # key -> population that made it
         self.generator_weights: dict = {}
@@ -234,9 +252,16 @@ class _Evaluator:
 
     def _candidate(self, expr: ag.Expr, side_mode: str, row: dict, z: pd.Series,
                    pnl: pd.Series, refs: list[pd.Series], *,
-                   with_fragility: bool) -> af.Candidate:
+                   with_fragility: bool, key: str = "",
+                   position: pd.Series | None = None) -> af.Candidate:
         """The candidate record the fitness reads. Everything measurable is passed; anything
-        this sweep cannot measure is left None so the fitness NAMES it rather than assuming."""
+        this sweep cannot measure is left None so the fitness NAMES it rather than assuming.
+
+        The three search-side pressures (2026-09-08) read: `position`, the path the P&L was
+        computed on; `peer_daily`, every OTHER promoted expression's P&L on this instrument --
+        the cross-section crowding is measured against; and `family`, which is `formula` for
+        everything this proposer emits, so the existing-exposure charge is the canon's own count
+        of formula sleeves."""
         activity = self.frames.get("activity")
         return af.Candidate(
             daily=pnl, name=f"{self.sym}.formula.{side_mode}", symbol=self.sym, z=z,
@@ -247,7 +272,10 @@ class _Evaluator:
                       and activity.notna().any() else None),
             n_trials=max(1, len(self.rows)), sharpes=tuple(self.sharpes),
             params={k: v for k, v in RECIPE.items() if k in ("norm", "entry_z", "hold_bars")},
-            score_fn=(self._rescore(expr, side_mode) if with_fragility else None))
+            score_fn=(self._rescore(expr, side_mode) if with_fragility else None),
+            position=position,
+            peer_daily=tuple(v for kk, v in self.pnls.items() if kk != key),
+            family="formula")
 
     def _rescore(self, expr: ag.Expr, side_mode: str):
         """A stage-0 re-screen under perturbed recipe parameters, for the fragility sweep.
@@ -292,8 +320,10 @@ class _Evaluator:
         z = self._z(ag.evaluate(expr, self.frames, self.memo))
         self.zs[k] = z
         flip = 1.0 if side_mode == "follow" else -1.0
+        held = _position_path(z * flip, RECIPE["entry_z"], RECIPE["hold_bars"])
         pnl = _daily_pnl_proxy(z * flip, self.ret, RECIPE["entry_z"], RECIPE["hold_bars"],
-                               self.risk_frac)
+                               self.risk_frac, held=held)
+        self.pnls[k] = pnl
         corr_surv = _corr(pnl, self.survivors)
         refs = list(self.canon_z.values()) + pop_z
         novelty = 1.0 - max([abs(_corr(z, r)) for r in refs] or [0.0])
@@ -301,7 +331,8 @@ class _Evaluator:
         if sd > 1e-12:
             self.sharpes.append(float(pnl.mean() / sd))
         terms = af.evaluate(self._candidate(expr, side_mode, {**row, **full}, z, pnl, refs,
-                                            with_fragility=with_fragility),
+                                            with_fragility=with_fragility, key=k,
+                                            position=held),
                             self.book, cfg=_search_worlds())
         self.terms[k] = terms
         fit = terms.score()
@@ -333,11 +364,13 @@ class _Evaluator:
             if z is None:
                 continue
             flip = 1.0 if side_mode == "follow" else -1.0
+            held = _position_path(z * flip, RECIPE["entry_z"], RECIPE["hold_bars"])
             pnl = _daily_pnl_proxy(z * flip, self.ret, RECIPE["entry_z"], RECIPE["hold_bars"],
-                                   self.risk_frac)
+                                   self.risk_frac, held=held)
+            self.pnls[k] = pnl
             refs = list(self.canon_z.values()) + [v for kk, v in self.zs.items() if kk != k]
             terms = af.evaluate(self._candidate(expr, side_mode, row, z, pnl, refs,
-                                                with_fragility=True),
+                                                with_fragility=True, key=k, position=held),
                                 self.book, cfg=_search_worlds())
             self.terms[k] = terms
             row.update({"fitness": round(terms.score(), 4), "refined": True,
