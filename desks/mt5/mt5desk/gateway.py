@@ -159,6 +159,7 @@ from mt5desk.decision_core import (  # noqa: E402, I001
     allocator_order as allocator_order,
     bracket_spec as bracket_spec,
     day_range as day_range,
+    gold_book_lot as gold_book_lot,
     heat_budget as heat_budget,
     live_heat_ceiling as live_heat_ceiling,
     min_lot_risk_eur as min_lot_risk_eur,
@@ -2374,11 +2375,24 @@ def main() -> None:
                 # `"auto"` IS THE GOLD BOOK AND NOTHING ELSE (`decision_core.roster` gives it to
                 # the three GOLD_WINDOWS rows alone), so this is where the principal's 0.02 floor
                 # binds -- as `max(policy lot, floor)`, never as a replacement for the policy lot.
-                lot = gold_lot(equity, dist, sym) if s["lot"] == "auto" else (
-                    promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,
-                                 s.get("risk_frac"), s.get("decay_faded"),
-                                 from_book=(s.get("sized_by") == "allocator_book"))
-                    if s["lot"] == "auto_ramp" else float(s["lot"]))
+                if s["lot"] == "auto":
+                    # THE ALLOCATOR NOW SIZES THE GOLD BOOK TOO (Tier-1 P1, 2026-09-09). `roster`
+                    # already stamps this row with the optimiser's h_i and bills heat at it; this
+                    # branch used to ignore both and send the policy lot, so the one book that
+                    # trades was the one book the allocator did not size. `gold_book_lot` is
+                    # `max(h_i lot, gold_lot)`: it can only ever raise the size, never lower it,
+                    # which is the principal's standing order in arithmetic.
+                    lot, _lot_basis = gold_book_lot(
+                        equity, dist, sym,
+                        s.get("risk_frac") if s.get("sized_by") == "allocator_book" else None,
+                        s.get("decay_faded"))
+                    log(f"[{s['name']}] gold sizing basis: {_lot_basis}")
+                elif s["lot"] == "auto_ramp":
+                    lot = promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,
+                                       s.get("risk_frac"), s.get("decay_faded"),
+                                       from_book=(s.get("sized_by") == "allocator_book"))
+                else:
+                    lot = float(s["lot"])
                 q_real = realised_q(equity, dist, s["symbol"], sym, lot=lot)
             except Exception as exc:
                 log(f"[{s['name']}] SKIPPED: cannot price {s['symbol']} risk in account "

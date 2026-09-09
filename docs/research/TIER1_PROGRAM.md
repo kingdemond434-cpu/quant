@@ -26,10 +26,10 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 2 Maximum breadth: the eight generators (LLM mechanism, symbolic, evolutionary, RL, residual, regime, causal, execution) | 0 | 0 | 1 | 0 | 23 |
 | 3 Alpha knowledge graph: research, failures, mechanisms, strategies, data, correlations, certificates, live results as one memory | 0 | 0 | 0 | 0 | 8 |
 | 4 Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls | 0 | 0 | 0 | 0 | 14 |
-| 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 3 | 0 | 16 |
+| 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 2 | 0 | 17 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
-| **all** | 3 | 0 | 9 | 0 | 101 |
+| **all** | 3 | 0 | 8 | 0 | 102 |
 
 ## Items
 
@@ -519,14 +519,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 
 ### Phase 5 — Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20%
 
-- **P1 The allocator as it is: objective, heat law, and the path from fraction to order** — PARTIAL · gate: principal
-  - gap: The whole chain is wired and hourly-scheduled, but the one book that has ever sent a live order — the three `"lot": "auto"` GOLD_WINDOWS rows — never reaches the allocator's h_i: gateway.py:2168 branches to `gold_lot` before the `from_book` path, so the allocator can bill gold's heat at h_i while the venue gets fixed-fractional-plus-floor. And on the money box the artifact itself was measured non-existent as of 2026-09-07, so every sleeve fell back to `ramped_fraction`.
-  - desks/mt5/research/pf_allocator.py:1-33 — module docstring: 'THE CAPITAL BRAIN -- robust posterior E[log W] over every validated edge'; 'It solves for PER-SLEEVE HEAT, not weights'; three clocks --mode fast/normal/heavy (MEASURED, from source)
-  - desks/mt5/research/pf_allocator.py:80 — `OUT = BASE / "reports" / "pf_allocation.json"`; :86 `ARMED = BASE / "data" / "PF_ALLOCATOR_ARMED"`; :88 `FORECASTS = BASE / "data" / "pf_forecast_log.jsonl"` (MEASURED)
-  - libs/portfolio/robust_elog.py:114-168 — `WorldConfig` defaults: n_worlds=256, n_rows=384, block_days=5.0, crisis_prob=0.06, crisis_vol_mult=2.5, crisis_common_share=0.55, decay_prob=0.30, cost_uncertainty=0.50, robust_lambda=0.50, cvar_alpha=0.20, redundancy_lambda=0.15, regime_min_days=60, max_elements=12_000_000 (MEASURED)
-  - desks/mt5/mt5desk/gateway_config_fallback.py:94 `HEAT_TARGET = 0.20`; :105 `HEAT_HARD_CEILING = 0.30`; :112 `MAX_SLEEVE_HEAT_SHARE = 0.25`; family cap 60% documented at :113+ (MEASURED)
-  - clock: desks/mt5/research/hourly_cycle.py:1158-1159 leg `pf_allocator` (`_producer("pf_allocator", "desks/mt5/research/pf_allocator.py", "--mode", _allocator_mode_for_the_hour())`, mode chooser at desks/mt5/research/hourly_cycle.py:541), run by MT5-Hourly (desks/mt5/ops/box_tasks.manifest:63, installer desks/mt5/scripts/MT5Hourly.cmd). Not present in ops/crontab.manifest (grep for 'pf_allocator' returns nothing) and not in desks/mt5/scripts/Install-QuantWindows.ps1. · artifact: desks/mt5/reports/pf_allocation.json (+ desks/mt5/data/pf_forecast_log.jsonl, desks/mt5/data/pf_allocator_cache/daily_r.parquet) · consumer: decision_core.allocator_heat/allocator_rank/book_from_allocation → gateway.allocator_heat/allocator_book/cap_by_heat; promoter.allocation_view; missed_growth (ALLOC); allocator_attribution; portfolio_gap
+- **P1 The allocator as it is: objective, heat law, and the path from fraction to order** — LANDED
+  - desks/mt5/mt5desk/decision_core.py — gold_book_lot(): max(the allocator's h_i lot, gold_lot), returning the lot AND the basis that set it (MEASURED)
+  - desks/mt5/mt5desk/gateway.py — the `"auto"` placement branch routes through it, so the optimiser's fraction for a gold window now reaches the venue instead of being computed, billed as heat and discarded (MEASURED)
+  - desks/mt5/tests/test_gold_is_sized_by_the_allocator.py — the lot is never below today's at any fraction from 1e-9 to 1.0; a fraction the optimiser wants larger actually raises it (MEASURED)
+  - clock: MT5-Gateway · artifact: desks/mt5/data/intent_ledger.jsonl; the gateway log's gold sizing basis · consumer: decision_core.allocator_heat/allocator_rank/book_from_allocation → gateway.allocator_heat/allocator_book/cap_by_heat; promoter.allocation_view; missed_growth (ALLOC); allocator_attribution; portfolio_gap
   - next: In desks/mt5/mt5desk/gateway.py:2168, let the gold branch take the allocator's fraction when one exists — `promoted_lot(..., from_book=True)` with `risk_frac=_book[name]` — and keep `max(that lot, gold_min_lot())` so the 0.02 floor still binds upward. Gold then gets whatever h_i the optimiser earned it (which on the last recorded solve was 1.7% of a 20.5% book) and can never be sized below the floor.
+  - landed: this commit
 - **P2 Marginal-Elog admission as THE capital criterion** — LANDED
   - desks/mt5/research/pf_allocator.py — per-candidate warm-start budget with a solve deadline in robust_elog.optimise (MEASURED)
   - clock: hourly_cycle:pf_allocator · artifact: desks/mt5/reports/pf_allocation.json · consumer: promoter.allocation_view → admission_of → capital_verdict → reconcile_capital → data/sleeves.json → gateway.load_sleeves

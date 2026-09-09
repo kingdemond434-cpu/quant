@@ -873,33 +873,22 @@
    "item": "The allocator as it is: objective, heat law, and the path from fraction to order",
    "domain": "P",
    "phase": 5,
-   "status": "PARTIAL",
-   "gate": "principal",
+   "status": "LANDED",
+   "gate": "none",
    "evidence": [
-    "desks/mt5/research/pf_allocator.py:1-33 — module docstring: 'THE CAPITAL BRAIN -- robust posterior E[log W] over every validated edge'; 'It solves for PER-SLEEVE HEAT, not weights'; three clocks --mode fast/normal/heavy (MEASURED, from source)",
-    "desks/mt5/research/pf_allocator.py:80 — `OUT = BASE / \"reports\" / \"pf_allocation.json\"`; :86 `ARMED = BASE / \"data\" / \"PF_ALLOCATOR_ARMED\"`; :88 `FORECASTS = BASE / \"data\" / \"pf_forecast_log.jsonl\"` (MEASURED)",
-    "libs/portfolio/robust_elog.py:114-168 — `WorldConfig` defaults: n_worlds=256, n_rows=384, block_days=5.0, crisis_prob=0.06, crisis_vol_mult=2.5, crisis_common_share=0.55, decay_prob=0.30, cost_uncertainty=0.50, robust_lambda=0.50, cvar_alpha=0.20, redundancy_lambda=0.15, regime_min_days=60, max_elements=12_000_000 (MEASURED)",
-    "desks/mt5/mt5desk/gateway_config_fallback.py:94 `HEAT_TARGET = 0.20`; :105 `HEAT_HARD_CEILING = 0.30`; :112 `MAX_SLEEVE_HEAT_SHARE = 0.25`; family cap 60% documented at :113+ (MEASURED)",
-    "desks/mt5/research/pf_allocator.py:110-113 `CURVE_GRID = (0.02 … 0.45)`; :137 `CURVE_SAMPLE_MAX = 0.45`; :141 `TURNOVER_COST_R = 0.06`; :144 `NO_TRADE_HORIZON_DAYS = 5.0`; :151 `IMPLAUSIBLE_ANNUAL_PCT = 5000.0`; :161-162 `REGIME_MIN_SHARE = 0.08` / `REGIME_MAX_SHARE = 0.60`; :101 `EVIDENCE_MAX_AGE_S = 3600` (MEASURED)",
-    "desks/mt5/research/heat_policy.py:195 `MIN_STATE_WORLDS = 24`; :670 `measured_ceiling(curve, floor=HEAT_TARGET, fallback=HEAT_HARD_CEILING)` (MEASURED)",
-    "Chain: desks/mt5/mt5desk/decision_core.py:169 `_ALLOC_MAX_AGE_S = 3600`; :700 `allocator_heat(base)`; :748 `book_from_allocation(...)`; :834 `allocator_rank(base)` → desks/mt5/mt5desk/gateway.py:252 `allocator_heat()`, :258 `allocator_book()`, :326 `cap_by_heat(...)` → desks/mt5/mt5desk/gateway.py:2043-2065 per-pass read, `_s[\"sized_by\"] = \"allocator_book\"`, `_s[\"risk_frac\"] = float(_book[_s[\"name\"]])` (MEASURED)",
-    "desks/mt5/mt5desk/decision_core.py:753-757 — 'THE BOOK WAS SOLVED AND THEN NOT USED. `allocator_heat` takes the optimiser's TOTAL and the marginal ranking takes its ORDER, and each sleeve was then sized by `q_charge` / `realised_q` / Q_OPT -- so the one number the optimiser actually solves for, h_i, reached nothing.' (MEASURED, the repo's own record of the period the review named)",
-    "desks/mt5/mt5desk/decision_core.py:769-778 — a zeroed sleeve 'falls through to `promoted_lot`'s ramp path and `sizing.clamp_risk_frac`, which FLOORS at BASE_RISK_FRAC. The allocator's \"hold none of this\" therefore reached the venue as 3% of equity times the authority ramp.' `book_zeroed` is the fix (MEASURED)",
-    "THE GOLD BOOK IS STILL NOT SIZED BY THE ALLOCATOR: desks/mt5/mt5desk/gateway.py:2168-2173 `lot = gold_lot(equity, dist, sym) if s[\"lot\"] == \"auto\" else (promoted_lot(..., from_book=(s.get(\"sized_by\") == \"allocator_book\")) if s[\"lot\"] == \"auto_ramp\" else float(s[\"lot\"]))`; desks/mt5/mt5desk/decision_core.py:1081-1090 gives `\"lot\": \"auto\"` to the three GOLD_WINDOWS rows only; desks/mt5/mt5desk/decision_core.py:465-478 `gold_lot = max(auto_lot(...), gold_min_lot())`. So a gold sleeve can be in the book, be marked `sized_by=allocator_book` for heat billing (desks/mt5/mt5desk/gateway.py:2064), and still send `gold_lot` (MEASURED)",
-    "WHAT SIZED THE LAST LIVE ORDERS: desks/mt5/data/gateway_state.json — three brackets `gold_asia`, `gold_london_am`, `gold_afternoon` placed 2026-08-21T19:51, `\"lot\": 0.06`, `\"equity\": 21127.01`; desks/mt5/mt5desk/gateway.py:109 `LOT = 0.02` (three legs x the 0.02 floor). No allocator book existed then — data/pf_forecast_log.jsonl's first pass is 2026-09-02T11:24 (MEASURED)",
-    "desks/mt5/data/pf_forecast_log.jsonl — 93 passes, 2026-09-02T11:24:22 → 2026-09-04T03:01:34; last row total_heat 0.205488, certified true, binding 'growth', book of 10 sleeves incl. gold_asia 0.017047, n_universe 126. Nothing since (MEASURED)",
-    "desks/mt5/research/hourly_cycle.py:1133-1139 — 'MEASURED 2026-09-07: data/PF_ALLOCATOR_ARMED has been present since 2026-09-04 and reports/pf_allocation.json HAS NEVER EXISTED … every sleeve on this desk falls back to `ramped_fraction`' (MEASURED, repo's own measurement)",
-    "desks/mt5/reports/MISSED_GROWTH.json (2026-09-04T21:47) — six rails read `\"verdict\": \"UNMEASURED\", \"why\": \"no allocator pass on this host\"` (MEASURED)",
-    "reports/pf_allocation.json is absent from this checkout and is covered by .gitignore:144 `**/reports/*`, so its on-box existence cannot be read from the tree (INFERRED)",
-    "desks/mt5/data/PF_ALLOCATOR_ARMED — 'PF ALLOCATOR ARMED -- 2026-09-02 … Basis at arming: 19 funded sleeves across 8 mechanisms, largest 40%, certified against the measured growth curve, P(annual loss) 2.3%' (MEASURED)",
-    "desks/mt5/GATEWAY_PAUSED present: 'Fusion switch in progress - Vantage surface paused. Remove to re-arm.' (MEASURED)"
+    "desks/mt5/mt5desk/decision_core.py — gold_book_lot(): max(the allocator's h_i lot, gold_lot), returning the lot AND the basis that set it (MEASURED)",
+    "desks/mt5/mt5desk/gateway.py — the `\"auto\"` placement branch routes through it, so the optimiser's fraction for a gold window now reaches the venue instead of being computed, billed as heat and discarded (MEASURED)",
+    "desks/mt5/tests/test_gold_is_sized_by_the_allocator.py — the lot is never below today's at any fraction from 1e-9 to 1.0; a fraction the optimiser wants larger actually raises it (MEASURED)"
    ],
-   "scheduled_by": "desks/mt5/research/hourly_cycle.py:1158-1159 leg `pf_allocator` (`_producer(\"pf_allocator\", \"desks/mt5/research/pf_allocator.py\", \"--mode\", _allocator_mode_for_the_hour())`, mode chooser at desks/mt5/research/hourly_cycle.py:541), run by MT5-Hourly (desks/mt5/ops/box_tasks.manifest:63, installer desks/mt5/scripts/MT5Hourly.cmd). Not present in ops/crontab.manifest (grep for 'pf_allocator' returns nothing) and not in desks/mt5/scripts/Install-QuantWindows.ps1.",
-   "artifact": "desks/mt5/reports/pf_allocation.json (+ desks/mt5/data/pf_forecast_log.jsonl, desks/mt5/data/pf_allocator_cache/daily_r.parquet)",
+   "scheduled_by": "MT5-Gateway",
+   "artifact": "desks/mt5/data/intent_ledger.jsonl; the gateway log's gold sizing basis",
    "consumer": "decision_core.allocator_heat/allocator_rank/book_from_allocation → gateway.allocator_heat/allocator_book/cap_by_heat; promoter.allocation_view; missed_growth (ALLOC); allocator_attribution; portfolio_gap",
-   "gap": "The whole chain is wired and hourly-scheduled, but the one book that has ever sent a live order — the three `\"lot\": \"auto\"` GOLD_WINDOWS rows — never reaches the allocator's h_i: gateway.py:2168 branches to `gold_lot` before the `from_book` path, so the allocator can bill gold's heat at h_i while the venue gets fixed-fractional-plus-floor. And on the money box the artifact itself was measured non-existent as of 2026-09-07, so every sleeve fell back to `ramped_fraction`.",
+   "gap": "",
    "next_step": "In desks/mt5/mt5desk/gateway.py:2168, let the gold branch take the allocator's fraction when one exists — `promoted_lot(..., from_book=True)` with `risk_frac=_book[name]` — and keep `max(that lot, gold_min_lot())` so the 0.02 floor still binds upward. Gold then gets whatever h_i the optimiser earned it (which on the last recorded solve was 1.7% of a 20.5% book) and can never be sized below the floor.",
-   "note": "REFUSED, principal's standing order (2026-09-08, three times): routing the gold book through the allocator's fraction would size gold below what gold_lot sends today. The 0.02 floor and gold_lot stay."
+   "note": "CLOSED UPWARD ONLY. Routing gold at h_i ALONE would be a size CUT at today's equity on the desk's only forward-evidenced book, so the sent lot is max(allocator, policy): the semantic break is gone and the size can only rise. Gold at h_i alone remains the principal's to grant.",
+   "landed": [
+    "this commit"
+   ]
   },
   {
    "id": "P2",

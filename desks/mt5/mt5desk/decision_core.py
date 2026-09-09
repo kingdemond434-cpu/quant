@@ -478,6 +478,56 @@ def gold_lot(equity: float, dist_usd: float | None = None,
     return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot()))
 
 
+def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
+                  h_i: object, decay_faded: object = None) -> tuple[float, str]:
+    """The gold book's lot when the ALLOCATOR has a fraction for it: `max(h_i lot, gold_lot)`.
+
+    THE SEMANTIC BREAK THIS CLOSES (Tier-1 P1, external audit 2026-09-09). The gold windows are
+    the only book that has ever sent a live order, and they were the one book the allocator did
+    not size. `gateway.roster` already stamps `sized_by = "allocator_book"` and `risk_frac = h_i`
+    on a gold row whenever the certified book contains it -- every other sleeve then reaches
+    `promoted_lot(..., from_book=True)` -- but the placement site tests `lot == "auto"` FIRST, so
+    gold fell through to `gold_lot` and the optimiser's own fraction for it was computed, billed
+    as heat, and thrown away at the venue. An alpha could belong to the optimiser's book while
+    the order quantity was decided somewhere else, which is exactly the source-to-money break the
+    programme exists to remove.
+
+    WHY `max` AND NOT THE ALLOCATOR'S FRACTION ALONE. The principal's standing order, given three
+    times (2026-09-08), is that the desk never reduces its aggressiveness, only its dynamicness.
+    At today's equity the allocator's fraction for a gold window resolves BELOW what `gold_lot`
+    sends, so handing the venue h_i alone would be a size CUT on the desk's only forward-evidenced
+    book, delivered under the banner of better sizing. `max` closes the break in the direction
+    that can only ever help: when the optimiser wants MORE gold than fixed-fractional sizing asks
+    for -- the growth case, and the whole reason h_i exists -- gold gets more, and when it wants
+    less, gold is sized exactly as it is today. Routing gold at h_i ALONE remains refused and
+    remains the principal's to grant.
+
+    Returns `(lot, basis)`. The basis names which term won, so the log and the intent row can say
+    whether the allocator or the floor set the size -- a lot with no stated basis is the thing
+    this desk keeps having to re-measure.
+    """
+    floor_lot = gold_lot(equity, dist_usd, info)
+    try:
+        frac = float(h_i)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return floor_lot, "gold_lot: the allocator's fraction is not a number"
+    if not (frac > 0.0):
+        # ZERO IS AN ANSWER EVERYWHERE ELSE AND MUST NOT BE ONE HERE. `allocator_book` carries a
+        # zeroed sleeve at 0.0 so the gateway's skip path fires -- but for gold that skip would
+        # be a size cut to nothing on the book the principal's order protects. Gold falls back to
+        # its own policy lot and the basis says the allocator declined.
+        return floor_lot, "gold_lot: the allocator gave this window no heat"
+    # The same q the heat ledger bills for this row (`q_charge` above): fraction x fade, capped
+    # by the outer per-trade envelope. Reduce-only inputs stay reduce-only; the `max` below is
+    # what guarantees the result is never smaller than today's.
+    q_eff = min(frac, MAX_RISK_FRAC) * decay_factor(decay_faded)
+    book = auto_lot(equity, dist_usd, GOLD_SYMBOL, info, q=q_eff)
+    if book > floor_lot:
+        return book, f"allocator_book h_i={frac:.4f} (q_eff {q_eff:.4f}) above the gold policy lot"
+    return floor_lot, (f"gold_lot: policy/floor {floor_lot:.2f} at or above the allocator's "
+                       f"{book:.2f} (h_i={frac:.4f})")
+
+
 def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) -> float:
     """The effective risk fraction of a NON-BOOK promoted sleeve: base clamp x authority x fade.
 

@@ -844,8 +844,20 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "_logs": logs, "_decisions": decisions, "_intents": intents, "_calls": calls,
         "_state_file": state_file,
     }
+    # `_sleeve_identity` rides along for the same reason it does in the family harness above: the
+    # send site spreads it onto the intent row and it is pure over the sleeve dict.
+    #
+    # IT WAS MISSING AND THE GAP WAS INVISIBLE (found 2026-09-09 while routing the allocator's
+    # fraction into the gold book). The gold branch used to call `gold_lot`, a `def` in
+    # gateway.py that is NOT in this name list, so it raised NameError inside the placement
+    # try/except on EVERY pass, logged SKIPPED and continued -- and this test's "sends nothing"
+    # passed because nothing was ever sized, not because the recovery worked. The moment the
+    # branch called an IMPORTED helper instead, the slice resolved it, the real path ran, and the
+    # missing name surfaced. A green test that never reached the code it names is worse than a
+    # red one.
     return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
-                  "_rejection_streak_expired", "load_state", "save_state", "now"), ns)
+                  "_rejection_streak_expired", "load_state", "save_state", "now",
+                  "_sleeve_identity"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
