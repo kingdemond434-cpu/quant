@@ -243,7 +243,7 @@
         "repo": "griddaimyorun/Metatraider-Traiding-Bot",
         "url": "https://github.com/griddaimyorun/Metatraider-Traiding-Bot",
         "description": "Production-ready MetaTrader 5 (MT5) algorithmic trading bot framework. Features automated execution, real-time market data integration via Python API, risk management, and backtesting infrastructure for systematic strategies.",
-        "stars": 1028,
+        "stars": 1103,
         "language": null,
         "symbols": [],
         "patterns": [
@@ -495,8 +495,8 @@
         "title": "Trade",
         "url": "",
         "symbols": [
-          "XAUUSD",
-          "GBPUSD"
+          "GBPUSD",
+          "XAUUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -540,9 +540,9 @@
         "title": "I built an open-source MT5 visual replacer for backtesting \u2014 looking for honest feedback before I take it further",
         "url": "",
         "symbols": [
-          "XAUUSD",
           "EURUSD",
-          "GBPUSD"
+          "GBPUSD",
+          "XAUUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -564,8 +564,8 @@
         "title": "FINAL UPDATE: Turning Around a 1$ blown account",
         "url": "",
         "symbols": [
-          "XAUUSD",
-          "DXY"
+          "DXY",
+          "XAUUSD"
         ],
         "patterns": [
           "EMA"
@@ -962,14 +962,14 @@
         "source": "cnn_fear_greed",
         "type": "sentiment_reading",
         "reading": "neutral",
-        "score": 40.8857142857143,
+        "score": 40.4857142857143,
         "rating": "fear",
         "symbols": [
           "US500",
           "NAS100"
         ],
         "confidence": 0.3,
-        "description": "Fear & Greed: 40.8857142857143 (fear)"
+        "description": "Fear & Greed: 40.4857142857143 (fear)"
       }
     ]
   },

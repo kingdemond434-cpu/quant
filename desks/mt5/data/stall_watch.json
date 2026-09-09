@@ -1,28 +1,33 @@
 {
-    "free_gb":  12.7,
-    "checked_at":  "2026-09-09T15:55:45.8469407Z",
+    "free_gb":  12.6,
+    "checked_at":  "2026-09-09T16:31:16.2258353Z",
     "actions":  [
                     "FAILING MT5-Shadow: last result 1 twice in a row -- re-run",
+                    "FAILING MT5-Hourly: last result 1 twice in a row -- re-run",
                     "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
-                    "FAILING MT5-ResearchSupervisor: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)"
+                    "FAILING MT5-ResearchSupervisor: last result 1 twice in a row -- re-run"
                 ],
     "low_mem_strikes":  0,
     "procs":  {
+                  "external_gauntlet.7300":  {
+                                                 "cpu":  127.15625,
+                                                 "at":  "2026-09-09T18:30:33.1599865+02:00"
+                                             },
                   "fail.MT5-MoatRecorder":  {
                                                 "cpu":  1,
-                                                "at":  "2026-09-09T17:50:41.7126717+02:00"
+                                                "at":  "2026-09-09T18:30:33.1599865+02:00"
                                             },
-                  "external_gauntlet.2056":  {
-                                                 "cpu":  314.875,
-                                                 "at":  "2026-09-09T17:50:41.7126717+02:00"
-                                             },
-                  "fail.MT5-Shadow":  {
-                                          "cpu":  1,
-                                          "at":  "2026-09-09T17:50:41.7126717+02:00"
-                                      },
                   "fail.MT5-ResearchSupervisor":  {
                                                       "cpu":  1,
-                                                      "at":  "2026-09-09T17:50:41.7126717+02:00"
-                                                  }
+                                                      "at":  "2026-09-09T18:30:33.1599865+02:00"
+                                                  },
+                  "fail.MT5-Shadow":  {
+                                          "cpu":  1,
+                                          "at":  "2026-09-09T18:30:33.1599865+02:00"
+                                      },
+                  "fail.MT5-Hourly":  {
+                                          "cpu":  1,
+                                          "at":  "2026-09-09T18:30:33.1599865+02:00"
+                                      }
               }
 }
