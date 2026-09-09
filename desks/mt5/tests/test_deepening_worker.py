@@ -191,6 +191,110 @@ def test_a_seat_error_is_reported_never_raised() -> None:
     assert found == {} and "budget exhausted" in why
 
 
+# ------------------------------------------------- the score has a denominator now
+
+class TestCostDenominator:
+    """`voi_order` had no cost term: a task worth 2 that takes 40 seconds of seat time sat ahead
+    of one worth 1.5 that takes 3. The score is now divided by the class's MEASURED mean wall
+    seconds, read through `compute_ledger.cost_by_run` from the worked ledger's own rows; an
+    uncosted class divides by 1.0 so the order is exactly what it was."""
+
+    def test_a_cheaper_class_of_equal_worth_is_worked_first(self) -> None:
+        a = dict(_TASK, kind="fund_claim", title="a")
+        b = dict(_TASK, kind="coverage_gap", title="b")
+        one = lambda t: 1.0                                                   # noqa: E731
+        costs = {"deepen:fund_claim": 40.0, "deepen:coverage_gap": 4.0}
+        assert [t["title"] for t in dw.voi_order([a, b], costs=costs, scorer=one)] == ["b", "a"]
+        flipped = {"deepen:fund_claim": 4.0, "deepen:coverage_gap": 40.0}
+        assert [t["title"] for t in dw.voi_order([a, b], costs=flipped, scorer=one)] == ["a", "b"]
+
+    def test_an_uncosted_queue_orders_exactly_as_before(self) -> None:
+        tasks = [dict(_TASK, title=f"t{i}", kind="k") for i in range(6)]
+        ref = sorted(tasks, key=lambda t: (-1.0, dw.task_id(t)))
+        assert dw.voi_order(tasks, costs={}, scorer=lambda t: 1.0) == ref
+        assert dw.voi_order(tasks, costs=None, scorer=lambda t: 1.0) == ref
+        assert dw.voi_order(tasks, costs={"deepen:other": 99.0}, scorer=lambda t: 1.0) == ref
+
+    def test_a_sub_second_class_is_floored_not_promoted_by_clock_noise(self) -> None:
+        a = dict(_TASK, kind="x", title="a")
+        b = dict(_TASK, kind="y", title="b")
+        costs = {"deepen:x": 0.01, "deepen:y": dw.MIN_TASK_COST_S}
+        got = dw.voi_order([a, b], costs=costs, scorer=lambda t: 1.0)
+        assert got == sorted([a, b], key=dw.task_id), "0.01s and 1.0s must tie at the floor"
+
+    def test_task_costs_reads_the_worked_ledger_through_cost_by_run(self, tmp_path,
+                                                                    monkeypatch) -> None:
+        from datetime import UTC, datetime
+        now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        led = tmp_path / "worked.jsonl"
+        led.write_text("\n".join([
+            json.dumps({"id": "old", "at": now, "disposition": "REJECTED"}),   # pre-stamp row
+            json.dumps({"id": "a", "at": now, "run": "deepen:fund_claim", "wall_s": 10.0}),
+            json.dumps({"id": "b", "at": now, "run": "deepen:fund_claim", "wall_s": 30.0}),
+            json.dumps({"id": "c", "at": now, "run": "deepen:anomaly", "wall_s": 0.0}),
+        ]) + "\n", encoding="utf-8")
+        monkeypatch.setattr(dw, "WORKED", led)
+        costs, basis = dw.task_costs()
+        assert costs == {"deepen:fund_claim": 20.0}, "a class at 0.0s is not a measurement"
+        assert basis.startswith("measured") and "cost_by_run" in basis
+
+    def test_no_costed_rows_is_uncosted_and_says_the_order_is_unchanged(self, tmp_path,
+                                                                        monkeypatch) -> None:
+        monkeypatch.setattr(dw, "WORKED", tmp_path / "none.jsonl")
+        costs, basis = dw.task_costs()
+        assert costs == {} and basis.startswith("uncosted") and "unchanged" in basis
+
+    def test_controller_variant_is_read_when_present_else_none(self, tmp_path,
+                                                                monkeypatch) -> None:
+        monkeypatch.setattr(dw, "BUDGET", tmp_path / "research_budget.json")
+        assert dw.controller_variant() is None
+        dw.BUDGET.write_text(json.dumps({"shares": {}, "controller_variant": "B"}), "utf-8")
+        assert dw.controller_variant() == "B"
+        dw.BUDGET.write_text(json.dumps({"shares": {}}), "utf-8")
+        assert dw.controller_variant() is None, "absence is None, not a default arm"
+
+    def _isolate(self, tmp_path, monkeypatch, tasks: list[dict], variant: str | None) -> None:
+        q = tmp_path / "queue.json"
+        q.write_text(json.dumps({"tasks": tasks}), "utf-8")
+        monkeypatch.setattr(dw, "DEEPEN", q)
+        monkeypatch.setattr(dw, "WORKED", tmp_path / "worked.jsonl")
+        monkeypatch.setattr(dw, "OUT", tmp_path / "deepened.json")
+        monkeypatch.setattr(dw, "LOG", tmp_path / "log.txt")
+        monkeypatch.setattr(dw, "LOCK", tmp_path / ".lock")
+        monkeypatch.setattr(dw, "BUDGET", tmp_path / "research_budget.json")
+        if variant is not None:
+            dw.BUDGET.write_text(json.dumps({"controller_variant": variant}), "utf-8")
+        monkeypatch.setattr(dw, "known_symbols", lambda: set())
+        monkeypatch.setattr(dw, "work_task", lambda task, universe: ([], "REJECTED: test"))
+
+    def test_the_worked_row_carries_class_seconds_basis_and_variant(self, tmp_path,
+                                                                    monkeypatch) -> None:
+        self._isolate(tmp_path, monkeypatch,
+                      [dict(_TASK, kind="fund_claim", title="first")], variant="B")
+        assert dw.main([]) == 0
+        rows = [json.loads(ln) for ln in dw.WORKED.read_text("utf-8").splitlines() if ln]
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["run"] == "deepen:fund_claim" and row["kind"] == "fund_claim"
+        assert isinstance(row["wall_s"], float) and row["wall_s"] >= 0.0
+        assert row["cost_basis"] == "uncosted:1.0", "nothing measured yet: the order was unchanged"
+        assert row["controller_variant"] == "B"
+        assert row["disposition"] == "REJECTED: test", "the existing fields are untouched"
+
+    def test_the_next_run_prices_the_class_from_the_rows_the_last_one_wrote(self, tmp_path,
+                                                                            monkeypatch) -> None:
+        from datetime import UTC, datetime
+        self._isolate(tmp_path, monkeypatch,
+                      [dict(_TASK, kind="fund_claim", title="second")], variant=None)
+        dw.WORKED.write_text(json.dumps({
+            "id": "earlier", "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "run": "deepen:fund_claim", "wall_s": 12.0}) + "\n", "utf-8")
+        assert dw.main([]) == 0
+        rows = [json.loads(ln) for ln in dw.WORKED.read_text("utf-8").splitlines() if ln]
+        assert rows[-1]["cost_basis"] == "measured:deepen:fund_claim:12.00s"
+        assert rows[-1]["controller_variant"] is None, "no variant in the budget file: None"
+
+
 # ------------------------------------------------- one queue, two schedules, one run at a time
 
 class TestSingleFlight:

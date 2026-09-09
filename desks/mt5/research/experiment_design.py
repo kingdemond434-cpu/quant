@@ -51,6 +51,26 @@ from typing import Any
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
 REPORT = BASE / "reports" / "EXPERIMENT_DESIGN.json"
+#: The gauntlet's own report: every cell it judged this sweep and every cell its fresh-build
+#: budget did not reach, the latter published as `NOT_RUN_BUILD_BUDGET_DEFERRED` verdicts
+#: (desks/mt5/scripts/external_gauntlet.py:1561-1570). Those deferred cells ARE the desk's real
+#: experiment queue, and until 2026-09-09 this module scored four hand-typed rows instead.
+GATES_EXTERNAL = BASE / "reports" / "universal_gates_external.json"
+DEFERRED_STATUS = "NOT_RUN_BUILD_BUDGET_DEFERRED"
+
+#: Seconds one UNCACHED gauntlet cell costs to build. Not measured here and not invented here:
+#: it is the figure `external_gauntlet.py` records in its own budget derivation -- "At ~22
+#: seconds per uncached cell and ~3,700 uncached cells, a full cold sweep is roughly 22 hours"
+#: (external_gauntlet.py:66-67) and "the build is ~22s a cell" (:188). When the report's own
+#: `prewarm` summary carries warmed cells and the seconds they took, THAT measurement is used
+#: and the basis says so; this constant is the cited fallback.
+GAUNTLET_CELL_BUILD_S = 22.0
+#: Rows of the EVSI-ordered docket published in the report. The docket has run to 7,648 deferred
+#: cells (external_gauntlet.py:1438-1439); the full ranking is computed and its size stated, the
+#: head is published. A reader wants the front of the queue, not a 2MB artifact.
+PUBLISHED_ROWS = 400
+#: How far into each ordering the head comparison looks.
+HEAD = 20
 
 #: An experiment whose EVSI is below this is not queued. Not zero: an experiment worth a
 #: vanishing amount still costs a slot, and a queue full of near-zero items is a queue nobody
@@ -223,22 +243,192 @@ def at_our_capital(edge_bp: float, adv_lots: float,
     }
 
 
+#: The four hand-typed standing questions. The FALLBACK when the gauntlet report is absent,
+#: labelled as such in the artifact; never the queue when the real docket is on disk.
+HAND_TYPED: tuple[Experiment, ...] = (
+    Experiment("recertify_unrunnable_certificates", 0.9, 0.20, 2.0,
+               falsifies="that the certificates carry a runnable parameterisation"),
+    Experiment("widen_timeframe_ladder_to_M5", 0.6, 0.15, 6.0,
+               falsifies="that sub-hourly mechanisms survive the ten gates"),
+    Experiment("re_backtest_every_certificate_again", 0.02, 0.30, 40.0),
+    Experiment("measure_markout_on_recorded_fills", 0.8, 0.25, 1.0,
+               falsifies="that execution gives back less than the edge"),
+)
+
+
+def _json(path: Path) -> dict[str, Any]:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def deferred_cells(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """The cells the last sweep's build budget did not reach, IN THE SWEEP'S OWN ORDER.
+
+    The gauntlet defers in its starvation-rotation order (longest-unbuilt symbol first,
+    external_gauntlet.py:1453-1458), so the position here is the cell's place in the existing
+    rotation and is kept beside its EVSI rank rather than replaced by it.
+    """
+    return [v for v in (report.get("verdicts") or [])
+            if isinstance(v, dict) and v.get("downstream_status") == DEFERRED_STATUS]
+
+
+def family_rates(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """P(certify | family) and the mean expected value of a family's survivors, from the cells
+    the SAME report judged. Laplace-smoothed: (k + 1) / (n + 2), so a family with no judged
+    cell reads as the uninformed 0.5 rather than as certain either way, and `_pooled` carries
+    the report-wide rate for cells whose family has nothing judged."""
+    judged: dict[str, list[dict[str, Any]]] = {}
+    for v in report.get("verdicts") or []:
+        if not isinstance(v, dict) or not isinstance(v.get("passed"), bool) or v.get("unmeasured"):
+            continue
+        judged.setdefault(str(v.get("family") or ""), []).append(v)
+    out: dict[str, dict[str, Any]] = {}
+    all_rows: list[dict[str, Any]] = []
+    for fam, rows in judged.items():
+        all_rows.extend(rows)
+        out[fam] = _rate(rows)
+    out["_pooled"] = _rate(all_rows)
+    return out
+
+
+def _rate(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    n = len(rows)
+    k = sum(1 for r in rows if r.get("passed") is True)
+    evs = []
+    for r in rows:
+        if r.get("passed") is True:
+            ev = ((r.get("stages") or {}).get("expected_value") or {}).get("ev")
+            if isinstance(ev, (int, float)) and math.isfinite(float(ev)):
+                evs.append(float(ev))
+    return {"judged": n, "passed": k, "p_certify": round((k + 1) / (n + 2), 6),
+            "mean_ev": (round(sum(evs) / len(evs), 6) if evs else None)}
+
+
+def cell_cost_seconds(report: dict[str, Any]) -> tuple[float, str]:
+    """Seconds per fresh cell: the report's own prewarm measurement when it carries one, else the
+    figure the gauntlet cites for itself."""
+    pw = report.get("prewarm") or {}
+    try:
+        warmed, secs = int(pw.get("warmed") or 0), float(pw.get("seconds") or 0.0)
+    except (TypeError, ValueError):
+        warmed, secs = 0, 0.0
+    if warmed > 0 and secs > 0:
+        return secs / warmed, (f"measured: {secs:.0f}s over {warmed} cell(s) warmed by this "
+                               f"report's own prewarm pool")
+    return GAUNTLET_CELL_BUILD_S, (f"cited: ~{GAUNTLET_CELL_BUILD_S:.0f}s per uncached cell, "
+                                   "external_gauntlet.py:66-67 and :188; no prewarm measurement "
+                                   "in the report")
+
+
+def docket_experiments(report: dict[str, Any]) -> tuple[list[Experiment], dict[str, Any]]:
+    """One Experiment per deferred gauntlet cell, priced at the gauntlet's own cost per cell.
+
+    P(changes the decision) is P(certify | family): a cell that fails changes nothing the desk
+    does (it is already not traded), a cell that certifies enters the canon. The decision's
+    value is the mean expected value of the family's survivors in the same report -- the
+    report-wide mean when the family has none, and UNMEASURED (scored at 0) when no survivor in
+    the report carries one, which the basis says out loud rather than inventing a figure.
+    """
+    cells = deferred_cells(report)
+    rates = family_rates(report)
+    pooled = rates.get("_pooled") or _rate([])
+    cost_s, cost_basis = cell_cost_seconds(report)
+    hours = cost_s / 3600.0
+    value_unmeasured = 0
+    exps: list[Experiment] = []
+    for v in cells:
+        fam = str(v.get("family") or "")
+        r = rates.get(fam) or {}
+        p = float(r.get("p_certify") if r.get("judged") else pooled["p_certify"])
+        value = r.get("mean_ev") if r.get("mean_ev") is not None else pooled.get("mean_ev")
+        if value is None:
+            value_unmeasured += 1
+            value = 0.0
+        exps.append(Experiment(
+            name=f"gauntlet_cell:{v.get('cell')}", p_changes_decision=p,
+            decision_value=float(value), cost_hours=hours,
+            falsifies=f"that {v.get('sym')} {fam} survives the ten gates"))
+    meta = {
+        "n_deferred": len(cells), "cost_s_per_cell": round(cost_s, 3), "cost_basis": cost_basis,
+        "p_basis": ("P(certify | family) = (passed + 1) / (judged + 2) over the cells this "
+                    "report judged; the report-wide rate when the family has none judged"),
+        "value_basis": ("mean stages.expected_value.ev of the family's survivors in this report; "
+                        "report-wide mean when the family has none"
+                        + (f"; {value_unmeasured} cell(s) scored at 0.0 because no survivor "
+                           f"carries an ev -- UNMEASURED, not worthless" if value_unmeasured
+                           else "")),
+        "family_rates": {k: v for k, v in rates.items() if k != "_pooled"},
+        "pooled_rate": pooled,
+    }
+    return exps, meta
+
+
+def docket_view(cells: list[dict[str, Any]], scored: list[dict[str, Any]],
+                exps: list[Experiment]) -> dict[str, Any]:
+    """The EVSI order beside the rotation order: every row carries both ranks."""
+    by_name = {e.name: (i, e) for i, e in enumerate(exps)}
+    rows = []
+    for r in scored:
+        i, e = by_name[r["name"]]
+        rows.append({"cell": cells[i].get("cell"), "sym": cells[i].get("sym"),
+                     "family": cells[i].get("family"), "evsi": r["evsi"], "queue": r["queue"],
+                     "p_changes_decision": round(e.p_changes_decision, 6),
+                     "decision_value": round(e.decision_value, 6),
+                     "cost_hours": round(e.cost_hours, 8), "rotation_rank": i})
+    rows.sort(key=lambda x: (-x["evsi"], x["rotation_rank"]))
+    for j, row in enumerate(rows):
+        row["evsi_rank"] = j
+    head_evsi = {row["cell"] for row in rows[:HEAD]}
+    head_rot = {c.get("cell") for c in cells[:HEAD]}
+    return {
+        "order": "EVSI descending, ties by rotation rank",
+        "n_rows": len(rows), "n_published": min(len(rows), PUBLISHED_ROWS),
+        "n_queued": sum(1 for r in rows if r["queue"]),
+        "head_overlap": {"head": HEAD, "cells_in_both_heads": len(head_evsi & head_rot),
+                         "why": ("how many of the next HEAD cells the rotation would build are "
+                                 "also in the EVSI head; the rotation stays the builder's order "
+                                 "(frame-cache locality, anti-starvation) and this is the view "
+                                 "beside it")},
+        "rows": rows[:PUBLISHED_ROWS],
+    }
+
+
 def run() -> dict[str, Any]:
-    """A worked pass over the desk's own standing questions."""
-    queue = [
-        Experiment("recertify_unrunnable_certificates", 0.9, 0.20, 2.0,
-                   falsifies="that the certificates carry a runnable parameterisation"),
-        Experiment("widen_timeframe_ladder_to_M5", 0.6, 0.15, 6.0,
-                   falsifies="that sub-hourly mechanisms survive the ten gates"),
-        Experiment("re_backtest_every_certificate_again", 0.02, 0.30, 40.0),
-        Experiment("measure_markout_on_recorded_fills", 0.8, 0.25, 1.0,
-                   falsifies="that execution gives back less than the edge"),
-    ]
+    """A worked pass over the desk's REAL experiment queue, with the standing questions as the
+    labelled fallback when the gauntlet report is not on disk."""
+    report = _json(GATES_EXTERNAL)
+    cells = deferred_cells(report)
+    if cells:
+        queue, docket_meta = docket_experiments(report)
+        queue_basis = "GAUNTLET_DEFERRED_CELLS"
+        queue_why = (f"{len(cells)} cell(s) published as {DEFERRED_STATUS} in "
+                     f"{GATES_EXTERNAL.name} (swept {report.get('swept_at')})")
+    else:
+        queue, docket_meta = list(HAND_TYPED), {}
+        queue_basis = "HAND_TYPED_FALLBACK"
+        queue_why = (f"{GATES_EXTERNAL.name} is absent or unreadable; the four standing "
+                     "questions are scored instead and this label says so"
+                     if not report else
+                     f"{GATES_EXTERNAL.name} carries no {DEFERRED_STATUS} cell (swept "
+                     f"{report.get('swept_at')}); the four standing questions are scored instead")
     scored = [evsi(e) for e in queue]
+    ranked = sorted(scored, key=lambda r: -r["evsi"])
+    docket: dict[str, Any] = {"status": "MEASURED" if cells else "FALLBACK", "basis": queue_basis,
+                              "why": queue_why, "report": str(GATES_EXTERNAL), **docket_meta}
+    if cells:
+        docket.update(docket_view(cells, scored, queue))
     return {
         "measured_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "evsi": sorted(scored, key=lambda r: -r["evsi"]),
-        "queued": [r["name"] for r in scored if r["queue"]],
+        "queue_basis": queue_basis,
+        "queue_why": queue_why,
+        "n_scored": len(scored),
+        "evsi": ranked[:PUBLISHED_ROWS],
+        "queued": [r["name"] for r in ranked if r["queue"]][:PUBLISHED_ROWS],
+        "n_queued": sum(1 for r in scored if r["queue"]),
+        "docket": docket,
         "design": cheapest_falsifier(queue),
         "arbitration_examples": {
             "overfit_signature": arbitrate(0.15, 0.85),
@@ -256,12 +446,19 @@ def main(argv: list[str] | None = None) -> int:
     doc = run()
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-    print(f"experiment design: {len(doc['queued'])} of {len(doc['evsi'])} experiment(s) queued")
-    for r in doc["evsi"]:
-        print(f"   {'QUEUE ' if r['queue'] else 'drop  '} {r['name']:38} "
-              f"EVSI {r['evsi']:+.4f}  {r['why'][:60]}")
+    print(f"experiment design [{doc['queue_basis']}]: {doc['n_queued']} of {doc['n_scored']} "
+          f"experiment(s) queued -- {doc['queue_why'][:90]}")
+    for r in doc["evsi"][:8]:
+        print(f"   {'QUEUE ' if r['queue'] else 'drop  '} {r['name'][:56]:56} "
+              f"EVSI {r['evsi']:+.4f}  {r['why'][:50]}")
+    dk = doc["docket"]
+    if dk.get("status") == "MEASURED":
+        print(f"   docket: {dk['n_deferred']} deferred cell(s) at {dk['cost_s_per_cell']}s each "
+              f"({dk['cost_basis'][:60]}); EVSI head shares "
+              f"{dk['head_overlap']['cells_in_both_heads']}/{dk['head_overlap']['head']} cells "
+              f"with the rotation head")
     d = doc["design"]
-    print(f"   cheapest falsifier: {d.get('choice', d['status'])}")
+    print(f"   cheapest falsifier: {str(d.get('choice', d['status']))[:70]}")
     if d.get("excluded_confirming"):
         print(f"   excluded as confirming: {', '.join(d['excluded_confirming'])}")
     cap = doc["capacity"]["example_small_edge"]

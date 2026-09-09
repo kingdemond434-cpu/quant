@@ -102,7 +102,12 @@ def truncation(df: pd.DataFrame, signals: Sequence[Any], cost: float, *,
         return {"verdict": "UNMEASURED", "why": "no family callable supplied"}
     from libs.validation.lookahead import truncation_test
     out = truncation_test(family, df, len(df) * 2 // 3, **(params or {}))
-    return {"verdict": "PASS" if out["ok"] else "FAIL", **out}
+    # THE SENTINEL'S OWN `verdict` (CAUSAL / LOOKAHEAD) USED TO OVERWRITE THIS ONE. Written as
+    # `{"verdict": ..., **out}`, the battery's PASS/FAIL was replaced by the sentinel's word, so
+    # `run` -- which looks for "FAIL" -- could never register a truncation kill. Found 2026-09-09
+    # by the first caller this module ever had (desks/mt5/research/falsifier_run.py).
+    return {**out, "lookahead_verdict": out.get("verdict"),
+            "verdict": "PASS" if out["ok"] else "FAIL"}
 
 
 def usd_residual(df: pd.DataFrame, signals: Sequence[Any], cost: float, *,
@@ -191,7 +196,10 @@ def run(df: pd.DataFrame, signals: Sequence[Any], cost: float, *, stop_on_fail: 
     for name in order:
         results[name] = FALSIFIERS[name](df, signals, cost, **kw)
         if results[name].get("verdict") == "FAIL":
-            killed_by = name
+            # THE FIRST KILL IN SCHEDULE ORDER, whether or not the run stops there. Without the
+            # guard a full run named the LAST failing test, i.e. the most expensive objection
+            # rather than the cheapest one that settled the question.
+            killed_by = killed_by or name
             if stop_on_fail:
                 break
     return {"order": order, "results": results, "killed_by": killed_by,

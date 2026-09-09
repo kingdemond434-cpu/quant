@@ -107,6 +107,17 @@ DEFAULT_LIMIT = int(os.environ.get("DEEPEN_LIMIT", "0"))          # 0 = the whol
 #: legs their time and absorbs an overrun on the last task without colliding with the next hour.
 RUN_BUDGET_SEC = float(os.environ.get("DEEPEN_RUN_BUDGET_SEC", "2400"))
 
+#: The bandit's budget file. `libs.research.bandit` writes the arm shares here; when it also
+#: carries a `controller_variant`, every worked row is stamped with it so two allocation policies
+#: run side by side can later be compared on certificates per compute-hour. Read, stamped, and
+#: NOT acted on: this worker does not split its queue by variant yet.
+BUDGET = BASE / "data" / "research_budget.json"
+
+#: A task class's measured cost is floored here before it divides the score. A seat call's clock
+#: is not resolved below a second, so a class whose mean came out at a few hundred milliseconds
+#: would otherwise be promoted by measurement noise rather than by being cheap.
+MIN_TASK_COST_S = 1.0
+
 #: GROWTH GOVERNANCE, carried on every prompt surface (principal 2026-09-04, fenced by
 #: scripts/check_growth_governance.py G7): research is anti-timid, capital is evidence-hard.
 GOVERNANCE = (
@@ -385,8 +396,66 @@ def work_task(task: dict, universe: set[str], *, chat=None) -> tuple[list[dict],
     return candidates, f"RECOVERED_{disposition}"
 
 
-def voi_order(tasks: list[dict]) -> list[dict]:
-    """Work the tasks with the highest expected value of information first.
+def task_class(task: dict) -> str:
+    """The cost class a task is billed under: its `kind`, as a run name the compute ledger can
+    aggregate. `deepen:<kind>` so the rows sit beside the cycle's own `deepen` leg row and are
+    never confused with it."""
+    return f"deepen:{task.get('kind') or 'unknown'}"
+
+
+def task_costs() -> tuple[dict[str, float], str]:
+    """Measured mean wall seconds per task class, and the basis the order will cite.
+
+    THE DENOMINATOR, FROM THE LEDGER THAT ALREADY EXISTS. `libs.ops.compute_ledger.cost_by_run`
+    aggregates any append-only ledger whose rows carry `at`, `run` and `wall_s`; the worked
+    ledger here is one row per decided task, so once each row is stamped with its class and its
+    seconds (below) the SAME function prices a task class with no second ledger and no join.
+    Falls back to 1.0 for every class when nothing is costed yet, which leaves the order exactly
+    what it was -- a divisor of one changes nothing -- and says so in the basis.
+
+    The hourly cycle's own `deepen` row in the compute ledger is the LEG's wall time; it is
+    class-blind, so it cannot order tasks against each other and is only cited.
+    """
+    try:
+        from libs.ops.compute_ledger import cost_by_run
+    except Exception:
+        return {}, "uncosted: compute ledger unavailable; every class divides by 1.0"
+    costs: dict[str, float] = {}
+    try:
+        for name, c in cost_by_run(path=WORKED).items():
+            mean = c.get("mean_wall_s")
+            if name.startswith("deepen:") and isinstance(mean, (int, float)) and mean > 0:
+                costs[name] = float(mean)
+    except Exception:
+        costs = {}
+    if costs:
+        return costs, (f"measured: mean wall seconds per task class from "
+                       f"cost_by_run({WORKED.name}), {len(costs)} class(es), floored at "
+                       f"{MIN_TASK_COST_S}s")
+    leg = ""
+    try:
+        d = cost_by_run().get("deepen") or {}
+        if d.get("runs"):
+            leg = (f"; the cycle's `deepen` leg row is {d.get('mean_wall_s')}s over "
+                   f"{d['runs']} run(s), class-blind")
+    except Exception:
+        leg = ""
+    return {}, f"uncosted: no per-class task rows in {WORKED.name} yet; order unchanged{leg}"
+
+
+def controller_variant() -> str | None:
+    """`controller_variant` from the bandit's budget file, when it carries one. Stamped on every
+    worked row so two allocation policies can later be compared; not acted on here."""
+    try:
+        v = json.loads(BUDGET.read_text("utf-8")).get("controller_variant")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return str(v) if v not in (None, "") else None
+
+
+def voi_order(tasks: list[dict], costs: dict[str, float] | None = None,
+              scorer=None) -> list[dict]:
+    """Work the tasks with the highest expected value of information PER MEASURED SECOND first.
 
     THE QUEUE WAS FIFO. 882 tasks and a 25-per-run limit meant a coverage gap the allocator
     asked about yesterday sat behind a month of low-grade crawler rows. Value of information for
@@ -400,8 +469,27 @@ def voi_order(tasks: list[dict]) -> list[dict]:
         novelty               a task whose (symbol, family) region the hypothesis graph has
                               already buried is discounted by 1 / (1 + n_failed)
 
+    DIVIDED BY THE CLASS'S MEASURED COST (2026-09-09). The score had no denominator: a task
+    worth 2 that takes 40 seconds of seat time sat ahead of one worth 1.5 that takes 3, and the
+    budget that binds every hour was spent as if seconds were free. `costs` is
+    `task_class -> mean wall seconds` from `task_costs()`; a class with no measurement divides
+    by 1.0, so an uncosted queue orders exactly as before. Nothing is dropped by this -- the
+    same tasks are worked, cheapest information first.
+
     Deterministic, so two runs on the same queue work the same tasks in the same order.
     """
+    score = scorer if scorer is not None else _scorer()
+    costs = costs or {}
+
+    def _key(t: dict) -> tuple[float, str]:
+        cost = max(MIN_TASK_COST_S, float(costs.get(task_class(t), 1.0)))
+        return (-score(t) / cost, task_id(t))
+
+    return sorted(tasks, key=_key)
+
+
+def _scorer():
+    """The value-of-information score for one task, as a callable built once per run."""
     try:
         from libs.research import funnel_census as fc
         recs = fc.build(ROOT)
@@ -473,7 +561,7 @@ def voi_order(tasks: list[dict]) -> list[dict]:
             direction = 1.0
         return p * worth * novelty * direction
 
-    return sorted(tasks, key=lambda t: (-_score(t), task_id(t)))
+    return _score
 
 
 #: Specialist system prompts by task kind. One seat, three roles: the prospector reads a row for
@@ -644,9 +732,11 @@ def _work(argv: list[str] | None = None) -> int:
         return 0
 
     done = worked_ids()
-    pending = voi_order([t for t in tasks if task_id(t) not in done])
+    costs, cost_basis = task_costs()
+    variant = controller_variant()
+    pending = voi_order([t for t in tasks if task_id(t) not in done], costs=costs)
     dlog(f"queue={len(tasks)} already-decided={len(done)} pending={len(pending)} "
-         f"limit={args.limit}")
+         f"limit={args.limit} cost_basis={cost_basis} controller_variant={variant}")
     if args.dry_run:
         for t in (pending if args.limit <= 0 else pending[:args.limit]):
             dlog(f"  would work {task_id(t)} [{t.get('source')}] {str(t.get('title'))[:70]}")
@@ -668,6 +758,8 @@ def _work(argv: list[str] | None = None) -> int:
                  f"hourly pass in VOI order -- nothing is dropped")
             break
         tid = task_id(task)
+        cls = task_class(task)
+        t_task = time.monotonic()
         try:
             candidates, disposition = work_task(task, universe)
         except Exception as exc:
@@ -677,9 +769,18 @@ def _work(argv: list[str] | None = None) -> int:
         head = disposition.split(":")[0]
         counts[head] = counts.get(head, 0) + 1
         recovered.extend(candidates)
+        # THE ROW IS ALSO THE COST LEDGER ENTRY: `run`, `wall_s` and `at` are what
+        # `compute_ledger.cost_by_run` aggregates, so next hour's `task_costs()` reads this
+        # class's mean from here. `cost_basis` names what divided THIS task's score, and
+        # `controller_variant` names the allocation policy that queued it.
         record({"id": tid, "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                 "source": task.get("source"), "url": task.get("url"),
-                "disposition": disposition, "n_candidates": len(candidates)})
+                "disposition": disposition, "n_candidates": len(candidates),
+                "run": cls, "kind": task.get("kind"),
+                "wall_s": round(time.monotonic() - t_task, 3),
+                "cost_basis": (f"measured:{cls}:{costs[cls]:.2f}s" if cls in costs
+                               else "uncosted:1.0"),
+                "controller_variant": variant})
         dlog(f"  {tid} [{task.get('source')}] {disposition} -> {len(candidates)} candidate(s)")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

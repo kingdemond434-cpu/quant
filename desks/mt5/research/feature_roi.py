@@ -77,6 +77,12 @@ STATE_ADMISSION = _DESK / "reports" / "STATE_ADMISSION.json"
 CANON = _DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 EXECUTION = _DESK / "reports" / "execution_intelligence.json"
 REPORT = _DESK / "reports" / "FEATURE_ROI.json"
+#: The candidate docket the gauntlet judges. Rows that came through a structured source carry
+#: `params.input_source` (`ff_calendar_vintage`, `cot_point_in_time`: miner_candidate_compiler
+#: :545 and :554); measured 2026-09-08, 123 of 23,465 rows name one. When the warehouse has no
+#: block to price, these sources are the only input-level population on disk, and they are
+#: ablated by differencing what the desk holds with and without each.
+CANDIDATES = _DESK / "data" / "hypotheses" / "external_survivors.json"
 
 #: DECLARED cost units, per the `research_pnl` doctrine: the two halves of a ROI must price
 #: effort the same way, and a declared table both halves read beats a measured number only one
@@ -294,6 +300,111 @@ def spanning(store: FeatureStore, blocks: list[dict[str, Any]]) -> dict[str, dic
     return out
 
 
+# --------------------------------------------------------------------------- source ablation
+def _input_source(row: dict[str, Any]) -> str | None:
+    """`params.input_source` on a candidate row, or under a certificate's `shadow_spec`."""
+    params = row.get("params")
+    if not isinstance(params, dict):
+        spec = row.get("shadow_spec")
+        params = spec.get("params") if isinstance(spec, dict) else None
+    src = params.get("input_source") if isinstance(params, dict) else None
+    return str(src) if src not in (None, "") else None
+
+
+def _candidate_rows(path: Path) -> list[dict[str, Any]]:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    rows = doc.get("candidates") if isinstance(doc, dict) else doc
+    if isinstance(rows, dict):
+        rows = list(rows.values())
+    return [r for r in (rows or []) if isinstance(r, dict)]
+
+
+def _certificates(path: Path) -> dict[str, dict[str, Any]]:
+    surv = _json(path).get("survivors")
+    if not isinstance(surv, dict):
+        return {}
+    return {str(k): v for k, v in surv.items() if isinstance(v, dict)}
+
+
+SOURCE_ABLATION_BASIS = (
+    "leave-one-source-out DIFFERENCING of artifacts already on disk, not a retrain: candidates "
+    "are the docket rows grouped by params.input_source, certificates are the canon's survivors "
+    "grouped by shadow_spec.params.input_source, and dElog is the allocator's growth_per_day per "
+    "sleeve (RESEARCH_PNL.json) joined to the certificate it funds. Each source's row is what the "
+    "desk would lose TODAY by dropping it -- certificates and attributed growth -- which is the "
+    "marginal value of the source as held, never what the source could have found.")
+
+
+def source_ablation(candidates: list[dict[str, Any]], certificates: dict[str, dict[str, Any]],
+                    pnl: dict[str, Any]) -> dict[str, Any]:
+    """Per input source: certificate and candidate counts with and without it, and the attributed
+    growth that goes with it, differenced.
+
+    UNMEASURED WHERE THE JOIN HAS NOTHING: a source named on no certificate reads as carrying
+    none (a measurement, and a sharp one -- 113 calendar rows and no certificate is a fact about
+    the source), and dElog is UNMEASURED rather than 0 when the allocator artifact carries no
+    growth per sleeve, because "no attribution" and "attributed nothing" are different states.
+    """
+    cand_by: dict[str, int] = {}
+    for r in candidates:
+        s = _input_source(r)
+        if s:
+            cand_by[s] = cand_by.get(s, 0) + 1
+    cert_by: dict[str, list[str]] = {}
+    for cid, c in certificates.items():
+        s = _input_source(c)
+        if s:
+            cert_by.setdefault(s, []).append(cid)
+    sources = sorted(set(cand_by) | set(cert_by))
+    n_cand, n_cert = len(candidates), len(certificates)
+    growth_by_cert: dict[str, float] = {}
+    for row in (pnl.get("sleeves") or {}).values():
+        if not isinstance(row, dict):
+            continue
+        g, cert = row.get("growth_per_day"), row.get("cert")
+        if isinstance(g, (int, float)) and math.isfinite(float(g)) and cert:
+            growth_by_cert[str(cert)] = growth_by_cert.get(str(cert), 0.0) + float(g)
+    elog_measured = bool(growth_by_cert)
+    per: dict[str, dict[str, Any]] = {}
+    for s in sources:
+        with_ids = cert_by.get(s, [])
+        cw, nw = len(with_ids), cand_by.get(s, 0)
+        co, no = n_cert - cw, n_cand - nw
+        g_with = sum(growth_by_cert.get(c, 0.0) for c in with_ids)
+        per[s] = {
+            "candidates_with": nw, "candidates_without": no,
+            "certificates_with": cw, "certificates_without": co,
+            "certification_rate_with": (round(cw / nw, 6) if nw else None),
+            "certification_rate_without": (round(co / no, 6) if no else None),
+            "delta_certificates_if_removed": -cw,
+            "delta_elog_per_day_if_removed": (round(-g_with, 10) if elog_measured
+                                              else UNMEASURED),
+            "certificates": with_ids[:20],
+            "verdict": ("CARRIES_CERTIFICATES" if cw else "NO_CERTIFICATE_DEPENDS_ON_IT"),
+        }
+    out: dict[str, Any] = {
+        "status": ("MEASURED" if sources else UNMEASURED),
+        "basis": SOURCE_ABLATION_BASIS,
+        "n_candidates": n_cand, "n_certificates": n_cert,
+        "candidates_naming_a_source": sum(cand_by.values()),
+        "certificates_naming_a_source": sum(len(v) for v in cert_by.values()),
+        "elog_basis": (f"RESEARCH_PNL.json sleeves.growth_per_day joined on `cert`, "
+                       f"{len(growth_by_cert)} certificate(s) attributed"
+                       if elog_measured else
+                       f"{UNMEASURED}: RESEARCH_PNL.json carries no sleeve with a finite "
+                       "growth_per_day and a cert, so no growth can be attributed to a source"),
+        "sources": per,
+    }
+    if not sources:
+        out["why"] = ("no candidate row and no certificate names a params.input_source, so "
+                      "there is no input-level population to ablate; this is UNMEASURED, not "
+                      "a finding that sources are worthless")
+    return out
+
+
 # --------------------------------------------------------------------------- the pass
 def _share_of_heat(pnl: dict[str, Any]) -> dict[str, float]:
     out: dict[str, float] = {}
@@ -443,10 +554,26 @@ def run(*, write: bool = True) -> dict[str, Any]:
         if write:
             store.set_status(name, status, line)
 
+    # THE FALLBACK WHEN THERE IS NO FEATURE TO PRICE. The warehouse has been empty on this host
+    # every pass (FEATURE_ROI.json: blocks 0, features 0), so the per-feature ROI above has
+    # never returned a number. The input SOURCES named on the docket and the canon are a
+    # population already on disk, and differencing certificate counts and attributed growth
+    # with and without each is the ablation the allocator's INFORMATION gap asks for
+    # (libs/ops/allocators.py:106-109), at the source level the desk can measure today.
+    if not blocks:
+        ablation = source_ablation(_candidate_rows(CANDIDATES), _certificates(CANON), pnl)
+        ablation["trigger"] = ("warehouse empty: no feature block to price, so the input "
+                               "sources named on candidate and certificate rows are ablated")
+    else:
+        ablation = {"status": "NOT_RUN", "basis": SOURCE_ABLATION_BASIS,
+                    "why": (f"the warehouse holds {len(blocks)} block(s); the per-feature ROI "
+                            "above is the measurement and the source-level fallback is not run")}
+
     doc = {
         "generated_utc": datetime.now(tz=UTC).isoformat(),
         "formula": ("FeatureROI_j = dE[logW | F_j] / (acquisition + compute + maintenance + "
                     "multiplicity), in log-wealth per day per declared cost unit"),
+        "source_ablation": ablation,
         "min_n": lc.MIN_N,
         "blocks": len(blocks), "features": len(by_name),
         "ledger_rows": len(rows), "ledger_states": ledger_states[:40],

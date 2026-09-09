@@ -75,7 +75,109 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(fr, "CANON", tmp_path / "UNIVERSAL_SURVIVORS.canon.json")
     monkeypatch.setattr(fr, "EXECUTION", tmp_path / "execution_intelligence.json")
     monkeypatch.setattr(fr, "REPORT", tmp_path / "FEATURE_ROI.json")
+    monkeypatch.setattr(fr, "CANDIDATES", tmp_path / "external_survivors.json")
     return tmp_path
+
+
+# ------------------------------------------------- 8. the source-level ablation fallback
+
+def _cand(symbol: str, family: str, source: str | None = None) -> dict[str, Any]:
+    params: dict[str, Any] = {"rr": 1.5}
+    if source:
+        params["input_source"] = source
+    return {"symbol": symbol, "family": family, "params": params, "producer": "test"}
+
+
+def _cert(symbol: str, family: str, source: str | None = None) -> dict[str, Any]:
+    params: dict[str, Any] = {"rr": 1.5}
+    if source:
+        params["input_source"] = source
+    return {"sym": symbol, "status": "UNIVERSAL",
+            "shadow_spec": {"symbol": symbol, "family": family, "params": params}}
+
+
+def _ablation_tree(desk: Path, *, pnl: bool = True) -> None:
+    (desk / "external_survivors.json").write_text(json.dumps(
+        [_cand("EURUSD", "event_reaction", "ff_calendar_vintage")] * 3
+        + [_cand("XAUUSD", "cot_positioning", "cot_point_in_time")] * 2
+        + [_cand("USDJPY", "session_range_breakout")] * 5), "utf-8")
+    (desk / "UNIVERSAL_SURVIVORS.canon.json").write_text(json.dumps({"survivors": {
+        "external.EURUSD.event_reaction": _cert("EURUSD", "event_reaction",
+                                                "ff_calendar_vintage"),
+        "external.USDJPY.srb.a": _cert("USDJPY", "session_range_breakout"),
+        "external.USDJPY.srb.b": _cert("USDJPY", "session_range_breakout"),
+        "external.XAUUSD.srb": _cert("XAUUSD", "session_range_breakout"),
+    }}), "utf-8")
+    if pnl:
+        (desk / "RESEARCH_PNL.json").write_text(json.dumps({"sleeves": {
+            "EURUSD_event": {"share_of_heat": 0.25, "growth_per_day": 0.0010,
+                             "cert": "external.EURUSD.event_reaction"},
+            "USDJPY_srb": {"share_of_heat": 0.75, "growth_per_day": 0.0030,
+                           "cert": "external.USDJPY.srb.a"},
+        }}), "utf-8")
+
+
+def test_an_empty_warehouse_ablates_the_input_sources_named_on_rows(desk: Path) -> None:
+    """BY HAND: 10 candidates, 4 certificates. ff_calendar_vintage names 3 candidates and 1
+    certificate; cot_point_in_time names 2 candidates and none; the allocator attributes
+    +0.0010/day to the calendar certificate."""
+    _ablation_tree(desk)
+    doc = fr.run()
+    assert doc["blocks"] == 0 and "warehouse" in doc["gaps"]
+    ab = doc["source_ablation"]
+    assert ab["status"] == "MEASURED" and ab["trigger"].startswith("warehouse empty")
+    assert ab["n_candidates"] == 10 and ab["n_certificates"] == 4
+    assert ab["candidates_naming_a_source"] == 5 and ab["certificates_naming_a_source"] == 1
+    cal = ab["sources"]["ff_calendar_vintage"]
+    assert (cal["candidates_with"], cal["candidates_without"]) == (3, 7)
+    assert (cal["certificates_with"], cal["certificates_without"]) == (1, 3)
+    assert cal["certification_rate_with"] == pytest.approx(1 / 3)
+    assert cal["certification_rate_without"] == pytest.approx(3 / 7)
+    assert cal["delta_certificates_if_removed"] == -1
+    assert cal["delta_elog_per_day_if_removed"] == pytest.approx(-0.0010)
+    assert cal["verdict"] == "CARRIES_CERTIFICATES"
+    assert cal["certificates"] == ["external.EURUSD.event_reaction"]
+    cot = ab["sources"]["cot_point_in_time"]
+    assert (cot["candidates_with"], cot["certificates_with"]) == (2, 0)
+    assert cot["certification_rate_with"] == 0.0
+    assert cot["delta_certificates_if_removed"] == 0
+    assert cot["delta_elog_per_day_if_removed"] == pytest.approx(0.0)
+    assert cot["verdict"] == "NO_CERTIFICATE_DEPENDS_ON_IT"
+    assert "differencing" in ab["basis"].lower() and "not a retrain" in ab["basis"]
+    assert "2 certificate(s) attributed" in ab["elog_basis"], "both funded sleeves name a cert"
+
+
+def test_delta_elog_is_unmeasured_not_zero_without_the_allocator_artifact(desk: Path) -> None:
+    _ablation_tree(desk, pnl=False)
+    ab = fr.run()["source_ablation"]
+    assert ab["status"] == "MEASURED"
+    assert ab["sources"]["ff_calendar_vintage"]["delta_elog_per_day_if_removed"] == "UNMEASURED"
+    assert ab["sources"]["ff_calendar_vintage"]["delta_certificates_if_removed"] == -1
+    assert ab["elog_basis"].startswith("UNMEASURED")
+
+
+def test_no_source_named_anywhere_is_unmeasured_with_why(desk: Path) -> None:
+    (desk / "external_survivors.json").write_text(json.dumps(
+        [_cand("USDJPY", "session_range_breakout")] * 3), "utf-8")
+    ab = fr.run()["source_ablation"]
+    assert ab["status"] == "UNMEASURED" and ab["sources"] == {}
+    assert "no input-level population" in ab["why"] and "not a finding" in ab["why"]
+    assert ab["n_candidates"] == 3 and ab["n_certificates"] == 0
+
+
+def test_a_populated_warehouse_does_not_run_the_source_fallback(desk: Path) -> None:
+    _known_answer_tree(desk)
+    _ablation_tree(desk)
+    ab = fr.run()["source_ablation"]
+    assert ab["status"] == "NOT_RUN" and "3 block(s)" in ab["why"]
+    assert "sources" not in ab
+
+
+def test_the_ablation_is_in_the_written_report(desk: Path) -> None:
+    _ablation_tree(desk)
+    fr.run()
+    written = json.loads(fr.REPORT.read_text("utf-8"))
+    assert written["source_ablation"]["sources"]["cot_point_in_time"]["certificates_with"] == 0
 
 
 def _known_answer_tree(desk: Path, *, mu_state: float = 0.002, rows: int = 40) -> None:
