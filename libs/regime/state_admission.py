@@ -44,9 +44,20 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
+
+#: The bar store the `rvol` labeller reads a trade's OWN symbol history from. Module-level so a
+#: test can point it at a synthetic universe rather than the desk's.
+UNIVERSE = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "universe"
+#: Trailing bars of log return one realised-vol reading is measured over: a broker day on H1.
+RVOL_WINDOW = 24
+#: Realised-vol readings a symbol must have BEFORE a trade for its quintile to be a quintile
+#: rather than a rank among a handful. Ten days of hourly readings.
+RVOL_MIN_HISTORY = 240
+RVOL_QUINTILES: tuple[str, ...] = ("Q1_LOW", "Q2", "Q3", "Q4", "Q5_HIGH")
 
 #: Shrinkage of a bucket mean toward the pooled mean, matching `robust_elog`'s k_state so the
 #: test measures the estimator the allocator would actually use rather than a sharper one.
@@ -224,6 +235,13 @@ def build_labeller(name: str) -> Callable[[Trade], str] | None:
     needs the walk-forward decode `family_regime_transition` builds; the liquidity state needs the
     historical tape; both are recorded as gaps until their history is joined rather than faked
     from a current reading.
+
+    `rvol` (Tier-1 audit G6, 2026-09-08) is the fourth dimension and the first built from the
+    trade's own SYMBOL BARS: the quintile of the trailing `RVOL_WINDOW`-bar realised vol, ranked
+    among every reading that symbol had produced BEFORE the trade -- an expanding percentile, so
+    the rank at a January trade is January's rank, never the full sample's. The bar used is the
+    last one stamped strictly before the trade's timestamp: a trade entered at the open of the
+    13:00 bar reads the 12:00 bar's close and nothing later.
     """
     if name == "session":
         try:
@@ -282,7 +300,68 @@ def build_labeller(name: str) -> Callable[[Trade], str] | None:
             return classify(when, [r["_stamp"] for r in scoped],
                             symbol=_symbol_of(t.sleeve), rows=scoped).phase
         return _event
+
+    if name == "rvol":
+        try:
+            import pandas as pd
+        except ImportError:
+            return None
+        if not UNIVERSE.is_dir():
+            return None
+        cache: dict[str, Any] = {}
+
+        def _pct(sym: str) -> Any:
+            """The symbol's point-in-time realised-vol percentile series, loaded once."""
+            if sym in cache:
+                return cache[sym]
+            out = None
+            path = UNIVERSE / f"{sym}_H1.parquet"
+            if path.exists():
+                try:
+                    df = pd.read_parquet(path, columns=["close"])
+                    idx = pd.DatetimeIndex(pd.to_datetime(df.index, utc=True, errors="coerce"))
+                    s = pd.Series(df["close"].to_numpy(dtype=float), index=idx).dropna()
+                    s = s[~s.index.isna()].sort_index()
+                    s = s[~s.index.duplicated(keep="last")]
+                    if len(s) > RVOL_MIN_HISTORY + RVOL_WINDOW:
+                        out = rvol_percentiles(s)
+                except (OSError, ValueError, KeyError, ImportError):
+                    out = None
+            cache[sym] = out
+            return out
+
+        def _rvol(t: Trade) -> str:
+            sym = _symbol_of(t.sleeve)
+            pct = _pct(sym) if sym else None
+            if pct is None:
+                return ""
+            try:
+                when = pd.Timestamp(t.when)
+            except (TypeError, ValueError):
+                return ""
+            when = when.tz_localize("UTC") if when.tzinfo is None else when.tz_convert("UTC")
+            pos = int(pct.index.searchsorted(when, side="left")) - 1   # strictly before
+            if pos < 0:
+                return ""
+            return rvol_bucket(float(pct.iloc[pos]))
+        return _rvol
     return None
+
+
+def rvol_percentiles(close: Any, window: int = RVOL_WINDOW,
+                     min_history: int = RVOL_MIN_HISTORY) -> Any:
+    """Per bar: the trailing `window`-bar realised vol's percentile among every reading up to
+    and including that bar. Expanding, never full-sample: the rank at bar t cannot see t+1."""
+    r = np.log(close.astype(float)).diff()
+    rv = r.rolling(int(window), min_periods=int(window)).std(ddof=1)
+    return rv.expanding(min_periods=int(min_history)).rank(pct=True)
+
+
+def rvol_bucket(pct: float) -> str:
+    """A percentile in (0, 1] to its quintile name; NaN (too little history) is no label."""
+    if not math.isfinite(pct):
+        return ""
+    return RVOL_QUINTILES[min(len(RVOL_QUINTILES) - 1, max(0, int(pct * len(RVOL_QUINTILES))))]
 
 
 def _symbol_of(sleeve: str) -> str:
