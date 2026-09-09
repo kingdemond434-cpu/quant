@@ -254,3 +254,62 @@ def test_the_prior_table_seeds_every_named_chain_before_data_proves_it() -> None
             assert 0.0 < e.plausibility <= 1.0
     # and every node kind is one the order names
     assert {n.kind for n in g.nodes.values()} <= set(cg.KINDS)
+
+
+# ----------------------------------------------- the nonlinear directed reading, beside the rule
+def _driven(n: int = 1200, seed: int = 0, beta: float = 0.8):
+    """X drives Y one bar later. Known answer: a flow forward, nothing back."""
+    rng = np.random.default_rng(seed)
+    x = rng.normal(size=n)
+    y = np.empty(n)
+    y[0] = 0.0
+    for t in range(1, n):
+        y[t] = 0.3 * y[t - 1] + beta * x[t - 1] + 0.4 * rng.normal()
+    return x, y
+
+
+def test_every_measured_edge_carries_a_transfer_entropy_reading():
+    """G7's gap was that the graph had no nonlinear directed measure at all. It has one now,
+    on every edge it measures, with the direction it ran and the null it ran against named."""
+    x, y = _driven()
+    e = cg.measure_edge(x, y, src="a", dst="b", clock="H1", decay_cls="h1", n_tests=10,
+                        min_n=200)
+    flow = e.evidence["information_flow"]
+    assert flow["te_forward"]["value"] > 0.2, flow
+    assert flow["te_reverse"]["value"] < 0.1 * flow["te_forward"]["value"], flow
+    assert flow["asymmetry"] > 0.2 and flow["null"] == "circular_shift"
+    assert flow["p_value"] is not None and flow["p_value"] < 0.05
+    assert flow["te_forward"]["correction"] == "miller-madow"
+
+
+def test_the_reading_is_an_annotation_and_changes_no_admission():
+    """THE LINE THAT MUST NOT MOVE. Adding a second gate here would change what the graph
+    admits without anyone deciding to, so the admission is recomputed with the reading removed
+    and must be identical -- status, reason and every number the rule is built from."""
+    x, y = _driven(beta=0.15, seed=3)
+    with_flow = cg.measure_edge(x, y, src="a", dst="b", clock="H1", decay_cls="h1", n_tests=10,
+                                min_n=200)
+    saved = cg.information_flow
+    cg.information_flow = lambda *a, **k: {"why": "disabled for this test"}
+    try:
+        without = cg.measure_edge(x, y, src="a", dst="b", clock="H1", decay_cls="h1",
+                                  n_tests=10, min_n=200)
+    finally:
+        cg.information_flow = saved
+    assert with_flow.status == without.status
+    assert with_flow.reason == without.reason
+    assert with_flow.strength == without.strength
+    assert with_flow.incremental_info == without.incremental_info
+    assert "never changes it" in with_flow.evidence["information_flow"]["_"]
+
+
+def test_a_reading_that_cannot_be_taken_refuses_and_never_stops_the_measure():
+    """A short pair is below the histogram floor. The edge is still measured and still admitted
+    or refused on its own rule; the annotation says why it could not be taken."""
+    x, y = _driven(n=260, seed=5)
+    e = cg.measure_edge(x, y, src="a", dst="b", clock="H1", decay_cls="h1", n_tests=10,
+                        min_n=200)
+    assert e.status in cg.MEASURED
+    flow = e.evidence["information_flow"]
+    assert flow["te_forward"]["value"] is None and flow["why"]
+    assert "below the floor" in flow["te_forward"]["why"]

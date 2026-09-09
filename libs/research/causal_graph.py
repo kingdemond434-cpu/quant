@@ -884,6 +884,59 @@ def nonlinearity(x: np.ndarray, y: np.ndarray, lag: int) -> dict[str, Any]:
             "sign_asymmetry": round(c_pos - c_neg, 6)}
 
 
+def information_flow(x: np.ndarray, y: np.ndarray, lag: int, *, seed: int = 0,
+                     n_perm: int = N_PERM) -> dict[str, Any]:
+    """Transfer entropy both ways and the plain MI, published BESIDE the linear admission.
+
+    WHY IT IS HERE AND WHY IT ADMITS NOTHING. Every test above this line is linear or monotone:
+    `lagged_xcorr` is a correlation, `incremental_information` is a deltaR2, `nonlinearity` is
+    Spearman against Pearson. Transfer entropy asks the same directed question without any of
+    those assumptions -- whether X's past reduces the UNCERTAINTY of Y_t once Y's own past is
+    held -- so it sees a driver that matters through magnitude or through a threshold, which a
+    coefficient cannot. That makes it worth reading on every edge and NOT worth admitting on:
+    the admission rule is stated once in the module docstring, it is the deflated interval plus
+    the incremental test, and adding a second gate here would change what the graph admits
+    without anyone deciding to. This is an annotation. It moves no threshold.
+
+    `asymmetry` is the number to read: TE(X->Y) - TE(Y->X). A shared driver pushes both
+    directions up together and leaves it near zero; a flow shows up as one direction only.
+
+    The null is a CIRCULAR SHIFT for the reason `incremental_information` uses one: a free
+    permutation destroys the source's own persistence as well as its relation to the target, so
+    on autocorrelated bars it is anti-conservative and reports a p that is too small.
+
+    Never raises. A refusal (short sample, flat series, a missing module) comes back as
+    `value: None` with `why` filled, exactly as `libs.research.information_flow` returns it.
+    """
+    try:
+        from libs.research import information_flow as _inf
+    except Exception as exc:                                    # pragma: no cover - import guard
+        return {"why": f"information_flow unavailable: {type(exc).__name__}: {exc}"}
+    try:
+        fwd = _inf.transfer_entropy(x, y, lag=max(int(lag), 1))
+        rev = _inf.transfer_entropy(y, x, lag=max(int(lag), 1))
+        mi = _inf.mutual_information(*_pairs(x, y, lag))
+        out: dict[str, Any] = {
+            "te_forward": fwd.to_dict(), "te_reverse": rev.to_dict(), "mi": mi.to_dict(),
+            "asymmetry": (round(fwd.value - rev.value, 6)
+                          if fwd.value is not None and rev.value is not None else None),
+            "null": "circular_shift", "p_value": None,
+            "_": ("annotation only: transfer entropy is read beside the admission and never "
+                  "changes it"),
+        }
+        if fwd.value is not None:
+            sig = _inf.significance(_inf.transfer_entropy, x, y, lag=max(int(lag), 1),
+                                    n_perm=int(n_perm), seed=int(seed), mode="circular_shift")
+            out["p_value"] = sig.get("p_value")
+            out["null_mean"] = sig.get("null_mean")
+            out["why"] = sig.get("why") or ""
+        else:
+            out["why"] = fwd.why
+        return out
+    except Exception as exc:                                    # a reading never stops a measure
+        return {"why": f"information flow refused: {type(exc).__name__}: {exc}"}
+
+
 def measure_edge(x: np.ndarray, y: np.ndarray, *, src: str, dst: str, clock: str,
                  decay_cls: str, n_tests: int, max_lag: int = MAX_LAG,
                  lags: Iterable[int] | None = None,
@@ -920,6 +973,10 @@ def measure_edge(x: np.ndarray, y: np.ndarray, *, src: str, dst: str, clock: str
     ev["incremental"] = inc
     ev["state"] = sd
     ev["nonlinearity"] = nl
+    # THE NONLINEAR DIRECTED READING, published beside the linear one and never gating it. See
+    # `information_flow`: every other test on this edge assumes a line or a rank, and this book's
+    # drivers are full of dependence that neither can see.
+    ev["information_flow"] = information_flow(x, y, lag, seed=seed, n_perm=n_perm)
     reasons: list[str] = []
     if lo <= 0.0 <= hi:
         reasons.append(f"deflated CI [{lo:+.4f}, {hi:+.4f}] over {n_tests} charged cells "

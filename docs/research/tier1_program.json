@@ -197,13 +197,16 @@
     "scripts/check_pit.py — the census now reads BOTH trees the compiler compiles from; before 2026-09-09 it read only desks/mt5/data/intelligence, so the stamped fraction was taken over a population that excluded every LLM seat donation while the judge's ratchet applied to rows from both (MEASURED)",
     "scripts/check_pit.py — a source name appearing under both roots has its counts ADDED, and the artifact names roots_read and roots_absent, because a fraction without its population is not a measurement (MEASURED)",
     "scripts/check_pit.py — blocks_certification per source, the judge's own libs.data.pit.is_stamped predicate (MEASURED, wave W1)",
-    "tests/scripts/test_check_pit_reads_both_trees.py (MEASURED)"
+    "tests/scripts/test_check_pit_reads_both_trees.py (MEASURED)",
+    "libs/data/lake.py — the layer is a property of the ROW (`layer` plus the stamps that layer requires), not of a directory: Layer/LAYER_REQUIRES/layer_of/missing_for, to_bronze byte-faithful with raw_sha256, promote() one step at a time, promote_many, read_as_of and layer_census (MEASURED)",
+    "libs/data/lake.py — promote() REFUSES rather than guessing: a skipped layer, an unresolvable event_time, a normaliser that raises or returns nothing, a feature that cannot name its inputs; every refusal carries its reason and the payload hash of the row it turned away (MEASURED)",
+    "tests/data/test_medallion_layers.py — 22 cases including the exposure this found and did NOT close: pit.AVAILABLE_KEYS carries `published_at`, so a row dated that way is readable from publication rather than from ingestion (MEASURED)"
    ],
    "scheduled_by": "",
    "artifact": "desks/mt5/reports/PIT_CENSUS.json",
    "consumer": "external_gauntlet / run_external_backtest read the parquet panels; PIT_CENSUS -> pit_high_water ratchet -> CI gate",
-   "gap": "Coverage itself is still low and bronze/silver/gold does not exist: raising the stamped fraction means moving each producer onto libs.data.pit.stamp, which is per-miner plumbing on the box. What changed is that the number is now taken over the right population, so the work can be ordered by source instead of guessed at.",
-   "next_step": "Stamp at ingest rather than auditing after: add the five PIT fields in desks/mt5/side_channels/seed_miners.py's row writer so every new discovery row is born stamped — the census at scripts/check_pit.py:63 will then ratchet stamped_frac upward on its own."
+   "gap": "Coverage itself is still low: raising the stamped fraction means moving each producer onto libs.data.pit.stamp, which is per-miner plumbing on the box. bronze/silver/gold now EXISTS as a row property with a refusing promoter, but no producer writes through it yet and no clock runs a promotion, so the ladder is built and unused. AND A NAMED EXPOSURE, measured 2026-09-09 and left alone deliberately: `libs.data.pit.AVAILABLE_KEYS` lists `published_at`, so a row carrying one is available from the moment it was PUBLISHED rather than from the moment this desk ingested it -- right for a feed the desk subscribes to, lookahead for a source it scrapes weeks later, and no field on the row tells the two apart. Narrowing that constant decides what EVERY backtest may read, so it is the principal's call and not an autonomous one.",
+   "next_step": "Two, in order. (1) Point one producer at lake.promote: desks/mt5/side_channels/seed_miners.py already writes rows, so writing them as BRONZE and running a bronze->silver promotion on the hourly leg turns the ladder from built into used and publishes its refusal count. (2) Put the available_time question to the principal: either split AVAILABLE_KEYS by source kind (subscribed feed vs scrape) or drop `published_at` from it and let ingestion be the availability everywhere."
   },
   {
    "id": "I8",
@@ -1925,15 +1928,20 @@
    "status": "PARTIAL",
    "gate": "none",
    "evidence": [
-    "The RL populations are ordered by the growth their draws realised, not by how many trees they drew (MEASURED)"
+    "The RL populations are ordered by the growth their draws realised, not by how many trees they drew (MEASURED)",
+    "libs/research/alpha_rl.py — a tabular Q-learner over the alpha-construction MDP: state IS a prefix of decisions, so a reward earned by one completion moves the value of a decision three layers above it. Replay ring (bounded, explicitly seeded), epsilon-greedy with a floor that cannot be set to zero, deterministic replay (MEASURED)",
+    "libs/research/alpha_rl.py — every action set is IMPORTED from a desk registry: families_orthogonal.ORTHOGONAL_FAMILIES (34), universe.json (251 Fusion symbols), research_os.dsl.SESSIONS, and timeframe_domain(family) so the layer-3 action set DEPENDS on the layer-0 decision (MEASURED)",
+    "libs/research/alpha_rl.py — BookReward reads marginal dE[log W] off reports/pf_allocation.json, preferring admission.candidates[*].delta_elogw_per_day (the marginal of ADMITTING) over marginal_delta_elog (the gradient at the SOLVED book), and names which on every report (MEASURED)",
+    "tests/research/test_alpha_rl.py — 16 cases: credit reaches the root decision from leaves two layers below it (the property a bandit cannot have), an UNMEASURED reward runs zero episodes and leaves the table empty, an UNPRICED completion is discarded whole rather than scored zero, a zero exploration floor and an unbounded buffer are both refused, and every symbol action is a Fusion symbol (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:search",
    "artifact": "desks/mt5/reports/EVOLUTION.json",
    "consumer": "desks/mt5/research/hourly_discovery.py:126 `_weight()` and desks/mt5/research/daily_cycle.py:255 `arm_weight()` set per-proposer `budget_s`",
-   "gap": "DEMOTED 2026-09-09 on an external audit that was right. This row was marked LANDED on 6908d8e6, which orders POPULATIONS by the growth their draws realised -- that is bandit-style credit assignment over finished candidates, not sequential control. A grep for q_learning / policy_gradient / actor_critic / replay_buffer / ppo across libs and desks returns one irrelevant hit in a scraper. A bandit cannot assign credit to an EARLY choice in the construction sequence, which is the property that makes RL search cheaper than enumeration.",
-   "next_step": "Make `libs/research/search_populations.run()` return per-population realised dE[log W] of what it produced and feed it back as the population weights (the `weights` arg at :738 is already there but is fed by yield counts, not by the allocator's marginal) — the file to touch is libs/research/search_populations.py `_order`.",
+   "gap": "SEQUENTIAL CONTROL NOW EXISTS AND IS MEASURED; NOTHING RUNS IT. The audit's finding is answered -- Q(partial spec, next decision) with a replay buffer and an epsilon floor, rewarded by marginal dE[log W] and refusing to learn from an unmeasured book -- but libs/research/alpha_rl.py has no clock and no consumer. By this desk's own vocabulary that is EXISTS-DARK code inside a PARTIAL row, and it is deliberately not scheduled here: an hourly leg whose artifact no organ reads is what check_dead_architecture calls BURNING, and adding one would trade a real gap for a worse one.",
+   "next_step": "Two steps, and the second is what makes the first worth doing. (1) A runner at desks/mt5/research/alpha_rl_run.py that loads BookReward.from_artifact(), runs run_episodes under a budget_s, and writes reports/ALPHA_RL.json with the ranked prefixes and the run's refusal counts -- then one _costed(\"alpha_rl\", ...) line in hourly_cycle.py beside causal_graph. (2) THE CONSUMER, without which (1) is BURNING: have libs/research/search_populations._order read the learned prefix values as its population weights, so the agent's opinion about what a family or a session is worth actually redirects the search budget it was built to redirect.",
    "landed": [
-    "6908d8e6"
+    "6908d8e6",
+    "this commit"
    ]
   },
   {
@@ -1979,19 +1987,25 @@
    "item": "Engine G — causal / mechanism discovery",
    "domain": "G",
    "phase": 2,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "The causal graph asks whether an admitted edge survives conditioning on its target's other admitted parents, and publishes the answer beside the admission (MEASURED)"
+    "The causal graph asks whether an admitted edge survives conditioning on its target's other admitted parents, and publishes the answer beside the admission (MEASURED)",
+    "libs/research/information_flow.py — transfer entropy, conditional mutual information and plain MI on equiprobable bins, Miller-Madow corrected, with a stated per-cell floor below which every estimator REFUSES rather than spreading a thin sample (MEASURED)",
+    "libs/research/causal_graph.py — information_flow(): TE both directions, their asymmetry, the MI and a circular-shift p-value written onto evidence['information_flow'] of EVERY measured edge (MEASURED)",
+    "tests/research/test_information_flow.py — 16 cases against known ground truth: the Miller-Madow correction removes the plug-in bias (corrected mean |0.004| nats on independent data against a positive plug-in mean), negatives are returned not clamped, conditioning collapses a pure shared driver to under 15% of its MI while sparing a mechanism, TE is directed >5x, TE IS the CMI on lagged blocks, and the free-shuffle null is measurably anti-conservative against the circular shift (MEASURED)",
+    "tests/research/test_causal_graph.py — the reading is an ANNOTATION: status, reason, strength and incremental_info are identical with it removed (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:causal_graph",
    "artifact": "desks/mt5/reports/CAUSAL_GRAPH.json",
    "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning → StateVector.conditioning; libs/research/search_populations.causal_derived; miner_candidate_compiler (anomalies)",
-   "gap": "DEMOTED 2026-09-09 on an external audit that was right. Granger-style incremental information, lagged cross-correlation, state dependence and bootstrap/permutation machinery all exist, and 600df84f added conditioning on a target's other admitted parents -- but TRANSFER ENTROPY and CONDITIONAL MUTUAL INFORMATION are absent (one hit repo-wide, in alpha_recombination.py, not an implementation). Granger is linear; the desk trades a book where nearly every pair shares the dollar as a driver, so the nonlinear directed measure and the conditional one are the two that matter.",
-   "next_step": "Add a `conditional_information(x, y, z, lag)` function beside `incremental_information` in libs/research/causal_graph.py (same ΔR² + circular-shift null, with the candidate confounder z in the base regression) and have `world_causal_graph.measure` call it against the already-admitted parents of the target.",
+   "gap": "",
+   "next_step": "",
    "landed": [
-    "600df84f"
-   ]
+    "600df84f",
+    "this commit"
+   ],
+   "note": "DEMOTED 2026-09-09 on an external audit that was right, and closed the same day. The audit's finding was exact: Granger-style incremental information, lagged cross-correlation, state dependence and bootstrap/permutation machinery all existed, and every one of them is LINEAR OR MONOTONE, while a grep for transfer entropy or conditional mutual information across libs/ and desks/ returned one hit -- a field NAME in alpha_recombination.py with no implementation behind it. Both estimators now exist, are tested against generators whose answer is known before they run, and are read on every edge the hourly leg measures. They admit nothing: the admission rule is the deflated interval plus the incremental test, and a second gate here would change what the graph admits without anyone deciding to. The honest limit is stated in the module and pinned by a test: the p-value does NOT separate a mechanism from a shared driver -- both return p=0.005 under the within-Z null -- only the magnitude against the unconditioned MI does."
   },
   {
    "id": "G8",
