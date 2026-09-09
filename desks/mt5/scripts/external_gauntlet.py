@@ -8,6 +8,7 @@ compute theatre and prevents fresh candidates from reaching the same machinery.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
@@ -968,6 +969,589 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     return summary
 
 
+# ------------------------------------------------------------------ certificate annotations
+#: WHAT THIS SECTION IS, AND IS NOT (2026-09-08, Tier-1 wave W1: V1, V5, V8, V13, V15, V19,
+#: V21, A8). Every function below is a MEASUREMENT recorded beside a verdict, or a report of what
+#: a stage WOULD have decided. None of them sets, moves or reads into a gate: the ten gates, their
+#: constants and every pass/fail decision in `run_gauntlet` are byte-identical with or without
+#: this section. A failure inside any annotation records UNMEASURED for that annotation and never
+#: touches certification; an absent input is recorded as absent (`None`, or a status of
+#: UNMEASURED with the reason), never as 0, never as a pass.
+
+#: Seconds the certificate block may spend REBUILDING passing cells for their second-engine
+#: replay and trade-level annotations. The sweep releases a cell's bars and signals the moment it
+#: is judged, and a cached cell never had them, so the trade-level inputs have to be rebuilt.
+#: Passing cells are single digits a sweep at ~22s each, so this is rarely reached; when it is,
+#: the remaining certificates carry UNMEASURED with the budget as the reason and are still
+#: written -- the hourly cadence is not spent on an annotation.
+ANNOTATION_BUDGET_SEC = float(os.environ.get("GAUNTLET_ANNOTATION_BUDGET_SEC", "300"))
+
+#: Stage 0's append-only ledger: the pre-filter module's own default file name, made absolute
+#: against BASE rather than the working directory (this file's first rule, line 23).
+PRE_FILTER_LEDGER = BASE / "data" / "pre_filter_ledger.jsonl"
+
+#: Params that SHAPE a trade rather than CONDITION its entry. Every other free param a family
+#: accepts is counted as an entry condition by `certificate_complexity`; the split is written on
+#: the certificate so the count can be argued with rather than trusted.
+TRADE_SHAPE_KEYS = frozenset({"rr", "wait_bars", "ttl_bars", "horizon", "side", "hold_bars",
+                              "stop_atr", "target_atr"})
+
+#: Exposure-matched monkey draws per certificate. `random_baseline.MIN_BASELINES` is 200; 500
+#: permutations of a ~1,000-day position vector cost milliseconds.
+MONKEY_BASELINES = 500
+
+
+def _unmeasured(why: str, **extra: object) -> dict:
+    return {"status": "UNMEASURED", "why": str(why)[:300], **extra}
+
+
+def _safe(fn, what: str) -> dict:
+    """Run one annotation; a failure inside it is UNMEASURED for that annotation, nothing more."""
+    try:
+        out = fn()
+        if isinstance(out, dict):
+            return out
+        return _unmeasured(f"{what} returned {type(out).__name__}")
+    except Exception as exc:
+        return _unmeasured(f"{what}: {type(exc).__name__}: {exc}")
+
+
+def _num(x: object) -> float | None:
+    """A finite float, or None. `json.dumps` writes NaN as a bare `NaN` token: not JSON."""
+    try:
+        f = float(x)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return f if math.isfinite(f) else None
+
+
+def gate_independence(verdicts: list[dict]) -> dict:
+    """How many verdicts' gate 9 restates gate 7, and how PBO/SPA are shared (V1). Measurement.
+
+    gate_spec.yaml's lockbox block says in its own comment that gate 9 is not independent of
+    gate 7; this COUNTS it per sweep instead of asserting it, over the judged verdicts only (an
+    UNMEASURED verdict has no gates to compare). PBO and SPA are computed once per matrix and
+    broadcast onto every verdict (`stages["pbo"]`, `stages["reality_check_spa"]`), so the number
+    of distinct values across a sweep is the measure of how per-candidate they are: 1 means every
+    candidate carries the set's verdict, not its own. Nothing here changes a decision.
+    """
+    judged = [v for v in verdicts
+              if not v.get("unmeasured") and isinstance(v.get("stages"), dict)
+              and "lockbox" in v["stages"]]
+    restated = 0
+    pbo_vals: set = set()
+    spa_vals: set = set()
+    for v in judged:
+        st = v["stages"]
+        lb, wf = st.get("lockbox") or {}, st.get("walk_forward") or {}
+        if (lb.get("lockbox_sharpe") is not None
+                and lb.get("lockbox_sharpe") == wf.get("oos_sharpe")):
+            restated += 1
+        pbo_vals.add((st.get("pbo") or {}).get("pbo"))
+        spa_vals.add((st.get("reality_check_spa") or {}).get("p_value"))
+    return {
+        "lockbox_restates_walk_forward": {"n": restated, "of": len(judged)},
+        "pbo_spa_broadcast": {"per_matrix": True, "verdicts": len(judged),
+                              "distinct_pbo_values": len(pbo_vals),
+                              "distinct_spa_p_values": len(spa_vals)},
+        "note": ("measurement only: gate 9 is passed on the same walk-forward OOS Sharpe as "
+                 "gate 7, and PBO/SPA are one matrix-level number written onto every verdict; "
+                 "no pass/fail decision is changed by recording this"),
+    }
+
+
+def lifetime_trial_report(families) -> dict:
+    """`lifetime_trials` and per-family trials from the experiment ledger (V21), REPORTED beside
+    the sealed charge and never substituted for it.
+
+    Read from the ledger file `pf_allocator` writes hourly, through the module's own path, and
+    never recomputed here: `experiment_ledger.family_trials` falls back to `lifetime(write=True)`
+    when that file is unreadable, and the judge must not write another organ's artifact. An
+    absent ledger is UNMEASURED with the writer named; a family the ledger does not list is
+    `None`, not 0.
+    """
+    fams = sorted({str(f) for f in families if f})
+    note = ("reported beside the sealed fixed campaign charge (`n_trials` / "
+            "`trial_count_basis`); it never sets the bar")
+    try:
+        from libs.research import experiment_ledger as _el
+        doc = json.loads(_el.OUT.read_text("utf-8"))
+        if not isinstance(doc, dict):
+            raise ValueError("EXPERIMENT_LEDGER.json is not a mapping")
+    except Exception as exc:
+        return _unmeasured(
+            f"{type(exc).__name__}: EXPERIMENT_LEDGER.json unreadable; pf_allocator writes it "
+            f"hourly through experiment_ledger.lifetime(write=True)",
+            families=fams, lifetime_trials=None, family_trials=dict.fromkeys(fams), note=note)
+    by_fam = doc.get("by_family") if isinstance(doc.get("by_family"), dict) else {}
+    lt = doc.get("lifetime_trials")
+    return {
+        "status": "MEASURED",
+        "lifetime_trials": int(lt) if isinstance(lt, int | float) else None,
+        "family_trials": {f: (int(by_fam[f]) if isinstance(by_fam.get(f), int | float) else None)
+                          for f in fams},
+        "families_absent_from_ledger": [f for f in fams if f not in by_fam],
+        "ledger_generated_utc": doc.get("generated_utc"),
+        "note": note,
+    }
+
+
+def _daily_index(ds: pd.Series) -> pd.DatetimeIndex:
+    """A series' dates as a tz-naive, day-normalised DatetimeIndex, whatever the cache or a
+    family handed back (python dates, naive or aware Timestamps)."""
+    idx = pd.DatetimeIndex(pd.to_datetime(list(ds.index)))
+    if idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    return idx.normalize()
+
+
+def _calendar_series(ds: pd.Series) -> pd.Series:
+    """Daily R on a business-day calendar spanning the series, inactive days 0.0 -- the
+    'full-length per-period, 0.0 = flat' shape `pre_filter` and the baselines are written for.
+    A weekend entry (FX opens Sunday evening) keeps its own day rather than being dropped."""
+    idx = _daily_index(ds)
+    per_day = pd.Series(ds.to_numpy(float), index=idx).groupby(level=0).sum()
+    cal = pd.bdate_range(idx.min(), idx.max()).union(per_day.index)
+    return per_day.reindex(cal, fill_value=0.0)
+
+
+def stage0_prefilter(cid: str, ds: pd.Series | None) -> dict:
+    """What `libs.research.pre_filter` WOULD decide about one cell's cached daily series (V8).
+
+    REPORT-ONLY, and why that is the honest wiring rather than a hedge. The pre-filter judges a
+    RETURN STREAM, and before a cell is built there is none: a spec is (symbol, family, params,
+    mechanism) and the filter's contract rejects nothing on those. The only cells that carry a
+    stream before the build loop are the ones already in the series cache -- exactly the cells
+    whose expensive step is already paid, so a rejection there saves no compute and would only
+    remove a verdict. So Stage 0 runs on every cached series, its verdict is recorded per cell
+    and cross-tabulated against the ten gates, and NO cell leaves the docket on its say-so. The
+    cross-tab is the calibration a filter must earn before it is ever allowed to reject.
+
+    Units: the stream is daily R-multiples, not simple returns. The sign, t-statistic and
+    window-concentration checks are scale-free; the cost-floor check needs cost in the stream's
+    units and is skipped (`rt_cost_per_trade=None` escalates on cost by the filter's own rule).
+    """
+    try:
+        from libs.research.pre_filter import pre_filter
+        if ds is None or len(ds) == 0:
+            return {"verdict": "UNJUDGED", "why": "empty series"}
+        stream = _calendar_series(ds)
+        out = pre_filter(stream.to_numpy(float), name=cid, rt_cost_per_trade=None, ledger=None)
+        return {"verdict": str(out.get("verdict")), "reason": out.get("reason"),
+                "detail": out.get("detail"), "t_insample": out.get("t_insample"),
+                "n_active": int(out.get("n_active", 0)), "n_periods": int(out.get("n", 0))}
+    except Exception as exc:
+        return {"verdict": "UNJUDGED", "why": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+def stage0_new_summary() -> dict:
+    return {"mode": "report-only", "rejected": 0, "escalated": 0, "why_counts": {},
+            "unjudged_no_series_before_build": 0, "unjudged_error": 0,
+            "cells_removed_from_docket": 0, "by_decision": {}}
+
+
+def stage0_record(summary: dict, verdicts: dict[str, dict], spec: dict, tf: str,
+                  ds: pd.Series | None) -> None:
+    """Judge ONE cached cell at Stage 0 and count the decision. Never raises."""
+    try:
+        cid = cell_id({"sym": spec["sym"], "family": spec["family"],
+                       "params": spec.get("params") or {}, "timeframe": tf})
+        rec = stage0_prefilter(cid, ds)
+        verdicts[cid] = rec
+        vd = str(rec.get("verdict"))
+        if vd == "REJECT":
+            summary["rejected"] += 1
+            reason = str(rec.get("reason"))
+            summary["why_counts"][reason] = summary["why_counts"].get(reason, 0) + 1
+        elif vd == "ESCALATE":
+            summary["escalated"] += 1
+        else:
+            summary["unjudged_error"] += 1
+        slot = summary["by_decision"].setdefault(f"{vd}:{rec.get('reason') or '-'}",
+                                                 {"n": 0, "sample": []})
+        slot["n"] += 1
+        if len(slot["sample"]) < 20:
+            slot["sample"].append(cid)
+    except Exception as exc:
+        summary["unjudged_error"] += 1
+        summary.setdefault("errors", []).append(f"{type(exc).__name__}: {exc}"[:120])
+
+
+def _stage0_append_ledger(summary: dict, ledger: Path) -> int:
+    """This sweep's Stage 0 decisions, appended by (verdict, reason) with a bounded sample of
+    cell ids. One row per cell would be ~20,000 rows an hour once the cache converges -- a ledger
+    nobody could read or keep -- so the per-cell verdict rides on the verdict row in
+    universal_gates_external.json and the ledger carries the counts (`n`) and samples."""
+    ts = datetime.now(UTC).isoformat()
+    rows = []
+    for key, slot in sorted(summary.get("by_decision", {}).items()):
+        vd, _, reason = key.partition(":")
+        rows.append({"ts": ts, "stage": "pre-filter (zero promotion authority)",
+                     "mode": "report-only", "verdict": vd,
+                     "reason": None if reason == "-" else reason, "n": int(slot["n"]),
+                     "sample_cells": list(slot["sample"]), "cells_removed_from_docket": 0})
+    if not rows:
+        return 0
+    try:
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        with ledger.open("a", encoding="utf-8") as fh:
+            for r in rows:
+                fh.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
+        return len(rows)
+    except OSError as exc:
+        print(f"  Stage 0 ledger NOT appended ({exc}); the decisions are still in the report")
+        return 0
+
+
+def stage0_summary(summary: dict, verdicts_by_cell: dict[str, dict], verdicts: list[dict],
+                   ledger: Path | None = None) -> dict:
+    """Cross-tab Stage 0's would-be verdicts against the ten gates, stamp each verdict row with
+    its Stage 0 record, append the ledger, and return the `pre_filter` block for the result."""
+    cross = {vd: {"gauntlet_pass": 0, "gauntlet_fail": 0, "unmeasured": 0}
+             for vd in ("REJECT", "ESCALATE")}
+    for v in verdicts:
+        rec = verdicts_by_cell.get(str(v.get("cell")))
+        if rec is None:
+            continue
+        v["stage0"] = {"verdict": rec.get("verdict"), "reason": rec.get("reason")}
+        vd = str(rec.get("verdict"))
+        if vd not in cross:
+            continue
+        if v.get("unmeasured"):
+            cross[vd]["unmeasured"] += 1
+        elif v.get("passed"):
+            cross[vd]["gauntlet_pass"] += 1
+        else:
+            cross[vd]["gauntlet_fail"] += 1
+    n_rows = _stage0_append_ledger(summary, ledger) if ledger is not None else 0
+    return {
+        "mode": "report-only",
+        "rejected": int(summary["rejected"]),
+        "escalated": int(summary["escalated"]),
+        "why_counts": dict(summary["why_counts"]),
+        "unjudged_no_series_before_build": int(summary["unjudged_no_series_before_build"]),
+        "unjudged_error": int(summary["unjudged_error"]),
+        "cells_removed_from_docket": 0,
+        "agreement_with_gauntlet": cross,
+        "ledger": None if ledger is None else str(ledger),
+        "ledger_rows_appended": n_rows,
+        "errors": list(summary.get("errors") or [])[:10],
+        "note": ("Stage 0 (libs.research.pre_filter) runs in REPORT-ONLY mode. It judges a "
+                 "return stream, and before a cell is built there is none, so on the fields a "
+                 "spec carries it can reject nothing safely; the cells that DO carry a stream "
+                 "(cached series) have already paid their build, so a rejection there would "
+                 "save no compute and only remove a verdict. Every cached cell's would-be "
+                 "verdict is recorded on its verdict row (`stage0`) and cross-tabulated against "
+                 "the ten gates here; `rejected` counts what the filter WOULD have rejected. No "
+                 "cell was removed from the docket and every pass/fail decision is the "
+                 "gauntlet's own. Ledger rows are per (verdict, reason) with `n` and a sample."),
+    }
+
+
+def certificate_complexity(family: str, params: dict | None, ds: pd.Series | None,
+                           trades: list | None = None) -> dict:
+    """{n_params, n_conditions, expression_nodes, turnover_per_day} for one certificate (V13).
+
+    No threshold. This is the measurement the fitness function's `complexity` term (node count,
+    weight 0.03, search-only) and the adversary's `overfit_params` canary have never had a real
+    survivor to be reconciled against. `n_conditions` is the free params outside TRADE_SHAPE_KEYS
+    and the keys are listed, so the count is checkable. `expression_nodes` is derivable only when
+    the params carry a grammar expression; a feature NAME is a leaf, not an expression, and is
+    recorded as None with that reason. Turnover is engine trades per calendar day when the cell
+    was rebuilt, else active trading days per calendar day from the daily series (which holds one
+    R per day and so cannot count trades) -- and the basis says which.
+    """
+    try:
+        from mt5desk.family_inputs import strip_identity_keys
+        free = strip_identity_keys(family, dict(params or {}))
+    except Exception:
+        free = {k: v for k, v in dict(params or {}).items() if k != "timeframe"}
+    cond_keys = sorted(k for k in free if k not in TRADE_SHAPE_KEYS)
+    out: dict = {
+        "status": "MEASURED", "n_params": len(free), "n_conditions": len(cond_keys),
+        "condition_keys": cond_keys,
+        "basis": ("free params = params minus input/chart identity keys "
+                  "(family_inputs.IDENTITY_KEYS); conditions = free params outside "
+                  f"TRADE_SHAPE_KEYS {sorted(TRADE_SHAPE_KEYS)}"),
+    }
+    expr = next((free[k] for k in ("expr", "expression", "genome", "tree")
+                 if isinstance(free.get(k), list | tuple)), None)
+    if expr is None:
+        out["expression_nodes"] = None
+        out["expression_nodes_why"] = ("no grammar expression on params (a feature name is a "
+                                       "leaf, not an expression)")
+    else:
+        try:
+            from libs.research.alpha_grammar import complexity as _nodes
+            out["expression_nodes"] = int(_nodes(expr))
+        except Exception as exc:
+            out["expression_nodes"] = None
+            out["expression_nodes_why"] = f"{type(exc).__name__}: {exc}"[:120]
+    if trades:
+        entries = pd.DatetimeIndex([pd.Timestamp(t.entry_time) for t in trades])
+        if entries.tz is not None:
+            entries = entries.tz_convert("UTC").tz_localize(None)
+        span = int((entries.max().normalize() - entries.min().normalize()).days) + 1
+        out["turnover_per_day"] = round(len(trades) / span, 6)
+        out["turnover_basis"] = (f"{len(trades)} engine trades over {span} calendar days "
+                                 f"(rebuilt cell)")
+    elif ds is not None and len(ds):
+        idx = _daily_index(ds)
+        span = int((idx.max() - idx.min()).days) + 1
+        out["turnover_per_day"] = round(len(idx.unique()) / span, 6)
+        out["turnover_basis"] = (f"{len(idx.unique())} active trading days over {span} calendar "
+                                 f"days (trade count unavailable: the cached series carries one "
+                                 f"R per day)")
+    else:
+        out["turnover_per_day"] = None
+        out["turnover_basis"] = "no daily series and no trades"
+    return out
+
+
+def _exposure_calendar(trades: list, calendar: pd.DatetimeIndex) -> tuple[np.ndarray, str]:
+    """Per-day net position from engine trades (+1 long / -1 short / 0 flat, every calendar day
+    a trade was open), on `calendar`."""
+    pos = pd.Series(0.0, index=calendar)
+    for t in trades:
+        a, b = pd.Timestamp(t.entry_time), pd.Timestamp(t.exit_time)
+        if a.tzinfo is not None:
+            a, b = a.tz_convert("UTC").tz_localize(None), b.tz_convert("UTC").tz_localize(None)
+        days = pd.date_range(a.normalize(), b.normalize()).intersection(calendar)
+        pos[days] = pos[days] + float(t.side)
+    return np.sign(pos.to_numpy(float)), "net side of engine trades open on each day (rebuilt cell)"
+
+
+def certificate_baselines(sym: str, ds: pd.Series | None, frame: pd.DataFrame | None,
+                          trades: list | None = None, *, seed: int = 0) -> dict:
+    """Buy-and-hold of the cell's own symbol, and the exposure-matched monkey (V15). Recorded.
+
+    The strategy stream is daily R on a calendar (inactive days 0); buy-and-hold is the symbol's
+    daily close-to-close fractional return on the same days. Sharpe is scale-free, so the Sharpe
+    comparison is legitimate; the scorecard's total-return excess is NOT (an R is not a
+    fraction) and is deliberately not recorded. The monkey keeps the rule's exposure calendar and
+    permutes WHEN, so the beat-rate isolates timing from being in the market.
+    """
+    from libs.validation.baselines import baseline_scorecard
+    from libs.validation.random_baseline import monkey_test, partition_return
+    if ds is None or len(ds) == 0:
+        return _unmeasured("no daily series for this cell")
+    if frame is None or len(frame) == 0 or "close" not in frame:
+        return _unmeasured(f"no bars for {sym} in the frame cache")
+    close = frame["close"].astype(float)
+    if not isinstance(close.index, pd.DatetimeIndex):
+        return _unmeasured("bars carry no DatetimeIndex")
+    daily_close = close.resample("1D").last().dropna()
+    if daily_close.index.tz is not None:
+        daily_close.index = daily_close.index.tz_convert("UTC").tz_localize(None)
+    daily_close.index = daily_close.index.normalize()
+    bh = daily_close.pct_change().dropna()
+    strat_cal = _calendar_series(ds)
+    first, last = strat_cal.index.min(), strat_cal.index.max()
+    span = bh[(bh.index >= first) & (bh.index <= last)]
+    if len(span) < 30:
+        return _unmeasured(f"only {len(span)} aligned daily bars for {sym} over the series' span")
+    strat = strat_cal.reindex(span.index, fill_value=0.0)
+    sc = baseline_scorecard(strat.to_numpy(float), buy_hold_returns=span.to_numpy(float))
+    if trades:
+        pos, pos_basis = _exposure_calendar(trades, span.index)
+    else:
+        pos = (strat.to_numpy(float) != 0.0).astype(float)
+        pos_basis = "active-day indicator, long (build_cell passes side=1; trades unavailable)"
+    mkt = span.to_numpy(float)
+    mt = monkey_test(pos, mkt, rng=np.random.default_rng(seed), n_baselines=MONKEY_BASELINES)
+    part = partition_return(pos, mkt)
+    return {
+        "status": "MEASURED", "symbol": sym, "n_days": len(span),
+        "buy_and_hold": {
+            "strategy_sharpe": _num(round(sc.strategy_sharpe, 4)),
+            "buy_hold_sharpe": _num(round(sc.buy_hold_sharpe, 4)),
+            "beats_buy_hold_sharpe": bool(sc.strategy_sharpe > sc.buy_hold_sharpe),
+            "units": ("calendar-day Sharpe; strategy in daily R (0 when flat), buy-and-hold in "
+                      "daily fractional close-to-close; total-return excess omitted as "
+                      "incommensurable"),
+        },
+        "monkey": {
+            "beat_rate": _num(mt.get("beat_rate")), "p_value": _num(mt.get("p_value")),
+            "n_baselines": mt.get("n_baselines"), "real_statistic": _num(mt.get("real_statistic")),
+            "baseline_median": _num(mt.get("baseline_median")),
+            "clears_target": mt.get("clears_target"), "target": mt.get("target"),
+            "reading": mt.get("reading"), "unmeasurable": mt.get("unmeasurable"),
+            "positions_basis": pos_basis,
+        },
+        "exposure_timing": {k: _num(part.get(k)) for k in
+                            ("exposure_share", "timing_share", "time_in_market")},
+    }
+
+
+def _rebuild_for_annotation(cell: dict, meta: dict) -> dict:
+    """ONE rebuild of a passing cell, shared by every trade-level annotation, or why not.
+
+    Same bars (`_frame_for`), same signal function and same cost model as the judged series --
+    `build_cell` is the one constructor -- so the trades it yields are the ones the certificate
+    was earned on, not a second opinion about them.
+    """
+    try:
+        obj = build_cell(str(cell["sym"]), str(cell["family"]), dict(cell.get("params") or {}),
+                         meta)
+        if not obj:
+            return {"ok": False,
+                    "why": "build_cell returned no executable cell (bars or inputs missing)"}
+        res = run_backtest(obj["df"], obj["sigs"], obj["costs"])
+        return {"ok": True, "df": obj["df"], "sigs": obj["sigs"], "costs": obj["costs"],
+                "trades": list(res.trades)}
+    except Exception as exc:
+        return {"ok": False, "why": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+def replay2_agreement(ctx: dict) -> dict:
+    """Per-trade agreement between `mt5desk.engine.run_backtest` and the second engine (V5).
+
+    `libs.validation.replay2` is written from the contract, not the engine's source; the cost it
+    subtracts is the engine's own per-unit round trip in price units (engine.run_backtest:
+    `per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz`). Signals that use trigger,
+    bank, trail or pyramid fields are outside replay2's stated contract; they are counted so a
+    gap on such a cell reads as expected rather than as a defect. Recorded, not gating.
+    """
+    if not ctx.get("ok"):
+        return _unmeasured(f"no rebuilt cell to replay: {ctx.get('why')}")
+    from libs.validation import replay2
+    costs, df, sigs = ctx["costs"], ctx["df"], ctx["sigs"]
+    cost_px = float(costs.per_oz_roundtrip()) / float(costs.contract_oz)
+    r2 = replay2.replay(df, sigs, cost_price_units=cost_px)
+    cmp = replay2.compare([t.r_multiple for t in ctx["trades"]], [t.r for t in r2])
+    outside = sum(1 for s in sigs
+                  if getattr(s, "trigger", None) is not None
+                  or float(getattr(s, "bank_frac", 0) or 0) > 0
+                  or float(getattr(s, "runner_trail_k", 0) or 0) > 0
+                  or int(getattr(s, "add_max", 0) or 0) > 0)
+    return {
+        "status": "MEASURED",
+        "max_abs_r_gap": _num(cmp.get("max_abs_diff_r")),
+        "n_trades_both": min(int(cmp.get("n_engine", 0)), int(cmp.get("n_replay", 0))),
+        "n_engine": int(cmp.get("n_engine", 0)), "n_replay": int(cmp.get("n_replay", 0)),
+        "n_disagree": cmp.get("n_disagree"),
+        "agree_within_tolerance": bool(cmp.get("ok")), "why": cmp.get("why"),
+        "cost_price_units": round(cost_px, 8),
+        "signals_outside_replay2_contract": int(outside), "n_signals": len(sigs),
+        "contract_note": ("replay2 models next-open fills, intrabar stop/target with stop first, "
+                          "TTL exits and one position at a time; trigger/bank/trail/pyramid "
+                          "signals are outside that contract and a gap on them is expected"),
+    }
+
+
+def forward_success_priors(base: Path) -> dict:
+    """Per-family Beta posteriors from the funnel census (V19), read ONCE per sweep.
+
+    `funnel_census.build` reads the docket, the canon and the shadow states -- not this sweep's
+    report -- so the posterior is what the desk believed BEFORE this sweep's certificates joined
+    the canon. `forward_survived` is the pass rate into forward survival from forward enrolment,
+    which is what a forward-success prediction is; the `certified` stage (the posterior
+    `deepening_worker.voi_order` reads) rides beside it for the record.
+    """
+    try:
+        from libs.research import funnel_census as fc
+        recs = fc.build(base)
+    except Exception as exc:
+        return {"_error": f"{type(exc).__name__}: {exc}"[:200]}
+    out: dict = {}
+    for fam, r in recs.items():
+        try:
+            a_f, b_f = r.posterior("forward_survived")
+            a_c, b_c = r.posterior("certified")
+            out[str(fam)] = {
+                "p": _num(a_f / (a_f + b_f)) if (a_f + b_f) > 0 else None,
+                "beta": [round(a_f, 4), round(b_f, 4)], "stage": "forward_survived",
+                "denominator_known": bool(r.denominator_known("forward_survived")),
+                "counts": {k: int(v) for k, v in dict(r.counts).items()},
+                "p_certified_stage": {"p": _num(a_c / (a_c + b_c)) if (a_c + b_c) > 0 else None,
+                                      "beta": [round(a_c, 4), round(b_c, 4)]},
+            }
+        except Exception:
+            continue
+    return out
+
+
+def p_forward_success(family: str, priors: dict) -> dict:
+    """The recorded prediction for one certificate; scored later, never a gate."""
+    if "_error" in priors:
+        return _unmeasured(f"funnel census unreadable: {priors['_error']}", family=family)
+    rec = priors.get(family)
+    if rec is None:
+        return _unmeasured(f"family {family!r} has no funnel record, so no posterior exists "
+                           f"for it; absence is not a probability", family=family)
+    return {"status": "RECORDED_PREDICTION", "family": family, **rec,
+            "basis": ("libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted "
+                      "to the desk's own yield, plus this family's funnel counts), taken at "
+                      "certificate time before this sweep's certificates joined the canon. A "
+                      "prediction to be scored against the forward outcome; not a gate")}
+
+
+def release_stamp() -> dict:
+    """`release_id` and `canon_sha256` of the release this certificate is minted under (A8).
+
+    `release.load()` is one JSON read of the sealed record -- the cheapest read there is and
+    the one the gateway stamps on every intent. Without a sealed record the working tree is
+    described (`build(write=False)`, git plus a few file hashes); without either, None with why.
+    """
+    out: dict = {"release_id": None, "canon_sha256": None,
+                 "release_basis": {"source": None, "why": None}}
+    try:
+        from libs.ops import release as _rel
+        doc = _rel.load()
+        source = "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)"
+        if doc is None:
+            doc = _rel.build(write=False)
+            source = "libs.ops.release.build(write=False) on the working tree (no RELEASE.json)"
+        out["release_id"] = doc.get("release_id")
+        out["canon_sha256"] = doc.get("canon_sha256")
+        out["release_basis"] = {
+            "source": source, "sealed": bool(doc.get("sealed")),
+            "code_sha": doc.get("code_sha") or doc.get("live_sha"),
+            "running_sha": _rel.git_head(),
+            "canon_note": ("canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the "
+                           "release names -- the canon this certificate was minted UNDER, not "
+                           "the one it joins"),
+            "why": None if doc.get("release_id") else "release record carries no release_id",
+        }
+    except Exception as exc:
+        out["release_basis"]["why"] = f"{type(exc).__name__}: {exc}"[:200]
+    return out
+
+
+def certificate_annotations(v: dict, cell: dict | None, meta: dict, *, priors: dict,
+                            release: dict, deadline: float) -> dict:
+    """Every recorded-not-gating annotation for ONE passing verdict, each wrapped so a failure
+    in one records UNMEASURED for that one and the certificate is still written."""
+    out = dict(release)
+    fam = str(v.get("family") or (cell or {}).get("family") or "")
+    sym = str(v.get("sym") or (cell or {}).get("sym") or "")
+    params = dict((cell or {}).get("params") or {})
+    ds = None
+    if cell is not None:
+        ds = cell.get("_cached_ds") if cell.get("_cached_ds") is not None else cell.get("_fresh_ds")
+    out["p_forward_success"] = _safe(lambda: p_forward_success(fam, priors), "p_forward_success")
+    if cell is None:
+        ctx = {"ok": False, "why": "the verdict's cell object is not in this sweep's docket"}
+    elif time.time() > deadline:
+        ctx = {"ok": False, "why": (f"annotation budget ({ANNOTATION_BUDGET_SEC:.0f}s) exhausted "
+                                    f"before this cell was rebuilt; the certificate is written "
+                                    f"and the trade-level annotations are UNMEASURED")}
+    else:
+        ctx = _rebuild_for_annotation(cell, meta)
+    trades = ctx.get("trades") if ctx.get("ok") else None
+    out["replay2_agreement"] = _safe(lambda: replay2_agreement(ctx), "replay2_agreement")
+    out["complexity"] = _safe(lambda: certificate_complexity(fam, params, ds, trades),
+                              "complexity")
+    seed = int(hashlib.sha1(str(v.get("cell")).encode()).hexdigest()[:8], 16)
+
+    def _baselines() -> dict:
+        frame = ctx.get("df") if ctx.get("ok") else _bars_for(sym, timeframe_of(params, fam))
+        return certificate_baselines(sym, ds, frame, trades, seed=seed)
+    out["baselines"] = _safe(_baselines, "baselines")
+    ctx.clear()          # release the rebuilt frame and signals before the next certificate
+    return out
+
+
 def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     """Run full 10-gate gauntlet on a list of cells."""
     print(f"\n=== GAUNTLET: {hunt_name} ({len(cells)} cells) ===")
@@ -1269,6 +1853,14 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         "n_trials": n_trials,
         "trial_count_basis": _trial_basis,
         "trial_census": _census,
+        # THE LIFETIME COUNT, BESIDE THE SEALED CHARGE (V21). `n_trials` above is the policy's
+        # fixed campaign charge and stays exactly that; this records what the experiment ledger
+        # holds for every family in the sweep so the two counters can be read side by side.
+        "trial_ledger": _safe(lambda: lifetime_trial_report(c.get("family") for c in cells),
+                              "trial_ledger"),
+        # GATE INDEPENDENCE, COUNTED (V1): how many verdicts' lockbox restates walk-forward,
+        # and that PBO/SPA are one matrix-level number on every verdict. Measurement only.
+        "gate_independence": _safe(lambda: gate_independence(verdicts), "gate_independence"),
         "program_level": {"pbo": round(pbo_val, 4), "spa_p": round(spa_p, 4)},
         "survivors_passing_all": n_pass,
         "n_judged": n_real,
@@ -1466,6 +2058,13 @@ def main():
     _prewarm = None
     if WORKERS > 1 and len(eligible_specs) > 1:
         _prewarm = _prewarm_cache(eligible_specs, meta, _build_t0 + FRESH_BUILD_BUDGET_SEC)
+    # STAGE 0, REPORT-ONLY (V8). `stage0_prefilter` says why it cannot be more than that here:
+    # a spec carries no return stream, and the cells that do (cached series) have already paid
+    # their build. It judges every cached series on the loop's cached branch below, counts what
+    # it WOULD have rejected, and removes nothing; the result's `pre_filter` block and the
+    # append-only ledger carry the decisions. Fresh builds are counted as unjudged-before-build.
+    _stage0 = stage0_new_summary()
+    _stage0_verdicts: dict[str, dict] = {}
     for spec in eligible_specs:
         key = f"{spec['sym']}.{spec['family']}.{json.dumps(spec['params'], sort_keys=True)}"
         spec_tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
@@ -1485,6 +2084,7 @@ def main():
         cached = cache_load(ckey)
         if cached is not None:
             ds1, ds3 = cached
+            stage0_record(_stage0, _stage0_verdicts, spec, spec_tf, ds1)
             cell_objs.append({
                 "sym": spec["sym"], "family": spec["family"], "params": spec["params"],
                 "timeframe": spec_tf,
@@ -1521,6 +2121,7 @@ def main():
             obj["_ckey"], obj["_last_day"] = ckey, last_day
             cell_objs.append(obj)
             built_fresh += 1
+            _stage0["unjudged_no_series_before_build"] += 1
         else:
             print(f"  SKIP {key}: parquet missing or build failed")
             blocked_build.append({**spec, "downstream_status": "NOT_RUN_BUILD_FAILED",
@@ -1594,6 +2195,12 @@ def main():
     result["n_cells_blocked_build_or_data"] = len(blocked_build)
     result["verdicts"] = (prior_rejections + deferred_verdicts + blocked_verdicts
                           + list(result.get("verdicts", [])))
+    # STAGE 0's RECORD (V8): counts, the cross-tab against the ten gates, and the ledger append.
+    # Reproduction writes its own file and nothing else, so it does not touch the ledger.
+    result["pre_filter"] = _safe(
+        lambda: stage0_summary(_stage0, _stage0_verdicts, result["verdicts"],
+                               None if _repro_active() else PRE_FILTER_LEDGER),
+        "pre_filter")
     result.setdefault("gate_fails", {})["economic_prior"] = (
         int(result.get("gate_fails", {}).get("economic_prior", 0)) + len(prior_rejections)
     )
@@ -1691,6 +2298,15 @@ def main():
         return "continuous"
 
     _params_by_cell = {cell_id(c): dict(c.get("params") or {}) for c in cell_objs}
+    # ANNOTATION INPUTS, READ ONCE PER SWEEP (see the certificate-annotations section): the
+    # funnel posteriors (V19) and the release record (A8) are the same for every certificate
+    # this sweep writes, and the rebuild budget is shared across them.
+    _cells_by_id = {cell_id(c): c for c in cell_objs}
+    _priors = _safe(lambda: forward_success_priors(BASE), "forward_success_priors")
+    if _priors.get("status") == "UNMEASURED":
+        _priors = {"_error": str(_priors.get("why"))}
+    _release = release_stamp()
+    _annot_deadline = time.time() + ANNOTATION_BUDGET_SEC
     for v in result.get("verdicts", []):
         if not v.get("passed"):
             continue
@@ -1733,6 +2349,13 @@ def main():
         if _why:
             print(f"  REFUSED-UNRUNNABLE {key}: {_why}")
             continue
+        # MEASUREMENT BESIDE THE VERDICT (V5 replay2, V13 complexity, V15 baselines, V19
+        # p_forward_success, A8 release stamp). `gates` above is the verdict and is untouched;
+        # every key added here is recorded, never gating, and a failure inside any one of them
+        # is UNMEASURED for that key with the reason -- the certificate is written regardless.
+        row.update(certificate_annotations(v, _cells_by_id.get(v["cell"]), meta,
+                                           priors=_priors, release=_release,
+                                           deadline=_annot_deadline))
         survivors_all[key] = row
 
     # THE SCALP LANE'S CERTIFICATES (scripts/scalp_gauntlet.py): same ten gates, same
