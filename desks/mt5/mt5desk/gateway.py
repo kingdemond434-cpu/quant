@@ -28,8 +28,10 @@ pass state and the ledgers, and sends what the core decided.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import sys
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -586,6 +588,13 @@ def _record_decision(**row) -> None:
     row.setdefault("exit_rule", "fixed_tp")
     row.setdefault("veto_reason", "" if row.get("taken") else str(row.get("reason") or ""))
     row.setdefault("portfolio_context", _decision_portfolio_context(row.get("sleeve")))
+    # THE ADDRESS THE DECISION SHARES WITH ITS INTENT (2026-09-08). A placed leg passes the id
+    # `_record_intent` stamped; a veto or a refusal derives the same formula from its own row, so
+    # every decision row has one and a placed one equals its intent's. Costs a field, never a row.
+    with contextlib.suppress(Exception):
+        if not row.get("intent_id"):
+            row["intent_id"] = _intent_id(row.get("symbol"), row.get("sleeve"),
+                                          row.get("side"), row["time"])
     write_decision(DECISIONS, row, log=log)
 
 
@@ -645,8 +654,48 @@ def _record_vetoed_bracket(s: dict, df: pd.DataFrame, sym, reason: str,
         return False
 
 
-def _record_intent(**row) -> None:
-    """Append one placement intent. NEVER raises -- telemetry must not break the money path."""
+def _minute_of(stamp: str) -> str:
+    """The decision minute exactly as `libs.research.decision_dataset.minute_of` floors it: the
+    ISO stamp parsed ('Z' and a naive stamp read as UTC), floored to the minute, ISO with offset."""
+    s = str(stamp or "").strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    d = datetime.fromisoformat(s)
+    d = d.astimezone(UTC) if d.tzinfo is not None else d.replace(tzinfo=UTC)
+    return d.replace(second=0, microsecond=0).isoformat()
+
+
+def _intent_id(symbol, sleeve, side, stamp: str) -> str:
+    """The one address an intent and its decision share.
+
+    `libs.research.decision_dataset.row_id`'s formula -- sha1 of `symbol|sleeve|side|minute`, cut
+    to 16 hex -- computed here rather than imported, so stamping a row on the money path does not
+    load a research module; `test_execution_attribution` pins the two equal. None reads as ""
+    exactly as the dataset reads a side-less refusal. An ADDRESS, never a secret.
+    """
+    key = f"{symbol or ''}|{sleeve or ''}|{side or ''}|{_minute_of(stamp)}"
+    return hashlib.sha1(key.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
+
+
+def _sleeve_identity(s) -> dict:
+    """The identity keys a sleeve row carries UPSTREAM of its name -- the certificate that
+    justified it and the registry's sleeve id -- read with .get and never required, because the
+    promoter writes them onto sleeves.json in its own wave and a row without them must still
+    place. Only the 31-char name reached the intent row before this; a euro of realised P&L could
+    walk back to a sleeve and no further."""
+    if not isinstance(s, dict):
+        return {}
+    return {k: s[k] for k in ("certificate", "sleeve_id") if s.get(k)}
+
+
+def _record_intent(**row) -> str | None:
+    """Append one placement intent. NEVER raises -- telemetry must not break the money path.
+
+    Returns the `intent_id` stamped on the row (None when the row could not be written), so the
+    decision recorded beside a placement can carry the same address. The id is derived from the
+    row's own `time`, and a caller may pass one; either way a fault in deriving it costs the
+    field and not the row.
+    """
     try:
         row["time"] = now()
         row.setdefault("state_vector_id", _state_vector_id())
@@ -654,14 +703,22 @@ def _record_intent(**row) -> None:
             row.setdefault("release_id", _release_id())
         except Exception:                                   # noqa: BLE001
             row.setdefault("release_id", "unreleased")
+        with contextlib.suppress(Exception):
+            row.setdefault("intent_id", _intent_id(row.get("symbol"), row.get("sleeve"),
+                                                   row.get("side"), row["time"]))
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
         with INTENTS.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, default=str) + "\n")
+        return row.get("intent_id")
     except Exception as exc:
         log(f"intent record failed (non-fatal): {type(exc).__name__}: {exc}")
+        return None
 
 
-def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) -> dict:
+def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
+                  sleeve_row: dict | None = None) -> dict:
+    """Send both legs of a bracket exactly as before; `sleeve_row` (the roster row, optional) is
+    read only to carry the sleeve's certificate and registry id onto the intent row."""
     if not st["armed"]:
         log(f"SHADOW [{sleeve}] would place bracket: {json.dumps(spec, default=str)}")
         for side in ("buy_stop", "sell_stop"):
@@ -718,7 +775,13 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
             "magic": MAGIC,
             "comment": f"DW{sleeve}",
         }
+        # LATENCY, MEASURED IN PLACE (2026-09-08): the wall clock around the one call that
+        # reaches the venue. `decision_dataset` has read `latency_ms` off the intent since it was
+        # written and nothing ever wrote it -- it is the one execution feature that cannot be
+        # reconstructed afterwards. Recorded, never acted on.
+        _t0 = time.perf_counter()
         res = mt5.order_send(req)
+        _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         code = res.retcode if res else None
         why = diagnose(code, getattr(res, "comment", "") or "")
         if why:
@@ -735,20 +798,22 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
         # them; with the quote and spread recorded here, execution cost becomes a function of
         # symbol, hour, spread and state rather than one scalar per symbol. `_t` was already read
         # above for the legality check, so this costs nothing and cannot fail separately.
-        _record_intent(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
-                       intended=float(s["price"]), sl=float(s["sl"]), tp=float(s["tp"]),
-                       ticket=(getattr(res, "order", None) if res else None), retcode=code,
-                       decision_bid=(float(_t.bid) if _t is not None else None),
-                       decision_ask=(float(_t.ask) if _t is not None else None),
-                       spread_at_decision=(float(_t.ask) - float(_t.bid)
-                                           if _t is not None else None),
-                       point=_point, stops_level=_lvl, order_type="pending_stop")
+        _iid = _record_intent(
+            sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+            intended=float(s["price"]), sl=float(s["sl"]), tp=float(s["tp"]),
+            ticket=(getattr(res, "order", None) if res else None), retcode=code,
+            decision_bid=(float(_t.bid) if _t is not None else None),
+            decision_ask=(float(_t.ask) if _t is not None else None),
+            spread_at_decision=(float(_t.ask) - float(_t.bid) if _t is not None else None),
+            point=_point, stops_level=_lvl, order_type="pending_stop", latency_ms=_lat_ms,
+            **_sleeve_identity(sleeve_row))
         sent.append({"side": side, "retcode": code,
                      "comment": res.comment if res else None})
         _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
                          price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
                          taken=(not why), reason=("placed" if not why else "broker_rejected"),
-                         detail=(why or ""), ticket=(getattr(res, "order", None) if res else None))
+                         detail=(why or ""), ticket=(getattr(res, "order", None) if res else None),
+                         intent_id=_iid)
         log(f"ORDER [{sleeve}] {side} -> retcode={code} "
             f"{res.comment if res else ''}")
     # THE SUCCESS CHECK. Without it a pass where every order was refused is
@@ -1695,18 +1760,21 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not margin_ok(s["symbol"], lot, entry_ref):
             log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
             continue
+        _t0 = time.perf_counter()
         res = mt5.order_send({
             "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": lot,
             "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
             "price": entry_ref, "sl": float(g.stop), "tp": float(g.target),
             "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
         })
+        _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         rc = res.retcode if res else None
         _record_intent(sleeve=name, symbol=s["symbol"],
                        side=("buy" if side == 1 else "sell"), lot=lot,
                        intended=entry_ref, sl=float(g.stop), tp=float(g.target),
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
-                       policy_advice=policy_advice)
+                       policy_advice=policy_advice, latency_ms=_lat_ms,
+                       **_sleeve_identity(s))
         log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} {diagnose(rc, getattr(res, 'comment', '') or '')} "
             f"| {order_desc}")
         if rc in (10008, 10009):
@@ -1875,18 +1943,21 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             if not margin_ok(s["symbol"], per, price):
                 log(f"[{name}] SCALP-EXEC add-on SKIPPED: margin tight (lot={per})")
                 continue
+            _t0 = time.perf_counter()
             res = mt5.order_send({
                 "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
                 "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
                 "price": price, "sl": float(basket["stop"]), "tp": float(new_tp),
                 "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
             })
+            _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
             rc = res.retcode if res else None
             _record_intent(sleeve=name, symbol=s["symbol"],
                            side=("buy" if side == 1 else "sell"), lot=per, intended=price,
                            sl=float(basket["stop"]), tp=float(new_tp),
                            ticket=(getattr(res, "order", None) if res else None), retcode=rc,
-                           slice_depth=len(entries))
+                           slice_depth=len(entries), latency_ms=_lat_ms,
+                           **_sleeve_identity(s))
             log(f"[{name}] SCALP-EXEC ADD-ON -> retcode={rc} "
                 f"{diagnose(rc, getattr(res, 'comment', '') or '')} | {desc}")
             if rc in (10008, 10009):
@@ -1935,18 +2006,21 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not margin_ok(s["symbol"], per, plan.entry_ref):
             log(f"[{name}] SCALP-EXEC SKIPPED: margin tight (lot={per})")
             continue
+        _t0 = time.perf_counter()
         res = mt5.order_send({
             "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
             "type": mt5.ORDER_TYPE_BUY if plan.side == 1 else mt5.ORDER_TYPE_SELL,
             "price": plan.entry_ref, "sl": float(plan.stop), "tp": float(plan.target),
             "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
         })
+        _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         rc = res.retcode if res else None
         _record_intent(sleeve=name, symbol=s["symbol"],
                        side=("buy" if plan.side == 1 else "sell"), lot=per,
                        intended=plan.entry_ref, sl=float(plan.stop), tp=float(plan.target),
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
-                       policy_advice=policy_advice, slice_depth=1)
+                       policy_advice=policy_advice, slice_depth=1, latency_ms=_lat_ms,
+                       **_sleeve_identity(s))
         log(f"[{name}] SCALP-EXEC ORDER -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '')} | {desc}")
         if rc in (10008, 10009):
@@ -2269,7 +2343,7 @@ def main() -> None:
                     log(f"release-refusal record failed (non-fatal) [{s['name']}]: "
                         f"{type(exc).__name__}: {exc}")
                 continue
-            res = place_bracket(st, spec, s["name"], s["symbol"], lot)
+            res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s)
             st["brackets"][s["name"]] = {"date": day_key, "hi": hi, "lo": lo,
                                          "spec": spec, "placed_at": now(), "result": res}
             save_state(st)

@@ -335,8 +335,10 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
           "_record_exec_outcome": lambda *a, **k: book.append(("outcome", *a)),
           "close_positions": lambda st, symbol: closes.append(("close", symbol)),
           "_logs": logs, "_intents": intents, "_book": book, "_closes": closes}
+    # `_sleeve_identity` rides along because the send site spreads it onto the intent row; it is
+    # pure over the sleeve dict and the harness would otherwise report the adapter broken.
     return _exec(("run_family_sleeves", "_family_chart", "_family_constructor",
-                  "_family_takes_side", "_family_call_params"), ns)
+                  "_family_takes_side", "_family_call_params", "_sleeve_identity"), ns)
 
 
 def _sleeve(**over) -> dict:
@@ -375,6 +377,10 @@ def test_armed_the_family_executor_sends_the_signals_levels_once_per_bar(tmp_pat
     assert req["comment"] == f"DW{_NAME}"
     (intent,) = ns["_intents"]
     assert intent["sleeve"] == _NAME and intent["retcode"] == 10009 and intent["ticket"] == 9
+    # The wall clock around the send, on the row and nowhere else: a float in milliseconds.
+    assert isinstance(intent["latency_ms"], float) and intent["latency_ms"] >= 0.0
+    # A roster row without identity keys places exactly as before and claims none.
+    assert "certificate" not in intent and "sleeve_id" not in intent
     last_bar = dc.h1_frame(rows).index[-2]
     assert st["generic"][_NAME]["open_ttl_until"] == dc.family_ttl_until(last_bar, 12)
     assert [b[0] for b in ns["_book"]] == ["target", "fill", "outcome"]
@@ -383,6 +389,27 @@ def test_armed_the_family_executor_sends_the_signals_levels_once_per_bar(tmp_pat
     # The same bar again places nothing.
     ns["run_family_sleeves"](st, [_sleeve()], 10_000.0)
     assert len(mt5.sent) == 1
+
+
+def test_the_family_intent_carries_the_sleeves_certificate_and_id_when_the_row_has_them(
+        tmp_path, monkeypatch) -> None:
+    """Read with .get, never required: the promoter writes `certificate` and `sleeve_id` onto
+    sleeves.json in its own wave, and a row that carries them is attributable above its name."""
+    rows = _rows()
+    mt5 = _fake_mt5(rows)
+    ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows))
+    ns["run_family_sleeves"]({"armed": True},
+                             [_sleeve(certificate="EURUSD.fam.asia", sleeve_id="1903a4cc")],
+                             10_000.0)
+    (req,) = mt5.sent
+    # THE ORDER IS UNCHANGED: the identity is recorded, never sent.
+    assert set(req) == {"action", "symbol", "volume", "type", "price", "sl", "tp", "deviation",
+                        "magic", "comment"}
+    (intent,) = ns["_intents"]
+    assert intent["certificate"] == "EURUSD.fam.asia" and intent["sleeve_id"] == "1903a4cc"
+    # An empty or absent value is not an identity.
+    assert ns["_sleeve_identity"]({"certificate": "", "sleeve_id": None}) == {}
+    assert ns["_sleeve_identity"](None) == {}
 
 
 def test_a_state_mismatch_is_marked_and_named_and_a_failed_signal_is_not_marked(

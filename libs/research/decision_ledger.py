@@ -291,7 +291,10 @@ def write_decision(path: Path | str, decision: Decision | Mapping[str, Any], *,
         row["state_vector_id"] = d.world_state_id
         row["taken"] = d.taken
         if not isinstance(decision, Decision):
-            for k in ("detail",):
+            # `intent_id` is the address the gateway stamps on the intent row and on the decision
+            # beside it (decision_dataset.row_id's formula); it rides through verbatim so the two
+            # ledgers can be joined on one key rather than re-derived from two clocks.
+            for k in ("detail", "intent_id"):
                 if k in decision:
                     row[k] = decision[k]
         p = Path(path)
