@@ -90,12 +90,12 @@ def mine_calendar() -> list[dict]:
 
         except Exception as e:
             print(f"  forexfactory calendar: {e}")
-        # A SWALLOWED EXCEPTION IS A SILENT ZERO: printing and returning [] makes a
-        # crashed miner indistinguishable from a quiet source. classify_row keys on
-        # "kind", so this counts as an error and never as a real row (L1.28a).
-        discoveries.append({"source": "forexfactory",
-                            "kind": "fetch_error",
-                            "error": f"{type(e).__name__}: {e}"})
+            # A SWALLOWED EXCEPTION IS A SILENT ZERO: printing and returning [] makes a
+            # crashed miner indistinguishable from a quiet source. classify_row keys on
+            # "kind", so this counts as an error and never as a real row (L1.28a).
+            discoveries.append({"source": "forexfactory",
+                                "kind": "fetch_error",
+                                "error": f"{type(e).__name__}: {e}"})
 
     return discoveries
 
