@@ -22,6 +22,15 @@ ops/crontab.manifest is the reconstructed DR floor; this checker keeps it honest
       nastier one that dies on ImportError, which is indistinguishable downstream because it
       still fires on time and still touches its log (R0359).
 
+  (f) DUPLICATE ORGANS across ALL FOUR PLANES (2026-09-08): every live row -- cron lines,
+      SYSTEMD units, the box's desks/mt5/ops/box_tasks.manifest and hourly_cycle's `_costed`
+      legs -- is grouped by the script it executes, and a script with more than one live
+      schedule that does not share ONE lock (one flock path on every line, or a job lock
+      inside the script itself) is REPORTED. Never disabled, never an exit code: (d) already
+      fails the same shape on cron alone, and the cross-plane case is the one nobody could
+      see -- run_frontier_rotation.sh carried four schedules on two planes and external_gauntlet
+      runs as a box task and an hourly leg at once. The report is data/duplicate_organs.json.
+
 In this sandbox / on a fresh restore `crontab -l` fails; that path reports 'no live crontab
 readable' gracefully and still runs (a)+(b) -- the repo-only checks are exactly the ones a
 dead box needs. deploy/reconstitute_cron.sh refuses to install while (a) fails.
@@ -42,7 +51,7 @@ import re
 import subprocess
 import sys
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -493,6 +502,178 @@ def split_by_plane(root: Path, drift_missing: list[str]) -> tuple[list[str], dic
     return uncovered, absorbed
 
 
+# ---------------------------------------------------------------------------------------------
+# (f) DUPLICATE ORGANS -- one script, several live schedules, no shared lock
+# ---------------------------------------------------------------------------------------------
+
+_BOX_TASKS_REL = "desks/mt5/ops/box_tasks.manifest"
+_HOURLY_REL = "desks/mt5/research/hourly_cycle.py"
+_DUP_REPORT_REL = "data/duplicate_organs.json"
+_TASK_LINE = re.compile(r"^TASK\s+(.*)$")
+_COSTED = re.compile(r'_costed\(\s*"([A-Za-z0-9_]+)"\s*,\s*([A-Za-z0-9_.]+)')
+_PRODUCER = re.compile(r'_producer\(\s*"([A-Za-z0-9_]+)"\s*,\s*"([^"]+)"')
+_DEF = re.compile(r"^def ([A-Za-z0-9_]+)\(", re.M)
+#: A script that serialises ITSELF: the desk's own job lock (research.job_lock.exclusive_job),
+#: a flock in a shell wrapper, or a raw file lock. Any of these makes every schedule of the
+#: script wait on the same lock, whichever plane fired it.
+_SELF_LOCK = re.compile(r"exclusive_job\(|job_lock|\bflock\b|fcntl\.(?:flock|lockf)|"
+                        r"msvcrt\.locking|single_instance")
+SERIALISED, UNSERIALISED = "SERIALISED", "UNSERIALISED"
+
+
+@dataclass(frozen=True)
+class ScheduleRow:
+    plane: str        # cron | systemd | box_task | hourly_leg
+    script: str       # repo-relative path, or `hourly_cycle:<leg>` for an in-process leg
+    schedule: str
+    lock: str | None
+    where: str        # manifest line, unit, task name or leg -- for the report
+
+
+def _box_rows(root: Path) -> tuple[list[ScheduleRow], str]:
+    p = root / _BOX_TASKS_REL
+    try:
+        text = p.read_text("utf-8")
+    except OSError:
+        return [], f"{_BOX_TASKS_REL}: absent"
+    rows: list[ScheduleRow] = []
+    for i, line in enumerate(text.splitlines(), start=1):
+        m = _TASK_LINE.match(line.strip())
+        if not m:
+            continue
+        kv = dict(_KV.findall(m.group(1)))
+        runs = kv.get("runs", "")
+        if not runs or runs == "UNKNOWN" or not runs.endswith((".py", ".sh", ".ps1", ".cmd")):
+            continue
+        rows.append(ScheduleRow("box_task", runs, kv.get("trigger", "UNDECLARED"), None,
+                                f"{kv.get('name', '?')} (line {i})"))
+    return rows, f"{_BOX_TASKS_REL}: {len(rows)} task row(s) naming a script"
+
+
+def _hourly_rows(root: Path) -> tuple[list[ScheduleRow], str]:
+    p = root / _HOURLY_REL
+    try:
+        src = p.read_text("utf-8", errors="ignore")
+    except OSError:
+        return [], f"{_HOURLY_REL}: absent"
+    # The body of every top-level def, so a leg's callee can be searched for the script it
+    # runs: `_costed("deep_forest", deep_forest)` wraps `_producer("deep_forest_miner",
+    # "research/deep_forest_miner.py")`, and the leg name is not the file's name.
+    defs = list(_DEF.finditer(src))
+    bodies = {m.group(1): src[m.end():(defs[i + 1].start() if i + 1 < len(defs) else len(src))]
+              for i, m in enumerate(defs)}
+    rows: list[ScheduleRow] = []
+    seen: set[str] = set()
+    for m in _COSTED.finditer(src):
+        leg, callee = m.group(1), m.group(2)
+        if leg in seen:
+            continue
+        seen.add(leg)
+        line = src[src.rfind("\n", 0, m.start()) + 1:src.find("\n", m.end())]
+        pm = _PRODUCER.search(line) or _PRODUCER.search(bodies.get(callee, ""))
+        path = pm.group(2) if pm else None
+        script = f"hourly_cycle:{leg}"
+        cands = ([path, f"desks/mt5/{path}"] if path else []) + [
+            f"desks/mt5/research/{leg}.py", f"desks/mt5/scripts/{leg}.py", f"scripts/{leg}.py"]
+        for c in cands:
+            if (root / c).is_file():
+                script = c
+                break
+        rows.append(ScheduleRow("hourly_leg", script, "hourly_cycle leg (every hour)", None,
+                                f"_costed({leg!r})"))
+    return rows, f"{_HOURLY_REL}: {len(rows)} _costed leg(s)"
+
+
+def schedule_rows(root: Path, man: Manifest) -> tuple[list[ScheduleRow], dict[str, str]]:
+    """Every live schedule on the four planes, one row per (plane, script)."""
+    rows: list[ScheduleRow] = []
+    for c in man.cron:
+        m = _FLOCK_PATH.search(c.command)
+        lock = m.group(1) if m is not None else None
+        for script in _SCRIPT_REF.findall(c.command):
+            rows.append(ScheduleRow("cron", script, c.schedule, lock, f"line {c.line_no}"))
+    for u in man.systemd:
+        if u.exec_path:
+            rows.append(ScheduleRow("systemd", u.exec_path, u.on, None, u.unit))
+    box, box_note = _box_rows(root)
+    hourly, hourly_note = _hourly_rows(root)
+    rows.extend(box)
+    rows.extend(hourly)
+    return rows, {"cron": f"{_MANIFEST_REL}: {len(man.cron)} live cron line(s)",
+                  "systemd": f"{_MANIFEST_REL}: {len(man.systemd)} SYSTEMD row(s)",
+                  "box_tasks": box_note, "hourly_cycle": hourly_note}
+
+
+def _organ_key(script: str) -> str:
+    """Group by the executed file's stem: `ops/run_x.sh`, `/home/quant/.../run_x.sh` and a
+    box task naming `desks/mt5/scripts/x.py` beside an hourly leg `x` are one organ."""
+    return Path(script.split(":", 1)[1] if script.startswith("hourly_cycle:") else script).stem
+
+
+def _self_lock_evidence(root: Path, scripts: set[str]) -> str:
+    for s in sorted(scripts):
+        if s.startswith("hourly_cycle:"):
+            continue
+        try:
+            src = (root / _to_repo_rel(root, s)).read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        m = _SELF_LOCK.search(src)
+        if m:
+            return f"{s}: {m.group(0)}"
+    return ""
+
+
+def check_duplicate_organs(root: Path, man: Manifest) -> dict:
+    """(f) Report every organ with more than one live schedule and whether one lock covers
+    them all. REPORT ONLY: nothing here changes an exit code or a schedule."""
+    rows, planes = schedule_rows(root, man)
+    by_key: dict[str, list[ScheduleRow]] = {}
+    for r in rows:
+        by_key.setdefault(_organ_key(r.script), []).append(r)
+    groups: dict[str, dict] = {}
+    for key, rs in sorted(by_key.items()):
+        if len(rs) < 2:
+            continue
+        locks = sorted({r.lock for r in rs if r.lock})
+        one_lock_everywhere = len(locks) == 1 and all(r.lock for r in rs)
+        evidence = _self_lock_evidence(root, {r.script for r in rs})
+        serialised = one_lock_everywhere or bool(evidence)
+        why = ("every schedule takes the same flock path" if one_lock_everywhere else
+               f"the script serialises itself ({evidence})" if evidence else
+               (f"{len(locks)} distinct flock path(s) across {len(rs)} schedules and no lock "
+                f"inside the script: the runs can overlap" if locks else
+                f"{len(rs)} schedules, no flock on any line and no lock inside the script"))
+        groups[key] = {"n_schedules": len(rs), "planes": sorted({r.plane for r in rs}),
+                       "scripts": sorted({r.script for r in rs}), "locks": locks,
+                       "self_lock": evidence or None,
+                       "verdict": SERIALISED if serialised else UNSERIALISED, "why": why,
+                       "rows": [asdict(r) for r in rs]}
+    unser = sorted(k for k, g in groups.items() if g["verdict"] == UNSERIALISED)
+    return {"n_rows": len(rows),
+            "by_plane": {p: sum(1 for r in rows if r.plane == p)
+                         for p in ("cron", "systemd", "box_task", "hourly_leg")},
+            "planes_read": planes, "n_duplicated": len(groups), "unserialised": unser,
+            "serialised": sorted(k for k in groups if k not in unser), "groups": groups,
+            "note": ("REPORT ONLY. A script on more than one live schedule is SERIALISED when "
+                     "every line takes one flock path or the script holds its own job lock, "
+                     "else UNSERIALISED -- the runs can overlap. Nothing here disables a "
+                     "schedule or fails the check; a person decides which schedule to keep.")}
+
+
+def write_duplicate_report(root: Path, report: dict) -> Path | None:
+    out = root / _DUP_REPORT_REL
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps({"generated_utc": datetime.now(UTC).isoformat(
+            timespec="seconds"), **report}, indent=1) + "\n", "utf-8")
+        return out
+    except OSError as e:                              # reporting must never mask the check
+        print(f"  duplicate-organ report unwritable ({e}) -- check result stands",
+              file=sys.stderr)
+        return None
+
+
 def repair_schedules(root: Path, man: object) -> list[str]:
     """Rewrite a committed timer's OnCalendar to the manifest's, and say so.
 
@@ -581,6 +762,17 @@ def main(argv: list[str] | None = None) -> int:
     # checks is VACUOUS, and printing the count is what makes the difference legible.
     print(f"  imports: {n_import_checks} first-party resolved, "
           f"{n_thirdparty} third-party NOT CHECKED (unresolvable from disk)")
+    # (f) duplicate organs, across all four planes. Reported, never an exit code.
+    dup = check_duplicate_organs(root, man)
+    for key in dup["unserialised"]:
+        g = dup["groups"][key]
+        print(f"  DUPLICATE {key}: {g['n_schedules']} live schedules on "
+              f"{'+'.join(g['planes'])} -- {UNSERIALISED}: {g['why']}")
+    dup_out = write_duplicate_report(root, dup)
+    print(f"  duplicate organs: {dup['n_rows']} live rows on 4 planes "
+          f"({', '.join(f'{k}={v}' for k, v in dup['by_plane'].items())}), "
+          f"{dup['n_duplicated']} organ(s) on >1 schedule, {len(dup['unserialised'])} "
+          f"unserialised (reported, never disabled)" + (f" -> {dup_out}" if dup_out else ""))
     if live is None:
         print("  live crontab: no live crontab readable (sandbox/fresh restore) -- "
               "repo-only checks (a)+(b) still ran")
@@ -621,6 +813,13 @@ def main(argv: list[str] | None = None) -> int:
                                     "n_first_party_checked": n_import_checks,
                                     "n_third_party_unchecked": n_thirdparty},
                 "parse": {"ok": not man.parse_problems, "problems": man.parse_problems},
+                # (f) never affects exit_code; `ok` here means "nothing unserialised", and
+                # the full groups live in data/duplicate_organs.json.
+                "duplicate_organs": {"ok": not dup["unserialised"],
+                                     "n_duplicated": dup["n_duplicated"],
+                                     "unserialised": dup["unserialised"],
+                                     "serialised": dup["serialised"],
+                                     "report": _DUP_REPORT_REL},
                 "live_crontab": {
                     "readable": live is not None,
                     "note": None if live is not None else "no live crontab readable",

@@ -19,6 +19,15 @@ proposal bar is the shared one, and the gauntlet's ten gates are untouched.
 THE OPERATORS ARE NAMED so `mutation_yield` can bill them: `step_<param>_up`,
 `step_<param>_down`, `swap_<param>`. Its weights file, when present, biases WHICH parameter
 this module perturbs first; it never changes what a screen or a gate requires.
+
+MOTIFS BY STATE (2026-09-08). The priors above are per-family PARAMETER priors; nothing said
+"X works primarily when state = Y". `motifs_by_state` groups the certificates of a family by
+the state their shadow_spec names (selector / condition) and reports where the survivors
+concentrate; where they do, a certificate of that family sitting in a DIFFERENT stated state is
+given one more neighbour: itself, conditioned on the dominant state (operator
+`condition_on_state`). That neighbour is never screened here -- state conditioning is applied
+by the shadow harness, not by the family function -- so it is queued as a task with the rule
+written on it, and the gauntlet decides as for everything else.
 """
 from __future__ import annotations
 
@@ -58,6 +67,14 @@ FROZEN = frozenset({"atr_n", "symbol", "input_symbol", "input_source", "factor_s
 CATEGORICAL = frozenset({"side"})
 HOLD_PARAMS = ("horizon", "ttl_bars", "hold_bars", "wait_bars", "hold_days")
 SESSION_PARAMS = ("selector", "condition", "session", "range_start", "signal_at")
+#: A family's survivors CONCENTRATE in a state when at least MIN_STATE_N of them name a state
+#: and the most common one holds MORE than STATE_SHARE of those -- a strict majority, so a 1/1
+#: split is not a concentration. Below either line the motif is reported with its counts and
+#: no neighbour is stepped from it.
+MIN_STATE_N = 2
+STATE_SHARE = 0.5
+STATE_OP = "condition_on_state"
+UNSTATED_STATE = "UNSTATED"
 _NULL_SCREEN = {"n_independent": 0, "gross_per_trade": 0.0, "t_gross": 0.0,
                 "clears_cost": False, "refused_unfillable": 0, "screened": False}
 
@@ -269,6 +286,87 @@ def motifs(certified: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return out
 
 
+def state_of(cert: dict[str, Any]) -> str:
+    """The state a certificate was certified in, as its shadow_spec names it: `selector=asia`,
+    `selector=afternoon|condition=NORMAL_DAY`, or UNSTATED when the certificate (a graph-only
+    node, a legacy cell) names neither. UNSTATED is unknown, not "any" -- it is never a
+    neighbour's origin or destination."""
+    parts = [f"{k}={cert.get(k)}" for k in ("selector", "condition") if cert.get(k) is not None]
+    return "|".join(parts) or UNSTATED_STATE
+
+
+def _state_fields(state: str) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for part in state.split("|"):
+        k, _, v = part.partition("=")
+        if k in ("selector", "condition") and v:
+            out[k] = v
+    return out
+
+
+def motifs_by_state(certified: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Per family: which stated states its survivors sit in, and whether they concentrate.
+
+    Descriptive first -- every family gets its counts -- and a RULE only where the counts clear
+    MIN_STATE_N and STATE_SHARE: "session_range_breakout survivors concentrate in
+    selector=asia: 5 of 6 stated certificates". A family with one stated survivor has no rule,
+    and says so, rather than a rule with n = 1 dressed as a finding.
+    """
+    per_fam: dict[str, list[dict[str, Any]]] = {}
+    for c in certified:
+        per_fam.setdefault(str(c["family"]), []).append(c)
+    out: dict[str, dict[str, Any]] = {}
+    for fam, certs in sorted(per_fam.items()):
+        states: Counter[str] = Counter(state_of(c) for c in certs)
+        n_unstated = states.pop(UNSTATED_STATE, 0)
+        n_stated = sum(states.values())
+        dominant, top = (states.most_common(1)[0] if states else (None, 0))
+        share = (round(top / n_stated, 4) if n_stated else None)
+        concentrated = bool(dominant) and n_stated >= MIN_STATE_N and top / n_stated > STATE_SHARE
+        out[fam] = {"n": len(certs), "n_stated": n_stated, "n_unstated": n_unstated,
+                    "states": dict(states.most_common()), "dominant": dominant,
+                    "share": share, "concentrated": concentrated,
+                    "rule": (f"{fam} survivors concentrate in {dominant}: {top} of {n_stated} "
+                             f"stated certificate(s)" if concentrated else None),
+                    "why_no_rule": (None if concentrated else
+                                    (f"{n_stated} stated certificate(s) < {MIN_STATE_N}"
+                                     if n_stated < MIN_STATE_N else
+                                     f"most common state holds {share:.0%}, not a strict "
+                                     f"majority over {STATE_SHARE:.0%}"))}
+    return out
+
+
+def state_neighbours(certified: list[dict[str, Any]], by_state: dict[str, dict[str, Any]],
+                     existing: set[str]) -> list[dict[str, Any]]:
+    """One neighbour per certificate sitting OUTSIDE its family's dominant state: the same
+    cell conditioned on that state. Params are untouched -- the state is not a parameter of the
+    family function, it is what the shadow harness selects on -- so the node id is minted on
+    params plus the state, which is what makes the conditioned cell a different hypothesis from
+    its parent and lets the graph refuse a repeat."""
+    from libs.research.hypothesis_graph import node_id
+
+    out: list[dict[str, Any]] = []
+    for c in certified:
+        m = by_state.get(str(c["family"]))
+        if not m or not m.get("concentrated"):
+            continue
+        own = state_of(c)
+        if own == UNSTATED_STATE or own == m["dominant"]:
+            continue
+        sym, fam, params = str(c["symbol"]), str(c["family"]), dict(c["params"])
+        nid = node_id(sym, fam, {**params, "__state__": m["dominant"]})
+        if nid in existing:
+            continue
+        existing.add(nid)
+        out.append({"parent": c["key"], "parent_id": c["id"], "symbol": sym, "family": fam,
+                    "params": params, "operator": STATE_OP, "state": _state_fields(m["dominant"]),
+                    "from_state": own, "to_state": m["dominant"], "id": nid,
+                    "score": float(m["share"] or 0.0),
+                    "mechanism": f"{c['mechanism']} (conditioned on {m['dominant']}: "
+                                 f"{m['rule']})"})
+    return out
+
+
 # ------------------------------------------------------------------------------------------
 # (c) the neighbours
 # ------------------------------------------------------------------------------------------
@@ -453,17 +551,33 @@ def _screen_symbol(sym: str, muts: list[dict[str, Any]], meta: dict[str, Any],
 
 
 def _task(m: dict[str, Any], why: str) -> dict[str, Any]:
-    return {"source": SOURCE, "kind": "mutation",
-            "title": f"Mutate {m['symbol']}.{m['family']}: {m['operator']} from {m['parent']}",
-            "description": (f"One-step neighbour of certified cell {m['parent']} inside the "
-                            f"survivor-dense region of {m['family']}: {m['operator']} -> params "
-                            f"{json.dumps(m['params'], sort_keys=True, default=str)}. Not "
-                            f"screened here: {why}. Screen where bars exist, then the ordinary "
-                            "gauntlet with the lifetime multiplicity charge; do not "
-                            "re-parameterise further."),
+    if m.get("operator") == STATE_OP:
+        desc = (f"Certified cell {m['parent']} sits in state {m['from_state']}; the survivors "
+                f"of {m['family']} concentrate in {m['to_state']}. Run the SAME params "
+                f"{json.dumps(m['params'], sort_keys=True, default=str)} conditioned on "
+                f"{m['to_state']} (shadow_spec {json.dumps(m['state'], sort_keys=True)}). Not "
+                f"screened here: {why}. Then the ordinary gauntlet with the lifetime "
+                "multiplicity charge; do not re-parameterise.")
+        title = (f"Condition {m['symbol']}.{m['family']} on {m['to_state']}: {m['operator']} "
+                 f"from {m['parent']}")
+    else:
+        desc = (f"One-step neighbour of certified cell {m['parent']} inside the "
+                f"survivor-dense region of {m['family']}: {m['operator']} -> params "
+                f"{json.dumps(m['params'], sort_keys=True, default=str)}. Not "
+                f"screened here: {why}. Screen where bars exist, then the ordinary "
+                "gauntlet with the lifetime multiplicity charge; do not "
+                "re-parameterise further.")
+        title = f"Mutate {m['symbol']}.{m['family']}: {m['operator']} from {m['parent']}"
+    return {"source": SOURCE, "kind": "mutation", "title": title, "description": desc,
             "symbols": [m["symbol"]], "family": m["family"], "params": m["params"],
             "parent": m["parent"], "operator": m["operator"], "status": None,
+            **({"state": m["state"], "from_state": m["from_state"]}
+               if m.get("operator") == STATE_OP else {}),
             "consumer": "proposers / gauntlet"}
+
+
+_STATE_WHY = ("state conditioning is applied by the shadow harness (selector/condition), not by "
+              "the family function, so a bar screen cannot see it")
 
 
 def run(budget_s: float = 900.0, symbols: list[str] | None = None,
@@ -479,6 +593,7 @@ def run(budget_s: float = 900.0, symbols: list[str] | None = None,
     failed = [r for r in current.values() if r.get("fate") in ("FAILED", "BURIED")]
     prior = survivor_prior(certified, failed)
     mot = motifs(certified)
+    by_state = motifs_by_state(certified)
     grid = grid_values(rows + certified)
     weights, weights_note = _weights()
     existing = set(current) | {c["id"] for c in certified}
@@ -489,6 +604,9 @@ def run(budget_s: float = 900.0, symbols: list[str] | None = None,
         ns = neighbours_of(c, prior, grid, weights, sv, existing)
         existing.update(n["id"] for n in ns)
         neighbours.extend(ns)
+    # STATE-CONDITIONED NEIGHBOURS go straight to the queue: they are not screened on bars.
+    conditioned = state_neighbours(sorted(todo, key=lambda x: (x["symbol"], x["family"],
+                                                               x["key"])), by_state, existing)
 
     have = {p.stem.removesuffix("_H1") for p in pc.UNI.glob("*_H1.parquet")}
     meta = pc.universe_meta()
@@ -522,12 +640,14 @@ def run(budget_s: float = 900.0, symbols: list[str] | None = None,
                                           "n_tests_sweep", "t_deflated_lifetime",
                                           "n_tests_lifetime")},
                   "parent": r["parent"], "operator": r["operator"]}) for r in proposals]
+    unscreened.extend((m, _STATE_WHY) for m in conditioned)
     unscreened.sort(key=lambda x: (-x[0]["score"], x[0]["id"]))
     tasks = [_task(m, why) for m, why in unscreened[:MAX_TASKS]]
     rep: dict[str, Any] = {
         "generated_at": datetime.now(tz=UTC).isoformat(), "graph_rows": len(rows),
         "certified_cells": len(certified), "certified_swept": len(todo),
-        "prior": prior, "motifs": mot, "weights": weights_note,
+        "prior": prior, "motifs": mot, "motifs_by_state": by_state,
+        "state_neighbours": len(conditioned), "weights": weights_note,
         "neighbours_generated": len(neighbours), "tests_run": len(screened),
         "cells_proposed": len(proposals), "n_unscreened": len(unscreened),
         "n_tasks": len(tasks), "skipped": skipped, "proposals": proposals,

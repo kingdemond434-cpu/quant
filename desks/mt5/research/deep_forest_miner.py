@@ -692,7 +692,8 @@ class _Run:
         row = {"source": SOURCE, "kind": "dataset", "title": title[:160] or url[:120], "url": url,
                "published": now, "symbols": [], "timeframes": [], "patterns": [],
                "confidence": round(min(0.95, 0.35 + 0.05 * min(len(eps), 10)), 2),
-               "lang": ground.get("language"), "endpoints": eps[:200], "n_endpoints": len(eps),
+               "lang": ground.get("language"), "language": ground.get("language"),
+               "endpoints": eps[:200], "n_endpoints": len(eps),
                "vault_sha": digest, "host": urlparse(url).netloc,
                "ground": ground.get("name"), "region": ground.get("region"),
                "cluster": cluster_of(ground), "dataset_class": ground.get("dataset_class"),
@@ -1206,6 +1207,57 @@ def _write_discoveries(rows: list[dict[str, Any]]) -> Path | None:
         return None
 
 
+FRONTIER_NAME = "deep_forest_frontier.json"
+#: Ground status -> hunt_frontier outcome. PRODUCTIVE yielded claims; REACHED_NO_CLAIMS is real
+#: negative knowledge; the three failure statuses are BLOCKED (the blocker may lift); a ground
+#: the budget or --no-fetch never reached stays NAMED_ONLY -- named, not hunted.
+_FRONTIER_OUTCOME: dict[str, str] = {
+    "PRODUCTIVE": "YIELDED", "REACHED_NO_CLAIMS": "EMPTY", "BLOCKED": "BLOCKED",
+    "NO_NETWORK": "BLOCKED", "UNREACHABLE": "BLOCKED",
+}
+
+
+def _frontier_path() -> Path:
+    """Beside the cursor file, so a test that redirects SEEN redirects this too."""
+    return SEEN.with_name(FRONTIER_NAME)
+
+
+def _record_frontier(grounds_status: list[dict[str, Any]],
+                     grounds: list[dict[str, Any]]) -> dict[str, Any]:
+    """Every ground's hunt outcome in `libs.research.hunt_frontier`'s vocabulary, stamped with
+    the ground's language and region, so the four outcomes roll up PER LANGUAGE.
+
+    Every registered ground is in the state (NAMED_ONLY until a run reaches it), so the
+    denominator is the whole registry rather than the grounds one budget happened to touch. A
+    ground already hunted is never demoted back to NAMED_ONLY by a run that skipped it.
+    """
+    from libs.research import hunt_frontier as hf
+
+    path = _frontier_path()
+    state = hf.load(path)
+    for g in grounds:
+        name = str(g.get("name") or "")
+        if name and name not in state.vectors:
+            hf.record(state, name, outcome="NAMED_ONLY", language=str(g.get("language") or ""),
+                      region=str(g.get("region") or ""))
+    for s in grounds_status:
+        name = str(s.get("ground") or "")
+        outcome = _FRONTIER_OUTCOME.get(str(s.get("status") or ""))
+        if not name or outcome is None:
+            continue
+        hf.record(state, name, outcome=outcome, findings=int(s.get("claims") or 0),
+                  blocker=(f"{s.get('status')}: {s.get('why') or s.get('error') or ''}".strip(": ")
+                           if outcome == "BLOCKED" else ""),
+                  language=str(s.get("language") or ""), region=str(s.get("region") or ""))
+    hf.save(state, path)
+    summary = hf.summarise(state)
+    return {k: summary.get(k) for k in ("vectors", "unhunted", "blocked", "off_cooldown",
+                                         "picked_over", "total_findings", "yield_rate",
+                                         "by_language", "by_region", "languages_yielded",
+                                         "languages_named_only", "by_language_note")} | {
+        "path": str(path)}
+
+
 def _task(row: dict[str, Any], tellings: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     inst = row.get("instruments") or {}
     perf = row.get("claimed_performance") or {}
@@ -1235,6 +1287,10 @@ def _task(row: dict[str, Any], tellings: list[dict[str, Any]] | None = None) -> 
             "description": desc, "url": row.get("url"),
             "symbols": list(inst.get("analogues") or inst.get("indirect") or []),
             "mechanism_tags": list(row.get("quantities") or []), "lang": row.get("lang"),
+            # `lang` is the claim's own language as extracted; `language` is the GROUND's
+            # declared language from deep_forest_sources.json, which is the key the
+            # per-language yield accounting joins on.
+            "language": row.get("language") or row.get("lang"),
             "region": row.get("region"), "cluster": row.get("cluster"),
             "channel": row.get("channel") or "direct",
             "mechanism_class": row.get("mechanism_class") or "other",
@@ -1288,12 +1344,12 @@ LEDGER_SCHEMA: dict[str, list[str]] = {
         "fetched_utc", "score", "license?", "stars?", "copy_allowed?"],
     "datasets (data/deep_forest_datasets.jsonl; intelligence/world/discoveries_deepforest_*)": [
         "source", "kind=dataset", "title", "url", "published", "symbols", "timeframes",
-        "patterns", "confidence", "lang", "endpoints", "n_endpoints", "vault_sha", "host",
-        "ground", "region", "cluster", "dataset_class", "available_time", "ingested_time",
-        "source_hash", "claims", "n_claims"],
+        "patterns", "confidence", "lang", "language", "endpoints", "n_endpoints", "vault_sha",
+        "host", "ground", "region", "cluster", "dataset_class", "available_time",
+        "ingested_time", "source_hash", "claims", "n_claims"],
     "deepening task (data/hypotheses/miner_deepening_queue.json)": [
         "source", "kind=story_mechanism", "title", "description", "url", "symbols",
-        "mechanism_tags", "lang", "region", "cluster", "channel", "mechanism_class",
+        "mechanism_tags", "lang", "language", "region", "cluster", "channel", "mechanism_class",
         "mechanism_key", "evidence_grade", "claimed_performance", "transfer_only", "claim_hash",
         "provenance[{url,ground,route,available_time,published_time,source_hash,lang}]",
         "n_tellings", "event_time", "published_time", "available_time", "score", "status",
@@ -1302,6 +1358,9 @@ LEDGER_SCHEMA: dict[str, list[str]] = {
         "at", "repo=ground", "url", "commit='<available_time> sha256:<source_hash16>'", "license",
         "file=route", "mechanism", "code_copied", "attribution_required",
         "commercial_restriction", "policy"],
+    "frontier (data/deep_forest_frontier.json; libs.research.hunt_frontier)": [
+        "vectors{<ground>: {outcome=NAMED_ONLY|BLOCKED|EMPTY|YIELDED, first_seen, last_attempt, "
+        "attempts, findings, blocker, language, region}}", "updated", "note"],
 }
 
 
@@ -1386,6 +1445,17 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         b["claims"] += int(s.get("claims") or 0)
         b["datasets"] += int(s.get("datasets") or 0)
         b["momentum_only"] += int(bool(s.get("momentum_only")))
+    # THE PER-LANGUAGE FRONTIER. Accounting only: it changes nothing about which ground is
+    # worked next, and a failure to write it is reported on the doc rather than raised.
+    frontier: dict[str, Any]
+    if write:
+        try:
+            frontier = _record_frontier(grounds_status, grounds)
+        except Exception as exc:
+            frontier = {"status": "UNMEASURED",
+                        "why": f"frontier accounting failed: {type(exc).__name__}: {exc}"}
+    else:
+        frontier = {"status": "UNMEASURED", "why": "write=False: frontier state not touched"}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
            "budget_s": budget_s, "elapsed_s": round(time.monotonic() - r.started, 1),
            "network": r.network, "fetch": fetch, "region_filter": region,
@@ -1399,6 +1469,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                                      if s.get("momentum_only")],
            "by_region": by_region,
            "languages": sorted({str(g.get("language")) for g in grounds if g.get("language")}),
+           "frontier": frontier,
            "counts": r.counts, "claims_new": len(r.new), "claims_total": len(all_rows),
            "claims_by_channel": {ch: sum(1 for c in r.new if c.get("channel") == ch)
                                  for ch in ("direct", "indirect")},

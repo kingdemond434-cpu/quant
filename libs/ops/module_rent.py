@@ -104,6 +104,25 @@ REPORT = "desks/mt5/reports/MODULE_RENT.json"
 ALPHA_CAPTURE = "desks/mt5/reports/ALPHA_CAPTURE.json"
 CAPTURE_HISTORY = "desks/mt5/data/alpha_capture_history.jsonl"
 EXECUTION_TWIN = "desks/mt5/reports/EXECUTION_TWIN.json"
+#: THE FRESHNESS LINE (2026-09-08). `scripts/check_job_manifest.py` already counts every SLO
+#: breach against a per-artifact age limit and names the consumer; it publishes a SNAPSHOT
+#: (data/job_manifest.json), and the day-keyed history a with/without split needs is its
+#: append-only companion. Neither is recomputed here: the fence owns the breach definition.
+JOB_MANIFEST = "data/job_manifest.json"
+FRESHNESS_HISTORY = "data/freshness_breaches.jsonl"
+#: The JOBS rows whose staleness means the desk acted on a STALE VIEW OF THE MARKET rather than
+#: on a late report: the three forward-book states, each rebuilt from bars every cycle, and the
+#: published desk state the dashboard and the operator read. A JOBS row not listed here is not
+#: counted, so the denominator of this rent line is explicit rather than "whatever was red".
+FRESHNESS_ARTIFACTS: tuple[str, ...] = (
+    "desks/mt5/reports/shadow/shadow_state.json",
+    "desks/mt5/reports/shadow/scalp_shadow_state.json",
+    "desks/mt5/reports/shadow/qquant_shadow_state.json",
+    "web/desk_state.json",
+)
+#: A breach is the fence's own verdict: too old, never produced, or produced with nothing in it.
+#: FROZEN and IDLE are NOT breaches -- identical bytes can be the correct output (L1.37).
+BREACH_STATUSES: frozenset[str] = frozenset({"STALE", "MISSING", "EMPTY"})
 
 #: The execution algorithms the registry competes (mt5desk.execution_registry). `market` is the
 #: baseline every other one is measured against, so its own rent is zero by definition.
@@ -331,6 +350,27 @@ MODULES: tuple[Module, ...] = (
            "'without' is genuinely zero rather than a counterfactual that has to be modelled",
            "measure_research_source", "desks/mt5/recorders/tick_recorder.py",
            key="tick_tape", sources=("liquidity_regime", "orderflow_imbalance", "tape", "moat")),
+    # DATA FRESHNESS AS A PRICED COMPONENT (2026-09-08). Measured that day: MODULE_RENT's
+    # data_source rows priced the SOURCE (tick_tape, fill_corpus, broker_clock) and NOTHING
+    # priced its FRESHNESS -- a tape that arrives late is a different asset from a tape that
+    # does not arrive, and only the second had a line. Freshness had a red/green flag
+    # (check_job_manifest) with no log-wealth number anywhere, so "the feed lagged six hours"
+    # and "the feed lagged six hours and it cost this much growth" were the same sentence.
+    #
+    # THE COUNTERFACTUAL IS A DAY, NOT A FILL, and that is what makes it billable at all: the
+    # fence already labels each day's artifacts breached or clean, so E[log W | fresh] -
+    # E[log W | breached] is a two-sample comparison over the desk's own realised days. It reads
+    # UNMEASURED until the breach history has rows -- the fence publishes a snapshot today --
+    # and that is the module working, not a gap: a freshness line cannot be billed before the
+    # desk has recorded a day on which freshness failed AND a day on which it did not.
+    Module("data_source:freshness", "data_source", FRESHNESS_HISTORY,
+           "mean realised R per day on days when no tape/bar artifact breached its own SLO, "
+           "minus the same on days when one did: E[log W with fresh data] - E[log W without it], "
+           "over the four artifacts whose staleness means the desk acted on a stale view of the "
+           "market. The breach definition and the age limits are check_job_manifest's own and "
+           "are never recomputed here",
+           "measure_freshness", "scripts/check_job_manifest.py JOBS -> data/job_manifest.json",
+           key="freshness"),
     Module("data_source:vol_archive", "data_source", RESEARCH_PNL,
            "expected log-wealth per day carried by certificates conditioned on the implied-vol / "
            "term-structure archive. READS UNMEASURED BY CONSTRUCTION UNTIL IT HAS VINTAGES: the "
@@ -929,6 +969,91 @@ def measure_execution_learning(m: Module, led: Ledgers) -> dict[str, Any]:
                 window=f"{len(before)} point(s) before vs {len(after)} after",
                 why=("" if verdict != UNMEASURED else f"|t| = {abs(t):.2f} < {T_LINE}"),
                 t=(round(t, 3) if math.isfinite(t) else None), capture_points=len(leaks))
+
+
+def _breach_days(rows: list[dict[str, Any]]) -> tuple[dict[str, bool], int]:
+    """day -> did any watched artifact breach, from the fence's own history rows.
+
+    A row is `{day, breaches: [artifact, ...]}` (or `{day, artifact, status}`); only the
+    artifacts this module watches count, and only the fence's breach statuses. The LAST word
+    about a day stands, so a re-run of the fence on the same day supersedes rather than
+    accumulates. Returns (flags, rows the module could read).
+    """
+    flags: dict[str, bool] = {}
+    used = 0
+    for r in rows:
+        day = str(r.get("day") or r.get("at") or "")[:10]
+        if not day:
+            continue
+        listed = r.get("breaches")
+        if isinstance(listed, list):
+            hit = any(str(x) in FRESHNESS_ARTIFACTS for x in listed)
+        elif r.get("artifact") is not None:
+            hit = (str(r.get("artifact")) in FRESHNESS_ARTIFACTS
+                   and str(r.get("status") or "") in BREACH_STATUSES)
+        else:
+            continue
+        used += 1
+        flags[day] = bool(flags.get(day)) or hit
+    return flags, used
+
+
+def measure_freshness(m: Module, led: Ledgers) -> dict[str, Any]:
+    """What tape/bar freshness is worth in log-wealth per day, on the fence's own breaches.
+
+    UNMEASURED IS THE EXPECTED READING TODAY AND IS NOT A GAP. `check_job_manifest` publishes a
+    SNAPSHOT of which artifacts are breaching right now; the day-keyed history this needs is its
+    append-only companion, and until it holds both a breached day and a clean day with realised
+    trades on them there is no with/without to take. The snapshot is still reported -- which
+    artifacts are red at this moment, out of the four watched -- so the row says what it knows
+    rather than only what it cannot say.
+    """
+    state = led.json(JOB_MANIFEST)
+    jobs = state.get("jobs") if isinstance(state.get("jobs"), dict) else {}
+    watched = {rel: row for rel, row in (jobs or {}).items() if rel in FRESHNESS_ARTIFACTS}
+    breaching = sorted(rel for rel, row in watched.items()
+                       if isinstance(row, dict) and str(row.get("status") or "") in
+                       BREACH_STATUSES)
+    snapshot = {"watched": list(FRESHNESS_ARTIFACTS), "on_manifest": sorted(watched),
+                "breaching_now": breaching,
+                "manifest_checked_at": str(state.get("checked_at") or "") or None}
+    if not state:
+        return _row(m, UNMEASURED, why=f"{JOB_MANIFEST} absent on this host: the freshness fence "
+                                       f"has not run here, so no breach is counted", **snapshot)
+    flags, used = _breach_days(led.rows(FRESHNESS_HISTORY))
+    if not flags:
+        return _row(m, UNMEASURED, n=0,
+                    why=(f"{FRESHNESS_HISTORY} holds no readable day for the watched artifacts "
+                         f"({used} row(s) parsed): the fence publishes a snapshot, and a "
+                         f"with/without split needs a day-keyed history. "
+                         f"{len(breaching)} of {len(FRESHNESS_ARTIFACTS)} artifact(s) breaching "
+                         f"at the last check"), **snapshot)
+    realised = led.realised()
+    by_day: dict[str, float] = defaultdict(float)
+    for (_sleeve, day), v in realised.items():
+        by_day[day] += v
+    clean = [v for d, v in by_day.items() if d in flags and not flags[d]]
+    dirty = [v for d, v in by_day.items() if flags.get(d)]
+    joined = len(clean) + len(dirty)
+    if len(clean) < MIN_N or len(dirty) < MIN_N:
+        return _row(m, UNMEASURED, n=joined,
+                    why=(f"{len(clean)} clean day(s) and {len(dirty)} breached day(s) join a "
+                         f"realised R; need {MIN_N} of each. {len(flags)} day(s) in "
+                         f"{FRESHNESS_HISTORY}, {len(by_day)} realised day(s)"),
+                    clean_days=len(clean), breached_days=len(dirty), **snapshot)
+    rent = statistics.fmean(clean) - statistics.fmean(dirty)
+    se = math.sqrt(statistics.variance(clean) / len(clean)
+                   + statistics.variance(dirty) / len(dirty))
+    t = rent / se if se > 0 else (math.inf if rent > 0 else (-math.inf if rent < 0 else 0.0))
+    verdict = EARNS if t > T_LINE else (COSTS if t < -T_LINE else UNMEASURED)
+    return _row(m, verdict, rent=rent, n=joined,
+                ci=[round(rent - 1.96 * se, 12), round(rent + 1.96 * se, 12)],
+                window=f"{len(clean)} clean day(s) vs {len(dirty)} breached day(s)",
+                why=("" if verdict != UNMEASURED else f"|t| = {abs(t):.2f} < {T_LINE}"),
+                t=(round(t, 3) if math.isfinite(t) else None),
+                clean_days=len(clean), breached_days=len(dirty),
+                mean_clean_r=round(statistics.fmean(clean), 10),
+                mean_breached_r=round(statistics.fmean(dirty), 10), **snapshot)
 
 
 def measure_dynamic_weights(m: Module, led: Ledgers) -> dict[str, Any]:

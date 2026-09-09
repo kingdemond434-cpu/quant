@@ -34,6 +34,22 @@ WHAT IS ALERTED, and why each is a distinct failure rather than one:
   MISSING    -- declared but never produced. An owed build, not a passing check (L1.28a).
   NO-CONSUMER-- produced, but nothing reads it. Either the consumer is unwired (a gap) or the
                 artifact is dead weight; both are defects, and neither is visible from the job.
+  EMPTY      -- fresh, moving, and its PAYLOAD says nothing was measured: n = 0, status
+                UNMEASURED, an empty roster. Until 2026-09-08 this read OK, because age was the
+                only instrument: execution_quality.json rewritten on time with 0 decisions was
+                green. A row may declare an emptiness predicate (its third element) and the
+                verdict then reads EMPTY rather than OK. Counted and printed, never alarmed --
+                alarming it would rebuild the always-red detector L1.37 retires -- and it never
+                replaces STALE, FROZEN or IDLE: an empty artifact that also stopped moving is
+                still reported for having stopped.
+
+RESEARCH LATENCY rides on the same report (2026-09-08). The blueprint's SLOs (start < 1h,
+screen < 10m, gauntlet verdict < 24h) had no number anywhere on the desk; the hypothesis graph
+carries every BORN and every verdict with a timestamp, so three rows are computed from it --
+time-to-first-screen, time-to-gauntlet-verdict, time-to-certificate -- each naming the
+timestamps it joins, and UNMEASURED with the count when no node has both ends. They are
+published and printed, never alarmed: a research backlog is a fact for the principal and
+research_productivity, not a repair request.
 
 The manifest lives in data/job_manifest.json and RATCHETS: a job that has ever produced an
 artifact is expected to keep producing one. Last-valid output and its hash are retained so a
@@ -43,9 +59,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import statistics
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from libs.ops.repair_invoke import request_repair
 
@@ -53,15 +72,59 @@ ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
 STATE = ROOT / "data" / "job_manifest.json"
 ALARM = ROOT / "data" / "JOB_MANIFEST_ALARM.txt"
+GRAPH = DESK / "data" / "hypothesis_graph.jsonl"
 
-#: artifact -> (max_age_hours, who consumes it). The consumer is named so "nothing reads this"
-#: is a checkable claim rather than an impression.
-JOBS: dict[str, tuple[float, str]] = {
+#: An emptiness predicate: the parsed artifact -> why its payload measures nothing, or None.
+EmptyFn = Callable[[Any], str | None]
+
+
+def _empty_execution_quality(doc: Any) -> str | None:
+    """shadow_execution.summarise: `decisions` and `filled` are the sample sizes."""
+    if not isinstance(doc, dict):
+        return None
+    n = int(doc.get("decisions") or 0)
+    if n == 0:
+        return "decisions=0: no shadow decision to measure execution on"
+    if int(doc.get("filled") or 0) == 0:
+        return f"filled=0 of {n} decision(s): no fill to price"
+    return None
+
+
+def _empty_decay_live(doc: Any) -> str | None:
+    """decay_monitor: `roster_state` UNMEASURED or an empty roster is a report about nothing."""
+    if not isinstance(doc, dict):
+        return None
+    if str(doc.get("roster_state") or "") == "UNMEASURED":
+        return f"roster_state=UNMEASURED: {doc.get('roster_why') or 'roster unreadable'}"
+    if doc.get("live_sleeves") in (None, 0):
+        return f"live_sleeves={doc.get('live_sleeves')!r}: nothing to decay"
+    return None
+
+
+def _empty_counterfactual(doc: Any) -> str | None:
+    """counterfactual_replay: status UNMEASURED, or no priced row, is a world nobody replayed."""
+    if not isinstance(doc, dict):
+        return None
+    status = str(doc.get("status") or "")
+    if status == "UNMEASURED":
+        return f"status=UNMEASURED: {doc.get('why') or ''}".rstrip(": ")
+    ds = doc.get("dataset") if isinstance(doc.get("dataset"), dict) else {}
+    priced = int(ds.get("rows_priced") or doc.get("rows_priced") or 0)
+    if status and priced == 0:
+        return f"status={status} with rows_priced=0: no decision was priced"
+    return None
+
+
+#: artifact -> (max_age_hours, who consumes it[, emptiness predicate]). The consumer is named so
+#: "nothing reads this" is a checkable claim rather than an impression; the predicate, where a
+#: row carries one, is what lets "rewritten on time with nothing in it" read EMPTY.
+JOBS: dict[str, tuple[float, str] | tuple[float, str, EmptyFn]] = {
     "desks/mt5/reports/UNIVERSAL_SURVIVORS.json": (26.0, "shadow_admission, promoter, dashboard"),
     "desks/mt5/reports/shadow/shadow_state.json": (3.0, "promoter, reconciler, dashboard"),
     "desks/mt5/reports/shadow/scalp_shadow_state.json": (3.0, "shadow_cycle, dashboard"),
     "desks/mt5/reports/shadow/qquant_shadow_state.json": (3.0, "promoter, dashboard"),
-    "desks/mt5/reports/execution_quality.json": (36.0, "promoter (promotion gate), dashboard"),
+    "desks/mt5/reports/execution_quality.json": (36.0, "promoter (promotion gate), dashboard",
+                                                 _empty_execution_quality),
     # sleeve_registry.json is DELIBERATELY NOT HERE. `freeze()` is idempotent -- it returns
     # early once a key is frozen -- so the file only changes when a NEW sleeve enrols and an
     # unchanged registry is the HEALTHY state. Gauging it by age (it carried a 3.0h window)
@@ -71,8 +134,13 @@ JOBS: dict[str, tuple[float, str]] = {
     # `forward_reconcile` as IDENTITY_UNFROZEN, and forward_reconcile.json IS age-gauged
     # below because it rewrites on every run. Do not "restore" this row: age is the wrong
     # instrument here, not a missing one.
-    "desks/mt5/data/decay_live.json": (26.0, "dashboard, gateway risk"),
+    "desks/mt5/data/decay_live.json": (26.0, "dashboard, gateway risk", _empty_decay_live),
     "desks/mt5/data/forward_reconcile.json": (26.0, "operator audit"),
+    # THE VETO RAILS' EVIDENCE. missed_growth reads it (desks/mt5/research/missed_growth.py:54)
+    # to bill every rail, and its UNMEASURED state -- no bars cover the decision minutes on this
+    # host -- was indistinguishable from a measured world by age alone.
+    "desks/mt5/reports/COUNTERFACTUAL_WORLD.json": (26.0, "missed_growth (veto rails), dashboard",
+                                                    _empty_counterfactual),
     "data/gauntlet_survivors.json": (26.0, "promotion_gate"),
     "web/desk_state.json": (0.5, "dashboard (Dell/phone)"),
     "data/authority_ratchet.json": (1.0, "earned-evidence floors"),
@@ -116,6 +184,138 @@ def _hash(path: Path) -> str | None:
         return None
 
 
+def _job_row(value: tuple) -> tuple[float, str, EmptyFn | None]:
+    """(max_age_h, consumer, emptiness predicate or None) from a two- or three-element row."""
+    max_age_h, consumer = float(value[0]), str(value[1])
+    empty_fn = value[2] if len(value) > 2 and callable(value[2]) else None
+    return max_age_h, consumer, empty_fn
+
+
+# ---------------------------------------------------------------------------- research latency
+#: name -> (target hours or None, consumer, the timestamps joined). A None target is a row that
+#: is MEASURED and reported but has no SLO: a certificate waits on forward evidence by law
+#: (promotion bar days >= 14), so a latency target on it would contradict the forward floor.
+LATENCY_SLOS: dict[str, tuple[float | None, str, str]] = {
+    "time_to_first_screen": (
+        1.0, "research_productivity, the principal",
+        "BORN.at -> the first LATER row of any other fate (JUDGED, FAILED, CERTIFIED, RETIRED, "
+        "BURIED) for the same node id in desks/mt5/data/hypothesis_graph.jsonl. Blueprint: start "
+        "< 1h and screen < 10m; the graph cannot separate the two, so their sum bounds this row"),
+    "time_to_gauntlet_verdict": (
+        24.0, "research_productivity, the principal",
+        "BORN.at -> the first LATER FAILED or CERTIFIED row for the same node id. Blueprint: "
+        "gauntlet verdict < 24h"),
+    "time_to_certificate": (
+        None, "research_productivity, the principal",
+        "BORN.at -> the first LATER CERTIFIED row for the same node id. No target: the "
+        "certificate waits on forward evidence by law"),
+}
+_SCREEN_FATES = frozenset({"JUDGED", "FAILED", "CERTIFIED", "RETIRED", "BURIED"})
+_VERDICT_FATES = frozenset({"FAILED", "CERTIFIED"})
+_CERT_FATES = frozenset({"CERTIFIED"})
+_LATENCY_FATES = {"time_to_first_screen": _SCREEN_FATES,
+                  "time_to_gauntlet_verdict": _VERDICT_FATES,
+                  "time_to_certificate": _CERT_FATES}
+
+
+def _parse_at(s: Any) -> datetime | None:
+    try:
+        d = datetime.fromisoformat(str(s))
+    except (TypeError, ValueError):
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=UTC)
+
+
+def _quantile(samples: list[float], q: float) -> float:
+    if len(samples) == 1:
+        return samples[0]
+    return float(statistics.quantiles(samples, n=100, method="inclusive")[int(q * 100) - 1])
+
+
+def latency_rows(graph_path: Path | None = None, now: datetime | None = None) -> dict[str, dict]:
+    """The three research-latency rows from the hypothesis graph's own timestamps.
+
+    Per node id the FIRST BORN row is the start; each SLO's end is the first row of its fate
+    set whose `at` is LATER than that start. A node whose verdict row is not later than its
+    BORN row (the backfill wrote verdicts before the compiler re-registered the cell) is
+    counted as `unordered`, never as a negative latency; a node born with no end yet is `open`
+    and its oldest age is reported, because a backlog is the latency the SLO is about.
+    """
+    graph_path = GRAPH if graph_path is None else graph_path   # resolved at call, not at def
+    now = now or datetime.now(tz=UTC)
+    out: dict[str, dict] = {}
+    if not graph_path.exists():
+        for name, (target, consumer, basis) in LATENCY_SLOS.items():
+            out[name] = {"status": "UNMEASURED", "n": 0, "target_h": target,
+                         "consumer": consumer, "basis": basis,
+                         "why": f"{graph_path} absent: no timestamps to join"}
+        return out
+    born: dict[str, datetime] = {}
+    later: dict[str, list[tuple[datetime, str]]] = {}
+    n_rows = 0
+    try:
+        with graph_path.open("r", encoding="utf-8") as fh:
+            for ln in fh:
+                if not ln.strip():
+                    continue
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                n_rows += 1
+                nid, fate, at = str(r.get("id") or ""), str(r.get("fate") or ""), _parse_at(
+                    r.get("at"))
+                if not nid or at is None:
+                    continue
+                if fate == "BORN":
+                    if nid not in born or at < born[nid]:
+                        born[nid] = at
+                else:
+                    later.setdefault(nid, []).append((at, fate))
+    except OSError as exc:
+        for name, (target, consumer, basis) in LATENCY_SLOS.items():
+            out[name] = {"status": "UNMEASURED", "n": 0, "target_h": target,
+                         "consumer": consumer, "basis": basis, "why": f"unreadable: {exc}"}
+        return out
+    for name, (target, consumer, basis) in LATENCY_SLOS.items():
+        fates = _LATENCY_FATES[name]
+        samples: list[float] = []
+        unordered = 0
+        open_ages: list[float] = []
+        for nid, t0 in born.items():
+            ends = sorted(at for at, fate in later.get(nid, []) if fate in fates)
+            after = [at for at in ends if at > t0]
+            if after:
+                samples.append((after[0] - t0).total_seconds() / 3600.0)
+            elif ends:
+                unordered += 1
+            else:
+                open_ages.append((now - t0).total_seconds() / 3600.0)
+        row: dict[str, Any] = {"n": len(samples), "target_h": target, "consumer": consumer,
+                               "basis": basis, "graph_rows": n_rows, "born_nodes": len(born),
+                               "open": len(open_ages), "unordered": unordered,
+                               "oldest_open_h": (round(max(open_ages), 2) if open_ages
+                                                 else None)}
+        if not samples:
+            row.update(status="UNMEASURED",
+                       why=(f"0 node(s) carry a BORN row followed by a later "
+                            f"{'/'.join(sorted(fates))} row; {len(open_ages)} open, "
+                            f"{unordered} unordered (verdict not later than BORN)"))
+        else:
+            samples.sort()
+            p50, p90 = _quantile(samples, 0.5), _quantile(samples, 0.9)
+            row.update(p50_h=round(p50, 2), p90_h=round(p90, 2), max_h=round(samples[-1], 2))
+            if target is None:
+                row.update(status="NO_TARGET", why="measured; no SLO by design (see basis)")
+            elif p90 <= target:
+                row.update(status="OK", why="")
+            else:
+                row.update(status="SLOW",
+                           why=f"p90 {p90:.1f}h > target {target}h on {len(samples)} node(s)")
+        out[name] = row
+    return out
+
+
 def _unchanged_because(path: Path) -> str | None:
     """A producer's own declaration that its output cannot move, or None.
 
@@ -138,9 +338,14 @@ def main() -> int:
     # this fence exit non-zero, because a correct organ with nothing to do is not a
     # failure. It is still printed and still counted in the summary.
     findings_idle: list[str] = []
+    # EMPTY is reported and counted like IDLE, never alarmed: the payload says nothing was
+    # measured, which is a reading, not a breach -- and an always-red row here would be the
+    # detector L1.37 retires. It replaces only OK; STALE, IDLE and FROZEN keep precedence.
+    findings_empty: list[str] = []
     rows: dict[str, dict] = {}
 
-    for rel, (max_age_h, consumer) in JOBS.items():
+    for rel, spec in JOBS.items():
+        max_age_h, consumer, empty_fn = _job_row(spec)
         path = ROOT / rel
         prior = jobs.get(rel, {})
         if not path.exists():
@@ -194,6 +399,11 @@ def main() -> int:
                 f"window allows, so the job is running and writing the same output rather than "
                 f"simply not being due yet. A loop turning without cutting. "
                 f"Consumer: {consumer}")
+        elif empty_fn is not None and (_why_empty := empty_fn(_read(path))):
+            status = "EMPTY"
+            findings_empty.append(
+                f"EMPTY {rel}: fresh ({age_h:.1f}h) and moving, but the payload measures "
+                f"nothing -- {_why_empty}. Consumer: {consumer}")
 
         rows[rel] = {"status": status, "age_h": round(age_h, 2), "hash": digest,
                      "consumer": consumer}
@@ -228,6 +438,16 @@ def main() -> int:
             f"JOBS entry was lost in an edit, the artifact is now unmonitored and this is how you "
             f"find out.")
 
+    # RESEARCH LATENCY, from the graph's own timestamps. Published on the state and printed;
+    # never a finding (see the module docstring).
+    try:
+        latency = latency_rows()
+    except Exception as exc:                       # a broken graph is a reading, not a crash
+        latency = {name: {"status": "UNMEASURED", "n": 0, "target_h": t, "consumer": c,
+                          "basis": b, "why": f"{type(exc).__name__}: {exc}"}
+                   for name, (t, c, b) in LATENCY_SLOS.items()}
+    state["research_latency"] = latency
+
     state["checked_at"] = now.isoformat(timespec="seconds")
     state["summary"] = {s: sum(1 for r in rows.values() if r["status"] == s)
                         for s in sorted({r["status"] for r in rows.values()})}
@@ -245,6 +465,15 @@ def main() -> int:
 
     for line in findings_idle:
         print(f"  {line}")
+    for line in findings_empty:
+        print(f"  {line}")
+    for name, row in latency.items():
+        measured = (f"p50={row['p50_h']}h p90={row['p90_h']}h n={row['n']}"
+                    if row.get("n") else row.get("why", ""))
+        print(f"  LATENCY {name}: {row['status']} {measured}"
+              + (f" (target {row['target_h']}h)" if row.get("target_h") else "")
+              + (f"; open={row['open']} oldest_open={row['oldest_open_h']}h"
+                 if row.get("open") else ""))
     if not findings:
         if ALARM.exists():
             ALARM.unlink()

@@ -41,6 +41,8 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from libs.research.strategy_artifact import feature_ids_of  # noqa: E402
+
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 OUT = BASE / "reports" / "ALPHA_GENOME.json"
 
@@ -120,17 +122,37 @@ def genome(meta: dict) -> dict[str, dict]:
     for key, cert in (canon.get("survivors") or {}).items():
         if not isinstance(cert, dict):
             continue
-        sym = str(cert.get("sym") or (cert.get("shadow_spec") or {}).get("symbol") or "").upper()
+        spec = cert.get("shadow_spec") or {}
+        sym = str(cert.get("sym") or spec.get("symbol") or "").upper()
         fam = _family_of(cert, key)
         mech = MECHANISM_CLASS.get(fam, "UNCLASSIFIED")
         row = meta.get(sym) or {}
+        params = spec.get("params") if isinstance(spec.get("params"), dict) else \
+            (cert.get("params") if isinstance(cert.get("params"), dict) else {})
         out[key] = {"symbol": sym, "asset_class": str(row.get("asset_class") or ""),
                     "legs": list(_legs(sym, meta)), "family": fam, "mechanism": mech,
                     "direction_bias": DIRECTION_BIAS.get(mech, "unknown"),
                     "clock": _clock_of(cert, key), "factor_roles": list(_factor_roles(sym, meta)),
                     "source": str(cert.get("hunt") or ""),
-                    "status": str(cert.get("status") or "PASS")}
+                    "status": str(cert.get("status") or "PASS"),
+                    # VARIABLE-LEVEL DESCENT: the same ids `strategy_artifact.from_certificate`
+                    # stamps, so the genome and the artifact registry name one vocabulary.
+                    "feature_ids": feature_ids_of(params)}
     return out
+
+
+def feature_genealogy(g: dict[str, dict]) -> dict[str, dict]:
+    """Per feature id, the sleeves that descend from it -- the fake-breadth reading at the
+    VARIABLE level. Family and cluster breadth both miss twelve sleeves that are all the same
+    20-day range wearing different family names; this does not. Sorted by fan-out, and a
+    feature carried by one sleeve is listed too, because "unique" is a reading as well."""
+    members: dict[str, list[str]] = defaultdict(list)
+    for key in sorted(g):
+        for fid in g[key].get("feature_ids") or []:
+            members[str(fid)].append(key)
+    ordered = sorted(members.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    return {fid: {"n": len(ms), "share": round(len(ms) / max(1, len(g)), 3), "members": ms}
+            for fid, ms in ordered}
 
 
 def cluster(g: dict[str, dict]) -> dict[str, list[str]]:
@@ -177,6 +199,9 @@ def run() -> dict:
     for v in active.values():
         by_mech[v["mechanism"]] += 1
     biggest = sorted(cl.items(), key=lambda kv: -len(kv[1]))[:8]
+    fg = feature_genealogy(active)
+    shared = {fid: row for fid, row in fg.items() if row["n"] >= 2}
+    without = sorted(k for k, v in active.items() if not v.get("feature_ids"))
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "n_sleeves": len(active),
            "n_clusters": len(cl),
            "structural_breadth": round(len(cl) / max(1, len(active)), 3),
@@ -184,6 +209,17 @@ def run() -> dict:
            "unclassified_families": sorted({v["family"] for v in active.values()
                                             if v["mechanism"] == "UNCLASSIFIED"}),
            "largest_clusters": [{"cluster": k, "n": len(v), "members": v[:10]} for k, v in biggest],
+           # THE VARIABLE-LEVEL VIEW. `max_feature_fanout` is the largest number of sleeves that
+           # read one variable; `sleeves_without_feature_ids` names the certificates whose
+           # params carry nothing to descend from (a legacy cell with no exact params), so the
+           # denominator of this reading is visible beside it.
+           "feature_genealogy": fg,
+           "n_feature_ids": len(fg), "n_shared_feature_ids": len(shared),
+           "max_feature_fanout": max((r["n"] for r in fg.values()), default=0),
+           "largest_feature_lineages": [{"feature_id": fid, "n": r["n"],
+                                         "members": r["members"][:10]}
+                                        for fid, r in list(fg.items())[:8]],
+           "sleeves_without_feature_ids": without,
            "clusters": cl, "genome": active}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1), "utf-8")

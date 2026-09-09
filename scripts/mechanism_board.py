@@ -23,20 +23,45 @@ THE THREE PARTS:
    measurement or timing rather than alpha -- exactly what a pre-test gate can catch.
 
 Read-only. No LLM, no keys. Run from repo root.
+
+THE BOARD EXISTS EVEN WHEN ITS INPUTS DO NOT (2026-09-08). Measured on this tree:
+data/mechanism_board.json had never been produced, because data/research_erv.json and
+data/research_autopsy.json do not exist here and nothing wrote the board without them --
+while five readers (run_alpha_frontier, research_cio, kimi_hunter, knowledge_engine,
+module_justification) opened it and silently got nothing. The board is now written on every
+run: the ECONOMIC taxonomy (`libs.research.mechanism_census.TAXONOMY`, 32 payer-named classes)
+is its `mechanisms` list in every mode, the graveyard tally gives verdicts where the graveyard
+exists, and `basis` names which inputs were present and which were absent, so a reader can
+tell a board built from evidence from one built from the taxonomy alone.
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.research.mechanism_census import TAXONOMY  # noqa: E402
+
 GRAVE = ROOT / "docs/graveyard.md"
 ERV = ROOT / "data/research_erv.json"
 AUTOPSY = ROOT / "data/research_autopsy.json"
 OUT = ROOT / "data/mechanism_board.json"
+
+#: `basis.mode` values. FULL means the ERV ranking (and the autopsy, when present) fed the
+#: board; TAXONOMY_FALLBACK means neither research_erv.json nor research_autopsy.json existed
+#: and the board carries the taxonomy plus whatever the graveyard alone could say.
+FULL, TAXONOMY_FALLBACK = "FULL", "TAXONOMY_FALLBACK"
+# a mechanism with many deaths and no survivor is a FAMILY KILL
+LIVE = {"M_STRUCTURAL_BARRIER", "M_FORCED_DELEVERAGE"}  # kimchi/cny, funding persistence
+OPEN = {"M_LIQUIDITY_WITHDRAWAL"}  # moat, untested
+FAMILY_KILL_DEATHS = 5
 
 # ECONOMIC MECHANISM taxonomy -- "who is forced to act, and why can the edge persist?"
 # Deliberately NOT a dataset taxonomy. Many concepts collapse into one mechanism.
@@ -228,70 +253,134 @@ def mech_of(text: str) -> list[str]:
     return [m for m, d in MECHANISMS.items() if any(k in t for k in d["kws"])]
 
 
-def main() -> None:
-    # ---------- 1. MECHANISM GRAVEYARD -------------------------------------------------
-    rows = []
-    for ln in GRAVE.read_text("utf-8").splitlines() if GRAVE.exists() else []:
+def graveyard_rows(path: Path) -> list[dict[str, Any]]:
+    """Every graveyard table row mapped to its economic mechanism(s); [] when the file is absent."""
+    rows: list[dict[str, Any]] = []
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return rows
+    for ln in lines:
         if not ln.startswith("|") or set(ln) <= set("|- "):
             continue
         c = [x.strip() for x in ln.strip("|").split("|")]
         if len(c) < 3 or c[0].lower() in ("name", "signal", "strategy"):
             continue
         rows.append({"name": c[0][:80], "blob": " ".join(c), "mechs": mech_of(" ".join(c))})
+    return rows
 
-    tally: dict[str, int] = {}
-    for r in rows:
-        for m in r["mechs"] or ["M_UNMAPPED"]:
-            tally[m] = tally.get(m, 0) + 1
 
-    # a mechanism with many deaths and no survivor is a FAMILY KILL
-    LIVE = {"M_STRUCTURAL_BARRIER", "M_FORCED_DELEVERAGE"}  # kimchi/cny, funding persistence
-    OPEN = {"M_LIQUIDITY_WITHDRAWAL"}  # moat, untested
-    print("=== 1. MECHANISM-LEVEL GRAVEYARD ===")
-    print("    concept archaeology blocks a PHRASE; mechanism archaeology blocks a REASON\n")
-    print(f"  {'mechanism':<26}{'deaths':>7}  verdict / economic story")
-    verdicts = {}
-    for m, n in sorted(tally.items(), key=lambda kv: -kv[1]):
+def verdicts_of(tally: dict[str, int]) -> dict[str, str]:
+    """Every mechanism the board names gets a verdict; zero recorded deaths is UNTESTED, never
+    silence, so a reader that keys on the verdict table sees the whole vocabulary."""
+    verdicts: dict[str, str] = {}
+    for m in (*MECHANISMS, *(k for k in tally if k not in MECHANISMS)):
+        n = tally.get(m, 0)
         if m == "M_UNMAPPED":
             v = "UNMAPPED"
         elif m in LIVE:
             v = "ALIVE"
-        elif m in OPEN:
+        elif m in OPEN or n == 0:
             v = "UNTESTED"
-        elif n >= 5:
+        elif n >= FAMILY_KILL_DEATHS:
             v = "FAMILY KILL"
         else:
             v = "WEAK"
         verdicts[m] = v
-        story = MECHANISMS.get(m, {}).get("story", "-")
-        print(f"  {m:<26}{n:>7}  {v:<12} {story[:74]}")
+    return verdicts
 
+
+def taxonomy_mechanisms() -> list[dict[str, Any]]:
+    """The economic taxonomy as the board's ontology: 32 payer-named classes, each with the
+    reason the payer cannot stop paying, its plausibility and orthogonality priors, and what
+    testing it would take. Read by run_alpha_frontier as `mechanisms`."""
+    out = []
+    for c in TAXONOMY:
+        d = c.to_dict()
+        d["signatures"] = list(c.signatures)[:12]
+        d["priority"] = c.priority
+        out.append(d)
+    return out
+
+
+def portfolio_of(ranked: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """ERV ranking with the mechanism-overlap penalty: each prior selection in the same
+    mechanism halves the value, so the second liquidity idea is worth less than the first."""
+    used_mech: dict[str, int] = {}
+    out: list[dict[str, Any]] = []
+    for h in ranked:
+        ms = mech_of(h.get("name", "") + " " + " ".join(h.get("concepts", []))) or ["M_UNMAPPED"]
+        overlap = max(used_mech.get(m, 0) for m in ms)
+        adj = h.get("erv", 0) / (2**overlap)
+        out.append({**h, "mechs": ms, "overlap": overlap, "erv_adj": round(adj, 4)})
+        for m in ms:
+            used_mech[m] = used_mech.get(m, 0) + 1
+    out.sort(key=lambda x: -x["erv_adj"])
+    return out
+
+
+def _read_json(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def build(grave: Path = GRAVE, erv: Path = ERV, autopsy: Path = AUTOPSY) -> dict[str, Any]:
+    """The board document. Never refuses: absent inputs are named in `basis`, not fatal."""
+    rows = graveyard_rows(grave)
+    tally: dict[str, int] = {}
+    for r in rows:
+        for m in r["mechs"] or ["M_UNMAPPED"]:
+            tally[m] = tally.get(m, 0) + 1
+    verdicts = verdicts_of(tally)
     dead_fams = [m for m, v in verdicts.items() if v == "FAMILY KILL"]
+    erv_doc = _read_json(erv)
+    ranked = list((erv_doc or {}).get("ranked") or []) if isinstance(erv_doc, dict) else []
+    autopsy_present = autopsy.exists()
+    mode = FULL if (erv.exists() or autopsy_present) else TAXONOMY_FALLBACK
+    basis = {
+        "mode": mode,
+        "graveyard": (f"{grave.name}: {len(rows)} row(s) mapped" if rows
+                      else f"{grave.name}: absent or no table rows"),
+        "erv": (f"{erv.name}: {len(ranked)} ranked hypothesis(es)" if erv.exists()
+                else f"{erv.name}: absent"),
+        "autopsy": f"{autopsy.name}: {'present' if autopsy_present else 'absent'}",
+        "taxonomy": f"libs.research.mechanism_census.TAXONOMY: {len(TAXONOMY)} classes",
+        "note": ("TAXONOMY_FALLBACK: the ERV ranking and the autopsy were absent, so the "
+                 "portfolio is empty and the verdicts rest on the graveyard tally alone; the "
+                 "mechanisms list is the economic taxonomy in every mode"
+                 if mode == TAXONOMY_FALLBACK else
+                 "FULL: ERV ranking present; portfolio carries the mechanism-overlap penalty"),
+    }
+    return {"updated": datetime.now(tz=UTC).isoformat(), "basis": basis,
+            "mechanism_deaths": tally, "verdicts": verdicts, "family_kills": dead_fams,
+            "portfolio": portfolio_of(ranked) if ranked else [],
+            "mechanisms": taxonomy_mechanisms(), "n_mechanisms": len(TAXONOMY)}
+
+
+def main() -> None:
+    doc = build()
+    tally, verdicts, dead_fams, out = (doc["mechanism_deaths"], doc["verdicts"],
+                                       doc["family_kills"], doc["portfolio"])
+    # ---------- 1. MECHANISM GRAVEYARD -------------------------------------------------
+    print("=== 1. MECHANISM-LEVEL GRAVEYARD ===")
+    print("    concept archaeology blocks a PHRASE; mechanism archaeology blocks a REASON\n")
+    print(f"  {'mechanism':<26}{'deaths':>7}  verdict / economic story")
+    for m, v in sorted(verdicts.items(), key=lambda kv: -tally.get(kv[0], 0)):
+        story = MECHANISMS.get(m, {}).get("story", "-")
+        print(f"  {m:<26}{tally.get(m, 0):>7}  {v:<12} {story[:74]}")
+
     print(f"\n  FAMILY KILLS: {dead_fams}")
     print("  Any future hypothesis mapping to these inherits the evidence and must show a NEW")
     print("  asymmetry or forced-flow story -- not merely a new dataset.")
 
     # ---------- 2. HYPOTHESIS PORTFOLIO CONSTRUCTION ------------------------------------
     print("\n=== 2. HYPOTHESIS PORTFOLIO (ERV alone concentrates the book) ===")
-    ranked = []
-    if ERV.exists():
-        ranked = json.loads(ERV.read_text("utf-8")).get("ranked", [])
-    if not ranked:
-        print("  no ERV output -- run scripts/research_erv.py first")
+    if not out:
+        print(f"  no ERV output ({doc['basis']['erv']}) -- run scripts/research_erv.py first; "
+              f"board written in {doc['basis']['mode']} mode from {doc['basis']['taxonomy']}")
     else:
-        used_mech: dict[str, int] = {}
-        out: list[dict[str, Any]] = []
-        for h in ranked:
-            ms = mech_of(h.get("name", "") + " " + " ".join(h.get("concepts", []))) or [
-                "M_UNMAPPED"
-            ]
-            # correlation penalty: each prior selection in the same mechanism halves the value
-            overlap = max(used_mech.get(m, 0) for m in ms)
-            adj = h.get("erv", 0) / (2**overlap)
-            out.append({**h, "mechs": ms, "overlap": overlap, "erv_adj": round(adj, 4)})
-            for m in ms:
-                used_mech[m] = used_mech.get(m, 0) + 1
-        out.sort(key=lambda x: -x["erv_adj"])
         print(f"  {'ERV':>6}{'ADJ':>7}  {'mech':<24} hypothesis")
         for h in out[:10]:
             print(
@@ -334,20 +423,9 @@ def main() -> None:
         if fam:
             print(f"      mechanism {fam[0]} is a FAMILY KILL -- needs a new asymmetry story")
 
-    OUT.write_text(
-        json.dumps(
-            {
-                "updated": datetime.now(tz=UTC).isoformat(),
-                "mechanism_deaths": tally,
-                "verdicts": verdicts,
-                "family_kills": dead_fams,
-                "portfolio": out if ranked else [],
-            },
-            indent=1,
-        ),
-        "utf-8",
-    )
-    print(f"\n  -> {OUT}")
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(doc, indent=1), "utf-8")
+    print(f"\n  -> {OUT}  (basis: {doc['basis']['mode']})")
 
 
 if __name__ == "__main__":

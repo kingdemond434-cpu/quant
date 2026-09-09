@@ -41,6 +41,12 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(A, "MOAT", tmp_path / "moat.json")
     monkeypatch.setattr(A, "REPORT", tmp_path / "plan.json")
     monkeypatch.setattr(A, "HISTORY", tmp_path / "hist.jsonl")
+    # EVERY path this script touches must land in the fixture tree, the probe directory
+    # included (2026-09-08): `main` now registers miner-probed sources into the map, so a run
+    # that could still see the live desk's discoveries would rank hundreds of real sources
+    # against a three-source fixture. The writer's own behaviour is tested in
+    # test_acquire_data_writer.py; these tests are about the RANKING.
+    monkeypatch.setattr(A, "PROBE_DIR", tmp_path / "no_probes")
     return tmp_path
 
 
@@ -152,13 +158,21 @@ def test_a_real_universe_produces_a_ranked_explained_plan(desk) -> None:
 
 
 def test_the_agent_claims_no_acquisition_authority(desk) -> None:
-    """It ranks and explains. Anything that could spend money or start a collector belongs behind
-    a human decision, not behind a score."""
+    """It ranks, explains, and REGISTERS what the miners probed -- nothing more.
+
+    The authority narrowed on 2026-09-08 (Tier-1 I9): the map had no producer at all, so this
+    script appends miner-probed sources at grade UNVERIFIED. That is registration, not
+    acquisition: anything that could spend money, grade a source or start a collector still
+    belongs behind a human decision rather than behind a score, and the string must keep saying
+    so.
+    """
     (desk / "universe.json").write_text('{"a": {"grade": "verified-clean"}}', "utf-8")
     A.main()
     rep = json.loads((desk / "plan.json").read_text("utf-8"))
-    assert "NONE" in rep["authority"]
     assert "spends nothing" in rep["authority"]
+    assert "signs nothing" in rep["authority"] and "no collector" in rep["authority"]
+    assert "never edits an existing entry" in rep["authority"]
+    assert A.MACHINE_GRADE in rep["authority"]
 
 
 def test_history_is_append_only(desk) -> None:
