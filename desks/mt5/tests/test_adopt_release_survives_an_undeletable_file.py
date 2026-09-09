@@ -452,7 +452,7 @@ def test_the_script_untracks_state_deletions_before_it_keeps_or_deletes() -> Non
     assert untrack < code.index("if (Test-KeptByBox $rel)")
     assert untrack < code.index("[System.IO.File]::Delete($full)")
     branch = code[untrack:code.index("if (Test-KeptByBox $rel)")]
-    assert '"rm", "--cached", "--quiet", "--", $rel' in branch
+    assert '"rm", "--cached", "--quiet", "--ignore-unmatch", "--", $rel' in branch
     assert "$staged.Add" not in branch and "File]::Delete" not in branch and "continue" in branch
     # the commit is not nested under the staged-count guard
     guard = code.index("if ($staged.Count -gt 0)")
@@ -506,6 +506,49 @@ def test_a_write_the_acl_refuses_falls_back_to_unlink_without_ever_going_first()
     assert "catch { throw $denied }" in body
 
 
+def test_a_retry_can_finish_the_untracking_a_previous_run_started(tmp_path: Path) -> None:
+    """THE RETRY THAT COULD NOT SUCCEED, measured on the box 2026-09-09.
+
+    An adoption untracked several hundred desks/mt5/data/intelligence/**/discoveries_*.json, then
+    failed on ten paths whose ACL it could not write, and exited non-zero without sealing. Every
+    retry after that reported those same hundreds as `[FAIL] ... rc=128` -- because `git rm
+    --cached` FATALS on a path that is no longer in the index, which is exactly what the previous
+    run had left behind. So each attempt failed on the work the attempt before it had completed,
+    the count of unremoved paths never reached zero, and the gateway sat on stale code while the
+    hourly task ran on schedule and reported failure on schedule.
+
+    The premise is checked against REAL git rather than asserted, because the whole bug was a
+    wrong belief about one exit code. The second half pins that the script asks for the flag.
+    """
+    repo = _repo(tmp_path)
+    (repo / "kept.json").write_text("{}", "utf-8")
+    _git(repo, "add", "kept.json")
+    _git(repo, "-c", "commit.gpgsign=false", "commit", "-qm", "one")
+
+    def rm(*extra: str) -> int:
+        return subprocess.run(["git", "-C", str(repo), "rm", "--cached", "--quiet",
+                               *extra, "--", "gone.json"], capture_output=True).returncode
+
+    assert rm() != 0, (
+        "git no longer fatals on an unmatched pathspec; the flag below may be unnecessary, but "
+        "check before removing it -- this test is the reason it is there")
+    assert rm("--ignore-unmatch") == 0, (
+        "--ignore-unmatch does not make an already-untracked path a success, so the retry still "
+        "cannot converge")
+    # And it must NOT excuse a path that is present: the failure the block below reports is a
+    # real one, and staying loud about it is the point of that block.
+    assert subprocess.run(["git", "-C", str(repo), "rm", "--cached", "--quiet",
+                           "--ignore-unmatch", "--", "kept.json"],
+                          capture_output=True).returncode == 0
+    assert "kept.json" not in _git(repo, "ls-files")
+
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    assert '"rm", "--cached", "--quiet", "--ignore-unmatch", "--", $rel' in code
+    # The failure branch stays: the flag narrows what counts as a failure, it does not remove
+    # the reporting.
+    assert "[void]$unremoved.Add($rel)" in code
+
+
 def test_untracking_is_narrowed_to_paths_origin_dropped_and_never_swallows_a_failure() -> None:
     """Two verifier hardenings. A state path the BOX added since the merge base was never
     tracked by origin, so origin cannot have dropped it: it falls through to the kept-by-box
@@ -516,7 +559,7 @@ def test_untracking_is_narrowed_to_paths_origin_dropped_and_never_swallows_a_fai
     assert "if ($cols[0] -match '^A') { $boxAdded[$p] = $true }" in code
     assert ('if ($op.Kind -eq "D" -and (Test-StatePath $rel) -and -not $boxAdded.ContainsKey($rel))'
             in code)
-    rm_at = code.index('Invoke-Git @("rm", "--cached", "--quiet", "--", $rel) -AllowFail')
+    rm_at = code.index('Invoke-Git @("rm", "--cached", "--quiet", "--ignore-unmatch", "--", $rel)')
     after = code[rm_at:rm_at + 500]
     assert "if ($LASTEXITCODE -ne 0)" in after and "$unremoved.Add($rel)" in after
     assert code.index("$boxAdded[$p] = $true") < rm_at          # the set exists before the loop

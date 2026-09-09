@@ -425,7 +425,19 @@ foreach ($rec in $records) {
             # path exactly as the target does, and the verify gate below sees no difference.
             # Deliberately NOT added to $staged: a later `git add --all -- <path>` would re-add
             # any copy .gitignore does not cover. Code deletions still take the branch below.
-            Invoke-Git @("rm", "--cached", "--quiet", "--", $rel) -AllowFail | Out-Null
+            # --ignore-unmatch BECAUSE THE RETRY MUST BE ABLE TO SUCCEED (2026-09-09). Without it
+            # this call fatals -- "pathspec did not match any files", rc=128 -- on a path that is
+            # ALREADY out of the index, which is precisely what a previous run of this script
+            # leaves behind. Measured on the box: the first adoption untracked several hundred
+            # desks/mt5/data/intelligence/**/discoveries_*.json, failed later on ten paths whose
+            # ACL it could not write, and every retry after that reported those same hundreds as
+            # [FAIL] rc=128 and refused to seal -- each attempt failing on exactly the work the
+            # attempt before it had completed. The desired end state here is "not in the index",
+            # and a path that is already there has reached it. Nothing is swallowed: a path that
+            # IS in the index and will not drop still returns non-zero and still lands in
+            # $unremoved, which is the case the block below exists for.
+            Invoke-Git @("rm", "--cached", "--quiet", "--ignore-unmatch", "--", $rel) -AllowFail |
+                Out-Null
             if ($LASTEXITCODE -ne 0) {
                 # Not swallowed: an index that will not drop the path (staged content differing
                 # from both the file and HEAD) leaves it in HEAD, and the verify gate must see
