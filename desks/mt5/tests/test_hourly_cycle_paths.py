@@ -104,6 +104,21 @@ def test_one_leg_failure_cannot_terminate_later_independent_legs(tmp_path, monke
     emitted: list[tuple[str, str]] = []
     monkeypatch.setattr(hourly_cycle, "_emit_leg",
                         lambda name, outcome: emitted.append((name, outcome)))
+    # AND THE COMPUTE LEDGER, WHICH IS THE SECOND LEAK FROM THE SAME CALL. `_costed` also opens
+    # and closes a `compute_ledger` run, so this test was appending
+    #   {"run": "bad", "outcome": "RuntimeError: simulated: one broken organ"}
+    # to `data/compute_ledger.jsonl` -- the desk's compute DENOMINATOR, which `cost_by_run`
+    # aggregates and `libs.ops.completion._streak` reads to tell a blip from an outage. A leg
+    # named "bad" that never existed, failing forever, is exactly the kind of row that makes a
+    # scaling law unreadable. `_costed` imports the ledger locally, so the module's own LEDGER
+    # path is the thing to redirect; when `libs` is not importable at all (the desk-root
+    # invocation) nothing is written and there is nothing to redirect, which is why this is
+    # tolerant rather than required.
+    try:
+        from libs.ops import compute_ledger as _cl
+        monkeypatch.setattr(_cl, "LEDGER", tmp_path / "compute_ledger.jsonl")
+    except Exception:                                                   # noqa: BLE001
+        pass
 
     ran: list[str] = []
 
