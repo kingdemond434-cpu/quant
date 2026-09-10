@@ -997,6 +997,37 @@ def wiring_audit() -> dict:
     return _producer("wiring_audit", "libs/ops/wiring_audit.py")
 
 
+def queue_cycle() -> dict:
+    """THE QUEUE'S CLOCK -- five modules that formed a complete loop and were never instantiated.
+
+    MEASURED 2026-09-10, by grepping the repo for the constructor:
+
+        grep -rn 'TaskQueue(' --include=*.py . | grep -v tests   ->   no results
+
+    `task_queue` (durable journal, leases, bounded attempts), `worker` (claim, capacity), `org`
+    (roles, escalation to a human inbox), `wiring_campaign` (producer) and `coverage_governor`
+    (producer) are all tested and were all dead: nothing on this desk had ever opened the file
+    they share. That is the defect `wiring_audit` exists to find, occurring for the second time
+    in the modules written to fix it -- the first time was fixed by wiring the audit, and this
+    fixes it by giving the queue a clock.
+
+    IT RUNS AFTER THE COVERAGE LEGS BECAUSE IT READS THEM. `coverage_governor` aims the search at
+    the mechanism clusters with no bet in them, and it reads `EFFECTIVE_BREADTH.json` to know
+    which those are. Run before `alpha_breadth`, it would aim this hour's search using last
+    hour's map -- which is survivable, and still wrong on the hour a cluster stops being empty.
+
+    WHAT IT PUBLISHES IS THE HALF OF ALERTING THAT NEEDS NO CHANNEL. `needs_a_person` counts the
+    tasks that exhausted their attempts, were escalated up the chart, and reached a role that
+    answers to nobody. A non-empty inbox is the desk asking for a decision. It has been possible
+    for that to happen silently for as long as the queue has existed, because nothing read it.
+
+    IT QUEUES AND NEVER EXECUTES. A `wire` task is a choice of consumer and call site, some of it
+    on money paths; queueing the decision with its evidence attached is the automation that can be
+    audited afterwards.
+    """
+    return _producer("queue_cycle", "libs/ops/queue_cycle.py")
+
+
 def issue_board() -> dict:
     """Every issue the desk can see, aggregated -- and the safe ones repaired.
 
@@ -1116,6 +1147,8 @@ def main() -> None:
     cm = _costed("alpha_breadth", coverage_map)
     rc = _costed("regime_coverage", regime_coverage)
     pt = _costed("alpha_periodic_table", periodic_table)
+    # AFTER the coverage legs: the governor aims the search from the map they just published.
+    qcy = _costed("queue_cycle", queue_cycle)
     # THE OTHER HALF OF THE SAME LEDGER. A certificate whose `shadow_spec.params` is None passed
     # all ten gates and can never be run: the parameterisation that passed was never recorded, so
     # there is nothing to replay. The issue board offers `survivor_publication` as the repair and
@@ -1472,6 +1505,8 @@ def main() -> None:
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "external_gauntlet": gt, "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
+                    "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
+                    "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},

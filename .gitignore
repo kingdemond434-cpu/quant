@@ -233,6 +233,15 @@ reports/principal_drop.json
 # it, see the day as done, and skip the one run that matters.
 desks/mt5/data/daily_cycle_state.json
 
+# Per-box task queue. Same reason as the stamp above, one level worse: the journal records LEASES
+# -- "task X is held by worker W until 03:14" -- and a lease names a process that only exists on
+# the machine that wrote it. Shared between machines, the box would fold in leases from a research
+# container's dead workers and refuse to hand out work nobody is doing. `queue_cycle` publishes the
+# FOLD to desks/mt5/reports/QUEUE.json, which is what a reader elsewhere should be looking at.
+desks/mt5/data/task_queue.jsonl
+desks/mt5/data/task_queue.subs.json
+desks/mt5/data/task_queue.watermark
+
 # CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have
 # committed it. Any key that has been in this directory on an unignored commit is burned.
