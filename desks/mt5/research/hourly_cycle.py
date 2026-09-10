@@ -1079,6 +1079,26 @@ def futures_lead_lag() -> dict:
     return _producer("futures_lead_lag", "research/futures_lead_lag.py")
 
 
+def time_joins() -> dict:
+    """WHERE AN EXTERNAL TIMESTAMP MEETS A BAR INDEX, and whether anything says which clock.
+
+    ONE BUG OF THIS CLASS WAS FOUND ON 2026-09-10 and it was invisible at the call site: the code
+    read correctly, the types lined up, the tzinfo said UTC, and `family_event_reaction` entered
+    two to three hours BEFORE the news because the bar index is broker time under a UTC tzinfo. A
+    defect that quiet is rarely alone, so the sites are enumerated rather than guessed at.
+
+    IT FIXES NOTHING, DELIBERATELY. Which frame a source is on is a fact about THAT SOURCE, and
+    guessing it is the original error repeated at scale. UNDECLARED is not a bug -- it is a site
+    where nobody reading the code can tell a correct join from one that is three hours early.
+
+    AND IT IS TUNED FOR PRECISION OVER RECALL, because a census nobody reads changes nothing. The
+    first version reported 75 sites by matching any external word within forty lines, including
+    `encode_quantile` and `realized_variation`, both purely internal. Requiring the external name
+    in the JOIN'S OWN EXPRESSION leaves four, and a test fails if that count ever exceeds twenty.
+    """
+    return _producer("time_joins", "scripts/check_time_joins.py")
+
+
 def spread_provenance() -> dict:
     """WHERE THE COST EVERY BACKTEST CHARGES CAME FROM -- for 145 of 195 symbols, nothing says.
 
@@ -1280,6 +1300,7 @@ def main() -> None:
     sp = _costed("spread_provenance", spread_provenance)
     tf = _costed("tape_features", tape_features)
     fll = _costed("futures_lead_lag", futures_lead_lag)
+    tj = _costed("time_joins", time_joins)
     # BEFORE queue_cycle, which turns its uncovered cells into owned recertification tasks.
     ety = _costed("entry_timing", entry_timing)
     # AFTER the coverage legs: the governor aims the search from the map they just published.
@@ -1644,7 +1665,7 @@ def main() -> None:
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
-                    "futures_lead_lag": fll,
+                    "futures_lead_lag": fll, "time_joins": tj,
                     "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
