@@ -918,6 +918,38 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def coverage_map() -> dict:
+    """WHICH INDEPENDENT AXES THE SEARCH HAS ACTUALLY COVERED -- 1,435 lines that nothing ran.
+
+    The desk's stated lever is "roughly twice as many genuinely independent sources of P&L", and
+    three modules were written to measure exactly that: `alpha_breadth` (nominal against EFFECTIVE
+    breadth, which is the number that matters when sleeves correlate), `regime_coverage` (where
+    the book has no edge, with coordinates rather than "x% of heat is unfundable"), and
+    `alpha_periodic_table` (mechanism coordinates -- who acts, why they must, what information
+    changes, when, where it appears first).
+
+    NOTHING IMPORTED ANY OF THEM. 432 + 591 + 412 lines, three working entrypoints, zero callers.
+    Without this the research governor has no map: it can only chase whichever family last
+    produced a good backtest, which is how a search gets stuck re-mining one axis while the other
+    nine stay dark. Coverage is what makes breadth a measured quantity instead of a hope.
+
+    THREE LEGS AND NOT ONE, because they answer different questions and fail independently -- a
+    combined leg would hide which of the three stopped.
+    """
+    return _producer("alpha_breadth", "research/alpha_breadth.py")
+
+
+def regime_coverage() -> dict:
+    """Where the book has no edge, in coordinates research can act on. See `coverage_map`."""
+    return _producer("regime_coverage", "research/regime_coverage.py")
+
+
+def periodic_table() -> dict:
+    """Mechanism coordinates for every candidate, so an unexplored cell is visible as a gap
+    rather than as an absence nobody noticed. See `coverage_map`."""
+    return _producer("alpha_periodic_table", "side_channels/alpha_periodic_table.py")
+
+
 def brain_ab() -> dict:
     """Did a change to the desk's own search actually help, or did it only feel like it?
 
@@ -1081,6 +1113,9 @@ def main() -> None:
     hc = _costed("heal_clocks", heal_clocks)
     wa = _costed("wiring_audit", wiring_audit)
     ab = _costed("brain_ab", brain_ab)
+    cm = _costed("alpha_breadth", coverage_map)
+    rc = _costed("regime_coverage", regime_coverage)
+    pt = _costed("alpha_periodic_table", periodic_table)
     # THE OTHER HALF OF THE SAME LEDGER. A certificate whose `shadow_spec.params` is None passed
     # all ten gates and can never be run: the parameterisation that passed was never recorded, so
     # there is nothing to replay. The issue board offers `survivor_publication` as the repair and

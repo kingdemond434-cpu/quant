@@ -835,6 +835,63 @@ def _wiring_block() -> dict[str, Any]:
     }
 
 
+#: Uncovered regime buckets shown before the list is trimmed. The count is the number; the sample
+#: is so a reader can see WHAT is dark without opening the artifact.
+COVERAGE_SAMPLE_ROWS = 8
+
+
+def _coverage_block() -> dict[str, Any]:
+    """NOMINAL SLEEVES AGAINST INDEPENDENT BETS -- the number that decides whether breadth is real.
+
+    MEASURED 2026-09-10, on the first run these modules had ever had: 32 sleeves in the
+    measurement, EFFECTIVE BREADTH 1.513. A breadth ratio of 0.047, and a Sharpe multiplier over
+    a single bet of 1.23. Thirty-two labels behaving like one and a half bets.
+
+    THAT NUMBER CHANGES WHAT "MORE BREADTH" MEANS. N uncorrelated edges of Sharpe s give s*sqrt(N),
+    so the desk's own stated lever -- "roughly twice as many genuinely INDEPENDENT sources of P&L"
+    -- is a claim about this figure and not about the sleeve count. Adding sleeves along an axis
+    already covered raises the nominal count and leaves the effective one where it is, which is
+    the difference between a search that is working and a search that is busy.
+
+    IT EXISTED AND NOTHING RAN IT. `alpha_breadth` (591 lines), `regime_coverage` (432) and
+    `alpha_periodic_table` (412) were written to measure exactly this and had zero importers
+    between them, so the figure had never been computed. A research governor without it can only
+    chase whichever family last produced a good backtest -- which is how a search gets stuck
+    re-mining one axis while the other nine stay dark.
+
+    UNMEASURED WHEN ABSENT, never clean. The artifacts come from hourly legs; a board that
+    reported healthy breadth because it could not find the file would be the failure it exists to
+    expose.
+    """
+    eb = _read(DESK / "reports" / "EFFECTIVE_BREADTH.json")
+    rc = _read(DESK / "reports" / "REGIME_COVERAGE.json")
+    if not eb and not rc:
+        return {"status": "UNMEASURED", "why": (
+            "neither EFFECTIVE_BREADTH.json nor REGIME_COVERAGE.json is on this host, so how "
+            "many INDEPENDENT bets the book carries is unknown -- the sleeve count is not it")}
+    eff = (eb.get("effective") or {}) if eb else {}
+    nom = (eb.get("nominal") or {}) if eb else {}
+    n_eff = eff.get("effective_breadth")
+    n_nom = eff.get("n_nominal") or nom.get("sleeves_in_the_measurement")
+    uncovered = (rc.get("uncovered") or []) if rc else []
+    return {
+        "status": eff.get("status", "UNMEASURED"),
+        "nominal_sleeves": n_nom,
+        "effective_breadth": n_eff,
+        "breadth_ratio": eff.get("breadth_ratio"),
+        "sharpe_multiplier_vs_one_bet": eff.get("sharpe_multiplier_vs_one_bet"),
+        "binding_reading": eff.get("binding_reading"),
+        "regime_buckets": rc.get("n_buckets") if rc else None,
+        "regime_uncovered": rc.get("n_uncovered") if rc else None,
+        "uncovered_sample": list(uncovered)[:COVERAGE_SAMPLE_ROWS],
+        "why": (f"{n_nom} sleeves are behaving like {n_eff} independent bets"
+                if n_eff is not None and n_nom else
+                "effective breadth has not been measured on this host")
+               + "; N uncorrelated edges of Sharpe s give s*sqrt(N), so adding sleeves along an "
+                 "axis already covered raises the count and not the growth",
+    }
+
+
 def build() -> dict[str, Any]:
     gateway = _read(DESK / "data" / "gateway_state.json")
     # NEVER FALL BACK TO gateway_state FOR THE ACCOUNT (2026-09-04). On a box with no MT5
@@ -1004,6 +1061,7 @@ def build() -> dict[str, Any]:
     payload["release"] = _release_block()
     payload["organs"] = _organs(now)
     payload["wiring"] = _wiring_block()
+    payload["coverage"] = _coverage_block()
     payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}
     payload["stats"] = _ledger_stats(rows)
     payload["stats"]["today_pnl"] = payload["account"]["today_pnl"]
