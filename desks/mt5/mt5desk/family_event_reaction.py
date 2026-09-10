@@ -37,8 +37,25 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-
 from mt5desk.families import Signal, _atr, _h1
+
+from libs.research.bar_clock import to_bar_time
+
+#: WHICH CLOCK THE CALLER'S EVENT STAMPS ARE ON. There is no safe guess, so it is a parameter.
+#:
+#:   "bars"  the stamps are already in the bar index's own frame. Nothing is converted.
+#:   "utc"   the stamps are genuinely UTC -- a filing's acceptance time, a release time -- and
+#:           must be shifted into the bars' frame before they can be compared to a bar label.
+#:
+#: THE DEFAULT IS "bars" BECAUSE IT IS THE ONLY ONE THAT CANNOT SILENTLY MOVE AN ENTRY. A default
+#: of "utc" would shift every existing caller's events by hours the moment this landed, including
+#: callers whose stamps were already in the bars' frame -- turning a fix for a look-ahead into a
+#: new one. Real event sources are UTC and say so: `family_inputs` passes "utc" explicitly.
+CLOCKS = ("bars", "utc")
+
+#: Events this lane could not place, by reason. A shrinking sample must never be silent: a study
+#: that quietly loses a third of its events is a different study.
+_DROPPED: dict[str, int] = {}
 
 #: The two claims an event permits, kept as separate modes so the family cannot pick whichever
 #: fits after seeing the data -- the same discipline `family_clock_transition` applies to its three.
@@ -49,8 +66,24 @@ MODES = ("drift", "fade")
 AT_KEY = "at"
 
 
-def _event_times(events: Sequence[dict[str, Any]], symbol: str) -> list[pd.Timestamp]:
-    """Every knowable-at for `symbol`, sorted, tz-aware. Malformed rows are skipped, not guessed."""
+def _event_times(events: Sequence[dict[str, Any]], symbol: str, *,
+                 clock: str = "bars") -> list[pd.Timestamp]:
+    """Every knowable-at for `symbol`, in the BARS' OWN CLOCK, sorted.
+
+    THE CONVERSION IS NOT COSMETIC AND THIS FUNCTION WAS WRONG WITHOUT IT. An event stamp is
+    genuinely UTC -- a filing's acceptance time, a release time -- and the bar index is BROKER
+    time carrying a UTC tzinfo, measured at +2 in winter and +3 in summer
+    (`research/futures_lead_lag`, 0.978 correlation at the right offset against 0.10 at zero).
+    So localising to UTC and calling `searchsorted` put the entry on a bar LABELLED 14:00 that is
+    really the 11:00-12:00 UTC bar: two to three hours BEFORE the news, on bars that opened while
+    the information was still private. That is a look-ahead, and it is largest exactly where this
+    lane is supposed to work, because the drift into a scheduled release happens in those hours.
+
+    AN UNCONVERTIBLE STAMP IS DROPPED, NEVER USED RAW. Raw is not a conservative fallback -- it
+    IS the bug. With no measured clock, or in a shoulder month where the offset depends on a
+    changeover date nothing measures, the event is skipped: that removes an observation the desk
+    cannot place, and changes no size and no live trade.
+    """
     out: list[pd.Timestamp] = []
     for e in events or ():
         if str(e.get("symbol", "")).upper() != symbol.upper():
@@ -64,6 +97,12 @@ def _event_times(events: Sequence[dict[str, Any]], symbol: str) -> list[pd.Times
             continue
         if ts.tzinfo is None:
             ts = ts.tz_localize("UTC")
+        if clock == "utc":
+            moved, status, _why = to_bar_time(ts.to_pydatetime())
+            if moved is None:
+                _DROPPED[status] = _DROPPED.get(status, 0) + 1
+                continue
+            ts = pd.Timestamp(moved)
         out.append(ts)
     return sorted(set(out))
 
@@ -81,19 +120,31 @@ def family_event_reaction(
     rr: float = 1.5,
     ttl_bars: int = 48,
     cooldown_bars: int = 12,
+    clock: str = "bars",
 ) -> list[Signal]:
     """Trade the bars after a dated event, entering only once the market could know about it.
 
     `side` is the direction the EVENT implies -- +1 for an insider cluster (people buying their
     own company), -1 for the mirror hypothesis. `mode` then says whether the claim is that the
     reaction continues (`drift`) or overshoots (`fade`), and the two are separate hypotheses.
+
+    `clock` DECLARES WHICH FRAME THE EVENT STAMPS ARE ON, and it has no safe default beyond the
+    identity. The bar index is BROKER time carrying a UTC tzinfo -- +2 in winter, +3 in summer,
+    measured by `research/futures_lead_lag` against a feed stamped in epoch seconds. So a
+    genuinely-UTC stamp compared straight to a bar label lands two to three hours EARLY, on a bar
+    that opened while the filing was still private: a look-ahead, and largest exactly where this
+    lane should work, because the drift into a scheduled release happens in those hours. Pass
+    "utc" for any real event source; a stamp that cannot be converted is DROPPED, because raw is
+    not a conservative fallback -- it is the bug.
     """
     if not events or mode not in MODES or side not in (1, -1) or symbol == "":
+        return []
+    if clock not in CLOCKS:
         return []
     d = _h1(df)
     if len(d) < atr_n + 4:
         return []
-    times = _event_times(events, symbol)
+    times = _event_times(events, symbol, clock=clock)
     if not times:
         return []
 

@@ -213,6 +213,14 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             if events is None or len(events) == 0:
                 return None, "no event calendar vintages on this box"
             extra["events"] = events
+            # THE CALENDAR IS GENUINELY UTC AND THE BAR INDEX IS NOT. Bars carry BROKER time
+            # under a UTC tzinfo -- +2 winter, +3 summer, measured by `research/futures_lead_lag`
+            # against a feed stamped in epoch seconds (0.978 correlation at the right offset,
+            # 0.10 at zero). Handing a UTC release time straight to a bar-label comparison puts
+            # the entry two to three hours BEFORE the news, on a bar that opened while the
+            # information was still private. Declaring the frame is what stops that, and the
+            # family drops any stamp it cannot convert rather than using it raw.
+            extra["clock"] = "utc"
             return extra, "ok"
 
         if family == "discovered":
