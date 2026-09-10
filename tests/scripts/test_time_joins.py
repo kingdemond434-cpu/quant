@@ -118,10 +118,13 @@ def test_the_real_repo_census_is_short_enough_to_read():
     assert doc["by_state"][ctj.INTERNAL] > doc["by_state"][ctj.UNDECLARED]
 
 
-def test_the_known_cot_gap_is_a_question_and_not_an_answer():
-    """data/cot_zcache.parquet is absent from a research checkout, so the ~20 hour claim cannot
-    be verified here and must not be asserted."""
+def test_the_cot_gap_is_answered_and_was_real():
+    """It was reported as a QUESTION because the cache is absent from a research checkout. The
+    CHAIN was verifiable without it: the zcache indexes on the Tuesday report date and the raw
+    parquets carry no release column, so the family entered ~20 hours before publication on all
+    26 years. Fixed at the reader."""
+    from desks.mt5.research import orthogonal_sweep as osw
+
     doc = ctj.census(_ROOT)
-    gap = doc["known_gap_cot"]
-    assert "If the cached series" in gap and "QUESTION" in gap.upper()
-    assert "check it where the file lives" in gap
+    assert "ANSWERED" in doc["cot_gap"] and "was real" in doc["cot_gap"]
+    assert osw.COT_RELEASE_LAG_DAYS == 3

@@ -23,12 +23,14 @@ THE THREE STATES A SITE CAN BE IN:
     UNDECLARED     an external series is joined to bars and nothing says which frame it is on.
                    NOT a bug by itself; a site that needs reading, with the arithmetic attached.
 
-AND ONE KNOWN GAP THIS CANNOT MEASURE HERE. `family_cot_positioning` joins a weekly COT series
-resampled to `W-FRI` -- a Friday 00:00 label -- while the CFTC publishes the report Friday 15:30
-ET (20:30 UTC). If the cached series is not already lagged to its release, that is a ~20 hour
-look-ahead which dwarfs the clock offset and is a different defect. The cache
-(`data/cot_zcache.parquet`) is not in a research checkout, so this reports the question rather
-than an answer: it must be checked on a machine that holds the file.
+THE COT GAP THIS ONCE REPORTED AS A QUESTION IS NOW ANSWERED, AND IT WAS REAL. The question was
+whether `family_cot_positioning`'s `W-FRI` label -- Friday 00:00 -- cleared the CFTC's Friday
+15:30 ET release. The cache itself is absent from a research checkout, but the CHAIN is not:
+`refresh_cot_zcache.py:91` indexes on `report_date_as_yyyy_mm_dd`, the TUESDAY the report is
+as-of, and forward-fills daily; `data/cot/*.parquet` carry that column and NO release date at
+all. So nothing in the pipeline ever knew when the number went public, and the family entered
+roughly twenty hours early -- about a day once the broker clock is counted -- on all 26 years.
+Fixed at the reader with `orthogonal_sweep.COT_RELEASE_LAG_DAYS`.
 
     python scripts/check_time_joins.py
     python scripts/check_time_joins.py --json
@@ -155,12 +157,12 @@ def census(root: Path | None = None) -> dict[str, Any]:
         "by_state": {k: len(v) for k, v in by.items()},
         "undeclared": [s.to_dict() for s in by[UNDECLARED]],
         "declared": [s.to_dict() for s in by[DECLARED]],
-        "known_gap_cot": (
-            "family_cot_positioning joins a W-FRI weekly series (a Friday 00:00 label) while the "
-            "CFTC publishes Friday 15:30 ET = 20:30 UTC. If the cached series is not already "
-            "lagged to its release that is a ~20 hour look-ahead, which dwarfs the clock offset "
-            "and is a different defect. data/cot_zcache.parquet is absent from a research "
-            "checkout, so this is a QUESTION and not an answer: check it where the file lives"),
+        "cot_gap": (
+            "ANSWERED 2026-09-10 and it was real: the zcache is indexed on the TUESDAY report "
+            "date with no release column anywhere in the chain, so the W-FRI label sat ~20 hours "
+            "before the Friday 15:30 ET publication -- about a day once the broker clock is "
+            "counted, on all 26 years. Lagged at the reader by "
+            "orthogonal_sweep.COT_RELEASE_LAG_DAYS"),
         "rule": (
             "UNDECLARED is not a bug. It is a site where the frame is a fact about the SOURCE and "
             "nothing records it, so nobody reading the code can tell a correct join from one that "
@@ -177,7 +179,7 @@ def render(doc: dict[str, Any]) -> str:
         lines.append(f"  {s['module']}:{s['line']}  {s['func']}() via .{s['call']}()")
     if doc["undeclared"]:
         lines.append("  (undeclared is a site to read, not a bug: see `rule`)")
-    lines.append(f"  KNOWN GAP: {doc['known_gap_cot'][:110]}...")
+    lines.append(f"  COT: {doc['cot_gap'][:100]}...")
     return "\n".join(lines)
 
 

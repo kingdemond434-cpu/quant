@@ -1033,6 +1033,14 @@ def family_macro_conditional(
     if macro is None or macro.empty:
         return []
     d = _h1(df)
+    # THE FRAME IS DECLARED HERE because the join is otherwise unreadable. The bar index is BROKER
+    # time under a UTC tzinfo (+2 winter, +3 summer, measured by `research/futures_lead_lag`; see
+    # `libs/research/bar_clock`), so a genuinely-UTC series reindexed straight onto it lands two
+    # to three hours early. `orthogonal_sweep._macro_series` is the only producer of this argument
+    # and it already delivers "a POINT-IN-TIME macro regime series ON THE BAR CLOCK", lagged by a
+    # full publication day before the forward fill. A three-hour offset inside a day-long lag
+    # cannot reach the bar it conditions, so this join is sound -- but it is sound because of a
+    # property of its PRODUCER, and a reader of this line could not have known that.
     m = macro.reindex(d.index).ffill()
     atr = _atr(d, atr_n)
     signals: list[Signal] = []

@@ -330,6 +330,16 @@ def _macro_series_name() -> str | None:
                  and len(series_map[k]) >= MACRO_RANK_MIN_OBS), None)
 
 
+#: A CFTC report is dated TUESDAY and published the FOLLOWING FRIDAY at 15:30 ET. This shifts the
+#: weekly label past that release, and it is three days rather than the exact 20.5 hours for two
+#: reasons. The release instant in UTC moves with US daylight saving (20:30 or 19:30), and the bar
+#: index is BROKER time under a UTC tzinfo (+2 winter, +3 summer, `libs/research/bar_clock`), so a
+#: precise stamp needs two clocks to be right. Monday is unambiguously after the release under
+#: every combination -- and it costs nothing, because FX is closed from Friday 21:00 UTC until
+#: Sunday's open, so a signal released Friday evening could not have been traded before then.
+COT_RELEASE_LAG_DAYS = 3
+
+
 @lru_cache(maxsize=32)
 def _cot_frame(symbol: str | None = None):
     import pandas as pd
@@ -338,11 +348,22 @@ def _cot_frame(symbol: str | None = None):
     # screened elsewhere but this gauntlet reader ignored it, so a COT miner could produce a real
     # candidate that always rebuilt with `cot=None`. Downsample the daily forward-filled cache to
     # one weekly observation; repeated daily values must not masquerade as independent reports.
+    #
+    # AND LAG IT TO ITS RELEASE, which nothing in this chain was doing. MEASURED 2026-09-10:
+    # `scripts/refresh_cot_zcache.py:91` indexes the cache on `report_date_as_yyyy_mm_dd` -- the
+    # TUESDAY the report is as-of -- and forward-fills it daily. The raw parquets under
+    # `data/cot/` carry that column and no release date at all, so no stage of this pipeline ever
+    # knew when the number became public. Resampled to `W-FRI` the label is Friday 00:00, while
+    # the CFTC publishes that Tuesday's report at 15:30 ET the SAME Friday: the family was
+    # entering roughly twenty hours before the data existed, and about a day once the broker
+    # clock is counted. A weekly series read a day early is a look-ahead on every observation it
+    # has, which is the whole 26 years.
     cache = BASE.parent.parent / "data" / "cot_zcache.parquet"
     if symbol and cache.exists():
         try:
             frame = pd.read_parquet(cache, columns=[symbol])
             series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
+            series.index = series.index + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
             if len(series) >= 52:
                 return series.rename("net").to_frame()
         except Exception:

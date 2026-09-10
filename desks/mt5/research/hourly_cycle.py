@@ -1079,6 +1079,25 @@ def futures_lead_lag() -> dict:
     return _producer("futures_lead_lag", "research/futures_lead_lag.py")
 
 
+def cost_construction() -> dict:
+    """WHERE A COST OBJECT IS BUILT BY HAND, and the two unit traps that live there.
+
+    `engine.Costs.from_symbol` is the only correct constructor. It closes `quote_per_account` --
+    absent, commission stays in ACCOUNT CURRENCY and is divided by contract_size as if it were
+    PRICE, "184x too little on the JPY crosses where this desk's surviving edges actually live,
+    in the direction that manufactures survivors" -- and it takes the per-SIDE commission rather
+    than a round-turn figure in a per-side field. 113 sites build a Costs some other way.
+
+    THREE WERE ON A SCHEDULE AND ARE FIXED (exit_study, run_hunt12, full_pipeline); this leg is
+    what fails the day a fourth appears. It also tracks the five off-clock sites that stress a
+    CONTRACTUAL commission, which widens a number that does not widen.
+
+    IT FIXES NOTHING. Rewriting two dozen money-path call sites blind, to chase a trap that only
+    bites non-account-currency quotes, is how one bug becomes two dozen.
+    """
+    return _producer("cost_construction", "scripts/check_cost_construction.py")
+
+
 def fusion_cost() -> dict:
     """WHAT A FUSION ZERO ACCOUNT ACTUALLY CHARGES -- commission per lot, and a residual spread.
 
@@ -1329,6 +1348,7 @@ def main() -> None:
     fll = _costed("futures_lead_lag", futures_lead_lag)
     tj = _costed("time_joins", time_joins)
     fzc = _costed("fusion_cost", fusion_cost)
+    cxc = _costed("cost_construction", cost_construction)
     # BEFORE queue_cycle, which turns its uncovered cells into owned recertification tasks.
     ety = _costed("entry_timing", entry_timing)
     # AFTER the coverage legs: the governor aims the search from the map they just published.
@@ -1694,7 +1714,7 @@ def main() -> None:
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "time_joins": tj,
-                    "fusion_cost": fzc,
+                    "fusion_cost": fzc, "cost_construction": cxc,
                     "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
