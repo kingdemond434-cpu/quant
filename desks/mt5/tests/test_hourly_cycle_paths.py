@@ -85,7 +85,7 @@ def test_daily_promotion_chain_cannot_terminate_hourly_discovery() -> None:
     assert "daily_cycle.main(" not in body
 
 
-def test_one_leg_failure_cannot_terminate_later_independent_legs() -> None:
+def test_one_leg_failure_cannot_terminate_later_independent_legs(tmp_path, monkeypatch) -> None:
     """Written on the VPS (2026-09-06) against its own `_costed`, which read a leg's SystemExit
     as that leg's verdict; the desk's `_costed` (2026-09-07) re-raises SystemExit because every
     in-process leg that can raise it already reports its own code at the call. The two were
@@ -93,6 +93,17 @@ def test_one_leg_failure_cannot_terminate_later_independent_legs() -> None:
     a failing leg is recorded and the legs after it still run -- rather than either file's text.
     """
     import hourly_cycle
+
+    # THIS TEST WAS WRITING SIMULATED FAILURES INTO THE DESK'S REAL EVENT LOG. `_costed` calls
+    # `_emit_leg` -> `libs.ops.events.leg_events`, which appends to the tracked, committed
+    # `desks/mt5/data/events.jsonl` -- so every run of this file left rows reading
+    # `{"leg": "bad", "outcome": "RuntimeError: simulated: one broken organ"}` in the log that
+    # consumers read to ask what happened since they last looked. Found 2026-09-10 as an
+    # untracked file after a suite run; a fabricated LEG_FAILED is the one thing an event log
+    # must never contain, and the same class as R0748 (a test writing to a tracked path).
+    emitted: list[tuple[str, str]] = []
+    monkeypatch.setattr(hourly_cycle, "_emit_leg",
+                        lambda name, outcome: emitted.append((name, outcome)))
 
     ran: list[str] = []
 
@@ -108,6 +119,8 @@ def test_one_leg_failure_cannot_terminate_later_independent_legs() -> None:
     assert first["status"] == "LEG_FAILED" and "RuntimeError" in first["error"]
     assert second == {"ok": True} and ran == ["later"], (
         "a leg's failure must be a recorded verdict, never authority to stop the pass")
+    assert emitted == [("bad", "RuntimeError: simulated: one broken organ"), ("later", "ok")], (
+        "both legs must reach the event log, the failure with its reason attached")
     body = SRC.split("def _costed(", 1)[1].split("\ndef ", 1)[0]
     assert "except BaseException as exc:" in body
     assert "close_run(run, outcome=" in body, "the failure must reach the compute ledger"
