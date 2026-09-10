@@ -981,7 +981,7 @@ function pageIssues(){
 
   const c2 = card("What the fixer did", "auto-repair");
   const acts = ib.actions || [];
-  const ran = acts.filter(a => a.action === "RAN");
+  const ran = acts.filter(a => a.action === "REPAIRED" && a.verified === true);
   if (acts.length){
     c2.body.appendChild(triple([
       ["REPAIRED", num(ran.length), ran.length ? "g" : "m"],
