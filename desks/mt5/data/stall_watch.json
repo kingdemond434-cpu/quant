@@ -1,41 +1,31 @@
 {
-    "free_gb":  9.6,
-    "checked_at":  "2026-09-10T07:30:26.7176917Z",
+    "free_gb":  10,
+    "checked_at":  "2026-09-10T08:00:11.7339287Z",
     "actions":  [
                     "FAILING MT5-Shadow: last result 1 twice in a row -- re-run",
                     "FAILING MT5-Hourly: last result 1 twice in a row -- re-run",
                     "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
                     "FAILING MT5-QQuantGatesCertify: last result 1 twice in a row -- re-run",
-                    "FAILING MT5-ResearchSupervisor: last result 1 twice in a row -- re-run",
-                    "RAM-FLOOR: only 99MB free (phys 99MB / virt 3232MB) -- shed ? (commit 10921MB); it resumes from cache on its next trigger",
                     "FEED LAG: 1 CLOCKED symbol(s) \u003e6h stale: EURCHF",
                     "FEED LAG fixer: re-selected 1 symbol(s) in MarketWatch"
                 ],
-    "low_mem_strikes":  3,
+    "low_mem_strikes":  0,
     "procs":  {
-                  "fail.MT5-MoatRecorder":  {
-                                                "cpu":  1,
-                                                "at":  "2026-09-10T09:30:11.0056714+02:00"
-                                            },
-                  "external_gauntlet.10024":  {
-                                                  "cpu":  7.015625,
-                                                  "at":  "2026-09-10T09:30:11.0056714+02:00"
-                                              },
-                  "fail.MT5-Hourly":  {
-                                          "cpu":  1,
-                                          "at":  "2026-09-10T09:30:11.0056714+02:00"
-                                      },
-                  "fail.MT5-ResearchSupervisor":  {
-                                                      "cpu":  1,
-                                                      "at":  "2026-09-10T09:30:11.0056714+02:00"
-                                                  },
                   "fail.MT5-QQuantGatesCertify":  {
                                                       "cpu":  1,
-                                                      "at":  "2026-09-10T09:30:11.0056714+02:00"
+                                                      "at":  "2026-09-10T10:00:04.5724614+02:00"
                                                   },
+                  "fail.MT5-MoatRecorder":  {
+                                                "cpu":  1,
+                                                "at":  "2026-09-10T10:00:04.5724614+02:00"
+                                            },
                   "fail.MT5-Shadow":  {
                                           "cpu":  1,
-                                          "at":  "2026-09-10T09:30:11.0056714+02:00"
+                                          "at":  "2026-09-10T10:00:04.5724614+02:00"
+                                      },
+                  "fail.MT5-Hourly":  {
+                                          "cpu":  1,
+                                          "at":  "2026-09-10T10:00:04.5724614+02:00"
                                       }
               }
 }

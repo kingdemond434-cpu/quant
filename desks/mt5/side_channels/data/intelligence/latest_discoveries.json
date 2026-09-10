@@ -1,7 +1,69 @@
 {
   "youtube": {
-    "count": 25,
+    "count": 30,
     "discoveries": [
+      {
+        "source": "youtube",
+        "title": "EURUSD OPEN BUY | 10 SEP 2026 09:36:03 | EURUSD Journal",
+        "channel": "EURUSD Journal",
+        "url": "https://youtube.com/watch?v=A8a1X3aF668",
+        "published": "2026-09-10T07:38:18Z",
+        "symbols": [
+          "EURUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "\ud835\udc06\ud835\udc01\ud835\udc0f\ud835\udc14\ud835\udc12\ud835\udc03 \u2013 \ud835\udc07\ud835\udfcf | \ud835\udfcf\ud835\udfce/\ud835\udfce\ud835\udfd7/\ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #smc #tradingsignals #gbpusd  #technicalanalysis #forexmoney",
+        "channel": "\ud835\udc13\ud835\udc21\ud835\udc1e \ud835\udc0a\ud835\udc28\ud835\udc27\ud835\udc20 \ud835\udc13\ud835\udc2b\ud835\udc1a\ud835\udc1d\ud835\udc1e\ud835\udc2b",
+        "url": "https://youtube.com/watch?v=u5XbtNtoGds",
+        "published": "2026-09-10T07:28:19Z",
+        "symbols": [
+          "GBPUSD"
+        ],
+        "timeframes": [
+          "H1"
+        ],
+        "patterns": [
+          "breakout",
+          "triangle",
+          "order block"
+        ],
+        "confidence": 0.7499999999999999
+      },
+      {
+        "source": "youtube",
+        "title": "\ud835\udc14\ud835\udc12\ud835\udc03\ud835\udc09\ud835\udc0f\ud835\udc18 \u2013 \ud835\udc07\ud835\udfcf | \ud835\udfcf\ud835\udfce/\ud835\udfce\ud835\udfd7/\ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #smc #tradingplan #tradingsignals #forexmoney #usdjpy  #technicalanalysis",
+        "channel": "\ud835\udc13\ud835\udc21\ud835\udc1e \ud835\udc0a\ud835\udc28\ud835\udc27\ud835\udc20 \ud835\udc13\ud835\udc2b\ud835\udc1a\ud835\udc1d\ud835\udc1e\ud835\udc2b",
+        "url": "https://youtube.com/watch?v=cbTACdYxn4c",
+        "published": "2026-09-10T07:10:29Z",
+        "symbols": [
+          "USDJPY"
+        ],
+        "timeframes": [
+          "H1"
+        ],
+        "patterns": [
+          "liquidity"
+        ],
+        "confidence": 0.44999999999999996
+      },
+      {
+        "source": "youtube",
+        "title": "Live XAUUSD - Gold Trading - My Strategy - 10/09/2026 #gold, #xauusd, livetrading, #btc, #forex",
+        "channel": "Gold & Bitcoin",
+        "url": "https://youtube.com/watch?v=7O2DUdyqH9k",
+        "published": "2026-09-10T05:59:55Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
       {
         "source": "youtube",
         "title": "Gold Technical Analysis 10 September 2026 || XAUUSD Today Trading Strategy",
@@ -19,28 +81,10 @@
       },
       {
         "source": "youtube",
-        "title": "\ud835\udc17\ud835\udc00\ud835\udc14\ud835\udc14\ud835\udc12\ud835\udc03 \u2013 \ud835\udc07\ud835\udfcf | \ud835\udfcf\ud835\udfce/\ud835\udfce\ud835\udfd7/\ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #technicalanalysis #smc #tradingplan #tradingsignals #xauusd",
-        "channel": "\ud835\udc13\ud835\udc21\ud835\udc1e \ud835\udc0a\ud835\udc28\ud835\udc27\ud835\udc20 \ud835\udc13\ud835\udc2b\ud835\udc1a\ud835\udc1d\ud835\udc1e\ud835\udc2b",
-        "url": "https://youtube.com/watch?v=UpGId01-EvU",
-        "published": "2026-09-10T04:41:01Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [
-          "H1"
-        ],
-        "patterns": [
-          "fibonacci",
-          "fib"
-        ],
-        "confidence": 0.6
-      },
-      {
-        "source": "youtube",
-        "title": "LIVESTREAM TRADING Th\u1ef1c chi\u1ebfn l\u01b0\u1edbt s\u00f3ng v\u00e0ng ng\u00e0y 10/09/2026. #xauusd #forextrading",
-        "channel": "\u0110\u1ee9c Anh Trader (Th\u1ea7n R\u00f9a)",
-        "url": "https://youtube.com/watch?v=HbLFlYLRfsU",
-        "published": "2026-09-10T04:37:48Z",
+        "title": "\ud83d\udd25 Forex Trading Live | Gold (XAUUSD) Trade Analysis &amp; Profit | Trading Strategy",
+        "channel": "XAUUSD Master",
+        "url": "https://youtube.com/watch?v=UAtX2bbUzLI",
+        "published": "2026-09-10T07:55:26Z",
         "symbols": [
           "XAUUSD"
         ],
@@ -50,10 +94,50 @@
       },
       {
         "source": "youtube",
-        "title": "XAUUSD Analysis Today | Gold Trading Strategy | 10Sep2026#xauusd#xauusdanalysis #xauusdlive",
-        "channel": "Swing Trading Range",
-        "url": "https://youtube.com/watch?v=LQSglXpsHck",
-        "published": "2026-09-10T02:49:00Z",
+        "title": "\ud83d\udd34LIVE GOLD TRADING /XAUUSD LIVE /BTCUSDLIVE #crypto #goldtrading #livetrading @Ashutosh_kumar_live",
+        "channel": "Ashutosh Kumar",
+        "url": "https://youtube.com/watch?v=mFh-ZcJd2b0",
+        "published": "2026-09-10T07:34:41Z",
+        "symbols": [
+          "XAUUSD",
+          "BTCUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.4
+      },
+      {
+        "source": "youtube",
+        "title": "Gold Trading Strategy That Beginners Should Know \ud83e\udd47\ud83d\udcc8 #trading #stockmarket#trader#tradingforbeginners",
+        "channel": "TRADEOWN",
+        "url": "https://youtube.com/watch?v=fkAMk-w2otU",
+        "published": "2026-09-10T07:17:34Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "10-11 September #xauusd #analysis https://t.me/xauusdgodlive #gold #forex #trading #trader #learning",
+        "channel": "XAUUSD GOD LIVE",
+        "url": "https://youtube.com/watch?v=qO8SFqgD9ck",
+        "published": "2026-09-10T07:17:39Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "10-11 September #xauusd #analysis https://t.me/ComexMarketExpert #gold #forex #trading #learning",
+        "channel": "Comex Market Expert",
+        "url": "https://youtube.com/watch?v=H6LTKQePh0c",
+        "published": "2026-09-10T07:13:31Z",
         "symbols": [
           "XAUUSD"
         ],
@@ -128,58 +212,6 @@
       },
       {
         "source": "youtube",
-        "title": "Gold Price Forecast Today  | CME Orders &amp; Market Direction #xauusd #xauusdforcast #goldanalysis",
-        "channel": "G.M Forex Academy ",
-        "url": "https://youtube.com/watch?v=0g2PRyZNtcI",
-        "published": "2026-09-10T05:59:12Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "gold trading #gold #xauusd #forex #commodity #trading #btc #nifty #tradingstrategy",
-        "channel": "Desivlog",
-        "url": "https://youtube.com/watch?v=TFludzzQkcg",
-        "published": "2026-09-10T04:55:09Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "GOLD XAUUSD Trading Strategy TODAY 10-11 SEP | XAUUSD Analysis TODAY 10-11 SEP | GOLD Forecast TODAY",
-        "channel": "The Trader Next Door",
-        "url": "https://youtube.com/watch?v=JMHIx5hvU6M",
-        "published": "2026-09-10T04:45:04Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
-        "title": "\ud83d\udd34 Live XAUUSD Trading | Gold Scalping and Day Trading Strategy | Forex Live Signals",
-        "channel": "Steve Stocks",
-        "url": "https://youtube.com/watch?v=33zLdrw7vQQ",
-        "published": "2026-09-10T04:44:08Z",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "timeframes": [],
-        "patterns": [],
-        "confidence": 0.2
-      },
-      {
-        "source": "youtube",
         "title": "GBPJPY Analysis Today: BUY or SELL? 206.987 Key Level | GBPJPY Forecast | GBP/JPY Technical Analysis",
         "channel": "ABSOLUTE TRADE",
         "url": "https://youtube.com/watch?v=ce6Na6WDQNI",
@@ -214,13 +246,26 @@
           "GBPJPY"
         ],
         "timeframes": [
-          "D1",
           "H1",
           "H4",
-          "W1"
+          "W1",
+          "D1"
         ],
         "patterns": [],
         "confidence": 0.6000000000000001
+      },
+      {
+        "source": "youtube",
+        "title": "The Yen Hits 155",
+        "channel": "CloseOption LLC",
+        "url": "https://youtube.com/watch?v=eCbk7gt-y0U",
+        "published": "2026-09-09T07:01:41Z",
+        "symbols": [
+          "USDJPY"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
       },
       {
         "source": "youtube",
@@ -254,6 +299,32 @@
         "channel": "Trade with Roshan",
         "url": "https://youtube.com/watch?v=VwSu1HNlnHU",
         "published": "2026-09-04T00:58:41Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD Analysis Today | Gold Trading Strategy | 10Sep2026#xauusd#xauusdanalysis #xauusdlive",
+        "channel": "Swing Trading Range",
+        "url": "https://youtube.com/watch?v=LQSglXpsHck",
+        "published": "2026-09-10T02:49:00Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Gold Trading Strategy That Beginners Should Know \ud83e\udd47\ud83d\udcc8 #trading #stockmarket#trader#tradingforbeginners",
+        "channel": "TRADEOWN",
+        "url": "https://youtube.com/watch?v=fkAMk-w2otU",
+        "published": "2026-09-10T07:17:34Z",
         "symbols": [
           "XAUUSD"
         ],
@@ -689,8 +760,25 @@
     ]
   },
   "reddit": {
-    "count": 20,
+    "count": 21,
     "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Fresh XAUUSD SETUP! Thirsty Thursday",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "pullback",
+          "support",
+          "resistance",
+          "EMA",
+          "liquidity"
+        ],
+        "confidence": 0.3
+      },
       {
         "source": "reddit",
         "subreddit": "Forex",
@@ -854,8 +942,8 @@
         "title": "Trade",
         "url": "",
         "symbols": [
-          "GBPUSD",
-          "XAUUSD"
+          "XAUUSD",
+          "GBPUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -899,9 +987,9 @@
         "title": "I built an open-source MT5 visual replacer for backtesting \u2014 looking for honest feedback before I take it further",
         "url": "",
         "symbols": [
-          "GBPUSD",
+          "XAUUSD",
           "EURUSD",
-          "XAUUSD"
+          "GBPUSD"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -934,8 +1022,28 @@
     ]
   },
   "central_bank": {
-    "count": 0,
-    "discoveries": []
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "central_bank",
+        "bank": "BoJ",
+        "currency": "JPY",
+        "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+        "published_utc": "2026-09-10T07:30:00+00:00",
+        "title": "Basic Figures on Fails (Aug.)",
+        "link": "http://www.boj.or.jp/en/statistics/set/bffail/sjgb2608.pdf",
+        "policy_signals": [],
+        "instruments": [
+          "USDJPY",
+          "EURJPY",
+          "GBPJPY",
+          "AUDJPY",
+          "CADJPY",
+          "CHFJPY",
+          "NZDJPY"
+        ]
+      }
+    ]
   },
   "forexfactory": {
     "count": 19,
@@ -948,9 +1056,9 @@
         "impact": "MEDIUM",
         "date": "2026-09-08T09:15:00-04:00",
         "symbols": [
-          "GBPAUD",
           "GBPUSD",
-          "GBPJPY"
+          "GBPJPY",
+          "GBPAUD"
         ],
         "confidence": 0.4,
         "description": "Medium impact GBP event: Monetary Policy Report Hearings"
@@ -963,16 +1071,16 @@
         "impact": "MEDIUM",
         "date": "2026-09-09T21:15:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: President Trump Speaks"
@@ -985,9 +1093,9 @@
         "impact": "HIGH",
         "date": "2026-09-10T08:15:00-04:00",
         "symbols": [
-          "EURUSD",
-          "EURJPY",
           "GBPEUR",
+          "EURJPY",
+          "EURUSD",
           "EURAUD"
         ],
         "confidence": 0.7,
@@ -1001,9 +1109,9 @@
         "impact": "HIGH",
         "date": "2026-09-10T08:15:00-04:00",
         "symbols": [
-          "EURUSD",
-          "EURJPY",
           "GBPEUR",
+          "EURJPY",
+          "EURUSD",
           "EURAUD"
         ],
         "confidence": 0.7,
@@ -1017,16 +1125,16 @@
         "impact": "HIGH",
         "date": "2026-09-10T08:30:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Core PPI m/m"
@@ -1039,16 +1147,16 @@
         "impact": "HIGH",
         "date": "2026-09-10T08:30:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: PPI m/m"
@@ -1061,16 +1169,16 @@
         "impact": "MEDIUM",
         "date": "2026-09-10T08:30:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Unemployment Claims"
@@ -1083,9 +1191,9 @@
         "impact": "HIGH",
         "date": "2026-09-10T08:45:00-04:00",
         "symbols": [
-          "EURUSD",
-          "EURJPY",
           "GBPEUR",
+          "EURJPY",
+          "EURUSD",
           "EURAUD"
         ],
         "confidence": 0.7,
@@ -1099,9 +1207,9 @@
         "impact": "HIGH",
         "date": "2026-09-11T02:00:00-04:00",
         "symbols": [
-          "GBPAUD",
           "GBPUSD",
-          "GBPJPY"
+          "GBPJPY",
+          "GBPAUD"
         ],
         "confidence": 0.7,
         "description": "High impact GBP event: GDP m/m"
@@ -1114,8 +1222,8 @@
         "impact": "MEDIUM",
         "date": "2026-09-11T05:15:00-04:00",
         "symbols": [
-          "CHFJPY",
-          "USDCHF"
+          "USDCHF",
+          "CHFJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact CHF event: SNB Chairman Schlegel Speaks"
@@ -1128,16 +1236,16 @@
         "impact": "HIGH",
         "date": "2026-09-11T08:30:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Core CPI m/m"
@@ -1150,16 +1258,16 @@
         "impact": "HIGH",
         "date": "2026-09-11T08:30:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Core CPI y/y"
@@ -1172,16 +1280,16 @@
         "impact": "HIGH",
         "date": "2026-09-11T08:30:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: CPI m/m"
@@ -1194,16 +1302,16 @@
         "impact": "HIGH",
         "date": "2026-09-11T08:30:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: CPI y/y"
@@ -1216,9 +1324,9 @@
         "impact": "MEDIUM",
         "date": "2026-09-11T10:00:00-04:00",
         "symbols": [
-          "EURUSD",
-          "EURJPY",
           "GBPEUR",
+          "EURJPY",
+          "EURUSD",
           "EURAUD"
         ],
         "confidence": 0.4,
@@ -1232,16 +1340,16 @@
         "impact": "MEDIUM",
         "date": "2026-09-11T10:00:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Prelim UoM Consumer Sentiment"
@@ -1254,16 +1362,16 @@
         "impact": "MEDIUM",
         "date": "2026-09-11T10:00:00-04:00",
         "symbols": [
-          "GBPUSD",
           "NAS100",
-          "AUDUSD",
           "USDCAD",
-          "USDCHF",
+          "XAUUSD",
           "EURUSD",
-          "USDJPY",
-          "US500",
+          "GBPUSD",
           "NZDUSD",
-          "XAUUSD"
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Prelim UoM Inflation Expectations"
@@ -1276,9 +1384,9 @@
         "impact": "MEDIUM",
         "date": "2026-09-12T04:00:00-04:00",
         "symbols": [
-          "EURUSD",
-          "EURJPY",
           "GBPEUR",
+          "EURJPY",
+          "EURUSD",
           "EURAUD"
         ],
         "confidence": 0.4,
@@ -1623,14 +1731,14 @@
         "source": "cnn_fear_greed",
         "type": "sentiment_reading",
         "reading": "neutral",
-        "score": 38.8857142857143,
+        "score": 36.2571428571429,
         "rating": "fear",
         "symbols": [
           "US500",
           "NAS100"
         ],
         "confidence": 0.3,
-        "description": "Fear & Greed: 38.8857142857143 (fear)"
+        "description": "Fear & Greed: 36.2571428571429 (fear)"
       }
     ]
   },
