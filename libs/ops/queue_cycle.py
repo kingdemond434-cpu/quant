@@ -82,38 +82,53 @@ def _coverage_governor(root: Path, queue: TaskQueue) -> dict[str, Any]:
 
 
 def _cost_evidence(root: Path, queue: TaskQueue) -> dict[str, Any]:
-    """Certificates whose own 3x cost gate never reached the hours they can fire in.
+    """Certificates whose own 3x cost gate demonstrably never reached the hours they can fire in.
 
-    THE WORK IS RECERTIFICATION, NOT A VETO, and the kind says so. `entry_timing` found 15 of 66
-    live certificates judged at a spread far below the measured one -- EURCHF at 30x, AUDCAD at
-    17x -- and the honest response to "this cell was judged at the wrong cost" is to judge it
-    again at the right one. Refusing the cell here would be reducing the book by fiat on evidence
-    a gauntlet has not yet weighed, and admitting it silently is what happened until now.
+    THE WORK IS RECERTIFICATION, NOT A VETO, and the kind says so. The honest response to "this
+    cell was judged at the wrong cost" is to judge it again at the right one; refusing the cell
+    here would be reducing the book by fiat on evidence no gauntlet has weighed.
+
+    IT QUEUES NOTHING TODAY, AND THAT IS THE CORRECT ANSWER. `entry_timing` first reported 15
+    uncovered cells, and every one of them was a producer artifact: `median_spread_pts` is
+    written by three producers with three different meanings, and the cells named carried
+    provenance `realized_fills` -- the desk's own executions, which outrank the H1 bar's stamped
+    spread column. With the provenance gate in place the count is zero. This producer stays wired
+    because the day a genuinely comparable symbol drifts, it queues that cell the same hour --
+    and because a finding that turns out to be an artifact costs far more than no finding: acting
+    on that one would have re-judged 15 certified cells on a bug the desk had already documented.
 
     OWNED BY VALIDATION, which owns `recertify` in `DESK_ROLES`. That routes it to the organ that
     re-runs gates, and gives it a supervisor: a recertification the desk cannot perform escalates
     to portfolio and then to a person, instead of the finding being published hourly forever.
     """
-    from desks.mt5.research.entry_timing import UNCOVERED, assess
+    from desks.mt5.research.entry_timing import UNCOVERED, census
 
+    doc = census(root)
     o = desk_org()
     queued, skipped = [], []
-    for w in assess(root):
-        if w.verdict != UNCOVERED:
+    for w in doc["windows"]:
+        if w["verdict"] != UNCOVERED:
             continue
         task = o.delegate(
             queue, "recertify", frm="ops",
-            payload={"cell": w.cell, "symbol": w.symbol, "selector": w.selector,
-                     "charged_pts": w.charged, "understatement": w.understatement,
-                     "dearest_pts": (max(w.measured.values()) if w.measured else None),
-                     "why": w.why},
-            priority=float(w.understatement or 0.0),
-            dedupe_key=f"recertify:cost:{w.cell}")
-        (queued.append(w.cell) if task is not None
-         else skipped.append(f"{w.cell} (already queued for recertification)"))
+            payload={"cell": w["cell"], "symbol": w["symbol"], "selector": w["selector"],
+                     "charged_pts": w["charged_pts"], "charged_source": w["charged_source"],
+                     "understatement": w["understatement"], "dearest_pts": w["dearest_pts"],
+                     "why": w["why"]},
+            priority=float(w["understatement"] or 0.0),
+            dedupe_key=f"recertify:cost:{w['cell']}")
+        (queued.append(w["cell"]) if task is not None
+         else skipped.append(f"{w['cell']} (already queued for recertification)"))
     return {"queued": queued, "skipped": skipped,
-            "why": ("a cell judged at the wrong cost is recertified at the right one; refusing "
-                    "it here would be reducing the book on evidence no gauntlet has weighed")}
+            # PUBLISHED EVEN WHEN NOTHING IS QUEUED, because "no comparable symbol drifted" and
+            # "almost nothing is comparable" are different states and only the second is a defect.
+            "n_comparable_symbols": doc["n_symbols_comparable"],
+            "n_symbols_no_provenance": doc["n_symbols_no_provenance"],
+            "n_charged_zero": doc["n_symbols_charged_zero"],
+            "why": ("a cell judged at the wrong cost is recertified at the right one; a ratio is "
+                    "only taken where the registry records that both sides are the same "
+                    "quantity, because a producer flip read as a cost error re-judges cells that "
+                    "were fine")}
 
 
 _IMPL = {"wiring_campaign": _wiring_campaign, "coverage_governor": _coverage_governor,

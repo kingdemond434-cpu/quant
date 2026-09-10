@@ -4,8 +4,16 @@ WHAT THIS GUARDS. `entry_timing` compares two numbers the desk already owns -- t
 `mt5desk/engine.py:124` bills every backtest (`universe.json -> median_spread_pts`) against the
 spread the tape measured at each hour (`cost_surface.json -> hours[H].p50`) -- and asks whether
 each cell's OWN `stress_costs` gate, which ran at 3x, ever reached the hours the cell can fire
-in. On the live canon it found 15 of 66 certificates outside their own gate, EURCHF at 30x, and
-6 symbols charged ZERO spread.
+in.
+
+BUT ONLY WHERE THE TWO SIDES ARE THE SAME QUANTITY, and that guard is the reason this file
+exists in its current form. The first version compared them unconditionally and reported 15 of
+66 certificates outside their own gate -- EURCHF at 30x. That number was an artifact.
+`libs/portfolio/execution_cost.py` had already documented why: THREE producers write
+`median_spread_pts` with three different meanings, and EURCHF's row carries provenance
+`realized_fills` -- the desk's OWN executions, which outrank a bar-boundary spread column. With
+the provenance gate in place the count is ZERO, and the real findings are that only 40 of 195
+symbols record a comparable producer at all and 6 are charged ZERO spread.
 
 THE TESTS THAT MATTER ARE THE ONES ABOUT WHAT IT REFUSES TO DO:
 
@@ -51,17 +59,25 @@ from desks.mt5.research import entry_timing as et  # noqa: E402
 
 
 def _desk(tmp: Path, *, hours: dict[int, float | None], charged: float | None,
-          selector: str = "asia", symbol: str = "TESTFX") -> Path:
-    """A throwaway desk carrying one symbol, one certificate and a surface with given hours."""
+          selector: str = "asia", symbol: str = "TESTFX",
+          source: str | None = et.COMPARABLE_SOURCE) -> Path:
+    """A throwaway desk carrying one symbol, one certificate and a surface with given hours.
+
+    `source` defaults to the ONLY provenance under which a ratio means anything, so a test that
+    is about the window arithmetic is not silently about the provenance gate instead.
+    """
     data = tmp / "desks" / "mt5" / "data"
     (data / "universe").mkdir(parents=True, exist_ok=True)
     surface = {"schema": "cost-surface-1", "symbols": {symbol: {"hours": {
         str(h): ({"status": "MEASURED", "p50": v} if v is not None else {"status": "UNMEASURED"})
         for h, v in hours.items()}}}}
     (data / "cost_surface.json").write_text(json.dumps(surface), encoding="utf-8")
-    meta = {"symbol": symbol}
+    meta: dict = {"symbol": symbol}
     if charged is not None:
         meta["median_spread_pts"] = charged
+    if source:
+        meta["_provenance"] = {"median_spread_pts":
+                               {"source": source, "at": "2026-09-07T00:00:00+00:00"}}
     (data / "universe" / "universe.json").write_text(
         json.dumps({"symbols": {symbol: meta}}), encoding="utf-8")
     (data / "UNIVERSAL_SURVIVORS.canon.json").write_text(json.dumps({"survivors": {
@@ -141,7 +157,7 @@ def test_zero_charged_is_a_cost_bug_and_not_a_cheap_symbol(tmp_path):
     root = _desk(tmp_path, hours=dict.fromkeys(range(24), 14.0), charged=0.0)
     row = et.assess(root)[0]
     assert row.verdict == et.UNMEASURED
-    assert "no spread at all" in row.why and "cost bug" in row.why
+    assert "no spread at all" in row.why and "registry defect" in row.why
     assert row.understatement is None
     gaps = et.symbol_gaps(root)
     assert gaps and gaps[0]["zero_charged"] is True
@@ -202,3 +218,52 @@ def test_no_window_wraps_onto_itself(selector):
     """A 12-hour TTL cannot cover the same hour twice, or a dear hour would be double counted."""
     hours = et.entry_hours(selector)
     assert len(set(hours)) == len(hours)
+
+
+# ---------------------------------------------------------------- the provenance gate ----------
+def test_a_charge_with_no_recorded_producer_refuses_the_comparison(tmp_path):
+    """199 of 251 registry rows record no producer. Three producers write that field with three
+    different meanings, so a ratio against an hourly median divides two different quantities --
+    and comparing them anyway is what made the first version of this file report 15 cells that
+    were fine."""
+    root = _desk(tmp_path, hours=dict.fromkeys(range(24), 30.0), charged=1.0, source=None)
+    row = et.assess(root)[0]
+    assert row.verdict == et.NO_PROVENANCE
+    assert "records no producer" in row.why
+    assert row.verdict != et.UNCOVERED, "an unattributable charge must never condemn a cell"
+
+
+def test_a_charge_from_realised_fills_outranks_the_bar_column(tmp_path):
+    """EURCHF is charged 0.5 pts because the desk's OWN FILLS said 0.5. The surface's 14.0 is the
+    spread STAMPED on an H1 bar -- one sample per hour, at the boundary, where the quote is
+    routinely widest. Re-judging the cell against the weaker number is a downgrade dressed as
+    rigour, so the disagreement is reported as evidence about the SURFACE."""
+    root = _desk(tmp_path, hours=dict.fromkeys(range(24), 14.0), charged=0.5,
+                 source=et.FILL_SOURCE)
+    row = et.assess(root)[0]
+    assert row.verdict == et.FILL_EVIDENCE
+    assert row.verdict != et.UNCOVERED
+    assert "stronger measurement" in row.why and "not about this cell" in row.why
+
+
+def test_only_the_h1_median_producer_can_ever_be_uncovered(tmp_path):
+    """The ratio is a cost error under exactly one provenance and a producer flip under the rest."""
+    hours = dict.fromkeys(range(24), 2.0)
+    hours[9] = 30.0
+    for source, expect in ((et.COMPARABLE_SOURCE, et.UNCOVERED),
+                           (et.FILL_SOURCE, et.FILL_EVIDENCE),
+                           ("expand_universe", et.NO_PROVENANCE),
+                           (None, et.NO_PROVENANCE)):
+        root = _desk(tmp_path / f"s{source}", hours=hours, charged=1.0, source=source)
+        assert et.assess(root)[0].verdict == expect, source
+
+
+def test_symbol_gaps_only_counts_comparable_symbols_as_understated(tmp_path):
+    root = _desk(tmp_path, hours=dict.fromkeys(range(24), 30.0), charged=1.0,
+                 source=et.FILL_SOURCE)
+    gaps = et.symbol_gaps(root)
+    assert gaps[0]["comparable"] is False
+    assert gaps[0]["source"] == et.FILL_SOURCE
+    doc = et.census(root)
+    assert doc["n_symbols_over_stress"] == 0, "a fill-sourced charge is not an understatement"
+    assert doc["n_symbols_comparable"] == 0

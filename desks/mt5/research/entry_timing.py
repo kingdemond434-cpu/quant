@@ -8,19 +8,33 @@ THE TWO NUMBERS, and the desk owns both:
   MEASURED  `data/cost_surface.json` -> `symbols[SYM].hours[H].p50`, the median spread observed
             on H1 bars at that hour of day, MEASURED or refused.
 
-MEASURED 2026-09-10 across the 195 symbols carrying both: the median ratio is 1.00, so the two
-are in the same units and the registry is broadly right -- which is what makes the exceptions
-worth reading rather than dismissing as a scale bug:
+THE TWO ARE NOT ALWAYS THE SAME QUANTITY, AND THAT GUARD IS MOST OF THIS FILE. The first version
+compared them unconditionally and reported 15 of 66 certificates judged at a spread 10x-30x below
+what the tape measured. THAT NUMBER WAS AN ARTIFACT, and the desk had already written down why:
+`libs/portfolio/execution_cost.py` records that THREE producers write `median_spread_pts` with
+three different meanings -- `fetch_universe` stores the median of the H1 spread column, while
+`expand_universe` and `download_all` store `symbol_info.spread`, a POINT-IN-TIME SNAPSHOT. A
+snapshot divided by an hourly median measures the producer flip and not the cost.
 
-    EURCHF   charged 0.5 pts,  measured 14.0   28x
-    AUDCAD   charged 1.0 pts,  measured 16.0   16x
-    CADJPY   charged 1.5 pts,  measured 15.0   10x
-    7 of 195 symbols understate by more than 3x, 2 of them by more than 10x
+So the registry's `_provenance.median_spread_pts.source` decides what a comparison can mean:
+
+    h1_spread_median   the same quantity as the surface's p50. A ratio here IS a cost error.
+                       MEASURED 2026-09-10: 40 of 195 priced symbols.
+    realized_fills     the desk's OWN EXECUTIONS. This is the STRONGER measurement, not the
+                       weaker one: the surface's p50 is the spread stamped on an H1 bar -- one
+                       sample per hour, at the boundary, where the quote is routinely widest.
+                       Where they disagree the finding is about the SURFACE. 27 certificates.
+    (absent)           unattributable. The comparison is refused. 145 of 195 symbols.
+
+WITH THE GATE IN PLACE, ZERO certificates are demonstrably outside their own cost gate. What
+survives as a real finding is smaller and different: 145 of 195 priced symbols charge every
+backtest a number with no recorded producer, and SIX are charged ZERO spread -- Broadcom, EURCAD,
+GBPCAD, HKDJPY, USDHKD, Walmart -- which is a registry defect and not a free instrument.
 
 THE BAR IS THE CELL'S OWN, AND THIS FILE DOES NOT SET IT. Every certificate passes
 `stress_costs`, which re-runs the cell at THREE TIMES its modelled cost and requires expectancy
-to stay positive; 66 of 66 survivors carry it. So a symbol whose real spread is 3x its charged
-spread is exactly at the edge of what its own gate tested, and one at 16x is far outside it. The
+to stay positive; 66 of 66 survivors carry it. So where a comparison IS legitimate, a symbol whose
+real spread is 3x its charged spread sits exactly at the edge of what its own gate tested. The
 question is not "is 3x the right multiple" -- the desk decided that -- it is whether the cell's
 existing gate ever reached the conditions the cell actually trades in. That comparison invents no
 threshold and cannot be tuned, because tuning it would mean disagreeing with a gate that ran.
@@ -44,6 +58,11 @@ WHAT THIS FILE WILL NOT DO, and the restraint is the point:
   * IT NEVER SUBSTITUTES A POOLED FIGURE FOR AN UNMEASURED HOUR. `cost_surface.spread_pts`
     returns None for an unmeasured cell so a caller cannot read one by accident, and an
     unmeasured window here reads UNMEASURED rather than cheap (L1.28a).
+  * IT REFUSES A RATIO IT CANNOT INTERPRET, rather than reporting the largest number it can
+    construct. A finding that turns out to be a producer artifact costs more than no finding: it
+    would have re-judged 15 certified cells, and `execution_cost.py` records that applying the
+    same ratio elsewhere "would have shifted 28 sleeves' posterior means down by up to 0.20R per
+    trade on the strength of a producer inconsistency the desk had already documented".
   * IT READS THE REGISTRY, NOT THE SURFACE'S COPY OF IT. `cost_surface.json` caches
     `pooled_median_spread_pts` from the registry at build time and that cache has DRIFTED --
     GBPJPY reads 1.0 there against 13.0 in the registry today. The engine bills the registry, so
@@ -90,6 +109,16 @@ OUT_REL = "desks/mt5/reports/ENTRY_TIMING.json"
 COVERED = "COVERED"
 UNCOVERED = "GATE_NEVER_REACHED_THIS_HOUR"
 UNMEASURED = "UNMEASURED"
+#: The charged figure has no recorded producer, so the ratio divides two different quantities.
+NO_PROVENANCE = "CHARGED_FIGURE_HAS_NO_PROVENANCE"
+#: The charged figure came from the desk's OWN FILLS, which outranks a bar-stamp column.
+FILL_EVIDENCE = "CHARGED_FROM_REALISED_FILLS"
+
+#: The only provenance under which `charged` and the surface's `p50` are the SAME QUANTITY -- both
+#: are medians of the H1 spread column -- and therefore the only one whose ratio is a cost error.
+COMPARABLE_SOURCE = "h1_spread_median"
+#: The desk's own executions. A stronger measurement than the bar column, not a weaker one.
+FILL_SOURCE = "realized_fills"
 
 
 def entry_hours(selector: str) -> tuple[int, ...]:
@@ -132,6 +161,20 @@ def charged_pts(meta: dict[str, dict[str, Any]], symbol: str) -> float | None:
         return None
 
 
+def charged_provenance(meta: dict[str, dict[str, Any]], symbol: str) -> str:
+    """Which producer wrote this symbol's `median_spread_pts`, or "" if the registry does not say.
+
+    THIS DECIDES WHETHER A RATIO MEANS ANYTHING, and it is the guard this module was missing on
+    its first pass. `libs/portfolio/execution_cost.py` had already documented why: THREE producers
+    write that field with three different meanings -- `fetch_universe` records the median of the
+    H1 spread column, while `expand_universe` and `download_all` record `symbol_info.spread`, a
+    POINT-IN-TIME SNAPSHOT. A snapshot is not a median, so dividing one by an hourly median
+    measures the producer flip and not the cost. 199 of 251 symbols carry no provenance at all.
+    """
+    prov = ((meta.get(symbol) or {}).get("_provenance") or {}).get("median_spread_pts") or {}
+    return str(prov.get("source") or "")
+
+
 def measured_pts(surface: dict[str, Any], symbol: str, hour: int) -> float | None:
     """The measured p50 spread in points at one hour, or None. Mirrors `cost_surface.spread_pts`
     exactly: a cell that is not MEASURED is a refusal, never the pooled scalar."""
@@ -158,6 +201,8 @@ class Window:
     hours: tuple[int, ...]
     by_hour: dict[int, float | None]
     charged: float | None
+    #: Which producer wrote `charged`. Decides whether a ratio against the surface means anything.
+    source: str
     verdict: str
     why: str
 
@@ -187,7 +232,7 @@ class Window:
             "cell": self.cell, "symbol": self.symbol, "selector": self.selector,
             "hours": list(self.hours),
             "n_measured": len(m), "n_unmeasured": len(self.hours) - len(m),
-            "charged_pts": self.charged,
+            "charged_pts": self.charged, "charged_source": self.source,
             "cheapest_hour": (min(m, key=lambda h: m[h]) if m else None),
             "dearest_hour": (max(m, key=lambda h: m[h]) if m else None),
             "cheapest_pts": (min(m.values()) if m else None),
@@ -202,33 +247,69 @@ class Window:
 
 def price_window(surface: dict[str, Any], meta: dict[str, dict[str, Any]],
                  cell: str, symbol: str, selector: str) -> Window:
-    """Price one certificate's whole entry window and say whether its cost gate reached it."""
+    """Price one certificate's entry window, and say whether the two sides are comparable AT ALL.
+
+    THE PROVENANCE GATE COMES FIRST, and it is the difference between a cost finding and a
+    producer artifact. Only `h1_spread_median` makes `charged` and the surface's `p50` the same
+    quantity; `realized_fills` makes the charged figure the STRONGER measurement, and an absent
+    provenance makes the ratio uninterpretable. Skipping this check reads a registry flip as a
+    30x undercharge -- which is precisely what the first version of this file did.
+    """
     hours = entry_hours(selector)
     charged = charged_pts(meta, symbol)
+    source = charged_provenance(meta, symbol)
     by_hour = {h: measured_pts(surface, symbol, h) for h in hours}
-    w = Window(cell, symbol, selector, hours, by_hour, charged, UNMEASURED, "")
+    w = Window(cell, symbol, selector, hours, by_hour, charged, source, UNMEASURED, "")
+
+    def _w(verdict: str, why: str) -> Window:
+        return Window(cell, symbol, selector, hours, by_hour, charged, source, verdict, why)
 
     if not hours:
-        why = f"selector {selector!r} is not a window this desk executes"
-    elif not w.measured:
-        why = f"no hour of {symbol}'s entry window is MEASURED in the cost surface"
-    elif charged is None:
-        why = f"{symbol} is not in the universe registry, so nothing says what it was charged"
-    elif not charged:
-        why = (f"{symbol} is charged 0.0 pts of spread: the backtest paid no spread at all, "
-               f"so no multiple of it exists. That is a cost bug and not a cheap symbol")
-    else:
-        mult = w.understatement
+        return _w(UNMEASURED, f"selector {selector!r} is not a window this desk executes")
+    if not w.measured:
+        return _w(UNMEASURED, f"no hour of {symbol}'s entry window is MEASURED in the cost surface")
+    if charged is None:
+        return _w(UNMEASURED,
+                  f"{symbol} is not in the universe registry, so nothing says what it was charged")
+
+    if source == FILL_SOURCE:
+        # THE DESK'S OWN EXECUTIONS OUTRANK A BAR COLUMN. The surface's p50 is the spread STAMPED
+        # on an H1 bar -- one sample per hour, taken at the bar boundary, where the quote is
+        # routinely at its widest. A median over realised fills is what the desk actually paid.
+        # Where they disagree the finding is about the SURFACE, not about the certificate, and
+        # re-judging a cell against the weaker number would be a downgrade dressed as rigour.
         dear = max(w.measured, key=lambda h: w.measured[h])
-        if mult is not None and mult <= STRESS_MULTIPLE:
-            return Window(cell, symbol, selector, hours, by_hour, charged, COVERED,
-                          f"the dearest hour the entry can fire in costs {mult}x what the "
-                          f"backtest charged, inside the {STRESS_MULTIPLE}x this cell passed at")
-        return Window(cell, symbol, selector, hours, by_hour, charged, UNCOVERED,
-                      f"the entry can fire at hour {dear} where the measured spread is "
-                      f"{w.measured[dear]} pts against {charged} charged -- {mult}x, and the "
-                      f"stress gate tested {STRESS_MULTIPLE}x and never reached it")
-    return Window(cell, symbol, selector, hours, by_hour, charged, UNMEASURED, why)
+        prov = ((meta.get(symbol) or {}).get("_provenance") or {}).get("median_spread_pts") or {}
+        return _w(FILL_EVIDENCE,
+                  f"{symbol} is charged {charged} pts from the desk's OWN REALISED FILLS "
+                  f"(recorded {prov.get('at', '')}). "
+                  f"The H1 surface reads up to {w.measured[dear]} pts in this window, but that "
+                  "column is a bar-boundary snapshot and fills are the stronger measurement, so "
+                  "the disagreement is evidence about the surface and not about this cell")
+
+    if source != COMPARABLE_SOURCE:
+        return _w(NO_PROVENANCE,
+                  f"{symbol}'s median_spread_pts records no producer, so it cannot be attributed "
+                  "to a median or to a snapshot and the ratio against an hourly median divides "
+                  "two different quantities. 199 of 251 symbols are in this state; "
+                  "`libs/portfolio/execution_cost.py` documents the three-producer flip")
+
+    if not charged:
+        return _w(UNMEASURED,
+                  f"{symbol} is charged 0.0 pts of spread: the backtest paid no spread at all, "
+                  "so no multiple of it exists. That is a registry defect, not a free instrument")
+
+    mult = w.understatement
+    dear = max(w.measured, key=lambda h: w.measured[h])
+    if mult is not None and mult <= STRESS_MULTIPLE:
+        return _w(COVERED,
+                  f"charged and measured are both medians of the H1 spread column, and the "
+                  f"dearest hour the entry can fire in costs {mult}x what the backtest charged "
+                  f"-- inside the {STRESS_MULTIPLE}x this cell already passed at")
+    return _w(UNCOVERED,
+              f"charged and measured are both H1 spread medians, and the entry can fire at hour "
+              f"{dear} where the measured spread is {w.measured[dear]} pts against {charged} "
+              f"charged -- {mult}x, and the stress gate tested {STRESS_MULTIPLE}x")
 
 
 def symbol_gaps(root: Path | None = None) -> list[dict[str, Any]]:
@@ -250,7 +331,11 @@ def symbol_gaps(root: Path | None = None) -> list[dict[str, Any]]:
             continue
         vals = sorted(float(v) for v in hours.values())
         med = vals[len(vals) // 2]
-        row = {"symbol": symbol, "charged_pts": charged,
+        source = charged_provenance(meta, symbol)
+        row = {"symbol": symbol, "charged_pts": charged, "source": source,
+               # ONLY `h1_spread_median` makes the two sides the same quantity. Anything else and
+               # the ratio measures which producer last wrote the row.
+               "comparable": source == COMPARABLE_SOURCE,
                "measured_median_pts": med, "measured_max_pts": max(vals),
                "median_over_charged": (round(med / charged, 3) if charged else None),
                "max_over_charged": (round(max(vals) / charged, 3) if charged else None),
@@ -287,7 +372,8 @@ def census(root: Path | None = None) -> dict[str, Any]:
     gaps = symbol_gaps(root)
     uncovered = [w for w in rows if w.verdict == UNCOVERED]
     ratios = [w.in_window_ratio for w in rows if w.in_window_ratio is not None]
-    over = [g for g in gaps if (g["median_over_charged"] or 0) > STRESS_MULTIPLE]
+    over = [g for g in gaps
+            if g["comparable"] and (g["median_over_charged"] or 0) > STRESS_MULTIPLE]
     zero = [g for g in gaps if g["zero_charged"]]
     return {
         "at": datetime.now(tz=UTC).isoformat(),
@@ -295,6 +381,10 @@ def census(root: Path | None = None) -> dict[str, Any]:
         "covered": sum(1 for w in rows if w.verdict == COVERED),
         "gate_never_reached": len(uncovered),
         "unmeasured": sum(1 for w in rows if w.verdict == UNMEASURED),
+        "no_provenance": sum(1 for w in rows if w.verdict == NO_PROVENANCE),
+        "charged_from_fills": sum(1 for w in rows if w.verdict == FILL_EVIDENCE),
+        "n_symbols_comparable": sum(1 for g in gaps if g["comparable"]),
+        "n_symbols_no_provenance": sum(1 for g in gaps if not g["source"]),
         "stress_multiple": STRESS_MULTIPLE,
         "worst_cells": [{"cell": w.cell, "understatement": w.understatement, "why": w.why}
                         for w in uncovered[:10]],
@@ -312,7 +402,11 @@ def census(root: Path | None = None) -> dict[str, Any]:
             "trade out of its session, vetoes an hour, or sizes anything: the selector is the "
             "mechanism, and what to do about an uncovered hour is the allocator's call. The "
             "charged figure is read from the universe REGISTRY, which is what the engine bills; "
-            "the copy cached inside cost_surface.json has drifted and is not used"),
+            "the copy cached inside cost_surface.json has drifted and is not used. A ratio is "
+            "taken ONLY where the registry records `h1_spread_median` provenance, so both sides "
+            "are the same quantity: where the charge came from realised fills it is the STRONGER "
+            "measurement and the surface is what is in question, and where no producer is "
+            "recorded the comparison is refused"),
     }
 
 
@@ -321,9 +415,14 @@ def render(doc: dict[str, Any]) -> str:
         f"ENTRY TIMING  {doc['n_certificates']} certificates: {doc['covered']} covered, "
         f"{doc['gate_never_reached']} whose {doc['stress_multiple']}x stress gate never reached "
         f"their entry window, {doc['unmeasured']} unmeasured",
-        f"  universe: {doc['n_symbols_over_stress']} of {doc['n_symbols_priced']} symbols are "
-        f"charged less than 1/{doc['stress_multiple']:.0f} of their measured spread; "
+        f"  comparability: only {doc['n_symbols_comparable']} of {doc['n_symbols_priced']} "
+        f"symbols record `h1_spread_median` provenance, so only those can be compared at all; "
+        f"{doc['n_symbols_no_provenance']} record no producer",
+        f"  of the comparable ones, {doc['n_symbols_over_stress']} are charged less than "
+        f"1/{doc['stress_multiple']:.0f} of their measured spread; "
         f"{doc['n_symbols_charged_zero']} are charged ZERO",
+        f"  certificates: {doc['no_provenance']} refused for want of provenance, "
+        f"{doc['charged_from_fills']} charged from the desk's own realised fills",
     ]
     if doc["median_in_window_ratio"] is not None:
         lines.append(f"  dearest/cheapest hour INSIDE the entry window: "
