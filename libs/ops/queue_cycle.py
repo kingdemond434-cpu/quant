@@ -64,7 +64,7 @@ OUT_REL = "desks/mt5/reports/QUEUE.json"
 #: Producers, in the order they run. Each is (name, callable(root, queue) -> dict). A producer
 #: that raises is recorded by name and the pass continues: the sweep in step 2 is what tells a
 #: person about failures, so it must not be skipped because a producer was broken.
-PRODUCERS = ("wiring_campaign", "coverage_governor")
+PRODUCERS = ("wiring_campaign", "coverage_governor", "cost_evidence")
 
 
 def queue_path(root: Path) -> Path:
@@ -81,7 +81,43 @@ def _coverage_governor(root: Path, queue: TaskQueue) -> dict[str, Any]:
     return {**enqueue(queue, root), "coverage": census(root)}
 
 
-_IMPL = {"wiring_campaign": _wiring_campaign, "coverage_governor": _coverage_governor}
+def _cost_evidence(root: Path, queue: TaskQueue) -> dict[str, Any]:
+    """Certificates whose own 3x cost gate never reached the hours they can fire in.
+
+    THE WORK IS RECERTIFICATION, NOT A VETO, and the kind says so. `entry_timing` found 15 of 66
+    live certificates judged at a spread far below the measured one -- EURCHF at 30x, AUDCAD at
+    17x -- and the honest response to "this cell was judged at the wrong cost" is to judge it
+    again at the right one. Refusing the cell here would be reducing the book by fiat on evidence
+    a gauntlet has not yet weighed, and admitting it silently is what happened until now.
+
+    OWNED BY VALIDATION, which owns `recertify` in `DESK_ROLES`. That routes it to the organ that
+    re-runs gates, and gives it a supervisor: a recertification the desk cannot perform escalates
+    to portfolio and then to a person, instead of the finding being published hourly forever.
+    """
+    from desks.mt5.research.entry_timing import UNCOVERED, assess
+
+    o = desk_org()
+    queued, skipped = [], []
+    for w in assess(root):
+        if w.verdict != UNCOVERED:
+            continue
+        task = o.delegate(
+            queue, "recertify", frm="ops",
+            payload={"cell": w.cell, "symbol": w.symbol, "selector": w.selector,
+                     "charged_pts": w.charged, "understatement": w.understatement,
+                     "dearest_pts": (max(w.measured.values()) if w.measured else None),
+                     "why": w.why},
+            priority=float(w.understatement or 0.0),
+            dedupe_key=f"recertify:cost:{w.cell}")
+        (queued.append(w.cell) if task is not None
+         else skipped.append(f"{w.cell} (already queued for recertification)"))
+    return {"queued": queued, "skipped": skipped,
+            "why": ("a cell judged at the wrong cost is recertified at the right one; refusing "
+                    "it here would be reducing the book on evidence no gauntlet has weighed")}
+
+
+_IMPL = {"wiring_campaign": _wiring_campaign, "coverage_governor": _coverage_governor,
+         "cost_evidence": _cost_evidence}
 
 
 def human_inbox(queue: TaskQueue) -> list[dict[str, Any]]:
@@ -110,7 +146,7 @@ def run(root: Path | None = None, *, queue: TaskQueue | None = None) -> dict[str
     for name in PRODUCERS:
         try:
             produced[name] = _IMPL[name](root, q)
-        except Exception as exc:                                  # noqa: BLE001 -- see header
+        except Exception as exc:
             failed[name] = f"{type(exc).__name__}: {exc}"
 
     swept = org.sweep_dead(q)
@@ -131,7 +167,8 @@ def run(root: Path | None = None, *, queue: TaskQueue | None = None) -> dict[str
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="one pass of the desk task queue: produce, sweep, publish")
+    ap = argparse.ArgumentParser(
+        description="one pass of the desk task queue: produce, sweep, publish")
     ap.add_argument("--root", default=str(_ROOT))
     ap.add_argument("--json", action="store_true", help="print the whole artifact")
     args = ap.parse_args(argv)

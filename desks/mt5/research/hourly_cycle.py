@@ -997,6 +997,50 @@ def wiring_audit() -> dict:
     return _producer("wiring_audit", "libs/ops/wiring_audit.py")
 
 
+def microstructure_census() -> dict:
+    """WHICH MICROSTRUCTURE CONSTRUCTIONS THIS VENUE CAN EXPRESS AT ALL, and what blocks each.
+
+    THE MEASUREMENT THAT DECIDES HALF OF THEM has been in the repo since 2026-08-17 and nothing
+    ever read it: `data/tape/depth_probe.json` probed 22 symbols and found `levels: 0` on every
+    one -- FX majors, gold, silver, both crypto CFDs. Fusion publishes no depth of market. So
+    queue position, true order-flow imbalance, microprice from sizes, depth convexity, absorption
+    and iceberg inference are not backlog on this desk; they are UNBUILDABLE on this venue, and
+    building them on a book synthesised from bid/ask would model the synthesis.
+
+    THE OTHER HALF IS FULLY AVAILABLE AND STARVED. Everything that needs the ORDER and TIMING of
+    quote revisions rather than resting size -- effective spread at a latency, post-fill mid
+    drift, realised spread, quote burstiness, the true intrabar path, the realised/bipower split
+    -- is computable from `copy_ticks_from(COPY_TICKS_ALL)`, which this desk already records.
+
+    IT IS THE SEPARATION THAT IS THE POINT. Collapsing STARVED into UNBUILDABLE is how a desk
+    stops working on the half it could fix today; the reverse is how it spends a quarter modelling
+    a synthesised book. The headline scores LIVE against REACHABLE so a broker with no order book
+    costs this desk nothing it could have earned.
+    """
+    return _producer("microstructure_census", "libs/research/microstructure_census.py")
+
+
+def entry_timing() -> dict:
+    """WHAT THE BACKTEST CHARGED FOR SPREAD AGAINST WHAT THE TAPE MEASURED, at the firing hours.
+
+    MEASURED 2026-09-10 on the live canon: 15 of 66 certificates can fire in an hour whose
+    measured spread is more than THREE TIMES what the backtest was billed -- the multiple their
+    own `stress_costs` gate ran at. EURCHF at 30x, AUDCAD at 17x, CADJPY at 10x. Six symbols are
+    charged ZERO spread. Both numbers come from artifacts the desk has held for weeks:
+    `universe.json -> median_spread_pts` is what `mt5desk/engine.py:124` bills, and
+    `cost_surface.json -> hours[H].p50` is what the bars measured.
+
+    IT SETS NO BAR OF ITS OWN. The comparison is against each cell's existing 3x stress gate, so
+    this is a check on a test that already ran rather than a second hurdle nobody agreed to.
+
+    AND IT NEVER REFUSES A TRADE. The entry window is priced, the uncovered cells are named, and
+    `queue_cycle` raises each one as a `recertify` task owned by the validation role. A cell
+    judged at the wrong cost gets judged again at the right one; it does not get vetoed here on
+    evidence no gauntlet has weighed.
+    """
+    return _producer("entry_timing", "research/entry_timing.py")
+
+
 def queue_cycle() -> dict:
     """THE QUEUE'S CLOCK -- five modules that formed a complete loop and were never instantiated.
 
@@ -1147,6 +1191,9 @@ def main() -> None:
     cm = _costed("alpha_breadth", coverage_map)
     rc = _costed("regime_coverage", regime_coverage)
     pt = _costed("alpha_periodic_table", periodic_table)
+    mx = _costed("microstructure_census", microstructure_census)
+    # BEFORE queue_cycle, which turns its uncovered cells into owned recertification tasks.
+    ety = _costed("entry_timing", entry_timing)
     # AFTER the coverage legs: the governor aims the search from the map they just published.
     qcy = _costed("queue_cycle", queue_cycle)
     # THE OTHER HALF OF THE SAME LEDGER. A certificate whose `shadow_spec.params` is None passed
@@ -1507,6 +1554,7 @@ def main() -> None:
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
+                    "microstructure_census": mx, "entry_timing": ety,
                     "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},

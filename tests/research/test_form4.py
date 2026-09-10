@@ -32,7 +32,6 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from libs.research.form4 import (  # noqa: E402
-    MIN_BUYERS,
     NOT_A_DECISION,
     Form4Txn,
     as_events,
