@@ -486,6 +486,17 @@ NOT_SOURCED_HERE = {
                 "search over pairs",
     "style_premia": "style_premia_sweep supplies the instrument's own rollover (broker_swaps) and "
                     "the risk driver and charges the whole style x instrument grid itself",
+    "cross_sectional": "its peer set is the whole hypothesis-lane universe on one clock, so a "
+                       "cell is (universe slice x horizon x mode) and NOT (family x symbol): "
+                       "enumerating it per symbol here would run the same ranking 86 times and "
+                       "charge 86 trials for one hypothesis. The runner that owns the slice "
+                       "supplies `peers` and charges its own grid",
+    "triangle": "research/triangle_miner.closed_triangles names the three legs and the two signs "
+                "from the QUOTE SET -- a triangle exists when the broker quotes all three sides, "
+                "which no search discovers. MEASURED 2026-09-10: 150 closed triangles out of "
+                "636,056 triples over 86 hypothesis-lane FX pairs, so the miner charges 150 "
+                "trials where a sweep pairing every symbol with every other pair would be an "
+                "uncharged search four thousand times larger",
 }
 
 

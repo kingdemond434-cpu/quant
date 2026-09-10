@@ -1460,6 +1460,39 @@ from mt5desk.family_multi_speed_trend import family_multi_speed_trend  # noqa: E
 ORTHOGONAL_FAMILIES["multi_speed_trend"] = family_multi_speed_trend
 FAMILY_INPUTS["multi_speed_trend"] = ("price only", "data/universe/*_H1.parquet")
 
+# WHERE AN INSTRUMENT STANDS AGAINST THE OTHERS (2026-09-10). Every other price family here is a
+# TIME-SERIES claim -- given this instrument's history, trade this instrument -- and not one ranks
+# the universe at a point in time. A cross-sectional bet is a claim about DISPERSION, so it can be
+# right on a day when every time-series family is flat, and it can be SHORT an instrument every
+# trend family is long. That disagreement is the mechanism, not a defect.
+#
+# NOT "buy the strongest trend": analyst_rank.BaselineRanker already sorts on trend strength, and
+# sorting a time-series property still leaves a time-series bet. What is ranked here is RELATIVE
+# displacement in ATRs, so an instrument in a strong absolute trend is DECLINED when the rest of
+# the universe is stronger -- which is the test that separates the two.
+from mt5desk.family_cross_sectional import family_cross_sectional  # noqa: E402
+
+ORTHOGONAL_FAMILIES["cross_sectional"] = family_cross_sectional
+FAMILY_INPUTS["cross_sectional"] = ("the peer set's bars, aligned on this instrument's clock",
+                                    "data/universe/*_H1.parquet")
+
+# WHAT TWO INSTRUMENTS IMPLY ABOUT A THIRD (2026-09-10). Every other price family here asks what
+# ONE instrument's history implies about its future; this asks what EURUSD and USDJPY imply about
+# EURJPY through an identity rather than a regularity. The residual can be wide while every trend,
+# breakout, calendar and jump family is flat, because it is not a claim about direction at all --
+# which is what makes it a separate cause rather than another parameterisation.
+#
+# NOT AN ARBITRAGE, and the family's own docstring says so at length: real triangular arbitrage is
+# closed in microseconds and none survives to an H1 close. The tradeable claim is that the
+# residual MEAN-REVERTS, which pays costs and earns a certificate like anything else.
+#
+# ITS GRID IS ENUMERATED, NOT SWEPT -- see NOT_SOURCED_HERE in orthogonal_sweep.
+from mt5desk.family_triangle import family_triangle  # noqa: E402
+
+ORTHOGONAL_FAMILIES["triangle"] = family_triangle
+FAMILY_INPUTS["triangle"] = ("the two legs' bars and their declared signs (research/"
+                             "triangle_miner names the cell)", "data/universe/*_H1.parquet")
+
 # MANY SUB-COST PREDICTORS AS ONE CANDIDATE (2026-09-04) -- Brown's public statement of the
 # Medallion architecture. Members are ordinary cells named on the certificate; the family runs
 # them through the gauntlet's own cell builder and votes. Frozen weights, never fitted here.
