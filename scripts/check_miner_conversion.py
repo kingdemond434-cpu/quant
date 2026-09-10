@@ -99,14 +99,17 @@ def _read(p: Path):
         return None
 
 
-def _mechanism_key(row: dict) -> str:
+def _mechanism_key(row: dict) -> str | None:
     """Dedup key by ECONOMIC EXPOSURE, never by title.
 
     Two rows are the same discovery if they trade the same family on the same instrument in the
     same session, however differently they are described. Titles are the worst possible key: the
     corpus is full of the same mechanism renamed by each source that found it.
     """
-    fam = str(row.get("family") or row.get("mechanism") or "unknown").casefold()
+    family = row.get("family") or row.get("mechanism")
+    if not isinstance(family, str) or family.casefold() in {"", "unknown"}:
+        return None
+    fam = family.casefold()
     sym = str(row.get("symbol") or row.get("sym") or "*").upper()
     ses = str(row.get("session") or row.get("window") or row.get("selector") or "*").casefold()
     return f"{fam}|{sym}|{ses}"
@@ -196,7 +199,7 @@ def miner_rows(cutoff: datetime) -> dict[str, list[dict]]:
             continue
         for src in sorted(d for d in base.iterdir() if d.is_dir()):
             rows: list[dict] = []
-            for f in list(src.glob("discoveries_*.json")) + list(src.glob("*.json")):
+            for f in sorted(src.glob("*.json")):
                 try:
                     if datetime.fromtimestamp(f.stat().st_mtime, tz=UTC) < cutoff:
                         continue
@@ -332,6 +335,7 @@ def main() -> int:
                             "symbol": (c.get("shadow_spec") or {}).get("symbol"),
                             "session": (c.get("shadow_spec") or {}).get("selector")})
             for c in certs.values()}
+    held.discard(None)
     fam_counts = Counter(str((c.get("shadow_spec") or {}).get("family") or "unknown")
                          for c in certs.values())
 
@@ -339,11 +343,13 @@ def main() -> int:
     tested_by_miner = Counter(_source_miner(r.get("source")) for r in tested_rows)
     tested_by_miner.pop("", None)
     survivor_keys = held
+    compiler = _read(DESK / "data" / "hypotheses" / "miner_candidates.json") or {}
+    compiled_sources = compiler.get("per_source") or {}
 
     per_miner: dict[str, dict] = {}
     zero_yield: list[str] = []
     for miner, rows in sorted(miner_rows(cutoff).items()):
-        keys = [_mechanism_key(r) for r in rows]
+        keys = [key for r in rows if (key := _mechanism_key(r)) is not None]
         uniq = set(keys)
         novel = uniq - held
         # MEASURED BY PROVENANCE, NOT BY A RECOMPUTED KEY -- and this is the whole reason the
@@ -362,6 +368,11 @@ def main() -> int:
         # key. Counting it answers the question actually being asked -- did this miner's work
         # reach the gauntlet -- instead of a question no miner could ever answer yes to.
         reached = _reached(miner, tested_by_miner)
+        # AND WHAT THE COMPILER BUILT FROM THEM (theirs, 2026-09-10), read from its own
+        # per-source block rather than recomputed here. "Reached a gauntlet" and "compiled into
+        # candidates" are two different questions and a miner can pass one while failing the
+        # other; collapsing them is how a plumbing gap reads as a dead source.
+        compiled = compiled_sources.get(miner) or {}
         per_miner[miner] = {
             "discoveries": len(rows),
             "distinct_mechanisms": len(uniq),
@@ -371,11 +382,27 @@ def main() -> int:
             "survivors": len(uniq & survivor_keys),
             "conversion": round(len(uniq & survivor_keys) / len(rows), 4) if rows else None,
             **_duplication(keys),
+            # WHAT THE COMPILER BUILT, AND WHETHER THE ROWS COULD BE ATTRIBUTED AT ALL (theirs,
+            # 2026-09-10). `duplicate_rate` is deliberately NOT taken from their side: theirs is
+            # `1 - distinct/rows`, the single number that reads 100% both when a miner found one
+            # idea 36,982 times and when the key can identify none of them. `_duplication`
+            # separates those two and refuses the second, which is the common case.
+            "unmapped_rows": len(rows) - len(keys),
+            "compiled_candidates": compiled.get("candidates"),
+            "deepening_tasks": compiled.get("deepening"),
+            "compiler_updated_at": compiler.get("compiled_at"),
+            "attribution_status": ("UNMEASURED" if len(keys) != len(rows) else "EXPOSURE_MATCH"),
         }
         # ZERO-YIELD MEANS TESTED AND FAILED, NOT MERELY UNCERTIFIED. Calling a miner "noise at
         # cost" when its rows never reached a gauntlet blames the source for a plumbing gap, and
         # the remedy that follows -- retire the miner -- deletes work that was never judged.
-        if len(rows) >= 20 and reached > 0 and not (uniq & survivor_keys):
+        #
+        # THEIRS GUARDED THE SAME ALARM ON `len(keys) == len(rows)` -- every row attributable --
+        # which is the same instinct reached from the other end: do not indict a source whose
+        # output could not be measured. Both conditions are kept, because they refuse different
+        # failures: unattributable rows, and rows that were attributed but never judged.
+        if (len(keys) == len(rows) and len(rows) >= 20 and reached > 0
+                and not (uniq & survivor_keys)):
             zero_yield.append(miner)
 
     total_certs = sum(fam_counts.values())
@@ -418,7 +445,9 @@ def main() -> int:
                     "Near 1.0 means every certificate is the same bet, and no amount of mining "
                     "inside that family raises the book's effective independent bets."),
         },
-        "note": ("Deduplication is by economic exposure (family|symbol|session), never by title: "
+        "note": ("Raw rows lacking a mechanism are UNMEASURED, never identical strategies. "
+                 "Compiler counts are separate from backtest and survivor evidence. "
+                 "Deduplication is by economic exposure (family|symbol|session), never by title: "
                  "the corpus renames the same mechanism per source, and counting those as "
                  "separate discoveries mistakes volume for breadth."),
     }

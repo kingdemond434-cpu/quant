@@ -1,10 +1,421 @@
 {
   "youtube": {
-    "count": 0,
-    "discoveries": []
+    "count": 30,
+    "discoveries": [
+      {
+        "source": "youtube",
+        "title": "EURUSD OPEN BUY | 10 SEP 2026 09:36:03 | EURUSD Journal",
+        "channel": "EURUSD Journal",
+        "url": "https://youtube.com/watch?v=A8a1X3aF668",
+        "published": "2026-09-10T07:38:18Z",
+        "symbols": [
+          "EURUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "\ud835\udc06\ud835\udc01\ud835\udc0f\ud835\udc14\ud835\udc12\ud835\udc03 \u2013 \ud835\udc07\ud835\udfcf | \ud835\udfcf\ud835\udfce/\ud835\udfce\ud835\udfd7/\ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #smc #tradingsignals #gbpusd  #technicalanalysis #forexmoney",
+        "channel": "\ud835\udc13\ud835\udc21\ud835\udc1e \ud835\udc0a\ud835\udc28\ud835\udc27\ud835\udc20 \ud835\udc13\ud835\udc2b\ud835\udc1a\ud835\udc1d\ud835\udc1e\ud835\udc2b",
+        "url": "https://youtube.com/watch?v=u5XbtNtoGds",
+        "published": "2026-09-10T07:28:19Z",
+        "symbols": [
+          "GBPUSD"
+        ],
+        "timeframes": [
+          "H1"
+        ],
+        "patterns": [
+          "breakout",
+          "triangle",
+          "order block"
+        ],
+        "confidence": 0.7499999999999999
+      },
+      {
+        "source": "youtube",
+        "title": "\ud835\udc14\ud835\udc12\ud835\udc03\ud835\udc09\ud835\udc0f\ud835\udc18 \u2013 \ud835\udc07\ud835\udfcf | \ud835\udfcf\ud835\udfce/\ud835\udfce\ud835\udfd7/\ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #smc #tradingplan #tradingsignals #forexmoney #usdjpy  #technicalanalysis",
+        "channel": "\ud835\udc13\ud835\udc21\ud835\udc1e \ud835\udc0a\ud835\udc28\ud835\udc27\ud835\udc20 \ud835\udc13\ud835\udc2b\ud835\udc1a\ud835\udc1d\ud835\udc1e\ud835\udc2b",
+        "url": "https://youtube.com/watch?v=cbTACdYxn4c",
+        "published": "2026-09-10T07:10:29Z",
+        "symbols": [
+          "USDJPY"
+        ],
+        "timeframes": [
+          "H1"
+        ],
+        "patterns": [
+          "liquidity"
+        ],
+        "confidence": 0.44999999999999996
+      },
+      {
+        "source": "youtube",
+        "title": "Live XAUUSD - Gold Trading - My Strategy - 10/09/2026 #gold, #xauusd, livetrading, #btc, #forex",
+        "channel": "Gold & Bitcoin",
+        "url": "https://youtube.com/watch?v=7O2DUdyqH9k",
+        "published": "2026-09-10T05:59:55Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Gold Technical Analysis 10 September 2026 || XAUUSD Today Trading Strategy",
+        "channel": "GoldX Naveed",
+        "url": "https://youtube.com/watch?v=rWDKnz70cSI",
+        "published": "2026-09-10T05:39:20Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [
+          "zone"
+        ],
+        "confidence": 0.35
+      },
+      {
+        "source": "youtube",
+        "title": "\ud83d\udd25 Forex Trading Live | Gold (XAUUSD) Trade Analysis &amp; Profit | Trading Strategy",
+        "channel": "XAUUSD Master",
+        "url": "https://youtube.com/watch?v=UAtX2bbUzLI",
+        "published": "2026-09-10T07:55:26Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "\ud83d\udd34LIVE GOLD TRADING /XAUUSD LIVE /BTCUSDLIVE #crypto #goldtrading #livetrading @Ashutosh_kumar_live",
+        "channel": "Ashutosh Kumar",
+        "url": "https://youtube.com/watch?v=mFh-ZcJd2b0",
+        "published": "2026-09-10T07:34:41Z",
+        "symbols": [
+          "XAUUSD",
+          "BTCUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.4
+      },
+      {
+        "source": "youtube",
+        "title": "Gold Trading Strategy That Beginners Should Know \ud83e\udd47\ud83d\udcc8 #trading #stockmarket#trader#tradingforbeginners",
+        "channel": "TRADEOWN",
+        "url": "https://youtube.com/watch?v=fkAMk-w2otU",
+        "published": "2026-09-10T07:17:34Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "10-11 September #xauusd #analysis https://t.me/xauusdgodlive #gold #forex #trading #trader #learning",
+        "channel": "XAUUSD GOD LIVE",
+        "url": "https://youtube.com/watch?v=qO8SFqgD9ck",
+        "published": "2026-09-10T07:17:39Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "10-11 September #xauusd #analysis https://t.me/ComexMarketExpert #gold #forex #trading #learning",
+        "channel": "Comex Market Expert",
+        "url": "https://youtube.com/watch?v=H6LTKQePh0c",
+        "published": "2026-09-10T07:13:31Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "$50 Se Gold Trade! \u274c Forex Trading Secret For Beginners \ud83d\udcc8 #trading #gold #forex #xauusd #pair",
+        "channel": "Abdullah Sani RAW | Trader",
+        "url": "https://youtube.com/watch?v=xZxpj563GPI",
+        "published": "2026-09-10T06:54:09Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "\ud83d\udd34 PPI NEWS LIVE | BIG MOVE EXPECTED IN GOLD XAUUSD \ud83d\udd25 | Live Trading &amp; Market Analysis #shorts",
+        "channel": "Trade with Vishwas",
+        "url": "https://youtube.com/watch?v=jtuk79IhqLw",
+        "published": "2026-09-10T06:36:45Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Akali EA v1.41 MT5 AUTOMATED FOREX ROBOT FREE DOWNLOAD  #xauusd #gold #reels #trading",
+        "channel": "GOLD PRO SIGNALS",
+        "url": "https://youtube.com/watch?v=1VG29fhsWkU",
+        "published": "2026-09-10T06:30:38Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Gold Sell Trade \ud83d\udd25 1:2 TP HIT! | XAUUSD Live Trading #shorts",
+        "channel": "Trade With Krishna",
+        "url": "https://youtube.com/watch?v=5QDkWAlPybc",
+        "published": "2026-09-10T06:22:20Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Today\u2019s XAUUSD Key Levels \ud83d\udccd | Gold Analysis + TopG Strategy Mentorship | TanmayFX",
+        "channel": "TanmayFX",
+        "url": "https://youtube.com/watch?v=vXQmbs0TU3Q",
+        "published": "2026-09-10T06:00:46Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "GBPJPY Analysis Today: BUY or SELL? 206.987 Key Level | GBPJPY Forecast | GBP/JPY Technical Analysis",
+        "channel": "ABSOLUTE TRADE",
+        "url": "https://youtube.com/watch?v=ce6Na6WDQNI",
+        "published": "2026-09-10T00:45:05Z",
+        "symbols": [
+          "GBPJPY"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "\u3010USD/JPY  \u610f\u5473\u4e0d\u660e\u306e\u5229\u4e0a\u3052\u30112026/9/10   #USDJPY\u3000#\u30c9\u30eb\u5186\u3000#FX\u3000#\u30c8\u30ec\u30fc\u30c9\u3000#shorts",
+        "channel": "\u3010\u682a\u5f0f\u30fbFX\u306e\u30c6\u30af\u30cb\u30ab\u30eb\u5206\u6790\u624b\u6cd5\u3000\u6570\u5b66\u30fb\u7d71\u8a08\u7684\u6295\u8cc7\u624b\u6cd5\u3011Dr.\u304b\u305a\u306e\u6295\u8cc7\u30c1\u30e3\u30f3\u30cd\u30eb",
+        "url": "https://youtube.com/watch?v=q78YBf-yTnM",
+        "published": "2026-09-09T23:36:50Z",
+        "symbols": [
+          "USDJPY"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "GBPJPY \u2696\ufe0f\ud83d\udcc9 Intervention in Progress \u2014 Never Read the Moving Candle, Wait for the Close #shorts",
+        "channel": "Forex100 Academy",
+        "url": "https://youtube.com/watch?v=Faxvk7aw57k",
+        "published": "2026-09-09T07:33:38Z",
+        "symbols": [
+          "GBPJPY"
+        ],
+        "timeframes": [
+          "H1",
+          "H4",
+          "W1",
+          "D1"
+        ],
+        "patterns": [],
+        "confidence": 0.6000000000000001
+      },
+      {
+        "source": "youtube",
+        "title": "The Yen Hits 155",
+        "channel": "CloseOption LLC",
+        "url": "https://youtube.com/watch?v=eCbk7gt-y0U",
+        "published": "2026-09-09T07:01:41Z",
+        "symbols": [
+          "USDJPY"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD LONDON SESSION LIVE \ud83d\udd34 | WILL GOLD BREAK THE ASIAN RANGE? | Forex Trading &amp; Live Analysis",
+        "channel": "Next Trader ",
+        "url": "https://youtube.com/watch?v=iO1h-Zpi9zc",
+        "published": "2026-09-07T18:24:19Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD LONDON SESSION LIVE \ud83d\udd34 | WILL GOLD BREAK THE ASIAN RANGE? | Forex Trading &amp; Live Analysis",
+        "channel": "Next Trader ",
+        "url": "https://youtube.com/watch?v=-bIfCtMjSoc",
+        "published": "2026-09-07T17:33:16Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "\ud83d\udd34 LIVE FOREX ANALYSIS | NYC SESSION | GOLD &amp; BITCOIN | SEP 03 | DAY 35",
+        "channel": "Trade with Roshan",
+        "url": "https://youtube.com/watch?v=VwSu1HNlnHU",
+        "published": "2026-09-04T00:58:41Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD Analysis Today | Gold Trading Strategy | 10Sep2026#xauusd#xauusdanalysis #xauusdlive",
+        "channel": "Swing Trading Range",
+        "url": "https://youtube.com/watch?v=LQSglXpsHck",
+        "published": "2026-09-10T02:49:00Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Gold Trading Strategy That Beginners Should Know \ud83e\udd47\ud83d\udcc8 #trading #stockmarket#trader#tradingforbeginners",
+        "channel": "TRADEOWN",
+        "url": "https://youtube.com/watch?v=fkAMk-w2otU",
+        "published": "2026-09-10T07:17:34Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+        "channel": "Live Forex Trading",
+        "url": "https://youtube.com/watch?v=la9YMawTxqY",
+        "published": "2026-09-10T01:37:20Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+        "channel": "Live Forex Trading",
+        "url": "https://youtube.com/watch?v=fJR_r9H9Qio",
+        "published": "2026-09-09T16:25:03Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+        "channel": "Live Forex Trading",
+        "url": "https://youtube.com/watch?v=_Y5gmEbQw7o",
+        "published": "2026-09-09T01:11:27Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD \ud83d\udd34Live 09.09.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+        "channel": "Sarathi Manikandan",
+        "url": "https://youtube.com/watch?v=NaUtuHgzzY8",
+        "published": "2026-09-09T18:19:59Z",
+        "symbols": [
+          "XAUUSD",
+          "BTCUSD",
+          "NAS100"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.6000000000000001
+      },
+      {
+        "source": "youtube",
+        "title": "gold full margin buy  #viral #gold #xauusd #buy #profit #lifestyle #short #enjoy#dollar #moneymaking",
+        "channel": "TOKMAT SECRET EDUCATIONAL",
+        "url": "https://youtube.com/watch?v=m-pkP3ehfT0",
+        "published": "2026-09-09T13:51:59Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      },
+      {
+        "source": "youtube",
+        "title": "XAUUSD LIVE SETUP #90 #trading #forex #crypto #IOFEX #nfp #gold #cpi",
+        "channel": "IOFEX  SMC TRADING",
+        "url": "https://youtube.com/watch?v=oWNC2D4v8yo",
+        "published": "2026-09-09T08:06:51Z",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "timeframes": [],
+        "patterns": [],
+        "confidence": 0.2
+      }
+    ]
   },
   "github": {
-    "count": 25,
+    "count": 17,
     "discoveries": [
       {
         "source": "github",
@@ -25,53 +436,13 @@
         "repo": "ilahuerta-IA/tradingsystem",
         "url": "https://github.com/ilahuerta-IA/tradingsystem",
         "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
-        "stars": 16,
+        "stars": 15,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "EMA"
         ],
-        "confidence": 0.16599999999999998
-      },
-      {
-        "source": "github",
-        "repo": "Anastasiamaster/forex-c15-trader-strategy-mt4",
-        "url": "https://github.com/Anastasiamaster/forex-c15-trader-strategy-mt4",
-        "description": "Official repository for Forex C 15 Trader Strategy on MetaTrader 4 (MT4). Clean, non-repainting M15 intraday trading signals, trend filter, and risk management templates for Forex & Gold (XAUUSD).",
-        "stars": 98,
-        "language": null,
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.29800000000000004
-      },
-      {
-        "source": "github",
-        "repo": "Evangeline668/forex-market-balance-trading-system",
-        "url": "https://github.com/Evangeline668/forex-market-balance-trading-system",
-        "description": "An institutional Forex Market Balance strategy for MetaTrader 4 (MT4). Automate value area detection, identify order flow imbalances, and trade alongside smart money with high R:R setups.",
-        "stars": 101,
-        "language": null,
-        "symbols": [],
-        "patterns": [
-          "SMA",
-          "smart money"
-        ],
-        "confidence": 0.401
-      },
-      {
-        "source": "github",
-        "repo": "Evangeline668/forex-tp-pro-trend-strategy-mt4",
-        "url": "https://github.com/Evangeline668/forex-tp-pro-trend-strategy-mt4",
-        "description": "Forex TP PRO Trend Strategy for MetaTrader 4 \u2014 A 100% no-repaint signal system for trading currency pairs and XAUUSD with built-in risk rules.",
-        "stars": 100,
-        "language": null,
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.30000000000000004
+        "confidence": 0.16499999999999998
       },
       {
         "source": "github",
@@ -88,67 +459,24 @@
       },
       {
         "source": "github",
-        "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
-        "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
-        "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
-        "stars": 99,
-        "language": null,
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "momentum"
-        ],
-        "confidence": 0.44899999999999995
-      },
-      {
-        "source": "github",
-        "repo": "Clementinemaster/forex-mpx-zones-strategy-mt4",
-        "url": "https://github.com/Clementinemaster/forex-mpx-zones-strategy-mt4",
-        "description": "Forex MPX Zones Strategy for MT4 \u2013 Master institutional order flow trading. Automate smart money zone mapping, get real-time price alerts, and upgrade your FX execution.",
-        "stars": 98,
-        "language": null,
+        "repo": "moss-site/moss-trade-bot-skills",
+        "url": "https://github.com/moss-site/moss-trade-bot-skills",
+        "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
+        "stars": 382,
+        "language": "Python",
         "symbols": [],
         "patterns": [
-          "SMA",
-          "smart money"
+          "momentum",
+          "RSI"
         ],
-        "confidence": 0.398
-      },
-      {
-        "source": "github",
-        "repo": "Clementinemaster/forex-stgfx-advanced-strategy-mt4",
-        "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
-        "description": "High Risk-to-Reward Forex & Gold (XAUUSD) trading strategy for MetaTrader 4 (MT4). Built on 100% non-repainting signals, multi-timeframe volatility filtering, and systematic risk management. Includes complete setup guide, templates (.tpl), and presets (.set).",
-        "stars": 99,
-        "language": null,
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.44899999999999995
-      },
-      {
-        "source": "github",
-        "repo": "goodie1972/algoforge",
-        "url": "https://github.com/goodie1972/algoforge",
-        "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
-        "stars": 5,
-        "language": "HTML",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.20500000000000002
+        "confidence": 0.6819999999999999
       },
       {
         "source": "github",
         "repo": "rolling-panda-san/notebooks",
         "url": "https://github.com/rolling-panda-san/notebooks",
         "description": "Analysis on systematic trading strategies (e.g., trend-following, carry and mean-reversion). The result is regularly updated. ",
-        "stars": 756,
+        "stars": 758,
         "language": "Jupyter Notebook",
         "symbols": [],
         "patterns": [
@@ -159,44 +487,56 @@
       },
       {
         "source": "github",
-        "repo": "moss-site/moss-trade-bot-skills",
-        "url": "https://github.com/moss-site/moss-trade-bot-skills",
-        "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
-        "stars": 381,
+        "repo": "Gharrr544/hyperliquid-mean-reversion-bot",
+        "url": "https://github.com/Gharrr544/hyperliquid-mean-reversion-bot",
+        "description": "hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot",
+        "stars": 8,
         "language": "Python",
         "symbols": [],
         "patterns": [
-          "momentum",
           "RSI"
         ],
-        "confidence": 0.681
-      },
-      {
-        "source": "github",
-        "repo": "orangepineapple/mean_reversion_strategies",
-        "url": "https://github.com/orangepineapple/mean_reversion_strategies",
-        "description": "Here I go through the processing of prototyping a mean reversion trading strategy using statistical concepts, then test it in backtrader.",
-        "stars": 83,
-        "language": "Jupyter Notebook",
-        "symbols": [],
-        "patterns": [
-          "mean reversion",
-          "RSI"
-        ],
-        "confidence": 0.383
+        "confidence": 0.158
       },
       {
         "source": "github",
         "repo": "mbordash/DRADIS",
         "url": "https://github.com/mbordash/DRADIS",
         "description": "Low-latency Rust prediction-market trading bot for Kalshi & Polymarket. 9 autonomous strategies (Momentum, Maker, Arbitrage, ML, etc.), real-time Next.js Control Tower, and an AI LLM Advisor that delivers optimization recommendations via Ollama (local or remote), MCP + Telegram and OpenClaw.",
-        "stars": 23,
+        "stars": 24,
         "language": "Rust",
         "symbols": [],
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.173
+        "confidence": 0.174
+      },
+      {
+        "source": "github",
+        "repo": "moss-site/moss-trade-bot-skills",
+        "url": "https://github.com/moss-site/moss-trade-bot-skills",
+        "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
+        "stars": 382,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "momentum",
+          "RSI"
+        ],
+        "confidence": 0.6819999999999999
+      },
+      {
+        "source": "github",
+        "repo": "nirholas/robinhood-chain-trading-bot",
+        "url": "https://github.com/nirholas/robinhood-chain-trading-bot",
+        "description": "Open-source autonomous trading bot for Robinhood Chain. Four strategies: launch sniping, momentum, Stock Token premium/discount arbitrage, and a bring-your-own-key LLM strategist (Claude, OpenAI, Groq, or OpenRouter). Real risk caps, real signed swaps, paper mode by default, live P&L dashboard.",
+        "stars": 7,
+        "language": "TypeScript",
+        "symbols": [],
+        "patterns": [
+          "momentum"
+        ],
+        "confidence": 0.157
       },
       {
         "source": "github",
@@ -216,13 +556,13 @@
         "repo": "ChypherFish3r/coinbase-trading-bot",
         "url": "https://github.com/ChypherFish3r/coinbase-trading-bot",
         "description": "coinbase trading bot for momentum strategies with optional profit transfers, CSV backtests, and a clean CLI",
-        "stars": 148,
+        "stars": 150,
         "language": "JavaScript",
         "symbols": [],
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.298
+        "confidence": 0.30000000000000004
       },
       {
         "source": "github",
@@ -236,20 +576,6 @@
           "momentum"
         ],
         "confidence": 0.161
-      },
-      {
-        "source": "github",
-        "repo": "moss-site/moss-trade-bot-skills",
-        "url": "https://github.com/moss-site/moss-trade-bot-skills",
-        "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
-        "stars": 381,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "momentum",
-          "RSI"
-        ],
-        "confidence": 0.681
       },
       {
         "source": "github",
@@ -269,48 +595,6 @@
       },
       {
         "source": "github",
-        "repo": "nirholas/robinhood-chain-trading-bot",
-        "url": "https://github.com/nirholas/robinhood-chain-trading-bot",
-        "description": "Open-source autonomous trading bot for Robinhood Chain. Four strategies: launch sniping, momentum, Stock Token premium/discount arbitrage, and a bring-your-own-key LLM strategist (Claude, OpenAI, Groq, or OpenRouter). Real risk caps, real signed swaps, paper mode by default, live P&L dashboard.",
-        "stars": 7,
-        "language": "TypeScript",
-        "symbols": [],
-        "patterns": [
-          "momentum"
-        ],
-        "confidence": 0.157
-      },
-      {
-        "source": "github",
-        "repo": "jefrnc/strategy-orb15-momentum",
-        "url": "https://github.com/jefrnc/strategy-orb15-momentum",
-        "description": "Opening Range Breakout system in Python \u2014 reproducible backtest, risk management and walk-forward validation. Results are in the repo; no return promises.",
-        "stars": 16,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "breakout",
-          "momentum"
-        ],
-        "confidence": 0.316
-      },
-      {
-        "source": "github",
-        "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
-        "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
-        "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
-        "stars": 99,
-        "language": null,
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "momentum"
-        ],
-        "confidence": 0.44899999999999995
-      },
-      {
-        "source": "github",
         "repo": "ashikscreativemath-commits/Paldo-ALM",
         "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
         "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
@@ -325,29 +609,44 @@
       },
       {
         "source": "github",
-        "repo": "goodie1972/algoforge",
-        "url": "https://github.com/goodie1972/algoforge",
-        "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
-        "stars": 5,
-        "language": "HTML",
-        "symbols": [
-          "XAUUSD"
+        "repo": "ELOSPO/algorithmic-tradingUR2023I",
+        "url": "https://github.com/ELOSPO/algorithmic-tradingUR2023I",
+        "description": "Este repositorio contiene las funciones b\u00e1sicas del curso de Trading Algor\u00edtmico con Python y MT5 dictado en la Universidad del Rosario as\u00ed como los robots desarrollados durante el curso",
+        "stars": 38,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "RSI"
         ],
-        "patterns": [],
-        "confidence": 0.20500000000000002
+        "confidence": 0.188
       },
       {
         "source": "github",
-        "repo": "xzaviourr/zerodha-algorithmic-trader",
-        "url": "https://github.com/xzaviourr/zerodha-algorithmic-trader",
-        "description": "Archived Flask trading-server prototype integrating Zerodha Kite Connect with five-EMA and Bank NIFTY short-straddle strategies; not investment advice.",
-        "stars": 8,
-        "language": "Python",
+        "repo": "JustinGuese/python_tradingbot_framework",
+        "url": "https://github.com/JustinGuese/python_tradingbot_framework",
+        "description": "Python algorithmic trading bot framework for Kubernetes: backtesting, hyperparameter optimization, 150+ technical analysis indicators (RSI, MACD, Bollinger Bands, ADX), portfolio management, PostgreSQL integration, Helm deployment, CronJob scheduling. Minimal overhead, production-ready, Yahoo Finance data.",
+        "stars": 39,
+        "language": "Jupyter Notebook",
+        "symbols": [],
+        "patterns": [
+          "bollinger",
+          "RSI",
+          "MACD"
+        ],
+        "confidence": 0.489
+      },
+      {
+        "source": "github",
+        "repo": "griddaimyorun/Metatraider-Traiding-Bot",
+        "url": "https://github.com/griddaimyorun/Metatraider-Traiding-Bot",
+        "description": "Production-ready MetaTrader 5 (MT5) algorithmic trading bot framework. Features automated execution, real-time market data integration via Python API, risk management, and backtesting infrastructure for systematic strategies.",
+        "stars": 1311,
+        "language": null,
         "symbols": [],
         "patterns": [
           "EMA"
         ],
-        "confidence": 0.158
+        "confidence": 1.0
       }
     ]
   },
@@ -405,8 +704,36 @@
     ]
   },
   "mql5_forum": {
-    "count": 0,
-    "discoveries": []
+    "count": 3,
+    "discoveries": [
+      {
+        "source": "mql5_forum",
+        "title": "GOLD, Gold and XAUUSD",
+        "url": "https://www.mql5.com/en/forum/393267",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "confidence": 0.2
+      },
+      {
+        "source": "mql5_forum",
+        "title": "GOLD, Gold and XAUUSD",
+        "url": "https://www.mql5.com/en/forum/393267",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "confidence": 0.2
+      },
+      {
+        "source": "mql5_forum",
+        "title": "GOLD, Gold and XAUUSD",
+        "url": "https://www.mql5.com/en/forum/393267",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "confidence": 0.2
+      }
+    ]
   },
   "tradingview": {
     "count": 1,
@@ -433,8 +760,194 @@
     ]
   },
   "reddit": {
-    "count": 16,
+    "count": 21,
     "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Fresh XAUUSD SETUP! Thirsty Thursday",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "pullback",
+          "support",
+          "resistance",
+          "EMA",
+          "liquidity"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Day 6 | $100K FTMO Challenge (Step 1)",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "I pulled realised vol, forwards and carry for USDMXN, USDJPY and four EM pairs and turned them into stop sizes. Numbers inside",
+        "url": "",
+        "symbols": [
+          "USDJPY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "XAUUSD SETUP 9 SEPT 2026",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "pullback",
+          "retest",
+          "support",
+          "EMA",
+          "momentum"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Bad day",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "100k FTMO 2 step Challenge.",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "forex community",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Excessive slippage?",
+        "url": "",
+        "symbols": [
+          "AUDNZD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "What pairs have smooth moves without being too volatile",
+        "url": "",
+        "symbols": [
+          "EURUSD"
+        ],
+        "patterns": [
+          "SMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Grabbed a good opportunityon XAUUSD as first trade of the week!",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "resistance"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Gotta love choppy NY session XAUUSD.",
+        "url": "",
+        "symbols": [
+          "NAS100",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Account management",
+        "url": "",
+        "symbols": [
+          "NAS100",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "6 NFP mornings on gold 5m: first 15 minute ranges from $5.73 to $48.48",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Free scalping algo",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "scalp"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Trade",
+        "url": "",
+        "symbols": [
+          "XAUUSD",
+          "GBPUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
       {
         "source": "reddit",
         "subreddit": "Forex",
@@ -505,141 +1018,554 @@
           "EMA"
         ],
         "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "XAUUSD right time!",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "pullback"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Why I passed on USD/JPY",
-        "url": "",
-        "symbols": [
-          "DXY"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Gold Algo",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "NFP Forecast: September 4, 2026 | August Employment Data",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "RSI"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Me VS XAUUSD",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Looking for 1 more market to trade alongside XAUUSD",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "liquidity"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Waiting for the profit. Will it break volume support or not?",
-        "url": "",
-        "symbols": [
-          "EURUSD"
-        ],
-        "patterns": [
-          "support"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Gold taking support from major level",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "support",
-          "trend"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "XAUUSD Trade",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "XAUUSD",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
       }
     ]
   },
   "central_bank": {
-    "count": 0,
-    "discoveries": []
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "central_bank",
+        "bank": "BoJ",
+        "currency": "JPY",
+        "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+        "published_utc": "2026-09-10T07:30:00+00:00",
+        "title": "Basic Figures on Fails (Aug.)",
+        "link": "http://www.boj.or.jp/en/statistics/set/bffail/sjgb2608.pdf",
+        "policy_signals": [],
+        "instruments": [
+          "USDJPY",
+          "EURJPY",
+          "GBPJPY",
+          "AUDJPY",
+          "CADJPY",
+          "CHFJPY",
+          "NZDJPY"
+        ]
+      }
+    ]
   },
   "forexfactory": {
-    "count": 0,
-    "error": "UnboundLocalError: cannot access local variable 'e' where it is not associated with a value"
+    "count": 19,
+    "discoveries": [
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Monetary Policy Report Hearings",
+        "currency": "GBP",
+        "impact": "MEDIUM",
+        "date": "2026-09-08T09:15:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "GBPJPY",
+          "GBPAUD"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact GBP event: Monetary Policy Report Hearings"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "President Trump Speaks",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-09-09T21:15:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: President Trump Speaks"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Main Refinancing Rate",
+        "currency": "EUR",
+        "impact": "HIGH",
+        "date": "2026-09-10T08:15:00-04:00",
+        "symbols": [
+          "GBPEUR",
+          "EURJPY",
+          "EURUSD",
+          "EURAUD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact EUR event: Main Refinancing Rate"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Monetary Policy Statement",
+        "currency": "EUR",
+        "impact": "HIGH",
+        "date": "2026-09-10T08:15:00-04:00",
+        "symbols": [
+          "GBPEUR",
+          "EURJPY",
+          "EURUSD",
+          "EURAUD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact EUR event: Monetary Policy Statement"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Core PPI m/m",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-09-10T08:30:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: Core PPI m/m"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "PPI m/m",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-09-10T08:30:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: PPI m/m"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Unemployment Claims",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-09-10T08:30:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: Unemployment Claims"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "ECB Press Conference",
+        "currency": "EUR",
+        "impact": "HIGH",
+        "date": "2026-09-10T08:45:00-04:00",
+        "symbols": [
+          "GBPEUR",
+          "EURJPY",
+          "EURUSD",
+          "EURAUD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact EUR event: ECB Press Conference"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "GDP m/m",
+        "currency": "GBP",
+        "impact": "HIGH",
+        "date": "2026-09-11T02:00:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "GBPJPY",
+          "GBPAUD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact GBP event: GDP m/m"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "SNB Chairman Schlegel Speaks",
+        "currency": "CHF",
+        "impact": "MEDIUM",
+        "date": "2026-09-11T05:15:00-04:00",
+        "symbols": [
+          "USDCHF",
+          "CHFJPY"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact CHF event: SNB Chairman Schlegel Speaks"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Core CPI m/m",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-09-11T08:30:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: Core CPI m/m"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Core CPI y/y",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-09-11T08:30:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: Core CPI y/y"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "CPI m/m",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-09-11T08:30:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: CPI m/m"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "CPI y/y",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-09-11T08:30:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: CPI y/y"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "ECB President Lagarde Speaks",
+        "currency": "EUR",
+        "impact": "MEDIUM",
+        "date": "2026-09-11T10:00:00-04:00",
+        "symbols": [
+          "GBPEUR",
+          "EURJPY",
+          "EURUSD",
+          "EURAUD"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact EUR event: ECB President Lagarde Speaks"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Prelim UoM Consumer Sentiment",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-09-11T10:00:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: Prelim UoM Consumer Sentiment"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Prelim UoM Inflation Expectations",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-09-11T10:00:00-04:00",
+        "symbols": [
+          "NAS100",
+          "USDCAD",
+          "XAUUSD",
+          "EURUSD",
+          "GBPUSD",
+          "NZDUSD",
+          "USDCHF",
+          "AUDUSD",
+          "USDJPY",
+          "US500"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: Prelim UoM Inflation Expectations"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "ECB President Lagarde Speaks",
+        "currency": "EUR",
+        "impact": "MEDIUM",
+        "date": "2026-09-12T04:00:00-04:00",
+        "symbols": [
+          "GBPEUR",
+          "EURJPY",
+          "EURUSD",
+          "EURAUD"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact EUR event: ECB President Lagarde Speaks"
+      },
+      {
+        "source": "forexfactory",
+        "kind": "fetch_error",
+        "error": "HTTPError: 404 Client Error: Not Found for url: https://nfs.faireconomy.media/ff_calendar_nextweek.json"
+      }
+    ]
   },
   "cot": {
-    "count": 0,
-    "discoveries": []
+    "count": 11,
+    "discoveries": [
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "USDCHF",
+        "contract": "SWISS FRANC - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-09-01",
+        "open_interest": 92,
+        "non_commercial_long": 136962,
+        "non_commercial_short": 64678,
+        "non_commercial_net": 72284,
+        "commercial_long": 9612,
+        "commercial_short": 12305,
+        "commercial_net": -2693,
+        "spec_pct_of_oi": 78569.57,
+        "comm_pct_of_oi": -2927.17
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "GBPUSD",
+        "contract": "BRITISH POUND - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-09-01",
+        "open_interest": 96,
+        "non_commercial_long": 317961,
+        "non_commercial_short": 133142,
+        "non_commercial_net": 184819,
+        "commercial_long": 6770,
+        "commercial_short": 77117,
+        "commercial_net": -70347,
+        "spec_pct_of_oi": 192519.79,
+        "comm_pct_of_oi": -73278.12
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "USDJPY",
+        "contract": "JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-09-01",
+        "open_interest": 97,
+        "non_commercial_long": 411882,
+        "non_commercial_short": 116682,
+        "non_commercial_net": 295200,
+        "commercial_long": 26510,
+        "commercial_short": 58529,
+        "commercial_net": -32019,
+        "spec_pct_of_oi": 304329.9,
+        "comm_pct_of_oi": -33009.28
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "EURUSD",
+        "contract": "EURO FX - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-09-01",
+        "open_interest": 99,
+        "non_commercial_long": 865412,
+        "non_commercial_short": 54643,
+        "non_commercial_net": 810769,
+        "commercial_long": 60295,
+        "commercial_short": 96137,
+        "commercial_net": -35842,
+        "spec_pct_of_oi": 818958.59,
+        "comm_pct_of_oi": -36204.04
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "AUDUSD",
+        "contract": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-09-01",
+        "open_interest": 232,
+        "non_commercial_long": 391678,
+        "non_commercial_short": 104022,
+        "non_commercial_net": 287656,
+        "commercial_long": 4829,
+        "commercial_short": 78498,
+        "commercial_net": -73669,
+        "spec_pct_of_oi": 123989.66,
+        "comm_pct_of_oi": -31753.88
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "EURUSD",
+        "contract": "EURO FX/BRITISH POUND XRATE - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-09-01",
+        "open_interest": 99,
+        "non_commercial_long": 40451,
+        "non_commercial_short": 597,
+        "non_commercial_net": 39854,
+        "commercial_long": 1132,
+        "commercial_short": 3937,
+        "commercial_net": -2805,
+        "spec_pct_of_oi": 40256.57,
+        "comm_pct_of_oi": -2833.33
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "EURUSD",
+        "contract": "EURO FX/JAPANESE YEN XRATE - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-09-01",
+        "open_interest": 99,
+        "non_commercial_long": 22410,
+        "non_commercial_short": 476,
+        "non_commercial_net": 21934,
+        "commercial_long": 564,
+        "commercial_short": 1547,
+        "commercial_net": -983,
+        "spec_pct_of_oi": 22155.56,
+        "comm_pct_of_oi": -992.93
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "USDMXN",
+        "contract": "MEXICAN PESO - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-09-01",
+        "open_interest": 95,
+        "non_commercial_long": 313188,
+        "non_commercial_short": 22083,
+        "non_commercial_net": 291105,
+        "commercial_long": 1713,
+        "commercial_short": 140084,
+        "commercial_net": -138371,
+        "spec_pct_of_oi": 306426.32,
+        "comm_pct_of_oi": -145653.68
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "NZDUSD",
+        "contract": "NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-09-01",
+        "open_interest": 112,
+        "non_commercial_long": 107274,
+        "non_commercial_short": 54532,
+        "non_commercial_net": 52742,
+        "commercial_long": 2648,
+        "commercial_short": 5216,
+        "commercial_net": -2568,
+        "spec_pct_of_oi": 47091.07,
+        "comm_pct_of_oi": -2292.86
+      },
+      {
+        "source": "cot",
+        "type": "extreme_positioning",
+        "symbol": "EURUSD",
+        "spec_pct": 22155.56,
+        "direction": "long",
+        "contrarian_signal": "short",
+        "confidence": 0.8,
+        "description": "Speculators 22155.6% net long - contrarian reversal signal"
+      },
+      {
+        "source": "cot",
+        "type": "positioning_shift",
+        "symbol": "EURUSD",
+        "spec_change": -18101.01,
+        "direction": "decreasing",
+        "confidence": 0.6,
+        "description": "Speculator positioning decreasing by 18101.0% in one week"
+      }
+    ]
   },
   "sec_edgar": {
     "count": 10,
@@ -805,14 +1731,14 @@
         "source": "cnn_fear_greed",
         "type": "sentiment_reading",
         "reading": "neutral",
-        "score": 41.8571428571429,
+        "score": 36.2571428571429,
         "rating": "fear",
         "symbols": [
           "US500",
           "NAS100"
         ],
         "confidence": 0.3,
-        "description": "Fear & Greed: 41.8571428571429 (fear)"
+        "description": "Fear & Greed: 36.2571428571429 (fear)"
       }
     ]
   },
@@ -825,15 +1751,42 @@
     "discoveries": []
   },
   "academic": {
-    "count": 0,
-    "discoveries": []
+    "count": 2,
+    "discoveries": [
+      {
+        "source": "arxiv",
+        "type": "academic_paper",
+        "title": "Assessing flood-conditioned power dependency of urban rail transit and its effects on resilience under climate change",
+        "summary": "Urban rail transit (URT) faces increasing flood risk while relying on traction power systems whose failures can trigger cascading disruption. Existing studies on URT flood resilience often oversimplif",
+        "url": "https://arxiv.org/abs/2609.10473v1",
+        "published": "2026-09-09T17:14:55Z",
+        "trading_terms": [
+          "risk"
+        ],
+        "symbols": [],
+        "confidence": 0.1
+      },
+      {
+        "source": "arxiv",
+        "type": "academic_paper",
+        "title": "Glyph: A Multi-Strategy Agentic System for Column Description and Sensitivity-Ontology Tagging of Enterprise Data Catalogs",
+        "summary": "Enterprise data lakes accumulate tables faster than human stewards can document or classify them, leaving columns with missing descriptions and unassigned governance labels. This documentation debt un",
+        "url": "https://arxiv.org/abs/2609.10430v1",
+        "published": "2026-09-09T16:43:26Z",
+        "trading_terms": [
+          "strategy"
+        ],
+        "symbols": [],
+        "confidence": 0.1
+      }
+    ]
   },
   "correlations": {
     "count": 0,
     "discoveries": []
   },
   "seasonality": {
-    "count": 89,
+    "count": 92,
     "discoveries": [
       {
         "source": "seasonality",
@@ -2014,6 +2967,48 @@
       {
         "source": "seasonality",
         "type": "historical_pattern",
+        "symbol": "XAUUSD_M1",
+        "month": 9,
+        "avg_return": -0.0001,
+        "overall_avg": 0.0,
+        "direction": "bearish",
+        "symbols": [
+          "XAUUSD_M1"
+        ],
+        "confidence": 0.6,
+        "description": "XAUUSD_M1 historically bearish in month 9 (avg -0.000%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "XAUUSD_M15",
+        "month": 9,
+        "avg_return": -0.0011,
+        "overall_avg": 0.0006,
+        "direction": "bearish",
+        "symbols": [
+          "XAUUSD_M15"
+        ],
+        "confidence": 0.5774411343374588,
+        "description": "XAUUSD_M15 historically bearish in month 9 (avg -0.001%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
+        "symbol": "XAUUSD_M5",
+        "month": 9,
+        "avg_return": -0.0004,
+        "overall_avg": 0.0001,
+        "direction": "bearish",
+        "symbols": [
+          "XAUUSD_M5"
+        ],
+        "confidence": 0.6,
+        "description": "XAUUSD_M5 historically bearish in month 9 (avg -0.000%)"
+      },
+      {
+        "source": "seasonality",
+        "type": "historical_pattern",
         "symbol": "XBRUSD_H1",
         "month": 9,
         "avg_return": 0.0486,
@@ -2084,18 +3079,18 @@
     ]
   },
   "weather": {
-    "count": 3,
+    "count": 2,
     "discoveries": [
       {
         "source": "weather",
         "type": "hurricane",
-        "name": "Marie",
+        "name": "Fourteen-E",
         "symbols": [
           "USOIL",
           "NATGAS"
         ],
         "confidence": 0.5,
-        "description": "Active hurricane Marie - may impact energy prices"
+        "description": "Active hurricane Fourteen-E - may impact energy prices"
       },
       {
         "source": "weather",
@@ -2107,17 +3102,6 @@
         ],
         "confidence": 0.5,
         "description": "Active hurricane Lowell - may impact energy prices"
-      },
-      {
-        "source": "weather",
-        "type": "hurricane",
-        "name": "Karina",
-        "symbols": [
-          "USOIL",
-          "NATGAS"
-        ],
-        "confidence": 0.5,
-        "description": "Active hurricane Karina - may impact energy prices"
       }
     ]
   },
@@ -2127,7 +3111,7 @@
       {
         "source": "shipping",
         "type": "bdi",
-        "value": 3628,
+        "value": 3620,
         "signal": "strong_expansion",
         "symbols": [
           "US500",
@@ -2136,7 +3120,7 @@
           "NZDUSD"
         ],
         "confidence": 0.6,
-        "description": "BDI: 3628 (strong_expansion)"
+        "description": "BDI: 3620 (strong_expansion)"
       }
     ]
   },

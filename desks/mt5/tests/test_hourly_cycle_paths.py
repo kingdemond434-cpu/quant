@@ -113,6 +113,24 @@ def test_one_leg_failure_cannot_terminate_later_independent_legs() -> None:
     assert "close_run(run, outcome=" in body, "the failure must reach the compute ledger"
 
 
+def test_a_leg_that_fails_without_raising_is_not_recorded_as_ok():
+    """THE DEFECT THIS DESK PAID MOST FOR, found independently on the VPS branch and merged here.
+
+    `_producer` returns a DICT. A non-zero exit, a MISSING script and a timeout all come back as
+    DATA -- nothing is raised -- so the `except` arm above never runs and the ledger wrote `ok`.
+    `pf_allocator` exited 1 every hour for six days and every compute-ledger row for it said ok,
+    which is why the streak that separates a blip from an outage counted zero the whole time.
+    `libs.ops.completion._streak` reads exactly this field.
+    """
+    body = SRC.split("def _costed(", 1)[1].split("\ndef ", 1)[0]
+    assert 'outcome = "ok"' in body, "the outcome is no longer derived from the leg's return"
+    for shape in ('out.get("error")', '"exit_code"', 'out.get("timeout_s")', 'status'):
+        assert shape in body, (
+            f"_costed no longer inspects {shape!r}, so a leg that fails by RETURNING a failure "
+            f"is recorded as a success again")
+    assert 'close_run(run, outcome=outcome)' in body
+
+
 # ------------------------------------------------------- the loop that has to never stop, 24/7
 
 LAUNCHER = (DESK / "scripts" / "MT5Hourly.cmd").read_text("utf-8")

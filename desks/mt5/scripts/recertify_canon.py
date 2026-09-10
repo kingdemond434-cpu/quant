@@ -35,7 +35,22 @@ DESK = BASE / "desks" / "mt5"
 OUT = DESK / "reports" / "recertification_audit.json"
 
 
-def main() -> int:
+def _cost_total(cell: dict) -> float | None:
+    """Return a reportable current cost, or None when the rebuild has no cost object.
+
+    Rebuilding a certificate can legitimately fail to price a formerly accepted recipe when
+    its current native cost inputs are unavailable.  That is an UNMEASURED recertification,
+    not permission to crash the entire batch (and thereby leave every other certificate
+    unreviewed), nor permission to substitute a default cost.
+    """
+    costs = cell.get("costs")
+    try:
+        return round(float(costs.spread_per_lot) + float(costs.commission_per_lot), 4)
+    except (AttributeError, TypeError, ValueError):
+        return None
+
+
+def main(*, output_path: Path | None = None) -> int:
     import external_gauntlet as eg
 
     uni = json.loads((DESK / "reports" / "UNIVERSAL_SURVIVORS.json").read_text("utf-8"))
@@ -60,7 +75,7 @@ def main() -> int:
     except Exception as exc:
         print(f"recertify: authorized_runs unavailable ({type(exc).__name__}: {exc})")
 
-    cells, keys, skipped = [], [], []
+    cells, keys, cost_totals, skipped = [], [], [], []
     for name, row in survivors.items():
         spec = row.get("shadow_spec")
         if not isinstance(spec, dict) or not spec.get("symbol"):
@@ -78,8 +93,17 @@ def main() -> int:
         if cell is None:
             skipped.append({"certificate": name, "why": "cell could not be rebuilt"})
             continue
+        cost_total = _cost_total(cell)
+        if cost_total is None:
+            skipped.append({"certificate": name,
+                            "why": ("current native cost inputs unavailable; "
+                                    "recertification is UNMEASURED")})
+            continue
         cells.append(cell)
         keys.append(name)
+        # The gauntlet releases each cell's costs to bound memory, so retain the scalar before
+        # invoking it.  The value is derived only from the exact reconstructed cell.
+        cost_totals.append(cost_total)
 
     if not cells:
         print("recertify: no certificate could be rebuilt -- nothing measured, nothing claimed")
@@ -89,7 +113,7 @@ def main() -> int:
     verdicts = {v.get("cell"): v for v in (res.get("verdicts") or [])}
 
     rows = []
-    for name, cell in zip(keys, cells, strict=False):
+    for name, cell, cost_total in zip(keys, cells, cost_totals, strict=True):
         cid = eg.cell_id({"sym": cell["sym"], "family": cell["family"],
                           "params": cell.get("params") or {}})
         v = verdicts.get(cid)
@@ -102,8 +126,7 @@ def main() -> int:
             "certificate": name, "cell": cid,
             "status": "STILL_PASSES" if v.get("passed") else "COST_REGRADE_FAIL",
             "gates_failing_now": fails,
-            "cost_per_lot_now": round(float(cell["costs"].spread_per_lot)
-                                      + float(cell["costs"].commission_per_lot), 4),
+            "cost_per_lot_now": cost_total,
         })
 
     still = sum(1 for r in rows if r["status"] == "STILL_PASSES")
@@ -119,9 +142,17 @@ def main() -> int:
                  "not a harsher bar. Nothing is revoked here: canon never shrinks from a script, "
                  "and retirement is the principal's call on this evidence."),
     }
-    OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    if output_path is not None:
+        doc["promotion_authority"] = False
+        doc["scope"] = "SELECTED_CERTIFICATE_DIAGNOSTIC"
+        doc["limitation"] = (
+            "Winner-only PBO/SPA and trial census do not replace original whole-search tests. "
+            "This isolated report cannot issue or restore certificates or authorize promotion.")
+    target = output_path or OUT
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     print(f"\nRECERTIFICATION: {still} still pass, {failed} FAIL under corrected costs "
-          f"({len(skipped)} unrebuildable) -> {OUT}")
+          f"({len(skipped)} unrebuildable) -> {target}")
     for r in rows:
         if r["status"] == "COST_REGRADE_FAIL":
             print(f"   FAIL {r['certificate']}: now fails {', '.join(r['gates_failing_now'])}")

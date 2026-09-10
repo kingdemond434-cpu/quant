@@ -670,7 +670,11 @@ def _costed(name: str, fn):
     """
     try:
         from libs.ops.compute_ledger import close_run, open_run
-    except Exception:                                                   # noqa: BLE001
+    except Exception as exc:                                            # noqa: BLE001
+        # LOUD, NOT SILENT (theirs, 2026-09-10). `compute_ledger` says in its own words that a
+        # denominator which fails silently is a scaling law nobody can draw; this was the import
+        # that could fail without a word.
+        print(f"{name} compute ledger UNAVAILABLE: {type(exc).__name__}: {exc}", flush=True)
         open_run = close_run = None                                     # type: ignore[assignment]
     run = open_run(name, kind="hourly_cycle") if open_run else None
     try:
@@ -694,9 +698,26 @@ def _costed(name: str, fn):
         _emit_leg(name, detail[:200])
         return {"error": detail[:300], "status": "LEG_FAILED",
                 "at": datetime.now(UTC).isoformat()}
+    # A LEG THAT FAILS WITHOUT RAISING WAS RECORDED AS "ok" (theirs, 2026-09-10 -- and it is the
+    # defect this desk has paid most for). `_producer` returns a DICT: a non-zero exit, a MISSING
+    # script or a timeout come back as data, nothing is raised, and the ledger wrote `ok`.
+    # `pf_allocator` exited 1 every hour for six days and every ledger row for it said ok, so the
+    # streak that is supposed to separate a blip from an outage counted zero the whole time.
+    # `libs.ops.completion` reads exactly this field.
+    outcome = "ok"
+    if isinstance(out, dict):
+        status = str(out.get("status") or "").upper()
+        if out.get("error"):
+            outcome = f"FAILED: {out['error']}"[:200]
+        elif status and status not in {"OK", "SUCCESS", "COMPLETED", "SKIPPED"}:
+            outcome = status
+        elif out.get("timeout_s") and out.get("exit_code") is None:
+            outcome = "TIMEOUT"
+        elif out.get("exit_code") not in (None, 0):
+            outcome = f"exit_code={out['exit_code']}"
     if close_run and run is not None:
-        close_run(run, outcome="ok")
-    _emit_leg(name, "ok")
+        close_run(run, outcome=outcome)
+    _emit_leg(name, outcome)
     return out
 
 
@@ -789,7 +810,7 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
                         f"whatever it had already written",
                 "at": datetime.now(UTC).isoformat()}
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
 
 
@@ -909,7 +930,7 @@ def frontier() -> dict:
                 "queued": (doc.get("ranked") or {}).get("n_queued"),
                 "missing_capabilities": doc.get("capability_matrix_missing"),
                 "at": datetime.now(UTC).isoformat()}
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
 
 
@@ -1441,6 +1462,13 @@ def maintain_miners() -> dict:
     return _producer("miner_maintenance", "scripts/run_miner_maintenance.py")
 
 
+def refresh_regime() -> dict:
+    """Refresh from native ledgers only; never overwrite authority from a VPS mirror."""
+    if sys.platform != "win32":
+        return {"status": "SKIPPED", "why": "regime authority belongs to the native Windows desk"}
+    return _producer("regime_monitor", "research/regime_monitor.py")
+
+
 def main() -> None:
     # BARS FIRST. Every leg below reasons about a chart, so a stale chart makes all of them
     # confidently wrong rather than merely late.
@@ -1449,6 +1477,7 @@ def main() -> None:
     h = _costed("health", health)
     t = _costed("record_tape", record_tape)
     s = _costed("state_vector", state_vector)
+    rg = _costed("regime_monitor", refresh_regime)
     d = _costed("daily", daily)
     hc = _costed("heal_clocks", heal_clocks)
     wa = _costed("wiring_audit", wiring_audit)
@@ -1813,13 +1842,17 @@ def main() -> None:
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
+                    "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc, "ml_layer": mll, "market_intel": mi, "experiment_design": xd, "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt, "queue_compact": qc, "issue_board": ib,
+                    "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
+                    "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
+                    "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,
+                    "queue_compact": qc, "issue_board": ib,
                     "execution_resolver": xr, "counterfactual_world": cw,
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,

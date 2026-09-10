@@ -38,9 +38,9 @@
     "title": "I built an open-source MT5 visual replacer for backtesting \u2014 looking for honest feedback before I take it further",
     "url": "",
     "symbols": [
-      "EURUSD",
       "GBPUSD",
-      "XAUUSD"
+      "XAUUSD",
+      "EURUSD"
     ],
     "patterns": [],
     "confidence": 0.3

@@ -1,0 +1,83 @@
+[
+  {
+    "source": "github",
+    "repo": "ashikscreativemath-commits/Paldo-ALM",
+    "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+    "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+    "stars": 21,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "scalping",
+      "swing"
+    ],
+    "confidence": 0.321
+  },
+  {
+    "source": "github",
+    "repo": "ilahuerta-IA/tradingsystem",
+    "url": "https://github.com/ilahuerta-IA/tradingsystem",
+    "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+    "stars": 15,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.16499999999999998
+  },
+  {
+    "source": "github",
+    "repo": "NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+    "url": "https://github.com/NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+    "description": "A complete trading automation framework using MetaTrader 5, LSTM Neural Networks, and Python. The bot detects engulfing candlestick patterns, combines volume and pivot-based signals, and trades GBPUSD using a risk-managed strategy with trailing stop-loss, partial take-profit, and live execution support.",
+    "stars": 14,
+    "language": "Python",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.21400000000000002
+  },
+  {
+    "source": "github",
+    "repo": "moss-site/moss-trade-bot-skills",
+    "url": "https://github.com/moss-site/moss-trade-bot-skills",
+    "description": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hyperliquid perpetuals.",
+    "stars": 382,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "momentum",
+      "RSI"
+    ],
+    "confidence": 0.6819999999999999
+  },
+  {
+    "source": "github",
+    "repo": "rolling-panda-san/notebooks",
+    "url": "https://github.com/rolling-panda-san/notebooks",
+    "description": "Analysis on systematic trading strategies (e.g., trend-following, carry and mean-reversion). The result is regularly updated. ",
+    "stars": 758,
+    "language": "Jupyter Notebook",
+    "symbols": [],
+    "patterns": [
+      "RSI",
+      "EMA"
+    ],
+    "confidence": 1.0
+  },
+  {
+    "source": "github",
+    "repo": "Gharrr544/hyperliquid-mean-reversion-bot",
+    "url": "https://github.com/Gharrr544/hyperliquid-mean-reversion-bot",
+    "description": "hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot hyperliquid-mean-reversion-trading-bot",
+    "stars": 8,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "RSI"
+    ],
+    "confidence": 0.158
+  }
+]

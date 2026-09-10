@@ -5234,21 +5234,30 @@
       "kind": "recommendation",
       "updated": "2026-08-23T08:37:00.380455+00:00",
       "resolve_by": "2026-09-06T08:37:00.378841+00:00",
-      "claim": "R0642 reaches IMPLEMENTED by 2026-09-06"
+      "claim": "R0642 reaches IMPLEMENTED by 2026-09-06",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-10T16:06:51.476647+00:00"
     },
     "rec:R0643": {
       "p": 0.35,
       "kind": "recommendation",
       "updated": "2026-08-23T08:37:00.580553+00:00",
       "resolve_by": "2026-09-06T08:37:00.578062+00:00",
-      "claim": "R0643 reaches IMPLEMENTED by 2026-09-06"
+      "claim": "R0643 reaches IMPLEMENTED by 2026-09-06",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-10T16:06:51.704538+00:00"
     },
     "rec:R0644": {
       "p": 0.35,
       "kind": "recommendation",
       "updated": "2026-08-23T08:37:00.788693+00:00",
       "resolve_by": "2026-09-06T08:37:00.786135+00:00",
-      "claim": "R0644 reaches IMPLEMENTED by 2026-09-06"
+      "claim": "R0644 reaches IMPLEMENTED by 2026-09-06",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-10T16:06:51.910576+00:00"
     },
     "rec:R0645": {
       "p": 0.35,

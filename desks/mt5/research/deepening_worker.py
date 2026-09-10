@@ -199,7 +199,16 @@ def task_id(task: dict) -> str:
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
 
 
-def worked_ids() -> set[str]:
+def worked_ids(*, retry_seat_blocks: bool = False) -> set[str]:
+    """Return terminal task identities.
+
+    A missing model seat is an infrastructure dependency, not evidence against the
+    source row.  Preserve that distinction in the ledger and make those rows
+    eligible again only once a seat is actually configured; otherwise an hourly
+    retry would spend the entire conversion budget rediscovering the same outage.
+    Older ledgers used ``REJECTED: seat error`` for this condition, so recognize
+    them too rather than permanently burying work due to the old label.
+    """
     if not WORKED.exists():
         return set()
     out: set[str] = set()
@@ -207,7 +216,13 @@ def worked_ids() -> set[str]:
         if not line.strip():
             continue
         try:
-            out.add(str(json.loads(line)["id"]))
+            row = json.loads(line)
+            disposition = str(row.get("disposition") or "")
+            seat_blocked = (disposition.startswith("BLOCKED_SEAT_UNAVAILABLE:")
+                            or disposition.startswith("REJECTED: seat error:"))
+            if retry_seat_blocks and seat_blocked:
+                continue
+            out.add(str(row["id"]))
         except (ValueError, KeyError):
             continue
     return out
@@ -375,6 +390,8 @@ def work_task(task: dict, universe: set[str], *, chat=None) -> tuple[list[dict],
         return candidates, f"RECOVERED_{disposition}"
     found, why = extract(task, chat=chat)
     if not found:
+        if why.startswith("seat error:"):
+            return [], f"BLOCKED_SEAT_UNAVAILABLE: {why}"
         return [], f"REJECTED: {why}"
 
     enriched = dict(task)
@@ -747,7 +764,16 @@ def _work(argv: list[str] | None = None) -> int:
         dlog("queue empty or unreadable -- nothing to work")
         return 0
 
-    done = worked_ids()
+    # A MISSING SEAT IS AN OUTAGE, NOT A VERDICT (theirs, 2026-09-10). A row blocked on an
+    # unconfigured external model was buried permanently; retried every hour it would spend the
+    # whole conversion budget rediscovering the same outage. Eligible again only once a seat
+    # actually exists.
+    try:
+        from libs.ops.llm_seat import primary_seat
+        retry_seat_blocks = primary_seat() is not None
+    except Exception:                                                   # noqa: BLE001
+        retry_seat_blocks = False
+    done = worked_ids(retry_seat_blocks=retry_seat_blocks)
     costs, cost_basis = task_costs()
     variant = controller_variant()
     pending = voi_order([t for t in tasks if task_id(t) not in done], costs=costs)
@@ -789,14 +815,19 @@ def _work(argv: list[str] | None = None) -> int:
         # `compute_ledger.cost_by_run` aggregates, so next hour's `task_costs()` reads this
         # class's mean from here. `cost_basis` names what divided THIS task's score, and
         # `controller_variant` names the allocation policy that queued it.
-        record({"id": tid, "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                "source": task.get("source"), "url": task.get("url"),
-                "disposition": disposition, "n_candidates": len(candidates),
-                "run": cls, "kind": task.get("kind"),
-                "wall_s": round(time.monotonic() - t_task, 3),
-                "cost_basis": (f"measured:{cls}:{costs[cls]:.2f}s" if cls in costs
-                               else "uncosted:1.0"),
-                "controller_variant": variant})
+        entry = {"id": tid, "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                 "source": task.get("source"), "url": task.get("url"),
+                 "disposition": disposition, "n_candidates": len(candidates),
+                 "run": cls, "kind": task.get("kind"),
+                 "wall_s": round(time.monotonic() - t_task, 3),
+                 "cost_basis": (f"measured:{cls}:{costs[cls]:.2f}s" if cls in costs
+                                else "uncosted:1.0"),
+                 "controller_variant": variant}
+        # AND IT SAYS WHAT WOULD UNBLOCK IT. A row parked on an unconfigured seat is an outage
+        # with a remedy, not a rejection; without this the ledger records only that it stopped.
+        if disposition.startswith("BLOCKED_SEAT_UNAVAILABLE:"):
+            entry["retry_action"] = "retry automatically after an external-model seat is configured"
+        record(entry)
         dlog(f"  {tid} [{task.get('source')}] {disposition} -> {len(candidates)} candidate(s)")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

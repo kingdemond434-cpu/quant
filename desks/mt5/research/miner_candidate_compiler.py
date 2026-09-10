@@ -751,6 +751,7 @@ def main() -> int:
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
     per_source: dict[str, dict[str, int]] = {}
+    source_candidates: dict[str, set[str]] = {}
     untestable = structurally_untestable_families()
     if untestable:
         print("families routed to DEEPENING (measured untestable at current parameters): "
@@ -779,6 +780,13 @@ def main() -> int:
             sources_by_identity.setdefault(identity, set()).add(source)
             if identity not in candidates:
                 candidates[identity] = candidate
+            # Keep all contributing miners without submitting the same experiment twice.
+            origins = candidates[identity].setdefault("contributing_sources", [])
+            if source not in origins:
+                origins.append(source)
+            seen = source_candidates.setdefault(source, set())
+            if identity not in seen:
+                seen.add(identity)
                 stats["candidates"] += 1
         if not produced:
             compact = {
@@ -791,8 +799,12 @@ def main() -> int:
             }
             key = hashlib.sha256(
                 json.dumps(compact, sort_keys=True, default=str).encode()).hexdigest()
-            deepening[key] = compact
-            stats["deepening"] += 1
+            # FIRST WRITER WINS (theirs, 2026-09-10). A later row for the same key was
+            # overwriting an earlier deepening task and still counting it, so `stats` told
+            # the seat census it had queued work it had actually discarded.
+            if key not in deepening:
+                deepening[key] = compact
+                stats["deepening"] += 1
     # AFTER the intake loop, never inside it: 4aaede35 placed this loop between the candidate
     # loop and the `if not produced` block, which moved the deepening of non-producing rows
     # into the per-candidate loop -- every prose row that compiled to nothing was dropped
@@ -842,6 +854,7 @@ def main() -> int:
             t["contested"] = True
     disagreement = {"contested_symbols": len(contested),
                     "cells": dict(sorted(contested.items())[:40])}
+
 
     # THE GRAPH REMEMBERS WHAT WAS BURIED. Every compiled candidate is registered as BORN with
     # its miner row as parent, and every one that lands in a parameter region the gauntlet has

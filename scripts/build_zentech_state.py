@@ -103,12 +103,20 @@ def _shadow_rows() -> list[dict[str, Any]]:
             continue
         roll = _number(row.get("roll20_exp"))
         decay = None if roll is None or exp == 0 else roll / exp
+        # `promotion_authority` is provenance supplied by the writer, not a live
+        # permission.  A reconciler can retire an otherwise Fusion-native row while
+        # retaining its original provenance for audit.  Publishing that raw field as
+        # authority made RETIRED_ORPHAN rows look promotable on the dashboard.
+        # Terminal state always wins: retained evidence is never retained authority.
+        source_authority = row.get("promotion_authority") is True
         output.append({
             "name": key, "status": row.get("status"), "trades": n,
             "expectancy_r": exp, "cum_r": cum_r, "max_dd_r": _number(row.get("max_dd_r")),
             "days": int(_number(row.get("days_active"), row.get("days")) or 0),
             "source": row.get("bar_source"),
-            "decay_ratio": decay, "promotion_authority": row.get("promotion_authority") is True,
+            "decay_ratio": decay,
+            "promotion_authority": source_authority and not _is_terminal(row.get("status")),
+            "source_promotion_authority": source_authority,
         })
     return sorted(output, key=lambda row: row["expectancy_r"], reverse=True)
 

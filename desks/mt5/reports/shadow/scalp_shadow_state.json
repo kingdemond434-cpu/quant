@@ -1,0 +1,165 @@
+{
+  "updated_at": "2026-09-09T15:09:23+00:00",
+  "certificate_lookup_error": null,
+  "shadow_start": "2026-08-22T18:00:00+00:00",
+  "source": {
+    "fetched_at": "2026-09-09T15:00:46+00:00",
+    "source_server": "FusionMarkets-Live",
+    "source_company": "Fusion Markets Pty Ltd",
+    "account_trade_allowed": true,
+    "symbol": "XAUUSD",
+    "rows": {
+      "M1": 20000,
+      "M5": 20000,
+      "M15": 20000
+    },
+    "promotion_authority": true
+  },
+  "declared_sleeves": 4,
+  "configured_sleeves": 4,
+  "gate_blocked_sleeves": 0,
+  "sleeves": {
+    "xau_m5_anti_breakout_overlap": {
+      "forward_start": "2026-08-22T18:00:00+00:00",
+      "first_trade_at": null,
+      "status": "PROMOTION_CANDIDATE",
+      "timeframe": "M5",
+      "choice": {
+        "family": "anti_donchian_breakout",
+        "session": "overlap",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 9
+      },
+      "n": 48,
+      "n_historical": 0,
+      "days": 18,
+      "days_active": 18,
+      "forward_empty_reason": "",
+      "expectancy_r": 0.06067691400797001,
+      "max_drawdown_r": -2.2915846082174802,
+      "forward_verdict": {
+        "n_eff": 48.0,
+        "n_eff_basis": "acf_adjusted(rho_sum=0.000)",
+        "seq_lower_bound": -0.428862,
+        "significant": false,
+        "independent": true,
+        "reason": "48 trades (n_eff 48.0), 18d, always-valid lower bound -0.4289R > 0"
+      },
+      "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
+      "last_source_bar": "2026-09-09T18:00:00+00:00",
+      "matured": true,
+      "source_trading_lag_hours": 0.0,
+      "source_stale": false,
+      "promotion_authority": true,
+      "note": "Fusion-native forward shadow."
+    },
+    "xau_m5_anti_momentum_ny": {
+      "forward_start": "2026-08-22T18:00:00+00:00",
+      "first_trade_at": null,
+      "status": "KILL",
+      "timeframe": "M5",
+      "choice": {
+        "family": "anti_three_bar_momentum",
+        "session": "new_york",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 9
+      },
+      "n": 89,
+      "n_historical": 0,
+      "days": 18,
+      "days_active": 18,
+      "forward_empty_reason": "",
+      "expectancy_r": 0.04748209614478179,
+      "max_drawdown_r": -2.3342674618484898,
+      "forward_verdict": {
+        "n_eff": 89.0,
+        "n_eff_basis": "acf_adjusted(rho_sum=0.000)",
+        "seq_lower_bound": -0.307708,
+        "significant": false,
+        "independent": true,
+        "reason": "89 trades (n_eff 89.0), 18d, always-valid lower bound -0.3077R > 0"
+      },
+      "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
+      "last_source_bar": "2026-09-09T18:00:00+00:00",
+      "matured": true,
+      "source_trading_lag_hours": 0.0,
+      "source_stale": false,
+      "promotion_authority": true,
+      "note": "Fusion-native forward shadow."
+    },
+    "xau_m15_anti_breakout": {
+      "forward_start": "2026-08-22T18:00:00+00:00",
+      "first_trade_at": null,
+      "status": "PROMOTION_CANDIDATE",
+      "timeframe": "M15",
+      "choice": {
+        "family": "anti_donchian_breakout",
+        "session": "all",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 6
+      },
+      "n": 86,
+      "n_historical": 0,
+      "days": 18,
+      "days_active": 18,
+      "forward_empty_reason": "",
+      "expectancy_r": 0.14485225289404238,
+      "max_drawdown_r": -1.3241808527594472,
+      "forward_verdict": {
+        "n_eff": 86.0,
+        "n_eff_basis": "acf_adjusted(rho_sum=0.000)",
+        "seq_lower_bound": -0.281388,
+        "significant": false,
+        "independent": true,
+        "reason": "86 trades (n_eff 86.0), 18d, always-valid lower bound -0.2814R > 0"
+      },
+      "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
+      "last_source_bar": "2026-09-09T18:00:00+00:00",
+      "matured": true,
+      "source_trading_lag_hours": 0.0,
+      "source_stale": false,
+      "promotion_authority": true,
+      "note": "Fusion-native forward shadow."
+    },
+    "xau_m15_anti_momentum": {
+      "forward_start": "2026-08-22T18:00:00+00:00",
+      "first_trade_at": null,
+      "status": "KILL",
+      "timeframe": "M15",
+      "choice": {
+        "family": "anti_three_bar_momentum",
+        "session": "all",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 6
+      },
+      "n": 160,
+      "n_historical": 0,
+      "days": 18,
+      "days_active": 18,
+      "forward_empty_reason": "",
+      "expectancy_r": -0.003036230778483874,
+      "max_drawdown_r": -5.049974889583536,
+      "forward_verdict": {
+        "n_eff": 160.0,
+        "n_eff_basis": "acf_adjusted(rho_sum=0.000)",
+        "seq_lower_bound": -0.192273,
+        "significant": false,
+        "independent": true,
+        "reason": "matured and independent but mean R -0.0030 is not positive"
+      },
+      "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
+      "last_source_bar": "2026-09-09T18:00:00+00:00",
+      "matured": true,
+      "source_trading_lag_hours": 0.0,
+      "source_stale": false,
+      "promotion_authority": true,
+      "note": "Fusion-native forward shadow."
+    }
+  },
+  "quarantined_candidates": {},
+  "represented_sleeves": 4
+}

@@ -2,3 +2,7 @@
 {"at": "2026-09-06T11:47:01+00:00", "run": "sweep", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 720.113, "cpu_s": 0.17}
 {"at": "2026-09-06T11:47:17+00:00", "run": "compile_candidates", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 16.197, "cpu_s": 13.58}
 {"at": "2026-09-06T12:04:54+00:00", "run": "deepen", "kind": "hourly_cycle", "outcome": "BrokenPipeError: [Errno 32] Broken pipe", "wall_s": 1056.659, "cpu_s": 214.85}
+{"at": "2026-09-10T15:59:55+00:00", "run": "bad", "kind": "hourly_cycle", "outcome": "RuntimeError: simulated: one broken organ", "wall_s": 0.0, "cpu_s": 0.0}
+{"at": "2026-09-10T15:59:55+00:00", "run": "later", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 0.0, "cpu_s": 0.0}
+{"at": "2026-09-10T16:09:17+00:00", "run": "bad", "kind": "hourly_cycle", "outcome": "RuntimeError: simulated: one broken organ", "wall_s": 0.0, "cpu_s": 0.0}
+{"at": "2026-09-10T16:09:17+00:00", "run": "later", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 0.0, "cpu_s": 0.0}

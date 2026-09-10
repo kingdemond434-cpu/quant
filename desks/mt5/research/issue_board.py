@@ -340,9 +340,11 @@ def repair(issues: list[Issue], apply: bool = False,
     """
     done: list[dict[str, Any]] = []
     for i in issues:
-        if not i.auto or not i.repair:
+        protected = next((k for k in NEVER_AUTO
+                          if k == i.severity or k == i.key.split(":", 1)[0]), None)
+        if protected or not i.auto or not i.repair:
             done.append({"key": i.key, "action": "REFUSED",
-                         "why": NEVER_AUTO.get(i.severity,
+                         "why": NEVER_AUTO.get(protected or i.severity,
                                                "no automated repair is defined for this issue")})
             continue
         if not apply:
@@ -359,7 +361,7 @@ def repair(issues: list[Issue], apply: bool = False,
         try:
             r = subprocess.run([sys.executable, "-u", str(target)], cwd=str(base),
                                capture_output=True, text=True, timeout=timeout_s, check=False)
-            done.append({"key": i.key, "action": "RAN", "cmd": i.repair,
+            done.append({"key": i.key, "action": "RAN" if r.returncode == 0 else "FAILED", "cmd": i.repair,
                          "exit_code": r.returncode,
                          "tail": (r.stdout or r.stderr or "").strip().splitlines()[-2:]})
         except subprocess.TimeoutExpired:
@@ -373,16 +375,42 @@ def repair(issues: list[Issue], apply: bool = False,
 
 def run(apply: bool = False) -> dict[str, Any]:
     issues = collect()
+    before_count = len(issues)
+    actions = repair(issues, apply=apply)
+    verification_error = None
+    if apply:
+        try:
+            remaining = collect()
+        except Exception as exc:
+            verification_error = f"{type(exc).__name__}: {exc}"
+            remaining = issues
+        # Missing -> stale is still the same broken producer, not a closure.
+        def defect_identity(key: str) -> str:
+            kind, _, name = key.partition(":")
+            return f"producer:{name}" if kind in {"missing", "stale"} else key
+
+        remaining_keys = {defect_identity(i.key) for i in remaining}
+        for action in actions:
+            if action["action"] == "RAN":
+                if verification_error:
+                    action.update(action="UNVERIFIED", why=verification_error)
+                elif defect_identity(action["key"]) in remaining_keys:
+                    action.update(action="UNRESOLVED", why="producer exited successfully but issue remains")
+                else:
+                    action.update(action="REPAIRED", verified=True)
+        issues = remaining
     by_sev: dict[str, int] = {}
     for i in issues:
         by_sev[i.severity] = by_sev.get(i.severity, 0) + 1
-    actions = repair(issues, apply=apply)
     return {
         "measured_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "issues": [i.as_dict() for i in issues],
         "count": len(issues), "by_severity": by_sev,
         "auto_repairable": sum(1 for i in issues if i.auto),
         "actions": actions, "applied": apply,
+        "count_before": before_count,
+        "verified_repairs": sum(a["action"] == "REPAIRED" for a in actions),
+        "verification_error": verification_error,
         "stale_tolerance": STALE_TOLERANCE,
         "watched_producers": len(CADENCE),
         "contract": ("Every producer declares a cadence and an artifact. An artifact older than "
@@ -404,12 +432,12 @@ def main(argv: list[str] | None = None) -> int:
     for i in doc["issues"][:20]:
         mark = "AUTO" if i["auto_repairable"] else "----"
         print(f"   [{mark}] {i['severity']:8} {i['what'][:78]}")
-    ran = [a for a in doc["actions"] if a["action"] == "RAN"]
+    ran = [a for a in doc["actions"] if a["action"] == "REPAIRED"]
     if ran:
         print(f"   repaired {len(ran)}: "
               + ", ".join(f"{a['key']}(exit {a['exit_code']})" for a in ran[:6]))
     elif doc["applied"]:
-        print("   nothing auto-repairable this pass")
+        print("   no verified repairs this pass")
     return 1 if any(i["severity"] == "CAPITAL" for i in doc["issues"]) else 0
 
 

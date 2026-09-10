@@ -1,0 +1,16 @@
+[
+  {
+    "source": "shipping",
+    "type": "bdi",
+    "value": 3584,
+    "signal": "strong_expansion",
+    "symbols": [
+      "US500",
+      "NAS100",
+      "AUDUSD",
+      "NZDUSD"
+    ],
+    "confidence": 0.6,
+    "description": "BDI: 3584 (strong_expansion)"
+  }
+]
