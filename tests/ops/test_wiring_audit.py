@@ -100,6 +100,22 @@ def test_a_script_something_actually_runs_closes_the_link(tmp_path: Path) -> Non
     assert "libs.lonely" not in _by_module(findings(root))
 
 
+def test_a_module_run_by_path_is_a_caller(tmp_path: Path) -> None:
+    """FOUND BY WIRING THIS FILE'S OWN LEG, 2026-09-10. `hourly_cycle` dispatches subprocess legs
+    as `_producer("name", "libs/ops/x.py")` -- the string is resolved against the repo root and
+    run every hour. That is neither an import nor a `-m` target, so the auditor went on listing
+    its own module as an orphan while the desk was running it hourly.
+
+    Closing it removed 18 false positives from the real tree (135 findings to 117, money-path 32
+    to 24). Like the `-m` scan, it can only ever ADD callers.
+    """
+    root = _tree(tmp_path, {
+        "libs/dispatched.py": "def main():\n    return 0\n",
+        "desks/mt5/research/cycle.py": '_producer("dispatched", "libs/dispatched.py")\n',
+    })
+    assert "libs.dispatched" not in _by_module(findings(root))
+
+
 def test_a_shell_dash_m_invocation_is_a_caller(tmp_path: Path) -> None:
     """`python -m libs.x.y` in a cron or unit is a real caller no AST scan of .py can see.
     Measured false positive elsewhere in this repo: libs.ops.deploy_plan runs every ten minutes

@@ -797,6 +797,44 @@ def _organs(now: datetime) -> dict[str, Any]:
             "dead_after_seconds": ORGAN_DEAD_SECONDS}
 
 
+#: How many unreachable modules travel to the page. The count is the number that matters; the
+#: list is there so an operator can see WHAT is stranded without opening the artifact.
+WIRING_HEADLINE_ROWS = 12
+
+
+def _wiring_block() -> dict[str, Any]:
+    """WHAT WAS BUILT AND IS NOT RUNNING -- the desk's most repeated defect, finally on screen.
+
+    MEASURED 2026-09-10: 135 library modules unreachable, 128 of them with tests proving they
+    work. Seven had been found by hand in the preceding session; the machine found nineteen times
+    as many. A module with green tests and no importer produces exactly as much E[log W] as never
+    having been written, and takes longer -- so this is a standing capital loss that nothing on
+    the board reported.
+
+    READ, NOT COMPUTED. `hourly_cycle:wiring_audit` writes the census; this carries it the last
+    two feet. An absent artifact reads UNMEASURED rather than clean, for the same reason the
+    release block does: a dashboard that reported health because it could not find the file would
+    be the failure it exists to expose.
+    """
+    c = _read(DESK / "reports" / "WIRING_AUDIT.json")
+    if not c:
+        return {"status": "UNMEASURED", "total": None,
+                "why": "no WIRING_AUDIT.json -- the hourly wiring_audit leg has not run here, so "
+                       "how much of this desk is built-and-unreachable is unknown"}
+    rows = [{k: f.get(k) for k in ("module", "verdict", "lines", "kind", "money_path")}
+            for f in (c.get("findings") or [])[:WIRING_HEADLINE_ROWS]]
+    total = c.get("total") or 0
+    return {
+        "status": "CLEAN" if total == 0 else "UNWIRED",
+        "total": total, "wire": c.get("wire"), "retire": c.get("retire"),
+        "money_path": c.get("money_path"), "one_link_short": c.get("one_link_short"),
+        "worst": rows,
+        "why": (f"{c.get('wire')} module(s) have tests and no caller; "
+                f"{c.get('one_link_short')} more are imported only by a script nothing runs, so "
+                f"the orphan check reads green while they stay as unreachable as an orphan"),
+    }
+
+
 def build() -> dict[str, Any]:
     gateway = _read(DESK / "data" / "gateway_state.json")
     # NEVER FALL BACK TO gateway_state FOR THE ACCOUNT (2026-09-04). On a box with no MT5
@@ -965,6 +1003,7 @@ def build() -> dict[str, Any]:
         "status": "UNMEASURED", "blocking": ["readiness has not been assessed"]}
     payload["release"] = _release_block()
     payload["organs"] = _organs(now)
+    payload["wiring"] = _wiring_block()
     payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}
     payload["stats"] = _ledger_stats(rows)
     payload["stats"]["today_pnl"] = payload["account"]["today_pnl"]

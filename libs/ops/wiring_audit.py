@@ -56,6 +56,14 @@ _SHELL_SUFFIXES: tuple[str, ...] = (".sh", ".ps1", ".service", ".timer", ".manif
 
 _MODULE_M = re.compile(r"-m\s+(libs(?:\.[A-Za-z_][A-Za-z0-9_]*)+)")
 
+#: A leg that runs a module BY PATH is a caller too, and neither an import nor a `-m` target.
+#: `hourly_cycle` dispatches its subprocess legs as `_producer("name", "libs/ops/x.py")`, which
+#: resolves the string against the repo root and runs it -- so the module is invoked hourly and
+#: an AST import scan sees nothing. Found by wiring this file's own leg and watching the auditor
+#: go on listing itself: the same blind spot the `-m` scan was added to close, in the other
+#: spelling. Like that one, this can only ADD callers, never hide an orphan.
+_MODULE_PATH = re.compile(r"['\"](libs/(?:[A-Za-z_][A-Za-z0-9_]*/)*[A-Za-z_][A-Za-z0-9_]*\.py)['\"]")
+
 #: Modules that are unreachable ON PURPOSE, each with the reason. This list is the argument for
 #: leaving them alone, so an entry without a reason is not an entry.
 _EXEMPT: dict[str, str] = {
@@ -142,6 +150,14 @@ def build_graph(root: Path) -> Graph:
             if "__pycache__" in p.parts or "tests" in p.parts:
                 continue
             self_name = _dotted(root, p) if area == "libs" else ""
+            # A MODULE RUN BY PATH IS RUN. See `_MODULE_PATH`.
+            try:
+                for rel in _MODULE_PATH.findall(p.read_text(encoding="utf-8", errors="replace")):
+                    named = rel[: -len(".py")].replace("/", ".")
+                    if named != self_name:
+                        g.shell_targets.add(named)
+            except OSError:
+                pass
             for target in _imports_of(p):
                 # SELF IS EXCLUDED PER FILE, NEVER GLOBALLY. Removing the name from a shared set
                 # is the bug that made an earlier walker report 241 of 244 modules as orphans:
@@ -268,6 +284,11 @@ def _one_link_short(root: Path, g: Graph) -> list[Finding]:
     return out
 
 
+#: Where the census lands so the dashboard and the wirer can both read it. Relative to the repo
+#: root, beside the desk's other reports -- `libs.ops.release` already spells a desk path this way.
+REPORT_REL = "desks/mt5/reports/WIRING_AUDIT.json"
+
+
 def census(root: Path) -> dict[str, Any]:
     """The counts an operator reads, and the list a queue consumes."""
     found = findings(root)
@@ -279,3 +300,47 @@ def census(root: Path) -> dict[str, Any]:
                                   if f.kind == "sole_importer_unreachable"),
             "by_verdict": by,
             "findings": [f.to_dict() for f in found]}
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Write the census and say what it found. The leg that makes this module its own first fix.
+
+    THE AUDITOR WAS IN ITS OWN REPORT, which is the only honest way to start a wiring campaign:
+    on the run that produced the first census, `libs.ops.wiring_audit` appeared under RETIRE --
+    no caller, no tests. This function and the hourly leg that calls it are what took it off its
+    own list, and the shape is the one every other fix on that list has to take.
+
+    EXIT 0 WHATEVER IT FINDS. A cycle leg that fails the pass when the repo has orphans would be
+    removed within a week, correctly -- the census is evidence for the wirer to act on, not a gate.
+    The gate this desk already has for that is scripts/max_audit.check_unwired_modules, and it
+    stays exactly where it is.
+    """
+    import argparse
+    import json
+
+    ap = argparse.ArgumentParser(description="census the modules nothing calls")
+    ap.add_argument("--root", default=None, help="repository root (default: this file's repo)")
+    ap.add_argument("--json", action="store_true", help="print the census instead of a summary")
+    args = ap.parse_args(argv)
+
+    root = Path(args.root) if args.root else Path(__file__).resolve().parents[2]
+    c = census(root)
+    out = root / Path(*REPORT_REL.split("/"))
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(c, indent=1), encoding="utf-8")
+    except OSError as exc:
+        print(f"wiring audit: could not write {REPORT_REL} ({exc.__class__.__name__})")
+
+    if args.json:
+        print(json.dumps(c, indent=1))
+    else:
+        print(f"wiring audit: {c['total']} unreachable -- {c['wire']} WIRE, {c['retire']} RETIRE, "
+              f"{c['money_path']} in money-path trees, {c['one_link_short']} one link short")
+        for f in c["findings"][:10]:
+            print(f"  {f['verdict']:7s} {f['module']:46s} {f['lines']:>4}L  {f['kind']}")
+    return 0
+
+
+if __name__ == "__main__":       # pragma: no cover - entrypoint
+    raise SystemExit(main())

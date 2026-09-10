@@ -918,6 +918,26 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def wiring_audit() -> dict:
+    """Census the modules nothing calls, every hour, and write it where the wirer can read it.
+
+    THE DESK'S DOMINANT FAILURE MODE, and it has never had a clock. MEASURED 2026-09-10: 135
+    library modules built and unreachable -- 128 with tests proving they work and nothing calling
+    them, 32 in money-path trees, and 49 of the "one link short" kind where the only importer is a
+    script nothing runs, so the orphan check reads green while the module is as dead as ever.
+
+    HOURLY, NOT DAILY, because the box adopts hourly: a pass that lands new code is exactly when
+    the answer changes, and a census taken then is measuring the tree that is actually running.
+    The whole audit is an AST walk of the repo -- seconds -- and `_costed` records what it really
+    takes, so if that stops being true the ledger says so rather than this comment.
+
+    IT REPORTS AND NEVER REFUSES. A leg that failed the pass on finding an orphan would be removed
+    within a week, correctly. `scripts/max_audit.check_unwired_modules` is the gate and stays the
+    gate; this is the evidence feed.
+    """
+    return _producer("wiring_audit", "libs/ops/wiring_audit.py")
+
+
 def issue_board() -> dict:
     """Every issue the desk can see, aggregated -- and the safe ones repaired.
 
@@ -1032,6 +1052,7 @@ def main() -> None:
     s = _costed("state_vector", state_vector)
     d = _costed("daily", daily)
     hc = _costed("heal_clocks", heal_clocks)
+    wa = _costed("wiring_audit", wiring_audit)
     # THE OTHER HALF OF THE SAME LEDGER. A certificate whose `shadow_spec.params` is None passed
     # all ten gates and can never be run: the parameterisation that passed was never recorded, so
     # there is nothing to replay. The issue board offers `survivor_publication` as the repair and
