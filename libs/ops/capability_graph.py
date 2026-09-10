@@ -651,6 +651,58 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/data/vol_archive/observations.jsonl",
                  "desks/mt5/reports/VOL_ARCHIVE.json"),
          reads=("desks/mt5/data/universe/universe.json", "desks/mt5/data/universe/")),
+
+    # ---------------------------------------------------------------- 2026-09-10: paying down
+    # the undeclared debt `scripts/check_completion.py` measures. 88 legs sit in the two cycles
+    # and 78 of them declared NO artifact here, so `libs.ops.completion` -- which asks whether a
+    # leg that ran actually produced anything -- was blind to 89% of the desk's hourly compute.
+    # That blindness is exactly how `pf_allocator` returned exit 1 every hour for six days with
+    # every panel reading healthy. These are the legs added on 2026-09-10, declared at once so
+    # the ceiling falls in the same commit that records it.
+    Node("hunt12", "desks/mt5/research/run_hunt12.py",
+         # THE ALLOCATOR'S FIRST INPUT. `portfolio_projection.load_h12_survivors` refuses
+         # without it and `pf_allocator` assembles its evidence through that projection, so an
+         # absent hunt12 report is the growth sizer refusing to solve -- which is precisely the
+         # edge nothing declared and nothing could therefore check.
+         writes=("desks/mt5/reports/hunt12_partial.json", "desks/mt5/reports/hunt12.json"),
+         reads=("desks/mt5/data/universe/universe.json", "desks/mt5/data/universe/"),
+         freshness_s={"desks/mt5/reports/hunt12_partial.json": 8 * 24 * 3600}),
+    Node("microstructure_census", "libs/research/microstructure_census.py",
+         writes=("desks/mt5/reports/MICROSTRUCTURE.json",),
+         reads=("desks/mt5/data/universe/universe.json", "desks/mt5/data/tape/")),
+    Node("entry_timing", "desks/mt5/research/entry_timing.py",
+         writes=("desks/mt5/reports/ENTRY_TIMING.json",),
+         reads=("desks/mt5/reports/SPREAD_PROVENANCE.json",
+                "desks/mt5/data/universe/universe.json")),
+    Node("spread_provenance", "desks/mt5/research/spread_provenance.py",
+         writes=("desks/mt5/reports/SPREAD_PROVENANCE.json",),
+         reads=("desks/mt5/data/universe/universe.json",)),
+    Node("tape_features", "desks/mt5/research/tape_features.py",
+         writes=("desks/mt5/reports/TAPE_RECORDER.json",),
+         reads=("desks/mt5/data/tape/",)),
+    Node("futures_lead_lag", "desks/mt5/research/futures_lead_lag.py",
+         writes=("desks/mt5/reports/FUTURES_LEAD_LAG.json", "desks/mt5/reports/BAR_CLOCK.json"),
+         reads=("desks/mt5/data/universe/",)),
+    Node("time_joins", "scripts/check_time_joins.py",
+         writes=("desks/mt5/reports/TIME_JOINS.json",)),
+    Node("fusion_cost", "libs/portfolio/fusion_cost.py",
+         writes=("desks/mt5/reports/FUSION_COST.json",),
+         reads=("desks/mt5/data/universe/universe.json",)),
+    Node("cost_construction", "scripts/check_cost_construction.py",
+         writes=("desks/mt5/reports/COST_CONSTRUCTION.json",)),
+    Node("edges_macro_fusion_sweep", "desks/mt5/research/run_edges_macro_fusion_sweep.py",
+         writes=("desks/mt5/reports/edges_macro_fusion_sweep.json",),
+         reads=("desks/mt5/data/universe/universe.json", "desks/mt5/data/universe/")),
+    Node("queue_cycle", "libs/ops/queue_cycle.py",
+         writes=("desks/mt5/reports/QUEUE.json",),
+         reads=("desks/mt5/data/task_queue.jsonl",)),
+    Node("wiring_audit", "libs/ops/wiring_audit.py",
+         writes=("desks/mt5/reports/WIRING_AUDIT.json",)),
+    Node("completion", "libs/ops/completion.py",
+         # THE FENCE THAT ASKS WHETHER A LEG THAT RAN PRODUCED ANYTHING. It reads the two
+         # records of what the cycles did and joins them onto this graph's own declarations.
+         writes=("desks/mt5/reports/COMPLETION.json",),
+         reads=("desks/mt5/data/sync_marker.json", "desks/mt5/data/compute_ledger.jsonl")),
 )
 
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that

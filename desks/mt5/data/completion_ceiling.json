@@ -1,0 +1,5 @@
+{
+ "undeclared_max": 67,
+ "measured_when_set": 67,
+ "rule": "the number of cycle legs that declare no artifact in capability_graph. It RATCHETS DOWN ONLY (L1.50). A leg that declares nothing cannot be checked for completion by anything, which is how a leg returning exit 1 every hour went six days unnoticed. There is no flag that raises this."
+}
