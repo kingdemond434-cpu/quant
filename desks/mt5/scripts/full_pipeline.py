@@ -95,15 +95,34 @@ PATTERN_TO_FAMILY = {
 }
 
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
+
 def costs_for(sym, meta, mult=1.0):
+    """Costs through the only constructor that converts both units.
+
+    THIS HAND-ROLLED `Costs(...)` AND CARRIED THREE DEFECTS, all of them documented elsewhere in
+    this repo before they were fixed here:
+
+      * NO `quote_per_account`, so commission stayed in ACCOUNT CURRENCY and was divided by
+        contract_size as if it were PRICE -- "184x too little, on the JPY crosses where this
+        desk's surviving edges actually live, in the direction that manufactures survivors"
+        (`engine.Costs.from_symbol`).
+      * `commission_per_lot=3.50`, a ROUND-TURN figure in a PER-SIDE field, billing $7.00 a round
+        trip against Fusion Zero's contractual $4.50 (`orthogonal_sweep.py:761` names this one).
+      * the gold override `spread_per_lot=0.48`, which the engine records as "0.16/oz median
+        written as dollars PER OUNCE into a field that wants dollars per lot ... every gold
+        backtest on this desk has run very nearly spread-free".
+
+    `mult` STILL SCALES THE SPREAD ONLY, which is what it always meant and what `from_symbol`
+    already implements. It must NOT scale commission: commission is contractual and does not
+    widen, so stressing it models nothing that happens -- `Costs.stressed` makes the same point.
+    The old code multiplied it, so a 2x stress was quietly charging $14.00 a round trip.
+    """
     m = meta.get(sym, {})
-    spread = m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5)
-    if sym == "XAUUSD":
-        spread = 0.48 * mult
-    else:
-        spread = max(spread, 0.05) * mult
-    return Costs(spread_per_lot=spread, commission_per_lot=3.50 * mult,
-                 contract_oz=m.get("contract_size", 1e5))
+    return Costs.from_symbol(m, mult=mult, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
 
 
 def daily_series(df, sigs, costs):
