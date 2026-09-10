@@ -33,6 +33,7 @@ if str(_ROOT) not in sys.path:
 from libs.ops.org import (  # noqa: E402
     ESCALATION_KIND,
     FROM_KEY,
+    HUMAN_INBOX,
     PARENT_KEY,
     Org,
     Role,
@@ -72,16 +73,32 @@ def test_a_dead_task_reaches_a_person(q) -> None:
     assert raised.payload[PARENT_KEY] == t.id, "the escalation lost the task that caused it"
 
 
-def test_the_top_role_escalates_nowhere_and_that_is_declared(q) -> None:
-    """Inventing a supervisor for the top role would put the failure back into the machine that
-    could not handle it."""
+def test_a_failure_at_the_top_of_the_chart_reaches_a_person(q) -> None:
+    """THE BUG THIS TEST WAS REWRITTEN AFTER FINDING (2026-09-10).
+
+    It first asserted that escalation from the top role returns None -- "inventing a supervisor
+    would put the failure back into the machine that could not handle it". That reasoning is
+    right and the conclusion was wrong. On the desk's own roster the top role is `ops`, and `ops`
+    owns EVERY wiring task, so under the old behaviour every wiring failure died with no record
+    at all: the top of the chart was a place failures went to be forgotten, which is the defect
+    this whole file exists against.
+
+    It now goes to HUMAN_INBOX, which NO ROLE OWNS -- so no worker can claim it and it stays on
+    the queue and the census until a person acts.
+    """
     org = _org()
     t = q.submit("decide", max_attempts=1)
     q.claim("w")
     q.fail(t.id, "w", why="needs a human")
-    assert org.escalate(q, q.tasks()[t.id]) is None
-    got = org.sweep_dead(q)
-    assert got["not_escalated"] == [t.id] and "answers to nobody" in got["why"]
+    raised = org.escalate(q, q.tasks()[t.id])
+    assert raised is not None and raised.kind == HUMAN_INBOX
+    assert "answers to nobody" in raised.payload["needs"]
+    assert org.owner_of(HUMAN_INBOX) is None, (
+        "a role owns the human inbox, so a worker will claim the thing meant for a person")
+    # The manual `escalate` above already raised it, so the sweep must now skip it -- the same
+    # once-means-ever rule the sweep uses everywhere else.
+    assert org.sweep_dead(q)["escalated"] == []
+    assert sum(1 for x in q.tasks().values() if x.kind == HUMAN_INBOX) == 1
 
 
 def test_the_sweep_escalates_each_failure_exactly_once(q) -> None:

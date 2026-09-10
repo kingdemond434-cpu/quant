@@ -47,6 +47,18 @@ FROM_KEY = "_from_role"
 #: Kind prefix an escalation takes, so an escalated task is never mistaken for fresh work.
 ESCALATION_KIND = "escalation"
 
+#: Where a failure goes when its owner answers to nobody. NO ROLE OWNS THIS, deliberately: no
+#: worker can claim it, so it sits in the queue and on the census until a person acts on it.
+#:
+#: THE FIRST DRAFT STOPPED INSTEAD (bug, caught by `test_a_wiring_task_that_dies_reaches_a_person`
+#: 2026-09-10). `escalate` returned None when the owner was the top role, on the reasoning that
+#: inventing a supervisor puts the failure back into the machine that could not handle it. That
+#: reasoning is right and the conclusion was wrong: work owned by the TOP role -- which on this
+#: desk includes every wiring task -- then died with no record at all. "Answers to nobody" has to
+#: mean REACHES A PERSON; it cannot mean stops here, or the top of the chart is a place failures
+#: go to be forgotten, which is the defect this whole file was written against.
+HUMAN_INBOX = f"{ESCALATION_KIND}:human"
+
 
 @dataclass(frozen=True)
 class Role:
@@ -152,15 +164,15 @@ class Org:
         counts it, nobody is told, and the work silently never happens. With it, failure travels
         up until it reaches a role that answers to nobody -- and on this desk that is a person.
 
-        A task already at the top escalates NOWHERE and says so, because inventing a supervisor
-        for the top role would put the failure back into the machine that could not handle it.
+        A task whose owner is the TOP role goes to `HUMAN_INBOX` rather than to another role: no
+        worker owns that kind, so it cannot be claimed, and it stays on the queue and the census
+        until a person acts. Inventing a supervisor would put the failure back into the machine
+        that could not handle it; stopping would lose it entirely, which is worse.
         """
         owner = self.owner_of(task.kind)
         if owner is None:
             return None
         boss = self.supervisor_of(owner.name)
-        if boss is None:
-            return None
         body = dict(task.payload)
         body.update({
             PARENT_KEY: task.id,
@@ -169,8 +181,11 @@ class Org:
             "attempts": task.attempts,
             "why": why or task.why,
         })
-        return queue.submit(f"{ESCALATION_KIND}:{boss.name}", payload=body,
-                            priority=max(task.priority, 1.0),
+        if boss is None:
+            body["needs"] = (f"a person: {owner.name!r} answers to nobody, so this failure has "
+                             f"nowhere further to go inside the machine")
+        return queue.submit(f"{ESCALATION_KIND}:{boss.name}" if boss else HUMAN_INBOX,
+                            payload=body, priority=max(task.priority, 1.0),
                             dedupe_key=f"{ESCALATION_KIND}:{task.id}")
 
     def sweep_dead(self, queue: TaskQueue) -> dict[str, Any]:
@@ -196,9 +211,14 @@ class Org:
             got = self.escalate(queue, t)
             (raised if got is not None else skipped).append(t.id)
         return {"escalated": raised, "not_escalated": skipped,
-                "why": ("a DEAD task with no supervisor stops here: its owner answers to nobody, "
-                        "and inventing one would put the failure back into the machine that "
-                        "could not handle it")}
+                "needs_person": [t for t in raised
+                                 if queue.tasks() and any(
+                                     x.payload.get(PARENT_KEY) == t and x.kind == HUMAN_INBOX
+                                     for x in queue.tasks().values())],
+                "why": ("a failure whose owner answers to nobody goes to HUMAN_INBOX, which no "
+                        "role owns and no worker can claim -- so it stays on the queue and the "
+                        "census until a person acts, rather than stopping at the top of the "
+                        "chart where failures would go to be forgotten")}
 
     # ------------------------------------------------------------------ what a person reads
     def lineage(self, queue: TaskQueue, task_id: str) -> list[str]:
@@ -247,7 +267,11 @@ DESK_ROLES: tuple[Role, ...] = (
          "marginal E[log W], heat, retirement: the only role that decides what gets capital"),
     Role("execution", ("place", "manage", "reconcile"), "ops",
          "the gateway lane: it acts on decisions and makes none"),
-    Role("ops", ("wire", "adopt", "heal", ESCALATION_KIND + ":ops"), "",
+    # `retire_module` is deliberately NOT `retire`: that kind belongs to `portfolio` and means
+    # pulling capital from a decayed sleeve. Deleting dead code and de-allocating capital are not
+    # the same act, and one kind cannot carry both -- the roster would accept the collision, and
+    # the routing would be silently wrong in the direction that touches money.
+    Role("ops", ("wire", "retire_module", "adopt", "heal", ESCALATION_KIND + ":ops"), "",
          "the machine itself -- and it answers to nobody, which is where a person reads"),
 )
 
