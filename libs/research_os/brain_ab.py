@@ -53,6 +53,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+# THE ENTRYPOINT HAD NEVER RUN (repaired 2026-09-10). This module ends in
+# `if __name__ == "__main__": raise SystemExit(main())`, and that line had never once executed:
+# for `python libs/research_os/brain_ab.py`, sys.path[0] is the SCRIPT's directory, so the repo
+# root is absent and `from libs.research_os import store` inside `report()` raises
+# ModuleNotFoundError before a single number is computed. Written 2026-08-30, unwired until now,
+# and unrunnable underneath the wiring -- which is why "it has a main()" is not evidence that
+# anything works. Prepending the repo root makes the file runnable by PATH as well as by `-m`,
+# and `hourly_cycle` dispatches its legs by path.
+_REPO_ROOT = str(Path(__file__).resolve().parents[2])
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 #: The metric ladder, DEEPEST FIRST. Order is the algorithm: the harness reports on the first rung
 #: where both arms clear MIN_PER_ARM, so the basis strengthens by itself as the desk matures.
 METRIC_LADDER: tuple[tuple[str, str], ...] = (

@@ -918,6 +918,33 @@ def adversaries() -> dict:
     return _producer("adversary", "research/adversary.py")
 
 
+def brain_ab() -> dict:
+    """Did a change to the desk's own search actually help, or did it only feel like it?
+
+    THE LOOP THE DESK HAD WRITTEN AND NEVER RUN. Every structural change to the search -- surgical
+    mutation, novelty V2, Thompson allocation, the adapter registry -- was argued for and shipped,
+    and none was measured. `libs/research_os/brain_ab.py` was written on 2026-08-30 to settle
+    exactly that, its own docstring says "the hourly loop looks at this every hour", and nothing
+    ever called it. This is that call.
+
+    IT IS ALREADY MORE CAREFUL THAN THE THING IT IS BEING COMPARED TO. Arms are assigned by a
+    deterministic blake2b of the candidate id AT PROPOSAL TIME -- before any outcome exists -- so
+    a re-run assigns identically and nothing can steer a promising candidate into the favoured
+    arm. (`hash()` is salted per process; using it would silently reshuffle the arms on every
+    restart, and every historical comparison would be reading a different experiment than it
+    thought.) The test is always-valid rather than a fixed-n t-test, because a t-test peeked at
+    hourly has a false-positive rate far above its nominal alpha.
+
+    AND IT REFUSES THE TRAP THAT MAKES A/B HARNESSES LIE. The metric anyone would name -- forward
+    survivors -- is 0/0 and has been for the desk's whole history; an A/B on a metric that is
+    identically zero returns "no difference" forever while looking rigorous. So it reports on the
+    deepest rung BOTH arms have data for, names the rung, and states that a win on a leading rung
+    is not a win. Reading a leading-metric win as a terminal one is how a desk convinces itself it
+    is improving while live P&L does nothing.
+    """
+    return _producer("brain_ab", "libs/research_os/brain_ab.py")
+
+
 def wiring_audit() -> dict:
     """Census the modules nothing calls, every hour, and write it where the wirer can read it.
 
@@ -1053,6 +1080,7 @@ def main() -> None:
     d = _costed("daily", daily)
     hc = _costed("heal_clocks", heal_clocks)
     wa = _costed("wiring_audit", wiring_audit)
+    ab = _costed("brain_ab", brain_ab)
     # THE OTHER HALF OF THE SAME LEDGER. A certificate whose `shadow_spec.params` is None passed
     # all ten gates and can never be run: the parameterisation that passed was never recorded, so
     # there is nothing to replay. The issue board offers `survivor_publication` as the repair and
