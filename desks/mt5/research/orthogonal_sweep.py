@@ -486,6 +486,12 @@ NOT_SOURCED_HERE = {
                 "search over pairs",
     "style_premia": "style_premia_sweep supplies the instrument's own rollover (broker_swaps) and "
                     "the risk driver and charges the whole style x instrument grid itself",
+    "event_reaction": "its events are DATED FACTS FROM OUTSIDE THE TAPE -- an insider cluster's "
+                      "acceptance time, an earnings date, a macro print -- produced by a miner "
+                      "and carrying the moment the market could first know. A sweep enumerating "
+                      "them over bars would be inventing events, and the one field the whole "
+                      "study depends on is exactly the one it cannot invent. The miner that "
+                      "dates them charges its own grid",
     "cross_sectional": "its peer set is the whole hypothesis-lane universe on one clock, so a "
                        "cell is (universe slice x horizon x mode) and NOT (family x symbol): "
                        "enumerating it per symbol here would run the same ranking 86 times and "

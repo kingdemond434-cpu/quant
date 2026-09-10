@@ -1460,6 +1460,26 @@ from mt5desk.family_multi_speed_trend import family_multi_speed_trend  # noqa: E
 ORTHOGONAL_FAMILIES["multi_speed_trend"] = family_multi_speed_trend
 FAMILY_INPUTS["multi_speed_trend"] = ("price only", "data/universe/*_H1.parquet")
 
+# THE LANE 103 INSTRUMENTS WERE ROUTED TO AND WHICH HAD NO ENGINE (2026-09-10). universe_policy
+# does not exclude single-name equities, it ROUTES them -- "traded on news, financial reports and
+# earnings reaction" -- and 103 of the registry's 251 symbols carry that routing. The lane was
+# readers only: event_calendar and event_density read, news_desk idles, earnability had no
+# consumer at all. Forty-one percent of the universe was assigned to a department with no staff.
+#
+# IT FIRES ON A FACT FROM OUTSIDE THE TAPE, which is what makes it a separate cause: an instrument
+# can be quiet on every price-based reading and have three officers buying it that morning. Its
+# failure mode is its own too -- it loses when the event was already priced, which has nothing to
+# do with a trend exhausting or a range breaking.
+#
+# ORDINARY SIGNALS ON PURPOSE, so the existing gauntlet judges an event hypothesis exactly as
+# harshly as a price one. The event lane must not become a second, gentler standard.
+from mt5desk.family_event_reaction import family_event_reaction  # noqa: E402
+
+ORTHOGONAL_FAMILIES["event_reaction"] = family_event_reaction
+FAMILY_INPUTS["event_reaction"] = ("dated events carrying the moment the market could know "
+                                   "(libs/research/form4 clusters, calendars)",
+                                   "desks/mt5/data/events.jsonl")
+
 # WHERE AN INSTRUMENT STANDS AGAINST THE OTHERS (2026-09-10). Every other price family here is a
 # TIME-SERIES claim -- given this instrument's history, trade this instrument -- and not one ranks
 # the universe at a point in time. A cross-sectional bet is a claim about DISPERSION, so it can be
