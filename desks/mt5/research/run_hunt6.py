@@ -21,6 +21,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 BASE = Path(__file__).resolve().parent.parent
 LOG = open(BASE / "logs" / "hunt6_console.txt", "w", encoding="utf-8")
 
@@ -45,10 +50,7 @@ def main() -> None:
 
     def per_symbol_costs(sym: str) -> Costs:
         m = meta[sym]
-        spread = 0.48 if sym == "XAUUSD" else (
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"])
-        return Costs(spread_per_lot=max(spread, 0.05),
-                     commission_per_lot=3.50, contract_oz=m["contract_size"])
+        return Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
 
     def wf_oos(h1: pd.DataFrame, sigs: list, costs: Costs) -> list[float]:
         idx_ns = h1.index.to_numpy().astype("datetime64[ns]").astype("int64")
@@ -113,9 +115,7 @@ def main() -> None:
                     continue
                 wf = wf_oos(h1, sigs, costs)
                 wf_ok = len(wf) == 3 and all(w == w and w > 0 for w in wf)
-                c2 = Costs(spread_per_lot=costs.spread_per_lot * 2,
-                           commission_per_lot=costs.commission_per_lot * 2,
-                           contract_oz=costs.contract_oz)
+                c2 = costs.stressed(2.0)
                 res2 = run_backtest(h1, sigs, c2)
                 st2 = res2.stats()
                 stress_ok = st2["expectancy_r"] > 0 and st2["t_stat"] > 1.5

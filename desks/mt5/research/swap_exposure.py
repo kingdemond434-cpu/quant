@@ -40,6 +40,11 @@ from mt5desk.engine import Costs, run_backtest                           # noqa:
 from mt5desk.financing import (                                          # noqa: E402
     FINANCING_VERSION, assess, profile, rollover_nights, stamp_provenance)
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 warnings.filterwarnings("ignore")
 
 UNI = BASE / "data" / "universe"
@@ -89,10 +94,7 @@ def _projection_costs(sym: str, meta: dict) -> Costs:
     The AUDCAD side is not stressed either: `mult` is effectively 1.0, so the spread is crossed
     once where a round trip crosses it twice.
     """
-    return Costs(
-        spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            meta["median_spread_pts"] * meta["tick_size"] * meta["contract_size"], 0.05),
-        commission_per_lot=3.50, contract_oz=meta["contract_size"])
+    return Costs.from_symbol(meta, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
 
 
 def stop_value_per_lot(trades, meta: dict) -> float:

@@ -57,6 +57,11 @@ from qquant_gates import (  # noqa: E402
     WalkForwardEngine, WalkForwardStatus, deflated_sharpe_ratio, sharpe_ratio)
 from run_hunt11 import WINDOWS  # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 #: The armed gold windows plus the symbols the nine candidates touched. No
 #: state dimension: that is the whole point of the re-run.
 SYMBOLS = ("XAUUSD", "CADJPY", "EURJPY", "USDJPY")
@@ -67,11 +72,7 @@ META = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-
 
 def costs_for(sym: str, mult: float = 1.0) -> Costs:
     m = META.get(sym, {})
-    return Costs(
-        spread_per_lot=0.48 * mult if sym == "XAUUSD" else max(
-            m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5)
-            * m.get("contract_size", 1e5), 0.05) * mult,
-        commission_per_lot=3.50 * mult, contract_oz=m.get("contract_size", 1e5))
+    return Costs.from_symbol(m, mult=mult, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
 
 
 def series_for(sym: str, win: str, stress: bool = False):

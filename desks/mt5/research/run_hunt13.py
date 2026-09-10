@@ -38,6 +38,11 @@ from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from research.run_hunt12 import day_states  # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 N_COMP = 11
@@ -116,9 +121,7 @@ def main() -> None:
             comp["gold_macro_stress"] = gs["gold_macro_stress"].groupby(
                 h1.assign(date=h1.index.date)["date"]).last().reindex(comp.index)
         meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))[sym]
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            meta["median_spread_pts"] * meta["tick_size"] * meta["contract_size"], 0.05),
-            commission_per_lot=3.50, contract_oz=meta["contract_size"])
+        costs = Costs.from_symbol(meta, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
         sigs = families.family_session_range_breakout(h1, **WINDOW)
         sdays = [pd.Timestamp(s.time).date() for s in sigs]
         tday = [s for s, d in zip(sigs, sdays) if states.get(d) == "TREND_DAY"]

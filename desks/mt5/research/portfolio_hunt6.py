@@ -13,6 +13,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 
@@ -34,10 +39,7 @@ SURVIVORS = [  # (sym, window) unique sleeves passing all gates
 
 def per_symbol_costs(meta: dict, sym: str) -> Costs:
     m = meta[sym]
-    spread = 0.48 if sym == "XAUUSD" else (
-        m["median_spread_pts"] * m["tick_size"] * m["contract_size"])
-    return Costs(spread_per_lot=max(spread, 0.05),
-                 commission_per_lot=3.50, contract_oz=m["contract_size"])
+    return Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
 
 
 def main() -> None:

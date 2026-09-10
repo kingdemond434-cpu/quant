@@ -45,6 +45,11 @@ from mt5desk.engine import Costs, Signal, run_backtest  # noqa: E402
 from mt5desk.families import _h1  # noqa: E402
 from run_hunt17 import resample  # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 UNI = BASE / "data" / "universe"
 ANCHORS_F = BASE / "data" / "cross_asset_anchors.pkl"
 Z_THR = 1.5
@@ -356,11 +361,7 @@ def main() -> None:
                     done.append(tag)
                     continue
                 m = meta.get(sym, {})
-                costs = Costs(
-                    spread_per_lot=0.48 if sym == "XAUUSD" else max(
-                        m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5)
-                        * m.get("contract_size", 1e5), 0.05),
-                    commission_per_lot=3.50, contract_oz=m.get("contract_size", 1e5))
+                costs = Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
                 r = run_backtest(h4, sigs, costs).stats()
                 tprint(f"{tag:<32} {r['n']:5d} {r['expectancy_r']:+7.3f} {r['t_stat']:5.2f} "
                        f"{r['profit_factor']:5.2f} {r['max_dd_r']:7.1f}")

@@ -56,10 +56,15 @@ sys.path.insert(0, str(BASE / "research"))
 
 warnings.filterwarnings("ignore")
 
-from mt5desk import families                                    # noqa: E402
-from mt5desk.engine import Costs, run_backtest                  # noqa: E402
-from run_hunt11 import WINDOWS                                  # noqa: E402
-from book_sizing import EIGHT, FIVE, SYMBOLS, WINS, compound    # noqa: E402
+from book_sizing import EIGHT, FIVE, SYMBOLS, WINS, compound  # noqa: E402
+from mt5desk import families  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from run_hunt11 import WINDOWS  # noqa: E402
+
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
 
 REALITY_VERSION = "bookreality-2026-08-18-b"
 
@@ -89,10 +94,7 @@ def series(sym: str, win: str, mult: float) -> pd.Series:
     if key in _ser:
         return _ser[key]
     m = META[sym]
-    base = 0.48 if sym == "XAUUSD" else max(
-        m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05)
-    cost = Costs(spread_per_lot=base * mult, commission_per_lot=3.50 * mult,
-                 contract_oz=m["contract_size"])
+    cost = Costs.from_symbol(m, mult=mult, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
     sigs = list(families.family_session_range_breakout(h1(sym), **WINDOWS[win]))
     tr = run_backtest(h1(sym), sigs, cost).trades
     s = pd.Series([t.r_multiple for t in tr],
@@ -247,11 +249,9 @@ def main() -> int:
     for k in FIVE:
         sym, win = k.split(".")
         m = META[sym]
-        base = 0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05)
         sigs = list(families.family_session_range_breakout(h1(sym), **WINDOWS[win]))
-        tr = run_backtest(h1(sym), sigs,
-                          Costs(base, 3.50, m["contract_size"])).trades
+        costs = Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
+        tr = run_backtest(h1(sym), sigs, costs).trades
         rec = [t for t in tr if t.entry_time.year >= 2025]
         tick = float(np.median([abs(t.entry - t.stop) / m["tick_size"]
                                 * m["tick_value"] * 0.01 for t in rec]))

@@ -57,6 +57,11 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  #
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 TRIALS_MULTIPLIER = 7.0
 DSR_THRESHOLD = 0.95
 PBO_THRESHOLD = 0.5
@@ -80,11 +85,7 @@ GATE_MODULES = {  # hunt -> module + report file
 
 def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
     m = meta.get(sym, {})
-    return Costs(
-        spread_per_lot=0.48 * mult if sym == "XAUUSD" else max(
-            m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5),
-            0.05) * mult,
-        commission_per_lot=3.50 * mult, contract_oz=m.get("contract_size", 1e5))
+    return Costs.from_symbol(m, mult=mult, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
 
 
 def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:

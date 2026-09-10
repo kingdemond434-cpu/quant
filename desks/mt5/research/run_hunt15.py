@@ -25,6 +25,11 @@ from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from portfolio_projection import (GOLD_WINDOWS, build_daily, build_sleeves,  # noqa: E402
                                   cell_trades)
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 MIN_N = 60
@@ -60,9 +65,7 @@ def main() -> None:
         try:
             h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
             m = meta[sym]
-            costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-                m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-                commission_per_lot=3.50, contract_oz=m["contract_size"])
+            costs = Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
             st = day_states(h1)
             tr = cell_trades(sym, win, state, h1, costs, st)
             if len(tr) < MIN_N:

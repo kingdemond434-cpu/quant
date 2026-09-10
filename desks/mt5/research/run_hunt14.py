@@ -46,6 +46,11 @@ from mt5desk.engine import Costs                                 # noqa: E402
 from mt5desk.multiplicity import deflation, sweep_size           # noqa: E402
 import run_hunt12 as h12                                         # noqa: E402
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+#: ROUND-TURN figure sitting in a PER-SIDE field, billing $7.00 a round trip against $4.50.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 OUT = BASE / "reports" / "hunt14.json"
@@ -87,11 +92,7 @@ def main() -> int:
     for sym in sorted(meta):
         h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
         m = meta[sym]
-        costs = Costs(
-            spread_per_lot=0.48 if sym == "XAUUSD" else max(
-                m["median_spread_pts"] * m["tick_size"] * m["contract_size"],
-                0.05),
-            commission_per_lot=3.50, contract_oz=m["contract_size"])
+        costs = Costs.from_symbol(m, commission_per_lot=FUSION_COMMISSION_PER_SIDE)
         states = h12.day_states(h1)
         for wname, wp in h12.WINDOWS.items():
             sigs = families.family_session_range_breakout(h1, **wp)
