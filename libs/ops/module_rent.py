@@ -291,6 +291,12 @@ MODULES: tuple[Module, ...] = (
            "at the same total heat on the same sampled worlds: E[logW | book + i] - E[logW | book]"
            " summed over the admitted set (pf_allocator.marginal_admission)",
            "measure_marginal_admission", "desks/mt5/research/pf_allocator.marginal_admission"),
+    Module("hunt12", "allocator_component", ALLOCATION,
+           "E[log W] of the solved book with the hypothesis-lane survivors against the same book "
+           "without them, at the same total heat on the same sampled worlds. This sweep is the "
+           "allocator's FIRST input -- portfolio_projection refuses without its artifact -- so an "
+           "absent one is the growth sizer declining to solve, not a missing research report",
+           "measure_hunt12_survivors", "desks/mt5/research/run_hunt12.py"),
     Module("pf_allocator:regime_conditioning", "allocator_component", ALLOCATION,
            "needs the book scored on unconditioned worlds beside the conditioned ones; the "
            "artifact carries regime.conditioned but no with/without score",
@@ -1154,6 +1160,32 @@ def measure_marginal_admission(m: Module, led: Ledgers) -> dict[str, Any]:
                 unscored=len(adm.get("unscored") or {}), basis=str(adm.get("basis") or ""),
                 note=("a sum of separately-measured marginals against the same held book; the "
                       "joint delta of admitting all of them at once is smaller"))
+
+
+def measure_hunt12_survivors(m: Module, led: Ledgers) -> dict[str, Any]:
+    """What the hypothesis-lane sweep is worth to the book it feeds.
+
+    IT IS DECISION-AFFECTING BY A ROUTE THAT IS EASY TO MISS. `pf_allocator` assembles its evidence
+    through `portfolio_projection`, which REFUSES outright without `reports/hunt12_partial.json`
+    -- so this sweep is not a research report, it is the allocator's first input, and an absent
+    one is the growth sizer declining to solve at all. Measured 2026-09-10, `pf_allocation.json`
+    had never existed for exactly this reason.
+
+    THE RENT IS THEREFORE THE BOOK'S, NOT THE SWEEP'S OWN STATISTICS. A survivor count says
+    nothing about growth; what this component is worth is E[log W] of the solved book WITH the
+    hunt12 survivors against the same book WITHOUT them, on one world population at one total
+    heat -- the same shape `measure_marginal_admission` uses. Nothing computes that pair yet, so
+    this reports the gap precisely rather than dressing a count as a rent (L1.28a).
+    """
+    alloc = led.json(ALLOCATION)
+    if not alloc:
+        return _row(m, UNMEASURED, why=f"{ALLOCATION} absent: no allocator pass on this host")
+    _book = alloc.get("book")
+    book: dict[str, Any] = _book if isinstance(_book, dict) else {}
+    return _row(m, UNMEASURED, n=len(book),
+                why=("the allocator solved a book this pass, and the artifact carries no score of "
+                     "the same book with the hunt12 survivors withheld; needs a second solve at "
+                     "the same heat on the same sampled worlds, as marginal_admission does"))
 
 
 def measure_regime_conditioning(m: Module, led: Ledgers) -> dict[str, Any]:
