@@ -201,7 +201,15 @@ def test_three_standby_rows_go_live_on_two_consecutive_admitting_readings(desk, 
     assert all("same admission scan" in s["admission"]["why"] for s in same.values())
 
     # a NEW scan, admitting again: the second consecutive reading, and the rows go LIVE
-    doc["admission"]["measured_utc"] = "2026-09-08T19:00:00+00:00"
+    #
+    # RELATIVE, BECAUSE AN ABSOLUTE STAMP ROTS. This line read "2026-09-08T19:00:00+00:00" and
+    # passed for exactly as long as that instant stayed inside the allocator's 26h freshness
+    # window; at 00:31 UTC on 2026-09-10 it turned 29.5h old, the view went NOT USABLE, capital
+    # reconciliation was skipped and the rows never went LIVE. A test whose result depends on how
+    # long ago it was written fails on a calendar rather than on a defect, and it takes the whole
+    # desk suite red with it -- which on this desk gates the seal. All this line ever needed was a
+    # stamp DIFFERENT from `first_scan`; `now` is that, and is fresh by construction.
+    doc["admission"]["measured_utc"] = datetime.now(tz=UTC).isoformat()
     alloc.write_text(json.dumps(doc), "utf-8")
     promoter.main()
     after_two = {s["name"]: s for s in desk.sleeves()}
