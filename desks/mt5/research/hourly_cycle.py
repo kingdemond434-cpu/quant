@@ -1079,6 +1079,36 @@ def futures_lead_lag() -> dict:
     return _producer("futures_lead_lag", "research/futures_lead_lag.py")
 
 
+def edges_macro_fusion_sweep() -> dict:
+    """THE EDGE LIBRARY RE-RANKED AT THE COST THE ACCOUNT ACTUALLY CHARGES.
+
+    IT DIED AT IMPORT AND THAT IS WHY IT WAS NEVER WIRED. Four of the twelve families it was
+    written against no longer exist on `mt5desk.families`, so the module raised AttributeError on
+    the way in -- before any scheduler could have reached it. Two were unambiguous renames and
+    are mapped; two are genuinely gone and are DROPPED AND NAMED rather than replaced with the
+    nearest-looking family, because substituting one mechanism under another's name is how a
+    sweep reports a result for a strategy nobody ran.
+
+    WHAT IT SAYS, first run 2026-09-10, 10 families x 4 symbols x 3 cost regimes:
+
+        WIDE   3 of 36 cells clear the t >= 1.96 screening bar
+        RAW    9 of 36
+        ZERO  10 of 36
+
+    Every earlier sweep on this desk used `Costs.from_symbol(meta, mult=2.0)` -- WIDE -- which
+    this module's own header calls "roughly five times the real cost on gold" on a
+    raw-spread/commission account. Pricing the account correctly TRIPLES the candidate flow.
+
+    AND THE RESULT IS NOT AN ARTIFACT OF THE OPTIMISTIC BOUND: ZERO returns 10 against RAW's 9,
+    so RAW captures nearly all of it. A family that only worked at ZERO would be visible as
+    exactly that, which is the reason all three are reported side by side rather than argued over.
+
+    STAGE-A RANKING ONLY, and the module says so: "cheaper costs make more candidates rank; they
+    do not make a ranked candidate an edge. Only forward evidence in a confirmation slot does."
+    """
+    return _producer("edges_macro_fusion_sweep", "research/run_edges_macro_fusion_sweep.py")
+
+
 def cost_construction() -> dict:
     """WHERE A COST OBJECT IS BUILT BY HAND, and the two unit traps that live there.
 
@@ -1349,6 +1379,7 @@ def main() -> None:
     tj = _costed("time_joins", time_joins)
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
+    emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
     # BEFORE queue_cycle, which turns its uncovered cells into owned recertification tasks.
     ety = _costed("entry_timing", entry_timing)
     # AFTER the coverage legs: the governor aims the search from the map they just published.
@@ -1715,6 +1746,7 @@ def main() -> None:
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "time_joins": tj,
                     "fusion_cost": fzc, "cost_construction": cxc,
+                    "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},

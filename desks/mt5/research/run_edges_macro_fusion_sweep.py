@@ -59,20 +59,41 @@ SCREEN_BAR = 1.96
 #: The desk's real chart-edge library -- every family taking only `df`.
 #: The three dip_* families are deliberately EXCLUDED: they were written for
 #: the earlier sweep and are not part of the desk's researched library.
-EDGES = {
-    "session_range_breakout": families.family_session_range_breakout,
-    "level_breakout": families.family_level_breakout,
-    "failed_breakout": families.family_failed_breakout,
-    "fair_value_gap": families.family_fair_value_gap,
-    "order_block": families.family_order_block,
-    "london_close_momentum": families.family_london_close_momentum,
-    "asia_momentum": families.family_asia_momentum,
-    "momentum_volgate": families.family_momentum_volgate,
-    "comex_settlement": families.family4_comex_settlement_effect,
-    "dow_effect": families.family_dow_effect,
-    "monday_gap": families.family_monday_gap,
-    "spread_state_avoidance": families.family7_spread_state_avoidance,
+#: The library this sweep was written against, as NAMES rather than attributes.
+#:
+#: IT DIED AT IMPORT AND THAT IS WHY IT WAS NEVER WIRED. Four of the twelve attributes no longer
+#: exist on `mt5desk.families`, so the module raised `AttributeError` on the way in -- before any
+#: scheduler could have called it, and long enough ago that nobody noticed it was gone. Resolving
+#: by name and REPORTING what is missing turns an import crash into a coverage number.
+#:
+#: TWO ARE UNAMBIGUOUS RENAMES and are mapped: `family_fair_value_gap` -> `family_ict_fvg` (ICT's
+#: FVG is the fair value gap) and `family4_comex_settlement_effect` ->
+#: `family_comex_settlement`.
+#:
+#: TWO ARE GENUINELY GONE -- `family_order_block` and `family7_spread_state_avoidance` -- and
+#: nothing in the module resembles them. They are DROPPED AND NAMED rather than replaced with the
+#: nearest-looking family: substituting a different mechanism under a mechanism's name is how a
+#: sweep reports a result for a strategy nobody ran.
+EDGE_NAMES = {
+    "session_range_breakout": "family_session_range_breakout",
+    "level_breakout": "family_level_breakout",
+    "failed_breakout": "family_failed_breakout",
+    "fair_value_gap": "family_ict_fvg",
+    "order_block": "family_order_block",
+    "london_close_momentum": "family_london_close_momentum",
+    "asia_momentum": "family_asia_momentum",
+    "momentum_volgate": "family_momentum_volgate",
+    "comex_settlement": "family_comex_settlement",
+    "dow_effect": "family_dow_effect",
+    "monday_gap": "family_monday_gap",
+    "spread_state_avoidance": "family7_spread_state_avoidance",
 }
+
+EDGES = {k: getattr(families, v) for k, v in EDGE_NAMES.items() if hasattr(families, v)}
+
+#: Families the library no longer carries. Published with the run so a reader can tell "this
+#: mechanism did not rank" from "this mechanism was not tested".
+MISSING_EDGES = sorted(k for k, v in EDGE_NAMES.items() if not hasattr(families, v))
 
 #: symbol -> (macro column, lookback days, economic reason for the mapping)
 CONDITION = {
@@ -85,17 +106,27 @@ CONDITION = {
 COST_REGIMES = {"WIDE": 2.0, "RAW": 0.2, "ZERO": 0.0}
 
 
+#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`.
+FUSION_COMMISSION_PER_SIDE = 2.25
+
+
 def _costs(meta: dict, mult: float) -> Costs:
     """Costs at one spread regime. Commission is never scaled.
 
     Commission is contractual -- it does not widen with volatility and
     stressing it models nothing that happens. Only the spread varies.
+
+    THIS BUILT ITS OWN Costs AND CONTRADICTED ITSELF. The docstring above was already right about
+    commission, and the code beside it passed `commission_per_lot=3.50` -- a ROUND-TURN figure in
+    a PER-SIDE field, billing $7.00 a round trip against Fusion Zero's contractual $4.50 -- and
+    omitted `quote_per_account`, so commission stayed in ACCOUNT CURRENCY and was divided by
+    contract_size as if it were PRICE: "184x too little on the JPY crosses where this desk's
+    surviving edges actually live". `Costs.from_symbol` closes both, and `mult` still scales the
+    SPREAD ONLY, which is what this function always meant.
     """
-    cs = float(meta.get("contract_size", 1e5))
-    spread = (float(meta.get("median_spread_pts", 0.0))
-              * float(meta.get("tick_size", 0.0)) * cs)
-    return Costs(spread_per_lot=max(spread * mult, 0.0),
-                 commission_per_lot=3.50, contract_oz=cs)
+    return Costs.from_symbol(meta, mult=mult,
+                             commission_per_lot=FUSION_COMMISSION_PER_SIDE)
 
 
 def _t(trades) -> tuple[int, float, float]:
@@ -120,8 +151,11 @@ def main() -> int:
         print("MACRO HISTORY ABSENT -- UNMEASURED, not a clean result.")
         return 2
 
-    print(f"{len(EDGES)} real chart families x {len(CONDITION)} symbols "
+    print(f"{len(EDGES)} of {len(EDGE_NAMES)} real chart families x {len(CONDITION)} symbols "
           f"x {len(COST_REGIMES)} cost regimes x (plain | macro-conditioned)")
+    if MISSING_EDGES:
+        print(f"NOT TESTED -- absent from mt5desk.families: {', '.join(MISSING_EDGES)}. "
+              "A mechanism that did not run is not a mechanism that did not rank.")
     print(f"STAGE A ranking, screening bar t >= {SCREEN_BAR}. "
           f"Cheaper costs rank more candidates; they do not create edge.\n")
 
@@ -189,8 +223,18 @@ def main() -> int:
 
     out = BASE / "reports" / "edges_macro_fusion_sweep.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({"screen_bar": SCREEN_BAR, "rows": rows}, indent=2,
-                              default=str), encoding="utf-8")
+    out.write_text(json.dumps({
+        "screen_bar": SCREEN_BAR,
+        "cost_regimes": COST_REGIMES,
+        "commission_per_lot_per_side": FUSION_COMMISSION_PER_SIDE,
+        # COVERAGE, so "did not rank" can be told from "was not tested". Two families the sweep
+        # was written against no longer exist on `mt5desk.families`, which is what made this
+        # module raise at import and is why nothing ever ran it.
+        "families_tested": sorted(EDGES),
+        "families_missing": MISSING_EDGES,
+        "n_families_tested": len(EDGES), "n_families_declared": len(EDGE_NAMES),
+        "rows": rows,
+    }, indent=2, default=str), encoding="utf-8")
     print(f"\n-> {out}")
     return 0
 
