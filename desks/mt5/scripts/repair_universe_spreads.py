@@ -68,6 +68,12 @@ REPORT = BASE / "reports" / "SPREAD_PROVENANCE.json"
 #: value (which is what this exists to eliminate).
 SOURCE = "h1_spread_median"
 
+#: The ONE exception to "realised fills beat bars". A fills-derived spread more than this multiple
+#: of the symbol's own bar median is not a better measurement -- past it a cell can never clear
+#: `stress_costs`, so the number is suppressing the instrument rather than pricing it. The
+#: multiple is the gauntlet's own, mirrored from `libs.portfolio.fusion_cost`.
+FILLS_IMPLAUSIBLE_ABOVE_BARS = 3.0
+
 #: A correction this large is reported as SUSPECT rather than applied silently. Not a cap -- the
 #: value is still written under --apply -- but a 50x move in the number every certificate is
 #: priced against is a thing a person should see named, not discover later in a P&L.
@@ -124,6 +130,10 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
     cheaper: list[dict[str, Any]] = []
     suspect: list[dict[str, Any]] = []
     kept_better: list[str] = []
+    #: `realized_fills` rows overridden because the fills value is implausible against its own
+    #: bars. Named and counted separately: this is the one place the repair overrules a
+    #: measurement with an inference, and a reviewer must be able to find every instance.
+    fills_overridden: list[dict[str, Any]] = []
     unmeasured: dict[str, str] = {}
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
 
@@ -133,11 +143,38 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
             continue
         src = ((row.get("_provenance") or {}).get("median_spread_pts") or {}).get("source")
         if src == "realized_fills":
-            # THE DESK'S OWN EXECUTIONS BEAT AN ESTIMATE FROM BARS, ALWAYS. Ten symbols carry
-            # this and none of them is touched: a repair that overwrote a measurement with an
-            # inference would be the same producer collapse in a new direction.
-            kept_better.append(sym)
-            continue
+            # THE DESK'S OWN EXECUTIONS BEAT AN ESTIMATE FROM BARS -- with ONE exception, added
+            # 2026-09-10 because the unconditional version was protecting the two worst numbers
+            # in the registry.
+            #
+            # MEASURED: GBPCHF carries a fills-derived 165.0 pts against a bar median of 7.0
+            # (23.6x) and NZDJPY 147.0 against 15.0 (9.8x). In pips those are 16.5 and 14.7,
+            # roughly five times what any account quotes on those crosses. A bar stamp samples
+            # the widest instant of its hour, so the bar median is ALREADY the wide reading and
+            # a fills value far above it is not a better measurement -- it is a broken estimate,
+            # almost certainly slippage or a rollover caught in a handful of fills.
+            #
+            # The line is the gauntlet's own `stress_costs` multiple and not a number chosen
+            # here: past 3x the symbol's own bars, a cell can never pass whatever its edge, so
+            # the value is suppressing the instrument rather than pricing it. Inside 3x the
+            # original rule stands untouched, which is where it was right.
+            probe, _why, pdetail = measured_spread(sym)
+            old_raw = row.get("median_spread_pts")
+            old_val = float(old_raw) if isinstance(old_raw, (int, float)) else None
+            implausible = (probe is not None and old_val is not None and probe > 0
+                           and old_val > probe * FILLS_IMPLAUSIBLE_ABOVE_BARS)
+            if not implausible:
+                kept_better.append(sym)
+                continue
+            # ITS OWN LIST, NOT `suspect`. That one means "a >50x move" and is read as such;
+            # folding a different finding into it would make both counts mean neither.
+            fills_overridden.append({"symbol": sym, "old": old_val, "new": probe,
+                            "source_was": "realized_fills",
+                            "over_bars": round(old_val / probe, 2), **pdetail,
+                            "why": (f"a fills-derived {old_val} pts against a bar median of "
+                                    f"{probe} is {old_val / probe:.1f}x -- past the "
+                                    f"{FILLS_IMPLAUSIBLE_ABOVE_BARS}x the stress gate tests, so "
+                                    "nothing on this symbol can pass. Repaired from bars")})
         got, why, detail = measured_spread(sym)
         if got is None:
             unmeasured[sym] = why
@@ -174,6 +211,8 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
         "corrected": corrected[:60],
         "unmeasured": dict(sorted(unmeasured.items())[:40]),
         "kept_realized_fills": sorted(kept_better),
+        "n_fills_overridden": len(fills_overridden),
+        "fills_overridden": fills_overridden,
         "rule": ("median_spread_pts is recomputed from each symbol's own H1 spread column using "
                  "cost_surface's exclusions (full-session days, non-zero bars, MIN_OBS floor) "
                  "and stamped with its source. `realized_fills` rows are never overwritten -- an "
@@ -200,11 +239,20 @@ def main(argv: list[str] | None = None) -> int:
     print(f"spread provenance: {r['n_symbols']} symbols"
           f"  corrected={r['n_corrected']}  already_correct={r['n_already_correct']}"
           f"  kept_realized_fills={r['n_kept_realized_fills']}  unmeasured={r['n_unmeasured']}")
+    if r.get("n_fills_overridden"):
+        print(f"  FILLS OVERRULED (implausible against their own bars): "
+              f"{r['n_fills_overridden']}")
+        for e in r["fills_overridden"]:
+            print(f"    {e['symbol']:12s} {e['old']} -> {e['new']}  ({e['over_bars']}x bars)")
     print(f"  would make CHEAPER: {r['n_made_cheaper']}"
           + (f"  {[c['symbol'] for c in r['made_cheaper'][:12]]}" if r["made_cheaper"] else ""))
     print(f"  suspect (>{SUSPECT_RATIO:.0f}x move): {r['n_suspect']}")
-    for c in r["corrected"][:12]:
-        print(f"    {c['symbol']:12s} {c['old']} -> {c['new']}  ({c['n_priced']} priced bars)")
+    for e in r["suspect"][:12]:
+        print(f"    {e['symbol']:12s} {e['old']} -> {e['new']}")
+    if r["corrected"]:
+        print(f"  CORRECTED: {r['n_corrected']}")
+        for c in r["corrected"][:12]:
+            print(f"    {c['symbol']:12s} {c['old']} -> {c['new']}  ({c['n_priced']} priced bars)")
     if not a.apply:
         print("  REPORT ONLY -- nothing written to the registry. Re-run with --apply to repair.")
     return 0
