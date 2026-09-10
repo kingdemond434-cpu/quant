@@ -126,11 +126,25 @@ def test_a_never_produced_artifact_outranks_a_missing_input(tmp_path, monkeypatc
 
 
 def test_external_feeds_are_a_purchase_not_a_wiring_task(tmp_path):
+    """An input nobody has acquired is not a clock this desk forgot to wire."""
     _probe(tmp_path)
     by = {r.construction.key: r for r in mc.readings(tmp_path)}
-    for key in ("futures_cfd_lead_lag", "venue_quote_comparison"):
-        assert by[key].verdict == mc.EXTERNAL, key
-        assert by[key].fixable_here is False
+    assert by["venue_quote_comparison"].verdict == mc.EXTERNAL
+    assert by["venue_quote_comparison"].fixable_here is False
+
+
+def test_an_acquired_feed_stops_being_external(tmp_path):
+    """`futures_cfd_lead_lag` was NEEDS_EXTERNAL_FEED until the reference bars were fetched. A
+    census that could not notice acquisition would keep a solved problem on the buy list."""
+    _probe(tmp_path)
+    before = {r.construction.key: r for r in mc.readings(tmp_path)}
+    assert before["futures_cfd_lead_lag"].verdict == mc.EXTERNAL
+    (tmp_path / "desks" / "mt5" / "data" / "reference" / "futures").mkdir(parents=True)
+    art = tmp_path / Path(*["desks", "mt5", "reports", "FUTURES_LEAD_LAG.json"])
+    art.parent.mkdir(parents=True, exist_ok=True)
+    art.write_text("{}", encoding="utf-8")
+    after = {r.construction.key: r for r in mc.readings(tmp_path)}
+    assert after["futures_cfd_lead_lag"].verdict == mc.LIVE
 
 
 def test_every_construction_names_what_a_decision_does_with_it():
@@ -146,7 +160,8 @@ def test_every_named_module_exists():
     """A census that cites a module nobody wrote is the failure it exists to find."""
     for c in mc.CONSTRUCTIONS:
         rel = c.module.split(":")[0]
-        path = _ROOT / rel if rel.startswith("libs/") else _ROOT / "desks" / "mt5" / rel
+        path = (_ROOT / rel if rel.startswith(("libs/", "desks/"))
+                else _ROOT / "desks" / "mt5" / rel)
         assert path.exists(), f"{c.key} cites {c.module}, which is not in the repo"
 
 

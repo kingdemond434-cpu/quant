@@ -214,10 +214,19 @@ CONSTRUCTIONS: tuple[Construction, ...] = (
     # ---- other venues ------------------------------------------------------------------------
     Construction(
         "futures_cfd_lead_lag", "whether COMEX gold prints move before the XAUUSD CFD quote",
-        (FUTURES,), "libs/research/information_flow.py",
-        "the highest-value external feed for this book: gold is the desk's largest sleeve and its "
-        "price is made on a venue the desk can see but does not trade",
-        ""),
+        (FUTURES,), "desks/mt5/research/futures_lead_lag.py",
+        "gold is the desk's largest sleeve and its price is made on a venue the desk can see and "
+        "does not trade. MEASURED 2026-09-10 at H1: a clean NULL -- after the bar clock is "
+        "removed every lag but zero is noise. The same run measured the clock itself (+2h winter, "
+        "+3h summer) and found the desk's stored scalar wrong for half of every year",
+        "desks/mt5/reports/FUTURES_LEAD_LAG.json"),
+    Construction(
+        "bar_clock_offset", "what timezone the desk's own H1 bars are stamped in",
+        (FUTURES,), "desks/mt5/research/futures_lead_lag.py",
+        "every join from a genuinely-UTC source: the event lane's filing acceptance times, the "
+        "macro calendar, any reference feed. At H1 an hour is the whole bar, so a wrong clock "
+        "attributes an observation to the wrong hour of the session",
+        "desks/mt5/reports/BAR_CLOCK.json"),
     Construction(
         "venue_quote_comparison", "which broker quotes tighter, when",
         (BROKERS,), "libs/data/venue_http.py",
@@ -336,8 +345,11 @@ def _have(root: Path) -> dict[str, dict[str, Any]]:
                 "path": "desks/mt5/data/{intents,deals}.jsonl",
                 "why": ("an intent with no matching deal is an UNFILLED bracket, never a "
                         "zero-slip fill")},
-        FUTURES: {"present": False, "path": "(none)",
-                  "why": "no futures tape is acquired; this is a purchase, not a wiring task"},
+        FUTURES: {"present": (root / "desks" / "mt5" / "data" / "reference" / "futures").is_dir(),
+                  "path": "desks/mt5/data/reference/futures/",
+                  "why": ("hourly reference bars fetched from a feed stamped in epoch seconds, "
+                          "which is UTC by definition -- which is what lets it measure a clock. "
+                          "Reference data informing an MT5 instrument, never a hunted universe")},
         BROKERS: {"present": False, "path": "libs/data/venue_http.py",
                   "why": "the second-venue reader exists and nothing feeds or calls it"},
     }
@@ -352,15 +364,12 @@ def readings(root: Path) -> list[Reading]:
         art = artifact_state(root, c.artifact)
         artifact_ok = art["state"] == "PRESENT"
 
+        # PRECEDENCE IS THE BLOCKER'S, NOT THE SYMPTOM'S. A construction whose INPUT does not
+        # exist is blocked by the input, and saying "its producer never ran" there would send
+        # someone to wire a module that has nothing to read. So the two blockers no amount of
+        # local work removes -- the venue, and a feed nobody has acquired -- are decided first.
         if not missing and artifact_ok:
             verdict, blocker, fixable = LIVE, "", False
-        elif art["state"] == "NEVER_PRODUCED":
-            # THE STRONGEST FINDING AVAILABLE FROM A RESEARCH CHECKOUT, and it outranks a missing
-            # input: the producer has never run on ANY machine, so wiring it is the work whether
-            # or not this particular tree can see the tape.
-            verdict = STARVED
-            blocker = f"{c.artifact} has never been produced on any machine -- {art['why']}"
-            fixable = True
         elif DEPTH in missing and not have[DEPTH].get("unmeasured"):
             verdict = UNBUILDABLE
             blocker = ("the venue publishes no resting depth: "
@@ -370,6 +379,13 @@ def readings(root: Path) -> list[Reading]:
             verdict = EXTERNAL
             blocker = str(have[FUTURES if FUTURES in missing else BROKERS]["why"])
             fixable = False
+        elif art["state"] == "NEVER_PRODUCED":
+            # THE STRONGEST FINDING AVAILABLE FROM A RESEARCH CHECKOUT once the inputs exist: the
+            # producer has never run on ANY machine, so wiring it is the work whether or not this
+            # particular tree can see the tape.
+            verdict = STARVED
+            blocker = f"{c.artifact} has never been produced on any machine -- {art['why']}"
+            fixable = True
         elif missing:
             verdict = STARVED
             blocker = "input absent: " + ", ".join(f"{n} ({have[n]['path']})" for n in missing)

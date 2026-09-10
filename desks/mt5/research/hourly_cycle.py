@@ -1020,6 +1020,91 @@ def microstructure_census() -> dict:
     return _producer("microstructure_census", "libs/research/microstructure_census.py")
 
 
+def tape_features() -> dict:
+    """THE BRIDGE FROM TICKS TO EVERY CONSUMER, and its output has never reached origin.
+
+    `recorders/tape_features.py` converts the recorded tick tape into the four artifacts the desk
+    already reads: the silver tape the `liquidity_regime` and `orderflow_imbalance` families are
+    starved of, `data/cost_surface_tick.json` (byte-compatible with the bar surface's schema, so
+    `cost_surface.spread_pts` reads it verbatim), `data/tape/slippage_surface.json` (the execution
+    twin's prior, computable from ticks WITHOUT a single fill), and the M1..D1 intrabar stack.
+
+    IT IS ALREADY SCHEDULED AND ITS OUTPUT HAS NEVER ARRIVED. `recorders/install_tape_tasks.ps1`
+    registers `MT5-TapeFeatures` hourly at :20. All three of its JSON outputs live under
+    `desks/mt5/data/`, which `libs/ops/release.STATE_PREFIXES` makes a path the box COMMITS AND
+    PUSHES, and none of them is gitignored -- so had any machine ever written one, the next adopt
+    would have carried it here. None is here. Either the installer was never run on this box or
+    the task fails silently, and from a research container with no SSH those are indistinguishable.
+
+    A LEG SETTLES IT EITHER WAY. Run from the hourly cycle it no longer depends on a separately
+    installed task nobody verified, and `_costed` records what it really takes and what it
+    returns. `microstructure_census` measures 9 of its 12 fixable constructions blocked behind
+    exactly this hop.
+
+    ON A RESEARCH BOX IT FINDS NO TAPE AND SAYS SO, which is the correct outcome there rather
+    than a failure: the ticks are recorded where the terminal is.
+    """
+    return _producer("tape_features", "recorders/tape_features.py", ("--days", "10"))
+
+
+def futures_lead_lag() -> dict:
+    """THE CLOCK THE DESK'S BARS ARE ON, measured against a venue whose clock cannot be wrong.
+
+    THE QUESTION WAS SUPPOSED TO BE A LEAD. `alpha_breadth` reports `cross_asset_lead_lag` EMPTY
+    IN BOTH the traded and the certified book, and its written brief names the payer: gold's price
+    is made on COMEX, in a contract this desk can see and does not trade. The first run answered
+    with a contemporaneous correlation of 0.10 and a spike three bars out. Two series on the same
+    metal cannot correlate 0.10 within the hour -- that was a CLOCK, and chasing it as a lead
+    would have certified a sleeve that traded a timezone.
+
+    MEASURED 2026-09-10, per DST season, on 10,598 overlapping hours:
+
+        summer +3h   winter +2h     lag-0 correlation 0.978 (gold), 0.989 (silver)
+
+    The H1 parquet index is BROKER time carrying a UTC tzinfo. `data/broker_clock_measured.json`
+    infers the offset from the diurnal shape of tick volume and records, on all ten symbols,
+    `offset_by_trough: 2` against `offset_by_peak: 3` -- a disagreement it cannot settle, storing
+    the trough's answer as ONE scalar. BOTH READINGS WERE RIGHT, in different seasons, so a scalar
+    is wrong for half of every year. This is a third and much stronger method: it aligns actual
+    returns against stamps that are epoch seconds and therefore UTC by definition.
+
+    THAT HOUR IS SPENT BY EVERY JOIN FROM A TRUE-UTC SOURCE -- the event lane's filing acceptance
+    times, the macro calendar, this feed. At H1 an hour is the whole bar.
+
+    AND THE ORIGINAL QUESTION GETS A CLEAN NULL. With the per-season offsets applied, every lag
+    but zero is noise (|corr| < 0.04): COMEX and the CFD price the metal in the same hour, and
+    neither predicts the other's next one. `cross_asset_lead_lag` is not fillable by this pair at
+    H1, and saying so is worth more than a spike that was a timezone.
+    """
+    return _producer("futures_lead_lag", "research/futures_lead_lag.py")
+
+
+def spread_provenance() -> dict:
+    """WHERE THE COST EVERY BACKTEST CHARGES CAME FROM -- for 145 of 195 symbols, nothing says.
+
+    `mt5desk/engine.py:124` bills `universe.json -> median_spread_pts` on every replay, gauntlet
+    stage and certificate. THREE producers write that field with three different meanings:
+    `fetch_universe` stores the median of the H1 spread column, `expand_universe` and
+    `download_all_symbols` store `symbol_info.spread`, a point-in-time snapshot that is not a
+    median at all. `universe_registry` has named this since it was written -- "EURUSD reads 12
+    under one producer and 0 under the next" -- and 199 of 251 rows still carry no provenance.
+
+    THE COST OF NOT KNOWING IS NOT ABSTRACT. `execution_cost` priced ZERO of 76 sleeves on
+    2026-09-07 for exactly this reason, and `entry_timing`'s first pass read the same ambiguity as
+    a 30x under-charge on eight EURCHF certificates that were fine. An unattributable number is
+    worse than a missing one: it is confidently wrong in both directions.
+
+    REPORT ONLY, DELIBERATELY, and the module author's own docstring is why: `--apply` "rewrites
+    the number every backtest, gauntlet verdict and certificate is priced against, and the clocks
+    rebase on the next pass". That is a decision a person takes, not an hourly leg. What the leg
+    buys is that the gap stops being invisible -- it is measured every hour, on the machine that
+    HAS the bars, and `repair_universe_spreads.py --apply` is one command away when someone wants
+    it. The script already counts and names every symbol the repair would make CHEAPER, which is
+    the shape of a desk talking itself into an edge; today that count is zero.
+    """
+    return _producer("spread_provenance", "scripts/repair_universe_spreads.py")
+
+
 def entry_timing() -> dict:
     """WHAT THE BACKTEST CHARGED FOR SPREAD AGAINST WHAT THE TAPE MEASURED, at the firing hours.
 
@@ -1192,6 +1277,9 @@ def main() -> None:
     rc = _costed("regime_coverage", regime_coverage)
     pt = _costed("alpha_periodic_table", periodic_table)
     mx = _costed("microstructure_census", microstructure_census)
+    sp = _costed("spread_provenance", spread_provenance)
+    tf = _costed("tape_features", tape_features)
+    fll = _costed("futures_lead_lag", futures_lead_lag)
     # BEFORE queue_cycle, which turns its uncovered cells into owned recertification tasks.
     ety = _costed("entry_timing", entry_timing)
     # AFTER the coverage legs: the governor aims the search from the map they just published.
@@ -1555,6 +1643,8 @@ def main() -> None:
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
+                    "spread_provenance": sp, "tape_features": tf,
+                    "futures_lead_lag": fll,
                     "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
