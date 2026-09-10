@@ -58,7 +58,34 @@ def load_h12_survivors() -> list[dict]:
             f"an empty survivor list would silently produce a GOLD-ONLY book presented as the "
             f"whole desk. Run research/run_hunt12.py on the desk box to produce the report."
         )
-    saved = json.loads(p.read_text(encoding="utf-8"))
+    try:
+        saved = json.loads(p.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        # A HALF-WRITTEN REPORT IS THE SAME REFUSAL AS AN ABSENT ONE. `run_hunt12` is stopped by
+        # a deadline between symbols now, so an interrupted write is routine; unhandled it
+        # arrives here as a bare JSONDecodeError from inside a portfolio builder, which is the
+        # one shape the careful refusal above was written to prevent.
+        raise SystemExit(
+            f"REFUSING to project a portfolio from {p}: the report is unreadable ({exc}). "
+            f"Delete it and re-run research/run_hunt12.py."
+        ) from exc
+    # AN INCOMPLETE SWEEP IS A TRUNCATED BOOK WEARING A NEW HAT. The sweep is resumable and holds
+    # an hourly clock, so it is legitimately part-done for the first pass or two of a re-sweep --
+    # and 85 symbols of 145, loaded as if they were the whole hypothesis lane, is exactly the
+    # GOLD-ONLY failure above with a different number of sleeves in it.
+    #
+    # ONLY AN EXPLICIT False REFUSES. A report written before `complete` existed carries no such
+    # key and WAS complete when it was written; treating its absence as incomplete would refuse
+    # every artifact already on the box, which is a regression dressed as a safety check.
+    if saved.get("complete") is False:
+        done, routed = len(saved.get("done") or []), int(saved.get("n_routed") or 0)
+        raise SystemExit(
+            f"REFUSING to project a portfolio from an unfinished sweep: {p} has covered "
+            f"{done} of {routed} hypothesis-lane symbols ({saved.get('resume') or ''}"
+            f"{'; ' + str(saved['stopped']) if saved.get('stopped') else ''}). A part-swept "
+            f"universe loaded as the whole book is the same silent truncation as an empty one. "
+            f"It resumes on the next hourly pass; nothing needs to be done by hand."
+        )
     return [c for c in saved.get("all", []) if c.get("gate")]
 
 

@@ -465,6 +465,85 @@ def heal_clocks() -> dict:
 #: supervisor has missed a pass", which is the condition this roster steps in on.
 ADMISSION_SCAN_MAX_AGE_S = 2 * 3600.0
 
+#: How long the hypothesis-lane sweep may go unrefreshed before it is swept again. A week of H1
+#: bars is ~120 rows against the ~54,000 each symbol carries, so this clock exists to stop the
+#: artifact ageing forever, not because the answer moves inside a day.
+HUNT12_MAX_AGE_S = 7 * 24 * 3600.0
+
+def _hunt12_state(art: Path | None = None,
+                  now: datetime | None = None) -> tuple[bool, str]:
+    """Whether the hypothesis-lane sweep needs a pass this hour, and why.
+
+    THE ALLOCATOR'S FIRST INPUT HAD NO CLOCK AT ALL, and that is the whole reason this leg
+    exists. `pf_allocator` assembles its evidence through `portfolio_projection`, which refuses
+    outright without `reports/hunt12_partial.json`; that report's only scheduler was
+    `research_supervisor`, keyed on a ONE-SHOT `reports/DONE_hunt12` marker, on the same worker
+    the allocator leg's own comment records as dead or stalled. One-shot means the report is
+    produced once ever or never, and `data/PF_ALLOCATOR_ARMED` has been present since 2026-09-04
+    against a `reports/pf_allocation.json` that HAS NEVER EXISTED. Measured on a checkout of this
+    code 2026-09-10:
+
+        $ python desks/mt5/research/pf_allocator.py --mode normal
+        REFUSING to project a portfolio without .../reports/hunt12_partial.json   (exit 1)
+
+    So "the allocator is armed and wired" was true, and every sleeve on the desk still sized off
+    `ramped_fraction` -- the authority ramp, a count of closed trades with no estimate of growth
+    in it -- because the growth-maximising sizer refused on an input nothing produced.
+
+    FOUR STATES, and three of them run:
+
+        absent        never swept on this box: the condition that has held since 2026-09-04
+        incomplete    a resumable sweep part-way through; the next pass advances it
+        stale         past HUNT12_MAX_AGE_S, so it is re-swept from scratch
+        fresh         complete and inside the age bound -- skipped, and the leg says so
+
+    A leg that reports SKIPPED with a reason is not an idle leg (III.16): the artifact it exists
+    to keep current is current, which is the measurement.
+    """
+    art = art or (BASE / "reports" / "hunt12_partial.json")
+    if not art.exists():
+        return True, "reports/hunt12_partial.json absent -- the allocator refuses without it"
+    try:
+        doc = json.loads(art.read_text("utf-8"))
+    except (OSError, ValueError):
+        return True, "the carried sweep is unreadable"
+    if doc.get("complete") is False:
+        return True, (f"the sweep has covered {len(doc.get('done') or [])} of "
+                      f"{doc.get('n_routed')} hypothesis-lane symbols")
+    stamp = doc.get("started_at") or doc.get("at") or doc.get("swept_at")
+    try:
+        ts = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return True, "the carried sweep carries no readable timestamp"
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=UTC)
+    age = ((now or datetime.now(UTC)) - ts).total_seconds()
+    if age > HUNT12_MAX_AGE_S:
+        return True, (f"the carried sweep is {age / 3600:.0f}h old "
+                      f"(max {HUNT12_MAX_AGE_S / 3600:.0f}h)")
+    return False, f"complete and {age / 3600:.0f}h old"
+
+
+def hunt12() -> dict:
+    """`run_hunt12`: the hypothesis-lane sweep the growth sizer refuses to solve without.
+
+    ROUTED BY LANE, WHICH IS WHAT LETS IT HOLD A CLOCK AT ALL. The sweep used to walk all 251
+    registry symbols; the principal's 2026-09-06 standing order routes single-name equities to
+    the event lane, taking it to 145 and the grid from 4,016 cells to 2,320. That is the mandate,
+    and it is also the difference between ~20 minutes and a job that cannot fit an hourly budget
+    -- which is why it was one-shot in the first place.
+
+    RESUMABLE AND DEADLINED, so a 720-second leg advances the sweep and the next hour finishes it
+    rather than restarting it. The partial names its own coverage and `load_h12_survivors`
+    refuses an unfinished one, so a part-swept universe can never be loaded as the whole book.
+    """
+    run, why = _hunt12_state()
+    if not run:
+        return {"status": "SKIPPED", "why": why, "at": datetime.now(UTC).isoformat()}
+    print(f"  hunt12: sweeping -- {why}", flush=True)
+    return {**_producer("hunt12", "research/run_hunt12.py",
+                        "--deadline-s", str(HUNT12_DEADLINE_S)), "why": why}
+
 
 def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None) -> float | None:
     """Seconds since the last MEASURED admission scan in reports/pf_allocation.json, or None
@@ -639,6 +718,11 @@ def _emit_leg(name: str, outcome: str) -> None:
 #: minutes each leaves the 40-minute deepening budget and the remaining legs their time inside the
 #: hour, and a search that needs longer is one that should be given its own task on the box.
 SEARCH_BUDGET_SEC = 720
+
+#: Where `hunt12` stops itself, one minute inside the budget above. It stops BETWEEN symbols, so
+#: the minute is what it needs to write its artifact and exit rather than be SIGKILLed somewhere
+#: inside a symbol -- which loses that symbol's work and can land in the middle of a write.
+HUNT12_DEADLINE_S = SEARCH_BUDGET_SEC - 60
 
 
 def _producer(name: str, script: str,
@@ -1526,6 +1610,16 @@ def main() -> None:
     # sleeve could ever go LIVE while every artifact read healthy. This roster is on a clock the
     # box owns, so it measures the scan itself whenever the last one is missing or older than
     # ADMISSION_SCAN_MAX_AGE_S -- a scheduling redundancy, not a change to any admission rule.
+    #
+    # AND ITS FIRST INPUT HAD NO CLOCK EITHER, WHICH IS WHY IT NEVER PRODUCED ANYTHING. Adding
+    # the leg below was necessary and was not sufficient: `pf_allocator` assembles evidence
+    # through `portfolio_projection`, which refuses outright without `reports/hunt12_partial.json`
+    # -- and that report's only scheduler was `research_supervisor`, keyed on a ONE-SHOT
+    # `reports/DONE_hunt12` marker, on the same worker this file already records as dead or
+    # stalled. So the allocator was armed, wired, consumed and scheduled, and exited 1 on every
+    # pass for want of a file nothing produced. `hunt12` runs first, and only when the sweep is
+    # absent, unfinished or a week old.
+    h12 = _costed("hunt12", hunt12)
     pa = _costed("pf_allocator", lambda: _producer(
         "pf_allocator", "research/pf_allocator.py", "--mode", _allocator_mode_for_the_hour()))
     # THE PROMOTER READS THE SCAN THE LEG ABOVE JUST WROTE (2026-09-08). A promoted row reaches
@@ -1747,7 +1841,8 @@ def main() -> None:
                     "futures_lead_lag": fll, "time_joins": tj,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
-                    "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
+                    "recertify_canon": rc, "hunt12": h12,
+                    "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")

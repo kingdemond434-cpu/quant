@@ -44,9 +44,16 @@ LEG_LAYER: dict[str, str] = {
     "frontier_implementer": "information", "frontier_report": "information",
     "state_vector": "information", "causal_graph": "information",
     "input_identity": "information",
+    # FIFTEEN LEGS LANDED WITHOUT A LAYER AND THIS TEST HAD BEEN RED FOR IT (2026-09-10). Nine
+    # of them were added on 2026-09-10 itself and mapped nowhere: exactly the failure the
+    # registry exists to prevent, committed by the session that wrote the registry's own fence.
+    # A leg with no layer is an hour of compute that `opportunity_cost` cannot attribute, so
+    # "what did the desk NOT test this hour" silently omits it.
+    "futures_lead_lag": "information", "tape_features": "information",
     # prediction: turning information into a claim about returns
     "compile_candidates": "prediction", "merge_docket": "prediction", "search": "prediction",
-    "sweep": "prediction", "backtest": "prediction", "external_gauntlet": "prediction",
+    "sweep": "prediction", "hunt12": "prediction",
+    "backtest": "prediction", "external_gauntlet": "prediction",
     "deepen": "prediction", "experiment_design": "prediction",
     "experiment_cache": "prediction", "ml_layer": "prediction", "model_league": "prediction",
     "model_skill": "prediction", "forecast_contract": "prediction",
@@ -57,16 +64,22 @@ LEG_LAYER: dict[str, str] = {
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
     "opportunity_forecast": "prediction", "edge_reliability": "prediction",
+    "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
+    "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
-    "rebalance_trigger": "timing",
+    "rebalance_trigger": "timing", "entry_timing": "timing",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
     "pf_allocator": "portfolio",
     # execution: how the order reaches the venue
     "execution_resolver": "execution", "execution_twin": "execution",
+    # What the venue charges and where that number came from is execution arithmetic, not
+    # research: these three decide what every backtest is billed at the fill.
+    "fusion_cost": "execution", "cost_construction": "execution",
+    "spread_provenance": "execution", "microstructure_census": "execution",
     # exit: how a position ends
     "exit_study": "exit",
     # meta
@@ -74,6 +87,7 @@ LEG_LAYER: dict[str, str] = {
     "publish_state": "meta", "release_identity": "meta", "smoke_release": "meta",
     "burn_in": "meta", "maintain_miners": "meta", "reclaim_disk": "meta", "daily": "meta",
     "layer_census": "meta", "opportunity_cost": "meta", "acceptance": "meta",
+    "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
     "session_capital": "portfolio",
 }
 
