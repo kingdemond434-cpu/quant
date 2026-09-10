@@ -331,14 +331,35 @@ if (-not $NoFetch) {
         # before a single file had been adopted.
         $prev = $ErrorActionPreference
         $ErrorActionPreference = "Continue"
-        try { & git -C $RepoRoot fetch origin $Branch 2>&1 | Out-Null }
+        # CAPTURED, NOT DISCARDED. This was `2>&1 | Out-Null`, which threw away the one thing
+        # worth having. MEASURED ON THE BOX 2026-09-10, the whole output of a failed adoption:
+        #
+        #     fetch attempt 1 failed -- retrying in 2s
+        #     fetch attempt 2 failed -- retrying in 4s
+        #     fetch attempt 3 failed -- retrying in 8s
+        #     fetch attempt 4 failed -- retrying in 16s
+        #     fetch of origin/... failed after 4 attempts
+        #
+        # Four identical lines and a throw, naming no cause. Credentials, DNS, a proxy, a lock
+        # held by another process and a permission fault on .git all look exactly the same, and
+        # each has a different remedy. A deployment path that cannot say why it failed is the
+        # same defect this desk keeps finding one level up: activity reported, outcome withheld.
+        try { $out = & git -C $RepoRoot fetch origin $Branch 2>&1 | Out-String }
         finally { $ErrorActionPreference = $prev }
         if ($LASTEXITCODE -eq 0) { $ok = $true; break }
-        Write-Host ("  fetch attempt {0} failed -- retrying in {1}s" -f $attempt, $delay)
+        Write-Host ("  fetch attempt {0} failed (exit {1}) -- retrying in {2}s"    `
+                    -f $attempt, $LASTEXITCODE, $delay)
+        foreach ($line in ($out -split "`r?`n" | Where-Object { $_ -match '\S' })) {
+            Write-Host ("      git: {0}" -f $line)
+        }
         Start-Sleep -Seconds $delay
         $delay = $delay * 2
     }
-    if (-not $ok) { throw "fetch of origin/$Branch failed after 4 attempts" }
+    if (-not $ok) {
+        throw ("fetch of origin/$Branch failed after 4 attempts; git's own last words are " +
+               "printed above. A permission fault on .git or on the working tree is the most " +
+               "common cause on this box -- see docs/BOX_PERMISSIONS.md")
+    }
 }
 $target = (Invoke-Git @("rev-parse", "FETCH_HEAD")).Trim()
 $head   = (Invoke-Git @("rev-parse", "HEAD")).Trim()
