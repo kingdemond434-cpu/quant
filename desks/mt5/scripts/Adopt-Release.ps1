@@ -279,9 +279,33 @@ function Write-InPlace {
 $StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
                    "data/", "reports/", "logs/", "web/")
 
+# STATE ARTIFACTS THAT SIT AT THE DESK ROOT INSTEAD OF UNDER data/. Every prefix above ends in a
+# directory, so a state file written beside the code reads as CODE -- and this script then treats
+# the box's own copy as unexplained drift rather than as the box's evidence.
+#
+# MEASURED HERE 2026-09-10, on the first adoption that reached the current branch:
+#
+#     REFUSING to record the merge: 9 path(s) still differ from the target.
+#     adopt-and-seal: Adopt-Release exited 1 -- partial adoption; NOT sealing a tree that only
+#     half-matches the branch
+#
+# Seven of those nine were a gateway state file, a regime stamp, a cycle marker and four sweep
+# outputs, at the desk root only because they were committed there once (aa90ee81, 2026-08-19).
+# The refusal was correct; the classification under it was not. The box rewrites those files, so
+# every future adoption would have refused for the same reason -- the seal never recorded, the
+# gateway never restarted, and the box stayed on old code indefinitely.
+#
+# KEPT IN STEP WITH libs/ops/release.STATE_FILES, which is the same list in the language the rest
+# of the desk reads it in, and a test fails when the two drift apart.
+$StateFiles = @("desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
+                "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
+                "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json",
+                "desks/mt5/mech_split.json")
+
 function Test-StatePath {
     param([string] $Rel)
     $p = ($Rel -replace '\\', '/').TrimStart('.', '/')
+    if ($StateFiles -contains $p) { return $true }
     foreach ($prefix in $StatePrefixes) { if ($p.StartsWith($prefix)) { return $true } }
     return $false
 }

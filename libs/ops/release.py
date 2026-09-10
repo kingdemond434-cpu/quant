@@ -400,11 +400,45 @@ STATE_PREFIXES: tuple[str, ...] = (
     "data/", "reports/", "logs/", "web/", "docs/",
 )
 
+#: STATE ARTIFACTS THAT SIT AT THE DESK ROOT INSTEAD OF UNDER data/, AND THE STALL THEY CAUSED.
+#: Every prefix above ends in a directory, so a state file written beside the code rather than
+#: inside `data/` is classified CODE -- and `Adopt-Release.ps1` then treats the box's own copy as
+#: unexplained drift instead of as the box's evidence.
+#:
+#: MEASURED ON THE BOX 2026-09-10, on the first adoption that reached the current branch:
+#:
+#:     REFUSING to record the merge: 9 path(s) still differ from the target.
+#:         desks/mt5/gateway_state.json      desks/mt5/portfolio_projection.json
+#:         desks/mt5/hunt11.json             desks/mt5/regime_state.json
+#:         desks/mt5/mech_battery.json       desks/mt5/sync_marker.json
+#:         desks/mt5/mech_split.json         desks/mt5/research/_sum6.py
+#:                                           desks/mt5/research/free_shadows.py
+#:     adopt-and-seal: Adopt-Release exited 1 -- partial adoption; NOT sealing a tree that only
+#:     half-matches the branch
+#:
+#: The refusal is correct and the classification underneath it was not. Seven of those nine are
+#: a gateway state file, a regime stamp, a cycle marker and four sweep outputs -- evidence by
+#: every reading of the paragraph above, sitting at the desk root only because they were
+#: committed there once (aa90ee81, 2026-08-19) and never moved. `Test-KeptByBox` asks
+#: `is_state_path` and got False, so the box's own records read as a half-matched tree, the seal
+#: was refused, the gateway was not restarted, and the box stayed on old code. Permanently: the
+#: box rewrites those files, so every future adoption would have refused for the same reason.
+#:
+#: AN EXACT-PATH LIST, NOT A WIDER PREFIX. Adding `desks/mt5/` as a prefix would classify the
+#: whole desk -- gateway.py, decision_core.py, every family -- as state, which is the identity
+#: fence disarmed rather than corrected. These seven are named individually and a new one has to
+#: be named too, which is the point: the right home for a new state artifact is `data/`.
+STATE_FILES: frozenset[str] = frozenset({
+    "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
+    "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
+    "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",
+})
+
 
 def is_state_path(rel: str) -> bool:
     """A repo-relative path that is evidence/record/rendering rather than code."""
     p = str(rel).replace("\\", "/").lstrip("./")
-    return any(p.startswith(prefix) for prefix in STATE_PREFIXES)
+    return p in STATE_FILES or any(p.startswith(prefix) for prefix in STATE_PREFIXES)
 
 
 def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None = None
