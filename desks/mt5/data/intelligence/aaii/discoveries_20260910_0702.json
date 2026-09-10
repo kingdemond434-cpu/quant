@@ -1,0 +1,17 @@
+[
+  {
+    "source": "aaii",
+    "type": "extreme_sentiment",
+    "reading": "extreme_bullish",
+    "bullish_pct": 75.0,
+    "bearish_pct": 70.3,
+    "bull_bear_ratio": 1.07,
+    "symbols": [
+      "US500",
+      "NAS100",
+      "XAUUSD"
+    ],
+    "confidence": 0.75,
+    "description": "AAII: 75.0% bullish (extreme) - contrarian sell signal"
+  }
+]
