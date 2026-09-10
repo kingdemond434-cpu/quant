@@ -32,6 +32,14 @@ def test_failed_verifier_preserves_issue():
     assert result["verified_repairs"] == 0
 
 
+def test_missing_becoming_stale_is_not_repaired():
+    with patch.object(board, "collect", side_effect=[[issue("missing:test")], [issue()]]), \
+         patch.object(board, "repair", return_value=[{"key": "missing:test", "action": "RAN"}]):
+        result = board.run(apply=True)
+    assert result["actions"][0]["action"] == "UNRESOLVED"
+    assert result["verified_repairs"] == 0
+
+
 @pytest.mark.parametrize("key,severity", [("alarm:test", "CAPITAL"),
                                          ("gate_threshold:test", "DEGRADED"),
                                          ("merge_conflict:test", "BLIND")])

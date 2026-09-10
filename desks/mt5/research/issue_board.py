@@ -308,12 +308,17 @@ def run(apply: bool = False) -> dict[str, Any]:
         except Exception as exc:
             verification_error = f"{type(exc).__name__}: {exc}"
             remaining = issues
-        remaining_keys = {i.key for i in remaining}
+        # Missing -> stale is still the same broken producer, not a closure.
+        def defect_identity(key: str) -> str:
+            kind, _, name = key.partition(":")
+            return f"producer:{name}" if kind in {"missing", "stale"} else key
+
+        remaining_keys = {defect_identity(i.key) for i in remaining}
         for action in actions:
             if action["action"] == "RAN":
                 if verification_error:
                     action.update(action="UNVERIFIED", why=verification_error)
-                elif action["key"] in remaining_keys:
+                elif defect_identity(action["key"]) in remaining_keys:
                     action.update(action="UNRESOLVED", why="producer exited successfully but issue remains")
                 else:
                     action.update(action="REPAIRED", verified=True)
