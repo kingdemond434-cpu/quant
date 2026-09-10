@@ -132,9 +132,9 @@ def blend_books(books: Mapping[str, Mapping[str, float]],
     for sleeve in sorted(names):
         acc = 0.0
         for book, w in weights.items():
-            b = books.get(book)
-            if isinstance(b, Mapping):
-                acc += float(w) * float(b.get(sleeve, 0.0) or 0.0)
+            b2 = books.get(book)
+            if isinstance(b2, Mapping):
+                acc += float(w) * float(b2.get(sleeve, 0.0) or 0.0)
         if acc > 0.0:
             out[sleeve] = acc
     return out

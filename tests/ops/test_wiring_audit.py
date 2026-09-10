@@ -37,8 +37,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -147,7 +145,8 @@ def test_a_package_root_is_reached_through_its_contents(tmp_path: Path) -> None:
 def test_a_one_link_short_finding_carries_the_same_evidence_as_an_orphan(tmp_path: Path) -> None:
     """BUG, 2026-09-10. These were emitted with no line count and no public API, so every one of
     them rendered as a 0-line stub and sorted last -- including a 656-line module."""
-    body = "def alpha():\n    return 1\n\n\nclass Beta:\n    pass\n\n\ndef _hidden():\n    return 2\n"
+    body = ("def alpha():\n    return 1\n\n\nclass Beta:\n    pass\n\n\n"
+            "def _hidden():\n    return 2\n")
     root = _tree(tmp_path, {
         "libs/big.py": body,
         "scripts/run_big.py": "from libs.big import alpha\nalpha()\n",

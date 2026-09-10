@@ -359,7 +359,7 @@ class TaskQueue:
         whose workers keep dying looks identical to a busy one in a state histogram."""
         at = now or _now()
         tasks = list(self.tasks().values())
-        by_state = {s: 0 for s in STATES}
+        by_state = dict.fromkeys(STATES, 0)
         expired = 0
         for t in tasks:
             by_state[t.state] = by_state.get(t.state, 0) + 1

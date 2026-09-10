@@ -59,6 +59,7 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent.parent
 LEDGER = _ROOT / "docs/desk_lessons.jsonl"

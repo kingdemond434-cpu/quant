@@ -146,7 +146,7 @@ def human_inbox(queue: TaskQueue) -> list[dict[str, Any]]:
         for t in queue.tasks().values()
         if t.kind == HUMAN_INBOX and t.state in ("READY", "LEASED")
     ]
-    out.sort(key=lambda r: r["created_at"])
+    out.sort(key=lambda r: str(r["created_at"]))
     return out
 
 

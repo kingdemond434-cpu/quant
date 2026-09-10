@@ -202,7 +202,8 @@ class Org:
         """
         tasks = queue.tasks()
         already = {t.dedupe_key for t in tasks.values() if t.dedupe_key.startswith(ESCALATION_KIND)}
-        raised, skipped = [], []
+        raised: list[str] = []
+        skipped: list[str] = []
         for t in tasks.values():
             if t.state != "DEAD" or t.kind.startswith(ESCALATION_KIND):
                 continue

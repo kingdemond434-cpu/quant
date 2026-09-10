@@ -84,7 +84,8 @@ def test_the_series_is_shifted_past_its_own_report_date(tmp_path, monkeypatch):
     assert set(got.index.dayofweek) == {0}, "a label did not clear the Friday release"
     # And each value is the one that was public by then -- never a later week's.
     unlagged = frame["AUDUSD"].astype(float).resample("W-FRI").last().dropna()
-    assert list(got["net"])[:20] == list(unlagged)[:20], "the lag changed the VALUES, not just the stamps"
+    assert list(got["net"])[:20] == list(unlagged)[:20], (
+        "the lag changed the VALUES, not just the stamps")
     osw._cot_frame.cache_clear()
 
 

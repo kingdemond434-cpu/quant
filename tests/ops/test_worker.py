@@ -84,7 +84,7 @@ def test_kinds_narrow_what_a_worker_will_take(q) -> None:
     w = _worker(q, {"generate": lambda lease: None}, kinds=["generate"])
     assert w.run_once(now=T0)["task"] == light.id
     assert q.tasks()[light.id].state == "DONE"
-    assert q.tasks()[[i for i in q.tasks() if i != light.id][0]].state == "READY"
+    assert q.tasks()[next(i for i in q.tasks() if i != light.id)].state == "READY"
 
 
 # ---------------------------------------------------------------------- THE FAILURE PATHS
@@ -151,7 +151,8 @@ def test_a_worker_at_capacity_does_not_claim_at_all(q) -> None:
                 capacity=lambda: Capacity(False, "0.4 GB free, below the 2.0 GB floor"))
     got = w.run_once(now=T0)
     assert got["outcome"] == "at_capacity" and "0.4 GB free" in got["why"]
-    assert q.tasks()[t.id].state == "READY", "the task was claimed by a worker that could not run it"
+    assert q.tasks()[t.id].state == "READY", (
+        "the task was claimed by a worker that could not run it")
     healthy = _worker(q, {"generate": lambda lease: "ran"}, name="w2")
     assert healthy.run_once(now=T0)["outcome"] == "done"
 

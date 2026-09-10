@@ -264,6 +264,15 @@ module = [
     "streamlit.*",
     "fastapi.*",
     "uvicorn.*",
+    # THE DESK PACKAGE IS NOT ON MYPY'S PATH AND IS ON PYTHON'S. `mt5desk` lives under
+    # desks/mt5/ and every importer reaches it through a runtime `sys.path.insert`, so the
+    # module resolves when the code runs and cannot be found when the type checker looks.
+    # It was carried as four inline `type: ignore[import-not-found]`s, which ruff's isort then
+    # wrapped onto their own lines -- moving the comment off the import and breaking the ignore,
+    # so ruff and mypy each demanded the shape the other rejected. One override ends that: the
+    # imports read as written, and nothing about the real module's types is silenced anywhere
+    # else, because these are its ONLY callers from outside the desk tree.
+    "mt5desk.*",
 ]
 ignore_missing_imports = true
 

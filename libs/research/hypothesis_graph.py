@@ -391,7 +391,8 @@ def _candidate_parent_key(c: dict[str, Any]) -> tuple[str, str]:
     carry `parent` at the top level. A parent that is only the miner-row hash (below) is NOT a
     mutation and gets no `mutated_from` edge.
     """
-    ev = c.get("evidence") if isinstance(c.get("evidence"), dict) else {}
+    _ev = c.get("evidence")
+    ev: dict[str, Any] = _ev if isinstance(_ev, dict) else {}
     parent = c.get("parent") or ev.get("parent") or ""
     op = c.get("operator") or ev.get("operator") or ""
     return str(parent or ""), str(op or "")

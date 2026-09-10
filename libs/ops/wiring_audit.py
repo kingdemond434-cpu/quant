@@ -62,7 +62,8 @@ _MODULE_M = re.compile(r"-m\s+(libs(?:\.[A-Za-z_][A-Za-z0-9_]*)+)")
 #: an AST import scan sees nothing. Found by wiring this file's own leg and watching the auditor
 #: go on listing itself: the same blind spot the `-m` scan was added to close, in the other
 #: spelling. Like that one, this can only ADD callers, never hide an orphan.
-_MODULE_PATH = re.compile(r"['\"](libs/(?:[A-Za-z_][A-Za-z0-9_]*/)*[A-Za-z_][A-Za-z0-9_]*\.py)['\"]")
+_MODULE_PATH = re.compile(
+    r"['\"](libs/(?:[A-Za-z_][A-Za-z0-9_]*/)*[A-Za-z_][A-Za-z0-9_]*\.py)['\"]")
 
 #: Modules that are unreachable ON PURPOSE, each with the reason. This list is the argument for
 #: leaving them alone, so an entry without a reason is not an entry.
@@ -125,10 +126,10 @@ def _imports_of(path: Path) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             out |= {a.name for a in node.names if a.name.startswith("libs.")}
-        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-            if node.module.startswith("libs"):
-                out.add(node.module)
-                out |= {f"{node.module}.{a.name}" for a in node.names}
+        elif (isinstance(node, ast.ImportFrom) and node.level == 0 and node.module
+              and node.module.startswith("libs")):
+            out.add(node.module)
+            out |= {f"{node.module}.{a.name}" for a in node.names}
     return out
 
 
@@ -256,7 +257,7 @@ def _one_link_short(root: Path, g: Graph) -> list[Finding]:
                     text = p.read_text(encoding="utf-8", errors="replace")
                 except OSError:
                     continue
-                runnable |= {m for m in re.findall(r"scripts/[A-Za-z0-9_./-]+\.py", text)}
+                runnable |= set(re.findall(r"scripts/[A-Za-z0-9_./-]+\.py", text))
     out: list[Finding] = []
     for name, importers in sorted(g.importers.items()):
         if name not in g.modules or name in _EXEMPT:

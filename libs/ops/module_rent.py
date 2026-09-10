@@ -835,7 +835,7 @@ def _scoreboard(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if str(desk) not in sys.path:
         sys.path.insert(0, str(desk))
     try:
-        from mt5desk.execution_registry import scoreboard  # type: ignore[import-not-found]
+        from mt5desk.execution_registry import scoreboard
         out = scoreboard(rows=rows)
         return dict(out) if isinstance(out, dict) else {}
     except Exception:
@@ -1014,9 +1014,10 @@ def measure_freshness(m: Module, led: Ledgers) -> dict[str, Any]:
     breaching = sorted(rel for rel, row in watched.items()
                        if isinstance(row, dict) and str(row.get("status") or "") in
                        BREACH_STATUSES)
-    snapshot = {"watched": list(FRESHNESS_ARTIFACTS), "on_manifest": sorted(watched),
-                "breaching_now": breaching,
-                "manifest_checked_at": str(state.get("checked_at") or "") or None}
+    snapshot: dict[str, Any] = {
+        "watched": list(FRESHNESS_ARTIFACTS), "on_manifest": sorted(watched),
+        "breaching_now": breaching,
+        "manifest_checked_at": str(state.get("checked_at") or "") or None}
     if not state:
         return _row(m, UNMEASURED, why=f"{JOB_MANIFEST} absent on this host: the freshness fence "
                                        f"has not run here, so no breach is counted", **snapshot)

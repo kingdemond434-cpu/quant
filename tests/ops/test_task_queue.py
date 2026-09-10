@@ -23,7 +23,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from libs.ops.task_queue import DEFAULT_LEASE_S, TaskQueue  # noqa: E402
+from libs.ops.task_queue import TaskQueue  # noqa: E402
 
 T0 = datetime(2026, 9, 9, 12, 0, tzinfo=UTC)
 
@@ -97,7 +97,7 @@ def test_a_torn_line_from_a_crash_costs_that_transition_and_not_the_queue(q):
     with q.path.open("a", encoding="utf-8") as fh:
         fh.write('{"id": "half-written", "kind": "c"')          # no newline, no closing brace
     tasks = q.tasks()
-    assert set(tasks) == {a.id, [t for t in tasks if t != a.id][0]}
+    assert set(tasks) == {a.id, next(t for t in tasks if t != a.id)}
     assert len(tasks) == 2 and all(t.state == "READY" for t in tasks.values())
     assert q.claim("w", now=T0) is not None, "the queue stopped working after a torn write"
 

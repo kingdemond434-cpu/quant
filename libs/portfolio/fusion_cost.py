@@ -173,7 +173,7 @@ def bar_median_pts(surface: dict[str, Any], symbol: str) -> float | None:
              if isinstance(c, dict) and c.get("status") == "MEASURED" and c.get("p50") is not None]
     if not hours:
         return None
-    vals = sorted(float(v) for v in hours)
+    vals = sorted(float(v) for v in hours if v is not None)
     return vals[len(vals) // 2]
 
 

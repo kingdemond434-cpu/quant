@@ -621,7 +621,8 @@ def certified_family_shares(canon: Path | None = None) -> tuple[dict[str, float]
     for cert in (doc.get("survivors") or {}).values():
         if not isinstance(cert, dict):
             continue
-        spec = cert.get("shadow_spec") if isinstance(cert.get("shadow_spec"), dict) else {}
+        _spec = cert.get("shadow_spec")
+        spec: dict[str, Any] = _spec if isinstance(_spec, dict) else {}
         fam = spec.get("family") or cert.get("family")
         if isinstance(fam, str) and fam:
             counts[fam] = counts.get(fam, 0) + 1

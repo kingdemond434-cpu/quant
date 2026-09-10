@@ -397,9 +397,10 @@ def layer_census(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
     for layer in LAYER_ORDER:
         per[layer.value] = {"rows": 0, "keeps_promise": 0, "stamped": 0, "revised": 0,
                             "promise": LAYER_PROMISE[layer]}
-    unlayered = {"rows": 0, "stamped": 0, "revised": 0,
-                 "_": ("rows carrying no `layer` at all -- the population the lake has not "
-                       "reached yet, counted rather than averaged away")}
+    unlayered: dict[str, Any] = {
+        "rows": 0, "stamped": 0, "revised": 0,
+        "_": ("rows carrying no `layer` at all -- the population the lake has not "
+              "reached yet, counted rather than averaged away")}
     for r in rows:
         if not isinstance(r, dict):
             continue
@@ -408,7 +409,9 @@ def layer_census(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         # says how often the claim is good. Filing by the truth instead would make every census
         # read 100% and measure nothing.
         label = str(r.get("layer") or "")
-        bucket = per.get(label) or (per[layer_of(r).value] if layer_of(r) else None)
+        _lay = layer_of(r)
+        bucket: dict[str, Any] | None = per.get(label) or (
+            per.get(_lay.value) if _lay else None)
         if bucket is None:
             unlayered["rows"] += 1
             unlayered["stamped"] += int(is_stamped(r))

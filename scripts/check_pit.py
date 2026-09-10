@@ -95,7 +95,7 @@ def _roots() -> tuple[Path, ...]:
     that sets `INTEL_ROOTS` is naming the whole population. Neither silently drags in the real
     repository's data underneath a fixture.
     """
-    if INTEL != _DEFAULT_ROOTS[0]:
+    if _DEFAULT_ROOTS[0] != INTEL:
         return (INTEL,)
     return tuple(INTEL_ROOTS)
 

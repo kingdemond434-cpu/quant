@@ -101,12 +101,15 @@ def from_certificate(c: dict[str, Any]) -> AlphaGenome:
     # Hashing the unknown as {} would join a certificate nothing can run onto the defaults
     # genome, so it gets an identity of its own, keyed on the cell the gauntlet named.
     id_params = {"__unrunnable_cell__": c.get("cell")} if unrunnable else params
+    _raw_gates = c.get("gates")
+    _gates: dict[str, Any] = (_raw_gates if isinstance(_raw_gates, dict)
+                              else {"stages": _raw_gates})
     return AlphaGenome(
         genome_id=genome_id(sym, fam, id_params), symbol=str(sym).upper(), family=str(fam),
         params=dict(params or {}), stage="CERTIFICATE",
         source=str(c.get("hunt") or spec.get("hunt") or ""),
         mechanism=str(c.get("mechanism") or c.get("hypothesis") or ""),
-        gates=c.get("gates") if isinstance(c.get("gates"), dict) else {"stages": c.get("gates")},
+        gates=_gates,
         certificate={"cell": c.get("cell"), "days": c.get("days"), "gated_at": c.get("gated_at"),
                      "status": c.get("status"), "unrunnable": unrunnable})
 

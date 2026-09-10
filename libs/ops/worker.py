@@ -130,7 +130,7 @@ class Worker:
             return Capacity(True, "no capacity probe configured")
         try:
             return self.capacity()
-        except Exception as exc:                      # noqa: BLE001 -- see disk_capacity
+        except Exception as exc:
             return Capacity(False, f"capacity probe raised {exc.__class__.__name__}")
 
     def run_once(self, *, now: datetime | None = None) -> dict[str, Any]:
@@ -162,7 +162,7 @@ class Worker:
             task.id, self.name, lease_s=self.lease_s))
         try:
             result = handler(lease)
-        except Exception as exc:                      # noqa: BLE001 -- one bad task, not the drain
+        except Exception as exc:
             why = f"{exc.__class__.__name__}: {exc}"
             self.queue.fail(task.id, self.name, why=why)
             return {"outcome": "failed", "why": why, "task": task.id}

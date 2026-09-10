@@ -91,7 +91,8 @@ def judge(arms: dict[str, dict[str, Any]], min_n: int = MIN_N,
             row.update(verdict=LEADS, p_worse_than_leader=0.0,
                        why="highest posterior survivor rate among arms above the floor")
         else:
-            la, lb = float(arms[leader].get("alpha", 1.0)), float(arms[leader].get("beta", 1.0))
+            lead = arms[str(leader)] if leader else {}
+            la, lb = float(lead.get("alpha", 1.0)), float(lead.get("beta", 1.0))
             p = p_worse(alpha, beta, la, lb)
             row.update(p_worse_than_leader=p)
             if p >= decisive:
@@ -155,7 +156,8 @@ def _history(path: Path, limit: int = 5000) -> list[dict[str, Any]]:
 def build(bandit: dict[str, Any], history: list[dict[str, Any]],
           now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
-    arms = bandit.get("arms") if isinstance(bandit.get("arms"), dict) else {}
+    _arms = bandit.get("arms")
+    arms: dict[str, dict[str, Any]] = _arms if isinstance(_arms, dict) else {}
     verdicts = judge(arms)
     variant = str(bandit.get("controller_variant") or "")
     return {

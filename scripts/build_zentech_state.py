@@ -779,7 +779,7 @@ def _organs(now: datetime) -> dict[str, Any]:
     # while its artifact is fresh (it ran, it errored, the old file is still there), and that
     # combination is invisible to every age-based reading on this board.
     watch = _read(DESK / "data" / "stall_watch.json")
-    for key in sorted((watch.get("procs") or {})):
+    for key in sorted(watch.get("procs") or {}):
         if not str(key).startswith("fail."):
             continue
         rows.append({"organ": str(key)[len("fail."):], "verdict": "FAILING",

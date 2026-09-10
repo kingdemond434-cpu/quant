@@ -326,7 +326,7 @@ class QLearner:
         The visit count rides beside the Q ON PURPOSE: a Q of 4.1 seen once is a single episode's
         reward, not a value, and a reader who cannot see the denominator cannot tell them apart.
         """
-        rows = [
+        rows: list[dict[str, Any]] = [
             {"prefix": [list(d) for d in state],
              "decision": list(action),
              "depth": len(state),
@@ -334,7 +334,8 @@ class QLearner:
              "visits": int(self.visits.get((state, action), 0))}
             for (state, action), v in self.q.items()
         ]
-        rows.sort(key=lambda r: (-r["q"], r["depth"], str(r["prefix"]), str(r["decision"])))
+        rows.sort(key=lambda r: (-float(r["q"]), int(r["depth"]),
+                                 str(r["prefix"]), str(r["decision"])))
         return rows[: max(0, int(n))]
 
     def table(self) -> dict[str, float]:
@@ -836,7 +837,8 @@ def run_episodes(mdp: MDP, learner: QLearner, reward: RewardFn, *, episodes: int
             res.truncated += 1
             continue
         spec = mdp.spec(state) if hasattr(mdp, "spec") else dict(state)
-        r, depth = reward(state, spec) if _takes_two(reward) else reward(state)
+        _rw: Any = reward
+        r, depth = _rw(state, spec) if _takes_two(reward) else _rw(state)
         if r is None:
             res.unpriced += 1
             continue

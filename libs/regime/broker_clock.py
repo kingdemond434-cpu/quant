@@ -172,7 +172,7 @@ def estimate_offset(profiles: Mapping[str, Sequence[float]]) -> dict[str, Any]:
     # CIRCULAR MEDIAN, because 23 and 1 are two hours apart and their arithmetic mean is 12.
     ang = np.array(votes, dtype="float64") * (2.0 * math.pi / 24.0)
     mean_ang = math.atan2(float(np.sin(ang).mean()), float(np.cos(ang).mean()))
-    off = int(round((mean_ang * 24.0 / (2.0 * math.pi)) % 24.0)) % 24
+    off = round((mean_ang * 24.0 / (2.0 * math.pi)) % 24.0) % 24
     if off > 12:
         off -= 24                                     # report as a signed offset, not 0..23
     spread = sorted({v if v <= 12 else v - 24 for v in votes})

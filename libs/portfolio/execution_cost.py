@@ -129,7 +129,8 @@ def fill_hour(selector: str | None, sleeve: str | None = None) -> tuple[int | No
             continue
         for tok in _TOKEN.split(str(src).lower()):
             if tok in SESSION_FILL_HOUR:
-                return SESSION_FILL_HOUR[tok], f"fill hour {SESSION_FILL_HOUR[tok]:02d} from '{tok}'"
+                return (SESSION_FILL_HOUR[tok],
+                        f"fill hour {SESSION_FILL_HOUR[tok]:02d} from '{tok}'")
     return None, "no session selector names a fill hour; the sleeve is left unpriced"
 
 

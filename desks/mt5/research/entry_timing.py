@@ -329,7 +329,7 @@ def symbol_gaps(root: Path | None = None) -> list[dict[str, Any]]:
                  and c.get("p50") is not None}
         if not hours or charged is None:
             continue
-        vals = sorted(float(v) for v in hours.values())
+        vals = sorted(float(v) for v in hours.values() if v is not None)
         med = vals[len(vals) // 2]
         source = charged_provenance(meta, symbol)
         row = {"symbol": symbol, "charged_pts": charged, "source": source,

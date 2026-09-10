@@ -336,7 +336,6 @@ def main() -> int:
                          for c in certs.values())
 
     tested_rows = [r for r in (_read(HYP) or []) if isinstance(r, dict)]
-    tested = {_mechanism_key(r) for r in tested_rows}
     tested_by_miner = Counter(_source_miner(r.get("source")) for r in tested_rows)
     tested_by_miner.pop("", None)
     survivor_keys = held

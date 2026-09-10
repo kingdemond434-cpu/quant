@@ -156,7 +156,8 @@ def enqueue(queue: Any, root: Path, *, org: Any = None, batch: int = BATCH) -> d
     from libs.ops.org import desk_org
 
     o = org or desk_org()
-    queued, skipped = [], []
+    queued: list[str] = []
+    skipped: list[str] = []
     for axis in dark_axes(root):
         if len(queued) >= batch:
             break

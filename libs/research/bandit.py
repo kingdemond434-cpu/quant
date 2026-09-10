@@ -46,7 +46,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -241,7 +241,9 @@ def measured_cost(costs: dict[str, dict[str, Any]] | None = None) -> dict[str, d
             from libs.ops.compute_ledger import cost_by_run
             costs = cost_by_run()
         except Exception as exc:
-            return {"_why": f"compute ledger unreadable: {type(exc).__name__}: {exc}"}
+            return {"_why": {"status": "UNMEASURED",
+                             "why": f"compute ledger unreadable: "
+                                    f"{type(exc).__name__}: {exc}"}}
     per_arm: dict[str, dict[str, Any]] = {}
     for arm, legs in ARM_RUNS.items():
         hit = [(leg, costs[leg]) for leg in legs
@@ -517,11 +519,11 @@ def _marginal_by_arm() -> dict[str, float]:
     return out
 
 
-def _cluster_of(row: dict[str, Any]) -> str | None:
+def _cluster_of(row: Mapping[str, Any]) -> str | None:
     """The alpha cluster a hypothesis row monetises, or None when it cannot be named."""
     try:
         from libs.research.alpha_clusters import UNCLASSIFIED, classify_family, classify_sleeve
-    except Exception:                                                    # noqa: BLE001
+    except Exception:
         return None
     for key in ("family", "cell", "name", "id"):
         v = row.get(key)
@@ -550,17 +552,19 @@ def breadth_credit() -> dict[str, Any]:
         try:
             from libs.research.breadth_credit import book_state
             state = book_state()
-        except Exception:                                                # noqa: BLE001
+        except Exception:
             state = None
         occupied = set((state or {}).get("occupied") or [])
-        shares_by_arm = occupied_shares(rows, lambda r: arm_of(r.get("source"), r.get("kind")),
-                                        _cluster_of, occupied)
+        def _arm_of(r: Mapping[str, Any]) -> str | None:
+            return arm_of(r.get("source"), r.get("kind"))
+
+        shares_by_arm = occupied_shares(rows, _arm_of, _cluster_of, occupied)
         return credits(ARMS, measured_shares=shares_by_arm)
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         # UNMEASURED means every credit is 1.0, which is exactly the behaviour that existed
         # before this term did. A broken credit must never be able to change an allocation.
         return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}",
-                "credit": {a: 1.0 for a in ARMS}}
+                "credit": dict.fromkeys(ARMS, 1.0)}
 
 
 def regret(ev: dict[str, dict[str, Any]], shares: dict[str, float],

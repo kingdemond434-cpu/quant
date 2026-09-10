@@ -44,7 +44,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 #: The only transaction code that is a decision to buy at the prevailing price. See the header:

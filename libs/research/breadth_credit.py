@@ -72,7 +72,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -205,9 +205,10 @@ def implied_rho(n_nominal: float, k_eff: float) -> float | None:
 
 def _report(path: Path | None = None) -> dict[str, Any]:
     try:
-        return json.loads((path or BREADTH_REPORT).read_text("utf-8"))
+        doc = json.loads((path or BREADTH_REPORT).read_text("utf-8"))
     except (OSError, ValueError):
         return {}
+    return doc if isinstance(doc, dict) else {}
 
 
 def book_state(doc: Mapping[str, Any] | None = None) -> dict[str, Any]:
@@ -243,7 +244,9 @@ def book_state(doc: Mapping[str, Any] | None = None) -> dict[str, Any]:
     }
 
 
-def occupied_shares(rows: Iterable[Mapping[str, Any]], arm_of, cluster_of,
+def occupied_shares(rows: Iterable[Mapping[str, Any]],
+                    arm_of: Callable[[Mapping[str, Any]], str | None],
+                    cluster_of: Callable[[Mapping[str, Any]], str | None],
                     occupied: set[str]) -> dict[str, dict[str, Any]]:
     """Per arm: the share of its CLASSIFIED output that lands in ground the book already holds.
 
@@ -295,7 +298,7 @@ def credits(arms: Iterable[str], *, doc: Mapping[str, Any] | None = None,
     state = book_state(doc)
     if state.get("status") != MEASURED:
         return {"status": UNMEASURED, "why": state.get("why", "no breadth measurement"),
-                "credit": {a: 1.0 for a in names}, "book": state}
+                "credit": dict.fromkeys(names, 1.0), "book": state}
     n, k = state["n_nominal"], state["k_eff"]
     rho_book, rho_cross = state["rho_book"], state["rho_cross"]
     ms = dict(measured_shares or {})
@@ -318,7 +321,7 @@ def credits(arms: Iterable[str], *, doc: Mapping[str, Any] | None = None,
             dk = marginal_k_eff(n, k, rho)
         except ValueError as exc:
             return {"status": UNMEASURED, "why": str(exc),
-                    "credit": {x: 1.0 for x in names}, "book": state}
+                    "credit": dict.fromkeys(names, 1.0), "book": state}
         raw[a] = dk
         rows[a] = {"occupied_share": round(s, 4), "source": src, "why": why,
                    "rho_to_book": round(rho, 4), "delta_k_eff": round(dk, 6)}
