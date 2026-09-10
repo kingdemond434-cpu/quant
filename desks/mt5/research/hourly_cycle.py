@@ -1079,6 +1079,33 @@ def futures_lead_lag() -> dict:
     return _producer("futures_lead_lag", "research/futures_lead_lag.py")
 
 
+def fusion_cost() -> dict:
+    """WHAT A FUSION ZERO ACCOUNT ACTUALLY CHARGES -- commission per lot, and a residual spread.
+
+    MEASURED 2026-09-10: over the 161 symbols whose stored spread can be checked against their own
+    bars, COMMISSION IS A MEDIAN 96% OF THE RAW-REGIME ROUND TRIP. Fusion Zero's published
+    contract is USD 2.25 per lot per side; it is contractual, identical on every symbol, and it
+    does not widen under stress. The spread this desk keeps arguing about is the other four
+    percent -- and the stored spreads are wrong in BOTH directions:
+
+        OVER   BlockInc 500x its own bars, USDRUB 34.8x, GBPCHF 23.6x, NZDJPY 9.8x, +2
+        UNDER  six symbols billed ZERO against bars quoting a positive spread every hour
+
+    The six over-charged sit outside even the 3x their own `stress_costs` gate tested, so nothing
+    on them can pass the gauntlet. That is a Rule 2 breach -- a real opportunity suppressed by a
+    broken number -- and it is the exact mirror of the six billed nothing at all.
+
+    RAW IS THE DEFAULT AND ZERO IS NOT. `run_edges_macro_fusion_sweep` defined these three regimes
+    and said in its own words that ZERO is "a BOUND, not because any account fills at it".
+    Defaulting to it would make every backtest better in the one direction the desk's guards exist
+    to prevent, so all three are published and none is chosen for a live decision here.
+
+    IT REWRITES NO REGISTRY. `median_spread_pts` is a money-path field: changing it re-judges every
+    certificate priced against it and rebases the forward clocks.
+    """
+    return _producer("fusion_cost", "libs/portfolio/fusion_cost.py")
+
+
 def time_joins() -> dict:
     """WHERE AN EXTERNAL TIMESTAMP MEETS A BAR INDEX, and whether anything says which clock.
 
@@ -1301,6 +1328,7 @@ def main() -> None:
     tf = _costed("tape_features", tape_features)
     fll = _costed("futures_lead_lag", futures_lead_lag)
     tj = _costed("time_joins", time_joins)
+    fzc = _costed("fusion_cost", fusion_cost)
     # BEFORE queue_cycle, which turns its uncovered cells into owned recertification tasks.
     ety = _costed("entry_timing", entry_timing)
     # AFTER the coverage legs: the governor aims the search from the map they just published.
@@ -1666,6 +1694,7 @@ def main() -> None:
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "time_joins": tj,
+                    "fusion_cost": fzc,
                     "recertify_canon": rc, "pf_allocator": pa, "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
