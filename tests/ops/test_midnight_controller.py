@@ -112,6 +112,20 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert '|| TRANSFER_RC=$?' in source
 
 
+def test_astra_daily_requires_canonical_runtime_and_migration_acceptance() -> None:
+    prompt = PROMPT.read_text("utf-8")
+    for requirement in (
+        "Claude remains the primary builder",
+        "existing shared backlog and issue ledger",
+        "NEW-BOX MIGRATION ACCEPTANCE",
+        "Never start a second live executor",
+        "CANONICALLY_MERGED",
+        "Only RUNTIME_VERIFIED closes an operational defect",
+        "A feature-branch push is not canonical",
+    ):
+        assert requirement in prompt
+
+
 def test_shadow_forward_service_can_import_certified_enrolment_modules() -> None:
     service = Path("ops/shadow-forward.service").read_text("utf-8")
     assert "sys.path.insert(0,'research')" in service
