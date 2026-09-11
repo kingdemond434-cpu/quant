@@ -730,8 +730,16 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
     costs = cost_doc["sleeves"]
 
     out: list[SleeveEvidence] = []
+    # NO ZERO-FILL HERE. `align` reindexes every sleeve onto the union of trading days, so a
+    # sleeve that has lived a fortnight carries NaN on the ~2,247 days before it existed.
+    # `fillna(0.0)` turned each of those into a REAL OBSERVATION OF ZERO RETURN -- the desk's
+    # shipped defect #4 -- which diluted the sleeve's mean, flattened its dispersion and told the
+    # shrinkage it had 2,260 observations. The NaN now survives to `_posterior_mu`, which takes
+    # each sleeve's mean/std/n from its OWN days, while every portfolio-level consumer
+    # (`sample_worlds`, `_corr_abs`, `_corr_to_book`) fills flat at its own stacking site. That
+    # split is the protocol's rule verbatim: NaN day, never 0; flat only at portfolio level.
     series: dict[str, np.ndarray] = {
-        str(c): daily[c].fillna(0.0).to_numpy(dtype=float) for c in daily.columns
+        str(c): daily[c].to_numpy(dtype=float) for c in daily.columns
     }
     for name, hist in series.items():
         fwd = forward.get(name, {})
@@ -1790,7 +1798,12 @@ def _annual_sharpe(r: np.ndarray) -> float | None:
     REPORTED, NEVER RANKED ON. It is on the row so a reader can SEE that the admission decision
     disagreed with the Sharpe ordering -- which is the whole point of the criterion.
     """
+    # ON ITS OWN DAYS. A sleeve's standalone Sharpe is a statement about the sleeve, so the days
+    # before it existed are not zero-return days in it (defect #4). Reported at 0.285 when it was
+    # 3.71, this number is what a reader uses to sanity-check an admission verdict, so a 13x
+    # understatement here hid the corrupted input rather than exposing it.
     a = np.asarray(r, dtype=float)
+    a = a[np.isfinite(a)]
     if a.size < 2:
         return None
     sd = float(a.std(ddof=1))
@@ -1814,10 +1827,14 @@ def _corr_to_book(cand: np.ndarray, held: dict[str, float],
     obs = min([int(cand.size)] + [int(e.daily_r.size) for e, _ in legs])
     if obs < 30:
         return None
+    # PORTFOLIO LEVEL: a day a leg did not exist contributes no P&L to the book stream, so flat
+    # is the honest fill HERE (protocol: "flat only at portfolio level, explicitly"). Without the
+    # fill the NaN now carried by young sleeves would propagate and return None for every
+    # candidate, which would read as "correlation unmeasurable" instead of "recently born".
     stream = np.zeros(obs, dtype=float)
     for e, h in legs:
-        stream += h * np.asarray(e.daily_r[-obs:], dtype=float)
-    c = np.asarray(cand[-obs:], dtype=float)
+        stream += h * np.nan_to_num(np.asarray(e.daily_r[-obs:], dtype=float), nan=0.0)
+    c = np.nan_to_num(np.asarray(cand[-obs:], dtype=float), nan=0.0)
     if not (stream.std() > 0 and c.std() > 0):
         return None
     return float(np.corrcoef(stream, c)[0, 1])

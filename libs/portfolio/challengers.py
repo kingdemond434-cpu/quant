@@ -38,7 +38,9 @@ MV_RISK_AVERSION = 5.0
 
 def _matrix(ev: Sequence[Any]) -> tuple[np.ndarray, list[str]]:
     obs = min(int(e.daily_r.size) for e in ev)
-    m = np.stack([np.asarray(e.daily_r[-obs:], dtype=float) for e in ev], axis=1)
+    # Flat at portfolio level, explicitly (defect #4 split).
+    m = np.stack([np.nan_to_num(np.asarray(e.daily_r[-obs:], dtype=float), nan=0.0)
+                  for e in ev], axis=1)
     return m, [e.name for e in ev]
 
 

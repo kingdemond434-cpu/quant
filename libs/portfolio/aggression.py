@@ -54,7 +54,8 @@ def effective_breadth(ev: Sequence[Any], book: Mapping[str, float]) -> float | N
     obs = min(int(by[n].daily_r.size) for n in names)
     if obs < 20:
         return None
-    m = np.stack([by[n].daily_r[-obs:] for n in names], axis=1)
+    # Flat at portfolio level, explicitly (defect #4 split).
+    m = np.stack([np.nan_to_num(by[n].daily_r[-obs:], nan=0.0) for n in names], axis=1)
     sd = m.std(axis=0)
     if not np.all(sd > 0):
         return None

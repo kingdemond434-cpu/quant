@@ -125,6 +125,29 @@ class SleeveEvidence:
         if self.daily_r.ndim != 1:
             raise ValueError(f"{self.name}: daily_r must be 1-D, got {self.daily_r.shape}")
 
+    @property
+    def own_r(self) -> np.ndarray:
+        """The days this sleeve ACTUALLY LIVED -- NaN dropped, never zero-filled.
+
+        THE TWO READINGS OF `daily_r`, AND WHY CONFUSING THEM IS DEFECT #4. `daily_r` is aligned
+        onto the whole book's calendar so the bootstrap can draw a day across every sleeve at
+        once; on that calendar a sleeve carries NaN before it was born. Those NaNs answer two
+        different questions and must not be filled the same way:
+
+          * "what is THIS SLEEVE's mean / dispersion / sample size?"  -> `own_r`. A day it did
+            not exist is not an observation of zero return. Filling it divided a fortnight-old
+            clock's mean by 2,260, flattened its std, and told the shrinkage it had 2,260
+            observations -- diluted toward zero AND falsely confident, the worst possible pair.
+          * "what did the BOOK earn that day?"  -> `np.nan_to_num(daily_r)`. A sleeve that did
+            not exist contributed no P&L, which is genuinely 0.0. That is the protocol's "flat
+            only at portfolio level, explicitly", and every cross-sleeve stack does it locally.
+
+        Use `own_r` for anything describing one sleeve; fill for anything summing across them.
+        """
+        a = np.asarray(self.daily_r, dtype=float)
+        out: np.ndarray = a[np.isfinite(a)]
+        return out
+
 
 @dataclass(frozen=True)
 class WorldConfig:
@@ -315,9 +338,31 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
     Returns (draws (W, N), posterior_mean (N,)).
     """
     n = len(ev)
-    m = np.array([float(e.daily_r.mean()) if e.daily_r.size else 0.0 for e in ev])
-    s = np.array([float(e.daily_r.std(ddof=1)) if e.daily_r.size > 1 else 0.0 for e in ev])
-    obs = np.array([float(e.daily_r.size) for e in ev])
+    # NaN IS "THIS SLEEVE DID NOT EXIST THAT DAY", AND IT IS NOT A ZERO RETURN. This is the
+    # desk's shipped defect #4 (UNIVERSAL_PROMOTION_PROTOCOL: "absent trade -> NaN day (never 0);
+    # flat only at portfolio level, explicitly"), and it lands hardest exactly where the desk can
+    # least afford it -- on a NEW sleeve, the only kind that can still be promoted.
+    #
+    # A sleeve aligned onto the book's 2,260-day union carries a real value on the days it has
+    # lived and NaN on the rest. Reading those as 0.0 corrupted all three statistics at once:
+    #   mean -- divided by 2,260 instead of its own day count (a 173x dilution at 13 days)
+    #   std  -- computed over a spike of zeros, understating its true dispersion
+    #   obs  -- 2,260, so the shrinkage treated a fortnight-old clock as PRECISELY ESTIMATED
+    # Diluted toward zero AND falsely confident about it, which is the worst pair: the posterior
+    # then shrinks a sleeve to nothing and reports high certainty that nothing is right.
+    #
+    # MEASURED 2026-09-10 on the three matured scalp clocks: standalone Sharpe 3.71 / 11.86 /
+    # 3.94 on their own days, reported to the optimiser as 0.285 / 0.766 / 0.312 -- understated
+    # 13.0x / 15.5x / 12.6x -- and refused at "0.0000% heat, the book does not want it at any
+    # size" against a book holding sleeves at 3.1-3.2. The allocator was not being conservative;
+    # it was answering correctly on a corrupted input.
+    #
+    # The portfolio level is UNCHANGED and still treats an absent day as flat -- see the
+    # `nan_to_num` at each stacking site, which is where "flat, explicitly" belongs.
+    own = [e.own_r for e in ev]
+    m = np.array([float(a.mean()) if a.size else 0.0 for a in own])
+    s = np.array([float(a.std(ddof=1)) if a.size > 1 else 0.0 for a in own])
+    obs = np.array([float(a.size) for a in own])
 
     # TWO DIFFERENT CORRECTIONS, EACH APPLIED ONCE. Conflating them is what made the first two
     # attempts at this both wrong, in opposite directions:
@@ -525,7 +570,12 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
                 f"(<= {cfg.max_elements:,} elements)")
 
     rng = np.random.default_rng(cfg.seed)
-    hist = np.stack([e.daily_r[-obs:].astype(np.float32) for e in ev], axis=1)   # (obs, N)
+    # FLAT AT PORTFOLIO LEVEL, EXPLICITLY (protocol rule for defect #4). A day this sleeve did
+    # not exist for contributes no P&L to the book, which IS 0.0 here -- the bootstrap draws whole
+    # days across sleeves and needs a rectangular history to keep co-occurrence real. The sleeve's
+    # OWN mean/std/n are taken from its own days in `_posterior_mu`; only this joint matrix fills.
+    hist = np.stack([np.nan_to_num(e.daily_r[-obs:], nan=0.0).astype(np.float32) for e in ev],
+                    axis=1)                                                     # (obs, N)
     sample_mean = hist.mean(axis=0)
 
     mu_draws, _post = _posterior_mu(ev, rng, n_worlds)
@@ -735,7 +785,10 @@ def _objective(worlds: Worlds, h: np.ndarray, corr_abs: np.ndarray, cfg: WorldCo
 def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:
     """|correlation| between sleeves on their common history, zeros where it cannot be measured."""
     obs = min(int(e.daily_r.size) for e in ev)
-    m = np.stack([e.daily_r[-obs:] for e in ev], axis=1)
+    # Absent days are flat for a CO-MOVEMENT measure: correlation is a portfolio-level statistic
+    # over the shared calendar, so nan_to_num here is the protocol's "flat only at portfolio
+    # level, explicitly" -- not the sleeve-level zero-fill that defect #4 names.
+    m = np.stack([np.nan_to_num(e.daily_r[-obs:], nan=0.0) for e in ev], axis=1)
     sd = m.std(axis=0)
     live = sd > 0
     c = np.zeros((len(ev), len(ev)))

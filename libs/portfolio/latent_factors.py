@@ -114,7 +114,9 @@ def effective(ev: Sequence[Any], book: Mapping[str, float], *, k: int = 3,
                 "n_eff": {"covariance": 1.0, "factor": 1.0, "tail": 1.0}, "note": "single leg"}
     by = {e.name: e for e in ev}
     obs = min(int(by[n].daily_r.size) for n in names)
-    m = np.stack([np.asarray(by[n].daily_r[-obs:], dtype=float) for n in names], axis=1)
+    # Flat at portfolio level, explicitly (defect #4 split).
+    m = np.stack([np.nan_to_num(np.asarray(by[n].daily_r[-obs:], dtype=float), nan=0.0)
+                  for n in names], axis=1)
     h = np.array([float(book[n]) for n in names])
     fm = factor_model(m, k=k, halflife=halflife)
     rho_s, n_stress = stress_corr(m)

@@ -116,7 +116,7 @@ def record(ev: Sequence[Any], book: dict[str, float], state_key: str,
             if h <= 1e-6:
                 continue
             sr = np.asarray(getattr(e, "state_r", np.array([])), dtype=float)
-            dr = np.asarray(e.daily_r, dtype=float)
+            dr = e.own_r      # defect #4: compare the state's days to days it actually traded
             if sr.size == 0 or dr.size == 0:
                 continue
             cat, mult = category(float(sr.mean()), float(dr.mean()), int(sr.size))

@@ -202,9 +202,14 @@ def posterior_moments(ev: Sequence[SleeveEvidence]) -> PosteriorMoments:
     obs = min(int(e.daily_r.size) for e in ev)
     if obs < 2:
         raise ValueError("a sleeve has fewer than 2 observations; refusing to fabricate a path")
-    m = np.array([float(e.daily_r.mean()) for e in ev])
-    s = np.array([float(e.daily_r.std(ddof=1)) if e.daily_r.size > 1 else 0.0 for e in ev])
-    n_obs = np.array([float(e.daily_r.size) for e in ev])
+    # PER-SLEEVE STATS COME FROM THE SLEEVE'S OWN DAYS (defect #4), same reasoning as
+    # `robust_elog._posterior_mu`: a day before the sleeve existed is not an observation of zero
+    # return, and counting it inflates n_obs while diluting the mean -- which shrinks a young
+    # sleeve to nothing and then reports high confidence in the nothing.
+    own = [e.own_r for e in ev]
+    m = np.array([float(a.mean()) if a.size else 0.0 for a in own])
+    s = np.array([float(a.std(ddof=1)) if a.size > 1 else 0.0 for a in own])
+    n_obs = np.array([float(a.size) for a in own])
     fwd = np.array([float(e.forward_days) for e in ev])
     live = np.array([float(e.live_days) for e in ev])
     n_eff = n_obs + FORWARD_WEIGHT * fwd + LIVE_WEIGHT * live
@@ -221,7 +226,10 @@ def posterior_moments(ev: Sequence[SleeveEvidence]) -> PosteriorMoments:
     post = lam * deflated
     kappa = n_eff + K_SLEEVE
 
-    hist = np.stack([np.asarray(e.daily_r[-obs:], dtype=float) for e in ev], axis=1)
+    # Flat at portfolio level, explicitly: this matrix is the joint history the paths are drawn
+    # from, and a sleeve that did not exist contributed no P&L on that day.
+    hist = np.stack([np.nan_to_num(np.asarray(e.daily_r[-obs:], dtype=float), nan=0.0)
+                     for e in ev], axis=1)
     resid = hist - hist.mean(axis=0)
     cov = np.atleast_2d(np.cov(hist, rowvar=False))
     # A dead sleeve (zero variance) would make the factor singular; a whisper of variance keeps
