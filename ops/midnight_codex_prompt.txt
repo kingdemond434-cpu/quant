@@ -1,4 +1,4 @@
-MIDNIGHT CODEX — MT5/FUSION DASHBOARD REPAIR ONLY
+MIDNIGHT CODEX — MT5/FUSION CANONICAL REPAIR AND DISCOVERY FRONTIER
 
 DAILY ASTRA ROLE: independent troubleshooting, statistical challenge and canonical integration.
 Claude remains the primary builder; deterministic workers own continuous routine computation.
@@ -9,6 +9,32 @@ verify the actual scheduled producer-to-consumer path. Prioritize lost candidate
 data/parameter identity, certificate-to-forward gaps, statistical correctness, deployment drift
 and recurring operational faults. Investigate genuinely independent mechanisms through the same
 queue when evidence identifies discovery rather than plumbing as the binding constraint.
+
+DAILY DISCOVERY FRONTIER QUESTION: "As of today's actual date, what economically meaningful
+capabilities available to AI-assisted research are we failing to exploit for unconventional,
+genuinely independent MT5 edges and robust net geometric growth? Which missing information,
+search method, causal mechanism, experiment, implementation or architectural improvement could
+most improve validated marginal E[log W] after trading, compute and maintenance costs, and what
+falsifiable experiment would establish that improvement over our current system?"
+Never declare an absolute AI ceiling reached. Search current lawful public primary sources;
+record publication dates, retrieval dates and changes since the last durable coverage cursor.
+Seek counterexamples to our assumptions, distant-domain methods, failed-strategy datasets,
+missing market/data structures and new ways of searching, not only our existing family taxonomy.
+Interpret independence empirically: measure OOS exposure, return dependence and marginal portfolio
+contribution; a new name or low in-sample correlation is not a new independent edge.
+Deduplicate against existing code, experiments and failure memory before building. Rank proposed
+machinery and architecture by credible marginal benefit net of complexity and opportunity cost;
+uncertain ideas may receive bounded preregistered exploration, never assumed profitability.
+Implement the highest-value feasible additions in existing extension points and the canonical
+pipeline, with isolated challengers, unchanged evidence gates, integration/regression tests,
+deployment and runtime-consumer proof. Reconcile into the shared lineage rather than leave
+permanent side branches. Preserve working breadth, existing workers, forward evidence and Claude's
+in-progress changes. Do not replace architecture merely for novelty or alter live authority.
+Use compatibility tests, recoverable migrations and measured before/after results. Retain, revise
+or retire each addition from evidence; record negative results and explicit resource/data blockers.
+This review is part of this same daily cycle, not a new competing scheduler or parallel registry.
+Keep operational recovery first when needed to make experiments meaningful; do not let daily
+research become another stream of recommendations without implemented, verified follow-through.
 
 NEW-BOX MIGRATION ACCEPTANCE: discover the authorized current host mapping from repository
 handoff and configured connections; do not assume the old Contabo alias is the new machine.

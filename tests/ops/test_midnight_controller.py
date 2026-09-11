@@ -122,6 +122,11 @@ def test_astra_daily_requires_canonical_runtime_and_migration_acceptance() -> No
         "CANONICALLY_MERGED",
         "Only RUNTIME_VERIFIED closes an operational defect",
         "A feature-branch push is not canonical",
+        "DAILY DISCOVERY FRONTIER QUESTION",
+        "Never declare an absolute AI ceiling reached",
+        "measure OOS exposure",
+        "trading, compute and maintenance costs",
+        "not a new competing scheduler or parallel registry",
     ):
         assert requirement in prompt
 
