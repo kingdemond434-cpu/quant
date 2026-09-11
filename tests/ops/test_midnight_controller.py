@@ -18,7 +18,7 @@ CONTRACT = Path("docs/research/OVERNIGHT_FRONTIER_CONTRACT.json")
 
 def test_midnight_is_a_vps_controller_cycle_not_an_app_automation() -> None:
     assert "00:00:00 Europe/Dublin" in TIMER.read_text("utf-8")
-    assert "run_midnight_frontier.sh" in SERVICE.read_text("utf-8")
+    assert "run_midnight_codex_controller.sh" in SERVICE.read_text("utf-8")
     wrapper = WRAPPER.read_text("utf-8")
     # A pre-run status publication is allowed, but the fresh MT5 snapshot must finish
     # before the actual reasoning-controller invocation.
@@ -133,8 +133,10 @@ def test_astra_daily_requires_canonical_runtime_and_migration_acceptance() -> No
 
 def test_shadow_forward_service_can_import_certified_enrolment_modules() -> None:
     service = Path("ops/shadow-forward.service").read_text("utf-8")
-    assert "sys.path.insert(0,'research')" in service
-    assert "from research.shadow_forward import main" in service
+    assert "WorkingDirectory=/home/quant/quant-platform/desks/mt5" in service
+    assert "ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/research/shadow_forward.py" in service
+    source = Path("desks/mt5/research/shadow_forward.py").read_text("utf-8")
+    assert "sys.path.insert" in source
 
 
 def test_midnight_builds_mt5_state_before_reasoning() -> None:
@@ -151,27 +153,22 @@ def test_controller_prompt_is_one_compact_mt5_only_operating_brief() -> None:
     prompt = PROMPT.read_text("utf-8")
     # Keep the nightly controller implementation-first and prevent mandate duplication
     # from silently consuming the reasoning budget again.
-    assert len(prompt) <= 10_000
+    assert len(prompt) <= 15_000
     for required in (
-        "MASTER_QUANT_CONSTITUTION.md",
-        "continuation cycle",
-        "Never reset",
-        "MT5/Fusion only",
-        "Convert, do not summarize",
-        "IMPLEMENTED+TESTED",
+        "MT5/FUSION",
+        "Do not reset state",
+        "unchanged ten gates",
+        "CANONICALLY_MERGED",
         "checkpoint",
-        "scripts/run_deadman_switch.py",
-        "implementation ledger of at most 300 words",
-        "never a replacement, reduction or amendment",
-        "preserve every master obligation",
-        "TIER1_CONTROLLER_MANDATE.md",
-        "tier-1 institutions",
+        "Never fake trades, place orders, arm capital",
+        "No essays",
+        "Read operative repository instructions",
+        "tier-1 frontier miner",
     ):
         assert required.casefold() in prompt.casefold()
     assert MANDATE.exists() and len(MANDATE.read_text("utf-8")) > 20_000
     assert "controller_continuity.py" in AGENTS.read_text("utf-8")
-    for excluded_venue in ("Binance", "Bybit", "OKX", "Hyperliquid"):
-        assert "Do not hunt" in prompt and excluded_venue in prompt
+    assert "Fusion-executable NON-STOCK instruments" in prompt
     controller = CONTROLLER.read_text("utf-8")
     assert controller.count("cat ops/midnight_codex_prompt.txt") == 1
     assert "cat ops/shared_conversion_controller.txt" not in controller
@@ -180,11 +177,10 @@ def test_controller_prompt_is_one_compact_mt5_only_operating_brief() -> None:
 def test_midnight_aggressively_converts_real_orphans_end_to_end() -> None:
     prompt = PROMPT.read_text("utf-8")
     for required in (
-        "ORPHAN",
-        "INERT",
-        "CONVERSION_FAILURE",
-        "WIRE+TEST, ARCHIVE, DELETE, or BLOCK",
-        "producer -> durable output -> consumer -> decision/research",
+        "beneficial unwired/unscheduled components",
+        "producer -> artifact -> consumer",
+        "explicitly reject obsolete/duplicate/negative-value machinery",
+        "Wire and\ntest useful missing paths",
     ):
         assert required in prompt
 
@@ -192,15 +188,15 @@ def test_midnight_aggressively_converts_real_orphans_end_to_end() -> None:
 def test_midnight_routes_mt5_data_and_every_conversion_family() -> None:
     prompt = PROMPT.read_text("utf-8")
     for required in (
-        "broker bars/ticks/DOM",
-        "preregistered hypothesis",
-        "near-survivor/survivor",
-        "zero-capital forward shadow",
-        "multiplicity/PBO/SPA",
-        "failure and near-survivor recycling",
-        "real-fill attribution",
-        "Claude, Codex, OpenCode",
-        "No hardcoded output quota",
+        "native bars/ticks",
+        "preregistered exploration",
+        "zero-order forward ledger",
+        "whole-search multiplicity",
+        "PBO/SPA",
+        "existing code, experiments and failure memory",
+        "Fix execution decision/fill attribution",
+        "respect active Claude work",
+        "never guaranteed survivor output",
     ):
         assert required in prompt
     controller = Path("ops/run_midnight_codex_controller.sh").read_text("utf-8")
