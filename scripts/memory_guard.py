@@ -40,6 +40,7 @@ stopped the desk trading" is a far worse outcome than a late gate run.
 from __future__ import annotations
 
 import argparse
+import ctypes
 import os
 import subprocess
 import sys
@@ -61,12 +62,39 @@ _SAMPLES = 3
 _SAMPLE_GAP_S = 3
 
 
+def _windows_available_mb() -> int:
+    """Read available physical RAM from Windows; failures remain fail-closed."""
+    class MemoryStatus(ctypes.Structure):
+        _fields_ = [("length", ctypes.c_uint32), ("load", ctypes.c_uint32)] + [
+            (name, ctypes.c_uint64) for name in (
+                "total_physical", "available_physical", "total_pagefile",
+                "available_pagefile", "total_virtual", "available_virtual", "extended",
+            )
+        ]
+
+    status = MemoryStatus()
+    status.length = ctypes.sizeof(status)
+    try:
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        query = kernel.GlobalMemoryStatusEx
+        query.argtypes = [ctypes.POINTER(MemoryStatus)]
+        query.restype = ctypes.c_int
+        if not query(ctypes.byref(status)):
+            return 0
+        return int(status.available_physical // (1024 * 1024))
+    except (OSError, AttributeError):
+        return 0
+
+
 def available_mb() -> int:
     """MemAvailable in MB, as the median of three spaced readings."""
     reads: list[int] = []
     for i in range(_SAMPLES):
         if i:
             time.sleep(_SAMPLE_GAP_S)
+        if sys.platform == "win32":
+            reads.append(_windows_available_mb())
+            continue
         try:
             with open("/proc/meminfo", encoding="utf-8") as fh:
                 for line in fh:
