@@ -1,4 +1,5 @@
 """Repair attempts are not evidence that an operational defect is closed."""
+
 from unittest.mock import patch
 
 import pytest

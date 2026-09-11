@@ -134,7 +134,8 @@ def test_astra_daily_requires_canonical_runtime_and_migration_acceptance() -> No
 def test_shadow_forward_service_can_import_certified_enrolment_modules() -> None:
     service = Path("ops/shadow-forward.service").read_text("utf-8")
     assert "WorkingDirectory=/home/quant/quant-platform/desks/mt5" in service
-    assert "ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/research/shadow_forward.py" in service
+    assert ("ExecStart=/home/quant/quant-platform/.venv/bin/python "
+            "/home/quant/quant-platform/desks/mt5/research/shadow_forward.py") in service
     source = Path("desks/mt5/research/shadow_forward.py").read_text("utf-8")
     assert "sys.path.insert" in source
 

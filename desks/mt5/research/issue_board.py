@@ -361,7 +361,8 @@ def repair(issues: list[Issue], apply: bool = False,
         try:
             r = subprocess.run([sys.executable, "-u", str(target)], cwd=str(base),
                                capture_output=True, text=True, timeout=timeout_s, check=False)
-            done.append({"key": i.key, "action": "RAN" if r.returncode == 0 else "FAILED", "cmd": i.repair,
+            done.append({"key": i.key, "action": "RAN" if r.returncode == 0 else "FAILED",
+                         "cmd": i.repair,
                          "exit_code": r.returncode,
                          "tail": (r.stdout or r.stderr or "").strip().splitlines()[-2:]})
         except subprocess.TimeoutExpired:
@@ -395,7 +396,8 @@ def run(apply: bool = False) -> dict[str, Any]:
                 if verification_error:
                     action.update(action="UNVERIFIED", why=verification_error)
                 elif defect_identity(action["key"]) in remaining_keys:
-                    action.update(action="UNRESOLVED", why="producer exited successfully but issue remains")
+                    action.update(action="UNRESOLVED",
+                                  why="producer exited successfully but issue remains")
                 else:
                     action.update(action="REPAIRED", verified=True)
         issues = remaining
