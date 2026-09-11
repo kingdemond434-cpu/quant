@@ -9,14 +9,11 @@
    "status": "FAILED"
   },
   "external_queue_projection": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/promote_external_to_queue.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-11T22:39:48.450014+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-11T22:48:48.015556+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   }
  },
- "updated_at": "2026-09-11T22:39:48.450014+00:00"
+ "updated_at": "2026-09-11T22:48:48.015556+00:00"
 }

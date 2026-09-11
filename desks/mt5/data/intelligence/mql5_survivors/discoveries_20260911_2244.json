@@ -1,0 +1,568 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2327790",
+  "symbols": [
+   "AUDCAD",
+   "AUDUSD",
+   "EURGBP",
+   "EURUSD",
+   "GBPAUD",
+   "GBPUSD",
+   "NZDCAD",
+   "USDCAD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 240.935,
+  "growth_pct": 10346.12,
+  "weeks": 282.0,
+  "pf": 1.59,
+  "max_dd_pct": null,
+  "trades": 8267.0,
+  "win_pct": 6365.0,
+  "algo_pct": 99.0,
+  "subscribers": 21.0,
+  "author": "/en/users/dvhung297",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "08": 1,
+   "16": 1,
+   "13": 1,
+   "05": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2306053",
+  "symbols": [
+   "BALESI",
+   "NASUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 44.283,
+  "growth_pct": 3763.36,
+  "weeks": 72.0,
+  "pf": 2.13,
+  "max_dd_pct": null,
+  "trades": 830.0,
+  "win_pct": 520.0,
+  "algo_pct": 100.0,
+  "subscribers": 24.0,
+  "author": "/en/users/kenni_siu",
+  "author_other_signals": [
+   {
+    "sid": "2383608",
+    "title": "'Kenni Daily Scalp Breakout Gold MT5' by Ken Rmah",
+    "growth": "8%",
+    "curve_points": 20,
+    "curve_dd": -50.0
+   }
+  ],
+  "hour_histogram": {
+   "22": 3,
+   "16": 1,
+   "13": 4,
+   "00": 2,
+   "18": 1,
+   "14": 2,
+   "06": 1,
+   "07": 2,
+   "23": 2,
+   "11": 1,
+   "19": 4,
+   "03": 1,
+   "02": 2,
+   "04": 5,
+   "17": 2,
+   "05": 1,
+   "10": 2,
+   "20": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2347343",
+  "symbols": [
+   "EURJPY",
+   "GBPJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "gold"
+  ],
+  "ev_score": 19.448,
+  "growth_pct": 2190.17,
+  "weeks": 41.0,
+  "pf": 1.4,
+  "max_dd_pct": null,
+  "trades": 248.0,
+  "win_pct": 125.0,
+  "algo_pct": 0.0,
+  "subscribers": 9.0,
+  "author": "/en/users/ludi1991",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "14": 2,
+   "10": 3,
+   "08": 2,
+   "15": 2,
+   "01": 1,
+   "03": 2,
+   "22": 1,
+   "11": 1,
+   "07": 1,
+   "05": 3,
+   "06": 1,
+   "00": 1,
+   "02": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2349227",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 2.159,
+  "growth_pct": 232.07,
+  "weeks": 45.0,
+  "pf": 3.2,
+  "max_dd_pct": null,
+  "trades": 375.0,
+  "win_pct": 283.0,
+  "algo_pct": 100.0,
+  "subscribers": 10.0,
+  "author": "/en/users/kuropatkin",
+  "author_other_signals": [
+   {
+    "sid": "2332166",
+    "title": "'SolarFlare' by Dmitrii Kuropatkin",
+    "growth": "344%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2332163",
+    "title": "'NebulaEA' by Dmitrii Kuropatkin",
+    "growth": "217%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   },
+   {
+    "sid": "2288980",
+    "title": "'Momentum' by Dmitrii Kuropatkin",
+    "growth": "194%",
+    "curve_points": 20,
+    "curve_dd": -7.0
+   }
+  ],
+  "hour_histogram": {
+   "12": 1,
+   "19": 2,
+   "04": 2,
+   "13": 2,
+   "05": 2,
+   "20": 1,
+   "10": 1,
+   "14": 2,
+   "17": 1,
+   "02": 2,
+   "03": 1,
+   "11": 1,
+   "08": 1,
+   "16": 1,
+   "15": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2381247",
+  "symbols": [
+   "EURUSD"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor"
+  ],
+  "ev_score": 44.682,
+  "growth_pct": 2349.95,
+  "weeks": 188.0,
+  "pf": 3.6,
+  "max_dd_pct": null,
+  "trades": 1015.0,
+  "win_pct": 753.0,
+  "algo_pct": 96.0,
+  "subscribers": 1.0,
+  "author": "/en/users/agi-amd",
+  "author_other_signals": [
+   {
+    "sid": "2381246",
+    "title": "'AgiFX 5' by I Putu Agi Sumara Jaya",
+    "growth": "245%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2381242",
+    "title": "'AgiFX 1' by I Putu Agi Sumara Jaya",
+    "growth": "51%",
+    "curve_points": 20,
+    "curve_dd": -55.0
+   },
+   {
+    "sid": "2381244",
+    "title": "'AgiFX 3' by I Putu Agi Sumara Jaya",
+    "growth": "235%",
+    "curve_points": 20,
+    "curve_dd": -10.0
+   }
+  ],
+  "hour_histogram": {
+   "08": 1,
+   "07": 4,
+   "00": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1932739",
+  "symbols": [
+   "AUDUSD",
+   "BTCUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURJPY",
+   "EURUSD",
+   "GBPUSD",
+   "TRADER",
+   "USDCHF",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 70.612,
+  "growth_pct": 2713.98,
+  "weeks": 352.0,
+  "pf": 1.63,
+  "max_dd_pct": null,
+  "trades": 14585.0,
+  "win_pct": 7162.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/vayne168",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "02": 1,
+   "08": 2,
+   "12": 2,
+   "03": 1,
+   "04": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/743742",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDUSD",
+   "CADCHF",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURSGD",
+   "EURUAD",
+   "EURUSD"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 36.903,
+  "growth_pct": 1458.29,
+  "weeks": 333.0,
+  "pf": 1.23,
+  "max_dd_pct": null,
+  "trades": 10103.0,
+  "win_pct": 7362.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/johnmacknamara",
+  "author_other_signals": [
+   {
+    "sid": "734515",
+    "title": "'R Factor Mean Reversal' by Raphael Minato",
+    "growth": "3177%",
+    "curve_points": 20,
+    "curve_dd": -11.0
+   },
+   {
+    "sid": "973927",
+    "title": "'R Factor Broker FPMarkets' by Raphael Minato",
+    "growth": "240%",
+    "curve_points": 20,
+    "curve_dd": -7.0
+   },
+   {
+    "sid": "1911819",
+    "title": "'R Factor Neural Network 2' by Raphael Minato",
+    "growth": "102%",
+    "curve_points": 20,
+    "curve_dd": -11.0
+   }
+  ],
+  "hour_histogram": {
+   "03": 2,
+   "07": 2,
+   "16": 4,
+   "13": 1,
+   "21": 1,
+   "00": 4,
+   "18": 2,
+   "14": 3,
+   "04": 3,
+   "11": 5,
+   "01": 5,
+   "02": 2,
+   "15": 1,
+   "22": 7,
+   "23": 2,
+   "08": 1,
+   "12": 1,
+   "09": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2329267",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD",
+   "GBPCHF",
+   "NZDCAD",
+   "NZDUSD",
+   "USDCAD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 22.555,
+  "growth_pct": 1379.54,
+  "weeks": 139.0,
+  "pf": 2.0,
+  "max_dd_pct": null,
+  "trades": 2548.0,
+  "win_pct": 1830.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/nekto61",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "06": 1,
+   "02": 1,
+   "16": 2,
+   "15": 1,
+   "18": 3,
+   "09": 1,
+   "03": 1,
+   "13": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2382360",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "gold"
+  ],
+  "ev_score": 30.019,
+  "growth_pct": 1275.55,
+  "weeks": 288.0,
+  "pf": 1.35,
+  "max_dd_pct": null,
+  "trades": 1140.0,
+  "win_pct": 659.0,
+  "algo_pct": 21.0,
+  "subscribers": 1.0,
+  "author": "/en/users/anson5129",
+  "author_other_signals": [
+   {
+    "sid": "2381807",
+    "title": "'Anson Account 1' by Cho Hong Au",
+    "growth": "150%",
+    "curve_points": 20,
+    "curve_dd": -58.0
+   },
+   {
+    "sid": "2386671",
+    "title": "'Anson Account 2' by Cho Hong Au",
+    "growth": "-43%",
+    "curve_points": 20,
+    "curve_dd": -94.0
+   }
+  ],
+  "hour_histogram": {
+   "04": 1,
+   "05": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1864588",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY"
+  ],
+  "found_at": "2026-09-11T22:44:42+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 180.342,
+  "growth_pct": 9509.93,
+  "weeks": 187.0,
+  "pf": 4.05,
+  "max_dd_pct": null,
+  "trades": 1667.0,
+  "win_pct": 1422.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/happyforex",
+  "author_other_signals": [
+   {
+    "sid": "1504614",
+    "title": "'EA Happy Breakout VT' by Jaroslav Rajcher",
+    "growth": "1295%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   },
+   {
+    "sid": "2317138",
+    "title": "'EA Happy Bitcoin M30 VM' by Jaroslav Rajcher",
+    "growth": "1182%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   },
+   {
+    "sid": "1762388",
+    "title": "'EA Happy Bitcoin M30 TMGM' by Jaroslav Rajcher",
+    "growth": "277%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   }
+  ],
+  "hour_histogram": {
+   "15": 1,
+   "13": 3,
+   "17": 1,
+   "11": 2,
+   "08": 4,
+   "02": 2,
+   "16": 3,
+   "12": 4,
+   "10": 1
+  }
+ }
+]
