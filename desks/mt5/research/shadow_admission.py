@@ -326,7 +326,20 @@ def unreachable_certificates(base: Path = BASE) -> dict:
     # a different job. Separating them is what makes either one rankable.
     recoverable = sum(1 for r in blocked if r.get("engine_can_replay") is True)
     unaskable = sum(1 for r in blocked if r.get("engine_can_replay") is None)
-    return {"n": len(blocked) if any(readable.values()) else None,
+    # PARTIAL READABILITY IS UNMEASURED, NOT A COUNT (L1.28a / WS-005). This read `any(...)`,
+    # so one readable source was enough to publish a confident number while the other was
+    # unreadable. Measured 2026-09-11 on a live clone:
+    #
+    #     unreachable_certified {'n': 0, 'sources_readable':
+    #                            {'QQUANT_GATES': True, 'REAL_SURVIVORS': False}}
+    #
+    # A clean zero, standing for "nothing is blocked", derived from half the evidence -- and
+    # "nothing is blocked" and "I could not read the certificates" are opposite facts. The fence
+    # written to catch exactly that confusion had it in its own return line.
+    #
+    # `all` is the honest test: every source must be readable before the count means anything.
+    # A count over a subset of the sources is a count of that subset, not of the desk.
+    return {"n": len(blocked) if all(readable.values()) else None,
             "sources_readable": readable,
             "by_cause": by_cause,
             # What the FIVE-TUPLE can express -- the thing this door actually tests.

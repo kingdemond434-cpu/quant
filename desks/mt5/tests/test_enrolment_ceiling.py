@@ -113,6 +113,7 @@ def test_the_only_side_the_spec_tuple_can_express_is_declared():
 
 def test_the_refused_short_is_counted_with_its_cause(base: Path) -> None:
     _write(base, "QQUANT_GATES.json", _qquant([_row("EURUSD", "breakout", "SHORT", "asia")]))
+    _write(base, "REAL_SURVIVORS.json", {"real_survivors": []})
     out = unreachable_certificates(base)
     assert out["n"] == 1
     assert out["certificates"][0]["symbol"] == "EURUSD"
@@ -154,6 +155,7 @@ def test_a_short_the_engine_could_replay_is_priced_as_a_missing_spec_field(base:
     try:
         _write(base, "QQUANT_GATES.json",
                _qquant([_row("EURUSD", monkey_family, "SHORT", "asia")]))
+        _write(base, "REAL_SURVIVORS.json", {"real_survivors": []})
         out = unreachable_certificates(base)
         assert out["certificates"][0]["engine_can_replay"] is True
         assert out["certificates"][0]["cause"] == sa.UNREACHABLE_SIDE_NOT_IN_SPEC_TUPLE
@@ -175,6 +177,7 @@ def test_the_stale_cause_is_no_longer_emitted() -> None:
 
 def test_an_admitted_long_is_not_counted_as_blocked(base: Path) -> None:
     _write(base, "QQUANT_GATES.json", _qquant([_row("EURUSD", "breakout", "LONG", "asia")]))
+    _write(base, "REAL_SURVIVORS.json", {"real_survivors": []})
     assert unreachable_certificates(base)["n"] == 0
 
 
@@ -184,6 +187,7 @@ def test_a_row_that_failed_a_gate_is_not_a_ceiling(base: Path) -> None:
     row = _row("EURUSD", "breakout", "SHORT", "asia")
     row["stages"] = {k: {"passed": False} for k in row["stages"]}
     _write(base, "QQUANT_GATES.json", _qquant([row]))
+    _write(base, "REAL_SURVIVORS.json", {"real_survivors": []})
     assert unreachable_certificates(base)["n"] == 0
 
 
@@ -214,6 +218,25 @@ def test_a_report_failing_the_policy_attestation_is_not_read(base: Path) -> None
     out = unreachable_certificates(base)
     assert out["sources_readable"]["QQUANT_GATES"] is False
     assert out["n"] is None
+
+
+def test_one_readable_source_is_still_unmeasured(base: Path) -> None:
+    """THE CASE THAT WAS MISSING, AND THEREFORE THE CASE THAT SHIPPED.
+
+    Both-unreadable and both-readable were covered; PARTIAL was not, and the return line
+    tested `any(readable.values())` -- so one readable source published a confident count
+    drawn from half the evidence. Measured on a live clone 2026-09-11:
+
+        {'n': 0, 'sources_readable': {'QQUANT_GATES': True, 'REAL_SURVIVORS': False}}
+
+    A zero there reads as "nothing is blocked" when the truth was "I read one of two
+    sources". This pins the distinction so it cannot regress.
+    """
+    _write(base, "QQUANT_GATES.json", _qquant([_row("EURUSD", "breakout", "SHORT", "asia")]))
+    out = unreachable_certificates(base)
+    assert out["sources_readable"]["QQUANT_GATES"] is True
+    assert out["sources_readable"]["REAL_SURVIVORS"] is False
+    assert out["n"] is None, "a count over a subset of the sources is not a count of the desk"
 
 
 def test_measuring_the_ceiling_never_changes_who_is_admitted(base: Path) -> None:
