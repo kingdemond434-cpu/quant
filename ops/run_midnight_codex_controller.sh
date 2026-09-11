@@ -169,7 +169,7 @@ HEARTBEAT_PID=$!
 # exports, then the pinned default. The pre-merge form read ONLY _OVERRIDE, which
 # silently discarded the Environment= lines in quant-midnight-frontier.service --
 # the unit's model pin had no effect on the process the unit itself started.
-CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-5.6-terra}}"
+CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-6-astra}}"
 CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-${CODEX_NIGHTLY_REASONING_EFFORT:-medium}}"
 # The unattended controller is explicitly authorized to edit the complete checkout.
 # workspace-write is not viable on this VPS: bubblewrap can start but denies every

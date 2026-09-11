@@ -20,7 +20,7 @@ Environment="CODEX_NIGHTLY_FALLBACK=0"
 TimeoutStartSec=18h
 KillMode=control-group
 Environment="PATH=/home/quant/quant-platform/.venv/bin:/home/quant/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Environment="CODEX_NIGHTLY_MODEL=gpt-5.6-terra"
+Environment="CODEX_NIGHTLY_MODEL=gpt-6-astra"
 Environment="CODEX_NIGHTLY_REASONING_EFFORT=medium"
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/bin/bash /home/quant/quant-platform/ops/run_midnight_codex_controller.sh

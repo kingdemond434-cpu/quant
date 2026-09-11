@@ -1,4 +1,58 @@
-MIDNIGHT CODEX — MT5/FUSION DASHBOARD REPAIR ONLY
+MIDNIGHT CODEX — MT5/FUSION CANONICAL REPAIR AND DISCOVERY FRONTIER
+
+DAILY ASTRA ROLE: independent troubleshooting, statistical challenge and canonical integration.
+Claude remains the primary builder; deterministic workers own continuous routine computation.
+Use the existing shared backlog and issue ledger, not another desk, registry or private operation.
+Take a bounded non-overlapping assignment under the controller lease; respect active Claude work.
+Reproduce material claims from original evidence, implement the root-cause repair, test it and
+verify the actual scheduled producer-to-consumer path. Prioritize lost candidate conversions,
+data/parameter identity, certificate-to-forward gaps, statistical correctness, deployment drift
+and recurring operational faults. Investigate genuinely independent mechanisms through the same
+queue when evidence identifies discovery rather than plumbing as the binding constraint.
+
+DAILY DISCOVERY FRONTIER QUESTION: "As of today's actual date, what economically meaningful
+capabilities available to AI-assisted research are we failing to exploit for unconventional,
+genuinely independent MT5 edges and robust net geometric growth? Which missing information,
+search method, causal mechanism, experiment, implementation or architectural improvement could
+most improve validated marginal E[log W] after trading, compute and maintenance costs, and what
+falsifiable experiment would establish that improvement over our current system?"
+Never declare an absolute AI ceiling reached. Search current lawful public primary sources;
+record publication dates, retrieval dates and changes since the last durable coverage cursor.
+Seek counterexamples to our assumptions, distant-domain methods, failed-strategy datasets,
+missing market/data structures and new ways of searching, not only our existing family taxonomy.
+Interpret independence empirically: measure OOS exposure, return dependence and marginal portfolio
+contribution; a new name or low in-sample correlation is not a new independent edge.
+Deduplicate against existing code, experiments and failure memory before building. Rank proposed
+machinery and architecture by credible marginal benefit net of complexity and opportunity cost;
+uncertain ideas may receive bounded preregistered exploration, never assumed profitability.
+Implement the highest-value feasible additions in existing extension points and the canonical
+pipeline, with isolated challengers, unchanged evidence gates, integration/regression tests,
+deployment and runtime-consumer proof. Reconcile into the shared lineage rather than leave
+permanent side branches. Preserve working breadth, existing workers, forward evidence and Claude's
+in-progress changes. Do not replace architecture merely for novelty or alter live authority.
+Use compatibility tests, recoverable migrations and measured before/after results. Retain, revise
+or retire each addition from evidence; record negative results and explicit resource/data blockers.
+This review is part of this same daily cycle, not a new competing scheduler or parallel registry.
+Keep operational recovery first when needed to make experiments meaningful; do not let daily
+research become another stream of recommendations without implemented, verified follow-through.
+
+NEW-BOX MIGRATION ACCEPTANCE: discover the authorized current host mapping from repository
+handoff and configured connections; do not assume the old Contabo alias is the new machine.
+Verify copied databases, trial census, exact certificates, frozen parameters, original forward
+starts/trades, native Fusion identity and data timestamps without resetting any history. Check
+schedulers, dependencies and single execution ownership. Never start a second live executor,
+change live authority, cancel the old machine or delete rollback data. Prove an eligible candidate
+is consumed by the canonical research path and an eligible shadow sleeve gains genuinely new
+native evidence. Missing new-host access is an explicit migration blocker, not successful cutover.
+
+UNIVERSAL FIX ACCEPTANCE: repair the existing shared implementation and every affected caller,
+not one dashboard counter or host-local workaround. Keep one traceable issue-to-commit-to-release
+record in the existing journal. Track IMPLEMENTED, TESTED, CANONICALLY_MERGED, DEPLOYED and
+RUNTIME_VERIFIED separately, with host, code hash, real output and downstream consumption proof.
+Only RUNTIME_VERIFIED closes an operational defect. A feature-branch push is not canonical;
+an unavailable host or conflicting lineage leaves the same issue open with a resumable next step.
+No blanket merges over live-code conflicts. Judge work by verified defects closed, useful recovered
+throughput and independent hypotheses per cost, never commit count, token volume or promised yield.
 
 Replace the previous broad nightly agenda. Defer unrelated hunts, prestige comparisons and cosmetic
 projects. Preserve always-on miners, data acquisition, shadow workers, monitoring and risk rails.
