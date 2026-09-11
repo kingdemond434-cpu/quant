@@ -1,0 +1,133 @@
+[
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "z14_EiUKsmw",
+  "published": "2026-09-10T12:51:11Z",
+  "title": "New York Session Live! | IQ Capital TV | Thursday 9/10/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80THE BIGGEST PROP EVENT OF THE YEAR!\ud83d\ude80\n\n\ud83d\udcc5 17th September\n\nGet ready for a major event you won\u2019t want to miss! \ud83d\udd25\n\n\ud83c\udde9\ud83c\uddea German Event: https://www.iqcapital.io/de/launch-ev...\n\n\ud83c\uddec\ud83c\udde7 English Event:  https://www.iqcapital.io/launch-event...\n\n\ud83d\udd25 Save the date. Be there. Don\u2019t miss it!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalof.  . \n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\n\n\n\ud83c\udf99\ufe0f Neu im Streaming oder bereit f\u00fcr den n\u00e4chsten Schritt? Schau dir StreamYard an und erhalte $10 Rabatt! \ud83d\ude0d https://streamyard.com/pal/d/6588736983859200",
+  "links": [
+   "https://www.iqcapital.io/de/launch-ev...",
+   "https://www.iqcapital.io/launch-event...",
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io",
+   "https://streamyard.com/pal/d/6588736983859200"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UC7NJLsf6IonOy8QI8gt5BeA",
+  "channel": "Trading with DaviddTech",
+  "video_id": "rQRs6DdnB6A",
+  "published": "2026-09-10T13:00:33Z",
+  "title": "I Built an INSANE AI Trading Bot With GPT-6 + TradingView (Full Guide)",
+  "description": "\ud83d\udc49 Get all my AI trading bots and strategies : https://www.skool.com/daviddtech/about\n\n\ud83d\udc46GPT-6 prompts and setup resources \ud83d\udc46\n\n\ud83c\udfc6 Explore the AI Trading Arena: https://aitradingarena.com/\n\nI gave GPT-6 Astra eight hours to research, build, and backtest trading strategies. In this full guide, I\u2019ll show you the tools, prompts, and TradingView setup so you can follow the process yourself.\n\nBut impressive backtests are only part of the story. GPT-6 stopped working partway through the experiment\u2014and its final arena ranking revealed something the biggest profit figures didn\u2019t tell us.\n\nWe\u2019ll connect ChatGPT to a backtesting engine, inspect the strategies it produces, and walk through the TradingView alerts and broker connection used to automate execution.\n\nWatch through the final leaderboard to see how GPT-6 compares with Claude Fable 5.1 and Grok Bot\u2014and why drawdown and forward testing matter alongside returns.\n\n\ud83d\udcac COMMENT \u201cGPT6\u201d and tell me: which matters most to you\u2014return, drawdown, or performance on new market data?\n\nIn this video you\u2019ll discover:\n\n\u2705 How to connect GPT-6 to Trader.dev through an MCP server\n\u2705 The prompts used to run an eight-hour strategy research sprint\n\u2705 What happened when ChatGPT stopped early\u2014and how I restarted it\n\u2705 How to inspect strategy results and equity curves in Mission Control\n\u2705 Why new strategies need forward testing before live deployment\n\u2705 How to import generated Pine Script into TradingView\n\u2705 How the example strategy compares with buy and hold\n\u2705 How to configure TradingView alerts and Trigger.trade for broker execution\n\u2705 Where GPT-6 placed on the AI Trading Arena leaderboard\n\n\u23f0 VIDEO CHAPTERS\n\n0:00 \u2013 GPT-6 Builds an AI Trading Bot\n0:46 \u2013 The Plan: From Setup to Automation\n2:21 \u2013 Tools You Need: ChatGPT, TradingKit & TradingView\n3:57 \u2013 Installing Trader.dev & Testing the Connection\n5:27 \u2013 The Prompts & Eight-Hour Research Sprint\n7:55 \u2013 GPT-6 Stops Early: Restarting the Experiment\n8:43 \u2013 Strategy Results & Mission Control\n10:35 \u2013 Forward Tes",
+  "links": [
+   "https://www.skool.com/daviddtech/about",
+   "https://aitradingarena.com/",
+   "https://tradingkit.com/",
+   "https://www.tradingview.com/",
+   "https://trigger.trade/",
+   "https://aitradingarena.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCa8rgzIMKFx2uJHVsf0oqjg",
+  "channel": "IQCapital",
+  "video_id": "p5pm1d8qYrA",
+  "published": "2026-09-10T13:08:40Z",
+  "title": "Will AI Replace Traders? A 12x Trading Champion Answers",
+  "description": "Will AI Replace Traders? A 12x Trading Champion Answers",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "z14_EiUKsmw",
+  "published": "2026-09-10T12:59:36Z",
+  "title": "New York Session Live! | IQ Capital TV | Thursday 9/10/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80THE BIGGEST PROP EVENT OF THE YEAR!\ud83d\ude80\n\n\ud83d\udcc5 17th September\n\nGet ready for a major event you won\u2019t want to miss! \ud83d\udd25\n\n\ud83c\udde9\ud83c\uddea German Event: https://www.iqcapital.io/de/launch-ev...\n\n\ud83c\uddec\ud83c\udde7 English Event:  https://www.iqcapital.io/launch-event...\n\n\ud83d\udd25 Save the date. Be there. Don\u2019t miss it!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalof.  . \n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\n\n\n\ud83c\udf99\ufe0f Neu im Streaming oder bereit f\u00fcr den n\u00e4chsten Schritt? Schau dir StreamYard an und erhalte $10 Rabatt! \ud83d\ude0d https://streamyard.com/pal/d/6588736983859200",
+  "links": [
+   "https://www.iqcapital.io/de/launch-ev...",
+   "https://www.iqcapital.io/launch-event...",
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io",
+   "https://streamyard.com/pal/d/6588736983859200"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "z14_EiUKsmw",
+  "published": "2026-09-10T15:45:12Z",
+  "title": "New York Session Live! | IQ Capital TV | Thursday 9/10/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80THE BIGGEST PROP EVENT OF THE YEAR!\ud83d\ude80\n\n\ud83d\udcc5 17th September\n\nGet ready for a major event you won\u2019t want to miss! \ud83d\udd25\n\n\ud83c\udde9\ud83c\uddea https://www.iqcapital.io/de/launch-event?aff=TJ\n\n\ud83c\uddec\ud83c\udde7 https://www.iqcapital.io/launch-event?aff=STREAM\n\n\ud83d\udd25 Save the date. Be there. Don\u2019t miss it!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalof.  . \n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\n\n\n\ud83c\udf99\ufe0f Neu im Streaming oder bereit f\u00fcr den n\u00e4chsten Schritt? Schau dir StreamYard an und erhalte $10 Rabatt! \ud83d\ude0d https://streamyard.com/pal/d/6588736983859200",
+  "links": [
+   "https://www.iqcapital.io/de/launch-event?aff=TJ",
+   "https://www.iqcapital.io/launch-event?aff=STREAM",
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io",
+   "https://streamyard.com/pal/d/6588736983859200"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "z14_EiUKsmw",
+  "published": "2026-09-10T15:51:45Z",
+  "title": "New York Session Live! | IQ Capital TV | Thursday 9/10/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80THE BIGGEST PROP EVENT OF THE YEAR!\ud83d\ude80\n\n\ud83d\udcc5 17th September\n\nGet ready for a major event you won\u2019t want to miss! \ud83d\udd25\n\n\ud83c\udde9\ud83c\uddea https://www.iqcapital.io/de/launch-event?aff=TJ\n\n\ud83c\uddec\ud83c\udde7 https://www.iqcapital.io/launch-event?aff=STREAM\n\n\ud83d\udd25 Save the date. Be there. Don\u2019t miss it!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalof.  . \n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\n\n\n\ud83c\udf99\ufe0f Neu im Streaming oder bereit f\u00fcr den n\u00e4chsten Schritt? Schau dir StreamYard an und erhalte $10 Rabatt! \ud83d\ude0d https://streamyard.com/pal/d/6588736983859200",
+  "links": [
+   "https://www.iqcapital.io/de/launch-event?aff=TJ",
+   "https://www.iqcapital.io/launch-event?aff=STREAM",
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io",
+   "https://streamyard.com/pal/d/6588736983859200"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCBc1EqknL4xzwJsUP9w7asg",
+  "channel": "Unbiased Trading",
+  "video_id": "tbHO6xJuNnM",
+  "published": "2026-09-10T22:55:02Z",
+  "title": "Ken Griffin Doesn't Hire for Talent. He Hires for This.",
+  "description": "Build your first live trading algorithm \ud83d\udc49https://cryptomomentumgroup.com/\n\nKen Griffin says his hiring filter at Citadel is an athlete who did well academically, because athletes know what it takes to win and have experienced loss. Talent is everywhere, but recovering from losses and still performing is rare. That same skill separates profitable traders from everyone else.\n\n\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\n\nThis channel shares educational content about systematic and algorithmic trading. Nothing here is financial advice, and I am not a registered investment adviser. Trading involves risk of loss. Always do your own research and consult a licensed financial professional before making investment decisions.",
+  "links": [
+   "https://cryptomomentumgroup.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ }
+]

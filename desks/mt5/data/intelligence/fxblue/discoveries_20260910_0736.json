@@ -1,0 +1,362 @@
+[
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user catapult",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=catapult&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user ccjhuang",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=ccjhuang&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user cetf",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=cetf&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user ceyfx",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=ceyfx&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user cfdn00b",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=cfdn00b&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user cfdprivate",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=cfdprivate&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user cfxglobal-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=cfxglobal-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user cfxpro",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=cfxpro&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user challenges",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=challenges&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user channel-live",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=channel-live&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user channel-trader",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=channel-trader&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user channel-trader-pro",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=channel-trader-pro&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user channeltraderpro",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=channeltraderpro&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-forexstf",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-forexstf&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-forexstf7",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-forexstf7&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-pulse",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-pulse&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-pulse7",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-pulse7&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-sigma",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-sigma&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-sigma7",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-sigma7&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-taren",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-taren&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-taren7",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-taren7&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-wallstreet",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-wallstreet&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-wallstreet7",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-wallstreet7&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-xaaron",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-xaaron&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user check-xaaron7",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=check-xaaron7&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user chelton",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=chelton&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user chinchin0975",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=chinchin0975&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user chochomaru",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=chochomaru&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user choudhary1musd",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=choudhary1musd&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user chriskraussch",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=chriskraussch&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user chrome-fx",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=chrome-fx&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user cht-831",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=cht-831&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user cig-1",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=cig-1&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user cl_nor",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=cl_nor&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user clam",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=clam&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user claudius-forex-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=claudius-forex-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user claudius-fx-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=claudius-fx-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user claudiusfxea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=claudiusfxea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user cleaner-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=cleaner-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user clenbot",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=clenbot&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-10T07:54:40+00:00"
+ }
+]

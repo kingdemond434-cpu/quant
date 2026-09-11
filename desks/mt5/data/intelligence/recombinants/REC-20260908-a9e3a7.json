@@ -4,31 +4,30 @@
     {
       "type": "entry",
       "value": "stop_order",
-      "source": "external.EURCHF.discovered.p=4cba1afa572a99cd"
+      "source": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
     },
     {
       "type": "execution",
       "value": "market",
-      "source": "external.EURCHF.discovered.p=4cba1afa572a99cd"
+      "source": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
     },
     {
       "type": "stop",
       "value": "atr",
-      "source": "external.EURCHF.discovered.p=e266baf78567bef3"
+      "source": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
     },
     {
       "type": "horizon",
       "value": "intraday",
-      "source": "external.EURGBP.discovered.p=8e61ea22743f15b7"
+      "source": "external.EURJPY.session_range_breakout.rr=2.0_wb=12"
     }
   ],
   "mechanism_class": "relative_value",
   "expected_orthogonality": 0.7999999999999999,
   "estimated_edge_bps": 11.5,
   "source_strategies": [
-    "external.EURCHF.discovered.p=e266baf78567bef3",
-    "external.EURCHF.discovered.p=4cba1afa572a99cd",
-    "external.EURGBP.discovered.p=8e61ea22743f15b7"
+    "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
   ],
   "recombination_type": "orthogonal",
   "falsifier": "edge disappears in forward test",

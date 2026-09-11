@@ -1,0 +1,13 @@
+[
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Norbert",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Norbert - may impact energy prices"
+  }
+]

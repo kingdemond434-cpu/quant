@@ -1,0 +1,187 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "The Case of the 999 CC Morgan Dollar",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "New to coins",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "I bought my first coin, 1987 ASE from JM bullion. It weighs 31.36 grams according to kitchen scale. It sounds like silver when I ping it but the concave ness on the face is throwing me off",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "This is good?",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Make It Make Sense?",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Started my first stack!",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Where to find the 5oz silver maple leaf??",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "How many out there are pretty sure you\u2019ve at some point acquired stolen silver?",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Star Trek silver plated coins",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Complete Franklin Mint \u201cThe 20th Century\u2019s Greatest Events\u201d \u2014 anyone familiar with this series?",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "how to sell 100oz silver bars",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "It\u2019s it\u2019s worth it?",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Cleaning \"real\" silver.",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Mourning my stack",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Help identifying Russian 84 zolotnik silver spoons \u2014 maker's mark \"GS\u201d",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "What's the deal with silver right now?",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [
+      "support",
+      "RSI"
+    ],
+    "confidence": 0.3
+  }
+]

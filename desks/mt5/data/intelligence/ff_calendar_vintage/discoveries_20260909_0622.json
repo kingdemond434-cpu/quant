@@ -1,0 +1,12 @@
+[
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "fetch_error",
+  "title": "429 Client Error: Too Many Requests for url: https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T06:24:30+00:00",
+  "needs_selector_work": true
+ }
+]
