@@ -703,7 +703,8 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     trials: dict[str, int] | None = None,
                     phase: str | None = None,
                     trades_by_sleeve: dict[str, list[dict]] | None = None,
-                    broker_utc_offset_h: int = 0) -> list[SleeveEvidence]:
+                    broker_utc_offset_h: int = 0,
+                    forward_only_days: dict[str, int] | None = None) -> list[SleeveEvidence]:
     """Fold backtest, certified, forward and live evidence into one record per sleeve.
 
     THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
@@ -765,7 +766,16 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     else tr.get("external", max(tr.values()) if tr else 1))
         out.append(SleeveEvidence(
             name=name, daily_r=hist, family=fam, symbol=parts[0], n_trials=int(n_trials),
-            forward_days=len(fwd), live_days=int(live.get(name, 0)),
+            # A LANE WHOSE WHOLE SERIES IS FORWARD COUNTS ITS OWN DAYS. `forward` holds days
+            # APPENDED to a backtest history, so `len(fwd)` is right for a sleeve with both.
+            # The scalp lane has no backtest half: `scalp_evidence` reads FORWARD PHASE ONLY
+            # and that series arrives through `daily`, so `fwd` is empty and this reported 1
+            # forward day for clocks holding 13-14. Not cosmetic -- it feeds
+            # `oos = 4*forward_days + 12*live_days`, the weight deciding how hard the mean is
+            # shrunk toward the family prior. Measured 2026-09-10: 53/94/97 forward trades
+            # over 13/14/14 days, all reported as forward_days=1.
+            forward_days=len(fwd) or int((forward_only_days or {}).get(name, 0)),
+            live_days=int(live.get(name, 0)),
             # Cost LEVEL is already inside the replayed R multiples (Costs.from_symbol at the
             # honest 2x baseline); `cost_r` is the per-trade scale used to size the UNCERTAINTY
             # around it, never a second charge -- and it now MOVES WITH THE SLEEVE, because a
@@ -2448,7 +2458,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     _log(f"state: phase={phase or 'UNKNOWN'} broker_utc_offset={broker_off:+d}h "
          f"sleeves_with_trades={len(trades_by_sleeve)}")
     ev = sleeve_evidence(daily, forward, live, trials, phase=phase,
-                         trades_by_sleeve=trades_by_sleeve, broker_utc_offset_h=broker_off)
+                         trades_by_sleeve=trades_by_sleeve, broker_utc_offset_h=broker_off,
+                         # The scalp lane's series IS its forward record, so its own day
+                         # count is the forward day count. `join_forward` never sees these
+                         # names -- they are not in `forward` -- so nothing else supplies it.
+                         forward_only_days={n: len(sr) for n, sr in scalp.items()})
     dd = worst_dd_r(daily)
 
     # THE STATE VECTOR ENTERS AS INFORMATION, NOT AS AUTHORITY. `state_vector_build` fits the
