@@ -703,7 +703,8 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     trials: dict[str, int] | None = None,
                     phase: str | None = None,
                     trades_by_sleeve: dict[str, list[dict]] | None = None,
-                    broker_utc_offset_h: int = 0) -> list[SleeveEvidence]:
+                    broker_utc_offset_h: int = 0,
+                    forward_only_days: dict[str, int] | None = None) -> list[SleeveEvidence]:
     """Fold backtest, certified, forward and live evidence into one record per sleeve.
 
     THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
@@ -730,8 +731,16 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
     costs = cost_doc["sleeves"]
 
     out: list[SleeveEvidence] = []
+    # NO ZERO-FILL HERE. `align` reindexes every sleeve onto the union of trading days, so a
+    # sleeve that has lived a fortnight carries NaN on the ~2,247 days before it existed.
+    # `fillna(0.0)` turned each of those into a REAL OBSERVATION OF ZERO RETURN -- the desk's
+    # shipped defect #4 -- which diluted the sleeve's mean, flattened its dispersion and told the
+    # shrinkage it had 2,260 observations. The NaN now survives to `_posterior_mu`, which takes
+    # each sleeve's mean/std/n from its OWN days, while every portfolio-level consumer
+    # (`sample_worlds`, `_corr_abs`, `_corr_to_book`) fills flat at its own stacking site. That
+    # split is the protocol's rule verbatim: NaN day, never 0; flat only at portfolio level.
     series: dict[str, np.ndarray] = {
-        str(c): daily[c].fillna(0.0).to_numpy(dtype=float) for c in daily.columns
+        str(c): daily[c].to_numpy(dtype=float) for c in daily.columns
     }
     for name, hist in series.items():
         fwd = forward.get(name, {})
@@ -757,7 +766,16 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     else tr.get("external", max(tr.values()) if tr else 1))
         out.append(SleeveEvidence(
             name=name, daily_r=hist, family=fam, symbol=parts[0], n_trials=int(n_trials),
-            forward_days=len(fwd), live_days=int(live.get(name, 0)),
+            # A LANE WHOSE WHOLE SERIES IS FORWARD COUNTS ITS OWN DAYS. `forward` holds days
+            # APPENDED to a backtest history, so `len(fwd)` is right for a sleeve with both.
+            # The scalp lane has no backtest half: `scalp_evidence` reads FORWARD PHASE ONLY
+            # and that series arrives through `daily`, so `fwd` is empty and this reported 1
+            # forward day for clocks holding 13-14. Not cosmetic -- it feeds
+            # `oos = 4*forward_days + 12*live_days`, the weight deciding how hard the mean is
+            # shrunk toward the family prior. Measured 2026-09-10: 53/94/97 forward trades
+            # over 13/14/14 days, all reported as forward_days=1.
+            forward_days=len(fwd) or int((forward_only_days or {}).get(name, 0)),
+            live_days=int(live.get(name, 0)),
             # Cost LEVEL is already inside the replayed R multiples (Costs.from_symbol at the
             # honest 2x baseline); `cost_r` is the per-trade scale used to size the UNCERTAINTY
             # around it, never a second charge -- and it now MOVES WITH THE SLEEVE, because a
@@ -1790,7 +1808,12 @@ def _annual_sharpe(r: np.ndarray) -> float | None:
     REPORTED, NEVER RANKED ON. It is on the row so a reader can SEE that the admission decision
     disagreed with the Sharpe ordering -- which is the whole point of the criterion.
     """
+    # ON ITS OWN DAYS. A sleeve's standalone Sharpe is a statement about the sleeve, so the days
+    # before it existed are not zero-return days in it (defect #4). Reported at 0.285 when it was
+    # 3.71, this number is what a reader uses to sanity-check an admission verdict, so a 13x
+    # understatement here hid the corrupted input rather than exposing it.
     a = np.asarray(r, dtype=float)
+    a = a[np.isfinite(a)]
     if a.size < 2:
         return None
     sd = float(a.std(ddof=1))
@@ -1814,10 +1837,14 @@ def _corr_to_book(cand: np.ndarray, held: dict[str, float],
     obs = min([int(cand.size)] + [int(e.daily_r.size) for e, _ in legs])
     if obs < 30:
         return None
+    # PORTFOLIO LEVEL: a day a leg did not exist contributes no P&L to the book stream, so flat
+    # is the honest fill HERE (protocol: "flat only at portfolio level, explicitly"). Without the
+    # fill the NaN now carried by young sleeves would propagate and return None for every
+    # candidate, which would read as "correlation unmeasurable" instead of "recently born".
     stream = np.zeros(obs, dtype=float)
     for e, h in legs:
-        stream += h * np.asarray(e.daily_r[-obs:], dtype=float)
-    c = np.asarray(cand[-obs:], dtype=float)
+        stream += h * np.nan_to_num(np.asarray(e.daily_r[-obs:], dtype=float), nan=0.0)
+    c = np.nan_to_num(np.asarray(cand[-obs:], dtype=float), nan=0.0)
     if not (stream.std() > 0 and c.std() > 0):
         return None
     return float(np.corrcoef(stream, c)[0, 1])
@@ -2431,7 +2458,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     _log(f"state: phase={phase or 'UNKNOWN'} broker_utc_offset={broker_off:+d}h "
          f"sleeves_with_trades={len(trades_by_sleeve)}")
     ev = sleeve_evidence(daily, forward, live, trials, phase=phase,
-                         trades_by_sleeve=trades_by_sleeve, broker_utc_offset_h=broker_off)
+                         trades_by_sleeve=trades_by_sleeve, broker_utc_offset_h=broker_off,
+                         # The scalp lane's series IS its forward record, so its own day
+                         # count is the forward day count. `join_forward` never sees these
+                         # names -- they are not in `forward` -- so nothing else supplies it.
+                         forward_only_days={n: len(sr) for n, sr in scalp.items()})
     dd = worst_dd_r(daily)
 
     # THE STATE VECTOR ENTERS AS INFORMATION, NOT AS AUTHORITY. `state_vector_build` fits the

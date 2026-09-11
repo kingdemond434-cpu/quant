@@ -91,7 +91,9 @@ def _inverse_vol(ev: Sequence[SleeveEvidence], total: float) -> dict[str, float]
     """Weight inversely to each sleeve's own daily volatility."""
     inv = []
     for e in ev:
-        sd = float(np.std(e.daily_r, ddof=1)) if e.daily_r.size > 1 else 0.0
+        # defect #4: a sleeve's OWN volatility, not vol across days it never lived
+        own = e.own_r
+        sd = float(np.std(own, ddof=1)) if own.size > 1 else 0.0
         inv.append(1.0 / sd if sd > 1e-12 else 0.0)
     s = sum(inv)
     if s <= 0:
@@ -112,7 +114,9 @@ def _risk_parity(ev: Sequence[SleeveEvidence], total: float) -> dict[str, float]
     m = min(len(e.daily_r) for e in ev)
     if m < 2:
         return _equal_weight([e.name for e in ev], total)
-    x = np.vstack([np.asarray(e.daily_r[-m:], dtype=float) for e in ev])
+    # Flat at portfolio level, explicitly (defect #4 split): a covariance across sleeves is a
+    # statement about the shared calendar, so an absent day is a no-P&L day here.
+    x = np.vstack([np.nan_to_num(np.asarray(e.daily_r[-m:], dtype=float), nan=0.0) for e in ev])
     cov = np.cov(x)
     if cov.ndim == 0:
         cov = cov.reshape(1, 1)
