@@ -85,14 +85,14 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     # longer shadow the Environment= line into irrelevance.
     assert (
         'CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-'
-        '${CODEX_NIGHTLY_MODEL:-gpt-5.6-terra}}"'
+        '${CODEX_NIGHTLY_MODEL:-gpt-6-astra}}"'
     ) in source
     assert (
         'CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-'
         '${CODEX_NIGHTLY_REASONING_EFFORT:-medium}}"'
     ) in source
     service = SERVICE.read_text("utf-8")
-    assert "CODEX_NIGHTLY_MODEL=gpt-5.6-terra" in service
+    assert "CODEX_NIGHTLY_MODEL=gpt-6-astra" in service
     assert "CODEX_NIGHTLY_REASONING_EFFORT=medium" in service
     for resource_control in ("MemoryHigh=1200M", "MemoryMax=1500M", "CPUWeight=25",
                              "IOSchedulingClass=idle", "OOMPolicy=stop"):
