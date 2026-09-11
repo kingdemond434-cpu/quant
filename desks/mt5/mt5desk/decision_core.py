@@ -109,6 +109,13 @@ BRACKET_TTL_HOURS = 6.0
 #: the same one without a cliff at the boundary. (principal, 2026-09-02)
 HEAT_SLIDE = 0.02
 
+#: How far ABOVE the earned ceiling a FILLED allocator book may land before it is refused
+#: rather than clamped. One basis point of heat is 0.01% of equity -- at any equity this desk
+#: has run that is smaller than the risk carried by the minimum lot it can send, so this can
+#: only ever absorb the rounding of a fill, never a book that actually wants more heat than
+#: it earned. See `allocator_heat`.
+_HEAT_FILL_TOL = 1e-4
+
 CANCEL_HOUR = 20.5      # end-of-day backstop; the per-bracket TTL above is the real limit
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
 PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
@@ -780,7 +787,22 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
             return None, "allocator did not certify the utilisation target"
         total = float(heat.get("total") or 0.0)
         cap, cap_why = live_heat_ceiling(heat)
-        if not (0.0 < total <= cap + 1e-12):
+        # A FILL THAT OVERSHOOTS THE BAR IS CLAMPED, NOT DISCARDED. The heat law FILLS the
+        # resolved heat rather than reporting it short (`heat.filled`), and that fill lands a
+        # rounding step ABOVE the ceiling it filled to. Measured 2026-09-11: a certified, armed
+        # book carrying annual_growth_pct = 4135 published heat.total = 0.300001 against a
+        # 0.300000 bar -- one part in 300,000 -- and `total <= cap + 1e-12` threw the WHOLE book
+        # away. The desk fell back to the derived budget at the 20% floor: admission cut from
+        # 30% to 22%, 65 sleeves down to 63, and five certified sleeves deferred (gold_asia_v3,
+        # gold_asia_v4, gold_london_am_v2/v3/v4). A book is not unsafe because its last decimal
+        # rounded up, and a 10-point heat cut is not what that decimal justifies.
+        #
+        # Clamping is the one resolution that cannot over-bet: the budget returned below is
+        # `min(total, cap)`, never above the bar this artifact earned, so absorbing the
+        # overshoot deploys LESS than the allocator asked for and never more. A book genuinely
+        # hotter than its bar -- past `_HEAT_FILL_TOL`, one basis point of heat -- is refused
+        # exactly as before, with the same reason naming the same numbers.
+        if not (0.0 < total <= cap + _HEAT_FILL_TOL):
             return None, f"allocator heat {total:.4f} outside (0, {cap:.2f}] ({cap_why})"
         # A HEAT NUMBER WITH NO GROWTH BEHIND IT IS NOT A BUDGET. Measured 2026-09-02: a pass
         # published 30% total heat carrying annual_growth_pct = -inf -- a book wiped out in at
@@ -790,7 +812,14 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         ann = g.get("annual_growth_pct")
         if not isinstance(ann, (int, float)) or not math.isfinite(float(ann)):
             return None, f"allocator book has no finite growth ({ann!r})"
-        return total, f"allocator book ({age / 60:.0f} min old, binding={heat.get('binding')})"
+        # `min` is where the clamp above is actually applied, AFTER every other check has run --
+        # so an over-filled book still has to certify, still has to carry finite growth, and
+        # still has to be armed and fresh. The clamp buys it nothing except not being discarded.
+        budget = min(total, cap)
+        why = f"allocator book ({age / 60:.0f} min old, binding={heat.get('binding')}"
+        why += (f"; fill {total:.6f} clamped to the {cap:.4f} bar it filled to)"
+                if budget < total else ")")
+        return budget, why
     except Exception as exc:
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
 

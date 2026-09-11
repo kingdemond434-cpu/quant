@@ -76,14 +76,25 @@ def _append(row: dict[str, Any]) -> None:
     fifty-nine costed legs an hour, and a silent `except OSError: pass` is one of the two ways
     that happens (the other, an import path, is fixed at the caller). A denominator that fails
     silently is a scaling law nobody can draw."""
-    try:
-        LEDGER.parent.mkdir(parents=True, exist_ok=True)
-        with open(LEDGER, "a", encoding="utf-8") as fh:
-            fh.write(json.dumps(row, default=str) + "\n")
-    except OSError as exc:
-        print(f"compute_ledger: row for {row.get('run')!r} NOT written "
-              f"({type(exc).__name__}: {exc}) -- this hour's cost is unrecorded",
-              file=sys.stderr, flush=True)
+    # RETRY, BECAUSE THE COMMON FAILURE IS CONTENTION AND NOT A PERMISSION. On Windows a second
+    # process appending to the same file raises PermissionError (errno 13) for as long as the
+    # first holds it -- the message reads like a broken ACL and is nothing of the kind. Measured
+    # 2026-09-11: MT5-Hourly lost the 'deepen', 'merge_docket' and 'backtest' rows of a single
+    # pass this way while the file was writable and unlocked seconds later. Three short retries
+    # cover a concurrent append; anything that survives them is a real failure and still says so.
+    for attempt in range(3):
+        try:
+            LEDGER.parent.mkdir(parents=True, exist_ok=True)
+            with open(LEDGER, "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(row, default=str) + "\n")
+            return
+        except OSError as exc:
+            if attempt == 2:
+                print(f"compute_ledger: row for {row.get('run')!r} NOT written "
+                      f"({type(exc).__name__}: {exc}) after 3 attempts "
+                      f"-- this hour's cost is unrecorded", file=sys.stderr, flush=True)
+                return
+            time.sleep(0.15 * (attempt + 1))
 
 
 def open_run(name: str, kind: str = "research", **meta: Any) -> Run:

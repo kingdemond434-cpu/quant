@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -83,9 +84,26 @@ def register_family(
     return decorator
 
 
-def get_family_func(name: str) -> Callable | None:
+def get_family_func(name: str) -> Callable[..., Any] | None:
+    """The constructor for `name`, across BOTH populations this module can reach.
+
+    FAMILY_REGISTRY holds the 27 decorated families. The 31 in
+    `families_orthogonal.ORTHOGONAL_FAMILIES` are equally real code that the forward engine
+    already resolves (`executables.resolve_family` falls through to them), but this lookup
+    stopped at the registry -- so the backtest and pipeline lanes silently skipped every
+    orthogonal family as "no such family" rather than testing it. Absence of a decorator is
+    not absence of an implementation; this makes the two lanes agree.
+    """
     entry = FAMILY_REGISTRY.get(name)
-    return entry["func"] if entry else None
+    if entry:
+        fn: Callable[..., Any] | None = entry["func"]
+        return fn
+    try:
+        from mt5desk import families_orthogonal as fo
+    except Exception:
+        return None
+    ofn: Callable[..., Any] | None = fo.ORTHOGONAL_FAMILIES.get(name)
+    return ofn
 
 
 def get_all_family_names() -> list[str]:

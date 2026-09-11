@@ -1374,6 +1374,27 @@ def sleeve_set() -> list[dict]:
 #: `type nul > data\GENERIC_EXEC_ENABLED` is the deliberate human act that arms the lane.
 GENERIC_EXEC_ENABLED = BASE / "data" / "GENERIC_EXEC_ENABLED"
 
+
+def unarmed_why(st: dict[str, object]) -> str:
+    """WHICH of the three arming terms is false, by name.
+
+    `armed` is `st["armed"] AND GENERIC_EXEC_ENABLED.exists() AND NEW_RISK_OK`, and the
+    WOULD-PLACE line used to print "enable=GENERIC_EXEC_ENABLED" whatever the cause. Measured
+    2026-09-11: the flag file had been present since 2026-09-06 and the false term was
+    NEW_RISK_OK (a release identity the seal had not caught up with), so every scalp signal for
+    hours advertised a fix that was already done while the real blocker went unnamed. A
+    diagnostic that points at the wrong term is worse than none: it sends whoever reads it to
+    re-do something that is not broken.
+    """
+    missing = []
+    if not st.get("armed"):
+        missing.append("account unarmed (state.armed false)")
+    if not GENERIC_EXEC_ENABLED.exists():
+        missing.append(f"{GENERIC_EXEC_ENABLED.name} absent")
+    if not NEW_RISK_OK:
+        missing.append("release identity refuses new risk")
+    return "; ".join(missing) if missing else "armed"
+
 #: RELEASE IDENTITY (2026-09-05). The code this box runs must be the code that was sealed,
 #: tested and merged -- one SHA. When it is not (a stale checkout, a trampled module, a seal that
 #: never landed, an identity that cannot be measured), the gateway keeps managing what is open
@@ -1923,9 +1944,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         ttl_until = str(plan["ttl_until"])
         order_desc = family_order_desc(side, lot, s["symbol"], g, ttl_until)
         if not armed:
-            log(f"[{name}] WOULD PLACE (generic exec "
-                f"{'not armed' if st.get('armed') else 'account unarmed'}; "
-                f"enable={GENERIC_EXEC_ENABLED.name}): {order_desc}")
+            log(f"[{name}] WOULD PLACE (generic exec blocked: "
+                f"{unarmed_why(st)}): {order_desc}")
             continue
         if not margin_ok(s["symbol"], lot, entry_ref):
             log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
@@ -2249,9 +2269,8 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             _book_target(name, s["symbol"], side * per, f"scalp_market/{plan['family']}",
                          price=price)
         if not armed:
-            log(f"[{name}] WOULD PLACE (scalp exec "
-                f"{'not armed' if st.get('armed') else 'account unarmed'}; "
-                f"enable={GENERIC_EXEC_ENABLED.name}): {desc}")
+            log(f"[{name}] WOULD PLACE (scalp exec blocked: "
+                f"{unarmed_why(st)}): {desc}")
             continue
         if not margin_ok(s["symbol"], per, price):
             log(f"[{name}] SCALP-EXEC{' add-on' if is_addon else ''} SKIPPED: margin tight "
