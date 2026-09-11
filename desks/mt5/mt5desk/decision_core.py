@@ -1089,6 +1089,7 @@ def cap_by_heat(sleeves: list[dict], equity: float,
 
     admitted: list[dict] = []
     dropped: list[str] = []
+    deferred_rows: list[tuple[dict[str, object], float]] = []
     used = 0.0
     for s, q in zip(sleeves, qs, strict=True):
         # CONTINUE, NOT BREAK. Stopping at the first sleeve that does not fit throws away every
@@ -1098,11 +1099,57 @@ def cap_by_heat(sleeves: list[dict], equity: float,
         # and what is deferred is the cheapest growth rather than everything after the misfit.
         if used + q > limit + 1e-12:
             dropped.append(str(s.get("name", "?")))
+            deferred_rows.append((s, q))
             continue
         admitted.append(s)
         used += q
+
+    # THE FLOOR IS A MINIMUM TO BE MET, NOT A BAR TO STOP UNDER (principal, standing; the heat
+    # law: "20% floor, flat, 24/7 ... the resolved heat is filled, never reported short").
+    #
+    # THE SLIDE WAS SILENTLY BINDING BELOW THE FLOOR. `limit` is budget + HEAT_SLIDE, and
+    # HEAT_SLIDE is a ROUNDING TOLERANCE -- it exists so a validated leg is not dropped for
+    # overshooting by an edge. But the greedy fill stops as soon as no REMAINING leg fits in
+    # what is left of it, which can and did leave the book under the floor the law requires.
+    # Measured 2026-09-11 on the live box, with the allocator artifact stale so `budget` fell
+    # back to the 20% floor itself:
+    #
+    #     68 sleeves totalling 129.1% exceed 22.0% (budget 20.0% + 2.0% slide)
+    #     admitting 58 at 19.3%, deferring ['gold_afternoon', 'gold_asia_v2', ...]
+    #
+    # 19.3% against a 20% floor, with ZERO open positions, while refusing certified legs. The
+    # floor had become a ceiling, which is precisely the inversion the growth governance rules
+    # forbid: a risk reduction nobody proved raises forward E[log W].
+    #
+    # SO: once the ordered fill is done, keep taking legs IN THE SAME VALUE ORDER until the book
+    # reaches the floor. Bounded by the ceiling, never by the slide -- growth is free above the
+    # floor up to the measured bar, and `ceiling` here is the same `max(MAX_HEAT_CEILING, budget)`
+    # the limit was already allowed to reach, so this can never deploy past a bar the desk had
+    # not already sanctioned. It only ever ADDS exposure, and only while the book is short of the
+    # minimum it is required to keep at work.
+    ceiling = max(MAX_HEAT_CEILING, budget)
+    if vcap is not None:
+        # The venue's daily-loss bar is not a growth argument and nothing overrides it, so it
+        # bounds the fill exactly as it bounds the limit. A venue that declares no daily limit
+        # passes None and leaves this untouched.
+        ceiling = min(ceiling, float(vcap))
+    filled: list[str] = []
+    if used < HEAT_TARGET - 1e-12 and deferred_rows:
+        still: list[tuple[dict, float]] = []
+        for s, q in deferred_rows:
+            if used >= HEAT_TARGET - 1e-12 or used + q > ceiling + 1e-12:
+                still.append((s, q))
+                continue
+            admitted.append(s)
+            used += q
+            filled.append(str(s.get("name", "?")))
+        deferred_rows = still
+        dropped = [n for n in dropped if n not in set(filled)]
+
     if not dropped:
-        return list(sleeves), None
+        return list(sleeves), (
+            f"PORTFOLIO HEAT: filled to the {HEAT_TARGET:.0%} floor at {used:.1%} "
+            f"[{budget_src}]; admitted every sleeve ({len(admitted)})" if filled else None)
     # WHICH BAR ACTUALLY BOUND. A book trimmed by the venue's daily-loss rule and one trimmed by
     # the growth budget are the same short book on screen, and the operator's next move differs
     # completely between them -- so the note names the binding constraint rather than implying
@@ -1114,6 +1161,11 @@ def cap_by_heat(sleeves: list[dict], equity: float,
             f"exceed {limit:.1%} ({bound_by}) [{budget_src}] "
             f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
             f"admitting {len(admitted)} at {used:.1%}, deferring {dropped}")
+    if filled:
+        # SAY WHICH LEGS THE FLOOR BOUGHT, not just that a cap ran. A book that was lifted to its
+        # minimum and one that was trimmed to a budget read identically without this.
+        note += (f"; filled to the {HEAT_TARGET:.0%} floor with {filled} "
+                 f"(ceiling {ceiling:.0%})")
     return admitted, note
 
 
