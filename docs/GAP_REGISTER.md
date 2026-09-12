@@ -1882,3 +1882,25 @@ New-host task census was read-only. `quant-frontier.service` on hel8 last exited
 2026-09-11T15:00:11Z (daily timer, not evidence of an hourly frontier); research_loop last exited
 0 at 2026-09-12T02:37:32Z. Hourly discovery and external pipeline were still activating, with no
 exit timestamp, so their successful completion and meaningful downstream output are UNMEASURED.
+
+## 2026-09-12 midnight continuation — `world-crawler:persistence` (epoch 109)
+
+OPEN, origin=self, bounded operational recovery above new architecture. Existing shared queue;
+no new research registry. On `hel8q` / `ubuntu-8gb-fsn1-1`, scheduled world crawler failed at
+22:49:02Z and 23:02:41Z in `world_frontier.save`: `PermissionError` opening the copied
+root-owned mode-0644 frontier for in-place writing. Directory is quant-owned and writable.
+Original frontier content says `updated_utc=2026-09-04T12:15:19+00:00`, 15,263 sources,
+2,377 cumulative fetches, despite filesystem mtime September 12. Last successful crawl report
+is 06:14:33Z (60 fetched, 44 leads). Later fetches cost compute without durable search-state
+or lead publication. Recoverable historical observations are preserved, never restamped.
+
+IMPLEMENTED: shared `world_frontier.save` publishes through a unique same-directory temporary,
+flush/fsync and atomic replace, with failure cleanup; both crawler and deep-forest producer
+inherit it. `load` refuses corrupt/inaccessible state instead of silently reseeding. TESTED:
+29 focused tests passed, including read-only snapshot advancement, serialization/replace failure
+preserving exact old bytes, corrupt schema refusal and crawler regressions. Release gates ALL_GREEN (ruff, compileall, collection, mypy).
+CANONICALLY_MERGED / DEPLOYED / RUNTIME_VERIFIED: pending. Preserve Claude's compatible
+`6e45c60f9` builder release and all dirty worker artifacts; no trading-path changes.
+Next: release gates, canonical push, verify unchanged target module before applying only this
+patch on hel8, preserve original frontier snapshot, observe scheduled crawl then compiler intake.
+No operational closure until new output and real consumer evidence exist.

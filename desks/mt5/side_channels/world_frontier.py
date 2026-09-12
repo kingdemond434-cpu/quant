@@ -26,7 +26,10 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
+import tempfile
+from contextlib import suppress
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -88,13 +91,18 @@ class Source:
 def _read() -> dict[str, Any]:
     try:
         doc = json.loads(FRONTIER.read_text("utf-8"))
-    except (OSError, ValueError):
+    except FileNotFoundError:
         return {}
-    return doc if isinstance(doc, dict) else {}
+    if not isinstance(doc, dict) or not isinstance(doc.get("sources"), dict):
+        raise ValueError(f"Invalid crawl frontier: {FRONTIER}")
+    return doc
 
 
 def load() -> dict[str, Source]:
-    """Every known source. An unreadable frontier is EMPTY-AND-SAID-SO, never silently reseeded."""
+    """Every known source; only a missing frontier permits bootstrap.
+
+    Corrupt or inaccessible evidence must fail before a caller can overwrite it with seeds.
+    """
     raw = _read()
     out: dict[str, Source] = {}
     for url, row in (raw.get("sources") or {}).items():
@@ -110,13 +118,25 @@ def save(sources: dict[str, Source], note: str = "") -> None:
     hosts: dict[str, int] = {}
     for s in sources.values():
         hosts[s.host] = hosts.get(s.host, 0) + 1
-    FRONTIER.write_text(json.dumps({
+    document = {
         "updated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "n_sources": len(sources),
         "n_hosts": len(hosts),
         "note": note,
         "sources": {u: asdict(s) for u, s in sources.items()},
-    }, indent=1), encoding="utf-8")
+    }
+    # Publish beside the destination: copied read-only files need not be opened for writing,
+    # and a failed serialization/write must never truncate the durable search history.
+    fd, name = tempfile.mkstemp(prefix=f".{FRONTIER.name}.", dir=FRONTIER.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(document, handle, indent=1)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(name, FRONTIER)
+    finally:
+        with suppress(FileNotFoundError):
+            os.unlink(name)
 
 
 def host_yield(sources: dict[str, Source]) -> dict[str, tuple[float, float]]:
