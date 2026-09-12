@@ -114,7 +114,19 @@ src = ["libs", "app", "tests"]
 # only tracked twin lives under desks/mt5 (already excluded); hourly_controller_with_discovery
 # has none, so basename exclusion is collision-free for both.
 exclude = ["scratch", "desks/mt5", "hourly_controller.py",
-           "hourly_controller_with_discovery.py", "youtube_miner.py"]
+           "hourly_controller_with_discovery.py", "youtube_miner.py",
+           # `tmp_*.py` is the SAME class as `scratch/` above, one directory up: throwaway
+           # measurement one-liners a session writes to answer a question and never deletes.
+           # Measured on the trading box 2026-09-12: 32 such files carrying ALL 270 of its ruff
+           # errors -- 71 printf-format, 60 statements-on-one-line, 33 multiple-imports -- which
+           # is exactly the shape of code written to be read once and thrown away.
+           #
+           # THE COST WAS NOT COSMETIC. `ruff check` is a PUSH GATE, so the trading box could
+           # not reach origin at all while somebody's leftover scratch sat in the root, and the
+           # only routes past it were to bypass the hook or to stop pushing. A gate that goes RED
+           # because of a file nobody ships is a gate that gets bypassed, and then it protects
+           # nothing. Excluded here and gitignored, so the next session's scratch is harmless.
+           "tmp_*.py"]
 # `desks/mt5` is the mirror copy of the MT5 research desk (executes on the local Windows host;
 # this copy is for visibility/coordination only). External code with its own host conventions
 # (MetaTrader5 import, Windows paths, legacy style) -- same treatment as scratch: the gate should

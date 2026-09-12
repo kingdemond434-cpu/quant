@@ -372,3 +372,8 @@ desks/mt5/logs/
 # them made both hosts unpullable while the desk was running, which is always.
 desks/mt5/data/.job_locks/
 desks/mt5/data/free_data_cache/
+
+# Session scratch: throwaway measurement one-liners written to answer one question.
+# Excluded from ruff too (pyproject [tool.ruff] exclude) -- 32 of these once held the trading
+# box's push gate RED with 270 lint errors in files nobody ships.
+tmp_*.py
