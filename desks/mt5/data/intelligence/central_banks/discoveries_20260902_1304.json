@@ -1,0 +1,18 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoC",
+    "currency": "CAD",
+    "feed": "https://www.bankofcanada.ca/content_type/press-releases/feed/",
+    "published_utc": "2026-09-02T09:47:53+00:00",
+    "title": "Rate announcement to come at 9:45&nbsp;(ET)",
+    "link": "https://www.bankofcanada.ca/2026/09/fad-press-release-2026-09-02/",
+    "policy_signals": [],
+    "instruments": [
+      "USDCAD",
+      "CADJPY",
+      "NZDCAD",
+      "AUDCAD"
+    ]
+  }
+]

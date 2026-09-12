@@ -1,0 +1,100 @@
+{
+  "n": 1,
+  "survivors": {
+    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
+      "hunt": "hunt16.json",
+      "cell": "AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+      "sym": "AUDNZD",
+      "days": 179,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "mechanism documented at hunt registration"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.3177
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9929,
+          "sr0": 0.131,
+          "n_trials": 3001
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.1378
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.03
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.3184,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.3708,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.1116
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.3708
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.3931
+        }
+      },
+      "shadow_spec": {
+        "symbol": "AUDNZD",
+        "family": "dav_range_filter_adx",
+        "side": "SHORT",
+        "selector": "afternoon",
+        "condition": "NORMAL_DAY",
+        "is_universe": true,
+        "hunt": "hunt16.json"
+      },
+      "gated_at": "2026-08-23T13:51:10.738675+00:00",
+      "status": "UNIVERSAL"
+    }
+  },
+  "gate_policy": {
+    "version": "mt5-original-universal-10-v2-calibrated-inputs",
+    "gates": [
+      "economic_prior",
+      "in_sample_screen",
+      "deflated_sharpe",
+      "pbo",
+      "reality_check_spa",
+      "cpcv",
+      "walk_forward",
+      "stress_costs",
+      "lockbox",
+      "expected_value"
+    ],
+    "trials_multiplier": 7.0,
+    "trial_count_basis": "ceil(null_calibrated_participation_ratio_effective_cells * 7); fail closed to ceil(raw_cells * 7) when dependence is unmeasurable",
+    "dsr_threshold": 0.95,
+    "pbo_max": 0.5,
+    "spa_alpha": 0.05,
+    "wf_splits": 4,
+    "wf_test_size": "max(20,len//6)",
+    "wf_min_oos_sharpe": 0.0,
+    "wf_min_stability": 0.5,
+    "cost_multiplier": 3.0,
+    "regime_admission_unit": "strategy x instrument x side x horizon/session x preregistered point-in-time regime",
+    "regime_control": "regime frozen before OOS; unconditional arm is a separately counted control; unknown or incompatible live regime is OFF",
+    "cpcv_mean_oos_sharpe_min_exclusive": 0.0,
+    "lockbox_oos_sharpe_min": 0.0,
+    "expected_value_min_exclusive": 0.0
+  },
+  "note": "Exact original ten-gate passes only; shadow remains zero-order authority.",
+  "swept_at": "2026-08-23T13:51:10.738675+00:00"
+}

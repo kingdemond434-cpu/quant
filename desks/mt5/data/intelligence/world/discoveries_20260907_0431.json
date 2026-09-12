@@ -1,0 +1,919 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical Data - Pakistan Stock Exchange (PSX)",
+  "url": "https://dps.psx.com.pk/historical",
+  "published": "2026-09-07T04:27:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "https://dps.psx.com.pk/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f6cfbf7be2c5405d4801",
+  "host": "dps.psx.com.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "SBP STRATEGIC PLAN FY 2024-28",
+  "url": "https://archive.sbp.org.pk/SBPVision/Index.html",
+  "published": "2026-09-07T04:27:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b72ef5a3809f21f4df5",
+  "host": "archive.sbp.org.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-07T04:27:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1a256bf22c91a145f675",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Latest Forex Investment Analysis Articles | Seeking Alpha",
+  "url": "http://seekingalpha.com/article/183525-cftc-reform-and-the-death-of-retail-forex",
+  "published": "2026-09-07T04:27:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://seekingalpha.com/samw/manifest.21e1a41eec7430f48197357dbb41445d.json",
+   "http://seekingalpha.com/api/v3/breaking_news",
+   "http://seekingalpha.com/api/v3/market_open",
+   "http://seekingalpha.com/api/v3/visitor_tag_for_url_params",
+   "http://seekingalpha.com/api/v3/ab_tests"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "b2425b22ccf1d6185a27",
+  "host": "seekingalpha.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MetaStock | Get a month of Daily Charts End-of-Day Data for FREE when you subscribe",
+  "url": "http://www.metastock.com/tradingsystemliferdl",
+  "published": "2026-09-07T04:28:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5b5bb8a4eeee6fd36ae9",
+  "host": "www.metastock.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingSystemLife.com Legal Terms and Conditions",
+  "url": "http://www.tradingsystemlife.com/Legal.html",
+  "published": "2026-09-07T04:28:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f1898a797754daf01862",
+  "host": "www.tradingsystemlife.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Collective - Algo Advantage",
+  "url": "https://algoadvantage.io/collective",
+  "published": "2026-09-07T04:28:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8333cca3d5582bcedb26",
+  "host": "algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Walk Forward Correlation (WFC) - A New Algo Trading Tool",
+  "url": "https://www.tradelikeamachine.com/blog/wfc/using-walk-forward-correlation-in-algo-trading?aid=pY5Tdstmnb8Tgh6s",
+  "published": "2026-09-07T04:28:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e460e781de4cafbd4701",
+  "host": "www.tradelikeamachine.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Opt My Strategy - Free, Subscription, and Lifetime Options",
+  "url": "https://www.tradelikeamachine.com/backtesting-software-opt-my-strategy/opt-my-strategy-purchase-options/m5cgt1tsvc91kjjk5nbw?aid=pY5Tdstmnb8Tgh6s",
+  "published": "2026-09-07T04:28:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e15e153123f21a18bd35",
+  "host": "www.tradelikeamachine.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Problem with Forex Fundamental Analysis &#8211; InvestMacro FX",
+  "url": "http://countingpips.com/fx/2011/03/06/the-problem-with-forex-fundamental-analysis/",
+  "published": "2026-09-07T04:28:34+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "41de49ee460d5cbb6856",
+  "host": "countingpips.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investor Education &amp; Resources | NFA",
+  "url": "http://www.nfa.futures.org/forex_training/content/coverpage.htm",
+  "published": "2026-09-07T04:28:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://www.nfa.futures.org/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c5a62b3c8e5670b42d1a",
+  "host": "www.nfa.futures.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Forex Analysis, Currency Rates, Economic Calendar, Technical Forecast, Fundamental News, Free Trading Signals. Best. USD Dollar, EUR Euro, JPY Yen, GBP Pound, CHF Swiss Franc, CAD Canadian Dollar",
+  "url": "http://www.actionforex.com/",
+  "published": "2026-09-07T04:28:50+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURAUD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "4H",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb69bbebc7a4a5543fde",
+  "host": "www.actionforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Educators",
+  "url": "http://www.tradingeducators.com/",
+  "published": "2026-09-07T04:28:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "mean_reversion",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-gb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10363a986116a577af9c",
+  "host": "www.tradingeducators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "6 Worrying Signs About the Debt Crisis - Forex Crunch",
+  "url": "http://www.forexcrunch.com/6-worrying-signs-about-the-debt-crisis/",
+  "published": "2026-09-07T04:29:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2374933bc0b1e5129e28",
+  "host": "www.forexcrunch.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Peace Army - Cash Out Rule for Effective Forex Money Management",
+  "url": "http://www.secretforexsociety.com/",
+  "published": "2026-09-07T04:29:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5105452d927a2cb76a94",
+  "host": "www.secretforexsociety.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog - FOREX MENTOR",
+  "url": "http://www.forexmentor.com/blog/",
+  "published": "2026-09-07T04:29:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-CA",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "96ceb02066bc2394eb54",
+  "host": "www.forexmentor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex predictions - Learn how to predict the FX market",
+  "url": "http://www.forexpredictions.com/",
+  "published": "2026-09-07T04:29:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fe31e119693d06e38187",
+  "host": "www.forexpredictions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DEWASLOT99 MAIN SLOT SERASA JALAN KE ROMA",
+  "url": "http://www.forex-business.com/",
+  "published": "2026-09-07T04:29:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "id-ID",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d4af5ce55f94b67e930",
+  "host": "www.forex-business.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AForexLoser | \u05de\u05d3\u05e8\u05d9\u05db\u05d9\u05dd \u05d5\u05ea\u05d5\u05db\u05df \u05e2\u05dc \u05e7\u05e8\u05d9\u05e4\u05d8\u05d5, \u05d1\u05e8\u05d9\u05d0\u05d5\u05ea \u05d5\u05e2\u05d5\u05d3",
+  "url": "http://www.aforexloser.com/",
+  "published": "2026-09-07T04:29:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "he-IL",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1178a448faf631d9f95e",
+  "host": "www.aforexloser.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Understanding Home Insurance Pricing In Akron: What You Need To Know Before You Buy",
+  "url": "http://www.forexeconomiccalendar.com/",
+  "published": "2026-09-07T04:29:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1cd00422f287d7aa9416",
+  "host": "www.forexeconomiccalendar.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BK Traders | Futures &amp; Forex Trading Indicators, Courses &amp; Daily Live Trading",
+  "url": "http://www.bkforexadvisors.com",
+  "published": "2026-09-07T04:29:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "387ec4a53c3974244805",
+  "host": "www.bkforexadvisors.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BK Traders | Futures &amp; Forex Trading Indicators, Courses &amp; Daily Live Trading",
+  "url": "http://www.bkforexadvisors.com/",
+  "published": "2026-09-07T04:29:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "387ec4a53c3974244805",
+  "host": "www.bkforexadvisors.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Is the CFTC Actually Helping Traders? - Forex Crunch",
+  "url": "http://www.forexcrunch.com/is-the-cftc-actually-helping-traders/",
+  "published": "2026-09-07T04:29:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "74bcfdf87c8e122b0298",
+  "host": "www.forexcrunch.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bangladesh Bank",
+  "url": "https://www.bb.org.bd/en/index.php/econdata/index",
+  "published": "2026-09-07T04:30:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://www.bb.org.bd/pub/monthly/econtrds/statisticaltable.xlsx",
+   "https://www.bb.org.bd/econdata/time_series_data1972-2024.xlsx",
+   "https://www.bb.org.bd/pub/quaterly/schbanksta/excell_format_sbs.zip",
+   "https://www.bb.org.bd/fnansys/bank_interest_rate.xlsx",
+   "https://www.bb.org.bd/econdata/fin_digitalfstat/fin_digitalfstat.xlsx",
+   "https://www.bb.org.bd/econdata/fin_digitalfstat/fidfs_time_series_data.xlsx",
+   "https://www.bb.org.bd/econdata/agent_banking/agent_timeseries.xlsx"
+  ],
+  "n_endpoints": 7,
+  "vault_sha": "1d934d39f366a2feb798",
+  "host": "www.bb.org.bd",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bangladesh Bank",
+  "url": "https://www.bb.org.bd/en/index.php/econdata/bopgraph",
+  "published": "2026-09-07T04:30:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1987ccc2dc90ca0fd67d",
+  "host": "www.bb.org.bd",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Press Releases | CBK",
+  "url": "https://www.centralbank.go.ke/press/",
+  "published": "2026-09-07T04:30:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.centralbank.go.ke/principal-exports-volume-value-unit-prices/",
+   "https://www.centralbank.go.ke/value-selected-domestic-exports/",
+   "https://www.centralbank.go.ke/value-exports-selected-african-countries/",
+   "https://www.centralbank.go.ke/value-exports-selected-rest-world-countries/"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "335531a3311ca55eb0fd",
+  "host": "www.centralbank.go.ke",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex | CBK",
+  "url": "https://www.centralbank.go.ke/forex/",
+  "published": "2026-09-07T04:30:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/961230917_11.03.2019.xlsx",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/949834214_25.02.2019.xlsx",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1206527264_09.10.2018.xlsx",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1791177193_29.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1985762334_28.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/545784185_27.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1262818479_25.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1278731982_23.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/473409083_22.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/597233211_20.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1891907036_16.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1898004694_15.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/135648346_14.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1092628904_13.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/49428023_11.08.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/993646534_02.07.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/813843734_05.06.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/767347420_04.06.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1896329087_30.05.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1377406110_21.05.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/839121695_05.05.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/26786523_03.03.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1822241920_06.01.2018.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1597784196_04.11.2017.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/696582078_forex.csv",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/1343215357_02.10.2017.xls",
+   "https://www.centralbank.go.ke/uploads/foreign_exchange_bureau_rates/325955306_Fx Rates16.09.2017.xls",
+   "https://www.centralbank.go.ke/uploads/cbk_indicative_rates/216162513_forex.csv",
+   "https://www.centralbank.go.ke/uploads/cbk_indicative_rates/1208993988_forex.csv",
+   "https://www.centralbank.go.ke/uploads/cbk_indicative_rates/471495007_forex.csv",
+   "https://www.centralbank.go.ke/uploads/cbk_indicative_rates/308547322_forex.csv",
+   "https://www.centralbank.go.ke/uploads/cbk_indicative_rates/1562463726_forex.csv",
+   "https://www.centralbank.go.ke/uploads/cbk_indicative_rates/1448113391_INDICATIVE RATES.xls",
+   "https://www.centralbank.go.ke/uploads/cbk_indicative_rates/1940448202_forex.csv",
+   "https://www.centralbank.go.ke/principal-exports-volume-value-unit-prices/",
+   "https://www.centralbank.go.ke/value-selected-domestic-exports/",
+   "https://www.centralbank.go.ke/value-exports-selected-african-countries/",
+   "https://www.centralbank.go.ke/value-exports-selected-rest-world-countries/"
+  ],
+  "n_endpoints": 38,
+  "vault_sha": "e7fdd6851ca6c6703df6",
+  "host": "www.centralbank.go.ke",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "National Payments Strategy 2022-2025 | CBK",
+  "url": "https://www.centralbank.go.ke/national-payments-strategy-2022-2025-2/",
+  "published": "2026-09-07T04:30:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.centralbank.go.ke/principal-exports-volume-value-unit-prices/",
+   "https://www.centralbank.go.ke/value-selected-domestic-exports/",
+   "https://www.centralbank.go.ke/value-exports-selected-african-countries/",
+   "https://www.centralbank.go.ke/value-exports-selected-rest-world-countries/"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "7c94566187337a22b9ed",
+  "host": "www.centralbank.go.ke",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Monthly Economic Indicators | CBK",
+  "url": "https://www.centralbank.go.ke/monthly-economic-indicators/",
+  "published": "2026-09-07T04:30:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.centralbank.go.ke/principal-exports-volume-value-unit-prices/",
+   "https://www.centralbank.go.ke/value-selected-domestic-exports/",
+   "https://www.centralbank.go.ke/value-exports-selected-african-countries/",
+   "https://www.centralbank.go.ke/value-exports-selected-rest-world-countries/"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "31264edc53bb22c3fa65",
+  "host": "www.centralbank.go.ke",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DealBook - The New York Times",
+  "url": "http://dealbook.blogs.nytimes.com/2010/10/25/sorkin-so-what-is-insider-trading/?hp",
+  "published": "2026-09-07T04:30:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "96289dad4ad2d133b0de",
+  "host": "dealbook.blogs.nytimes.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The MVCI (Whatever That Means) Indicator | Jay On The Markets",
+  "url": "http://tinyurl.com/pjcw6z6",
+  "published": "2026-09-07T04:31:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14f36da6f9913fb33fcc",
+  "host": "tinyurl.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u9cb2\u817e\u6295\u8d44\u5218\u4eae\u5728\u7ebf\u8def\u6f14\uff1a\u9cb2\u817e\u91cf\u5316CTA\u4ea7\u54c1\u4ecb\u7ecd \u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/11673.html",
+  "published": "2026-09-07T04:31:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e7af7e6c9278750f403b",
+  "host": "ly.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u676d\u5dde\u535a\u884d\u79c1\u52df\u7a0b\u4f59\u5728\u7ebf\u8def\u6f14\uff1a\u91cf\u5316CTA\uff1a\u4ece\u7b56\u7565\u903b\u8f91\u5230\u540e\u5e02\u5c55\u671b \u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/12892.html",
+  "published": "2026-09-07T04:31:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d879ca0d571f40d66a2",
+  "host": "ly.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5609\u5408\u6749\u5347\u91cf\u5316CTA\u4e00\u53f7_\u57fa\u91d1\u51c0\u503c_\u79c1\u52df\u57fa\u91d1-\u79c1\u52df\u6392\u6392\u7f51",
+  "url": "https://dc.simuwang.com/product/HF0000AJA0.html",
+  "published": "2026-09-07T04:31:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://www.simuwang.com/apps/downloads.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c494569295adca51ec4d",
+  "host": "dc.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u79c1\u52df\u57fa\u91d1_CTA\u7b56\u7565\u8def\u6f14\u89c6\u9891-\u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/square/c91",
+  "published": "2026-09-07T04:31:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8577441f205f7acc0c64",
+  "host": "ly.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u534e\u6f84\u79c1\u52df\u5728\u7ebf\u8def\u6f14\uff1a\u6ce2\u52a8\u91cd\u4e34\uff0c\u91cf\u5316CTA\u7684\u7edd\u5bf9\u6536\u76ca\u4e4b\u9053 \u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/11705.html",
+  "published": "2026-09-07T04:31:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "correlation",
+   "flow",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3c6ad139fd2bce40f9e6",
+  "host": "ly.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

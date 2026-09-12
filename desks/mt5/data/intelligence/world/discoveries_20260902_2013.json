@@ -1,0 +1,977 @@
+[
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (130/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=130",
+  "published": "2026-09-02T20:12:06+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE",
+   "REPSOL"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "142f71752da0495dde01",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (131/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=131",
+  "published": "2026-09-02T20:12:08+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE",
+   "REPSOL"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "df99559a33ee0829fc6d",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (132/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=132",
+  "published": "2026-09-02T20:12:10+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE",
+   "REPSOL"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "133f52e0c0f894baea28",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35",
+  "published": "2026-09-02T20:12:13+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE",
+   "REPSOL"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "512a93f45cdf2bd2a76e",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader Market - the largest store of trading applications",
+  "url": "https://www.metatrader5.com/en/automated-trading/mql5market",
+  "published": "2026-09-02T20:12:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "9e02165ee03f3ea78f02",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Where to buy trading robots and indicators for MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/market/buy",
+  "published": "2026-09-02T20:12:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "9cd5a6c02b58f483ca3e",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Subscribe to a trade signal straight from MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/trading-platform/trading-signals",
+  "published": "2026-09-02T20:12:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "5b29d756a1185ad54016",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 5 VPS: Virtual Hosting for Forex and Stocks Trading",
+  "url": "https://www.metatrader5.com/en/trading-platform/vps",
+  "published": "2026-09-02T20:12:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "92e5d74f801cde6c8385",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 5 web platform",
+  "url": "https://www.metatrader5.com/en/trading-platform/web-trading",
+  "published": "2026-09-02T20:12:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "2dda57031ea2326430f8",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Web version features",
+  "url": "https://www.metatrader5.com/en/trading-platform/web-trading/features",
+  "published": "2026-09-02T20:12:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "f3a7e7bef3632fa3465e",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Always ready for a good trade - Web Trading with MetaTrader 5",
+  "url": "https://www.metatrader5.com/en/trading-platform/web-trading/professional-trading",
+  "published": "2026-09-02T20:12:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "c8f551a5537952da459a",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading - Rankia",
+  "url": "https://www.rankia.com/categorias/trading",
+  "published": "2026-09-02T20:12:27+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "4eac3596cc1e311da76f",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading de futuros: gu\u00eda completa para principiantes 2026",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/5955792-trading-futuros",
+  "published": "2026-09-02T20:12:28+00:00",
+  "symbols": [
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "5798ee7496c843335f85",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Mejores brokers de futuros 2026: top 7 en Espa\u00f1a",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/2644934-broker-mas-barato-para-operar-futuros",
+  "published": "2026-09-02T20:12:30+00:00",
+  "symbols": [
+   "BROKER",
+   "DEGIRO",
+   "MEXDER",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "9af7bfbb9954eb9cbc6a",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QuanterLab \u2014 Quantitative Research Platform",
+  "url": "https://quanterlab.com/",
+  "published": "2026-09-02T20:12:32+00:00",
+  "symbols": [
+   "NASDAQ"
+  ],
+  "timeframes": [
+   "5M"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "daca0c700fe13497bb92",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Articles \u2014 QuanterLab",
+  "url": "https://quanterlab.com/articles",
+  "published": "2026-09-02T20:12:33+00:00",
+  "symbols": [
+   "REVIEW"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "66f5a03ff430a52f2463",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Research \u2014 QuanterLab",
+  "url": "https://quanterlab.com/research",
+  "published": "2026-09-02T20:12:35+00:00",
+  "symbols": [
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "280eea5c6cad26e9beab",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "All Weather built and tested against inverse volatility, equal risk contribution and a 60/40, 2008-2025 | QuanterLab",
+  "url": "https://quanterlab.com/research/dalio-s-all-weather-constructed-and-then-tested-against-inverse-volatility-equal",
+  "published": "2026-09-02T20:12:42+00:00",
+  "symbols": [
+   "FAMILY",
+   "NASDAQ",
+   "PAIRED",
+   "RECIPE"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "8fb78b2b5b3d02c68667",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "NASDAQ-100 additions vs deletions 2007-2024: the deletion premium died around 2016, and a recycled ticker nearly rewrote the result",
+  "url": "https://quanterlab.com/research/nasdaq-100-additions-versus-deletions-eighteen-decembers-an-effect-that-died-aro",
+  "published": "2026-09-02T20:12:44+00:00",
+  "symbols": [
+   "EFFECT",
+   "NASDAQ",
+   "PAIRED",
+   "TICKER",
+   "TRADES",
+   "WORKED"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "9317b615b052ac35cf40",
+  "host": "quanterlab.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QuantPedia | The Encyclopedia of Algorithmic and Quantitative Trading Strategies",
+  "url": "https://quantpedia.com/?a=6080",
+  "published": "2026-09-02T20:12:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "faf5050d03626828f49d",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantt | Learn Quantitative Finance, Mathematics &amp; Technology | Quantt",
+  "url": "https://www.quantt.co.uk/?ref=quantocracy",
+  "published": "2026-09-02T20:12:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "7f05acd56810cc8b92a6",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QuantPedia | The Encyclopedia of Algorithmic and Quantitative Trading Strategies",
+  "url": "http://quantpedia.com/?a=6080",
+  "published": "2026-09-02T20:12:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "26fdef2df46be9d2cebf",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3 Main Reasons to Buy Quantpedia Subscription | QuantPedia",
+  "url": "https://quantpedia.com/pricing/",
+  "published": "2026-09-02T20:12:49+00:00",
+  "symbols": [
+   "ACCESS"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "111b8440cb12778bec19",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Screener - Quantpedia",
+  "url": "https://quantpedia.com/screener/",
+  "published": "2026-09-02T20:12:51+00:00",
+  "symbols": [
+   "FSCORE"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "d29e3128046cd7519e4b",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "How it works | QuantPedia",
+  "url": "https://quantpedia.com/how-it-works/",
+  "published": "2026-09-02T20:12:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "70497853a64c27ccc600",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "About us | QuantPedia",
+  "url": "https://quantpedia.com/quantpedia-mission/",
+  "published": "2026-09-02T20:12:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "bd59f2853436c02713bf",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Blog | QuantPedia",
+  "url": "https://quantpedia.com/blog/",
+  "published": "2026-09-02T20:12:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "2c9f5f98f7d03524a27d",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantt | Learn Quantitative Finance, Mathematics &amp; Technology | Quantt",
+  "url": "https://www.quantt.co.uk/",
+  "published": "2026-09-02T20:12:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "9d5e5eb0051a29da08b6",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Free Quant Finance Tools | Quantt",
+  "url": "https://www.quantt.co.uk/tools",
+  "published": "2026-09-02T20:13:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1"
+  ],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "5c7db76378dd62154a5f",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Resources \u2014 Quant Finance Guides | Quantt",
+  "url": "https://www.quantt.co.uk/resources",
+  "published": "2026-09-02T20:13:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "D1",
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "b34dcfdbfcd501ad0a91",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "The Ornstein-Uhlenbeck Process in Finance: Theory, Simulation and Calibration | Quantt",
+  "url": "https://www.quantt.co.uk/resources/ornstein-uhlenbeck-process",
+  "published": "2026-09-02T20:13:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "b89d0843f7fae3d6c355",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Vasicek Model: Interest Rate Modelling Explained 2026 | Quantt",
+  "url": "https://www.quantt.co.uk/resources/vasicek-model-explained",
+  "published": "2026-09-02T20:13:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "4ca34ccf46ad7cee03da",
+  "host": "www.quantt.co.uk"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Mathematics and Statistics Articles | QuantStart",
+  "url": "https://www.quantstart.com/articles/topic/mathematics-and-statistics/",
+  "published": "2026-09-02T20:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "f254ad9db1acb257afee",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Time Series Analysis Articles | QuantStart",
+  "url": "https://www.quantstart.com/articles/topic/time-series-analysis/",
+  "published": "2026-09-02T20:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "f200694edf690eae99d4",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Derivatives Pricing Articles | QuantStart",
+  "url": "https://www.quantstart.com/articles/topic/derivatives-pricing/",
+  "published": "2026-09-02T20:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "4aecdbd62d8086f68f68",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Python Articles | QuantStart",
+  "url": "https://www.quantstart.com/articles/topic/python/",
+  "published": "2026-09-02T20:13:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "762c8716261fba0b91f3",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "C++ Articles | QuantStart",
+  "url": "https://www.quantstart.com/articles/topic/c/",
+  "published": "2026-09-02T20:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "695fc32e56d8844f40e4",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "QSTrader Articles | QuantStart",
+  "url": "https://www.quantstart.com/articles/topic/qstrader/",
+  "published": "2026-09-02T20:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "bbb0854a908ddc274c4d",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Interactive Trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/forum/137-interactive-trading?order=asc&sort=lastpost",
+  "published": "2026-09-02T20:13:24+00:00",
+  "symbols": [
+   "BTCUSD",
+   "CRYPTO",
+   "METHOD",
+   "TARGET",
+   "VOLUME"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "fc852527d96aa0b2600f",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Interactive Trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/forum/137-interactive-trading?order=desc&sort=replycount",
+  "published": "2026-09-02T20:13:25+00:00",
+  "symbols": [
+   "BTCUSD",
+   "CRYPTO",
+   "METHOD",
+   "TARGET",
+   "VOLUME"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "28ce629d6ceef078b55a",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Most volatile EU/GU/XAU/BTC trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/1116274-most-volatile-euguxaubtc-trading",
+  "published": "2026-09-02T20:13:27+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "15M",
+   "1H",
+   "1M",
+   "4H",
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "572907cd46d31289a052",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Bitcoin trading calls | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/1389347-bitcoin-trading-calls",
+  "published": "2026-09-02T20:13:29+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPNZD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "80d5bbb65beeaa7810e7",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Bitcoin Trading | Crypto Craft",
+  "url": "https://www.cryptocraft.com/thread/1363270-bitcoin-trading",
+  "published": "2026-09-02T20:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "bd2f06de949035002a75",
+  "host": "www.cryptocraft.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "List of Strategies - Allocate Smartly",
+  "url": "https://allocatesmartly.com/list-of-strategies/",
+  "published": "2026-09-02T20:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "1ccfbb3777a6af35a367",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Adding a 1-Day Lag When Executing TAA Strategies - Allocate Smartly",
+  "url": "https://allocatesmartly.com/adding-a-1-day-lag-when-executing-taa-strategies/",
+  "published": "2026-09-02T20:13:36+00:00",
+  "symbols": [
+   "FNERTR",
+   "NAREIT"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "415b9c4346e8140083f2",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Alt. Trading Days &amp; Tranching Archives - Allocate Smartly",
+  "url": "https://allocatesmartly.com/category/taa-analysis/timing-luck-portfolio-tranching/",
+  "published": "2026-09-02T20:13:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "4dae321bec267519266f",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Does Trading TAA Strategies More Often Improve Performance? - Allocate Smartly",
+  "url": "https://allocatesmartly.com/does-trading-taa-strategies-more-often-improve-performance/",
+  "published": "2026-09-02T20:13:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "4ec758ee781b92d1f40c",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Investing in &quot;Distressed&quot; TAA Strategies (Redux) - Allocate Smartly",
+  "url": "https://allocatesmartly.com/investing-in-distressed-taa-strategies-redux/",
+  "published": "2026-09-02T20:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "ae102c9ec4bf82a259c5",
+  "host": "allocatesmartly.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/",
+  "published": "2026-09-02T20:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "4741cbbeb7aa8a82f422",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Industry - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/industry",
+  "published": "2026-09-02T20:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "00d6cc40c1d92045b297",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Jobs &amp; Skills - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/jobs-skills",
+  "published": "2026-09-02T20:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "ad1aa52caf5c9f24c011",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading Desk Setup - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/trading-desk-setup",
+  "published": "2026-09-02T20:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "f56aeda2803f19854d3e",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Success Stories - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/success-stories",
+  "published": "2026-09-02T20:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "5730ab5a892f7f4e5176",
+  "host": "blog.quantinsti.com"
+ }
+]

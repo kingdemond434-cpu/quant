@@ -1,0 +1,450 @@
+{
+ "assign_sim": 0.45,
+ "at": "2026-09-12T07:12:21.193781+00:00",
+ "categories": [
+  {
+   "centroid": {
+    "1": -0.235702,
+    "104": 0.235702,
+    "120": -0.235702,
+    "127": -0.235702,
+    "14": -0.235702,
+    "155": -0.235702,
+    "165": 0.235702,
+    "166": 0.235702,
+    "222": 0.235702,
+    "231": 0.235702,
+    "26": 0.235702,
+    "322": 0.235702,
+    "404": -0.235702,
+    "407": 0.235702,
+    "412": -0.235702,
+    "418": -0.235702,
+    "508": -0.235702,
+    "57": -0.235702
+   },
+   "created_at": "seed",
+   "label": "agriculture_supply",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "harvest",
+    "crop",
+    "yield",
+    "drought",
+    "planting",
+    "acreage"
+   ]
+  },
+  {
+   "centroid": {
+    "108": 0.0,
+    "116": 0.102274,
+    "143": 0.102274,
+    "161": 0.102274,
+    "179": -0.372864,
+    "226": -0.372864,
+    "27": 0.372864,
+    "314": 0.102274,
+    "351": -0.102274,
+    "353": 0.270591,
+    "380": 0.102274,
+    "386": 0.102274,
+    "417": -0.372864,
+    "420": 0.135295,
+    "46": 0.102274,
+    "478": -0.270591,
+    "75": -0.372864,
+    "90": 0.237569
+   },
+   "created_at": "seed",
+   "label": "central_bank_policy",
+   "n_instances": 2,
+   "origin": "seed",
+   "top_tokens": [
+    "bank",
+    "rate",
+    "maintained",
+    "monetary",
+    "policy",
+    "summary",
+    "minutes",
+    "july"
+   ]
+  },
+  {
+   "centroid": {
+    "12": -0.288675,
+    "127": 0.288675,
+    "149": 0.288675,
+    "158": 0.288675,
+    "193": 0.288675,
+    "23": 0.288675,
+    "26": -0.288675,
+    "260": -0.288675,
+    "289": 0.288675,
+    "336": -0.288675,
+    "472": 0.288675,
+    "503": 0.288675
+   },
+   "created_at": "seed",
+   "label": "conflict_security",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "strike",
+    "strikes",
+    "attack",
+    "military",
+    "conflict",
+    "war"
+   ]
+  },
+  {
+   "centroid": {
+    "146": 0.316228,
+    "22": 0.316228,
+    "234": -0.316228,
+    "300": -0.316228,
+    "346": -0.316228,
+    "363": -0.316228,
+    "441": -0.316228,
+    "446": -0.316228,
+    "70": -0.316228,
+    "73": 0.316228
+   },
+   "created_at": "seed",
+   "label": "corporate_earnings",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "earnings",
+    "guidance",
+    "quarterly",
+    "revenue",
+    "profit",
+    "outlook"
+   ]
+  },
+  {
+   "centroid": {
+    "180": 0.27735,
+    "222": -0.27735,
+    "246": -0.27735,
+    "321": 0.27735,
+    "340": -0.27735,
+    "354": 0.27735,
+    "377": 0.27735,
+    "384": -0.27735,
+    "417": -0.27735,
+    "418": -0.27735,
+    "449": -0.27735,
+    "460": 0.27735,
+    "75": 0.27735
+   },
+   "created_at": "seed",
+   "label": "credit_financial_stress",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "default",
+    "downgrade",
+    "rating",
+    "bailout",
+    "insolvency",
+    "liquidity"
+   ]
+  },
+  {
+   "centroid": {
+    "118": 0.288675,
+    "127": -0.288675,
+    "194": 0.288675,
+    "2": -0.288675,
+    "223": -0.288675,
+    "249": 0.288675,
+    "284": -0.288675,
+    "347": 0.288675,
+    "365": -0.288675,
+    "444": -0.288675,
+    "60": 0.288675,
+    "87": 0.288675
+   },
+   "created_at": "seed",
+   "label": "energy_supply",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "opec",
+    "crude",
+    "oil",
+    "barrel",
+    "output",
+    "inventories"
+   ]
+  },
+  {
+   "centroid": {
+    "102": 0.301511,
+    "149": -0.301511,
+    "180": -0.301511,
+    "190": -0.301511,
+    "224": 0.301511,
+    "299": 0.301511,
+    "309": 0.301511,
+    "364": -0.301511,
+    "377": 0.301511,
+    "68": 0.301511,
+    "92": -0.301511
+   },
+   "created_at": "seed",
+   "label": "fiscal_political",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "budget",
+    "election",
+    "parliament",
+    "coalition",
+    "government",
+    "minister"
+   ]
+  },
+  {
+   "centroid": {
+    "168": 0.27735,
+    "180": -0.27735,
+    "246": -0.27735,
+    "247": 0.27735,
+    "307": -0.27735,
+    "386": 0.5547,
+    "407": 0.27735,
+    "45": -0.27735,
+    "474": 0.27735,
+    "85": -0.27735
+   },
+   "created_at": "seed",
+   "label": "fx_intervention",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "intervention",
+    "peg",
+    "devaluation",
+    "revaluation",
+    "currency",
+    "reserves"
+   ]
+  },
+  {
+   "centroid": {
+    "165": -0.301511,
+    "180": 0.301511,
+    "2": -0.301511,
+    "207": -0.301511,
+    "234": 0.301511,
+    "26": 0.301511,
+    "347": 0.301511,
+    "401": 0.301511,
+    "438": 0.301511,
+    "443": -0.301511,
+    "45": -0.301511
+   },
+   "created_at": "seed",
+   "label": "growth_release",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "gdp",
+    "growth",
+    "output",
+    "production",
+    "industrial",
+    "pmi"
+   ]
+  },
+  {
+   "centroid": {
+    "124": 0.316228,
+    "170": 0.316228,
+    "227": -0.316228,
+    "30": 0.316228,
+    "400": -0.316228,
+    "422": -0.316228,
+    "436": 0.316228,
+    "442": -0.316228,
+    "446": -0.316228,
+    "458": 0.316228
+   },
+   "created_at": "seed",
+   "label": "inflation_release",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "inflation",
+    "cpi",
+    "ppi",
+    "prices",
+    "consumer",
+    "producer"
+   ]
+  },
+  {
+   "centroid": {
+    "174": 0.333333,
+    "211": -0.333333,
+    "250": 0.0,
+    "251": 0.333333,
+    "300": -0.333333,
+    "327": 0.333333,
+    "330": -0.333333,
+    "404": 0.333333,
+    "481": 0.333333,
+    "63": 0.333333
+   },
+   "created_at": "seed",
+   "label": "labour_release",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "employment",
+    "payrolls",
+    "unemployment",
+    "jobs",
+    "jobless",
+    "claims"
+   ]
+  },
+  {
+   "centroid": {
+    "141": 0.353553,
+    "158": 0.353553,
+    "17": 0.353553,
+    "183": 0.353553,
+    "323": 0.353553,
+    "355": 0.353553,
+    "363": -0.353553,
+    "388": 0.353553,
+    "476": 0.0
+   },
+   "created_at": "seed",
+   "label": "natural_disaster",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "earthquake",
+    "hurricane",
+    "typhoon",
+    "flood",
+    "wildfire",
+    "storm"
+   ]
+  },
+  {
+   "centroid": {
+    "128": -0.316228,
+    "163": -0.316228,
+    "180": -0.316228,
+    "200": -0.316228,
+    "246": 0.316228,
+    "268": -0.316228,
+    "363": 0.316228,
+    "436": 0.316228,
+    "501": 0.316228,
+    "56": 0.316228
+   },
+   "created_at": "seed",
+   "label": "regulatory_exchange",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "regulator",
+    "regulation",
+    "exchange",
+    "listing",
+    "margin",
+    "reconstitution"
+   ]
+  },
+  {
+   "centroid": {
+    "124": 0.288675,
+    "15": 0.288675,
+    "166": -0.288675,
+    "23": -0.288675,
+    "370": 0.57735,
+    "38": 0.288675,
+    "443": 0.288675,
+    "55": -0.288675,
+    "68": -0.288675
+   },
+   "created_at": "seed",
+   "label": "shipping_logistics",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "shipping",
+    "freight",
+    "canal",
+    "strait",
+    "port",
+    "vessel"
+   ]
+  },
+  {
+   "centroid": {
+    "120": -0.27735,
+    "127": 0.27735,
+    "128": -0.27735,
+    "145": 0.5547,
+    "247": 0.27735,
+    "254": 0.27735,
+    "308": -0.27735,
+    "310": 0.27735,
+    "468": -0.27735,
+    "497": -0.27735
+   },
+   "created_at": "seed",
+   "label": "trade_policy",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "tariff",
+    "tariffs",
+    "sanctions",
+    "export",
+    "import",
+    "quota"
+   ]
+  },
+  {
+   "centroid": {
+    "245": 0.316228,
+    "254": -0.316228,
+    "265": 0.316228,
+    "289": 0.316228,
+    "337": 0.316228,
+    "342": 0.316228,
+    "418": -0.316228,
+    "436": -0.316228,
+    "456": 0.316228,
+    "9": 0.316228
+   },
+   "created_at": "seed",
+   "label": "volatility_repricing",
+   "n_instances": 0,
+   "origin": "seed",
+   "top_tokens": [
+    "volatility",
+    "vix",
+    "options",
+    "skew",
+    "hedging",
+    "gamma"
+   ]
+  }
+ ],
+ "emerge_sim": 0.55,
+ "min_emerge": 12,
+ "note": "Categories are DISCOVERED from the ledger. Seeds are a cold-start bootstrap and are dropped from a centroid once it has 25 real instances."
+}

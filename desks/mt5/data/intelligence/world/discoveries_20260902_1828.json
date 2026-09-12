@@ -1,0 +1,224 @@
+[
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 4\u3068MetaTrader 5\u306e\u81ea\u52d5\u58f2\u8cb7\u30ed\u30dc\u30c3\u30c8\u3068\u30a4\u30f3\u30c7\u30a3\u30b1\u30fc\u30bf\u306e\u7121\u6599\u306e\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9 - MQL5\u30b3\u30fc\u30c9\u30d9\u30fc\u30b9",
+  "url": "https://www.mql5.com/ja/code",
+  "published": "2026-09-02T18:27:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M5"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "vault_sha": "79505e94c306704455fe",
+  "host": "www.mql5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Download forex indicators for free for MetaTrader 5 in MQL5 Code Base",
+  "url": "https://www.mql5.com/en/code/mt5/indicators",
+  "published": "2026-09-02T18:28:00+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H4",
+   "M15",
+   "M5"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "897209e9c9a955a87fdb",
+  "host": "www.mql5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trades | Forex Factory",
+  "url": "https://www.forexfactory.com/trades",
+  "published": "2026-09-02T18:28:00+00:00",
+  "symbols": [
+   "ARRGAN",
+   "GAPAKE",
+   "SELECT"
+  ],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "048088a6de838640dd1f",
+  "host": "www.forexfactory.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "News | Forex Factory",
+  "url": "https://www.forexfactory.com/news",
+  "published": "2026-09-02T18:28:02+00:00",
+  "symbols": [
+   "AUDJPY",
+   "FUTURE"
+  ],
+  "timeframes": [
+   "5M"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "orderflow",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "6f3406081ce0fd526ce6",
+  "host": "www.forexfactory.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Algorithmic Trading, Quantitative Trading, Trading Strategies, Backtesting and Implementation | QuantStart",
+  "url": "https://www.quantstart.com/",
+  "published": "2026-09-02T18:28:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "f9f2b152054986287e0e",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantcademy - Sign Up Now | QuantStart",
+  "url": "https://www.quantstart.com/quantcademy/",
+  "published": "2026-09-02T18:28:12+00:00",
+  "symbols": [
+   "MATLAB"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "bc8de821954ba0096cd3",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Successful Algorithmic Trading | QuantStart",
+  "url": "https://www.quantstart.com/successful-algorithmic-trading-ebook/",
+  "published": "2026-09-02T18:28:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "32b6cf34001bbfda42ad",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Foro de Bolsa - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa",
+  "published": "2026-09-02T18:28:15+00:00",
+  "symbols": [
+   "ONLINE",
+   "REPSOL",
+   "SECTOR"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "0c30e68d36869ce31786",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading and Market Microstructure",
+  "url": "https://arxiv.org/list/q-fin.TR/recent",
+  "published": "2026-09-02T18:28:19+00:00",
+  "symbols": [
+   "MARBLE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "e9064af0f49c710d5167",
+  "host": "arxiv.org"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 5 Trading Platform for Forex, Stocks, Futures",
+  "url": "https://www.metatrader5.com",
+  "published": "2026-09-02T18:28:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "13db6dacc8154a4a6c20",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading Systems | Metals Mine",
+  "url": "https://www.metalsmine.com/forum/71-trading-systems",
+  "published": "2026-09-02T18:28:26+00:00",
+  "symbols": [
+   "GBPJPY",
+   "HAPPYY",
+   "MAPBAM",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1H",
+   "4H",
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "orderflow",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "8865a56dae41a221e733",
+  "host": "www.metalsmine.com"
+ }
+]

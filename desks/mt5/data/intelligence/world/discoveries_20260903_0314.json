@@ -1,0 +1,953 @@
+[
+ {
+  "source": "world_crawler",
+  "title": "3 AVISOS que le dir\u00eda a mi YO pasado antes de empezar en el TRADING | Rankia",
+  "url": "https://www.rankia.com/blog/mentalpips/7071143-3-avisos-que-diria-pasado-antes-empezar-trading",
+  "published": "2026-09-03T03:13:08+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "1c0eae1b862df390bc0e",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Qu\u00e9 es el trading y c\u00f3mo empezar en 2026",
+  "url": "https://www.rankia.com/diccionario/trading/trading",
+  "published": "2026-09-03T03:13:09+00:00",
+  "symbols": [
+   "DEGIRO",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "909497e013d433cfc976",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (3/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=3",
+  "published": "2026-09-03T03:13:11+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "d607b8b5a5784afa0140",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (4/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=4",
+  "published": "2026-09-03T03:13:13+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "2745c748f2328ccfd056",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (5/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=5",
+  "published": "2026-09-03T03:13:15+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [
+   "M30"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "ccd7151de3b85fb3702d",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (7/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=7",
+  "published": "2026-09-03T03:13:17+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "f2aadd6776129b712e86",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Swing trading IBEX35 (11/132) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=11",
+  "published": "2026-09-03T03:13:19+00:00",
+  "symbols": [
+   "AVISOS",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "fd32423ab66c8c66c200",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.6 Volatility Regimes and Strategy Survival",
+  "url": "https://aligrithm.com/volatility-regimes-and-strategy-survival/",
+  "published": "2026-09-03T03:13:20+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "9534c593e3cef68bc33c",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.8 How to Make Indicators More Stationary",
+  "url": "https://aligrithm.com/how-to-make-indicators-more-stationary/",
+  "published": "2026-09-03T03:13:22+00:00",
+  "symbols": [
+   "EURUSD",
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "31eb82c04e137175f764",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.11 Regime Coverage: Why Your Backtest Needs Different Market States",
+  "url": "https://aligrithm.com/regime-coverage-why-your-backtest-needs-different-market-states/",
+  "published": "2026-09-03T03:13:23+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "40cd7dd3a11d7ead9c43",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.16 Degrees of Freedom in Trading Systems",
+  "url": "https://aligrithm.com/degrees-of-freedom-in-trading-systems/",
+  "published": "2026-09-03T03:13:26+00:00",
+  "symbols": [
+   "NIKKEI",
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "e740113e61495ec89657",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.17 Why More Parameters Make a Strategy Easier to Sell and Easier to Break",
+  "url": "https://aligrithm.com/why-more-parameters-make-a-strategy-easier-to-sell-and-easier-to-break/",
+  "published": "2026-09-03T03:13:27+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "add99cb8ee5602e23708",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.19 Trade-Count Thresholds for Backtest Reliability",
+  "url": "https://aligrithm.com/trade-count-thresholds-for-backtest-reliability/",
+  "published": "2026-09-03T03:13:29+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "d565a27970122e61d412",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "3.20 Why 30 Trades Is Not a Strategy",
+  "url": "https://aligrithm.com/why-30-trades-is-not-a-strategy/",
+  "published": "2026-09-03T03:13:31+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "1278a16a7c351a90b15f",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Donchian Channels: How to Turn a Simple Idea Into Working Strategies",
+  "url": "https://blog.quantinsti.com/donchian-channel-strategy/",
+  "published": "2026-09-03T03:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "7cee96406e8f439c473e",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Technical Analysis - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/technical-analysis/",
+  "published": "2026-09-03T03:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "e4654b4f9749fc76d7b9",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantitative Finance &amp; Algo Trading Blog by QuantInsti (Page 2)",
+  "url": "https://blog.quantinsti.com/page/2/",
+  "published": "2026-09-03T03:13:37+00:00",
+  "symbols": [
+   "REALLY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "b7fdce20b94c324a10df",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Retail Algorithmic Trading: A Complete Guide",
+  "url": "https://blog.quantinsti.com/algorithmic-trading-retail-traders/",
+  "published": "2026-09-03T03:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "0511f9a176a76e695c34",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cloud Computing in Trading: Types, Models, Automation and more",
+  "url": "https://blog.quantinsti.com/raining-data-cloud-computing-solutions-for-retail-traders/",
+  "published": "2026-09-03T03:13:41+00:00",
+  "symbols": [
+   "MATLAB"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "e8c9c016598976e6b267",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Direct Market Access (DMA): Intro, Trading Platforms, Brokers, and More",
+  "url": "https://blog.quantinsti.com/direct-market-access/",
+  "published": "2026-09-03T03:13:43+00:00",
+  "symbols": [
+   "EURUSD",
+   "ULLDMA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "ef045b270860d3472c8c",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Data Engineering and its Applications in Financial Markets!",
+  "url": "https://blog.quantinsti.com/data-engineering/",
+  "published": "2026-09-03T03:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "caef97f4439cfc94a42a",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Mean Reversion vs Trend Following Through the Years &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/mean-reversion-vs-trend-following-through-the-years/",
+  "published": "2026-09-03T03:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "58555cd5a1bdd30a4987",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Privacy Policy &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/privacy-policy/",
+  "published": "2026-09-03T03:13:48+00:00",
+  "symbols": [
+   "NOTICE",
+   "POLICY",
+   "REMOVE",
+   "RIGHTS",
+   "SOCIAL"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "5fea2fa45917a0814ad7",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Testimonials &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/testimonials/",
+  "published": "2026-09-03T03:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "0c07d7008c131ad4014e",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "General &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/category/general/",
+  "published": "2026-09-03T03:13:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "c77bb393f6d7dba835f6",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cesar Alvarez &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/author/cesaradmin/",
+  "published": "2026-09-03T03:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "3b99695dfe89a67cc376",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Research &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/category/research/",
+  "published": "2026-09-03T03:13:57+00:00",
+  "symbols": [
+   "UPDATE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "665239588f943f45f27e",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Market Timing &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/blog/category/market-timing/",
+  "published": "2026-09-03T03:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "c9973e9fd92acbd8e0f6",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "smart beta | QuantPedia",
+  "url": "https://quantpedia.com/tag/smart-beta/",
+  "published": "2026-09-03T03:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "e1cfb54f0db5bf77f341",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "stock picking | QuantPedia",
+  "url": "https://quantpedia.com/tag/stock-picking/",
+  "published": "2026-09-03T03:14:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "44171e5307d5dbc396ed",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "value | QuantPedia",
+  "url": "https://quantpedia.com/tag/value/",
+  "published": "2026-09-03T03:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "697aea8678d6d677a18d",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "volatility effect | QuantPedia",
+  "url": "https://quantpedia.com/tag/volatility-effect/",
+  "published": "2026-09-03T03:14:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "e32dbf2b9965fcb03ddb",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantpedia Awards 2024 | QuantPedia",
+  "url": "https://quantpedia.com/quantpedia-awards-2024/",
+  "published": "2026-09-03T03:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "a90ba76119821a356a7f",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MesoSim v2.1: Events Export, ThetaEngine Strategy Template | Deltaray Blog | Options Tutorials, Research &amp; Release Notes",
+  "url": "https://blog.deltaray.io/mesosim-21/",
+  "published": "2026-09-03T03:14:13+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "95bf73512de359d70230",
+  "host": "blog.deltaray.io"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MesoSim v2.0: Campaign Mode, Indicators, IV Rank and more | Deltaray Blog | Options Tutorials, Research &amp; Release Notes",
+  "url": "https://blog.deltaray.io/mesosim-20-is-live/",
+  "published": "2026-09-03T03:14:15+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "43f968d0d8dd675f329a",
+  "host": "blog.deltaray.io"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Deltaray Blog Tag: Strategy Library | Options Tutorials, Research &amp; Release Notes",
+  "url": "https://blog.deltaray.io/tags/strategies/",
+  "published": "2026-09-03T03:14:19+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "78781b5908e9bc5d7ca5",
+  "host": "blog.deltaray.io"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: SPX High Loss Threshold Strangle Articles",
+  "url": "http://dtr-trading.blogspot.com/p/blog-page_25.html",
+  "published": "2026-09-03T03:14:20+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "73b3f67be9e43a999534",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: RUT High Loss Threshold Strangle Articles",
+  "url": "http://dtr-trading.blogspot.com/p/rut-high-loss-threshold-strangle.html",
+  "published": "2026-09-03T03:14:22+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "903274b760577b475481",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: SPX Straddle Articles",
+  "url": "http://dtr-trading.blogspot.com/p/spx-straddle-articles.html",
+  "published": "2026-09-03T03:14:24+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "a441ef3488c8df4bbb28",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: RUT Straddle Articles",
+  "url": "http://dtr-trading.blogspot.com/p/rut-straddle-articles.html",
+  "published": "2026-09-03T03:14:26+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "4620c6130b17e7bba0ef",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: About DTR Trading",
+  "url": "http://dtr-trading.blogspot.com/p/about-dtr-trading.html",
+  "published": "2026-09-03T03:14:28+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "bc749ab2994318b71e1d",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: Frequently Asked Questions",
+  "url": "http://dtr-trading.blogspot.com/p/dtr-trading-faq_23.html",
+  "published": "2026-09-03T03:14:30+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "vault_sha": "0e7dc1ad47a2e62661a5",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading: Contact",
+  "url": "http://dtr-trading.blogspot.com/p/contact.html",
+  "published": "2026-09-03T03:14:32+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "a4f366f82ed65cabca4a",
+  "host": "dtr-trading.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Delta Hedging Techniques | Deltaray Blog | Options Tutorials, Research &amp; Release Notes",
+  "url": "https://blog.deltaray.io/delta-hedging-techniques/",
+  "published": "2026-09-03T03:14:32+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "48847ad37238cbbae9dd",
+  "host": "blog.deltaray.io"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Volatility Hedged Theta Engine | Deltaray Blog | Options Tutorials, Research &amp; Release Notes",
+  "url": "https://blog.deltaray.io/volatility-hedged-theta-engine/",
+  "published": "2026-09-03T03:14:34+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "1612581c9eb6d6263a66",
+  "host": "blog.deltaray.io"
+ },
+ {
+  "source": "world_crawler",
+  "title": "\u0413\u0440\u0430\u0444\u0438\u043a\u0438 \u0432 \u0442\u043e\u0440\u0433\u043e\u0432\u043e\u0439 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0435 MetaTrader 5",
+  "url": "https://www.metatrader5.com/ru/trading-platform/charts",
+  "published": "2026-09-03T03:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "vault_sha": "4799152e385aadaf878d",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "OpenSourceQuant &#8211; OSQ = Quants ^ OpenSource",
+  "url": "https://opensourcequant.wordpress.com/",
+  "published": "2026-09-03T03:14:50+00:00",
+  "symbols": [
+   "MEBOOT",
+   "NAREIT"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "57ffb5b1173ed366469f",
+  "host": "opensourcequant.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Open Source Algorithmic Trading Platform. - QuantConnect.com",
+  "url": "https://www.quantconnect.com/",
+  "published": "2026-09-03T03:14:51+00:00",
+  "symbols": [
+   "AGENTS",
+   "ASSETS",
+   "ASSIST"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "3c54c55ceeb628747785",
+  "host": "www.quantconnect.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quant Fiction &#8211; Telling Stories with Data",
+  "url": "https://quantfiction.com/",
+  "published": "2026-09-03T03:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "48b33a5a7f3277ca80af",
+  "host": "quantfiction.com"
+ }
+]

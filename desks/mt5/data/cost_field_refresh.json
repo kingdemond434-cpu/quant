@@ -1,0 +1,13 @@
+{
+ "checked_at": "2026-09-12T04:58:53+00:00",
+ "rows": 251,
+ "costable_before": 248,
+ "costable_after": 248,
+ "filled": 0,
+ "terminal_unanswered": 3,
+ "still_uncostable": [
+  "BeyondMeat",
+  "BlockInc",
+  "Walgreens"
+ ]
+}

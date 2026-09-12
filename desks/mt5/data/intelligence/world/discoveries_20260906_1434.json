@@ -1,0 +1,1868 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Global Market Coverage - TradingHours.com",
+  "url": "https://www.tradinghours.com/data/coverage",
+  "published": "2026-09-06T14:30:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "04ffb957cb5e0a8fa7dd",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://www.tradinghours.com/data",
+  "published": "2026-09-06T14:30:19+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "e8b1bbe17b8ae7602f2d",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-06T14:30:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0c7f9a71677671fcf03c",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-06T14:30:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fff1bad369be2cb1e580",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-06T14:30:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ea415c0717907b6a1319",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "One losing strategy cost me half of my last 100 trades. It came from 3,925 fluke backtests my own gate had approved. | StratProof",
+  "url": "https://stratproof.com/blog/my-graduation-gate-let-3925-fluke-strategies-through",
+  "published": "2026-09-06T14:30:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4b597e9e209c0d3684a7",
+  "host": "stratproof.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "&#x27;bars_mutation passes 63%&#x27; is not what it looks like. What backtest search-method tables actually tell you. | StratProof",
+  "url": "https://stratproof.com/blog/random-search-vs-mutation-crypto-strategies",
+  "published": "2026-09-06T14:30:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2903e3b4e211dadab416",
+  "host": "stratproof.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline",
+  "published": "2026-09-06T14:30:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5f283eb96456f4c87f7c",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=US.NYSE%2CGB.LSE%2CJP.JPX%2CAU.ASX",
+  "published": "2026-09-06T14:30:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4166c2c82fde666bf151",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=US.NYSE%2CUS.NASDAQ%2CCA.TSX",
+  "published": "2026-09-06T14:30:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4c18901f2b897e6afb55",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=GB.LSE%2CDE.XFRA%2CFR.EURONEXT%2CCH.SIX",
+  "published": "2026-09-06T14:31:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "17a8cb5cbd35957f1043",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=JP.JPX%2CHK.HKEX%2CCN.SSE%2CSG.SGX",
+  "published": "2026-09-06T14:31:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f7e2f11ff94d7297e077",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=US.NYSE%2CCA.TSX%2CBR.BOVESPA%2CMX.BMV",
+  "published": "2026-09-06T14:31:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e046170842c363959853",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=SA.TADAWUL%2CIL.TASE%2CZA.JSE",
+  "published": "2026-09-06T14:31:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "orderflow",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5910b808f47a3df64543",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingHours.com - Market Holidays & Trading Hours Calendars",
+  "url": "https://www.tradinghours.com",
+  "published": "2026-09-06T14:31:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f18ef4eff7352282a309",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dyskusja:Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/wiki/Dyskusja:Algorytm_Strassena",
+  "published": "2026-09-06T14:31:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fbf9dec0361978693725",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&veaction=edit",
+  "published": "2026-09-06T14:31:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "73a12f9aa52ab799b291",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Edytujesz Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&action=edit",
+  "published": "2026-09-06T14:31:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9cdd7a18000d50153919",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&oldid=78388478",
+  "published": "2026-09-06T14:31:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3a2bee2f24f111506195",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&useparsoid=0",
+  "published": "2026-09-06T14:31:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1b5a2a9fdc1be3b4e6ee",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tworzenie ksi\u0105\u017cki \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Specjalna:Ksi%C4%85%C5%BCka&bookcmd=book_creator&referer=Algorytm+Strassena",
+  "published": "2026-09-06T14:31:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b367bb70d7284700f059",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&printable=yes",
+  "published": "2026-09-06T14:31:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "386d7caa3bbdc1afd4d5",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/wiki/Algorytm",
+  "published": "2026-09-06T14:31:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bfe082ee005da6d92972",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassenov algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=Strassenov_algoritmus&veaction=edit",
+  "published": "2026-09-06T14:31:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "439a5acee033005aae56",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassenov algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=Strassenov_algoritmus&oldid=7962408",
+  "published": "2026-09-06T14:32:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f43586d8b4b02644cb90",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassenov algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=Strassenov_algoritmus&useparsoid=0",
+  "published": "2026-09-06T14:32:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5142b6f6e426b7e2b813",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tvorba knihy - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=%C5%A0peci%C3%A1lne:Knihy&bookcmd=book_creator&referer=Strassenov+algoritmus",
+  "published": "2026-09-06T14:32:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6f5ba64656f541fa3c94",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassenov algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=Strassenov_algoritmus&printable=yes",
+  "published": "2026-09-06T14:32:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ff27c5a4b863c84d59f1",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/wiki/Algoritmus",
+  "published": "2026-09-06T14:32:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1e2d6e1993cebab8eb6d",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/sr/%C5%A0trasenov_algoritam",
+  "published": "2026-09-06T14:32:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8f9802294f657e25de0b",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0428\u0442\u0440\u0430\u0441\u0435\u043d\u043e\u0432 \u0430\u043b\u0433\u043e\u0440\u0438\u0442\u0430\u043c \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/sr-ec/%C5%A0trasenov_algoritam",
+  "published": "2026-09-06T14:32:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr-Cyrl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae98a504221d8fc2df47",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/sr-el/%C5%A0trasenov_algoritam",
+  "published": "2026-09-06T14:32:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr-Latn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d08004671cd55625e33c",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&veaction=edit",
+  "published": "2026-09-06T14:32:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6fa670830ea3e8c98bd6",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0443\u0440\u0435\u0452\u0438\u0432\u0430\u045a\u0435 \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&action=edit",
+  "published": "2026-09-06T14:32:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4c3d57f62a55323c7d71",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0438\u0441\u0442\u043e\u0440\u0438\u0458\u0430 \u0438\u0437\u043c\u0435\u043d\u0430 \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&action=history",
+  "published": "2026-09-06T14:32:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7c318cd087aa90c1c44a",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u043a\u043e\u0458\u0435 \u0432\u043e\u0434\u0435 \u043e\u0432\u0430\u043c\u043e \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/wiki/%D0%9F%D0%BE%D1%81%D0%B5%D0%B1%D0%BD%D0%BE:%D0%A8%D1%82%D0%B0_%D0%B2%D0%BE%D0%B4%D0%B8_%D0%BE%D0%B2%D0%B0%D0%BC%D0%BE/%C5%A0trasenov_algoritam",
+  "published": "2026-09-06T14:32:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5e608c37a902385bb597",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&oldid=31175923",
+  "published": "2026-09-06T14:32:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8a4cd3f90a60c21e8c24",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u041f\u043e\u0434\u0430\u0446\u0438 \u043e \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0438 \u201e\u0160trasenov algoritam\u201d \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&action=info",
+  "published": "2026-09-06T14:32:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2cf7cab570fcf80646a",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&veaction=edit&section=1",
+  "published": "2026-09-06T14:32:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7335655626ed2e7ced23",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0423\u0440\u0435\u0452\u0443\u0458\u0435\u0442\u0435 \u0160trasenov algoritam (\u043e\u0434\u0435\u0459\u0430\u043a) \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&action=edit&section=1",
+  "published": "2026-09-06T14:32:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99686fde413deb1a338e",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading",
+  "url": "https://www.ninjatraderbrokerage.com/eu/en-fr/futures/why-trade-futures/futures-vs-forex-and-cfds/",
+  "published": "2026-09-06T14:32:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bca280f483c7826d18e8",
+  "host": "www.ninjatraderbrokerage.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "TradingView PineScript Developer Service",
+  "url": "https://4xdev.com/services/tradingview-programming",
+  "published": "2026-09-06T14:32:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c24d6dbae8ae9a5f4fb9",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtesting and optimization",
+  "url": "https://4xdev.com/services/backtesting-and-optimization",
+  "published": "2026-09-06T14:32:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8fbfa5873418904bc62c",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Buy Professional Forex Indicators. \ud83e\uddf0 Tools For Traders | 4xDev",
+  "url": "https://4xdev.com/tools",
+  "published": "2026-09-06T14:32:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "db65bd2ed8d8a0e4a5a9",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Buy TradingView Indicators. Custom Pine Script Tools | 4xDev",
+  "url": "https://4xdev.com/tools/tradingview",
+  "published": "2026-09-06T14:33:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "436203ebe7a6a56ebfbb",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Protector Software. Protection of the Trading Tools | 4xDev",
+  "url": "https://4xdev.com/products/forex-protector-software",
+  "published": "2026-09-06T14:33:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "932b00e851bfb41c02ad",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingHours.com - Market Holidays & Trading Hours Calendars",
+  "url": "https://www.tradinghours.com/",
+  "published": "2026-09-06T14:33:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "882fdd6529f05e4b52b0",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MIC Code Search - TradingHours.com",
+  "url": "https://www.tradinghours.com/mic",
+  "published": "2026-09-06T14:33:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7294360eb4f3729e8032",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Currency Holidays - TradingHours.com",
+  "url": "https://www.tradinghours.com/currencies",
+  "published": "2026-09-06T14:33:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "03132327c3e0e137b8cf",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SIFMA Recommended Trading Hours, Holidays & Early Close Schedule - TradingHours.com",
+  "url": "https://www.tradinghours.com/sifma",
+  "published": "2026-09-06T14:33:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "29d685c15db10e866594",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Is the Stock Market Open? - TradingHours.com",
+  "url": "https://www.tradinghours.com/open",
+  "published": "2026-09-06T14:33:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "614620be216d5fd412cc",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog - The Essentials of Trading in UAE",
+  "url": "http://www.theessentialsoftrading.com/Blog/",
+  "published": "2026-09-06T14:33:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a5388c34b1426db6ce6",
+  "host": "www.theessentialsoftrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Wall Street Currents: Quant Currents",
+  "url": "http://www.wallstreetcurrents.com/p/quant-currents.html",
+  "published": "2026-09-06T14:33:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "H1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "608cbea33855e40d2170",
+  "host": "www.wallstreetcurrents.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tales from a Trading Desk | Software Engineering Noise",
+  "url": "http://mdavey.wordpress.com",
+  "published": "2026-09-06T14:33:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a34a5a49533ed3d41e46",
+  "host": "mdavey.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com",
+  "published": "2026-09-06T14:33:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e8c9039674584fb4b4ef",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IB UK Spot Gold and Spot Silver | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-metals.php",
+  "published": "2026-09-06T14:33:40+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7481c82b0426ce1396ce",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Leading Trading Strategies",
+  "url": "https://systematic.autotradenow.com/selector",
+  "published": "2026-09-06T14:33:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2b1d18c149e56f3f7bf",
+  "host": "systematic.autotradenow.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Supertrend, flipped to death: the most-taught indicator on the internet | The Refutation",
+  "url": "https://therefutation.com/essays/does-supertrend-work/",
+  "published": "2026-09-06T14:33:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "4H"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e80408a3c3b03ec38e61",
+  "host": "therefutation.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Does Your Backtest Survive the Adverse Same-Bar Fill? A 48.8 Million-Pair Stress Test. \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/adverse-same-bar-fill",
+  "published": "2026-09-06T14:33:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1b2efd5f79b86dacd0c4",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The NAAIM-AAII Equities Allocation Spread: Another Smart Money Relative Sentiment Indicator | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/blog/the-naaim-aaii-equities-allocation-spread-another-smart-money-relative-sentiment-indicator/",
+  "published": "2026-09-06T14:33:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4403bc12a1d85108c3c4",
+  "host": "portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Part (3/3) - Refiner Trade: A Second Signal and the Case for Trading Less",
+  "url": "https://beyondpassive.substack.com/p/part-33-refiner-trade-a-second-signal",
+  "published": "2026-09-06T14:33:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e84dbfff9b93180fc28d",
+  "host": "beyondpassive.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Research Review | 24 July 2026 | Strategy Analytics | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/research-review-24-july-2026-strategy-analytics/",
+  "published": "2026-09-06T14:33:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "28803f2468038de4bbea",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What Should You Change First in a Crypto Backtest? 99.75 Million Tests \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/which-backtest-knob-changes-what",
+  "published": "2026-09-06T14:33:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "402549c5d04a6959a1c8",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic Trading, HFT, and Market Stability &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/07/23/algorithmic-trading-hft-and-market-stability/",
+  "published": "2026-09-06T14:33:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6ccd7de5cf8794a892ea",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MACD: The Indicator Is a Passenger | The Refutation",
+  "url": "https://therefutation.com/essays/macd-the-indicator-is-a-passenger/",
+  "published": "2026-09-06T14:33:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7614150af39935c478d7",
+  "host": "therefutation.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Random-Max Percentile: Grading Every Backtest Against Its Search's Random Maximum \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/random-max-percentile",
+  "published": "2026-09-06T14:33:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a0f7a3b45f517b4c0ba0",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How Many Backtests Is Too Many? We Ran the Same Search Twice to Find Out \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/how-many-backtests-is-too-many",
+  "published": "2026-09-06T14:33:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H"
+  ],
+  "patterns": [
+   "carry",
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ff2506d9a1597d272189",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "We Ran 100 Million Bitcoin Backtests. Only 3,130 Beat the Luck Bar. \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/100-million-backtests-deflated-sharpe",
+  "published": "2026-09-06T14:33:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "1M",
+   "5M"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d8d716c4da462cd9c314",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Lookahead Bias in Fundamental Backtests: 66 Days, Measured",
+  "url": "https://tradevodata.com/blog/lookahead-bias-fundamental-backtests",
+  "published": "2026-09-06T14:33:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d788a122124a08d52a28",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Value - by Concretum Research",
+  "url": "https://concretumgroup.substack.com/p/quantitative-value",
+  "published": "2026-09-06T14:33:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ceddba35413c4131ca5b",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Market Impact of Retail Options Trading &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/07/05/the-market-impact-of-retail-options-trading/",
+  "published": "2026-09-06T14:34:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "923a2ede52382b838bb0",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estimating the Capacity of a Trading Strategy",
+  "url": "https://concretumgroup.substack.com/p/estimating-the-capacity-of-a-trading",
+  "published": "2026-09-06T14:34:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "26b23432070f8a4a7267",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Value-at-Risk Estimation: Improved Historical and Simulation-based Estimates with the Harrell-Davis Quantile Estimator | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/blog/value-at-risk-estimation-improved-historical-and-simulation-based-estimates-with-the-harrell-davis-quantile-estimator/",
+  "published": "2026-09-06T14:34:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e8eb7712b408e6aadd1",
+  "host": "portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automating a Volatility Strategy With Python and Interactive Brokers",
+  "url": "https://concretumgroup.substack.com/p/automating-a-volatility-strategy",
+  "published": "2026-09-06T14:34:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "gap",
+   "inventory",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5fdaa2a66aff5068a49f",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Interviewing the Quants: An Inside Look With &#8220;Sanz Prophet&#8221;",
+  "url": "http://godelsmarket.blogspot.com/2015/01/interviewing-quants-inside-look-with.html",
+  "published": "2026-09-06T14:34:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "inventory",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "223bcc20d038460fdf16",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "http://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/",
+  "published": "2026-09-06T14:34:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c777729e258240165567",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Non-Linear Costs of Trading - by Concretum Research",
+  "url": "https://concretumgroup.substack.com/p/the-non-linear-costs-of-trading",
+  "published": "2026-09-06T14:34:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b8d5e31ad61d619ed99c",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI Overfitting in Trading Systems | Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/ai-overfitting-trading-systems/",
+  "published": "2026-09-06T14:34:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eb523f8616820c255fdf",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Build a Reliable Algo Trading Infrastructure",
+  "url": "https://concretumgroup.substack.com/p/operational-pitfalls-of-algo-trading",
+  "published": "2026-09-06T14:34:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3739edb8d195f4638a40",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Most of the insider trading alpha is gone by the time you see the filing: poof!",
+  "url": "https://tommijohnsen.substack.com/p/most-of-the-insider-trading-alpha",
+  "published": "2026-09-06T14:34:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c8900f1a4624d1b3d1b8",
+  "host": "tommijohnsen.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pyramid Your Trading Profits Using the Gator - Tradinformed",
+  "url": "https://www.tradinformed.com/pyramid-trading-profits-using-gator-oscillator/",
+  "published": "2026-09-06T14:34:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb3515e1381fd0e67722",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

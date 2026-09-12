@@ -1,0 +1,16 @@
+{
+ "last_run_utc": "2026-09-12T02:46:18.186879+00:00",
+ "ledger_rows": {
+  "intents": 39,
+  "outcomes": 1,
+  "deals": 16
+ },
+ "last": {
+  "cases_joined": 39,
+  "symbols_calibrated": 0,
+  "symbols_unmeasured": 1,
+  "donated_rows": 3
+ },
+ "runs": 9,
+ "donated_total": 43
+}

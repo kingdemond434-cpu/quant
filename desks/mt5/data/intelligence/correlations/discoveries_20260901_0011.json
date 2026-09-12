@@ -1,0 +1,16 @@
+[
+  {
+    "source": "correlation",
+    "type": "extreme_correlation",
+    "pair": "eur_jpy",
+    "symbol1": "EURUSD",
+    "symbol2": "USDJPY",
+    "correlation": -0.733,
+    "symbols": [
+      "EURUSD",
+      "USDJPY"
+    ],
+    "confidence": 0.5,
+    "description": "eur_jpy extreme correlation: -0.73"
+  }
+]

@@ -1,0 +1,6 @@
+{"generated_utc": "2026-09-08T18:40:18.329485+00:00", "symbol": "GBPNOK", "pairings": 22, "n_earning": 0, "seed": 0, "source": "factor_model_coevolution"}
+{"generated_utc": "2026-09-08T18:40:29.237369+00:00", "symbol": "GBPSEK", "pairings": 20, "n_earning": 0, "seed": 1, "source": "factor_model_coevolution"}
+{"generated_utc": "2026-09-08T18:40:57.402806+00:00", "symbol": "GBPZAR", "pairings": 22, "n_earning": 8, "seed": 2, "source": "factor_model_coevolution"}
+{"generated_utc": "2026-09-08T18:41:19.296192+00:00", "symbol": "NZDCAD", "pairings": 20, "n_earning": 0, "seed": 3, "source": "factor_model_coevolution"}
+{"generated_utc": "2026-09-08T18:41:46.630404+00:00", "symbol": "USDCAD", "pairings": 23, "n_earning": 0, "seed": 4, "source": "factor_model_coevolution"}
+{"generated_utc": "2026-09-08T18:42:23.899976+00:00", "symbol": "USDCHF", "pairings": 24, "n_earning": 0, "seed": 5, "source": "factor_model_coevolution"}

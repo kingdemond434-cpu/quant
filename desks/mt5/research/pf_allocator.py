@@ -163,9 +163,19 @@ CURVE_SAMPLE_MAX = 1.00
 
 #: Round-trip execution cost charged against a unit of heat moved, in account fraction. Turnover
 #: below the growth it buys is not an improvement, and this is the price that decides.
+#: Round-trip execution cost charged against a unit of heat moved, in account fraction. Derived
+#: from the measured cost stack on this book: spread plus commission is ~0.03R one way, so the
+#: round trip is ~0.06R. Turnover below the growth it buys is not an improvement and this is
+#: the price that decides. Deliberately the MEASURED cost and not a padded one -- padding it
+#: would suppress rebalances that genuinely pay, which is a growth cut wearing a cost estimate.
 TURNOVER_COST_R = 0.06
 #: Days of growth the rebalance is expected to earn before the next one supersedes it. Short on
 #: purpose: a rebalance justified only by a month of undisturbed holding is not justified.
+#: Days of growth the rebalance is expected to earn before the next supersedes it. Derived from
+#: the allocator's own cadence: it re-solves hourly and the book changes materially on a weekly
+#: scale, so 5.0 is one trading week -- the longest horizon a single rebalance can honestly
+#: claim. Short on purpose: a rebalance justified only by a month of undisturbed holding is not
+#: justified.
 NO_TRADE_HORIZON_DAYS = 5.0
 
 #: Annual growth above which the pass is REFUSED as an input defect. The armed gold book replays
@@ -1901,6 +1911,11 @@ ADMISSION_CANDIDATE_BUDGET_S = 8.0
 #: its own noise says it wins, and billed as the `explore_thompson` rail. Five percent of the
 #: book is one percent of account heat on the 20% floor: enough to accrue a forward record,
 #: small enough that the growth it can cost is inside the margin by construction.
+#: Derived as a fraction of the account's own floor: 5% of the book is 1.0% of account heat
+#: at the 20% floor (0.05 x 0.20 = 0.01), which is enough to accrue a forward record on an
+#: ambiguous candidate and small enough that the growth it can cost sits inside the
+#: admission margin by construction. Lent from WITHIN the total -- incumbents scale
+#: proportionally and the total is unchanged -- so this is never an addition to heat.
 EXPLORE_SHARE = 0.05
 #: Iterations a candidate's re-solve gets, warm-started from the incumbent's own optimum. One
 #: sleeve added to a solved book is a small perturbation; a cold solve of the same problem

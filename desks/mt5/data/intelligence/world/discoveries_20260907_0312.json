@@ -1,0 +1,2006 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical Data - Pakistan Stock Exchange (PSX)",
+  "url": "https://dps.psx.com.pk/historical",
+  "published": "2026-09-07T03:07:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "https://dps.psx.com.pk/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "403e5c58230dbf1c5ad7",
+  "host": "dps.psx.com.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "SBP STRATEGIC PLAN FY 2024-28",
+  "url": "https://archive.sbp.org.pk/SBPVision/Index.html",
+  "published": "2026-09-07T03:07:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a03b463640189d1a915",
+  "host": "archive.sbp.org.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-07T03:07:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "900462ba8911e4a8fdb5",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Archive - The DeCarley Perspective",
+  "url": "https://decarleytrading.substack.com/archive",
+  "published": "2026-09-07T03:07:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7016f53fefe4b2874528",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google Books",
+  "url": "https://www.google.co.id/books/edition/DATA_MINING/MWcHEAAAQBAJ?hl=id&newbks=1&gbpv=1&dq=statistika+dan+algoritma+em&pg=PA120&printsec=frontcover",
+  "published": "2026-09-07T03:07:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "id-DE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4e551a40fdee9dba0ae0",
+  "host": "www.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About - The DeCarley Perspective",
+  "url": "https://decarleytrading.substack.com/about",
+  "published": "2026-09-07T03:08:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aae962ee78b6c43efb35",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The DeCarley Perspective...Are the grains following 2010?",
+  "url": "https://decarleytrading.substack.com/p/the-decarley-perspectiveare-the-grains",
+  "published": "2026-09-07T03:08:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "18da8837624c3a5e6e61",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The DeCarley Perspective...Oil headlines are bullish, but price action isn\u2019t",
+  "url": "https://decarleytrading.substack.com/p/the-decarley-perspectiveoil-headlines",
+  "published": "2026-09-07T03:08:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c41f922d33a6ef47b331",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy Idea...Buy December Corn Puts",
+  "url": "https://decarleytrading.substack.com/p/strategy-ideabuy-december-corn-puts",
+  "published": "2026-09-07T03:08:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f363a03e861d4d56aa9",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The DeCarley Perspective...First the Yen, then the Treasuries",
+  "url": "https://decarleytrading.substack.com/p/the-decarley-perspectivefirst-the",
+  "published": "2026-09-07T03:08:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea4fb4ef288f52c6d94d",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy Idea...Sell mini soybeans with catastrophic insurance.",
+  "url": "https://decarleytrading.substack.com/p/strategy-ideasell-mini-soybeans-with",
+  "published": "2026-09-07T03:08:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9d3855297603d5b3b514",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The DeCarley Perspective...Scanning for overcrowded futures trades",
+  "url": "https://decarleytrading.substack.com/p/the-decarley-perspectivescanning",
+  "published": "2026-09-07T03:08:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8141663910a6e401c4a2",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PART 2 The DeCarley Perspective...Yentervention: What is it and why does it matter?",
+  "url": "https://decarleytrading.substack.com/p/part-2-the-decarley-perspectiveyentervention",
+  "published": "2026-09-07T03:08:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "72e45c4a14ab7c2aea80",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Terms of Service",
+  "url": "https://decarleytrading.substack.com/tos",
+  "published": "2026-09-07T03:08:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "353564620b3e38066663",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/wiki/Category:Algorithms?uselang=bs",
+  "published": "2026-09-07T03:08:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "auction",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "bs",
+  "endpoints": [
+   "https://kmlexport.toolforge.org/?project=commons&amp;article=Category%3AAlgorithms"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6167ed135649c78363bf",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms \u2013 Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/wiki/Category:Algorithms?uselang=frr",
+  "published": "2026-09-07T03:08:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "auction",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "frr",
+  "endpoints": [
+   "https://kmlexport.toolforge.org/?project=commons&amp;article=Category%3AAlgorithms"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d17ef91ac17cc81b13f1",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit",
+  "published": "2026-09-07T03:08:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f7ccf1f13af2ff6cc31",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ojehaih\u00edna Algoritmo - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Algoritmo&action=edit",
+  "published": "2026-09-07T03:08:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0e318002fcc60437b91b",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Jehechapyr\u00e9va pete\u0129 \u00f1e\u2019\u1ebd rehegua \u00abAlgoritmo\u00bb - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Algoritmo&action=history",
+  "published": "2026-09-07T03:08:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ecfbe83fcd9654a6a5d4",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kuatiaku\u00e9ra ojoaj\u00fava \"Algoritmo\" rehe - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/wiki/Mba%27ech%C4%A9ch%C4%A9:LoQueEnlazaAqu%C3%AD/Algoritmo",
+  "published": "2026-09-07T03:08:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "80e202aa9ccf75c199f9",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Algoritmo&oldid=134370",
+  "published": "2026-09-07T03:08:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9701635548c19e0f37f5",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informaci\u00f3n de \u00abAlgoritmo\u00bb - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Algoritmo&action=info",
+  "published": "2026-09-07T03:08:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7204ab2868a474d8d806",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Eromandu'a ko kuatia - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Mba%27ech%C4%A9ch%C4%A9:Citar&page=Algoritmo&id=134370&wpFormIdentifier=titleform",
+  "published": "2026-09-07T03:08:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c95e15eecbb4db2f3878",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Algoritmo&useparsoid=0",
+  "published": "2026-09-07T03:08:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "21cfa17bf9eda522841f",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creador de libros - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Mba%27ech%C4%A9ch%C4%A9:Libro&bookcmd=book_creator&referer=Algoritmo",
+  "published": "2026-09-07T03:09:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c2efce1470018425e9d",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Algoritmo&printable=yes",
+  "published": "2026-09-07T03:09:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "73df0f95cfb6acac96cb",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit&section=1",
+  "published": "2026-09-07T03:09:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "caafa1f2731aac3e0251",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ojehaih\u00edna Algoritmo (vore) - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/w/index.php?title=Algoritmo&action=edit&section=1",
+  "published": "2026-09-07T03:09:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ba070641879ea22b4963",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Nawaa account banao - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:CreateAccount&returnto=Algorithm",
+  "published": "2026-09-07T03:09:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "806e0fdf648ac1a8b088",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Log in karo - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:UserLogin&returnto=Algorithm",
+  "published": "2026-09-07T03:09:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7a6d8f04a3457a26ba15",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&veaction=edit",
+  "published": "2026-09-07T03:09:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "81e285f20128ccbc3184",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm badlawa jae hai - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&action=edit",
+  "published": "2026-09-07T03:09:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9d08e6cb077789f3238f",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm: ke sansodhan ke itihaas - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&action=history",
+  "published": "2026-09-07T03:09:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5df627c98968f44b27cc",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Panna jon ki Algorithm se jurre hai - Wikipedia",
+  "url": "https://hif.wikipedia.org/wiki/khaas:WhatLinksHere/Algorithm",
+  "published": "2026-09-07T03:09:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f6e4f7006ee72f463d34",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&oldid=311727",
+  "published": "2026-09-07T03:09:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e3b43edc60c6cbbf46c9",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\"Algorithm\" ke khatir jaankari - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&action=info",
+  "published": "2026-09-07T03:09:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b0eda4eb9eb89b91bd94",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cite This Page - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:CiteThisPage&page=Algorithm&id=311727&wpFormIdentifier=titleform",
+  "published": "2026-09-07T03:09:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ce7c04ec1f2a65850a2",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "URL shortener - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:UrlShortener&url=https%3A%2F%2Fhif.wikipedia.org%2Fwiki%2FAlgorithm",
+  "published": "2026-09-07T03:09:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "29511ac8ca32d842a601",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&useparsoid=0",
+  "published": "2026-09-07T03:09:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1f74439cabc10da466e3",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Book banae waala - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:Book&bookcmd=book_creator&referer=Algorithm",
+  "published": "2026-09-07T03:09:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "815d31b31e9be927e061",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Download as PDF - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:DownloadAsPdf&page=Algorithm&action=show-download-screen",
+  "published": "2026-09-07T03:09:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d881e4d983f58aac52b",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&printable=yes",
+  "published": "2026-09-07T03:09:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8c0bbf69b678f0f6df3a",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&mobileaction=toggle_view_mobile",
+  "published": "2026-09-07T03:09:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c09490628d4e5994b0ad",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Vikipedija",
+  "url": "https://isv.wikipedia.org/w/index.php?title=Algoritm&veaction=edit",
+  "published": "2026-09-07T03:09:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "isv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "831481ee8b49d3f61b1f",
+  "host": "isv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pravjenje stranice \u00abAlgoritm\u00bb - Vikipedija",
+  "url": "https://isv.wikipedia.org/w/index.php?title=Algoritm&action=edit",
+  "published": "2026-09-07T03:09:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "isv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "452315594c8e71089133",
+  "host": "isv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Vikipedija",
+  "url": "https://isv.wikipedia.org/w/index.php?title=Algoritm&oldid=29666",
+  "published": "2026-09-07T03:09:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "isv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dfe2c0420da7452a19cc",
+  "host": "isv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Vikipedija",
+  "url": "https://isv.wikipedia.org/w/index.php?title=Algoritm&useparsoid=0",
+  "published": "2026-09-07T03:10:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "isv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "92616c6ac656d438591a",
+  "host": "isv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tvorec knig - Vikipedija",
+  "url": "https://isv.wikipedia.org/w/index.php?title=Special:Book&bookcmd=book_creator&referer=Algoritm",
+  "published": "2026-09-07T03:10:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "isv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e0605a70a96867de4494",
+  "host": "isv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Vikipedija",
+  "url": "https://isv.wikipedia.org/w/index.php?title=Algoritm&printable=yes",
+  "published": "2026-09-07T03:10:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "isv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4e2d89803e304eea2674",
+  "host": "isv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Vikipedija",
+  "url": "https://isv.wikipedia.org/w/index.php?title=Algoritm&veaction=edit&section=1",
+  "published": "2026-09-07T03:10:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "isv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "18f5b6b9f51b94b52cd5",
+  "host": "isv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Talq\u0131law:Algoritm \u2014 Qaraqalpaqsha Wikipedia",
+  "url": "https://kaa.wikipedia.org/wiki/Talq%C4%B1law:Algoritm",
+  "published": "2026-09-07T03:10:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "kaa",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1b04ca4a252ac447b6e0",
+  "host": "kaa.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2014 Qaraqalpaqsha Wikipedia",
+  "url": "https://kaa.wikipedia.org/w/index.php?title=Algoritm&veaction=edit",
+  "published": "2026-09-07T03:10:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "kaa",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e301dc7f3ae7ffe69f23",
+  "host": "kaa.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2014 Qaraqalpaqsha Wikipedia",
+  "url": "https://kaa.wikipedia.org/w/index.php?title=Algoritm&oldid=265613",
+  "published": "2026-09-07T03:10:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "kaa",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "506ab99047a2f9971e68",
+  "host": "kaa.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2014 Qaraqalpaqsha Wikipedia",
+  "url": "https://kaa.wikipedia.org/w/index.php?title=Algoritm&useparsoid=0",
+  "published": "2026-09-07T03:10:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "kaa",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "37f63b7a05b98dc05090",
+  "host": "kaa.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kitap jarat\u0131wsh\u0131 qural\u0131 \u2014 Qaraqalpaqsha Wikipedia",
+  "url": "https://kaa.wikipedia.org/w/index.php?title=Arnawl%C4%B1:Book&bookcmd=book_creator&referer=Algoritm",
+  "published": "2026-09-07T03:10:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "kaa",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4d06725fd15a137bb258",
+  "host": "kaa.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2014 Qaraqalpaqsha Wikipedia",
+  "url": "https://kaa.wikipedia.org/w/index.php?title=Algoritm&printable=yes",
+  "published": "2026-09-07T03:10:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "kaa",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "04c7a703d1847894bf9e",
+  "host": "kaa.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2014 Qaraqalpaqsha Wikipedia",
+  "url": "https://kaa.wikipedia.org/w/index.php?title=Algoritm&veaction=edit&section=1",
+  "published": "2026-09-07T03:10:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "kaa",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4df40190bbe317970443",
+  "host": "kaa.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://ki.wikipedia.org/w/index.php?title=Algorithm&veaction=edit",
+  "published": "2026-09-07T03:10:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ki",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7011002e1b6d7d8df891",
+  "host": "ki.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://ki.wikipedia.org/w/index.php?title=Algorithm&oldid=19382",
+  "published": "2026-09-07T03:11:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ki",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "845a12bf81f2014574b6",
+  "host": "ki.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://ki.wikipedia.org/w/index.php?title=Algorithm&useparsoid=0",
+  "published": "2026-09-07T03:11:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ki",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9ea6e20a1e6d66e66bcc",
+  "host": "ki.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Book creator - Wikipedia",
+  "url": "https://ki.wikipedia.org/w/index.php?title=Special:Book&bookcmd=book_creator&referer=Algorithm",
+  "published": "2026-09-07T03:11:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ki",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "137356f3e71868951aaf",
+  "host": "ki.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://ki.wikipedia.org/w/index.php?title=Algorithm&printable=yes",
+  "published": "2026-09-07T03:11:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ki",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2db38540e7cd36996f59",
+  "host": "ki.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://ki.wikipedia.org/w/index.php?title=Algorithm&mobileaction=toggle_view_mobile",
+  "published": "2026-09-07T03:11:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ki",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8f308f73d9c6a5b4f5cb",
+  "host": "ki.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crea un conta - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Spesial:CreateAccount&returnto=Algoritmo",
+  "published": "2026-09-07T03:11:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0dfb22d7ee78de5c1dc8",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Autentici - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Spesial:UserLogin&returnto=Algoritmo",
+  "published": "2026-09-07T03:11:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9f3bb9e23ec478ba0870",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit",
+  "published": "2026-09-07T03:11:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "29b4795beccef4e94370",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Editante Algoritmo - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&action=edit",
+  "published": "2026-09-07T03:11:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "85f8f8e3ad88a66e75e6",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo: Istoria de revisas - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&action=history",
+  "published": "2026-09-07T03:11:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2b993d05e22358b7f76b",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pajes cual lia a \"Algoritmo\" - Vicipedia",
+  "url": "https://lfn.wikipedia.org/wiki/Spesial:WhatLinksHere/Algoritmo",
+  "published": "2026-09-07T03:11:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "08eceaf6316520eb5125",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&oldid=14493",
+  "published": "2026-09-07T03:11:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5fc7934fc1f18bfddf7f",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informa per \"Algoritmo\" - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&action=info",
+  "published": "2026-09-07T03:11:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "577d5fe190bdee2ab3ca",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Refere a esta paje - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Spesial:CiteThisPage&page=Algoritmo&id=14493&wpFormIdentifier=titleform",
+  "published": "2026-09-07T03:11:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aa23312c0a2ffec61549",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "URL shortener - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Spesial:UrlShortener&url=https%3A%2F%2Flfn.wikipedia.org%2Fwiki%2FAlgoritmo",
+  "published": "2026-09-07T03:11:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "307474f53310908084f8",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&useparsoid=0",
+  "published": "2026-09-07T03:11:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d876e209c99abe28e3d4",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creor de libro - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Spesial:Book&bookcmd=book_creator&referer=Algoritmo",
+  "published": "2026-09-07T03:11:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ab6d9d44aff4988a5a9",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Download as PDF - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Spesial:DownloadAsPdf&page=Algoritmo&action=show-download-screen",
+  "published": "2026-09-07T03:11:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "11af9ca59e9490c0ebec",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&printable=yes",
+  "published": "2026-09-07T03:11:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91c349476cb6d7c47dad",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&mobileaction=toggle_view_mobile",
+  "published": "2026-09-07T03:11:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c4545f60b852a501993",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/wiki/Category:Algorithms?uselang=lmo",
+  "published": "2026-09-07T03:11:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "auction",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "lmo",
+  "endpoints": [
+   "https://kmlexport.toolforge.org/?project=commons&amp;article=Category%3AAlgorithms"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "09362fd63310306f1799",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/wiki/Category:Algorithms?uselang=ro",
+  "published": "2026-09-07T03:12:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "auction",
+   "carry",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ro",
+  "endpoints": [
+   "https://kmlexport.toolforge.org/?project=commons&amp;article=Category%3AAlgorithms"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "641050f8613a542a2674",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crea contu - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Ispetziale:CreateAccount&returnto=Algoritmu",
+  "published": "2026-09-07T03:12:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "877d1f65fd8a506b031e",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intra - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Ispetziale:UserLogin&returnto=Algoritmu",
+  "published": "2026-09-07T03:12:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "16be894b46cf03907237",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmu - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&veaction=edit",
+  "published": "2026-09-07T03:12:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2313731cf87cd0649c05",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cambiende Algoritmu - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&action=edit",
+  "published": "2026-09-07T03:12:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c80c73c147354240413",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmu: Ist\u00f2ria de is revisiones - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&action=history",
+  "published": "2026-09-07T03:12:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d55b1b62fca8dc75af12",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "P\u00e0ginas chi ligant a \"Algoritmu\" - Wikipedia",
+  "url": "https://sc.wikipedia.org/wiki/Ispetziale:WhatLinksHere/Algoritmu",
+  "published": "2026-09-07T03:12:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "79420d7ca7ddf91daf06",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmu - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&oldid=188872",
+  "published": "2026-09-07T03:12:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50db3bb390bb94e93095",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informatziones pro \"Algoritmu\" - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&action=info",
+  "published": "2026-09-07T03:12:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "49d36cda2227110ea9d0",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cite This Page - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Ispetziale:CiteThisPage&page=Algoritmu&id=188872&wpFormIdentifier=titleform",
+  "published": "2026-09-07T03:12:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e8537547b7a9df97757",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "URL shortener - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Ispetziale:UrlShortener&url=https%3A%2F%2Fsc.wikipedia.org%2Fwiki%2FAlgoritmu",
+  "published": "2026-09-07T03:12:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d5a4e5a38be8d6df4a16",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmu - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&useparsoid=0",
+  "published": "2026-09-07T03:12:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "38a5198d9ac17c6bda6c",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creadore de libros - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Ispetziale:Book&bookcmd=book_creator&referer=Algoritmu",
+  "published": "2026-09-07T03:12:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b49b2dcc7945675dbfe5",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Download as PDF - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Ispetziale:DownloadAsPdf&page=Algoritmu&action=show-download-screen",
+  "published": "2026-09-07T03:12:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c546da131f85ec9fc618",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmu - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&printable=yes",
+  "published": "2026-09-07T03:12:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2ce842c84052cdf3266",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creande Algoritmu/campidanesu - Wikipedia",
+  "url": "https://sc.wikipedia.org/wiki/Algoritmu/campidanesu?action=edit&redlink=1",
+  "published": "2026-09-07T03:12:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5bce65ae2e44675e5f84",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creande Algoritmu/logudoresu - Wikipedia",
+  "url": "https://sc.wikipedia.org/wiki/Algoritmu/logudoresu?action=edit&redlink=1",
+  "published": "2026-09-07T03:12:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4dd624e5ad5144b067e5",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

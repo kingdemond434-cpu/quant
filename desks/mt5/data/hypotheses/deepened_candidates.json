@@ -1,0 +1,142 @@
+{
+ "built_at": "2026-09-12T06:02:21+00:00",
+ "candidates": [
+  {
+   "genome_id": "12286c48cd59b9f8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {},
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "GOLD INTO STOCKS ?",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: [survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "12286c48cd59b9f8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {},
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "Is Gold Finding Buyers Around 4635\u20134640?",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: [survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "8018437b887c90ab",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {
+    "selector": "asia",
+    "condition": "None"
+   },
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "Costco Gold",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: [survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "12286c48cd59b9f8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {},
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "ALWAYS do the math",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: [survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "12286c48cd59b9f8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {},
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "Gold Algo",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: [survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "12286c48cd59b9f8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {},
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "XAUUSD SETUP",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: [survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "12286c48cd59b9f8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {},
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "Me VS XAUUSD",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "12286c48cd59b9f8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {},
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "Gold - good problem to have",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: [survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "12286c48cd59b9f8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {},
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "Starting my stack!",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: [survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "12286c48cd59b9f8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {},
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "Buying habits?",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  }
+ ],
+ "recovered_this_run": 0,
+ "dispositions": {
+  "BLOCKED_SEAT_UNAVAILABLE": 29485
+ }
+}

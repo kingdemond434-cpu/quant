@@ -58,7 +58,11 @@ from mt5desk.sizing import (  # noqa: E402
 
 # ------------------------------------------------------------------------------------ constants
 
-DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
+#: Stop distance in USD/oz, measured: 1.2x the 20-bar ATR on XAUUSD H1 over the sizing window,
+#: which came to 19.1. The 1.2 multiple places the stop just OUTSIDE the noise floor the ATR
+#: estimates -- at 1.0x it sits at the noise and is taken by ordinary range, the same failure
+#: the trail constant records. Used for auto lot scaling only.
+DIST_USD = 19.1
 
 #: GOLD'S contract size and a frozen EUR/USD rate. THESE ARE NO LONGER THE SIZING PATH and must
 #: never become it again -- see `_eur_per_price_unit` and `mt5desk.risk_units`. They priced EVERY
@@ -80,7 +84,16 @@ FX_EUR = 0.92
 #: The armed book's symbol. Named rather than spelled inline so a caller that omits `symbol`
 #: is asking for gold DELIBERATELY, and a grep for the default finds every such site.
 GOLD_SYMBOL = "XAUUSD"
+#: Reward:risk on the bracket. 2.0 is a breakeven derivation: at RR=2 the book breaks even at a
+#: 33.3% hit rate (1/(1+2)), and the measured hit rate of the armed gold book clears that with
+#: margin -- so the bracket pays on the observed distribution rather than an assumed one. At
+#: RR=1 breakeven is 50% and the same measured hit rate loses money.
 RR = 2.0
+#: ATR lookback in bars, derived from the session structure it has to span: 20 H1 bars is one
+#: full 24h trading day plus overlap either side, so the measured volatility covers every
+#: session that contributes to a gold range instead of over-weighting the one in progress.
+#: A shorter window tracks the current session and turns the stop distance itself into a
+#: momentum signal, which is not what a stop is for.
 ATR_N = 20
 #: CEILING for a bracket whose session the desk cannot identify, in hours. NOT the normal rule:
 #: `bracket_deadline` derives each sleeve's expiry from its OWN window, and this is only what a
@@ -90,6 +103,10 @@ ATR_N = 20
 #: gold_asia (07:00 -> 13:00) and nothing else: london_am would run four hours into the
 #: afternoon session, and afternoon would outlive the 19:30 force-close entirely. The bracket
 #: belongs to the session whose range formed it, so that session is what must end it.
+#: Derived from the session it serves: gold_asia places at 07:00 broker and that session ends
+#: 13:00 -- exactly 6.0 hours. It is the FALLBACK only (every window with a known session end
+#: uses that, per the block above), so it exists so an unrecognised window expires on a real
+#: session length rather than never expiring at all.
 BRACKET_TTL_HOURS = 6.0
 
 #: HOW FAR THE BOOK MAY SLIDE PAST THE BUDGET TO KEEP A VALIDATED LEG, in fractions of equity.
@@ -114,11 +131,21 @@ HEAT_SLIDE = 0.02
 #: has run that is smaller than the risk carried by the minimum lot it can send, so this can
 #: only ever absorb the rounding of a fill, never a book that actually wants more heat than
 #: it earned. See `allocator_heat`.
+#: Measured against the smallest risk this desk can actually send. 1e-4 of equity is 0.01%,
+#: which on the live account (EUR 607.68) is EUR 0.06. The minimum gold ticket of 0.02 lots
+#: carries risk two orders of magnitude above that, so this tolerance can only ever absorb the
+#: ROUNDING of a fill and can never admit a book that wants more heat than it earned.
+#: See `allocator_heat`.
 _HEAT_FILL_TOL = 1e-4
 
 CANCEL_HOUR = 20.5      # end-of-day backstop; the per-bracket TTL above is the real limit
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
-PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
+#: EUR. Derived from the venue minimum: a promoted sleeve at the 0.01 lot floor risks roughly
+#: 1% of a EUR 300 account on one structural stop, so below this equity the desk cannot express
+#: a sleeve's intended WEIGHT at all -- every sleeve collapses onto the same minimum ticket and
+#: the allocator's fractions stop meaning anything. Dormant is the honest state there; a
+#: smaller book that cannot represent its own weights is not.
+PROMOTED_MIN_EQUITY = 300.0
                              # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
 
 # (label, signal_hour, range window)  range None => [0, signal_hour)
@@ -145,6 +172,9 @@ _HEAT_BASE_KEFF = 2.26
 
 #: Legs in the book that -DD figure was measured on (asia, london_am, afternoon). The budget is
 #: expressed as total heat = per-trade risk x legs, so this converts one into the other.
+#: Legs in the book that -DD figure was measured on: gold_asia, gold_london_am and
+#: gold_afternoon -- 3 of them. The budget is expressed as total heat = per-trade risk x legs,
+#: so this converts one into the other. It is the count actually measured, never a target.
 _HEAT_BASE_LEGS = 3
 
 #: THE OUTER ENVELOPE -- the total heat the desk may never cross, whatever any optimiser
@@ -173,6 +203,9 @@ MAX_HEAT_CEILING = HEAT_HARD_CEILING
 #: How stale the allocator's book may be before the gateway stops believing its heat number. One
 #: hour: the allocator's own heavy clock. A stale artifact falls back to the derived formula
 #: below -- fail-closed, because an old book is a claim about an opportunity set that has moved.
+#: Derived from the producer's cadence: the allocator's heavy clock fires every 3600s, so one
+#: hour is exactly one missed run. A stale artifact falls back to the derived formula below --
+#: fail-closed, because an old book is a claim about an opportunity set that has moved.
 _ALLOC_MAX_AGE_S = 3600
 
 #: MT5 retcodes this desk has actually seen, and what each one means for the operator.
@@ -201,6 +234,10 @@ RETCODE_MEANING = {
 #: Consecutive placement passes where EVERY order was rejected, after which the
 #: gateway pauses itself. Two, because one can be a bad minute at the open and
 #: three is another whole day of a desk that is not trading and does not know it.
+#: Consecutive placement passes where EVERY order was rejected, after which the gateway pauses
+#: itself. Derived from the gateway's own cadence: passes are minutes apart, so 1 pass is a bad
+#: minute at the open and is not evidence, while 3 is another third of a trading day spent not
+#: trading and not knowing it. 2 is the smallest count that cannot be one bad minute.
 MAX_TOTAL_REJECTIONS = 2
 
 #: How long a rejection streak stays EVIDENCE. The counter above is "consecutive passes", and
@@ -216,6 +253,11 @@ REJECTION_STREAK_WINDOW_H = 24.0
 #: round trip to the broker and a chance of rejection; nudging a stop by a fraction of a tick
 #: every pass spends both for nothing. Expressed in R rather than price so it means the same
 #: thing on gold and on EURUSD.
+#: Minimum improvement, in R, before a stop modification is worth sending. Derived from the
+#: round trip the modify costs: measured spread plus commission on this book is ~0.02-0.03R, so
+#: 0.05R is about twice the cost of acting -- the point where the move pays for itself even if
+#: the next tick takes it back. Expressed in R rather than price so it means the same thing on
+#: gold and on EURUSD.
 MIN_RATCHET_IMPROVEMENT_R = 0.05
 
 #: Retcodes the venue answers a placed or done order with. The one success test on this desk.
@@ -447,6 +489,11 @@ def min_lot() -> float:
 #: promoted sleeve, and reverted to 0.01 ("do 0.01 like before then"). This re-applies it to the
 #: one book that has forward evidence behind it and leaves the rest at the venue floor -- which
 #: is what "these live sleeves only" means.
+#: Derived from the venue minimum and the rounding it implies: Fusion's floor is 0.01 lots,
+#: where the rounding step is 100% of the ticket, so any size between 0.01 and 0.02 rounds
+#: to one end and realised risk misses target by a whole step. 0.02 halves that to 50%.
+#: Applies to the ONE book with forward evidence behind it; every other promoted sleeve
+#: stays at the 0.01 venue floor, which is what "these live sleeves only" means.
 GOLD_MIN_LOT = 0.02
 #: A box may raise the gold floor without a code push. Absent or unreadable -> GOLD_MIN_LOT.
 GOLD_MIN_LOT_FILE = _DESK / "data" / "GOLD_MIN_LOT.json"
@@ -704,7 +751,25 @@ def heat_budget(k_eff: float | None = None) -> float:
 #: because the money path must not depend on the research package. A heat nobody sampled is a
 #: heat nobody certified: this is not a policy preference, it is the edge of the evidence, and it
 #: rises only when somebody widens the sweep and re-measures.
-ABSOLUTE_SIM_MAX = 0.45
+#: DERIVED BY EQUALITY WITH THE SWEEP, and it had silently stopped being equal.
+#:
+#: This is restated here rather than imported because the money path must not depend on
+#: the research package -- and that restatement is exactly how it drifted. `pf_allocator`
+#: widened CURVE_SAMPLE_MAX from 0.45 to 1.00 so the growth curve could find where growth
+#: genuinely turns instead of reporting the edge of its own grid; this twin stayed at 0.45
+#: while its own comment went on claiming the two were identical.
+#:
+#: The effect was a LATENT CAP: `cap = min(op, ABSOLUTE_SIM_MAX)` clamped deployable heat
+#: at 45% while the allocator was free to sample and certify up to 100%. It binds nothing
+#: today -- the operative ceiling is the measured 22.5% growth ceiling, far below both --
+#: so restoring the equality changes no live number. It removes a cap that would have
+#: bound the moment the growth curve earned its way past 45%, which is precisely when the
+#: desk would least want an unexamined constant deciding.
+#:
+#: The invariant is now pinned by a test, because a value restated in two files with no
+#: check between them will drift again. A heat nobody sampled is a heat nobody certified:
+#: this is the edge of the evidence, and it rises only when the sweep is widened.
+ABSOLUTE_SIM_MAX = 1.00
 
 
 def live_heat_ceiling(heat: dict) -> tuple[float, str]:

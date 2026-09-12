@@ -1,0 +1,2187 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Documentation | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/",
+  "published": "2026-09-07T16:11:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "13d1b1f2be5ea35ed4b6",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Training Workshops | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/workshops/",
+  "published": "2026-09-07T16:11:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "9e52db8a1759cc5202a9",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Installer | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/download-installer/",
+  "published": "2026-09-07T16:11:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/",
+   "https://www.sharkindicators.com/installers/download?NT8",
+   "https://www.sharkindicators.com/installers/download?f=SharkIndicatorsInstaller.8.1.16.56%20NT8.exe",
+   "https://www.sharkindicators.com/installers/download?NT7"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "3034b7be501decb590c7",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Downloads | SharkIndicators",
+  "url": "https://www.sharkindicators.com/downloads/",
+  "published": "2026-09-07T16:11:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/downloads/",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/?did=22",
+   "https://www.sharkindicators.com/downloads/?did=23",
+   "https://www.sharkindicators.com/downloads/?did=24",
+   "https://www.sharkindicators.com/downloads/?did=25",
+   "https://www.sharkindicators.com/downloads/?category=86",
+   "https://www.sharkindicators.com/downloads/?did=28",
+   "https://www.sharkindicators.com/downloads/?did=26",
+   "https://www.sharkindicators.com/downloads/?did=1023",
+   "https://www.sharkindicators.com/downloads/?did=1354",
+   "https://www.sharkindicators.com/downloads/?category=87",
+   "https://www.sharkindicators.com/downloads/?did=1448",
+   "https://www.sharkindicators.com/downloads/?category=71",
+   "https://www.sharkindicators.com/downloads/?did=961",
+   "https://www.sharkindicators.com/downloads/?did=727",
+   "https://www.sharkindicators.com/downloads/?did=877",
+   "https://www.sharkindicators.com/downloads/?category=79",
+   "https://www.sharkindicators.com/downloads/?did=728",
+   "https://www.sharkindicators.com/downloads/?did=729",
+   "https://www.sharkindicators.com/downloads/?did=782",
+   "https://www.sharkindicators.com/downloads/?did=734",
+   "https://www.sharkindicators.com/downloads/?category=74",
+   "https://www.sharkindicators.com/downloads/?did=726",
+   "https://www.sharkindicators.com/downloads/?did=792",
+   "https://www.sharkindicators.com/downloads/?did=1021",
+   "https://www.sharkindicators.com/downloads/?category=69",
+   "https://www.sharkindicators.com/downloads/?did=731",
+   "https://www.sharkindicators.com/downloads/?did=847",
+   "https://www.sharkindicators.com/downloads/?did=735",
+   "https://www.sharkindicators.com/downloads/?did=730",
+   "https://www.sharkindicators.com/downloads/?category=66",
+   "https://www.sharkindicators.com/downloads/?category=84",
+   "https://www.sharkindicators.com/downloads/?did=879"
+  ],
+  "n_endpoints": 35,
+  "vault_sha": "10de6e9e7969a3784e6b",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Installation, Updates, &#038; Licensing | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/licensing/",
+  "published": "2026-09-07T16:11:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/",
+   "https://www.sharkindicators.com/installers/download?NT8"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "6c4968281c137e8e1b2e",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Getting Started with SharkIndicators | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/getting-started-with-sharkindicators/",
+  "published": "2026-09-07T16:11:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/",
+   "https://www.sharkindicators.com/download-installer/nt8/#markPopover"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "3dd993cca3fe4fc1ae6e",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BH Tips &#038; Tricks Videos | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/tips-tricks/",
+  "published": "2026-09-07T16:11:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "fe04fb99fe2ec7a3ef0d",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How BloodHound Works | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/how-bloodhound-works/",
+  "published": "2026-09-07T16:11:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "c5f08fc13256e3409067",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BloodHound Overview | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/bloodhound-reference/",
+  "published": "2026-09-07T16:11:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "500ded22c3fb9b6ccd6c",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BloodHound&#8217;s Interface | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/bloodhounds-interface/",
+  "published": "2026-09-07T16:11:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d5984337517a34138cdf",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Multiple Timeframes | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/multiple-timeframes/",
+  "published": "2026-09-07T16:11:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "a5a09541fc355f4d8763",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Confidence Solvers | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/confidence-solvers/",
+  "published": "2026-09-07T16:11:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/",
+   "https://ninjatrader.com/support/helpGuides/nt8/seriest.htm"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "e7b865f8089395ecfa06",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bar Direction | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/confidence-solvers/bar-direction/",
+  "published": "2026-09-07T16:11:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "9bb336af013ec48132f7",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bar Length | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/confidence-solvers/bar-length/",
+  "published": "2026-09-07T16:11:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d20368862fa1fc153f5a",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicator Change In Slope | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/confidence-solvers/indicator-change-in-slope/",
+  "published": "2026-09-07T16:12:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/",
+   "https://ninjatrader.com/support/helpGuides/nt8/seriest.htm"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "137b3e1776026cf746f5",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicator Comparison | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/confidence-solvers/indicator-comparison/",
+  "published": "2026-09-07T16:12:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/",
+   "https://ninjatrader.com/support/helpGuides/nt8/seriest.htm"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "04071f2955720b6df292",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicator Crossover | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/confidence-solvers/indicator-cross-over/",
+  "published": "2026-09-07T16:12:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/",
+   "https://ninjatrader.com/support/helpGuides/nt8/seriest.htm"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "891f9a2ee1cf653103cd",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dorschden Swing Trend | SharkIndicators",
+  "url": "https://www.sharkindicators.com/documentation/confidence-solvers/dorschden-swing-trend/",
+  "published": "2026-09-07T16:12:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.sharkindicators.com/wp-content/plugins/download-monitor/page-addon/styles.css?ver=6.1.12",
+   "https://www.sharkindicators.com/documentation/download-installer/",
+   "https://www.sharkindicators.com/downloads/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "3f5b99d606c34597c066",
+  "host": "www.sharkindicators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Holiday Hours | ICE",
+  "url": "https://www.theice.com/marketdata/Calendar.shtml?calendars=Holiday&expirationEnabled=false&calendars=SpecialTradingHours",
+  "published": "2026-09-07T16:12:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8b1374b0ef6cc46e62dc",
+  "host": "www.theice.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics",
+  "url": "https://www.mas.gov.sg/statistics",
+  "published": "2026-09-07T16:12:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.mas.gov.sg/-/media/mas/sora/historical-sora-data---jul-2005-to-jul-2020.xlsx",
+   "https://www.mas.gov.sg/html/site/_assets/fonts/SourceSansPro-Bold-export/SourceSansPro-Bold.woff2",
+   "https://www.mas.gov.sg/html/site/_assets/fonts/SourceSansPro-Regular-export/SourceSansPro-Regular.woff2",
+   "https://www.mas.gov.sg/html/site/_assets/fonts/SourceSansPro-SemiBold-export/SourceSansPro-SemiBold.woff2"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "8c4597455a1ef68fe115",
+  "host": "www.mas.gov.sg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicators of capacity and inflation pressures for Canada - Bank of Canada",
+  "url": "https://www.bankofcanada.ca/rates/indicators/capacity-and-inflation-pressures/",
+  "published": "2026-09-07T16:12:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "gap",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c73f470aadeacd4eeb0f",
+  "host": "www.bankofcanada.ca",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Financial stability indicators - Bank of Canada",
+  "url": "https://www.bankofcanada.ca/rates/indicators/financial-stability-indicators/",
+  "published": "2026-09-07T16:12:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "flow",
+   "gap",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ddf543780d8f2b749bae",
+  "host": "www.bankofcanada.ca",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Summary of key monetary policy variables - Bank of Canada",
+  "url": "https://www.bankofcanada.ca/rates/indicators/key-variables/",
+  "published": "2026-09-07T16:12:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "M1"
+  ],
+  "patterns": [
+   "auction",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c557058c71e1d466944e",
+  "host": "www.bankofcanada.ca",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Labour market recovery from COVID\u201119 - Bank of Canada",
+  "url": "https://www.bankofcanada.ca/markets/market-operations-liquidity-provision/covid-19-actions-support-economy-financial-system/labour-market-recovery-from-covid-19/",
+  "published": "2026-09-07T16:12:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ed416d8062a8276bee00",
+  "host": "www.bankofcanada.ca",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Science Archives - AlgoTrading101 Wiki",
+  "url": "https://algotrading101.com/wiki/data-science-resources/",
+  "published": "2026-09-07T16:12:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a5767863d7b3180fa83b",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Archive - The DeCarley Perspective",
+  "url": "https://decarleytrading.substack.com/archive",
+  "published": "2026-09-07T16:12:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d33b98567eb5c28cd7e2",
+  "host": "decarleytrading.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download our Mobile App! - Commodity Broker - Options, Futures, Integrity",
+  "url": "https://decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app",
+  "published": "2026-09-07T16:12:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://decarleytrading.com/free-offers/decarley-trading-mobile-application/download-our-commodity-mobile-app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1c0382ec50ddc13b74b8",
+  "host": "decarleytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-07T16:12:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d32c4d81aa98fc8f483e",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google Books",
+  "url": "https://www.google.co.id/books/edition/DATA_MINING/MWcHEAAAQBAJ?hl=id&newbks=1&gbpv=1&dq=statistika+dan+algoritma+em&pg=PA120&printsec=frontcover",
+  "published": "2026-09-07T16:12:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "id-DE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "361c1b58a1218b68bd20",
+  "host": "www.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading",
+  "url": "https://ninjatrader.com/support/helpGuides/nt7/running_a_ninjascript_strategy.htm?zoom_highlightsub=exit%2Bon%2Bclose%2Bseconds",
+  "published": "2026-09-07T16:12:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5e2fa8f2b1f7dff0113b",
+  "host": "ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading",
+  "url": "https://ninjatrader.com/support/helpguides/nt8/strategy_analyzer.htm",
+  "published": "2026-09-07T16:12:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c33aab137708d6a66da0",
+  "host": "ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Arutelu:Algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/wiki/Arutelu:Algoritm",
+  "published": "2026-09-07T16:12:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9685492ec5a0852d5a5b",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Algoritm&veaction=edit",
+  "published": "2026-09-07T16:12:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "123a54bc0668c9b450ab",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Muutmisel on \"Algoritm\" \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Algoritm&action=edit",
+  "published": "2026-09-07T16:12:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "df3b270b25b057e88f4e",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Algoritm&oldid=6901701",
+  "published": "2026-09-07T16:12:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "098e4af24ba5a6205e10",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Algoritm&useparsoid=0",
+  "published": "2026-09-07T16:12:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "17ccec223c42267e7410",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Raamatu koostamine \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Eri:Raamat&bookcmd=book_creator&referer=Algoritm",
+  "published": "2026-09-07T16:12:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1a1cbfe612dae8ebc423",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Algoritm&printable=yes",
+  "published": "2026-09-07T16:13:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9721d915ba546c98dfdc",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Algoritm&veaction=edit&section=1",
+  "published": "2026-09-07T16:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6a9cbe43207d511883f8",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Muutmisel on osa lehek\u00fcljest \"Algoritm\" \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Algoritm&action=edit&section=1",
+  "published": "2026-09-07T16:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e1bd318b941bf5236975",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Izveidot jaunu lietot\u0101ju \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Special:CreateAccount&returnto=Algoritms",
+  "published": "2026-09-07T16:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea71bed99e24e488fced",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritms \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Algoritms&veaction=edit",
+  "published": "2026-09-07T16:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c912bd023e6ce32258f6",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Labot Algoritms \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Algoritms&action=edit",
+  "published": "2026-09-07T16:13:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c6b9686f1e8e1b85058c",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritms: Versiju hronolo\u0123ija \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Algoritms&action=history",
+  "published": "2026-09-07T16:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2eb2b08ff4a17d7e06fe",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Lapas, kur\u0101s ir saites uz lapu \"Algoritms\" \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/wiki/Special:WhatLinksHere/Algoritms",
+  "published": "2026-09-07T16:13:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "776f798f731cee74b78f",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Saist\u012bt\u0101s izmai\u0146as \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/wiki/Special:RecentChangesLinked/Algoritms",
+  "published": "2026-09-07T16:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "db24b60347ede06cf5a3",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritms \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Algoritms&oldid=4043102",
+  "published": "2026-09-07T16:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a1f6dd63a321d5397b18",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inform\u0101cija par \"Algoritms\" \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Algoritms&action=info",
+  "published": "2026-09-07T16:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "218c826a8059225eb12f",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cit\u0113\u0161ana \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Special:CiteThisPage&page=Algoritms&id=4043102&wpFormIdentifier=titleform",
+  "published": "2026-09-07T16:13:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8bff23f74f70ceeda401",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritms \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Algoritms&useparsoid=0",
+  "published": "2026-09-07T16:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0269f938e8286beccc51",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gr\u0101matu veidot\u0101js \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Special:Book&bookcmd=book_creator&referer=Algoritms",
+  "published": "2026-09-07T16:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b7424fc4c3d369e4e47a",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritms \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/w/index.php?title=Algoritms&printable=yes",
+  "published": "2026-09-07T16:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13d58828722152924ed6",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0100tr\u0101s k\u0101rto\u0161anas algoritms \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/wiki/\u0100tr\u0101s_k\u0101rto\u0161anas_algoritms",
+  "published": "2026-09-07T16:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5cf5c68bbbe5db8961ba",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Eikl\u012bda algoritms \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/wiki/Eikl\u012bda_algoritms",
+  "published": "2026-09-07T16:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "abec112f86c3ef3b3f20",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Discu\u021bie:Algoritm - Wikipedia",
+  "url": "https://ro.wikipedia.org/wiki/Discu%C8%9Bie:Algoritm",
+  "published": "2026-09-07T16:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d70316177f65e0621920",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Wikipedia",
+  "url": "https://ro.wikipedia.org/w/index.php?title=Algoritm&veaction=edit",
+  "published": "2026-09-07T16:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4e94f7051ea40db09985",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "modificare Algoritm - Wikipedia",
+  "url": "https://ro.wikipedia.org/w/index.php?title=Algoritm&action=edit",
+  "published": "2026-09-07T16:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9055bce50ebc7eeb49c1",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm: Istoricul versiunilor - Wikipedia",
+  "url": "https://ro.wikipedia.org/w/index.php?title=Algoritm&action=history",
+  "published": "2026-09-07T16:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "087b7028fa495ca889c6",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Wikipedia",
+  "url": "https://ro.wikipedia.org/w/index.php?title=Algoritm&oldid=17954318",
+  "published": "2026-09-07T16:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09eb8280a83b1dc81575",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Wikipedia",
+  "url": "https://ro.wikipedia.org/w/index.php?title=Algoritm&useparsoid=0",
+  "published": "2026-09-07T16:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b4510d772fadb025efa6",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creator de c\u0103r\u021bi - Wikipedia",
+  "url": "https://ro.wikipedia.org/w/index.php?title=Special:Carte&bookcmd=book_creator&referer=Algoritm",
+  "published": "2026-09-07T16:14:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8c1dd883491d97c79003",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Wikipedia",
+  "url": "https://ro.wikipedia.org/w/index.php?title=Algoritm&printable=yes",
+  "published": "2026-09-07T16:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "28e2ce3e745572875d5e",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmul lui Euclid - Wikipedia",
+  "url": "https://ro.wikipedia.org/wiki/Algoritmul_lui_Euclid",
+  "published": "2026-09-07T16:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0da64a5d9ea5aa766d03",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Wikipedia",
+  "url": "https://ro.wikipedia.org/w/index.php?title=Algoritm&veaction=edit&section=1",
+  "published": "2026-09-07T16:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "282a30564b7e635a7d94",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&veaction=edit",
+  "published": "2026-09-07T16:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "204791e531cca41cc246",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Po redaktohet Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&action=edit",
+  "published": "2026-09-07T16:14:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d273c09a45dfa775573",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&oldid=2941812",
+  "published": "2026-09-07T16:14:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fe176a2d9b98b34c8fc4",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&useparsoid=0",
+  "published": "2026-09-07T16:14:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e2bccddb4cf5095795c",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Krijues i librit - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Speciale:Libra&bookcmd=book_creator&referer=Algoritmi",
+  "published": "2026-09-07T16:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ca3b1027c87e03f1a27",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&printable=yes",
+  "published": "2026-09-07T16:14:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "58b377636a838d6f42c4",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&veaction=edit&section=1",
+  "published": "2026-09-07T16:14:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5a50c362365fa0f793da",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Po redaktohet Algoritmi (paragraf) - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&action=edit&section=1",
+  "published": "2026-09-07T16:14:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "80c13926206407164096",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit",
+  "published": "2026-09-07T16:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5991da87b01f6876fe93",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Binabago: Algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Algoritmo&action=edit",
+  "published": "2026-09-07T16:14:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b04e3caa912a0a05a7f3",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kasaysayan ng pagbabago sa \"Algoritmo\" - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Algoritmo&action=history",
+  "published": "2026-09-07T16:15:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f67be80c42cfa6fae454",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Algoritmo&oldid=2084360",
+  "published": "2026-09-07T16:15:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "acc693a6388d520c654a",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sipiin - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Natatangi:Sipiin&page=Algoritmo&id=2084360&wpFormIdentifier=titleform",
+  "published": "2026-09-07T16:15:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d54592c99798ac42a05",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Algoritmo&useparsoid=0",
+  "published": "2026-09-07T16:15:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1bcbdef97921a66c58de",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Algoritmo&printable=yes",
+  "published": "2026-09-07T16:15:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d5ecc66657de8b45f477",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit&section=1",
+  "published": "2026-09-07T16:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "55a59ecd129de6ee3a34",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit",
+  "published": "2026-09-07T16:15:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [
+   "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "15e22338f2dbef19b350",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u00abAlgoritmo\u00bb aldatzen - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/w/index.php?title=Algoritmo&action=edit",
+  "published": "2026-09-07T16:15:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "777298612e7fd9c8525b",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u00abAlgoritmo\u00bb orriko edizioen historia - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/w/index.php?title=Algoritmo&action=history",
+  "published": "2026-09-07T16:15:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "41003b9837347d695aaa",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u00abAlgoritmo\u00bb lotura duten orriak - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/wiki/Berezi:ZerkLotzenDuHona/Algoritmo",
+  "published": "2026-09-07T16:15:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cfee8c66d0ed1e227778",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Lotutako orrietako aldaketak - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/wiki/Berezi:RecentChangesLinked/Algoritmo",
+  "published": "2026-09-07T16:15:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3b7ca7b0bdabdc6f4d1e",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/w/index.php?title=Algoritmo&oldid=11639909",
+  "published": "2026-09-07T16:15:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [
+   "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ae6798baba0f27980408",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/w/index.php?title=Algoritmo&useparsoid=0",
+  "published": "2026-09-07T16:15:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [
+   "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c878a41b41956825f357",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Liburu sortzailea - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/w/index.php?title=Berezi:Book&bookcmd=book_creator&referer=Algoritmo",
+  "published": "2026-09-07T16:15:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bec233538804c5aee578",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/w/index.php?title=Algoritmo&printable=yes",
+  "published": "2026-09-07T16:15:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [
+   "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b703e9bf861909bd69f0",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit&section=1",
+  "published": "2026-09-07T16:15:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [
+   "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "958b09a6f5266d61101e",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo aldatzen (atala) - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/w/index.php?title=Algoritmo&action=edit&section=1",
+  "published": "2026-09-07T16:16:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35dc32a6750d3e61d684",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crear unha conta - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Especial:Crear_unha_conta&returnto=Algoritmo",
+  "published": "2026-09-07T16:16:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1340f653af0ccb6aa06e",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Acceder ao sistema - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Especial:Iniciar_sesi%C3%B3n&returnto=Algoritmo",
+  "published": "2026-09-07T16:16:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aba632ca1ca07ac21355",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Conversa:Algoritmo - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/wiki/Conversa:Algoritmo",
+  "published": "2026-09-07T16:16:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "245381fe3d0e0c2378a2",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit",
+  "published": "2026-09-07T16:16:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [
+   "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "afbd1d7d7cb5955afcec",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A editar \u00abAlgoritmo\u00bb - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Algoritmo&action=edit",
+  "published": "2026-09-07T16:16:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "57fca36d5377af1375e4",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

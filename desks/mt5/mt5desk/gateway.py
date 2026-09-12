@@ -107,9 +107,20 @@ MAGIC = 341953
 #: exists because the previous day-wide window silently lost every fill the gateway did not see
 #: on the same calendar day: a skipped pass, an OOM kill or a restart after midnight left those
 #: closes unrecorded permanently, since nothing ever looked backwards.
+#: THIRTY DAYS IS DERIVED FROM THE DEDUP GUARANTEE, not chosen for comfort. Deals are keyed by
+#: the venue's own ticket, so widening the window cannot double-count -- the only cost is a
+#: longer list scan. The floor is set by the longest credible gap in the gateway's own cadence:
+#: a restart spanning a weekend plus a holiday is ~4 days, and 30 covers seven such gaps back
+#: to back. Anything shorter re-creates the defect below, where a skipped pass lost those
+#: closes permanently because nothing ever looked backwards.
 LEDGER_LOOKBACK_DAYS = 30
 
-LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
+#: The gold book's ticket. 0.02 is twice the venue minimum of 0.01, and that ratio IS the
+#: derivation: at 0.01 the rounding step is 100% of the ticket, so any size the allocator asks
+#: for between 0.01 and 0.02 rounds to one end and realised heat misses target by a whole step.
+#: At 0.02 the same absolute step is 50% of the ticket. A FLOOR on the gold book only -- Q_OPT
+#: below decides the actual size and this never raises it.
+LOT = 0.02
 # RISK FRACTION OF EQUITY PER TRADE. Was 0.055, and that was not an arbitrary number: measured
 # full Kelly on the 3-leg gold book (E[ln(1+qR)] maximised over the daily portfolio series,
 # 5,728 trades, 2018-2026) is q* = 6.00%, so 5.5% was ~92% of Kelly, chosen deliberately.

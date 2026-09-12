@@ -1,0 +1,2343 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Trader Workstation (TWS) | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+  "published": "2026-09-06T15:31:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "e950d5c2bd753876336a",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop - Backtesting Tool for Trading",
+  "url": "https://www.forextester.com/idevaffiliate/idevaffiliate.php?id=4051",
+  "published": "2026-09-06T15:31:16+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2b0209ac5768ebedefb4",
+  "host": "www.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-06T15:31:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd85a65faed3124a57cf",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-06T15:31:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "559f146c8038cf43c30a",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-06T15:31:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2b709992ca528b740b94",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "We Combined 1.1 Million Strategy Pairs. Three in Four Diluted the Better One. \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/how-to-combine-trading-strategies",
+  "published": "2026-09-06T15:31:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "M1"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ad66e65adec267a2d55a",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Your Crypto Backtest Is Lying to You: 3 Reasons Why \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/backtest-lies",
+  "published": "2026-09-06T15:31:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43666f289bbd9102e162",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Read Your Backtest Results: Sharpe, Profit Factor, Max Drawdown, Win Rate \u2014 Rulyfi",
+  "url": "https://rulyfi.com/blog/how-to-read-backtest-results",
+  "published": "2026-09-06T15:31:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc760f277f0164dbb8ca",
+  "host": "rulyfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Hidden Tax Behind Free Trading - by Concretum Research",
+  "url": "https://concretumgroup.substack.com/p/the-hidden-tax-behind-free-trading",
+  "published": "2026-09-06T15:31:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a05ebc8f891b1f5b05b3",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Build a Reliable Algo Trading Infrastructure",
+  "url": "https://concretumgroup.substack.com/p/operational-pitfalls-of-algo-trading?utm_source=substack&utm_medium=email&utm_content=share&action=share",
+  "published": "2026-09-06T15:31:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce7c9ac0fa5d9f1d0ead",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Overfitting and Parameter Selection in Trading Strategies &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/05/04/overfitting-and-parameter-selection-in-trading-strategies/",
+  "published": "2026-09-06T15:31:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6474747d7d50623e8daf",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Large Language Models in Trading: Models and Market Dynamics &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/04/06/large-language-models-in-trading-models-and-market-dynamics/",
+  "published": "2026-09-06T15:31:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc97495fcdcc784a525f",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Evaluating Option-Based Strategies and Dollar-Cost Averaging &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/03/28/evaluating-option-based-strategies-and-dollar-cost-averaging/",
+  "published": "2026-09-06T15:31:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "892e8e9b3ab7734ad626",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Charles Gave\u2019s Four Quadrants Framework | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/macro-indicators/four-quadrants/",
+  "published": "2026-09-06T15:31:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1dcdd56182e73e9958a",
+  "host": "portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Posts by Tag | Portfolio Optimizer",
+  "url": "https://portfoliooptimizer.io/blog/tags/",
+  "published": "2026-09-06T15:31:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "980fde35149d9426c146",
+  "host": "portfoliooptimizer.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "options trading strategies &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/category/options-trading-strategies/",
+  "published": "2026-09-06T15:31:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.algos.org/api/v1/file/8708a7e7-0d94-4297-9f54-d3dd3b233520.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "58fe4afc98b340eb2022",
+  "host": "blog.harbourfronts.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Analysis in R: Part II | Analyzing A 60/40 Strategy | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/portfolio-analysis-in-r-part-ii-analyzing-a-6040-strategy/",
+  "published": "2026-09-06T15:31:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4d854b2ae14233201f5a",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Revelation For Small-Cap Investing Strategies | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/a-revelation-for-small-cap-investing-strategies/",
+  "published": "2026-09-06T15:31:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "07ca41fc6496d2dfa8a9",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Momentum-Based Trading Signal With Strategic Value | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/a-momentum-based-trading-signal-with-strategic-value/",
+  "published": "2026-09-06T15:31:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "47b51268ac54b911dcb9",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Analysis in R: Part III | Adding A Global Strategy | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/portfolio-analysis-in-r-part-iii-adding-a-global-strategy/",
+  "published": "2026-09-06T15:31:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ca767108c43e964bbdfe",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "We\u2019re All Backtesters Now | The Capital Spectator",
+  "url": "http://www.capitalspectator.com/were-all-backtesters-now/",
+  "published": "2026-09-06T15:31:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0860e0a97a3469df9202",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tales from a Trading Desk | Software Engineering Noise",
+  "url": "https://mdavey.wordpress.com/",
+  "published": "2026-09-06T15:31:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0a0b1c5b8f0ca1649044",
+  "host": "mdavey.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tales from a Trading Desk | Software Engineering Noise",
+  "url": "https://mdavey.wordpress.com",
+  "published": "2026-09-06T15:32:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0f0bf3f0094325e8eefe",
+  "host": "mdavey.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com/",
+  "published": "2026-09-06T15:32:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a2aa202cff445ff48e71",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Highly scored unanswered questions - Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com/unanswered",
+  "published": "2026-09-06T15:32:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "74dfa8a11d630fe24c63",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com?tab=active",
+  "published": "2026-09-06T15:32:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "63b9431814ab159d1387",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Hottest Questions Today - Quantitative Finance Meta Stack Exchange",
+  "url": "https://quant.meta.stackexchange.com?tab=hot",
+  "published": "2026-09-06T15:32:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e156e1f4a13c5975e8eb",
+  "host": "quant.meta.stackexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Proprietary Trading Group | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/accounts/proprietary-trading-group.php",
+  "published": "2026-09-06T15:32:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+   "https://www.interactivebrokers.co.uk/download/ptgPoolGetStarted.pdf",
+   "https://www.interactivebrokers.co.uk/download/ptgSTLGetStarted.pdf"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "e625f67e41f7c400a5c0",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Trial | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/free-trial.php",
+  "published": "2026-09-06T15:32:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "783cd03d69f33f058c8b",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Margin Rates and Financing | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/margin-rates.php",
+  "published": "2026-09-06T15:32:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6d7af9ca4d1d9ea8c6fc",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR Trading Platforms | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/trading-platforms.php",
+  "published": "2026-09-06T15:32:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dd226a4d6dd5aa1e6f61",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IB API | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/ib-api.php",
+  "published": "2026-09-06T15:32:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+   "https://ibkrcampus.eu/traders-academy/api/",
+   "https://www.interactivebrokers.co.uk/download/WebAPI_Onboarding_Questionnaire.pdf"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "30d2cebe17b158183177",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Margin Trading | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/margin.php",
+  "published": "2026-09-06T15:32:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "96de337d7a86b5a3bf38",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI-Powered Portfolio Analysis & Trading Tools | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/ai-integrations.php",
+  "published": "2026-09-06T15:32:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8cf9316cf0b75d12992b",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Products, Exchanges and Contracts Search | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-exchanges.php",
+  "published": "2026-09-06T15:32:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2aef45d1bdf3fd209a5d",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stock Trading: Trade Stocks Online | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-stocks.php",
+  "published": "2026-09-06T15:32:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a5f4c9d00f228c08e5c7",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR ATS Clients | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/clients-ibkr-ats.php?menu=A",
+  "published": "2026-09-06T15:32:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9a9e97694b021ec2c46e",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Order Types and Algos | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/ordertypes.php",
+  "published": "2026-09-06T15:32:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "mean_reversion",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c0ba3e654ae564ba7661",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Securities Financing | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/securities-financing.php",
+  "published": "2026-09-06T15:33:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9f3636fec4b47ed17013",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Features in Focus | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/features-in-focus.php",
+  "published": "2026-09-06T15:33:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bf6abf8cda1d018653ca",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stock, Bond & Options Block Desk | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/global-outsourced-trading-desk.php",
+  "published": "2026-09-06T15:33:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "80f2338f886aafe6879d",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR GlobalAnalyst | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/globalanalyst.php",
+  "published": "2026-09-06T15:33:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+   "https://www.interactivebrokers.co.uk/download/multisort_whitepaper_web.pdf"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ae595eac7f6d4701ef59",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bonds Marketplace | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-bonds.php",
+  "published": "2026-09-06T15:33:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ef09bce43e14a460fee5",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mutual Funds Marketplace | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-mutual-funds.php",
+  "published": "2026-09-06T15:33:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c7fd6c133cfa81b19721",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Iberia Capital Strategy \u2014 trading strategy | Collective2",
+  "url": "https://systematic.autotradenow.com/details/155570436",
+  "published": "2026-09-06T15:33:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9651066061eb069421ba",
+  "host": "systematic.autotradenow.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Overbought-Oversold Indicator | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/analytics/overbought-oversold-indicator/",
+  "published": "2026-09-06T15:33:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "59286450c22422c72d54",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GitHub - christianpichichero-max/pit-fundamentals: Free point-in-time US fundamentals sample (40 large caps, 3,280 rows) \u2014 every value stamped with the date it became public. No lookahead bias. From S",
+  "url": "https://tradevodata.com/go/github-sample?cta_location=blog-lookahead-bias-fundamental-backtests",
+  "published": "2026-09-06T15:33:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://tradevodata.com/manifest.json",
+   "https://tradevodata.com/christianpichichero-max/pit-fundamentals/blob/main/data/pit_fundamentals_history.csv",
+   "https://tradevodata.com/topics/dataset"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "79fa9eb90cef3e1744fa",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Point-in-Time Fundamentals Sample and Colab | Tradevo Data",
+  "url": "https://tradevodata.com/sample?cta_location=blog-lookahead-bias-fundamental-backtests",
+  "published": "2026-09-06T15:33:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d3bb1290766265270fb",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GitHub - christianpichichero-max/pit-fundamentals: Free point-in-time US fundamentals sample (40 large caps, 3,280 rows) \u2014 every value stamped with the date it became public. No lookahead bias. From S",
+  "url": "https://tradevodata.com/go/github-sample?utm_source=website&utm_medium=owned&utm_content=blog-lookahead-bias-fundamental-backtests&cta_location=blog-lookahead-bias-fundamental-backtests",
+  "published": "2026-09-06T15:33:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://tradevodata.com/manifest.json",
+   "https://tradevodata.com/christianpichichero-max/pit-fundamentals/blob/main/data/pit_fundamentals_history.csv",
+   "https://tradevodata.com/topics/dataset"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d229e2e099f17b703ecd",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantConnect Fundamental Data Alternative: Tradevo Data",
+  "url": "https://tradevodata.com/alternatives/quantconnect-data",
+  "published": "2026-09-06T15:33:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1213a0aa2bedc0940fe4",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Interviewing the Quants: Marco Simioni and Nightly Patterns",
+  "url": "http://godelsmarket.blogspot.com/2015/02/interviewing-quants-marco-simioni-and.html",
+  "published": "2026-09-06T15:33:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "66e1e619db90270cd9d4",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Simple Automated Trading System",
+  "url": "http://godelsmarket.blogspot.com/2012/12/simple-automated-trading-system.html",
+  "published": "2026-09-06T15:33:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "811f6cae6c09a312bf40",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: strategy",
+  "url": "http://godelsmarket.blogspot.com/search/label/strategy",
+  "published": "2026-09-06T15:33:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://godelsmarket.blogspot.com/2015/08/downloading-stock-market-news-for.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "64ca32fcba21dd5d3bc0",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?share=twitter",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?share=twitter",
+  "published": "2026-09-06T15:33:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://adaptivetrader.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5f7ee01b155f50158bd3",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/tag/indicator/",
+  "published": "2026-09-06T15:33:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6d7ae918f7cbc738f861",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "indicators | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/tag/indicators/",
+  "published": "2026-09-06T15:33:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1f666f3e4d1c60fc842d",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "strategies | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/tag/strategies/",
+  "published": "2026-09-06T15:33:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b7ecf874ad34223eef36",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "trading | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/tag/trading/",
+  "published": "2026-09-06T15:33:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1498cce09ce106a81963",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/",
+  "published": "2026-09-06T15:33:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1050722618e0ce2d61cc",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative DV2 Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/27/cumulative-dv2/",
+  "published": "2026-09-06T15:33:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8b66d99dcef5f447a238",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RSI of Volatility Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2013/01/03/rsi-of-volatility-indicator/",
+  "published": "2026-09-06T15:33:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "28c520d8cca548efc021",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?replytocom=98",
+  "published": "2026-09-06T15:33:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d34c368d00e4ad72ad1",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?replytocom=100",
+  "published": "2026-09-06T15:33:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "74f728211c0d6f85b547",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Managed Futures Broker | Wisdom Trading",
+  "url": "https://wisdomtrading.com/",
+  "published": "2026-09-06T15:33:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "90749fb2375e35d7bf7b",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Managed Futures Programs | Wisdom Trading",
+  "url": "https://wisdomtrading.com/managed-futures/",
+  "published": "2026-09-06T15:33:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "83ada9a6a1065eb41d70",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading Systems | Wisdom Trading",
+  "url": "https://wisdomtrading.com/trading-systems/",
+  "published": "2026-09-06T15:33:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7e6f3a232ccba28c6260",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Broker - CME, ICE, Eurex | Wisdom Trading",
+  "url": "https://wisdomtrading.com/brokerage/",
+  "published": "2026-09-06T15:34:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af584538c406f33c4fc6",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Commodity Hedging &amp; Futures Advisory | Wisdom Trading",
+  "url": "https://wisdomtrading.com/advisory-hedging/",
+  "published": "2026-09-06T15:34:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9ce2e9a1e1badcac8bff",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading Insights | Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/",
+  "published": "2026-09-06T15:34:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "carry",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91c1d9ad76fa9fd96add",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Independent Futures Broker | Wisdom Trading",
+  "url": "https://wisdomtrading.com/about/",
+  "published": "2026-09-06T15:34:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "inventory",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d60d6c790859772c21a",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Account | Wisdom Trading",
+  "url": "https://wisdomtrading.com/get-started/",
+  "published": "2026-09-06T15:34:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5125d7bdfaeccc6a42c8",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How We Use AI to Develop and Test Trading Systems in Trading Blox - Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/ai-trading-blox-systems-development/",
+  "published": "2026-09-06T15:34:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "018f7518d473404b5b76",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Wisdom Trading, Author at Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/author/admin/",
+  "published": "2026-09-06T15:34:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "carry",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8f644083840cb2410dc",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Systems Archives - Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/category/trading-systems/",
+  "published": "2026-09-06T15:34:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d45640ad3730169962a1",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Managed Futures Performance May 2026: Trend Recap | Wisdom Trading",
+  "url": "https://wisdomtrading.com/insights/managed-futures-may-2026-trend-recap/",
+  "published": "2026-09-06T15:34:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1dd1111447c95fa72384",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Managed Futures Recommendations | Wisdom Trading",
+  "url": "https://wisdomtrading.com/managed-futures-insider/",
+  "published": "2026-09-06T15:34:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb2ce88c51b33616b4ac",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Markets We Trade - Wisdom Trading",
+  "url": "https://wisdomtrading.com/markets/",
+  "published": "2026-09-06T15:34:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e67094c54e25212a5502",
+  "host": "wisdomtrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Most of the insider trading alpha is gone by the time you see the filing: poof!",
+  "url": "https://tommijohnsen.substack.com/p/most-of-the-insider-trading-alpha/comments",
+  "published": "2026-09-06T15:34:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a9fd5e79a9b8ab5f5fff",
+  "host": "tommijohnsen.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technical Indicators &amp; Trading Resources Archives - Tradinformed",
+  "url": "https://www.tradinformed.com/product-category/trading-resources/",
+  "published": "2026-09-06T15:34:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f6b40fff775933745615",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Use a Tradinformed Backtest Model - Tradinformed",
+  "url": "https://www.tradinformed.com/how-use-tradinformed-backtest-model",
+  "published": "2026-09-06T15:34:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f7daee50620add7ee621",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technical Indicators - Tradinformed",
+  "url": "https://www.tradinformed.com/technical-indicators-guide/",
+  "published": "2026-09-06T15:34:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ed2501818b8ab69f0ca9",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Improve Your Trading By Calculating Technical Indicators - Tradinformed",
+  "url": "https://www.tradinformed.com/improve-trading-learning-calculate-technical-indicators/",
+  "published": "2026-09-06T15:34:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "92ed1666f172dbbdee7d",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technical Indicators in Excel - Get Better Trading Results! - Tradinformed",
+  "url": "https://www.tradinformed.com/better-trading-results-technical-indicators-excel/",
+  "published": "2026-09-06T15:34:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e3f9a0aee59d385f2b26",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Strategy Guide - Tradinformed",
+  "url": "https://www.tradinformed.com/trading-strategy-guide/",
+  "published": "2026-09-06T15:34:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "night_session",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fa6fb84d71b0b878a0b6",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Strategies Archives - Tradinformed",
+  "url": "https://www.tradinformed.com/category/trading-strategies/",
+  "published": "2026-09-06T15:34:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c71438170ccd13d9927",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Trade and Calculate the Awesome Oscillator and Acc/Dec Indicator - Tradinformed",
+  "url": "https://www.tradinformed.com/how-to-trade-and-calculate-awesome-oscillator-acc-dec-indicator/",
+  "published": "2026-09-06T15:34:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4b0b3dfad68cfed9606e",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Calculate Your Trading Edge - Tradinformed",
+  "url": "https://www.tradinformed.com/how-to-calculate-your-trading-edge/",
+  "published": "2026-09-06T15:34:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "64f8dc95f08a979f4e93",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Forex SuperTrend Trading Strategy - Tradinformed",
+  "url": "https://www.tradinformed.com/forex-supertrend-trading-strategy/",
+  "published": "2026-09-06T15:34:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e45bc8751bd3b1d68bc4",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Calculate the PSAR Indicator - New Version - Tradinformed",
+  "url": "https://www.tradinformed.com/calculate-psar-indicator-revised/",
+  "published": "2026-09-06T15:34:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09950e9bcfe40dd7d18e",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Insights into the World of Algorithmic Trading - Tradinformed",
+  "url": "https://www.tradinformed.com/insights-into-the-world-of-algorithmic-trading/",
+  "published": "2026-09-06T15:34:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "36857b883aee7264a8fa",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: lookback parameter | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/13/dual-momentum-lookback-parameter/",
+  "published": "2026-09-06T15:34:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "07c0823b5e581c0356c8",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: real portfolios and current status | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/05/dual-momentum-real-portfolios-and-current-status/",
+  "published": "2026-09-06T15:34:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "846bbb4e7c6085f31386",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum with Value and Momentum factor portfolios | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/01/29/dual-momentum-with-value-and-momentum-factor-portfolios/",
+  "published": "2026-09-06T15:35:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "beb89f902289805fb9d6",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum without the benefit of the bond bull market | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/01/23/dual-momentum-without-the-benefit-of-the-bond-bull-market/",
+  "published": "2026-09-06T15:35:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e25316bffcab7defc015",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Schwab Commission Free ETF Rotation System Backtest $SPY, $TLO, $PCY, $RWO, $SHY - Theta Trend",
+  "url": "http://www.thetatrend.com/schwab-commission-free-etf-rotation-system-backtest-spy-tlo-pcy-rwo-shy/",
+  "published": "2026-09-06T15:35:03+00:00",
+  "symbols": [
+   "USDCHF"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ea27fd359c6e0554ec73",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematic Trading Platform",
+  "url": "https://www.subscribepage.com/SSTradingPlatform",
+  "published": "2026-09-06T15:35:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c0585a04d60714d5f4a5",
+  "host": "www.subscribepage.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

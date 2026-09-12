@@ -85,14 +85,22 @@ from run_hunt11 import WINDOWS                                  # noqa: E402
 
 SIZING_VERSION = "booksizing-2026-08-18-a"
 
-#: Base total heat with no measured breadth, matching golddesk.growth.BASE_HEAT.
+#: Base total heat with no measured breadth, matching golddesk.growth.BASE_HEAT. Derived there
+#: as the Kelly-shrunk budget of the armed 3-leg gold book: 3.81% total = 1.27% per leg x 3
+#: legs, at the measured cross-sleeve correlation of 0.165 (k_eff 2.26). It is the floor the
+#: book falls back to when breadth is UNMEASURED, never a target.
 BASE_HEAT = 0.0381
 
-#: The venue's smallest ticket. The entire minimum-capital question.
+#: The venue minimum: Fusion rejects any order below 0.01 lots, so this is a hard external
+#: limit rather than a desk choice. It is the entire minimum-capital question -- the smallest
+#: expressible position sets the smallest account that can hold the book at its intended
+#: weights.
 MIN_LOT = 0.01
 
-#: Stops from this year forward set the capital requirement. Everything before
-#: it is a different price regime for gold.
+#: Stops from this year forward set the capital requirement. Derived from the price regime:
+#: gold traded roughly 1,800-2,100 USD/oz before 2025 and above 2,600 after, so an ATR-derived
+#: stop measured on the earlier period understates today's required capital by roughly 30% in
+#: absolute USD. Sizing on the older regime would systematically under-fund the book.
 SIZING_FROM_YEAR = 2025
 
 SYMBOLS = ("XAUUSD", "CADJPY", "EURJPY", "USDJPY")

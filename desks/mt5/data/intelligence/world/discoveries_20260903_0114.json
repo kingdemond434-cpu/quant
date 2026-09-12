@@ -1,0 +1,831 @@
+[
+ {
+  "source": "world_crawler",
+  "title": "Cambio D\u00f3lar Estadounidense D\u00f3lar Canadiense hoy en tiempo real | Cotizaci\u00f3n USD/CAD",
+  "url": "https://www.rankia.com/forex/usd-cad",
+  "published": "2026-09-03T01:12:50+00:00",
+  "symbols": [
+   "ONLINE",
+   "USDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "1c05af5ead9098bf91ad",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio D\u00f3lar Neozeland\u00e9s D\u00f3lar Estadounidense hoy en tiempo real | Cotizaci\u00f3n NZD/USD",
+  "url": "https://www.rankia.com/forex/nzd-usd",
+  "published": "2026-09-03T01:12:52+00:00",
+  "symbols": [
+   "NZDUSD",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "f3cad77b9afc8c59c4e4",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio D\u00f3lar Australiano D\u00f3lar Estadounidense hoy en tiempo real | Cotizaci\u00f3n AUD/USD",
+  "url": "https://www.rankia.com/forex/aud-usd",
+  "published": "2026-09-03T01:12:54+00:00",
+  "symbols": [
+   "AUDUSD",
+   "ONLINE"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "vault_sha": "360be16e41f69d9b4795",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio Euro Franco Suizo hoy en tiempo real | Cotizaci\u00f3n EUR/CHF",
+  "url": "https://www.rankia.com/forex/eur-chf",
+  "published": "2026-09-03T01:12:56+00:00",
+  "symbols": [
+   "EURCHF",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "dfbd170ee864270d13a3",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio D\u00f3lar Franco Suizo hoy en tiempo real | Cotizaci\u00f3n USD/CHF",
+  "url": "https://www.rankia.com/forex/usd-chf",
+  "published": "2026-09-03T01:12:58+00:00",
+  "symbols": [
+   "ONLINE",
+   "USDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "221ee4db4ed4f669070e",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cambio Euro D\u00f3lar hoy en tiempo real | Cotizaci\u00f3n EUR/USD",
+  "url": "https://www.rankia.com/forex/eur-usd",
+  "published": "2026-09-03T01:13:00+00:00",
+  "symbols": [
+   "EURUSD",
+   "ONLINE"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "vault_sha": "c6157723bfc7fd1f2bd2",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Precio del D\u00f3lar hoy en M\u00e9xico | Cotizaci\u00f3n USD/MXN",
+  "url": "https://www.rankia.com/forex/usd-mxn",
+  "published": "2026-09-03T01:13:02+00:00",
+  "symbols": [
+   "ONLINE",
+   "USDMXN"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "vault_sha": "a1eb7e7217a08eb14cc3",
+  "host": "www.rankia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Building a Guardrailed LLM Trading Risk-Manager Agent for AAPL",
+  "url": "https://blog.quantinsti.com/ai-aapl-trading-risk-manager-deepseek-python/",
+  "published": "2026-09-03T01:13:05+00:00",
+  "symbols": [
+   "STRESS",
+   "SYMBOL"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "0d7b0c39bd5c32bcc3b9",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "LLM trading AAPL - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/llm-trading-aapl/",
+  "published": "2026-09-03T01:13:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "916532168a8621c2c01a",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Building a Quant Research Pipeline Using Financial Data APIs",
+  "url": "https://blog.quantinsti.com/financial-data-apis-algorithmic-trading-fmp/",
+  "published": "2026-09-03T01:13:09+00:00",
+  "symbols": [
+   "EBITDA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "37f6f8ca48082b548789",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Automated Trading - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/automated-trading/",
+  "published": "2026-09-03T01:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "bd4f9e43d7ee22f8db82",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Cointegrated Pairs Trading Strategy in Indian Equity Market (2015\u20132025) | EPAT Project",
+  "url": "https://blog.quantinsti.com/cointegrated-pairs-trading-indian-equity-market-epat-project/",
+  "published": "2026-09-03T01:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "a60c22b489a8a8d82b32",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "EPAT Trading Projects - Quantitative Finance &amp; Algo Trading Blog by QuantInsti",
+  "url": "https://blog.quantinsti.com/tag/epat-trading-projects/",
+  "published": "2026-09-03T01:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "41f8adac0e285ac6cfaa",
+  "host": "blog.quantinsti.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "1.1 Trading Systems Are Recipes, Not Predictions",
+  "url": "https://aligrithm.com/trading-systems-are-recipes-not-predictions/",
+  "published": "2026-09-03T01:13:15+00:00",
+  "symbols": [
+   "GBPUSD",
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "carry",
+   "gap",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "0fd868ba0a9aa2b6976f",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "1.3 The Difference Between a Trading Rule, a Strategy, and a Portfolio",
+  "url": "https://aligrithm.com/the-difference-between-a-trading-rule-a-strategy-and-a-portfolio/",
+  "published": "2026-09-03T01:13:17+00:00",
+  "symbols": [
+   "GBPUSD",
+   "POINTS"
+  ],
+  "timeframes": [
+   "30M",
+   "4H"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "3c491f6060aa70326085",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "1.4 Why &quot;Quantitative&quot; Does Not Automatically Mean Scientific",
+  "url": "https://aligrithm.com/why-quantitative-does-not-automatically-mean-scientific/",
+  "published": "2026-09-03T01:13:19+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "b1855427ece20df4fef4",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "1.7 Loose Pants Fit Everyone: Why General Trading Ideas Survive Longer",
+  "url": "https://aligrithm.com/loose-pants-fit-everyone-why-general-trading-ideas-survive-longer/",
+  "published": "2026-09-03T01:13:21+00:00",
+  "symbols": [
+   "AUDJPY",
+   "EURUSD",
+   "GBPUSD",
+   "POINTS",
+   "USDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "4b24e4f2a70fb7bc25e4",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "1.9 Why Trading Is a Probability Business, Not a Certainty Business",
+  "url": "https://aligrithm.com/why-trading-is-a-probability-business-not-a-certainty-business/",
+  "published": "2026-09-03T01:13:23+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "8f69001976a888818d5b",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "1.10 Why Good Trading Feels Boring",
+  "url": "https://aligrithm.com/why-good-trading-feels-boring/",
+  "published": "2026-09-03T01:13:25+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "57747123b8a0ef9f35fe",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "1.12 Backtesting Is an Experiment, Not a Screenshot",
+  "url": "https://aligrithm.com/backtesting-is-an-experiment-not-a-screenshot/",
+  "published": "2026-09-03T01:13:27+00:00",
+  "symbols": [
+   "POINTS"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "e2b80e8053ab18ee2956",
+  "host": "aligrithm.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Trading Strategy Evaluation Service &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/trading-strategy-evaluation-service/",
+  "published": "2026-09-03T01:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "c7b6ea86056c0c9ff339",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Tranquil Trades &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/tranquil-trades/",
+  "published": "2026-09-03T01:13:33+00:00",
+  "symbols": [
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "1c7db92fb048c27c6fce",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Bio &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/bio/",
+  "published": "2026-09-03T01:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "cf085996ef92dc83bf85",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Contact Me &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/contact-me/",
+  "published": "2026-09-03T01:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "51c204a56c96d925ba06",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "FAQ &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/faq/",
+  "published": "2026-09-03T01:13:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "31cb626db18f299fa165",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Disclaimer &#8211; Alvarez Quant Trading",
+  "url": "https://alvarezquanttrading.com/disclaimer/",
+  "published": "2026-09-03T01:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "f5174b0ce8fae7285282",
+  "host": "alvarezquanttrading.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Sectoral Intramonth Momentum Cycle: Exploiting Turn-of-the-Month Patterns in Sector ETF Strategies | QuantPedia",
+  "url": "https://quantpedia.com/sectoral-intramonth-momentum-cycle/",
+  "published": "2026-09-03T01:13:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "1e0351372aee6a9b0317",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "alternative data | QuantPedia",
+  "url": "https://quantpedia.com/tag/alternative-data/",
+  "published": "2026-09-03T01:13:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "0e7fc924ace48d1a6355",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "asset allocation | QuantPedia",
+  "url": "https://quantpedia.com/tag/asset-allocation/",
+  "published": "2026-09-03T01:13:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "709d11639589e666dcc6",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "asset class picking | QuantPedia",
+  "url": "https://quantpedia.com/tag/asset-class-picking/",
+  "published": "2026-09-03T01:13:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "afa6e863e83fd37634dd",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "cryptocurrencies | QuantPedia",
+  "url": "https://quantpedia.com/tag/cryptocurrencies/",
+  "published": "2026-09-03T01:13:51+00:00",
+  "symbols": [
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "4389c0f59ee67829dc27",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "diversification | QuantPedia",
+  "url": "https://quantpedia.com/tag/diversification/",
+  "published": "2026-09-03T01:13:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "vault_sha": "7a32a9e494e372461d0d",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "equity long short | QuantPedia",
+  "url": "https://quantpedia.com/tag/equity-long-short/",
+  "published": "2026-09-03T01:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "321e57290c94e2f25ce5",
+  "host": "quantpedia.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 5 para Forex, bolsa de valores e futuros",
+  "url": "https://www.metatrader5.com/pt/trading-platform/forex-stock-markets",
+  "published": "2026-09-03T01:13:55+00:00",
+  "symbols": [
+   "GLOBEX",
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "pt",
+  "vault_sha": "44eb36d4f6eab42d9b07",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 5 \u0434\u043b\u044f \u0424\u043e\u0440\u0435\u043a\u0441\u0430, \u0444\u043e\u043d\u0434\u043e\u0432\u043e\u0439 \u0431\u0438\u0440\u0436\u0438 \u0438 \u0444\u044c\u044e\u0447\u0435\u0440\u0441\u043e\u0432",
+  "url": "https://www.metatrader5.com/ru/trading-platform/forex-stock-markets",
+  "published": "2026-09-03T01:13:57+00:00",
+  "symbols": [
+   "GLOBEX",
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "ru",
+  "vault_sha": "e8bdc2438630a932a090",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "MetaTrader 5 f\u00fcr Forex, Aktien und Futures",
+  "url": "https://www.metatrader5.com/de/trading-platform/forex-stock-markets",
+  "published": "2026-09-03T01:14:01+00:00",
+  "symbols": [
+   "GLOBEX",
+   "NASDAQ"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "de",
+  "vault_sha": "fc02b8d88992ed6c6759",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Sistema comercial MetaTrader 5: todos los tipos de \u00f3rdenes",
+  "url": "https://www.metatrader5.com/es/trading-platform/trading",
+  "published": "2026-09-03T01:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "vault_sha": "486e24a85b406c93d9b9",
+  "host": "www.metatrader5.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Quantile Regression",
+  "url": "https://asmquantmacro.com/2019/07/14/flexible-distributions-for-asset-returns-part-ii-quantile-regression/",
+  "published": "2026-09-03T01:14:09+00:00",
+  "symbols": [
+   "GROWTH",
+   "MARGIN"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "2c4969589c569ff73dcd",
+  "host": "asmquantmacro.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Flexible Distributions for Asset Returns &#8211; Part I [Generalized Lambda Distribution]",
+  "url": "https://asmquantmacro.com/2019/07/04/flexible-returns-distribution-part-i-generalized-lambda-distribution/",
+  "published": "2026-09-03T01:14:12+00:00",
+  "symbols": [
+   "RMFMKL"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "ffb508d587d95296ece5",
+  "host": "asmquantmacro.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Nelder-Mead Method in VBA",
+  "url": "https://asmquantmacro.com/2016/07/01/nelder-mead-method-in-vba/",
+  "published": "2026-09-03T01:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "890e3afe6345e9b7c28a",
+  "host": "asmquantmacro.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Understanding Equities Data | QuantStart",
+  "url": "https://www.quantstart.com/articles/understanding-equities-data/",
+  "published": "2026-09-03T01:14:26+00:00",
+  "symbols": [
+   "NASDAQ"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "cf1b4cde1b93fc5c523e",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Building a Raspberry Pi Cluster for QSTrader using SLURM - Part 1 | QuantStart",
+  "url": "https://www.quantstart.com/articles/building-a-raspberry-pi-cluster-for-qstrader-using-slurm-part-1/",
+  "published": "2026-09-03T01:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "9ef48dc5481aea953189",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Simple versus Advanced Systematic Trading Strategies - Which is Better? | QuantStart",
+  "url": "https://www.quantstart.com/articles/simple-versus-advanced-systematic-trading-strategies-which-is-better/",
+  "published": "2026-09-03T01:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "b96ae75560f1cc240517",
+  "host": "www.quantstart.com"
+ },
+ {
+  "source": "world_crawler",
+  "title": "Rhino Strategy Family: From Broken-Wing Butterfly to Genetic Optimization | Deltaray Blog | Options Tutorials, Research &amp; Release Notes",
+  "url": "https://blog.deltaray.io/rhino-options-strategy/",
+  "published": "2026-09-03T01:14:32+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "4c438a17747cfa9dda08",
+  "host": "blog.deltaray.io"
+ },
+ {
+  "source": "world_crawler",
+  "title": "DTR Trading",
+  "url": "https://dtr-trading.blogspot.com/",
+  "published": "2026-09-03T01:14:33+00:00",
+  "symbols": [
+   "ADVICE",
+   "FUTURE",
+   "HEREIN",
+   "SHOULD",
+   "SOLELY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "f7a5687e9e6b42331b56",
+  "host": "dtr-trading.blogspot.com"
+ }
+]

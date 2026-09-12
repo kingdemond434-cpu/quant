@@ -1,0 +1,752 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download - StrategyQuant",
+  "url": "https://strategyquant.com/download/",
+  "published": "2026-09-03T22:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://strategyquant.com/download/",
+   "https://api.strategyquant.com/downloads?code=sqxsetup",
+   "https://api.strategyquant.com/downloads?code=sqx_144_win",
+   "https://api.strategyquant.com/downloads?code=sqx_144_win_arm",
+   "https://www.azul.com/downloads/?package=jdk#zulu",
+   "https://www.graalvm.org/downloads/",
+   "https://api.strategyquant.com/downloads?code=sqx_144_mac",
+   "https://api.strategyquant.com/downloads?code=sqx_144_mac_arm",
+   "https://api.strategyquant.com/downloads?code=sqx_144_linux",
+   "https://api.strategyquant.com/downloads?code=sqx_144_linux_arm",
+   "https://api.strategyquant.com/downloads?code=sqx_143_win",
+   "https://api.strategyquant.com/downloads?code=sqx_143_mac",
+   "https://api.strategyquant.com/downloads?code=sqx_143_linux",
+   "https://api.strategyquant.com/downloads?code=sqx_142_win",
+   "https://api.strategyquant.com/downloads?code=sqx_142_mac",
+   "https://api.strategyquant.com/downloads?code=sqx_142_linux",
+   "https://api.strategyquant.com/downloads?code=sqx_141_win",
+   "https://api.strategyquant.com/downloads?code=sqx_141_mac",
+   "https://api.strategyquant.com/downloads?code=sqx_141_linux",
+   "https://api.strategyquant.com/downloads?code=sqx_140_win",
+   "https://api.strategyquant.com/downloads?code=sqx_140_mac",
+   "https://api.strategyquant.com/downloads?code=sqx_140_linux",
+   "https://api.strategyquant.com/downloads?code=sqx139win",
+   "https://api.strategyquant.com/downloads?code=sqx139mac",
+   "https://api.strategyquant.com/downloads?code=sqx139linux",
+   "https://api.strategyquant.com/downloads?code=sqx138win",
+   "https://api.strategyquant.com/downloads?code=sqx138mac",
+   "https://api.strategyquant.com/downloads?code=sqx138linux",
+   "https://api.strategyquant.com/downloads?code=sqxzip137",
+   "https://api.strategyquant.com/downloads?code=sqxmac137",
+   "https://api.strategyquant.com/downloads?code=sqxlinux137",
+   "https://api.strategyquant.com/downloads?code=sqxzip136",
+   "https://api.strategyquant.com/downloads?code=sqxmac136",
+   "https://api.strategyquant.com/downloads?code=sqxlinux136",
+   "https://api.strategyquant.com/downloads?code=sqxzip135",
+   "https://api.strategyquant.com/downloads?code=sqxmac",
+   "https://api.strategyquant.com/downloads?code=sqxlinux",
+   "https://api.strategyquant.com/downloads?code=sqxzip134"
+  ],
+  "n_endpoints": 38,
+  "vault_sha": "1b182b8810d2e78e65c4",
+  "host": "strategyquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Subscription - StrategyQuant",
+  "url": "https://strategyquant.com/data-subscription/",
+  "published": "2026-09-03T22:13:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "http://autoupdate.strategyquant.com/historydata/SQ_data_equities.txt",
+   "http://autoupdate.strategyquant.com/historydata/SQ_data_futures.txt",
+   "http://autoupdate.strategyquant.com/historydata/SQ_continuous_futures.txt",
+   "https://strategyquant.com/download/",
+   "https://strategyquant.com/wp-content/themes/strategyquant/static/img/bg/icons-svg.svg?v=2.3.3#icon-export"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "06aa15c62c7c29c38af0",
+  "host": "strategyquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "PyAlgoTrade - Downloads",
+  "url": "https://gbeced.github.io/pyalgotrade/downloads/",
+  "published": "2026-09-03T22:13:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://github.com/downloads/gbeced/pyalgotrade/PyAlgoTrade-0.9.tar.gz",
+   "https://github.com/downloads/gbeced/pyalgotrade/PyAlgoTrade-0.8.tar.gz",
+   "https://github.com/downloads/gbeced/pyalgotrade/PyAlgoTrade-0.7.tar.gz",
+   "https://github.com/downloads/gbeced/pyalgotrade/PyAlgoTrade-0.6.tar.gz",
+   "https://github.com/downloads/gbeced/pyalgotrade/PyAlgoTrade-0.5.tar.gz",
+   "https://github.com/downloads/gbeced/pyalgotrade/PyAlgoTrade-0.4.tar.gz",
+   "https://github.com/downloads/gbeced/pyalgotrade/PyAlgoTrade-0.3.tar.gz",
+   "https://github.com/downloads/gbeced/pyalgotrade/PyAlgoTrade-0.2.tar.gz",
+   "https://github.com/downloads/gbeced/pyalgotrade/PyAlgoTrade-0.1.tar.gz",
+   "http://sourceforge.net/projects/pyalgotrade/files/0.18/PyAlgoTrade-0.18.tar.gz/download",
+   "http://sourceforge.net/projects/pyalgotrade/files/0.17/PyAlgoTrade-0.17.tar.gz/download",
+   "http://sourceforge.net/projects/pyalgotrade/files/0.16/PyAlgoTrade-0.16.tar.gz/download",
+   "http://sourceforge.net/projects/pyalgotrade/files/0.15/PyAlgoTrade-0.15.tar.gz/download",
+   "http://sourceforge.net/projects/pyalgotrade/files/0.14/PyAlgoTrade-0.14.tar.gz/download",
+   "http://sourceforge.net/projects/pyalgotrade/files/0.13/PyAlgoTrade-0.13.tar.gz/download",
+   "http://sourceforge.net/projects/pyalgotrade/files/0.12/PyAlgoTrade-0.12.tar.gz/download",
+   "http://sourceforge.net/projects/pyalgotrade/files/0.11/PyAlgoTrade-0.11.tar.gz/download",
+   "http://sourceforge.net/projects/pyalgotrade/files/0.10/PyAlgoTrade-0.10.tar.gz/download"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "fa08bc2934368452bc7e",
+  "host": "gbeced.github.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Mining: Theories, Algorithms, and Examples - 1st Edition - Nong Y",
+  "url": "https://www.crcpress.com/Data-Mining-Theories-Algorithms-and-Examples/Ye/p/book/9781439808382",
+  "published": "2026-09-03T22:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "432b40c19eafbb62a349",
+  "host": "www.crcpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LBMA Precious Metal Prices | LBMA",
+  "url": "https://www.lbma.org.uk/prices-and-data",
+  "published": "2026-09-03T22:13:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.lbma.org.uk/humans.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7b818e6bab7e19dd42d9",
+  "host": "www.lbma.org.uk"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u8d22\u7ecf\u5feb\u8baf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://kuaixun.eastmoney.com/wh.html",
+  "published": "2026-09-03T22:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "107df93f1f51e85c5b36",
+  "host": "kuaixun.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://eu-live.dukascopy.com/cabinet/trader/auth/forgot",
+  "published": "2026-09-03T22:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://eu-live.dukascopy.com/cabinet/trader/auth/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cd14febf88b207fa7722",
+  "host": "eu-live.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Backtesting dilemmas",
+  "url": "https://tradingwithpython.blogspot.com/2014/05/backtesting-dilemmas.html",
+  "published": "2026-09-03T22:13:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8cdd00b390c120941eae",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Starting IPython notebook from windows file exlorer",
+  "url": "https://tradingwithpython.blogspot.com/2014/01/starting-ipython-notebook-from-windows.html",
+  "published": "2026-09-03T22:13:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35bd85277badc64b2eb6",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Leveraged ETFs in 2013, where is your decay now?",
+  "url": "https://tradingwithpython.blogspot.com/2014/01/leveraged-etfs-in-2013-where-is-your.html",
+  "published": "2026-09-03T22:13:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7b3f4f482502950bad20",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Putting a price tag on TWTR",
+  "url": "https://tradingwithpython.blogspot.com/2014/01/putting-price-tag-on-twtr.html",
+  "published": "2026-09-03T22:13:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45ca6b6093cd1b3ef821",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Trading With Python course available!",
+  "url": "https://tradingwithpython.blogspot.com/2013/09/trading-with-python-course-available.html",
+  "published": "2026-09-03T22:13:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34db8d0c0e0abefafb85",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Short VXX strategy",
+  "url": "https://tradingwithpython.blogspot.com/2013/08/short-vxx-strategy.html",
+  "published": "2026-09-03T22:13:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae4724c73fe10c80ae81",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading with Python: Getting short volume from BATS",
+  "url": "https://tradingwithpython.blogspot.com/2013/08/getting-short-volume-from-bats.html",
+  "published": "2026-09-03T22:13:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7196e7b985fd75965dc3",
+  "host": "tradingwithpython.blogspot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Direction of Change Forecasting | Quantivity",
+  "url": "https://quantivity.wordpress.com/2012/01/16/sign-direction-of-change-forecasting/",
+  "published": "2026-09-03T22:13:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c83397624f31b71cf21f",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Index Return Decomposition | Quantivity",
+  "url": "https://quantivity.wordpress.com/2011/12/14/index-return-decomposition/",
+  "published": "2026-09-03T22:13:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "78460c22cf1d4c761563",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Physics, Biology, or Peltzman? | Quantivity",
+  "url": "https://quantivity.wordpress.com/2012/01/03/physics-biology-peltzman-finance/",
+  "published": "2026-09-03T22:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1575055c7d574fa4f34",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Return Decomposition via Mixing | Quantivity",
+  "url": "https://quantivity.wordpress.com/2011/12/28/estimating-mixture-index-return-decomposition-via-maximum-likelihood/",
+  "published": "2026-09-03T22:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "60a8f41a733e8c9bd1a0",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Risk Pragmatics | Quantivity",
+  "url": "https://quantivity.wordpress.com/2011/12/17/risk-pragmatics/",
+  "published": "2026-09-03T22:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fef841ec2498c74cc410",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Proxy / Cross Hedging | Quantivity",
+  "url": "https://quantivity.wordpress.com/2011/10/02/proxy-cross-hedging/",
+  "published": "2026-09-03T22:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://www.carolalexander.org/publish/download/JournalArticles/PDFs/JPM_33_2_46-59.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8293a58750d2e97fc2a9",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Update: Curated Quant Research Feed | Quantivity",
+  "url": "https://quantivity.wordpress.com/2011/11/04/update-curated-quant-research-feed/",
+  "published": "2026-09-03T22:13:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4a051b58824561089835",
+  "host": "quantivity.wordpress.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technical Analysis Indicators API by EODHD",
+  "url": "https://eodhd.com/financial-apis/technical-indicators-api",
+  "published": "2026-09-03T22:14:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0b11bb0425dd68f3ad76",
+  "host": "eodhd.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Custom Bars (OHLC) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/forex/get_v2_aggs_ticker__forexticker__range__multiplier___timespan___from___to",
+  "published": "2026-09-03T22:14:17+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4278896f58832cb58080",
+  "host": "polygon.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Overview | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/forex/getting-started",
+  "published": "2026-09-03T22:14:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "82c5d7c2d8d9805e3b2a",
+  "host": "polygon.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Factor investing and asset allocation strategies: a comparison of factor versus sector optimization | Journal of Asset Management | Springer Nature Link",
+  "url": "https://link.springer.com/article/10.1057/s41260-021-00225-1",
+  "published": "2026-09-03T22:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "16ceda30f314fa904298",
+  "host": "link.springer.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitativo (@quantitativo1) / X",
+  "url": "https://x.com/quantitativo1",
+  "published": "2026-09-03T22:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://x.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6346aeaa1437248ee57a",
+  "host": "x.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Democratizing trading: How AI is changing the game - ET Edge Insights",
+  "url": "https://etedge-insights.com/markets/democratizing-trading-how-ai-is-changing-the-game/",
+  "published": "2026-09-03T22:14:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ccb28b71d7730c4883c5",
+  "host": "etedge-insights.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic trading market to reach $1.55 billion by 2033 - The HinduBusinessLine",
+  "url": "https://www.thehindubusinessline.com/markets/algorithmic-trading-market-to-reach-155-billion-by-2033/article70515759.ece",
+  "published": "2026-09-03T22:14:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.thehindubusinessline.com/economy/indias-tyre-exports-rise-16-in-q1-to-7700-cr-despite-global-headwinds-atma/article71400024.ece?utm_source=non-amp&utm_medium=quickdiscovery&utm_campaign=article"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "784d3fdaa67544a91db2",
+  "host": "www.thehindubusinessline.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantPedia | Lightspeed Financial",
+  "url": "https://lightspeed.com/lp/quantpedia-lightspeed-financial-services-group-one-free-year-promotion",
+  "published": "2026-09-03T22:14:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "carry",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "109b142daffa87c967c8",
+  "host": "lightspeed.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantmatix &amp; Quantpedia",
+  "url": "https://quantmatix.com/quantpedia/?ref=radovanvojtko",
+  "published": "2026-09-03T22:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "201b67007385c9544bbd",
+  "host": "quantmatix.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantpedia Special Pricing",
+  "url": "https://orats.com/quantpedia?utm_source=quantpedia&utm_medium=affiliate&utm_campaign=quantpedia",
+  "published": "2026-09-03T22:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e1282f49e72fc1fd9cfb",
+  "host": "orats.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FXMacroData | Real-Time Macro Data API for FX &amp; Quant Research",
+  "url": "https://fxmacrodata.com?via=quantpedia",
+  "published": "2026-09-03T22:14:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://fxmacrodata.com/llms.txt",
+   "https://fxmacrodata.com/googlebot-data-index.json",
+   "https://fxmacrodata.com/ai-surface-index.json",
+   "https://fxmacrodata.com/.well-known/agent-card.json",
+   "https://api.fxmacrodata.com/openapi.json",
+   "https://fxmacrodata.com/data-export",
+   "https://fxmacrodata.com/api/v1/announcements/eur/inflation",
+   "https://fxmacrodata.com/features/data-export"
+  ],
+  "n_endpoints": 8,
+  "vault_sha": "8bcb263b6d496e893111",
+  "host": "fxmacrodata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pricing - Financial Data API",
+  "url": "https://financialdata.net/pricing?via=quantpedia",
+  "published": "2026-09-03T22:14:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fa9816ca67a74ddd42a6",
+  "host": "financialdata.net"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantStart (@quantstart) / X",
+  "url": "https://x.com/quantstart",
+  "published": "2026-09-03T22:14:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://x.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2c61ab4965ea9ccab051",
+  "host": "x.com"
+ }
+]

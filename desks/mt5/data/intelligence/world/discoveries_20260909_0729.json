@@ -1,0 +1,2441 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/data/",
+  "published": "2026-09-09T07:25:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "79703e48eb86bbb4ea69",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-09T07:25:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13752a3eda8fa8cc5223",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics - International Cocoa Organization",
+  "url": "https://www.icco.org/statistics/",
+  "published": "2026-09-09T07:26:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.icco.org/pwa-manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b5cae551b6c4104d8569",
+  "host": "www.icco.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Price Performance &amp; Data | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data",
+  "published": "2026-09-09T07:26:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "40c1d76d682006c5c163",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-09T07:26:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c96fcc8b25f874ffad2b",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/",
+  "published": "2026-09-09T07:26:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "37f2a23c8034e602b5c2",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics",
+  "url": "https://www.norges-bank.no/en/topics/Statistics/",
+  "published": "2026-09-09T07:26:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b36f364d394b9213a3bc",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics - Czech National Bank",
+  "url": "https://www.cnb.cz/en/statistics/",
+  "published": "2026-09-09T07:26:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cnb.cz/export/system/modules/org.opencms.apollo/resources/img/favicon_120.png",
+   "https://www.cnb.cz/export/system/modules/cz.nelasoft.opencms.cnb/resources/css/styles.min.css?v=1787248198699"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d677edc90c1ec200d7ed",
+  "host": "www.cnb.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Central bankers&#039; speeches | Bank for International Settlements",
+  "url": "https://www.bis.org/cbspeeches/index.htm",
+  "published": "2026-09-09T07:26:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.bis.org/speeches/central-bank/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bfdb8b1ce4788dfc3123",
+  "host": "www.bis.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data mining | Math Trading",
+  "url": "https://mathtrading.wordpress.com/tag/data-mining/",
+  "published": "2026-09-09T07:26:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5706ab87e2f1ebd1fbf8",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u8bc1\u5238\u4ea4\u6613|\u7092\u80a1|\u76ef\u76d8\u5b98\u65b9\u8f6f\u4ef6\u4e0b\u8f7d",
+  "url": "http://www.18.cn/download.html",
+  "published": "2026-09-09T07:26:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/e34adc18-c94e-4053-8c31-83d65f277dc7.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "30cab92b6875adc1e514",
+  "host": "www.18.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intro - AlgoCloud",
+  "url": "https://algocloud.com/trade-tutorial/intro/",
+  "published": "2026-09-09T07:26:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50d9c8d6db2882ba9982",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AlgoCloud \u2013 Cloud Algo Trading Platform for US Stocks &amp; ETFs",
+  "url": "https://algocloud.com/2026/08/20/",
+  "published": "2026-09-09T07:26:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f09da7cd91187c58079c",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uncategorized - AlgoCloud",
+  "url": "https://algocloud.com/category/uncategorized/",
+  "published": "2026-09-09T07:26:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f8cf3d618c4c715aa430",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What Is Really Happening Inside Your AlgoCloud Portfolio? - AlgoCloud",
+  "url": "https://algocloud.com/what-is-really-happening-inside-your-algocloud-portfolio/",
+  "published": "2026-09-09T07:26:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bb531eb3f54ce7decf6b",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AlgoCloud \u2013 Cloud Algo Trading Platform for US Stocks &amp; ETFs",
+  "url": "https://algocloud.com/2026/07/14/",
+  "published": "2026-09-09T07:26:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "512b608d2a5b628ee122",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How to Build a Sector ETF Rotation Strategy in Algo Cloud - AlgoCloud",
+  "url": "https://algocloud.com/how-to-build-a-sector-etf-rotation-strategy-in-algo-cloud/",
+  "published": "2026-09-09T07:26:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "41303f182e8edba8dd28",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AlgoCloud \u2013 Cloud Algo Trading Platform for US Stocks &amp; ETFs",
+  "url": "https://algocloud.com/2026/06/17/",
+  "published": "2026-09-09T07:26:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d2e3d0868d2d49237083",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beating the Market: The S&amp;P 100 Pullback Momentum Strategy - AlgoCloud",
+  "url": "https://algocloud.com/beating-the-market-the-sp-100-pullback-momentum-strategy/",
+  "published": "2026-09-09T07:26:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c88a789eb48eeacf27f",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Terms of Service \u2014 AlgoCloud",
+  "url": "https://algocloud.com/terms-of-service/",
+  "published": "2026-09-09T07:26:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "22110229ebd0fde88c3f",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Privacy Policy \u2014 AlgoCloud",
+  "url": "https://algocloud.com/privacy-policy/",
+  "published": "2026-09-09T07:26:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "88d3bd19593e9585612e",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GDPR &amp; Cookies Policy \u2014 AlgoCloud",
+  "url": "https://algocloud.com/gdpr-cookies-policy/",
+  "published": "2026-09-09T07:26:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8325dc158c91e2f0d5be",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FAQs \u2014 Frequently Asked Questions About AlgoCloud",
+  "url": "https://algocloud.com/faqs",
+  "published": "2026-09-09T07:26:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8bfdc5dfdf555ed3e44b",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Let\u2019s start trading - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/lets-start-trading/",
+  "published": "2026-09-09T07:26:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "17a7110bc9f99d4efb13",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What is a single symbol strategy? - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/what-is-a-single-symbol-strategy/",
+  "published": "2026-09-09T07:26:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d14b5e3c920988cdb0b1",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade timing - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/trade-timing/",
+  "published": "2026-09-09T07:26:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d2ade7a1bb6bd7fa9b5",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Commission settings - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/commission-settings/",
+  "published": "2026-09-09T07:26:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "88099f5338be0b48dc92",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://mathtrading.wordpress.com/2012/09/02/quantitative-trading-and-macroeconomics/?share=twitter",
+  "url": "https://mathtrading.wordpress.com/2012/09/02/quantitative-trading-and-macroeconomics/?share=twitter",
+  "published": "2026-09-09T07:26:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://mathtrading.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cf02e34b2b27229d066a",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uncategorized | Math Trading",
+  "url": "https://mathtrading.wordpress.com/category/uncategorized/",
+  "published": "2026-09-09T07:27:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c900366fb158cbc81d2a",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Macro Trading | Math Trading",
+  "url": "https://mathtrading.wordpress.com/tag/macro-trading/",
+  "published": "2026-09-09T07:27:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "77243d7d097106588eb6",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy Design | Math Trading",
+  "url": "https://mathtrading.wordpress.com/tag/strategy-design/",
+  "published": "2026-09-09T07:27:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2513df19bc9e50e8fbd",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative trading in a Macro world | Math Trading",
+  "url": "https://mathtrading.wordpress.com/2012/09/02/quantitative-trading-and-macroeconomics/?replytocom=10",
+  "published": "2026-09-09T07:27:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "62084604aa5c43a92aec",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Math Trading | Applying quantitative analysis to gain an edge in financial markets",
+  "url": "https://mathtrading.wordpress.com",
+  "published": "2026-09-09T07:27:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "mean_reversion",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "de50dc7d2d4458ebad45",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative trading in a Macro world | Math Trading",
+  "url": "https://mathtrading.wordpress.com/2012/09/02/quantitative-trading-and-macroeconomics/?replytocom=11",
+  "published": "2026-09-09T07:27:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91dd68907ac027f5ba97",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative trading in a Macro world | Math Trading",
+  "url": "https://mathtrading.wordpress.com/2012/09/02/quantitative-trading-and-macroeconomics/?replytocom=370",
+  "published": "2026-09-09T07:27:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7952e2d2774f8253fb56",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "In defense of a quantitative approach to financial markets | Math Trading",
+  "url": "https://mathtrading.wordpress.com/2014/09/14/in-defense-of-a-quantitative-approach-to-financial-markets/",
+  "published": "2026-09-09T07:27:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5722346716b3bbaf0fb3",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Order matching algorithms | Math Trading",
+  "url": "https://mathtrading.wordpress.com/2014/04/21/order-matching-algorithms/",
+  "published": "2026-09-09T07:27:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aa16a099c98f5a1e49f5",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Feature selection in trading algorithms | Math Trading",
+  "url": "https://mathtrading.wordpress.com/2014/01/16/features-selection-in-trading-algorithms/",
+  "published": "2026-09-09T07:27:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5d221b65152bbb2b990",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "High Frequency Trading | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/category/trading/high-frequency-trading-trading/",
+  "published": "2026-09-09T07:27:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2107dcdd9f51e6e3985e",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading | Quantitative Finance Club | Page 2",
+  "url": "https://qfclub.wordpress.com/tag/trading/page/2/",
+  "published": "2026-09-09T07:27:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e34ead0d4ccb9306e0de",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/category/trading/",
+  "published": "2026-09-09T07:27:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6cfc832b2cb2f7dc9948",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "estrategias | Quantitative Finance Club | Page 2",
+  "url": "https://qfclub.wordpress.com/tag/estrategias/page/2/",
+  "published": "2026-09-09T07:27:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb3ee155b826e6815935",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Electronic Trading | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/tag/electronic-trading/",
+  "published": "2026-09-09T07:27:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a157889db3612b0d4ac7",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "fun &amp; finance: cap\u00edtulo 6, Trading Electronico | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/2011/04/04/fun-finance-capitulo-6-trading-electronico/",
+  "published": "2026-09-09T07:27:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "95882ed7d904267df917",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gr\u00e1fico du Jour: Algo FX | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/2011/01/10/grafico-du-jour-algo-fx/",
+  "published": "2026-09-09T07:27:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b8270b3f70d49906350",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Regulaci\u00f3n Financiera, dark pools y flash trading | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/2010/05/19/regulacion-financiera-dark-pools-y-flash-trading/",
+  "published": "2026-09-09T07:27:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5281db3c6951533764c1",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "flash trading | Quantitative Finance Club",
+  "url": "https://qfclub.wordpress.com/tag/flash-trading/",
+  "published": "2026-09-09T07:27:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3b1ab266ef1b16b70bc5",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithmic trading | Quantitative Finance Club | Page 2",
+  "url": "https://qfclub.wordpress.com/tag/algorithmic-trading/page/2/",
+  "published": "2026-09-09T07:27:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f939e19e2f79d1be669c",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "High Frequency Trading | Quantitative Finance Club | Page 2",
+  "url": "https://qfclub.wordpress.com/tag/high-frequency-trading/page/2/",
+  "published": "2026-09-09T07:27:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "239917107e79b3c84674",
+  "host": "qfclub.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics for Financial Markets Course | Risk Management and Trading Strategies with Excel",
+  "url": "https://www.quantinsti.com/epat/statistics-financial-markets",
+  "published": "2026-09-09T07:27:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantinsti.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "97249793470b0ca6f119",
+  "host": "www.quantinsti.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingHours.com - Market Holidays & Trading Hours Calendars",
+  "url": "https://tradinghours.com",
+  "published": "2026-09-09T07:28:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://tradinghours.com/manifest.json",
+   "https://tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "00bd2ff5e878030fe49e",
+  "host": "tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quiver API Setup | Quiver Quantitative",
+  "url": "https://www.quiverquant.com/api-setup/",
+  "published": "2026-09-09T07:28:05+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "65ad27b3c8a4ffc895b7",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quiver Quantitative Privacy Notice",
+  "url": "https://www.quiverquant.com/privacypolicy/",
+  "published": "2026-09-09T07:28:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d6bc4e868f11d488c0da",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Website Terms of Use",
+  "url": "https://www.quiverquant.com/termsofservice/",
+  "published": "2026-09-09T07:28:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7c23afacf9dc35574f73",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Congress Trading - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/congresstrading/",
+  "published": "2026-09-09T07:28:12+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "65b5205fbe70c1de244b",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Politician Stock Portfolio Leaderboard - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/politician-stock-portfolio-leaderboard/",
+  "published": "2026-09-09T07:28:15+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "42cb60082fdbd793dd0e",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Insider Trading Dashboard - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/insiders/",
+  "published": "2026-09-09T07:28:16+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d06aec03fa648b78814e",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Congress Live Net Worth Tracker | Quiver Quantitative",
+  "url": "https://www.quiverquant.com/congress-live-net-worth/",
+  "published": "2026-09-09T07:28:18+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "82dd98de9c79c4c49e80",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Government Spending | Quiver Quantitative",
+  "url": "https://www.quiverquant.com/government-spending/",
+  "published": "2026-09-09T07:28:20+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a99a3fe6bf16553dc376",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Corporate Lobbying",
+  "url": "https://www.quiverquant.com/lobbying/",
+  "published": "2026-09-09T07:28:22+00:00",
+  "symbols": [
+   "AIRBNB",
+   "AMAZON",
+   "BOEING",
+   "INTUIT",
+   "NVIDIA",
+   "ORACLE",
+   "PFIZER",
+   "TOYOTA",
+   "TWILIO"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8a2726d72536bbff285f",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Corporate Election Contributions - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/election-contributions/",
+  "published": "2026-09-09T07:28:25+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7181edc9615843019fa5",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Institutional Holdings - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/sec13f/",
+  "published": "2026-09-09T07:28:31+00:00",
+  "symbols": [
+   "AMAZON",
+   "NVIDIA",
+   "ORACLE",
+   "PFIZER",
+   "TOYOTA"
+  ],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "M1",
+   "MN"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "breakout",
+   "flow",
+   "inventory",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fc7eddf238a4cbb462f5",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Compensation Dashboard - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/compensation/",
+  "published": "2026-09-09T07:28:31+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4990b60719bb3574a17c",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "NVDA | Nvidia Corp Ownership Summary",
+  "url": "https://www.quiverquant.com/stock/NVDA/ownership/",
+  "published": "2026-09-09T07:28:34+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4865c27b0cefe698d7d2",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Donald Trump Stock Trade Tracker | Quiver Quantitative",
+  "url": "https://www.quiverquant.com/Donald-Trump-Stock-Trades/",
+  "published": "2026-09-09T07:28:38+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/",
+   "https://api.quiverquant.com/datasets/trump-stock-trades"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "50463f70ed3b1269007a",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantmatix Limited | LinkedIn",
+  "url": "https://ie.linkedin.com/company/quantmatix",
+  "published": "2026-09-09T07:28:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://ie.linkedin.com/homepage-guest/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9b79fd3b7747ad6e3652",
+  "host": "ie.linkedin.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - TradingMarkets",
+  "url": "https://tradingmarkets.com/",
+  "published": "2026-09-09T07:28:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b61d654c70437a5bdfda",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI Wealth Creation Trading Report Subscription",
+  "url": "https://store.tradingmarkets.com/pages/ai-wealth-creation-trading-report",
+  "published": "2026-09-09T07:28:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1bed672140cf8d4fd0c",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Books &ndash; TradingMarkets",
+  "url": "https://store.tradingmarkets.com/collections/books",
+  "published": "2026-09-09T07:28:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d9bf3c35b5a1b27cbad2",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Courses &ndash; TradingMarkets",
+  "url": "https://store.tradingmarkets.com/collections/courses",
+  "published": "2026-09-09T07:28:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "64e318d3107961f6f68d",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Knowledge Center Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/knowledge-center",
+  "published": "2026-09-09T07:28:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d2d22036cc0556cdf2f",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Lesson Of The Day Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/trading-tip",
+  "published": "2026-09-09T07:28:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d2e89d7e9ec295336b1a",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stocks Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/stocks",
+  "published": "2026-09-09T07:28:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7398fd0d1929628c43ca",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ETFs Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/etfs",
+  "published": "2026-09-09T07:28:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d4b7234c3d25406863fe",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Options Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/options",
+  "published": "2026-09-09T07:28:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ced99a8a159b11392b2e",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Volatility Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/volatility",
+  "published": "2026-09-09T07:28:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c44f53ebabb47747e0b5",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingMarkets",
+  "url": "https://store.tradingmarkets.com/",
+  "published": "2026-09-09T07:28:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5a574f496b07e8163c6b",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Account &ndash; TradingMarkets",
+  "url": "https://store.tradingmarkets.com/account/",
+  "published": "2026-09-09T07:29:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "977e9e4591719d8bfc58",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Interviews Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/interviews",
+  "published": "2026-09-09T07:29:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0c0edc64568b12eb6c78",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI For Traders: A Professional Manual for Hedge\u2011Fund\u2011Level Alpha",
+  "url": "https://store.tradingmarkets.com/products/cognitive-analysis-guidebook",
+  "published": "2026-09-09T07:29:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "mean_reversion",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8d901b3d673a7a35543e",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Webinar Replay: Bear Market Checklist &amp; Short-Side Opportunities - TradingMarkets",
+  "url": "https://tradingmarkets.com/trading-tip/webinar-replay-bear-market-checklist-short-side-opportunities-1597779",
+  "published": "2026-09-09T07:29:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d78162479d40d6230107",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ChatGPT Unveiled: The Modern Trader&#039;s Tool for Deciphering Stock Charts - TradingMarkets",
+  "url": "https://tradingmarkets.com/stocks/chatgpt-unveiled-the-modern-traders-tool-for-deciphering-stock-charts-1597135",
+  "published": "2026-09-09T07:29:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dae51fdc76af4ec9c4f8",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beginner Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/level/beginner",
+  "published": "2026-09-09T07:29:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e41b972b6e6f1893cc0",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The 20 Most Important Risk Management Tips for Traders - TradingMarkets",
+  "url": "https://tradingmarkets.com/recent/the-20-most-important-risk-management-tips-for-traders-1596943",
+  "published": "2026-09-09T07:29:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "momentum",
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2d363822bbda4440fdf",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dec 2023 relaunch Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/dec-2023-relaunch",
+  "published": "2026-09-09T07:29:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e380dc4e3660c5f0663",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "evergreen Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/evergreen",
+  "published": "2026-09-09T07:29:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "88917544a4f03386659d",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Recent Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/recent",
+  "published": "2026-09-09T07:29:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d9fa9ca2e67705a4df9d",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Unlocking the Power of Momentum Trading: From Basics to Strategies - TradingMarkets",
+  "url": "https://tradingmarkets.com/recent/unlocking-the-power-of-momentum-trading-from-basics-to-strategies-1597138",
+  "published": "2026-09-09T07:29:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9f630c242a9f5f481d0f",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intermediate Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/level/intermediate",
+  "published": "2026-09-09T07:29:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bac854c8fbd1334153a8",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI For Traders: A Professional Manual for Hedge\u2011Fund\u2011Level Alpha",
+  "url": "https://store.tradingmarkets.com/products/ai-for-traders-manual",
+  "published": "2026-09-09T07:29:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "mean_reversion",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c633e343f7a2dc1521ac",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Buy the Fear, Sell the Greed - 7 Behavioral Quant Strategies For Traders &ndash; TradingMarkets",
+  "url": "https://store.tradingmarkets.com/products/new-buy-the-fear-sell-the-greed-7-behavioral-quant-strategies-for-traders-hardcover-available-for-immediate-shipping-1",
+  "published": "2026-09-09T07:29:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8de654d465038cb255f6",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "NEW! The Alpha Formula: High Powered Strategies to Beat The Market Wit &ndash; TradingMarkets",
+  "url": "https://store.tradingmarkets.com/products/new-the-alpha-formula-high-powered-strategies-to-beat-the-market-with-less-risk-hardcover?utm_source=copyToPasteBoard&utm_medium=product-links&utm_content=web",
+  "published": "2026-09-09T07:29:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b02a03288fbf018aea1c",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mastering Oscillators: Unveil Trading Strategies for Market Success - TradingMarkets",
+  "url": "https://tradingmarkets.com/recent/mastering-oscillators-unveil-trading-strategies-for-market-success-1597139",
+  "published": "2026-09-09T07:29:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "16ed29b3776a99338bbe",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingMarkets Swing Trading College 2019",
+  "url": "https://store.tradingmarkets.com/products/tradingmarkets-swing-trading-college-2019",
+  "published": "2026-09-09T07:29:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f95da9792ee161a81a3f",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "NEW! The Alpha Formula: High Powered Strategies to Beat The Market Wit &ndash; TradingMarkets",
+  "url": "https://store.tradingmarkets.com/products/new-the-alpha-formula-high-powered-strategies-to-beat-the-market-with-less-risk-hardcover",
+  "published": "2026-09-09T07:29:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9ea8abe6c79633342bc9",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Award-Winning Algorithmic Trading Course &amp; Strategies | Kevin Davey",
+  "url": "https://www.kjtradingsystems.com",
+  "published": "2026-09-09T07:29:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd452197e7e5e2fcf7b4",
+  "host": "www.kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Alternatives Handelssystem \u2013 Wikipedia",
+  "url": "https://de.wikipedia.org/wiki/Alternatives_Handelssystem",
+  "published": "2026-09-09T07:29:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f55f6cace2c821902cb5",
+  "host": "de.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DV Trading",
+  "url": "http://dvtrading.co",
+  "published": "2026-09-09T07:29:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7ed30b0653b936d12666",
+  "host": "dvtrading.co",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorisme d'expectativa-maximitzaci\u00f3 - Viquip\u00e8dia, l'enciclop\u00e8dia lliure",
+  "url": "https://ca.wikipedia.org/wiki/Algorisme_d%27expectativa-maximitzaci%C3%B3",
+  "published": "2026-09-09T07:29:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ca",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "52966b25b6d881cb4bb4",
+  "host": "ca.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM algoritmus \u2013 Wikipedie",
+  "url": "https://cs.wikipedia.org/wiki/EM_algoritmus",
+  "published": "2026-09-09T07:29:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c0a897686a370d57f5a",
+  "host": "cs.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-Algorithmus \u2013 Wikipedia",
+  "url": "https://de.wikipedia.org/wiki/EM-Algorithmus",
+  "published": "2026-09-09T07:29:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d8f9e9222c1b8bb7609e",
+  "host": "de.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo esperanza-maximizaci\u00f3n - Wikipedia, la enciclopedia libre",
+  "url": "https://es.wikipedia.org/wiki/Algoritmo_esperanza-maximizaci%C3%B3n",
+  "published": "2026-09-09T07:29:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "127555145105beb4c103",
+  "host": "es.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/wiki/EM-algoritmi",
+  "published": "2026-09-09T07:29:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fa9edb0560ab9ad3db0f",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithme esp\u00e9rance-maximisation \u2014 Wikip\u00e9dia",
+  "url": "https://fr.wikipedia.org/wiki/Algorithme_esp%C3%A9rance-maximisation",
+  "published": "2026-09-09T07:29:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cecdd9b3eb90ba048e19",
+  "host": "fr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

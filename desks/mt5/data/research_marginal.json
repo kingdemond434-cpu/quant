@@ -1,0 +1,33 @@
+{
+ "generated_utc": "2026-09-08T18:46:20.612457+00:00",
+ "worth_by_arm": {
+  "new_mechanism": 0.25,
+  "mutate_survivor": 0.25,
+  "combine_survivors": 0.25,
+  "conditional_state_edge": 0.25,
+  "execution_improvement": 0.25,
+  "exit_improvement": 0.25,
+  "cross_asset_signal": 0.25,
+  "alt_data_hypothesis": 0.25,
+  "failure_derived": 0.25,
+  "model_architecture": 0.25,
+  "external_screen": 1.0
+ },
+ "worth_by_source": {
+  "external": 1.0,
+  "fund_playbook:AQR:A": 0.25,
+  "miner:alpha_evolution": 0.25,
+  "miner:anomalies": 0.25,
+  "miner:broker_swaps": 0.25,
+  "miner:cot": 0.25,
+  "miner:factor_residual": 0.25,
+  "miner:ff_calendar_vintage": 0.25,
+  "miner:forexfactory": 0.25,
+  "miner:fund_playbook": 0.25,
+  "miner:plumbing": 0.25,
+  "miner:scheduled_chatgpt": 0.25,
+  "miner:seasonality": 0.25
+ },
+ "floor": 0.25,
+ "consumer": "libs.research.bandit.evidence(marginal_by_source=worth_by_arm)"
+}

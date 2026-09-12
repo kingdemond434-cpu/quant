@@ -1,0 +1,8 @@
+{
+ "compiled_at": "2026-09-12T05:17:53+00:00",
+ "hypotheses": [],
+ "symbols_scanned": 245,
+ "symbols_skipped": 0,
+ "symbols_with_tape": 245,
+ "rule": "per (symbol, tape feature): terciles fitted on the first 70% of 30d of ticks, separation >= 0.06 sd in sample, and held out of sample with the same sign at Welch |t| >= 2.0. Proposes only -- the ten gates judge."
+}

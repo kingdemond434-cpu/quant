@@ -1,0 +1,2612 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-06T21:34:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "866f9db7f146c6d2f926",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-06T21:34:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ec93d79743b292fa3dca",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Melhores investimentos 2024: Estrat\u00e9gias da Liberdade Financeira - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/melhores-investimentos-2024/",
+  "published": "2026-09-06T21:34:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d41968312961a501ddaa",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estrat\u00e9gia de investimentos - P\u00e1gina 2 de 18 - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/aprenda-a-investir/estrategia-de-investimentos/page/2/",
+  "published": "2026-09-06T21:34:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ac4faae1d1d140aa4f53",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estrat\u00e9gias de Investimento de Longo Prazo: Guia Definitivo",
+  "url": "https://clubedovalor.com.br/blog/estrategias-de-investimento-de-longo-prazo/",
+  "published": "2026-09-06T21:35:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cca66befd606aa9db703",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Servi\u00e7o de Wealth Advisor | Consultor Financeiro - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/calltoaction/cta-advisor/?origem=quanto-rende-500-mil-no-tesouro-direto",
+  "published": "2026-09-06T21:35:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13cf598cf3f12681003a",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantas a\u00e7\u00f5es ter na carteira: guia completo - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/quantas-acoes-ter-na-carteira/",
+  "published": "2026-09-06T21:35:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13872f9b35912bd05b66",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Como Comprar A\u00e7\u00f5es Baratas e Vender as Caras - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/acoes-baratas/",
+  "published": "2026-09-06T21:35:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "784c5cfdffc0de28324d",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Servi\u00e7o de Wealth Advisor | Consultor Financeiro - Clube do Valor",
+  "url": "https://clubedovalor.com.br/advisor/mkt/bl?utm_source=blog&utm_medium=p0&utm_campaign=adv-geracao-leads&utm_content=blog-estrategia-de-dividendos-prod-adv",
+  "published": "2026-09-06T21:35:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "30a599eb2521c84e25cc",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Arquivos Estrat\u00e9gia de Investimentos - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/tag/estrategia-de-investimentos/",
+  "published": "2026-09-06T21:35:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "835d63c4739de5071ab2",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Como Investir em A\u00e7\u00f5es Com Pouco Dinheiro (Menos de Mil Reais) - Clube do Valor",
+  "url": "https://clubedovalor.com.br/como-investir-em-acoes-com-pouco-dinheiro/",
+  "published": "2026-09-06T21:35:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f1a33941b486e9570293",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u70ba\u66ff\u5e02\u5834 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/list/search?keyword[]=%E7%82%BA%E6%9B%BF%E5%B8%82%E5%A0%B4",
+  "published": "2026-09-06T21:35:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "carry",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0b9f8784bcc41011e32d",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "1\u30ab\u6708\u5f8c\u306e\u65e5\u7d4c\u5e73\u5747\u30fb\u70ba\u66ff\u306e\u898b\u901a\u3057\u2026\u500b\u4eba\u6295\u8cc7\u5bb62,338\u4eba\u306f\u5f37\u6c17\uff1f\u5f31\u6c17\uff1f\uff082\u30da\u30fc\u30b8\u76ee\uff09 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53386?page=2",
+  "published": "2026-09-06T21:35:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c788e1279066eca4e61c",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u65e5\u7d4c\u5e73\u5747\u682a\u4fa1\u306f\u4e00\u66426\u4e070,488\u5186\u307e\u3067\u4e0b\u843d\u2026\u3053\u306e\u5148\u306f\uff1f\u500b\u4eba\u6295\u8cc7\u5bb62,235\u4eba\u304c\u4e88\u60f3\u3057\u305f\u300c1\u30ab\u6708\u5f8c\u306e\u65e5\u7d4c\u5e73\u5747\u30fb\u70ba\u66ff\u300d\u306e\u898b\u901a\u3057 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53124",
+  "published": "2026-09-06T21:35:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "827a9863826ed733b212",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u300c\u590f\u67af\u308c\u300d\u306f\u30d4\u30f3\u30c1\u304b\u30c1\u30e3\u30f3\u30b9\u304b\uff1f\u30a2\u30ce\u30de\u30ea\u30fc\u304b\u3089\u8aad\u3080\u3001\u65e5\u672c\u682a\u300c\u62bc\u3057\u76ee\u8cb7\u3044\u300d\u6226\u7565\uff08\u7aaa\u7530\u771f\u4e4b\uff09 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53252",
+  "published": "2026-09-06T21:35:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "flow",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4c788d8d7ec20cf9bc39",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u300c\u65e5\u672c\u306b\u4f4f\u3093\u3067\u3001\u7c73\u56fd\u306b\u6295\u8cc7\u3059\u308b\u300d\u304c\u6700\u5f37\u306e\u751f\u5b58\u6226\u7565 \u7c73\u56fd\u682a\u6295\u8cc7\u5bb6\u30dd\u30fc\u30eb\u30fb\u30b5\u30a4\u3055\u3093\u30a4\u30f3\u30bf\u30d3\u30e5\u30fc\uff3b\u5f8c\u7de8\uff3d | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/52633?page=1",
+  "published": "2026-09-06T21:35:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "flow",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cda51e9d94fbb3ea5ab9",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Revista Hispatrading - X-Trader.net",
+  "url": "https://www.x-trader.net/author/revista-hispatrading/",
+  "published": "2026-09-06T21:35:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4085e4ee731181d8fe33",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "C\u00f3mo Elegir el Mejor Per\u00edodo Para los Indicadores",
+  "url": "https://www.x-trader.net/como-elegir-el-mejor-periodo-para-los-indicadores/",
+  "published": "2026-09-06T21:35:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "61935f3d6f92558d101c",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Comportamiento de las Estrategias Tras Su Publicaci\u00f3n",
+  "url": "https://www.x-trader.net/comportamiento-de-las-estrategias-tras-su-publicacion/",
+  "published": "2026-09-06T21:35:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "71fd0cd4e8929a86aaab",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "El Indicador MACD Momentum Ratio",
+  "url": "https://www.x-trader.net/el-indicador-macd-momentum-ratio/",
+  "published": "2026-09-06T21:35:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9593f1c6dca77bbbcc93",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading - General - X-Trader.net",
+  "url": "https://www.x-trader.net/category/articulos/trading-general/",
+  "published": "2026-09-06T21:35:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "85f9fc1436229002e7b7",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Presentaci\u00f3n de un Libro: Trading Algor\u00edtmico con Python",
+  "url": "https://www.x-trader.net/presentacion-de-un-libro-trading-algoritmico-con-python/",
+  "published": "2026-09-06T21:35:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6aaa21b6cd3e4ac048bc",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Capitalise.ai: Trading Autom\u00e1tico Solo con Palabras",
+  "url": "https://www.x-trader.net/capitalise-ai-trading-automatico-solo-con-palabras/",
+  "published": "2026-09-06T21:35:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "03b1d86de72b6bfd3c4c",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estrategias con Opciones 0DTE: Operando Como un Profesional",
+  "url": "https://www.x-trader.net/estrategias-con-opciones-0dte-operando-como-un-profesional/",
+  "published": "2026-09-06T21:36:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f0e9c13a75486b22f42a",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Python para Trading - X-Trader.net",
+  "url": "https://www.x-trader.net/tag/python-para-trading/",
+  "published": "2026-09-06T21:36:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e0205f600d2acc8833ac",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading en General - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewforum.php?f=9&sid=e589c42181c8395cd53b0cb161aa88d2",
+  "published": "2026-09-06T21:36:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5bcb4c41611a81517508",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Las principales estrategias de trading de los \u00faltimos 100 a\u00f1os - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?t=22424&sid=e589c42181c8395cd53b0cb161aa88d2",
+  "published": "2026-09-06T21:36:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "29d6d5e1177df708f6e5",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Las principales estrategias de trading de los \u00faltimos 100 a\u00f1os - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?p=265365&sid=e589c42181c8395cd53b0cb161aa88d2",
+  "published": "2026-09-06T21:36:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5758ccfd103a2be24b1e",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Las principales estrategias de trading de los \u00faltimos 100 a\u00f1os - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?p=265372&sid=e589c42181c8395cd53b0cb161aa88d2",
+  "published": "2026-09-06T21:36:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b6a02e6e99203e8b46bc",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Las principales estrategias de trading de los \u00faltimos 100 a\u00f1os - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?p=265386&sid=e589c42181c8395cd53b0cb161aa88d2",
+  "published": "2026-09-06T21:36:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "58fc2cf150cb672b3a1e",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Las principales estrategias de trading de los \u00faltimos 100 a\u00f1os - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?p=265404&sid=e589c42181c8395cd53b0cb161aa88d2",
+  "published": "2026-09-06T21:36:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b2038cb00acc99041b4d",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Las principales estrategias de trading de los \u00faltimos 100 a\u00f1os - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?p=265417&sid=e589c42181c8395cd53b0cb161aa88d2",
+  "published": "2026-09-06T21:36:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6e4ee4767f6c6461b66b",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Las principales estrategias de trading de los \u00faltimos 100 a\u00f1os - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?p=265436&sid=e589c42181c8395cd53b0cb161aa88d2",
+  "published": "2026-09-06T21:36:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "414fb16dbea0707a89ff",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "NBU Strategy",
+  "url": "https://bank.gov.ua/en/about/strategy",
+  "published": "2026-09-06T21:36:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "944b676f61ac877b80c7",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0423\u0441\u0456 \u043d\u043e\u0432\u0438\u043d\u0438",
+  "url": "https://bank.gov.ua/ua/news/all?tags=strategy",
+  "published": "2026-09-06T21:36:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b35a322405b7b1b8e9ef",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0421\u0442\u0440\u0430\u0442\u0435\u0433\u0456\u044f \u041d\u0430\u0446\u0456\u043e\u043d\u0430\u043b\u044c\u043d\u043e\u0433\u043e \u0431\u0430\u043d\u043a\u0443 \u0434\u043e 2025 \u043f\u0440\u0438\u043f\u0438\u043d\u0435\u043d\u0430",
+  "url": "https://bank.gov.ua/ua/about/strategy/strategy2022",
+  "published": "2026-09-06T21:36:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c9b817227f818dd76e65",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0421\u0442\u0440\u0430\u0442\u0435\u0433\u0456\u044f \u041d\u0430\u0446\u0456\u043e\u043d\u0430\u043b\u044c\u043d\u043e\u0433\u043e \u0431\u0430\u043d\u043a\u0443 2018-2020 \u0440\u043e\u043a\u0456\u0432",
+  "url": "https://bank.gov.ua/ua/about/strategy/strategy2020",
+  "published": "2026-09-06T21:36:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ea9d581255e5cff69e92",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Financial Sector Development",
+  "url": "https://bank.gov.ua/en/about/develop-strategy",
+  "published": "2026-09-06T21:36:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19",
+   "https://bank.gov.ua/en/file/download?file=Strategy_FS_2025_2020-01-16_pr_eng.pdf"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "212717a5a1a0c9f0c801",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0421\u0442\u0440\u0430\u0442\u0435\u0433\u0456\u044f \u0440\u043e\u0437\u0432\u0438\u0442\u043a\u0443 \u0444\u0456\u043d\u0430\u043d\u0441\u043e\u0432\u043e\u0433\u043e \u0441\u0435\u043a\u0442\u043e\u0440\u0443 \u0423\u043a\u0440\u0430\u0457\u043d\u0438 \u0434\u043e 2025 \u0440\u043e\u043a\u0443 (\u043f\u0440\u0438\u043f\u0438\u043d\u0435\u043d\u0430 \u0443 2023 \u0440\u043e\u0446\u0456)",
+  "url": "https://bank.gov.ua/ua/about/develop-strategy/develop-strategy2023",
+  "published": "2026-09-06T21:36:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19",
+   "https://bank.gov.ua/ua/file/download?file=Strategy_FS_2025_2020.pdf",
+   "https://bank.gov.ua/ua/file/download?file=Strategy_FS_2025.pdf",
+   "https://bank.gov.ua/ua/file/download?file=Strategy_finsector2025_zvit_2022.pdf",
+   "https://bank.gov.ua/ua/file/download?file=Strategy_finsector2025_zvit_roadmap_2022.pdf",
+   "https://bank.gov.ua/ua/file/download?file=Strategy_finsector_NBU.pdf",
+   "https://bank.gov.ua/ua/file/download?file=%D0%A1oncept_development_Suptech_Regtech.pdf"
+  ],
+  "n_endpoints": 7,
+  "vault_sha": "8db10096acf40b2116e3",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0420\u043e\u0437\u0432\u0438\u0442\u043e\u043a \u0444\u0456\u043d\u0442\u0435\u0445\u0443 \u0432 \u0423\u043a\u0440\u0430\u0457\u043d\u0456",
+  "url": "https://bank.gov.ua/ua/about/develop-strategy/fintech2025",
+  "published": "2026-09-06T21:36:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f78b2f46350b74b510d5",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u041a\u043e\u043c\u043f\u043b\u0435\u043a\u0441\u043d\u0430 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u0430 \u0440\u043e\u0437\u0432\u0438\u0442\u043a\u0443 \u0444\u0456\u043d\u0430\u043d\u0441\u043e\u0432\u043e\u0433\u043e \u0441\u0435\u043a\u0442\u043e\u0440\u0443 \u0434\u043e 2020 \u0440\u043e\u043a\u0443",
+  "url": "https://bank.gov.ua/ua/about/develop-strategy/refactoring",
+  "published": "2026-09-06T21:36:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19",
+   "https://bank.gov.ua/ua/file/download?file=CP_finsektor_2020_report_2020-final.pdf",
+   "https://bank.gov.ua/ua/file/download?file=CP_finsektor_2020_2018-05-31.pdf",
+   "https://bank.gov.ua/ua/file/download?file=CP_finsektor_2020_2015-06-18.pdf",
+   "https://bank.gov.ua/ua/file/download?file=18062015_391_resolution.pdf",
+   "https://bank.gov.ua/ua/file/download?file=3Yreforms_2017-06-22_pr.pdf",
+   "https://bank.gov.ua/ua/file/download?file=prez_01022017_final.pdf",
+   "https://bank.gov.ua/ua/file/download?file=RashkovanStrategyStatus30602016_final.pdf",
+   "https://bank.gov.ua/ua/file/download?file=Committee_program_finsector_2015-07-14_pr.pdf",
+   "https://bank.gov.ua/ua/file/download?file=Reform_finsector_team_pr_2018-01.pdf",
+   "https://bank.gov.ua/ua/file/download?file=BankID_infoden_2016-11-08_pr.pdf",
+   "https://bank.gov.ua/ua/file/download?file=CP_finsektor_2020_report.pdf",
+   "https://bank.gov.ua/ua/file/download?file=Cashless_economy_2016-05-18_pr.pdf",
+   "https://bank.gov.ua/ua/file/download?file=Cashless_economy_NBU_2016-04-26_pr.pdf",
+   "https://bank.gov.ua/ua/file/download?file=squad_reform_2017-10-10.pdf"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "d66ea23467811412ff87",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0421\u0442\u0430\u043b\u0438\u0439 \u0440\u043e\u0437\u0432\u0438\u0442\u043e\u043a \u0444\u0456\u043d\u0430\u043d\u0441\u043e\u0432\u043e\u0433\u043e \u0441\u0435\u043a\u0442\u043e\u0440\u0443",
+  "url": "https://bank.gov.ua/ua/about/develop-strategy/esg",
+  "published": "2026-09-06T21:36:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19",
+   "https://bank.gov.ua/ua/file/download?file=ESG_hlosarii_09-03.pdf",
+   "https://bank.gov.ua/ua/file/download?file=Bila_knyga_2025_fin.pdf",
+   "https://bank.gov.ua/ua/file/download?file=ESG%20strategy_public.pdf"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "19813fed0ec201c96370",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0421\u0442\u0440\u0430\u0442\u0435\u0433\u0456\u044f \u0437 \u0440\u043e\u0437\u0432\u0438\u0442\u043a\u0443 \u043a\u0440\u0435\u0434\u0438\u0442\u0443\u0432\u0430\u043d\u043d\u044f",
+  "url": "https://bank.gov.ua/ua/about/lending-strategy",
+  "published": "2026-09-06T21:36:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5211601fee2baebd3890",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy of financial literacy",
+  "url": "https://bank.gov.ua/en/about/strategy-fin-literacy",
+  "published": "2026-09-06T21:36:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ae86e22e7b04c6a26c2c",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Macroeconomic Indicators",
+  "url": "https://bank.gov.ua/en/statistic/macro-indicators",
+  "published": "2026-09-06T21:36:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19",
+   "https://bank.gov.ua/files/macro/CPI_m.xlsx",
+   "https://bank.gov.ua/files/macro/CPI_q.xlsx",
+   "https://bank.gov.ua/files/macro/CPI_y.xlsx",
+   "https://bank.gov.ua/files/macro/CCPI_m.xlsx",
+   "https://bank.gov.ua/files/macro/CCPI_y.xlsx",
+   "https://bank.gov.ua/files/macro/PPI_m.xlsx",
+   "https://bank.gov.ua/files/macro/PPI_q.xlsx",
+   "https://bank.gov.ua/files/macro/PPI_y.xlsx",
+   "https://bank.gov.ua/files/macro/IKSO_m.xlsx",
+   "https://bank.gov.ua/files/macro/GDP_y.xlsx",
+   "https://bank.gov.ua/files/macro/Indust_m.xlsx",
+   "https://bank.gov.ua/files/macro/Indust_y.xlsx",
+   "https://bank.gov.ua/files/macro/Agric_m.xlsx",
+   "https://bank.gov.ua/files/macro/Agric_y.xlsx",
+   "https://bank.gov.ua/files/macro/Constr_m.xlsx",
+   "https://bank.gov.ua/files/macro/Constr_y.xlsx",
+   "https://bank.gov.ua/files/macro/Trade_m.xlsx",
+   "https://bank.gov.ua/files/macro/Trade_y.xlsx",
+   "https://bank.gov.ua/files/macro/Emp_q.xlsx",
+   "https://bank.gov.ua/files/macro/Emp_y.xlsx",
+   "https://bank.gov.ua/files/macro/Unemp_m.xlsx",
+   "https://bank.gov.ua/files/macro/Unemp_q.xlsx",
+   "https://bank.gov.ua/files/macro/Unemp_y.xlsx",
+   "https://bank.gov.ua/files/macro/Wages_m.xlsx",
+   "https://bank.gov.ua/files/macro/Wages_y.xlsx",
+   "https://bank.gov.ua/files/macro/Number_m.xlsx",
+   "https://bank.gov.ua/files/macro/Number_q.xlsx",
+   "https://bank.gov.ua/files/macro/Number_y.xlsx",
+   "https://bank.gov.ua/files/macro/Payroll_m.xlsx",
+   "https://bank.gov.ua/files/macro/Payroll_q.xlsx",
+   "https://bank.gov.ua/files/macro/Payroll_y.xlsx",
+   "https://bank.gov.ua/files/macro/R_wage_m.xlsx",
+   "https://bank.gov.ua/files/macro/R_wage_y.xlsx",
+   "https://bank.gov.ua/files/macro/Arrears_m.xlsx",
+   "https://bank.gov.ua/files/macro/Arrears_y.xlsx",
+   "https://bank.gov.ua/files/macro/C_budget_m.xlsx",
+   "https://bank.gov.ua/files/macro/C_budget_q.xlsx",
+   "https://bank.gov.ua/files/macro/C_budget_y.xlsx",
+   "https://bank.gov.ua/files/macro/S_budget_m.xlsx",
+   "https://bank.gov.ua/files/macro/S_budget_q.xlsx",
+   "https://bank.gov.ua/files/macro/S_budget_y.xlsx"
+  ],
+  "n_endpoints": 42,
+  "vault_sha": "2295a49605966a7e5a8a",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0423\u0441\u0456 \u043d\u043e\u0432\u0438\u043d\u0438",
+  "url": "https://bank.gov.ua/ua/news/all",
+  "published": "2026-09-06T21:36:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c13bb292a87b96c744a5",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 15/04/2026 17:34:38 - y a quelqu&#039;un? - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/467872739/",
+  "published": "2026-09-06T21:36:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "18e8c1a91a22784542c0",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 21/06/2025 13:20:35 - info plateforme de trading - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/466664245/",
+  "published": "2026-09-06T21:36:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5a08f5278b311979b193",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 21/06/2025 13:06:39 - param\u00e9trage trading Board - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/466664220/",
+  "published": "2026-09-06T21:36:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2130f4c0043fff0d642d",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 21/05/2025 18:18:29 - TARARARARA - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/466514648/",
+  "published": "2026-09-06T21:36:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a85fb2ba6139f3b1236e",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 15/11/2024 16:22:22 - vous \u00eates tous sur les crypto ou - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/465637277/",
+  "published": "2026-09-06T21:36:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cd90f722dc4d8abebb41",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 30/08/2009 19:04:55 - ICI m\u00eame, sur ce foum, nous avons 2 - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/389825107/",
+  "published": "2026-09-06T21:36:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ca1fcede60ddc3835b6d",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 30/08/2009 19:04:55 - ICI m\u00eame, sur ce foum, nous avons 2, page 2 - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/389825107/page-2",
+  "published": "2026-09-06T21:36:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ffa6bbeb476a9b7fc3ae",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 30/08/2009 19:04:55 - ICI m\u00eame, sur ce foum, nous avons 2, page 3 - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/389825107/page-3",
+  "published": "2026-09-06T21:36:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "153da0c3ee9fa98cfee7",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 03/12/2009 11:30:45 - Bonjour - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/393723989/",
+  "published": "2026-09-06T21:37:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9b89eb5c3f916e58cbfa",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 03/12/2009 11:30:45 - Bonjour, page 2 - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/393723989/page-2",
+  "published": "2026-09-06T21:37:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0a1c86cdca31d91993c0",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 31/10/2024 09:42:57 - [HELP] Module &quot;Mes favoris&quot; sur le Trading Board - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/465555174/",
+  "published": "2026-09-06T21:37:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "93415aa8986be6bdf339",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 01/10/2009 06:14:38 - LOL - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/391109237/",
+  "published": "2026-09-06T21:37:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ff152d8a81f986d0f161",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 20/06/2024 16:49:26 - Demande d&#039;un d\u00e9butant - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/464935007/",
+  "published": "2026-09-06T21:37:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3a734c247a14f577ce1f",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 18/08/2018 15:28:07 - F. DAY si tu passes par l\u00e0... - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/450351409/",
+  "published": "2026-09-06T21:37:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "04b5fd13c8f472147299",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 31/03/2024 23:40:27 - Alors Muchi - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/464500094/",
+  "published": "2026-09-06T21:37:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c460e0c7ca5996740eb7",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 08/05/2023 15:53:13 - Cherche les conseils d&#039;un trader exp\u00e9riment\u00e9 - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/462763770/",
+  "published": "2026-09-06T21:37:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0fd16ff3d063d10eeb96",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 18/05/2009 07:52:29 - Bonjour :-)) - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/386417844/",
+  "published": "2026-09-06T21:37:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6f2fa2f7751d75cca984",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse (Day)Trading - 06/01/2023 07:24:56 - avis sur le Day by Day Trading de Bourso ? - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/detail/462059629/",
+  "published": "2026-09-06T21:37:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b2e7df3d9bd321580880",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investment Basics - Learn to Invest | I3investor",
+  "url": "https://klse.i3investor.com/web/hti/forexstock",
+  "published": "2026-09-06T21:37:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "23416cb4ccaf66d4399a",
+  "host": "klse.i3investor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investment Basics - Learn to Invest | I3investor",
+  "url": "https://klse.i3investor.com/web/hti/forexbinaryopt",
+  "published": "2026-09-06T21:37:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "108d0c0d89286594b7a4",
+  "host": "klse.i3investor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BIDS Trading Connectivity | Cboe",
+  "url": "https://www.cboe.com/markets/bidstrading/connect",
+  "published": "2026-09-06T21:37:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d804921ef55e95c8aa68",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BIDS Trading FAQ | Cboe",
+  "url": "https://www.cboe.com/markets/bidstrading/FAQ",
+  "published": "2026-09-06T21:37:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae23cf2d6d270013ef88",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe BIDS Europe | Cboe",
+  "url": "https://www.cboe.com/markets/eu/equities/trading/cboe-bids",
+  "published": "2026-09-06T21:37:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4b0be80129eec409bb32",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe BIDS Canada",
+  "url": "https://www.cboe.com/ca/equities/trading/cboe-bids/",
+  "published": "2026-09-06T21:37:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "52f30579ccd2117906d8",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Insights | Cboe",
+  "url": "https://www.cboe.com/insights/categories/bids_newsletter/",
+  "published": "2026-09-06T21:37:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "60de4b92e5f90156eb05",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BIDS Trading: July Volume | Cboe",
+  "url": "https://www.cboe.com/insights/posts/bids-trading-july-volume",
+  "published": "2026-09-06T21:37:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4f745c7369c5f5e909b6",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BIDS Trading: June Volume | Cboe",
+  "url": "https://www.cboe.com/insights/posts/bids-trading-june-volume",
+  "published": "2026-09-06T21:37:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d3d540e20e3aa4b0cbb8",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Planos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/planos/",
+  "published": "2026-09-06T21:37:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7bc4abebce06676b03b3",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sobre | QuantBrasil",
+  "url": "https://quantbrasil.com.br/sobre/",
+  "published": "2026-09-06T21:37:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "42c634e58792ac96ce86",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CLI do QuantBrasil | QuantBrasil",
+  "url": "https://quantbrasil.com.br/cli/",
+  "published": "2026-09-06T21:37:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "01ad48c81dc0ddbfe6e5",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Rob\u00f4s Quantitativos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/robos/",
+  "published": "2026-09-06T21:37:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "88d9c32a7a32af016943",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Magic Formula | QuantBrasil",
+  "url": "https://quantbrasil.com.br/magic-formula",
+  "published": "2026-09-06T21:37:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2fca08b2a545fa82ba44",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Simulador de Backtests | QuantBrasil",
+  "url": "https://quantbrasil.com.br/backtests",
+  "published": "2026-09-06T21:37:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7cbaba85cbe6620cf811",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estrat\u00e9gias Quantitativas | QuantBrasil",
+  "url": "https://quantbrasil.com.br/estrategias",
+  "published": "2026-09-06T21:37:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "INTRADI\u00c1RIO"
+  ],
+  "patterns": [
+   "auction",
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dcb3dbcc8cbc10c6c0a3",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IPOs Recentes | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ipos",
+  "published": "2026-09-06T21:37:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "07c1e7af59ff049cb6ee",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog | QuantBrasil",
+  "url": "https://quantbrasil.com.br/blog/",
+  "published": "2026-09-06T21:37:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://quantbrasil.com.br/blog/como-exportar-dados-do-profitchart-para-um-banco-de-dados-utilizando-python-e-sql/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3ba1d39f6fe084566975",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Code Capital | QuantBrasil",
+  "url": "https://quantbrasil.com.br/code-capital/",
+  "published": "2026-09-06T21:37:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d69fe9569f01b3fc6d8",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "V\u00eddeos do YouTube | QuantBrasil",
+  "url": "https://quantbrasil.com.br/youtube/",
+  "published": "2026-09-06T21:38:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6ed4c5ea4c91d7ed6857",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Releases | QuantBrasil",
+  "url": "https://quantbrasil.com.br/releases/",
+  "published": "2026-09-06T21:38:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "INTRADAY",
+   "INTRADI\u00c1RIO"
+  ],
+  "patterns": [
+   "auction",
+   "correlation",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "619b76f84e68ba118512",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Documenta\u00e7\u00e3o do QuantBrasil | QuantBrasil",
+  "url": "https://quantbrasil.com.br/docs/",
+  "published": "2026-09-06T21:38:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "96ebf209b967cedae515",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estrat\u00e9gias Quantitativas | QuantBrasil",
+  "url": "https://quantbrasil.com.br/estrategias/",
+  "published": "2026-09-06T21:38:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "INTRADI\u00c1RIO"
+  ],
+  "patterns": [
+   "auction",
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dcb3dbcc8cbc10c6c0a3",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtest Score | QuantBrasil",
+  "url": "https://quantbrasil.com.br/backtests/score/",
+  "published": "2026-09-06T21:38:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "245768228071256c7e3b",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Simulador de Backtests | QuantBrasil",
+  "url": "https://quantbrasil.com.br/backtests/",
+  "published": "2026-09-06T21:38:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "52740885d04e2142542e",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long &amp; Short por Cointegra\u00e7\u00e3o | QuantBrasil",
+  "url": "https://quantbrasil.com.br/cointegracao/",
+  "published": "2026-09-06T21:38:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef5be968864d4c4bc8e1",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Suportes e Resist\u00eancias | QuantBrasil",
+  "url": "https://quantbrasil.com.br/suportes-e-resistencias/",
+  "published": "2026-09-06T21:38:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0cc2c54003460b2c0b70",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Here's the Role High-Frequency-Trading (HFT) Played in the Crash - Business Insider",
+  "url": "http://www.businessinsider.com/heres-the-role-high-frequency-trading-hft-played-in-todays-crash-2010-5?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+clusterstock+%28ClusterStock%29&utm_content=Google+Reader",
+  "published": "2026-09-06T21:38:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "23cbc3e122d93a85147a",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicadores diarios",
+  "url": "https://si3.bcentral.cl/Indicadoressiete/secure/Indicadoresdiarios.aspx",
+  "published": "2026-09-06T21:38:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e5618ed1243d0c84208",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy - Business Insider",
+  "url": "http://www.businessinsider.com/strategy",
+  "published": "2026-09-06T21:38:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "http://www.businessinsider.com/flexport-ceo-remote-work-white-collar-fraud-2026-6"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2dc01489a44899a58ba8",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Videogame Technology Is at the Core of High-Frequency Trading - Business Insider",
+  "url": "https://www.businessinsider.com/video-games-help-pave-the-way-for-high-frequency-trading-2009-12",
+  "published": "2026-09-06T21:38:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc3b042e86fde31f510f",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cyborg Trading Promises High-Frequency Trading for Joe Six-Pack - Business Insider",
+  "url": "https://www.businessinsider.com/cyborg-trading-promises-hft-solutions-for-joe-trader-2009-11",
+  "published": "2026-09-06T21:38:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0f38f91b3937d5ad8fd9",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "alternative trading system - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Special:EntityPage/Q438711",
+  "published": "2026-09-06T21:38:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q438711.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8cb3463310323bb17de8",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/wiki/Multilateral_handelsfasilitet",
+  "published": "2026-09-06T21:38:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f3ca3eed16a0228c9fa0",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kapitalmarktrecht - Petra Buck-Heeb - Google Books",
+  "url": "https://books.google.de/books?id=PkyqW_qpr9YC&pg=PA41&dq=Multilaterales+Handelssystem&hl=de&sa=X&ved=2ahUKEwjk6qCH3K3tAhUmsKQKHR0FBVoQuwUwAHoECAEQBw",
+  "published": "2026-09-06T21:38:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://books.google.de/books/download/Kapitalmarktrecht.bibtex?id=PkyqW_qpr9YC&amp;hl=de&amp;output=bibtex",
+   "https://books.google.de/books/download/Kapitalmarktrecht.enw?id=PkyqW_qpr9YC&amp;hl=de&amp;output=enw",
+   "https://books.google.de/books/download/Kapitalmarktrecht.ris?id=PkyqW_qpr9YC&amp;hl=de&amp;output=ris"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "5cfe354ea845c615929d",
+  "host": "books.google.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen\u2019s Matrix Multiplication algorithm",
+  "url": "https://iq.opengenus.org/strassens-matrix-multiplication-algorithm/",
+  "published": "2026-09-06T21:38:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6ff934a27fdcc10dbaf0",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy Factory Workshop Curriculum | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/p/curriculum",
+  "published": "2026-09-06T21:38:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5a645c0d7d4529cef45b",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "World Cup Trading Championship Standings - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/world-cup-trading-championship-standings",
+  "published": "2026-09-06T21:38:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f9407e26474b6cd1b45e",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Traders - Academy, Courses, Software, Research + Podcast!",
+  "url": "http://www.thealgorithmicadvantage.com",
+  "published": "2026-09-06T21:38:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13010deb4cd62ef991ce",
+  "host": "www.thealgorithmicadvantage.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automating Your Strategy - Kevin Davey",
+  "url": "https://anthonycrudele.com/futuresradioshow/podcast/293/",
+  "published": "2026-09-06T21:38:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0c0f63484ed675853235",
+  "host": "anthonycrudele.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud83d\udd0a STS 006 \u2013 Kevin Davey: world champion in futures algorithmic trading - System Trader Show",
+  "url": "https://systemtrader.show/sts-006-kevin-davey-world-champion-in-futures-algorithmic-trading/",
+  "published": "2026-09-06T21:38:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://api.spreaker.com/v2/episodes/15897774/download.mp3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c9f090939ae373062599",
+  "host": "systemtrader.show",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kevin Davey Shares His Top Trading Secrets",
+  "url": "https://tradingstrategyguides.com/kevin-daveys-trading-secrets-for-beginners/",
+  "published": "2026-09-06T21:38:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.reuters.com/article/us-madcow-beeftrade-exports/mad-cow-ban-cost-u-s-11-billion-in-beef-exports-idUSTRE4969C120081007"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "337ceb1878f33621495d",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DV Commodities | Trading the Global Commodities Markets",
+  "url": "https://dvcommodities.com/",
+  "published": "2026-09-06T21:38:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "98dad9bc93dd343f80e8",
+  "host": "dvcommodities.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "expectation\u2013maximization algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Special:EntityPage/Q1275153",
+  "published": "2026-09-06T21:38:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q1275153.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1000c9d90e486db2ecca",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "data clustering algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Special:EntityPage/Q28058114",
+  "published": "2026-09-06T21:39:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q28058114.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8b3853455acba7832552",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

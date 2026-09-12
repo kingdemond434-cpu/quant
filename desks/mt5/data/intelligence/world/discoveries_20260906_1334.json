@@ -1,0 +1,1828 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indikatorar for underliggjande inflasjon i Noreg",
+  "url": "https://www.norges-bank.no/aktuelt/publikasjoner/Staff-Memo/2017/staff-memo-132017/",
+  "published": "2026-09-06T13:30:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "nn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3c41283b347743b6e7a5",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Trading Volume | Gold Daily Volume | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data/trading-volumes",
+  "published": "2026-09-06T13:30:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.gold.org/download/file/19819/Trading_volumes_methodology_2025.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b5496d3df5a1b615311b",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://www.tradinghours.com/data",
+  "published": "2026-09-06T13:30:39+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "239f08073ccc7bb53f8c",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Prisvekst",
+  "url": "https://www.norges-bank.no/tema/statistikk/Indikatorer-for-prisvekst/",
+  "published": "2026-09-06T13:30:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "nb",
+  "endpoints": [
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_no.xlsx?v=11082026140057"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "47faa2b947cc5e2d319b",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicators of underlying inflation in Norway",
+  "url": "https://www.norges-bank.no/en/news-events/publications/Staff-Memo/2017/staff-memo-132017/",
+  "published": "2026-09-06T13:30:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ff2679012262087d7e42",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Downloads | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/4.x/endpoints/download",
+  "published": "2026-09-06T13:30:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ce64603dcc117559a1d8",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Downloads | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/3.x/enterprise/download",
+  "published": "2026-09-06T13:30:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cad44f99dc9069b45934",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How Data Changes Can Impact Your Futures Backtesting",
+  "url": "https://kjtradingsystems.com/data-changes-algo-trading.html",
+  "published": "2026-09-06T13:30:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "299f8b96beafa87b6735",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Inflation indicators",
+  "url": "https://www.norges-bank.no/en/topics/statistics/Inflation-indicators/",
+  "published": "2026-09-06T13:30:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.xlsx?v=11082026140056",
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.csv?v=11082026140056"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f605c2a142ef4fcbe64b",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Trading Volume | Gold Daily Volume | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data/gold-trading-volumes",
+  "published": "2026-09-06T13:30:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.gold.org/download/file/19819/Trading_volumes_methodology_2025.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "487db04cb52fa258dc53",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics",
+  "url": "https://www.norges-bank.no/en/topics/Statistics/",
+  "published": "2026-09-06T13:30:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2f53b5da43ea027ca012",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-06T13:30:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "44fd0142e3c193c3b4d0",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-06T13:30:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9b1fac5c68585d95ad25",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Price Performance &amp; Data | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data",
+  "published": "2026-09-06T13:30:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f013a12f3fc02bc14222",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-06T13:30:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7f96beb9a2ee317ce8c2",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Introduction | TradingHours Docs",
+  "url": "https://docs.tradinghours.com",
+  "published": "2026-09-06T13:30:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a418b6b00f7ddf779602",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Introduction | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/",
+  "published": "2026-09-06T13:30:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "233c19a3d27db00201b7",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Python Library Overview | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/python-library/",
+  "published": "2026-09-06T13:31:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b09fbca295536ff42d64",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Which Algorithmic Trading Courses Provide Mentorship or Coaching?",
+  "url": "https://kjtradingsystems.com/which-algorithmic-trading-courses-provide-mentorship-or-coaching.html",
+  "published": "2026-09-06T13:31:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99569584670d06e6c804",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Purchase Algorithmic Trading Course With Money-back Guarantee",
+  "url": "https://kjtradingsystems.com/purchase-algorithmic-trading-course-with-money-back-guarantee.html",
+  "published": "2026-09-06T13:31:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c56e2deeca3c531aff33",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic Trading Courses With Certification",
+  "url": "https://kjtradingsystems.com/algorithmic-trading-courses-with-certification.html",
+  "published": "2026-09-06T13:31:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "gap",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0bddd6768069ceca6561",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Best Reviewed Algo Trading Courses",
+  "url": "https://kjtradingsystems.com/best-reviewed-algo-trading-courses.html",
+  "published": "2026-09-06T13:31:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6493c5168d138fb9d76a",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Focused Algorithmic Trading Courses",
+  "url": "https://kjtradingsystems.com/futures-focused-algorithmic-trading-courses.html",
+  "published": "2026-09-06T13:31:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "640c129d7e3ff37db4a0",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Scale Your Trading With These Algorithmic Trading Courses",
+  "url": "https://kjtradingsystems.com/scale-your-trading-with-these-algorithmic-trading-courses.html",
+  "published": "2026-09-06T13:31:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c77b808b7ace039ce8b5",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BEST Futures Trading Strategies Books | KJ Trading Systems",
+  "url": "https://kjtradingsystems.com/my-algo-trading-books.html",
+  "published": "2026-09-06T13:31:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "829b62f5a0eea96445d5",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algo Trading &quot;Best Of Trading&quot; Lists",
+  "url": "https://kjtradingsystems.com/algo-trading-best.html",
+  "published": "2026-09-06T13:31:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "21a9eab4d4b3283c6810",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Change Log | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/change-log",
+  "published": "2026-09-06T13:31:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#phase-types",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#season-definitions",
+   "https://docs.tradinghours.com/3.x/enterprise/download#phases"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "01c402dfa10b77f08453",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Getting Started in Server Mode | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/python-library/server-mode/getting-started",
+  "published": "2026-09-06T13:31:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://127.0.0.1:8000/openapi.json",
+   "https://docs.tradinghours.com/th-python-server/openapi.json",
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "a080d9125001e5be0314",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Getting Started in Package Mode | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/python-library/package-mode/getting-started",
+  "published": "2026-09-06T13:31:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "18dfa78d84c529b00052",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Working with Markets | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/python-library/package-mode/markets",
+  "published": "2026-09-06T13:31:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cc284215ba3e7e6d50f2",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Working with Currencies | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/python-library/package-mode/currencies",
+  "published": "2026-09-06T13:31:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ed70e08e242a6b483e07",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "API Details | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/3.x/api-details",
+  "published": "2026-09-06T13:31:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#how-often-does-data-update"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "6f9526bf7815bce1bd55",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pembicaraan:Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/wiki/Pembicaraan:Algoritma_ekspektasi-maksimisasi",
+  "published": "2026-09-06T13:31:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [
+   "https://id.wikipedia.org/api/rest_v1/page/pdf/Pembicaraan%3AAlgoritma%20ekspektasi-maksimisasi"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "44d5307c7857eda6ee3b",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&veaction=edit",
+  "published": "2026-09-06T13:32:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1866066764d537ff101",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Menyunting Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&action=edit",
+  "published": "2026-09-06T13:32:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eefd41dca77453583b70",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi: Riwayat revisi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&action=history",
+  "published": "2026-09-06T13:32:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8095a243a5ef09b09db5",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&oldid=28443392",
+  "published": "2026-09-06T13:32:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "536b12f699071be1685e",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kutip Halaman Ini - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Istimewa:Kutip&page=Algoritma_ekspektasi-maksimisasi&id=28443392&wpFormIdentifier=titleform",
+  "published": "2026-09-06T13:32:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14ce22a472abbece5d3b",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&useparsoid=0",
+  "published": "2026-09-06T13:32:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d601e2f156c7651602d0",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pembuat buku - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Istimewa:Buku&bookcmd=book_creator&referer=Algoritma+ekspektasi-maksimisasi",
+  "published": "2026-09-06T13:32:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "38ab26b3d47c39b66ec5",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&printable=yes",
+  "published": "2026-09-06T13:32:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c825d2d2b67ba2f7cae3",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&veaction=edit&section=1",
+  "published": "2026-09-06T13:32:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "63128c839f5aaf2206e2",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo EM - Wikipedia",
+  "url": "https://it.wikipedia.org/w/index.php?title=Algoritmo_EM&veaction=edit",
+  "published": "2026-09-06T13:32:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "409e2d4f8516c5b02368",
+  "host": "it.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo EM: cronologia delle modifiche - Wikipedia",
+  "url": "https://it.wikipedia.org/w/index.php?title=Algoritmo_EM&action=history",
+  "published": "2026-09-06T13:32:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f8333572fee749b1fa1b",
+  "host": "it.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo EM - Wikipedia",
+  "url": "https://it.wikipedia.org/w/index.php?title=Algoritmo_EM&oldid=151002971",
+  "published": "2026-09-06T13:32:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d8cbbb9f5442c25521fb",
+  "host": "it.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Utente bloccato. - Wikipedia",
+  "url": "https://it.wikipedia.org/w/index.php?title=Speciale:UrlShortener&url=https%3A%2F%2Fit.wikipedia.org%2Fwiki%2FAlgoritmo_EM",
+  "published": "2026-09-06T13:32:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b9a2ed0a67c6be89e308",
+  "host": "it.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo EM - Wikipedia",
+  "url": "https://it.wikipedia.org/w/index.php?title=Algoritmo_EM&useparsoid=0",
+  "published": "2026-09-06T13:32:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "69f9528ba9346e57d347",
+  "host": "it.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo EM - Wikipedia",
+  "url": "https://it.wikipedia.org/w/index.php?title=Algoritmo_EM&printable=yes",
+  "published": "2026-09-06T13:32:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2665729e6e56efc7a90",
+  "host": "it.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo EM - Wikipedia",
+  "url": "https://it.wikipedia.org/w/index.php?title=Algoritmo_EM&veaction=edit&section=1",
+  "published": "2026-09-06T13:33:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7b8278e257a3c65490d2",
+  "host": "it.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Discuss\u00e3o:Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/wiki/Discuss%C3%A3o:Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa",
+  "published": "2026-09-06T13:33:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "59ef9c199103f58e31aa",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&veaction=edit",
+  "published": "2026-09-06T13:33:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d0e9ea9f7d6c0aa339f7",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A editar Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&action=edit",
+  "published": "2026-09-06T13:33:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7afb408b7933d6ad19f4",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de maximiza\u00e7\u00e3o de expectativa: historial de revis\u00f5es \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&action=history",
+  "published": "2026-09-06T13:33:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d223c3c4e61cedfc2d96",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&oldid=71968862",
+  "published": "2026-09-06T13:33:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "55cf023c323aa932a7d6",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informa\u00e7\u00f5es sobre \"Algoritmo de maximiza\u00e7\u00e3o de expectativa\" \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&action=info",
+  "published": "2026-09-06T13:33:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "02b98286f4438d1cc88e",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&useparsoid=0",
+  "published": "2026-09-06T13:33:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ccde52df04a3710dd55",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Criador de livros \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Especial:Livro&bookcmd=book_creator&referer=Algoritmo+de+maximiza%C3%A7%C3%A3o+de+expectativa",
+  "published": "2026-09-06T13:33:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc542bb41f9043c00b7c",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&printable=yes",
+  "published": "2026-09-06T13:33:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14b592a01a9dfa3f0866",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&veaction=edit&section=1",
+  "published": "2026-09-06T13:33:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "df0ba28d4f2acbcb3a7a",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A editar Algoritmo de maximiza\u00e7\u00e3o de expectativa (sec\u00e7\u00e3o) \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&action=edit&section=1",
+  "published": "2026-09-06T13:33:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a75f606b2a272c7bd73c",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading",
+  "url": "https://ninjatrader.com/?utm_campaign=brand-nt-us&utm_source=partner&utm_medium=futuresio&utm_content=sitelink_platform&utm_term=",
+  "published": "2026-09-06T13:33:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e02976ab1c6efd126c10",
+  "host": "ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Why Futures Over CFDs",
+  "url": "https://ninjatrader.com/eu/en-fr/futures/why-trade-futures/futures-vs-forex-and-cfds/",
+  "published": "2026-09-06T13:33:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e0fadd4b09f9b835b35b",
+  "host": "ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Educators | Student Trading Lab | IBKR Campus",
+  "url": "https://ibkrcampus.com/campus/student-trading-lab/",
+  "published": "2026-09-06T13:33:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3eeba15a89920ce1997c",
+  "host": "ibkrcampus.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "I paper-traded 22 popular crypto strategies on real fees for 10 days. 16 of them lost money. Here&#x27;s the data. | StratProof",
+  "url": "https://stratproof.com/blog/paper-trading-22-strategies-real-fees",
+  "published": "2026-09-06T13:33:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "15M",
+   "1H",
+   "30M",
+   "4H",
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a047a8dc35c465ecb006",
+  "host": "stratproof.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Krei konton - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:Krei_konton&returnto=Algoritmo+de+Strassen",
+  "published": "2026-09-06T13:33:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "131bb09e8987a7c04cb0",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ensaluti - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:Ensaluti&returnto=Algoritmo+de+Strassen",
+  "published": "2026-09-06T13:33:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d3769aebcbb356857e94",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&veaction=edit",
+  "published": "2026-09-06T13:33:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9acba5720276ab0c3d29",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Redaktado de Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&action=edit",
+  "published": "2026-09-06T13:33:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1bdc0bfba88594ecbea1",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Historio de versioj de \"Algoritmo de Strassen\" - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&action=history",
+  "published": "2026-09-06T13:34:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2377b48d12b8d61aa21",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pa\u011doj kiuj ligas al Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/wiki/Speciala%C4%B5o:Kio_ligas_%C4%89i_tien%3F/Algoritmo_de_Strassen",
+  "published": "2026-09-06T13:34:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c311cf7e1d8bc31b026e",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&oldid=9444650",
+  "published": "2026-09-06T13:34:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0a1191e88307831a4a96",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informoj por \"Algoritmo de Strassen\" - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&action=info",
+  "published": "2026-09-06T13:34:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cebc46a3f717a3295e6f",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Citado - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:Citi&page=Algoritmo_de_Strassen&id=9444650&wpFormIdentifier=titleform",
+  "published": "2026-09-06T13:34:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6367779b6ca44170bc99",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "URL-mallongigilo - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:UrlShortener&url=https%3A%2F%2Feo.wikipedia.org%2Fwiki%2FAlgoritmo_de_Strassen",
+  "published": "2026-09-06T13:34:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d2527248339e7a27aaa2",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&useparsoid=0",
+  "published": "2026-09-06T13:34:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e43ec6ed8e5188877918",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Libro-kreilo - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:Libro&bookcmd=book_creator&referer=Algoritmo+de+Strassen",
+  "published": "2026-09-06T13:34:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "98092e73de4bbdd4ee9e",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "El\u015duti kiel PDF - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:DownloadAsPdf&page=Algoritmo_de_Strassen&action=show-download-screen",
+  "published": "2026-09-06T13:34:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c38a2ef7922aa7f46c9e",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&printable=yes",
+  "published": "2026-09-06T13:34:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4af21d2290928e36d708",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vikipedio",
+  "url": "https://eo.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-06T13:34:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [
+   "https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5e0f13065c6f81c4fb88",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Coppersmith-Winograd - Vikipedio",
+  "url": "https://eo.wikipedia.org/wiki/Algoritmo_de_Coppersmith-Winograd",
+  "published": "2026-09-06T13:34:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d017b688a9e2303ac91",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Vita:Strassen-algoritmus \u2013 Wikip\u00e9dia",
+  "url": "https://hu.wikipedia.org/wiki/Vita:Strassen-algoritmus",
+  "published": "2026-09-06T13:34:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "hu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "885880e2a8653fd13c63",
+  "host": "hu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen-algoritmus \u2013 Wikip\u00e9dia",
+  "url": "https://hu.wikipedia.org/w/index.php?title=Strassen-algoritmus&oldid=28407650",
+  "published": "2026-09-06T13:34:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "hu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99b81f41899bf922af52",
+  "host": "hu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen-algoritmus \u2013 Wikip\u00e9dia",
+  "url": "https://hu.wikipedia.org/w/index.php?title=Strassen-algoritmus&useparsoid=0",
+  "published": "2026-09-06T13:34:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "hu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75522733608079a7f6a8",
+  "host": "hu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

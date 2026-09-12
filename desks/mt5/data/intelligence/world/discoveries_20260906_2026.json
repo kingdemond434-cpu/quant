@@ -1,0 +1,2338 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5957\u5229\u80a1 \u8981\u7ea6\u6536\u8d2d \u73b0\u91d1\u9009\u62e9 \u6362\u80a1\u4ef7 \u5438\u6536\u5408\u5e76 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/data/taoligu/",
+  "published": "2026-09-06T20:21:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce8e3fae2156b0fb9fd1",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-06T20:21:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "49e8c3bc8dd6439c0062",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-06T20:21:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89e0ae3a296127d0b382",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5957\u5229 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/topic/%E5%A5%97%E5%88%A9",
+  "published": "2026-09-06T20:21:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b50b85da80cd03a47e9d",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u80a1\u606f\u8f6e\u52a8\u7b56\u7565\u5b9e\u76d8\uff0cAI\u81ea\u52a8\u5316\u9009\u80a1 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/524983",
+  "published": "2026-09-06T20:21:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7ffbe3828df6d3455692",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u573a\u5185\u8d27\u57fa\u80fd\u767d\u5ad6\u5417\uff1f511990/511880 \u65e5\u5185\u5957\u5229\u7684\u51e0\u4e2a\u5047\u8bbe\uff0c\u6211\u62ff10\u5e74\u6570\u636e\u9a8c\u8bc1\u4e86\u4e00\u4e0b - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/524589",
+  "published": "2026-09-06T20:21:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c828d8787baa4ecba719",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ETF\u671f\u6743\u91cf\u5316\u591a\u7a7a\u5957\u5229\u7b56\u7565-\u8fd14\u5e74\u7d2f\u8ba1\u6536\u76ca72.85%\uff0c\u5e74\u5316\u6536\u76ca15.5%\uff0c\u6700\u5927\u56de\u64a45.63% - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/505428",
+  "published": "2026-09-06T20:21:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c794796f3dbb61904138",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5408\u5e76\u5957\u5229 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/topic/%E5%90%88%E5%B9%B6%E5%A5%97%E5%88%A9",
+  "published": "2026-09-06T20:21:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "439cb8348a8c0b1d5be4",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5206\u7ea7\u57fa\u91d1\u5957\u5229 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/topic/%E5%88%86%E7%BA%A7%E5%9F%BA%E9%87%91%E5%A5%97%E5%88%A9",
+  "published": "2026-09-06T20:21:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "386a984dfdac88724074",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u91cf\u5316\u4ea4\u6613 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/topic/%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93",
+  "published": "2026-09-06T20:22:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b943be9980fb9cb6558",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u573a\u5185\u8d27\u57fa\u80fd\u767d\u5ad6\u5417\uff1f511990/511880 \u65e5\u5185\u5957\u5229\u7684\u51e0\u4e2a\u5047\u8bbe\uff0c\u6211\u62ff10\u5e74\u6570\u636e\u9a8c\u8bc1\u4e86\u4e00\u4e0b - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/524589?show_all_answer-TRUE__item_id-5534237__answer_id-5534237__single-TRUE",
+  "published": "2026-09-06T20:22:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ffc3ae7123df7da981d2",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u6052\u751f\u521b\u65b0\u836fETF\uff08520500\uff09\u2014\u2014\u201c\u5e95\u4ed3 + \u7f51\u683c\u4ea4\u6613\u201d\u6295\u8d44\u7b56\u7565\u5907\u5fd8\u5f55 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/524956",
+  "published": "2026-09-06T20:22:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c98af1f44d79d9608140",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u8bc1\u5238ETF\u7f51\u683c\u4ea4\u6613\u5907\u5fd8\u5f55 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/524791",
+  "published": "2026-09-06T20:22:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "inventory",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c06912c0cf8a441d8cd9",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u521b\u4e1a\u677f\u5fae\u76d8\u80a1\u53e0\u52a0\u7f51\u683c\u7b56\u7565\u5b9e\u76d8\u8fd0\u884c\u8bb0\u5f55\u2014\u20142024.11.13\u5f00\u59cb - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/524085",
+  "published": "2026-09-06T20:22:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "momentum",
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e6ae29b0d2adeb3e128e",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u7f51\u683c\u4ea4\u6613\u5b9e\u64cd\u5e72\u8d27\u6c42\u5171\u4eab\uff0c\u90fd\u6765\u5520\u5520 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/520346",
+  "published": "2026-09-06T20:22:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d4b8d227afbfb9d8b819",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u7f51\u683c\u7b56\u7565\uff0c\u7f51\u4f4f\u7684\u662f\u81ea\u5df1 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/515846",
+  "published": "2026-09-06T20:22:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "01c1371611ef24cc690e",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u91cf\u5316\u62e9\u65f6+\u4e3b\u89c2\u8f6e\u52a8\u4e4b\u57fa\u91d1\u5927\u997c - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/515766",
+  "published": "2026-09-06T20:22:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2546dadc6d99cb148a7e",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u7533\u4e07\u5b8f\u6e90\u7f51\u683c\u81ea\u52a8\u4ea4\u6613\u8ba8\u8bba - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/511846",
+  "published": "2026-09-06T20:22:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "48298e840dd1608eb3fd",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5c0f\u767d\u6c42\u6559\u81ea\u5df1\u7684\u6295\u8d44\u7b56\u7565\u95ee\u9898 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/question/510003",
+  "published": "2026-09-06T20:22:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8798beb40af5f9f81fc8",
+  "host": "www.jisilu.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading | Elite Trader",
+  "url": "https://www.elitetrader.com/et/forums/trading.1/",
+  "published": "2026-09-06T20:22:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f0558de44a2783d4f1ad",
+  "host": "www.elitetrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex | Elite Trader",
+  "url": "https://www.elitetrader.com/et/forums/forex.38/",
+  "published": "2026-09-06T20:22:24+00:00",
+  "symbols": [
+   "GBPJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "763c99055ff0e50015d5",
+  "host": "www.elitetrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automated Trading | Elite Trader",
+  "url": "https://www.elitetrader.com/et/forums/automated-trading.48/",
+  "published": "2026-09-06T20:22:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8347a57cd9aa2571400c",
+  "host": "www.elitetrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy Scripting | Elite Trader",
+  "url": "https://www.elitetrader.com/et/forums/strategy-scripting.34/",
+  "published": "2026-09-06T20:22:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "307f259dc7c64f44630d",
+  "host": "www.elitetrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Brokers | Elite Trader",
+  "url": "https://www.elitetrader.com/et/forums/forex-brokers.47/",
+  "published": "2026-09-06T20:22:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fecb48d7c49d8daa6793",
+  "host": "www.elitetrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum (Day)Trading : conseils, analyses, discussions, avis - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/",
+  "published": "2026-09-06T20:22:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "56818f26f8bcc7f87f9c",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Forex : conseils, analyses, discussions, avis - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/forex-fxcm/",
+  "published": "2026-09-06T20:22:53+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a1123c9f1bab17b5484a",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Swing Trading : conseils, analyses, discussions, avis - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/swingtrading/",
+  "published": "2026-09-06T20:22:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7bfec1e686675da3f7e1",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The evening note takes 5 minutes",
+  "url": "https://letters.statsedgetrading.com/p/the-evening-note-takes-5-minutes",
+  "published": "2026-09-06T20:23:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "486888466a7a3ef5553a",
+  "host": "letters.statsedgetrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "11 setups. One nightly book.",
+  "url": "https://letters.statsedgetrading.com/p/11-setups-one-nightly-book",
+  "published": "2026-09-06T20:23:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "de8aea6498eba8f81a82",
+  "host": "letters.statsedgetrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stats Edge Evening Note - 9/3/26",
+  "url": "https://letters.statsedgetrading.com/p/stats-edge-evening-note-9326",
+  "published": "2026-09-06T20:23:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c9da5a4a3fa73533635",
+  "host": "letters.statsedgetrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stats Edge Evening Note - 9/2/26",
+  "url": "https://letters.statsedgetrading.com/p/stats-edge-evening-note-9226",
+  "published": "2026-09-06T20:23:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4d56fca2649d8ee02055",
+  "host": "letters.statsedgetrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u6025\u9a30\u30fb\u6025\u843d\u306e\u30b5\u30a4\u30f3\u3092\u898b\u9003\u3059\u306a\uff01\u300c\u88c1\u5b9a\u8cb7\u3044\u6b8b\u300d\u3067\u8aad\u307f\u89e3\u304f\u65e5\u672c\u682a\u306e\u6f6e\u76ee\uff08\u7aaa\u7530\u771f\u4e4b\uff09 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53390",
+  "published": "2026-09-06T20:23:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7c0a90fc587241b72335",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u70ba\u66ff | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/list/search?fulltext=%E7%82%BA%E6%9B%BF",
+  "published": "2026-09-06T20:23:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "075cf3327a4e5692c8d8",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "1\u30ab\u6708\u5f8c\u306e\u65e5\u7d4c\u5e73\u5747\u30fb\u70ba\u66ff\u306e\u898b\u901a\u3057\u2026\u500b\u4eba\u6295\u8cc7\u5bb62,338\u4eba\u306f\u5f37\u6c17\uff1f\u5f31\u6c17\uff1f | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53386",
+  "published": "2026-09-06T20:23:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "297ba50eefe9b1d26dd3",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "3\u5206\u3067\u308f\u304b\u308b\uff01\u4eca\u65e5\u306e\u6295\u8cc7\u6226\u7565\u3014\u5e73\u65e5\u6bce\u671d8\u6642\u63b2\u8f09\u3015 | \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/category/3minutes",
+  "published": "2026-09-06T20:23:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "95de3bdc19f9e25926aa",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u300c\u65e5\u672c\u306b\u4f4f\u3093\u3067\u3001\u7c73\u56fd\u306b\u6295\u8cc7\u3059\u308b\u300d\u304c\u6700\u5f37\u306e\u751f\u5b58\u6226\u7565 \u7c73\u56fd\u682a\u6295\u8cc7\u5bb6\u30dd\u30fc\u30eb\u30fb\u30b5\u30a4\u3055\u3093\u30a4\u30f3\u30bf\u30d3\u30e5\u30fc\uff3b\u5f8c\u7de8\uff3d | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/52633",
+  "published": "2026-09-06T20:23:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "flow",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4576c2bdd2232a23226d",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u8cc7\u75235,000\u4e07\u5186\u7a81\u7834\uff01\u4e8c\u4eba\u306e\u5b50\u4f9b\u306e\u6559\u80b2\u8cc7\u91d1\u306e\u9032\u6357\u306f\uff1f\u5143\u8a3c\u5238\u30a6\u30fc\u30de\u30f3\u6295\u8cc7\u5bb6\u30fb\u3055\u3076\u3055\u3093\u30a4\u30f3\u30bf\u30d3\u30e5\u30fc\u524d\u7de8 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/52395",
+  "published": "2026-09-06T20:23:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7cc8e9551cf2221d48c0",
+  "host": "media.rakuten-sec.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CNY \u4eba\u6c11\u5e63 - \u6e2f\u5143\u532f\u7387 - \u5916\u532f\u9ec3\u91d1\u532f\u7387 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/quote-hkd.php?currency=cny",
+  "published": "2026-09-06T20:23:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4a7b246d8660ee02cc2d",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AUD \u6fb3\u5143 - \u6e2f\u5143\u532f\u7387 - \u5916\u532f\u9ec3\u91d1\u532f\u7387 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/quote-hkd.php?currency=aud",
+  "published": "2026-09-06T20:23:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e21918f60530ba435cd",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EUR \u6b50\u5143 - \u6e2f\u5143\u532f\u7387 - \u5916\u532f\u9ec3\u91d1\u532f\u7387 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/quote-hkd.php?currency=eur",
+  "published": "2026-09-06T20:24:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "de2b0001f4b23a8251c4",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GBP \u82f1\u938a - \u6e2f\u5143\u532f\u7387 - \u5916\u532f\u9ec3\u91d1\u532f\u7387 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/quote-hkd.php?currency=gbp",
+  "published": "2026-09-06T20:24:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea162b3026fa979b1bb6",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "JPY \u65e5\u5713 - \u6e2f\u5143\u532f\u7387 - \u5916\u532f\u9ec3\u91d1\u532f\u7387 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/quote-hkd.php?currency=jpy",
+  "published": "2026-09-06T20:24:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e48c8273400e3ff4aa62",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5916\u532f\uff0f\u4eba\u6c11\u5e63 - \u5c08\u984c\u900f\u8996 - \u65b0\u805e | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/news/topic_news_category.php?category=forex",
+  "published": "2026-09-06T20:24:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1057f93438d2e1baab85",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5373\u6642\u65b0\u805e - \u65b0\u805e | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/news/categorized_news_list.php?category=forexmetals",
+  "published": "2026-09-06T20:24:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13d2a42716b2de8b7192",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5916\u532f - \u8a55\u8ad6 - \u65b0\u805e | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/news/commentary_category.php?category=forex",
+  "published": "2026-09-06T20:24:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ed42f7cc978af0db25f",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u4e3b\u9801 - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/index.php",
+  "published": "2026-09-06T20:24:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9d263bdc26bc4ad26555",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u3010\u6d2a\u705d\u5c08\u8a2a\u3011A\u80a1\u5efa\u5009\u628a\u63e1\u4ea4\u6613\u578b\u6a5f\u6703\uff0c\u5c0f\u5fc3\u300c\u71d2\u9999\u5f0f\u300d\u8207\u300c\u50f9\u503c\u5f0f\u300d\u5169\u985e\u6295\u8cc7\uff088\u670827\u65e5\u9304\u5f71\uff0c\u666e\u901a\u8a71\u8996\u983b\uff0c\u7e41\u9ad4\u5b57\u5e55\uff09 | \u6d2a\u705d\u7b56\u7565 - etnet TV",
+  "url": "https://www.etnet.com.hk/www/tc/video/haohong",
+  "published": "2026-09-06T20:24:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bdcfcea69088d1835e09",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u9078\u80a1\u7b56\u7565 - \u7f8e\u80a1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/us-stocks/strategy.php",
+  "published": "2026-09-06T20:24:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce138ff2b6e1dff77e10",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5168\u90e8 - \u5373\u6642\u65b0\u805e - \u65b0\u805e\u53ca\u8a55\u8ad6 - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/news",
+  "published": "2026-09-06T20:24:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "67c4be89a8e398e7a47d",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u6e2f\u5143\u5b9a\u671f\u5b58\u6b3e - \u5b9a\u671f\u5b58\u6b3e - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/deposit-rate.php",
+  "published": "2026-09-06T20:24:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0907756a2b2de98fae1a",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CNY \u4eba\u6c11\u5e63(\u5728\u5cb8) - \u9280\u884c\u5916\u5e63\u514c\u63db - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/bank-exchange-rate.php",
+  "published": "2026-09-06T20:24:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2494e216378d6054732a",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u6e2f\u5143\u532f\u7387 - \u5916\u532f\u9ec3\u91d1\u532f\u7387 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/quote-hkd.php",
+  "published": "2026-09-06T20:24:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0adeceeb4464b839562f",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u7f8e\u5143\u532f\u7387 - \u5916\u532f\u9ec3\u91d1\u532f\u7387 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/quote-usd.php",
+  "published": "2026-09-06T20:24:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "290cfdc1111e1e5db7a0",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "XAU \u9ec3\u91d1\u73fe\u8ca8 - \u8cb4\u91d1\u5c6c - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/quote-commodity.php",
+  "published": "2026-09-06T20:24:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f36e4c1ba4c0b9dfc23c",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GDP \u570b\u5167\u751f\u7522\u7e3d\u503c (\u5e74\u7387) - \u91cd\u8981\u6578\u64da - \u7d93\u6fdf\u6578\u64da - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/economic-major-indicator.php",
+  "published": "2026-09-06T20:24:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9fdcaa848aaec52f5dfa",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Trading Info | I3investor",
+  "url": "https://klse.i3investor.com/web/hti/forexintro",
+  "published": "2026-09-06T20:24:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8bfce24828e3d995803e",
+  "host": "klse.i3investor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MQ Trader MY | MQTrader",
+  "url": "https://klse.i3investor.com/mqtrader/app/screener/sigdl",
+  "published": "2026-09-06T20:24:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89d85f8c5e3e7655c9d8",
+  "host": "klse.i3investor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investment Basics - Learn to Invest | I3investor",
+  "url": "https://klse.i3investor.com/web/hti/forex",
+  "published": "2026-09-06T20:24:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fdffafd476eebbfc3018",
+  "host": "klse.i3investor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BIDS Trading | Cboe",
+  "url": "https://www.cboe.com/markets/bidstrading",
+  "published": "2026-09-06T20:24:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f074e5f68734d86a34a6",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Global Trading Hours | Cboe",
+  "url": "https://www.cboe.com/about/global-trading-hours",
+  "published": "2026-09-06T20:24:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e3ffcfc56ddf166da7e4",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Plus - Exklusive Analysen & Trading-Setups bestellen | stock3",
+  "url": "https://stock3.com/store/godmode-plus-55",
+  "published": "2026-09-06T20:24:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2a87cf90db287492b516",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "(3\u207a) stock3 Wochenend-Setup: Die n\u00e4chste KI-Welle \"rollt\"! | stock3",
+  "url": "https://stock3.com/news/stock3-wochenend-setup-die-naechste-ki-welle-rollt-17254500",
+  "published": "2026-09-06T20:24:45+00:00",
+  "symbols": [
+   "EURUSD",
+   "SPACEX"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "65c3c8245baa8588b7a1",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "STRATEGY: Startet jetzt die Trendwende? | stock3",
+  "url": "https://stock3.com/news/strategy-startet-jetzt-die-trendwende-17271677",
+  "published": "2026-09-06T20:24:47+00:00",
+  "symbols": [
+   "EURUSD",
+   "SPACEX"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1c9e7b11664902981a69",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Artikel Archiv | stock3",
+  "url": "https://stock3.com/news/archiv?categoryId=2600",
+  "published": "2026-09-06T20:24:50+00:00",
+  "symbols": [
+   "NVIDIA",
+   "SPACEX"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "88cb817b16935a3d3a7d",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "(3\u207a) stock US-Ausblick: Wichtiger Handelstag steht an | stock3",
+  "url": "https://stock3.com/news/stock-us-ausblick-wichtiger-handelstag-steht-an-17272301",
+  "published": "2026-09-06T20:24:51+00:00",
+  "symbols": [
+   "EURUSD",
+   "SPACEX"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f24fc0abcd0522d59fac",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Euro stabil vor US-Arbeitsmarktbericht | stock3",
+  "url": "https://stock3.com/news/euro-stabil-vor-us-arbeitsmarktbericht-17271297",
+  "published": "2026-09-06T20:24:54+00:00",
+  "symbols": [
+   "EURUSD",
+   "SPACEX"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1ac7f7fb08988a0ff328",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technologie-Aktien & Krypto Trading-Service bestellen | stock3",
+  "url": "https://stock3.com/store/tech-aktien-krypto-183",
+  "published": "2026-09-06T20:24:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f3308ab8b9d182c93a6d",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Knock-Out Trading mit dem KO-Rechner auf stock3 Terminal | stock3",
+  "url": "https://stock3.com/news/neu-so-macht-knock-out-trading-spass-unser-neuer-ko-rechner-noch-besser-noch-intuitiver-11551483",
+  "published": "2026-09-06T20:25:00+00:00",
+  "symbols": [
+   "SPACEX"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d9b1f4d1b5c3184e3ebd",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading auf stock3 | Hol Dir den vollen Trading Boost | stock3",
+  "url": "https://stock3.com/trading",
+  "published": "2026-09-06T20:25:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1a843dde3eaf81bf5c0b",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading-Services - Jetzt entdecken | stock3",
+  "url": "https://stock3.com/store/trading-services",
+  "published": "2026-09-06T20:25:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "880e8cb0de9b1edd3dd8",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "stock3: DIE Homebase f\u00fcr Deinen B\u00f6rsenalltag | stock3",
+  "url": "https://stock3.com/broker-select/sicherheit",
+  "published": "2026-09-06T20:25:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c74041eaf1ba2ef6eef6",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estrategia GTAA Active Momentum - X-Trader.net",
+  "url": "https://www.x-trader.net/estrategia-gtaa-active-momentum/",
+  "published": "2026-09-06T20:25:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d101346e17d738c5791",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cu\u00e1les Son Las Mejores Librer\u00edas de Python para Backtesting",
+  "url": "https://www.x-trader.net/librerias-de-python-para-backtesting-y-cual-usar/",
+  "published": "2026-09-06T20:25:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bc5a0c67b8378376eb73",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Las principales estrategias de trading de los \u00faltimos 100 a\u00f1os - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?f=9&t=22424&p=265493",
+  "published": "2026-09-06T20:25:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ab0991dc09907ca39eae",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Operativa Sistem\u00e1tica sobre el DAX con Capitalizaci\u00f3n Compuesta - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?f=9&t=22427&p=265492",
+  "published": "2026-09-06T20:25:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json",
+   "https://www.x-trader.net/foro/download/file.php?id=43518&amp;sid=195381a1c726a59122c9958c8df27901",
+   "https://www.x-trader.net/foro/download/file.php?id=43520&amp;sid=195381a1c726a59122c9958c8df27901&amp;mode=view",
+   "https://www.x-trader.net/foro/download/file.php?id=43521&amp;sid=195381a1c726a59122c9958c8df27901&amp;mode=view",
+   "https://www.x-trader.net/foro/download/file.php?id=43524&amp;sid=195381a1c726a59122c9958c8df27901&amp;mode=view"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "924335f00cce9e826d7d",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Military Trading Secrets - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?f=87&t=22452&p=265485",
+  "published": "2026-09-06T20:25:15+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json",
+   "https://www.x-trader.net/foro/download/file.php?id=43542&amp;sid=cea1465180927b50645677e07cc0d318&amp;mode=view",
+   "https://www.x-trader.net/foro/download/file.php?id=43544&amp;sid=cea1465180927b50645677e07cc0d318&amp;mode=view",
+   "https://www.x-trader.net/foro/download/file.php?id=43543&amp;sid=cea1465180927b50645677e07cc0d318&amp;mode=view"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "48375739c2c3130fc23a",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0421\u0442\u0440\u0430\u0442\u0435\u0433\u0456\u044f \u041d\u0430\u0446\u0456\u043e\u043d\u0430\u043b\u044c\u043d\u043e\u0433\u043e \u0431\u0430\u043d\u043a\u0443",
+  "url": "https://bank.gov.ua/ua/about/strategy",
+  "published": "2026-09-06T20:25:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6865aa4d42c7e86cbfca",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0420\u043e\u0437\u0432\u0438\u0442\u043e\u043a \u0444\u0456\u043d\u0430\u043d\u0441\u043e\u0432\u043e\u0433\u043e \u0441\u0435\u043a\u0442\u043e\u0440\u0443",
+  "url": "https://bank.gov.ua/ua/about/develop-strategy",
+  "published": "2026-09-06T20:25:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19",
+   "https://bank.gov.ua/ua/file/download?file=%D0%A1oncept_development_Suptech_Regtech.pdf"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4dcbc3470a391808e54a",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u041d\u0430\u0446\u0456\u043e\u043d\u0430\u043b\u044c\u043d\u0430 \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0456\u044f \u0440\u043e\u0437\u0432\u0438\u0442\u043a\u0443 \u0444\u0456\u043d\u0430\u043d\u0441\u043e\u0432\u043e\u0457 \u0433\u0440\u0430\u043c\u043e\u0442\u043d\u043e\u0441\u0442\u0456 \u0434\u043e 2030 \u0440\u043e\u043a\u0443",
+  "url": "https://bank.gov.ua/ua/about/strategy-fin-literacy",
+  "published": "2026-09-06T20:25:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "32b654f2844f2f73a22f",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u041c\u0430\u043a\u0440\u043e\u0435\u043a\u043e\u043d\u043e\u043c\u0456\u0447\u043d\u0456 \u043f\u043e\u043a\u0430\u0437\u043d\u0438\u043a\u0438",
+  "url": "https://bank.gov.ua/ua/statistic/macro-indicators",
+  "published": "2026-09-06T20:25:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19",
+   "https://bank.gov.ua/files/macro/CPI_m.xlsx",
+   "https://bank.gov.ua/files/macro/CPI_q.xlsx",
+   "https://bank.gov.ua/files/macro/CPI_y.xlsx",
+   "https://bank.gov.ua/files/macro/CCPI_m.xlsx",
+   "https://bank.gov.ua/files/macro/CCPI_y.xlsx",
+   "https://bank.gov.ua/files/macro/PPI_m.xlsx",
+   "https://bank.gov.ua/files/macro/PPI_q.xlsx",
+   "https://bank.gov.ua/files/macro/PPI_y.xlsx",
+   "https://bank.gov.ua/files/macro/IKSO_m.xlsx",
+   "https://bank.gov.ua/files/macro/GDP_y.xlsx",
+   "https://bank.gov.ua/files/macro/Indust_m.xlsx",
+   "https://bank.gov.ua/files/macro/Indust_y.xlsx",
+   "https://bank.gov.ua/files/macro/Agric_m.xlsx",
+   "https://bank.gov.ua/files/macro/Agric_y.xlsx",
+   "https://bank.gov.ua/files/macro/Constr_m.xlsx",
+   "https://bank.gov.ua/files/macro/Constr_y.xlsx",
+   "https://bank.gov.ua/files/macro/Trade_m.xlsx",
+   "https://bank.gov.ua/files/macro/Trade_y.xlsx",
+   "https://bank.gov.ua/files/macro/Emp_q.xlsx",
+   "https://bank.gov.ua/files/macro/Emp_y.xlsx",
+   "https://bank.gov.ua/files/macro/Unemp_m.xlsx",
+   "https://bank.gov.ua/files/macro/Unemp_q.xlsx",
+   "https://bank.gov.ua/files/macro/Unemp_y.xlsx",
+   "https://bank.gov.ua/files/macro/Wages_m.xlsx",
+   "https://bank.gov.ua/files/macro/Wages_y.xlsx",
+   "https://bank.gov.ua/files/macro/Number_m.xlsx",
+   "https://bank.gov.ua/files/macro/Number_q.xlsx",
+   "https://bank.gov.ua/files/macro/Number_y.xlsx",
+   "https://bank.gov.ua/files/macro/Payroll_m.xlsx",
+   "https://bank.gov.ua/files/macro/Payroll_q.xlsx",
+   "https://bank.gov.ua/files/macro/Payroll_y.xlsx",
+   "https://bank.gov.ua/files/macro/R_wage_m.xlsx",
+   "https://bank.gov.ua/files/macro/R_wage_y.xlsx",
+   "https://bank.gov.ua/files/macro/Arrears_m.xlsx",
+   "https://bank.gov.ua/files/macro/Arrears_y.xlsx",
+   "https://bank.gov.ua/files/macro/C_budget_m.xlsx",
+   "https://bank.gov.ua/files/macro/C_budget_q.xlsx",
+   "https://bank.gov.ua/files/macro/C_budget_y.xlsx",
+   "https://bank.gov.ua/files/macro/S_budget_m.xlsx",
+   "https://bank.gov.ua/files/macro/S_budget_q.xlsx",
+   "https://bank.gov.ua/files/macro/S_budget_y.xlsx"
+  ],
+  "n_endpoints": 42,
+  "vault_sha": "5368cba3696eeabeee25",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u041c\u0430\u043a\u0440\u043e\u0435\u043a\u043e\u043d\u043e\u043c\u0456\u0447\u043d\u0456 \u043f\u043e\u043a\u0430\u0437\u043d\u0438\u043a\u0438",
+  "url": "https://bank.gov.ua/statistic/macro-indicators",
+  "published": "2026-09-06T20:25:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19",
+   "https://bank.gov.ua/files/macro/CPI_m.xlsx",
+   "https://bank.gov.ua/files/macro/CPI_q.xlsx",
+   "https://bank.gov.ua/files/macro/CPI_y.xlsx",
+   "https://bank.gov.ua/files/macro/CCPI_m.xlsx",
+   "https://bank.gov.ua/files/macro/CCPI_y.xlsx",
+   "https://bank.gov.ua/files/macro/PPI_m.xlsx",
+   "https://bank.gov.ua/files/macro/PPI_q.xlsx",
+   "https://bank.gov.ua/files/macro/PPI_y.xlsx",
+   "https://bank.gov.ua/files/macro/IKSO_m.xlsx",
+   "https://bank.gov.ua/files/macro/GDP_y.xlsx",
+   "https://bank.gov.ua/files/macro/Indust_m.xlsx",
+   "https://bank.gov.ua/files/macro/Indust_y.xlsx",
+   "https://bank.gov.ua/files/macro/Agric_m.xlsx",
+   "https://bank.gov.ua/files/macro/Agric_y.xlsx",
+   "https://bank.gov.ua/files/macro/Constr_m.xlsx",
+   "https://bank.gov.ua/files/macro/Constr_y.xlsx",
+   "https://bank.gov.ua/files/macro/Trade_m.xlsx",
+   "https://bank.gov.ua/files/macro/Trade_y.xlsx",
+   "https://bank.gov.ua/files/macro/Emp_q.xlsx",
+   "https://bank.gov.ua/files/macro/Emp_y.xlsx",
+   "https://bank.gov.ua/files/macro/Unemp_m.xlsx",
+   "https://bank.gov.ua/files/macro/Unemp_q.xlsx",
+   "https://bank.gov.ua/files/macro/Unemp_y.xlsx",
+   "https://bank.gov.ua/files/macro/Wages_m.xlsx",
+   "https://bank.gov.ua/files/macro/Wages_y.xlsx",
+   "https://bank.gov.ua/files/macro/Number_m.xlsx",
+   "https://bank.gov.ua/files/macro/Number_q.xlsx",
+   "https://bank.gov.ua/files/macro/Number_y.xlsx",
+   "https://bank.gov.ua/files/macro/Payroll_m.xlsx",
+   "https://bank.gov.ua/files/macro/Payroll_q.xlsx",
+   "https://bank.gov.ua/files/macro/Payroll_y.xlsx",
+   "https://bank.gov.ua/files/macro/R_wage_m.xlsx",
+   "https://bank.gov.ua/files/macro/R_wage_y.xlsx",
+   "https://bank.gov.ua/files/macro/Arrears_m.xlsx",
+   "https://bank.gov.ua/files/macro/Arrears_y.xlsx",
+   "https://bank.gov.ua/files/macro/C_budget_m.xlsx",
+   "https://bank.gov.ua/files/macro/C_budget_q.xlsx",
+   "https://bank.gov.ua/files/macro/C_budget_y.xlsx",
+   "https://bank.gov.ua/files/macro/S_budget_m.xlsx",
+   "https://bank.gov.ua/files/macro/S_budget_q.xlsx",
+   "https://bank.gov.ua/files/macro/S_budget_y.xlsx"
+  ],
+  "n_endpoints": 42,
+  "vault_sha": "e6b54154561265cf24f5",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0426\u0438\u0444\u0440\u043e\u0432\u0430\u044f \u0430\u043c\u043d\u0435\u0437\u0438\u044f: \u043f\u043e\u0447\u0435\u043c\u0443 \u0418\u0418\u2011\u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u044f \u0442\u043e\u0442\u0430\u043b\u044c\u043d\u043e\u0433\u043e \u0438\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f \u0447\u0435\u043b\u043e\u0432\u0435\u043a\u0430 \u0432 \u0431\u0430\u043d\u043a\u0430\u0445 \u043c\u043e\u0436\u0435\u0442 \u0437\u0430\u0432\u0435\u0441\u0442\u0438 \u0432 \u0442\u0443\u043f\u0438\u043a? &#x2F; \u0425\u0430\u0431\u0440",
+  "url": "https://habr.com/ru/articles/1078718/",
+  "published": "2026-09-06T20:25:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://assets.habr.com/habr-web/release_2.346.2/client/js/_plugin-vue_export-helperDNxzX1G4.js"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "53a6aae058b9434d0b5a",
+  "host": "habr.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Infla\u00e7\u00e3o - Ferramentas | InfoMoney",
+  "url": "https://www.infomoney.com.br/ferramentas/inflacao/",
+  "published": "2026-09-06T20:25:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a06969353953ca88b941",
+  "host": "www.infomoney.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estrat\u00e9gia de investimentos - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/aprenda-a-investir/estrategia-de-investimentos/",
+  "published": "2026-09-06T20:25:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae555161a741c15f9d51",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Como ser um milion\u00e1rio? Aprenda a investir com estrat\u00e9gia - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/como-ser-um-milionario/",
+  "published": "2026-09-06T20:25:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2bf16d4d583ab7f359b8",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quanto rende R$ 500 mil no Tesouro Direto? Ainda vale a pena? - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/quanto-rende-500-mil-no-tesouro-direto/",
+  "published": "2026-09-06T20:25:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7e8ecafc427746f7765f",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "M\u00e1quina de Dividendos: o que \u00e9 e como funciona essa estrat\u00e9gia?",
+  "url": "https://clubedovalor.com.br/blog/estrategia-de-dividendos/",
+  "published": "2026-09-06T20:25:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a1f6f920b822c452eccf",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Taesa (TAEE11) : Quanto Rende R$ 1000 em Dividendos?",
+  "url": "https://clubedovalor.com.br/blog/taesa-dividendos/",
+  "published": "2026-09-06T20:25:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d96e0575ab7424f6fad2",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ITA\u00daSA (ITSA4) : Quanto rende R$ 1000 em dividendos?",
+  "url": "https://clubedovalor.com.br/blog/itausa-dividendos/",
+  "published": "2026-09-06T20:25:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bfbd58de97a7fff268a5",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Wealth Advisor: o que \u00e9, quanto custa e por que contratar - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/wealth-advisor/",
+  "published": "2026-09-06T20:25:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c27dec32fbb1c22e666e",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Melhores FIIs na Estrat\u00e9gia S-Rank do Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/melhores-fiis-s-rank/",
+  "published": "2026-09-06T20:25:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "464d9454f094c1e3f00d",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Como Investir para a Aposentadoria na Bolsa de Valores - A Estrat\u00e9gia DOBRAR - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/investir-para-a-aposentadoria/",
+  "published": "2026-09-06T20:25:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2c1e4a508b7c67c00b0a",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://www.simuwang.com/report/560.html",
+  "url": "https://www.simuwang.com/report/560.html",
+  "published": "2026-09-06T20:25:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "1M",
+   "4H",
+   "H4",
+   "MN"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "77b7d2f8ad6160316aa6",
+  "host": "www.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://www.simuwang.com/news/286972.html",
+  "url": "https://www.simuwang.com/news/286972.html",
+  "published": "2026-09-06T20:25:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "5M",
+   "D1",
+   "M1",
+   "MN",
+   "W1"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b4af863e884342f8527b",
+  "host": "www.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "N\u00e3o opere no escuro | QuantBrasil",
+  "url": "https://quantbrasil.com.br/",
+  "published": "2026-09-06T20:25:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "442c01b83ec46ca5555b",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home \u2014 Companhia Nacional de Abastecimento",
+  "url": "https://www.conab.gov.br/info-agro/safras",
+  "published": "2026-09-06T20:25:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [
+   "https://www.gov.br/conab/pt-br/assuntos/noticias/exportacoes-de-graos-crescem-e-fretes-oscilam-nos-principais-corredores-logisticos-do-pais"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8276c9e76eb144cc3071",
+  "host": "www.conab.gov.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Base de Datos Estad&#237;sticos (BDE)",
+  "url": "https://si3.bcentral.cl/Siete/",
+  "published": "2026-09-06T20:26:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-CL",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cab5c9a5ea3f11fb96a2",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inicio | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/",
+  "published": "2026-09-06T20:26:03+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d6fe34af89f32e8fcd48",
+  "host": "www.rava.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Why You Don't Stand a Chance Against the High-Frequency Traders - Business Insider",
+  "url": "http://www.businessinsider.com/you-dont-stand-a-chance-in-the-market-against-hft-slideshow-2009-12",
+  "published": "2026-09-06T20:26:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10117053a173fc18a0d0",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

@@ -1,0 +1,30 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "FAOSTAT",
+  "url": "https://www.fao.org/faostat/en/",
+  "published": "2026-09-10T20:39:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "language": "en",
+  "endpoints": [
+   "https://www.fao.org/faostat/en/humans.txt"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e7d6c678671ba94e7921",
+  "host": "www.fao.org",
+  "ground": "FAO data and price index",
+  "region": "institutional",
+  "cluster": "institutional",
+  "dataset_class": "commodity_inventories",
+  "available_time": "2026-09-10T20:39:42+00:00",
+  "ingested_time": "2026-09-10T20:39:42+00:00",
+  "source_hash": "e7d6c678671ba94e7921",
+  "claims": [],
+  "n_claims": 0
+ }
+]

@@ -1,31 +1,63 @@
 {
-    "free_gb":  10,
-    "checked_at":  "2026-09-10T08:00:11.7339287Z",
+    "memory":  {
+                   "free_phys_mb":  60233,
+                   "total_commit_mb":  251842,
+                   "total_phys_mb":  98298,
+                   "top_commit":  [
+                                      {
+                                          "pid":  11220,
+                                          "name":  "recertify_canon.py",
+                                          "commit_mb":  12621,
+                                          "rss_mb":  11082
+                                      },
+                                      {
+                                          "pid":  7912,
+                                          "name":  "pf_allocator.py",
+                                          "commit_mb":  12380,
+                                          "rss_mb":  11014
+                                      },
+                                      {
+                                          "pid":  6804,
+                                          "name":  "python.exe",
+                                          "commit_mb":  8344,
+                                          "rss_mb":  1872
+                                      },
+                                      {
+                                          "pid":  4816,
+                                          "name":  "python.exe",
+                                          "commit_mb":  7986,
+                                          "rss_mb":  1919
+                                      },
+                                      {
+                                          "pid":  18340,
+                                          "name":  "external_gauntlet.py",
+                                          "commit_mb":  7185,
+                                          "rss_mb":  5014
+                                      },
+                                      {
+                                          "pid":  6812,
+                                          "name":  "terminal64.exe",
+                                          "commit_mb":  3123,
+                                          "rss_mb":  108
+                                      }
+                                  ],
+                   "free_commit_mb":  188344
+               },
     "actions":  [
-                    "FAILING MT5-Shadow: last result 1 twice in a row -- re-run",
-                    "FAILING MT5-Hourly: last result 1 twice in a row -- re-run",
-                    "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
-                    "FAILING MT5-QQuantGatesCertify: last result 1 twice in a row -- re-run",
-                    "FEED LAG: 1 CLOCKED symbol(s) \u003e6h stale: EURCHF",
-                    "FEED LAG fixer: re-selected 1 symbol(s) in MarketWatch"
+                    "FAILING MT5-Shadow: last result 2 twice in a row -- re-run",
+                    "TASK MISSING: MT5-ShadowSync is not registered at all -- re-register from ops/ (deletion, not failure)"
                 ],
     "low_mem_strikes":  0,
+    "free_gb":  979.9,
     "procs":  {
-                  "fail.MT5-QQuantGatesCertify":  {
-                                                      "cpu":  1,
-                                                      "at":  "2026-09-10T10:00:04.5724614+02:00"
-                                                  },
-                  "fail.MT5-MoatRecorder":  {
-                                                "cpu":  1,
-                                                "at":  "2026-09-10T10:00:04.5724614+02:00"
-                                            },
+                  "external_gauntlet.18340":  {
+                                                  "cpu":  3961.546875,
+                                                  "at":  "2026-09-12T08:50:02.5358795+02:00"
+                                              },
                   "fail.MT5-Shadow":  {
-                                          "cpu":  1,
-                                          "at":  "2026-09-10T10:00:04.5724614+02:00"
-                                      },
-                  "fail.MT5-Hourly":  {
-                                          "cpu":  1,
-                                          "at":  "2026-09-10T10:00:04.5724614+02:00"
+                                          "cpu":  2,
+                                          "at":  "2026-09-12T08:50:02.5358795+02:00"
                                       }
-              }
+              },
+    "checked_at":  "2026-09-12T06:50:08.5984827Z"
 }

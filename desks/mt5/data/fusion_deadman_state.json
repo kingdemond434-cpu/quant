@@ -1,0 +1,40 @@
+{
+ "peak_equity": 784.38,
+ "consecutive": 0,
+ "halt_codes": [],
+ "rearm_history": {},
+ "escalated": [],
+ "cleared_at": null,
+ "checked_at": "2026-09-12T07:05:01+00:00",
+ "mode": "DRY-RUN",
+ "readings": {
+  "equity": 607.68,
+  "margin_free": 0.0,
+  "last_reconcile": "2026-09-12T07:04:02+00:00",
+  "open_positions": 0,
+  "peak_equity": 784.38,
+  "size_guard": {
+   "judged": 0,
+   "unmeasured": 0
+  }
+ },
+ "rails": {
+  "DAILY_LOSS_PCT": 0.1,
+  "EQUITY_FLOOR_EUR": 300.0,
+  "WEEKLY_LOSS_PCT": 0.2,
+  "MAX_OPEN_POSITIONS": 24,
+  "MIN_FREE_MARGIN_FRAC": 0.25,
+  "MAX_SIZE_MULTIPLE": 3.0,
+  "STALE_HEARTBEAT_MIN": 45,
+  "CONFIRM_READS": 2
+ },
+ "breaches": [],
+ "would": {
+  "action": "NOTHING",
+  "executed": false,
+  "reasons": [],
+  "confirm": "0/2",
+  "rearm": "no halt of ours to lift"
+ },
+ "rearm_verdict": "no halt of ours to lift"
+}

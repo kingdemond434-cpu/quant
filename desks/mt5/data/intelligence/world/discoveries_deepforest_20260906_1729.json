@@ -1,0 +1,30 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Elite Trader",
+  "url": "https://www.elitetrader.com/et/",
+  "published": "2026-09-06T17:29:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.45,
+  "lang": "en",
+  "endpoints": [
+   "https://www.elitetrader.com/et/threads/mapped-what-every-country-exports-most.391217/",
+   "https://www.elitetrader.com/et/threads/mapped-what-every-country-exports-most.391217/latest"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "45eaae1ed25199d0d09f",
+  "host": "www.elitetrader.com",
+  "ground": "Elite Trader",
+  "region": "us",
+  "cluster": "west",
+  "dataset_class": null,
+  "available_time": "2026-09-06T17:29:10+00:00",
+  "ingested_time": "2026-09-06T17:29:10+00:00",
+  "source_hash": "45eaae1ed25199d0d09f",
+  "claims": [],
+  "n_claims": 0
+ }
+]

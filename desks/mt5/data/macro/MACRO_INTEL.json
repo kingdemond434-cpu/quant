@@ -1,0 +1,854 @@
+{
+ "at": "2026-09-12T07:11:04.489379+00:00",
+ "attribution": {
+  "at": "2026-09-12T07:11:08.823107+00:00",
+  "categories_seen": [
+   "UNCLASSIFIED",
+   "central_bank_policy"
+  ],
+  "ledger": {
+   "at": "2026-09-12T07:11:08.831774+00:00",
+   "categories": 2,
+   "categories_with_sample": [],
+   "min_category_n": 30,
+   "path": "C:\\opt\\quant\\desks\\mt5\\data\\macro\\event_ledger.jsonl",
+   "rows": 113,
+   "rows_with_capital_authority": 0,
+   "rows_with_measured_reaction": 0,
+   "sources": [
+    "BOE",
+    "EIA",
+    "FED",
+    "SEC"
+   ]
+  },
+  "median_overreaction_ratio": null,
+  "n_attributions": 72,
+  "note": "Verification here is move-confirmation, not fact-checking. Named as a limitation rather than presented as truth.",
+  "overreaction_reading": "UNMEASURED",
+  "priced_calibration": {
+   "mean_error": null,
+   "n": 0,
+   "reading": "UNMEASURED -- no attributions with both an estimate and a realisation"
+  },
+  "sources": [
+   {
+    "confirmed": 0,
+    "contradicted": 0,
+    "median_arrival_lag_s": null,
+    "median_lead_to_move_s": null,
+    "n": 51,
+    "source": "BOE"
+   },
+   {
+    "confirmed": 0,
+    "contradicted": 0,
+    "median_arrival_lag_s": null,
+    "median_lead_to_move_s": null,
+    "n": 21,
+    "source": "FED"
+   }
+  ]
+ },
+ "categories_minted": [],
+ "category_loadings": {},
+ "coverage": {
+  "at": "2026-09-12T07:11:04.503909+00:00",
+  "coverage_fraction": 0.926,
+  "domains_blind": [
+   "rates_futures_repricing",
+   "volatility_options_repricing"
+  ],
+  "domains_covered": [
+   "bank_counterparty_stress",
+   "central_bank_decisions",
+   "central_bank_speech_minutes",
+   "commodity_supply_shock",
+   "conflict_escalation",
+   "corporate_credit",
+   "elections_politics",
+   "energy_inventories",
+   "equity_earnings_guidance",
+   "fiscal_budget",
+   "fx_intervention_pegs",
+   "index_reconstitution",
+   "labour_strikes",
+   "natural_disasters",
+   "opec_decisions",
+   "regulatory_exchange",
+   "sanctions_export_controls",
+   "shipping_chokepoints",
+   "sovereign_credit",
+   "statistics_asia",
+   "statistics_europe",
+   "statistics_other",
+   "statistics_us",
+   "trade_policy_tariffs",
+   "weather_harvest"
+  ],
+  "domains_total": 27,
+  "licensed_gaps": [
+   {
+    "consequence": "no surprise z for any scheduled release anywhere in the world -- surprise.py returns UNMEASURED, so no scheduled release can earn capital authority",
+    "evidence": "desks/mt5/data/news_schedule.json starts EMPTY by design; libs/regime/event_state.py records that the desk's calendar vintages carry forecast and previous but no actual",
+    "gap": "economic calendar with consensus AND actuals",
+    "remedy": "a licensed calendar feed"
+   },
+   {
+    "consequence": "median arrival is tens of seconds to minutes behind the tape, so the unpriced fraction on fast events is small or zero and the allocator interrupt will correctly almost never fire",
+    "evidence": "every source above is a first-party feed generated after the event",
+    "gap": "a real-time wire",
+    "remedy": "a licensed low-latency wire"
+   },
+   {
+    "consequence": "priced-versus-unpriced returns UNMEASURABLE for any event whose publish-to-receive lag is under an hour on those instruments",
+    "evidence": "desks/mt5/data/universe/ holds H1 for 24 symbols and M15 for 3; no tick tape",
+    "gap": "sub-minute price series",
+    "remedy": "M1 bars or a tick tape for the instruments the desk reacts on"
+   }
+  ],
+  "n_sources": 28,
+  "note": "This is a COVERAGE checklist -- what the desk went looking for. It is NOT the event taxonomy, which is open and discovered (taxonomy.py). An item that turns out to be about something nobody listed is still recorded and still scored.",
+  "sources": [
+   {
+    "domains": [
+     "central_bank_decisions",
+     "central_bank_speech_minutes",
+     "bank_counterparty_stress"
+    ],
+    "id": "FED",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "statistics_us"
+    ],
+    "id": "BLS",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "central_bank_decisions",
+     "central_bank_speech_minutes"
+    ],
+    "id": "ECB",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "central_bank_decisions",
+     "central_bank_speech_minutes",
+     "fx_intervention_pegs"
+    ],
+    "id": "BOJ",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "central_bank_decisions",
+     "central_bank_speech_minutes"
+    ],
+    "id": "BOE",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "central_bank_decisions",
+     "fx_intervention_pegs"
+    ],
+    "id": "SNB",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "energy_inventories",
+     "commodity_supply_shock"
+    ],
+    "id": "EIA",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "opec_decisions"
+    ],
+    "id": "OPEC",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "trade_policy_tariffs"
+    ],
+    "id": "USTR",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "sanctions_export_controls"
+    ],
+    "id": "TREASURY_OFAC",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "weather_harvest",
+     "commodity_supply_shock"
+    ],
+    "id": "USDA_WASDE",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "statistics_europe"
+    ],
+    "id": "EUROSTAT",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "statistics_europe"
+    ],
+    "id": "ONS",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "sovereign_credit",
+     "fiscal_budget",
+     "sanctions_export_controls"
+    ],
+    "id": "US_TREASURY",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "sovereign_credit",
+     "fiscal_budget"
+    ],
+    "id": "IMF",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "natural_disasters",
+     "weather_harvest"
+    ],
+    "id": "NOAA_NHC",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "conflict_escalation",
+     "elections_politics"
+    ],
+    "id": "UN_NEWS",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "energy_inventories",
+     "commodity_supply_shock"
+    ],
+    "id": "IEA",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "regulatory_exchange"
+    ],
+    "id": "CFTC",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "regulatory_exchange",
+     "corporate_credit"
+    ],
+    "id": "SEC",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "regulatory_exchange"
+    ],
+    "id": "ESMA",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "statistics_other"
+    ],
+    "id": "STATCAN",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "statistics_asia",
+     "central_bank_decisions"
+    ],
+    "id": "ABS_RBA",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "statistics_asia"
+    ],
+    "id": "JAPAN_STAT",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "labour_strikes"
+    ],
+    "id": "ILO",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "shipping_chokepoints"
+    ],
+    "id": "IMO_SHIPPING",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "index_reconstitution"
+    ],
+    "id": "SP_INDICES",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   },
+   {
+    "domains": [
+     "equity_earnings_guidance"
+    ],
+    "id": "SEC_EDGAR",
+    "licence": "public-first-party-feed",
+    "retrieval": "rss",
+    "tier": "OFFICIAL"
+   }
+  ]
+ },
+ "credibility": {
+  "at": "2026-09-12T07:11:04.503875+00:00",
+  "min_source_n": 12,
+  "min_tier_sources": 4,
+  "note": "Tier priors are a starting ordering; both levels re-fit from measured verification outcomes written by attribution.py. Speed is reported SEPARATELY from reliability -- a reliable source that arrives after the move has an unpriced fraction of zero and is worth nothing to trade on.",
+  "sources": [
+   {
+    "lead_s": null,
+    "n_falsified": 0,
+    "n_speed": 0,
+    "n_verified": 0,
+    "p_true": 0.9756,
+    "source": "BOE",
+    "status": "UNMEASURED",
+    "tier": "OFFICIAL",
+    "verdict": "speed UNMEASURED"
+   },
+   {
+    "lead_s": null,
+    "n_falsified": 0,
+    "n_speed": 0,
+    "n_verified": 0,
+    "p_true": 0.9756,
+    "source": "FED",
+    "status": "UNMEASURED",
+    "tier": "OFFICIAL",
+    "verdict": "speed UNMEASURED"
+   }
+  ],
+  "tiers": {
+   "OFFICIAL": {
+    "alpha": 40.0,
+    "beta": 1.0,
+    "status": "UNMEASURED"
+   },
+   "SOCIAL_OSINT": {
+    "alpha": 3.0,
+    "beta": 4.0,
+    "status": "UNMEASURED"
+   },
+   "SPECIALIST": {
+    "alpha": 8.0,
+    "beta": 3.0,
+    "status": "UNMEASURED"
+   },
+   "UNKNOWN": {
+    "alpha": 1.0,
+    "beta": 1.0,
+    "status": "UNMEASURED"
+   },
+   "WIRE": {
+    "alpha": 20.0,
+    "beta": 2.0,
+    "status": "UNMEASURED"
+   }
+  }
+ },
+ "exposures_loaded": 0,
+ "factor_basis": {
+  "factors": [],
+  "n_obs": 0,
+  "note": "no basis fitted yet",
+  "status": "UNMEASURED"
+ },
+ "interrupt": null,
+ "items_seen": 90,
+ "ledger": {
+  "at": "2026-09-12T07:11:04.496278+00:00",
+  "categories": 2,
+  "categories_with_sample": [],
+  "min_category_n": 30,
+  "path": "C:\\opt\\quant\\desks\\mt5\\data\\macro\\event_ledger.jsonl",
+  "rows": 113,
+  "rows_with_capital_authority": 0,
+  "rows_with_measured_reaction": 0,
+  "sources": [
+   "BOE",
+   "EIA",
+   "FED",
+   "SEC"
+  ]
+ },
+ "price_coverage": {
+  "base": "C:\\opt\\quant\\desks\\mt5\\data\\universe",
+  "blind_spot": "NONE",
+  "by_bar_span": {
+   "3600s": [
+    "3M",
+    "A",
+    "AA",
+    "AAL",
+    "AALB",
+    "AALG",
+    "AAOI",
+    "AAOIUSD",
+    "AAPL",
+    "AAPL.24H",
+    "AAPLUSD",
+    "ABBV.24H",
+    "ABBVIE",
+    "ABDN",
+    "ABF",
+    "ABN",
+    "ABNB",
+    "ABT",
+    "AC",
+    "ACA",
+    "ACN",
+    "ADAJPY",
+    "ADAUSD",
+    "ADBE",
+    "ADBE.24H",
+    "ADBEUSD",
+    "ADI",
+    "ADM",
+    "ADP",
+    "ADPR",
+    "ADS",
+    "ADSK",
+    "ADYEN",
+    "AENA",
+    "AEP",
+    "AFG",
+    "AFL",
+    "AFX",
+    "AGG",
+    "AGN",
+    "AGNC",
+    "AI",
+    "AIG",
+    "AIR",
+    "AKAM",
+    "AKZA",
+    "ALAB",
+    "ALB",
+    "ALGN",
+    "ALGUSD",
+    "ALIBABA",
+    "ALIBABA.24H",
+    "ALK",
+    "ALLC",
+    "AMD",
+    "AT&T",
+    "AUDCHF",
+    "AUDHUF",
+    "AUDJPY",
+    "AUDSGD",
+    "AUDUSD",
+    "AUS200",
+    "AVAXUSD",
+    "Accenture",
+    "Adobe",
+    "Airbnb",
+    "AlibabaGroup",
+    "Alphabet-A",
+    "Alphabet-C",
+    "Amazon",
+    "AmericanExpress",
+    "Amgen",
+    "Apple",
+    "AppliedMaterials",
+    "Atlassian",
+    "BCHUSD",
+    "BNBUSD",
+    "BTCUSD",
+    "Baidu",
+    "BankofAmericaCorp",
+    "Berkshire",
+    "BlackRock",
+    "Boeing",
+    "Booking",
+    "Broadcom",
+    "CA60",
+    "CADCHF",
+    "CADJPY",
+    "CHFDKK",
+    "CHFHUF",
+    "CHFJPY",
+    "CHFNOK",
+    "CHFPLN",
+    "CHFSEK",
+    "CHFSGD",
+    "CHINAH",
+    "COFARA",
+    "COFROB",
+    "CORN",
+    "COTTON",
+    "CVSHealth",
+    "Caterpillar",
+    "CharlesSchwab",
+    "Charter",
+    "Chevron",
+    "Cisco",
+    "Citigroup",
+    "Coca-Cola",
+    "Coinbase",
+    "Comcast",
+    "CostcoWholesale",
+    "DOGEUSD",
+    "DOTUSD",
+    "DocuSign",
+    "Doordash",
+    "Dow",
+    "E35",
+    "EOSUSD",
+    "ETHUSD",
+    "EURAUD",
+    "EURCAD",
+    "EURCHF",
+    "EURCZK",
+    "EURDKK",
+    "EURGBP",
+    "EURHKD",
+    "EURHUF",
+    "EURILS",
+    "EURJPY",
+    "EURMXN",
+    "EURNOK",
+    "EURNZD",
+    "EURPLN",
+    "EURRUB",
+    "EURSEK",
+    "EURSGD",
+    "EURTRY",
+    "EURUSD",
+    "EURZAR",
+    "EUSTX50",
+    "ElectronicArts",
+    "ExxonMobil",
+    "FRA40",
+    "Ford",
+    "GBPAUD",
+    "GBPCAD",
+    "GBPCHF",
+    "GBPDKK",
+    "GBPHUF",
+    "GBPJPY",
+    "GBPMXN",
+    "GBPNOK",
+    "GBPNZD",
+    "GBPPLN",
+    "GBPSEK",
+    "GBPSGD",
+    "GBPTRY",
+    "GBPUSD",
+    "GBPZAR",
+    "GER40",
+    "GeneralElectric",
+    "GeneralMotors",
+    "GileadSciences",
+    "GoldmanSachs",
+    "HK50",
+    "HKDJPY",
+    "HomeDepot",
+    "Honeywell",
+    "IBM",
+    "Intel",
+    "Intuit",
+    "IntuitiveSurgical",
+    "JPMorganChase",
+    "JPN225",
+    "Johnson&Johnson",
+    "LNKUSD",
+    "LTCUSD",
+    "LucidGroup",
+    "Lyft",
+    "MATICUSD",
+    "MXNJPY",
+    "Mastercard",
+    "McDonalds",
+    "Medtronic",
+    "Merck",
+    "Meta",
+    "MicronTechnology",
+    "Microsoft",
+    "MorganStanley",
+    "NAS100",
+    "NETH25",
+    "NIO",
+    "NOKJPY",
+    "NOKSEK",
+    "NVIDIA",
+    "NZDCHF",
+    "NZDHUF",
+    "NZDJPY",
+    "NZDSGD",
+    "NZDUSD",
+    "Netflix",
+    "Nike",
+    "OJ",
+    "Oracle",
+    "PayPal",
+    "Pepsi",
+    "Pfizer",
+    "PhilipMorrisInternational",
+    "Pinterest",
+    "Procter&Gamble",
+    "Qualcomm",
+    "RobinhoodMarkets",
+    "Roku",
+    "S&PGlobal",
+    "SEKJPY",
+    "SGDJPY",
+    "SOLUSD",
+    "SOYBEAN",
+    "SUGAR",
+    "SUGARRAW",
+    "Salesforce",
+    "ServiceNow",
+    "Shopify",
+    "Snapchat",
+    "Snowflake",
+    "Spotify",
+    "Starbucks",
+    "TMEGroup",
+    "TSMC",
+    "Target",
+    "Tesla",
+    "TexasInstruments",
+    "ThermoFisherScientific",
+    "Toyota",
+    "Travelers",
+    "Twilio",
+    "UK100",
+    "UKCOCOA",
+    "UKGILT",
+    "US2000",
+    "US30",
+    "US500",
+    "USCOCOA",
+    "USDBRL",
+    "USDCAD",
+    "USDCHF",
+    "USDCNH",
+    "USDCZK",
+    "USDDKK",
+    "USDHKD",
+    "USDHUF",
+    "USDIDR",
+    "USDILS",
+    "USDINR",
+    "USDJPY",
+    "USDKRW",
+    "USDMXN",
+    "USDNOK",
+    "USDPLN",
+    "USDRUB",
+    "USDSEK",
+    "USDSGD",
+    "USDTHB",
+    "USDTRY",
+    "USDX",
+    "USDZAR",
+    "UST05Y",
+    "UST10Y",
+    "Uber",
+    "UnionPacific",
+    "UnitedHealth",
+    "UnitedParcelService",
+    "Verizon",
+    "Visa",
+    "WHEAT",
+    "Walmart",
+    "WaltDisney",
+    "WellsFargo",
+    "XAGEUR",
+    "XAGUSD",
+    "XALUSD",
+    "XAUAUD",
+    "XAUEUR",
+    "XBRUSD",
+    "XCUUSD",
+    "XLMUSD",
+    "XNGUSD",
+    "XNIUSD",
+    "XPBUSD",
+    "XPDUSD",
+    "XPTUSD",
+    "XTIUSD",
+    "XZNUSD",
+    "ZARJPY",
+    "eBay"
+   ],
+   "60s": [
+    "XAUUSD"
+   ],
+   "900s": [
+    "AUDCAD",
+    "AUDNZD",
+    "NZDCAD"
+   ]
+  },
+  "symbols": 299,
+  "symbols_at_or_below_60s": 1
+ },
+ "rent": {
+  "module": "macro_intel",
+  "rule": "E[logW] with - E[logW] without, measured forward",
+  "status": "UNMEASURED",
+  "value": null,
+  "why": "the layer has never sized a position -- no category has passed replay clearance -- so there is no with-minus-without to measure. Ledger rows and replay clearance are the leading indicators until there is."
+ },
+ "replay": {
+  "at": "2026-09-12T07:11:08.822207+00:00",
+  "categories_cleared_for_capital": [
+   "UNCLASSIFIED"
+  ],
+  "categories_in_ledger": [
+   "UNCLASSIFIED",
+   "central_bank_policy"
+  ],
+  "categories_refused": [
+   "central_bank_policy"
+  ],
+  "covers": "Every event IN THE LEDGER, released at its own received_at, scored against a price reader that raises on any read past that instant.",
+  "does_not_cover": [
+   "Any event the desk never recorded. The ledger is the entire universe of this replay, and on this box it starts empty -- so today the replay covers ZERO historical CPI, NFP, FOMC, ECB, BOJ, oil-shock or geopolitical events.",
+   "Availability times the desk never observed. Replaying an archive stamped with when an event HAPPENED rather than when it was PUBLICLY AVAILABLE would leak, so such an archive cannot be replayed here at all -- it is refused, not approximated.",
+   "Execution. This replays the information path only; fills, slippage and the event-window cost distribution are the gateway's and the execution twin's ground.",
+   "The pre-arrival window's own microstructure. With H1 as the fastest series for most instruments, a sub-hour pre-move is UNMEASURABLE rather than estimated."
+  ],
+  "gate": "assess.py refuses capital authority to any category not in categories_cleared_for_capital. With an empty ledger that is every category, which is why nothing in this package can size a position today.",
+  "ledger_rows": 113,
+  "replayed": {
+   "at": "2026-09-12T07:11:08.822296+00:00",
+   "clean": true,
+   "errors": [],
+   "n_events": 113,
+   "n_scored": 113,
+   "n_violations": 0,
+   "per_category": {
+    "UNCLASSIFIED": 111,
+    "central_bank_policy": 2
+   },
+   "violations": []
+  }
+ },
+ "replay_cleared": [
+  "UNCLASSIFIED"
+ ],
+ "replay_refused": [
+  "central_bank_policy"
+ ],
+ "rows_written": 0,
+ "source_failures": [],
+ "taxonomy": {
+  "at": "2026-09-12T07:11:04.503829+00:00",
+  "emergent": [],
+  "n_categories": 16,
+  "seed_areas_never_observed": [
+   "agriculture_supply",
+   "conflict_security",
+   "corporate_earnings",
+   "credit_financial_stress",
+   "energy_supply",
+   "fiscal_political",
+   "fx_intervention",
+   "growth_release",
+   "inflation_release",
+   "labour_release",
+   "natural_disaster",
+   "regulatory_exchange",
+   "shipping_logistics",
+   "trade_policy",
+   "volatility_repricing"
+  ],
+  "with_instances": {
+   "central_bank_policy": 2
+  }
+ }
+}

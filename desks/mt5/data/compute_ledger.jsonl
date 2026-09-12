@@ -6,3 +6,9 @@
 {"at": "2026-09-10T15:59:55+00:00", "run": "later", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 0.0, "cpu_s": 0.0}
 {"at": "2026-09-10T16:09:17+00:00", "run": "bad", "kind": "hourly_cycle", "outcome": "RuntimeError: simulated: one broken organ", "wall_s": 0.0, "cpu_s": 0.0}
 {"at": "2026-09-10T16:09:17+00:00", "run": "later", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 0.0, "cpu_s": 0.0}
+{"at": "2026-09-12T06:24:14+00:00", "run": "backtest", "kind": "hourly_cycle", "outcome": "TIMEOUT", "wall_s": 2434.82, "cpu_s": 0.031}
+{"at": "2026-09-12T06:36:14+00:00", "run": "external_gauntlet", "kind": "hourly_cycle", "outcome": "TIMEOUT", "wall_s": 720.4, "cpu_s": 0.016}
+{"at": "2026-09-12T06:46:43+00:00", "run": "falsifier_run", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 628.808, "cpu_s": 0.0}
+{"at": "2026-09-12T06:58:45+00:00", "run": "recertify_canon", "kind": "hourly_cycle", "outcome": "TIMEOUT", "wall_s": 721.865, "cpu_s": 0.016}
+{"at": "2026-09-12T07:10:46+00:00", "run": "enrol_clocks", "kind": "hourly_cycle", "outcome": "TIMEOUT", "wall_s": 721.63, "cpu_s": 0.016}
+{"at": "2026-09-12T07:10:47+00:00", "run": "hunt12", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 0.141, "cpu_s": 0.016}

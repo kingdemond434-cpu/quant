@@ -1,0 +1,1584 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics | CBK",
+  "url": "https://www.centralbank.go.ke/statistics/",
+  "published": "2026-09-07T05:07:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.centralbank.go.ke/principal-exports-volume-value-unit-prices/",
+   "https://www.centralbank.go.ke/value-selected-domestic-exports/",
+   "https://www.centralbank.go.ke/value-exports-selected-african-countries/",
+   "https://www.centralbank.go.ke/value-exports-selected-rest-world-countries/"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "72a22b3f91b1ec0b1716",
+  "host": "www.centralbank.go.ke",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical Data - Pakistan Stock Exchange (PSX)",
+  "url": "https://dps.psx.com.pk/historical",
+  "published": "2026-09-07T05:07:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "https://dps.psx.com.pk/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d08080cc29ef37719248",
+  "host": "dps.psx.com.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "SBP STRATEGIC PLAN FY 2024-28",
+  "url": "https://archive.sbp.org.pk/SBPVision/Index.html",
+  "published": "2026-09-07T05:07:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "203943f5613f154312eb",
+  "host": "archive.sbp.org.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-07T05:07:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fd733367b42ded8805ad",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Stocks - Mega First Corporation | I3investor",
+  "url": "https://klse.i3investor.com/web/blog/detail/rhbinvest/2026-09-07-story-h502376607-Trading_Stocks_Mega_First_Corporation",
+  "published": "2026-09-07T05:07:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c40a89cb7c77d6624fdf",
+  "host": "klse.i3investor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Stocks - Ranhill Utilities | I3investor",
+  "url": "https://klse.i3investor.com/web/blog/detail/rhbinvest/2026-09-07-story-h502376585-Trading_Stocks_Ranhill_Utilities",
+  "published": "2026-09-07T05:07:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a9c8bd78001518cc3430",
+  "host": "klse.i3investor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5146\u7965\u8d44\u4ea7\u4e8e\u5fd7\u5cf0\u5728\u7ebf\u8def\u6f14\uff1aETF\u7533\u8d2d\u8d4e\u56de\u5957\u5229\u53ca\u80a1\u6307CTA\u91cf\u5316\u7b56\u7565 \u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/12874.html",
+  "published": "2026-09-07T05:07:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ded44a65b3e887bb86c",
+  "host": "ly.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u79c1\u52df\u57fa\u91d1_\u91cf\u5316\u7b56\u7565\u8def\u6f14\u89c6\u9891-\u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/square/c82",
+  "published": "2026-09-07T05:07:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "inventory",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cbe2c4621d83d457324a",
+  "host": "ly.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u5317\u4eac\u5149\u534e\u79c1\u52df\u674e\u5947\u6cfd\u5728\u7ebf\u8def\u6f14\uff1a\u5149\u534e\u91cf\u5316\u8fdb\u5165\u7b56\u7565\u8212\u9002\u533a\uff1a\u9707\u8361\u73af\u5883\u4e0b\u7684\u8d85\u989d\u6536\u76ca\u903b\u8f91\u4e0e\u914d\u7f6e\u4ef7\u503c \u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/10935.html",
+  "published": "2026-09-07T05:07:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1ad998f1304f5f00c9b",
+  "host": "ly.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u6c6a\u6c9b-\u51c6\u661f\u57fa\u91d1\u6c6a\u6c9b_\u57fa\u91d1\u7ecf\u7406\u7b80\u5386-\u79c1\u52df\u6392\u6392\u7f51",
+  "url": "https://dc.simuwang.com/manager/PL000037US.html",
+  "published": "2026-09-07T05:07:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://www.simuwang.com/apps/downloads.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a812b9d05bad267f0e48",
+  "host": "dc.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u65bd\u6069-\u4e91\u8d77\u91cf\u5316\u65bd\u6069_\u57fa\u91d1\u7ecf\u7406\u7b80\u5386-\u79c1\u52df\u6392\u6392\u7f51",
+  "url": "https://dc.simuwang.com/manager/PL00003NOP.html",
+  "published": "2026-09-07T05:07:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://www.simuwang.com/apps/downloads.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "74e52b9f8db62c8b94d5",
+  "host": "dc.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Meet the Quantower \u2014 Quantower Trading Platform",
+  "url": "https://www.quantower.com/",
+  "published": "2026-09-07T05:07:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantower.com/download",
+   "https://www.quantower.com/sites/default/files/topFeatures/historyexport.png"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fbef0e076135c4c4909c",
+  "host": "www.quantower.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic Futures | Automated Trading Systems",
+  "url": "https://www.algorithmic-futures.com/",
+  "published": "2026-09-07T05:08:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d950d8fa7f6974fd4cb",
+  "host": "www.algorithmic-futures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Contact Us | Algorithmic Futures Trading Software",
+  "url": "https://www.algorithmic-futures.com/contact-us",
+  "published": "2026-09-07T05:08:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "12a7b7e430df7e5538f1",
+  "host": "www.algorithmic-futures.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home | TheTradingPit",
+  "url": "https://www.thetradingpit.com/",
+  "published": "2026-09-07T05:08:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3a921706581ab1dbaac5",
+  "host": "www.thetradingpit.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home | TheTradingPit",
+  "url": "https://www.thetradingpit.com/en-us/contact-us",
+  "published": "2026-09-07T05:08:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ac09e0ae753d16ae955",
+  "host": "www.thetradingpit.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "brokerize | Die Multi-Brokerage-API",
+  "url": "https://brokerize.com/",
+  "published": "2026-09-07T05:08:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ad8877f2f8ee25e6caa4",
+  "host": "brokerize.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - Hispatrading Magazine",
+  "url": "https://www.hispatrading.es/",
+  "published": "2026-09-07T05:08:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "990eeb9760b290b4c63d",
+  "host": "www.hispatrading.es",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtesting.py - Backtest trading strategies in Python",
+  "url": "https://kernc.github.io/backtesting.py/",
+  "published": "2026-09-07T05:08:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6345f08bca742c6e34ca",
+  "host": "kernc.github.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading-Strategie \u2013 06.07.- 10.07.2026 - VTAD",
+  "url": "https://www.vtad.de/dax-trading-strategie-06-07-10-07-2026/",
+  "published": "2026-09-07T05:08:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a831bdfa3941fc18c4f6",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading 2026: CFD Compound-Modell - VTAD",
+  "url": "https://www.vtad.de/dax-trading-2026-cfd-compound-modell-10/",
+  "published": "2026-09-07T05:08:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "da3258950c67f70d4f95",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading-Strategie \u2013 13.07.- 17.07.2026 - VTAD",
+  "url": "https://www.vtad.de/dax-trading-strategie-13-07-17-07-2026/",
+  "published": "2026-09-07T05:08:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7849b4fcdedfface27a8",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading-Strategie \u2013 20.07.- 24.07.2026 - VTAD",
+  "url": "https://www.vtad.de/dax-trading-strategie-20-07-24-07-2026/",
+  "published": "2026-09-07T05:08:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "298b7cc38cf526a0cc1f",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading 2026: CFD Compound-Modell - VTAD",
+  "url": "https://www.vtad.de/dax-trading-2026-cfd-compound-modell-13/",
+  "published": "2026-09-07T05:08:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "64515e073b434bffcb09",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading-Strategie - VTAD",
+  "url": "https://www.vtad.de/fa/fdax-trading-strategie/",
+  "published": "2026-09-07T05:08:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cc1cbf3266170fab64f0",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading 2026: CFD Compound-Modell - VTAD",
+  "url": "https://www.vtad.de/dax-trading-2026-cfd-compound-modell-12/",
+  "published": "2026-09-07T05:08:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8c783acf537c8943918e",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematischer DAX-Handel mit Compound-Kapitalentwicklung - VTAD",
+  "url": "https://www.vtad.de/systematischer-dax-handel-mit-compound-kapitalentwicklung/",
+  "published": "2026-09-07T05:08:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9e98263297a100431bc4",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematischer DAX-Handel mit Compound-Kapitalentwicklung - VTAD",
+  "url": "https://www.vtad.de/systematischer-dax-handel-mit-compound-kapitalentwicklung-3/",
+  "published": "2026-09-07T05:08:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "02c3852852f5c0b59f7b",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Conclus\u00f5es do Conselho de Administra\u00e7\u00e3o Sobre a Execu\u00e7\u00e3o da Estrat\u00e9gia da CONAB \u2014 Companhia Nacional de Abastecimento",
+  "url": "https://www.gov.br/conab/pt-br/acesso-a-informacao/institucional/gestao-estrategica/conclusoes-do-consad-estrategia",
+  "published": "2026-09-07T05:08:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "892211254f3fddfe8b3a",
+  "host": "www.gov.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitativo F\u00edsico de Pessoal \u2014 Companhia Nacional de Abastecimento",
+  "url": "https://www.gov.br/conab/pt-br/acesso-a-informacao/empregados-publicos/gestao-de-pessoas/quantitativo-fisico-de-pessoal",
+  "published": "2026-09-07T05:08:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9b9b7f7291e05fe8cfdf",
+  "host": "www.gov.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Solicitar renegocia\u00e7\u00e3o de d\u00edvidas - Fam\u00edlias",
+  "url": "https://www.gov.br/pt-br/servicos/solicitar-renegociacao-de-dividas-familias?origem=destaque_inst",
+  "published": "2026-09-07T05:08:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a74e879849c2800efb06",
+  "host": "www.gov.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Receber pagamento da Subven\u00e7\u00e3o Direta ao Produtor Extrativista",
+  "url": "https://www.gov.br/pt-br/servicos/receber-pagamento-da-subvencao-direta-ao-produtor-extrativista-sdpe",
+  "published": "2026-09-07T05:08:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b9ee6780cd05229e793f",
+  "host": "www.gov.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inicio",
+  "url": "https://www.estrategiaantilavado.cl/",
+  "published": "2026-09-07T05:08:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es-cl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14a19bd1e7bfe680e0c8",
+  "host": "www.estrategiaantilavado.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Algor\u00edtmico con Python: Desarrolla tus habilidades en el Trading Algor\u00edtmico : Trullas, Isaac: Amazon.es: Libros",
+  "url": "https://www.amazon.es/Trading-Algor%C3%ADtmico-Python-Desarrolla-habilidades/dp/B0DM6Q3LZF/?tag=xtradernet-21",
+  "published": "2026-09-07T05:08:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3fc47652a278313ad3ce",
+  "host": "www.amazon.es",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A IA precisa de ferramentas para investir",
+  "url": "https://codecapital.substack.com/p/a-ia-precisa-de-ferramentas-para",
+  "published": "2026-09-07T05:08:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c7878c0fde87f7650822",
+  "host": "codecapital.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtests no S&amp;P 500 - by Rafael Quintanilha - Code Capital",
+  "url": "https://codecapital.substack.com/p/code-night-003-backtests-no-s-and",
+  "published": "2026-09-07T05:08:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91efead6cc606395e167",
+  "host": "codecapital.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u0627\u0644\u0628\u062f\u064a\u0644 - \u0648\u064a\u0643\u064a\u0628\u064a\u062f\u064a\u0627",
+  "url": "https://ar.wikipedia.org/wiki/%D9%86%D8%B8%D8%A7%D9%85_%D8%A7%D9%84%D8%AA%D8%AF%D8%A7%D9%88%D9%84_%D8%A7%D9%84%D8%A8%D8%AF%D9%8A%D9%84",
+  "published": "2026-09-07T05:09:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ar",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c70e5711bd598c56db7a",
+  "host": "ar.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inside the Russell Reconstitution: Getting Tactical on Volatility, Options and Trading Opportunities",
+  "url": "https://futures.anthonycrudele.com/podcast/481/",
+  "published": "2026-09-07T05:09:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "19d40db483b8ab9d9615",
+  "host": "futures.anthonycrudele.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "#012: Andrea Unger, czterokrotny mistrz \u015bwiata w tradingu (EN) - System Trader",
+  "url": "https://systemtrader.pl/st-012-andrea-unger-4-time-world-trading-champion/",
+  "published": "2026-09-07T05:09:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "pl-PL",
+  "endpoints": [
+   "https://api.spreaker.com/download/episode/14924984/st012_andrea_unger_4_time_world_trading_champion.mp3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d84e5db2a4c85687e8d9",
+  "host": "systemtrader.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Definitive Guide to Position Sizing Strategies",
+  "url": "http://www.vantharp.com/products/definitive-guide-position-sizing.asp",
+  "published": "2026-09-07T05:09:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "160d534068da89b736e4",
+  "host": "www.vantharp.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gravity Zone Indicator | Catch Frictionless Market Breakouts",
+  "url": "https://www.findbettertrades.com/gravity?aff=7101e814b48f2f39d846f83a1847d6c2ddf76e9d3306df9fcb61be9fab4b912c",
+  "published": "2026-09-07T05:09:10+00:00",
+  "symbols": [
+   "BTCUSD",
+   "GBPUSD",
+   "NVIDIA",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d5217776ff96056a9a83",
+  "host": "www.findbettertrades.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The best support and resistance Tradingview indicator - MagniZone Indicator by Find Better Trades",
+  "url": "https://www.findbettertrades.com/magnizone?aff=7101e814b48f2f39d846f83a1847d6c2ddf76e9d3306df9fcb61be9fab4b912c",
+  "published": "2026-09-07T05:09:12+00:00",
+  "symbols": [
+   "BTCUSD",
+   "TARGET"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e0fbbf4f5b38d37618d7",
+  "host": "www.findbettertrades.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "See the Little-Known Triangle Patterns that Unleash 56%... 72%... Even 140% GAINS\u2014Automatically!",
+  "url": "https://www.findbettertrades.com/tritrader-indicator?aff=7101e814b48f2f39d846f83a1847d6c2ddf76e9d3306df9fcb61be9fab4b912c",
+  "published": "2026-09-07T05:09:15+00:00",
+  "symbols": [
+   "EURUSD",
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M15"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d14fe2eeb7aded0ebc8",
+  "host": "www.findbettertrades.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FBT| Power Index Indicator",
+  "url": "https://www.findbettertrades.com/power?aff=7101e814b48f2f39d846f83a1847d6c2ddf76e9d3306df9fcb61be9fab4b912c",
+  "published": "2026-09-07T05:09:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "23f24f718f8ad174b885",
+  "host": "www.findbettertrades.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algo Nation",
+  "url": "https://d2t.link/AlgoNation",
+  "published": "2026-09-07T05:09:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e47af12623aefce11646",
+  "host": "d2t.link",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KBpedia: ClusteringAlgorithm Reference Concept",
+  "url": "https://kbpedia.org/knowledge-graph/reference-concept/?uri=ClusteringAlgorithm",
+  "published": "2026-09-07T05:09:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://kbpedia.org/resources/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9979966deb761da23373",
+  "host": "kbpedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud83d\udcca \ud000\ud2b8 \uc804\ub7b5 \ubc31\ud14c\uc2a4\ud2b8 \uae30\ucd08 &ndash; \uc5d1\uc140\ub85c \uc218\uc775\ub960 \uac80\uc99d\ud558\uae30",
+  "url": "https://twentytwentyone.tistory.com/1447",
+  "published": "2026-09-07T05:09:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "86e9fc8490f2f50bce6f",
+  "host": "twentytwentyone.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "[\ubc31\ud14c\uc2a4\ud2b8 \ub9ac\ud3ec\ud2b8#17] \ud000\ud2b8 \ud22c\uc790 \uc785\ubb38: &quot;\ucf54\ub529 \ubab0\ub77c\ub3c4 \uac00\ub2a5&quot; \ud30c\uc774\uc36c\uc73c\ub85c 10\ubd84 \ub9cc\uc5d0 \ub05d\ub0b4\ub294 \ub098\ub9cc\uc758 \uc8fc\uc2dd \uc804\ub7b5 \uac80\uc99d\ubc95",
+  "url": "https://booktech-lab.tistory.com/399",
+  "published": "2026-09-07T05:09:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7e04a539b7a5374905d0",
+  "host": "booktech-lab.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "2.\ub370\uc774\ud130 \ubd84\uc11d\uc73c\ub85c \uc218\uc775 \uadf9\ub300\ud654! \ud000\ud2b8 \ud22c\uc790\uc758 \ubc31\ud14c\uc2a4\ud305 \uc804\ub7b5",
+  "url": "https://limitless6919.tistory.com/38",
+  "published": "2026-09-07T05:09:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b3c59aee0ff6ed11df16",
+  "host": "limitless6919.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "[\ud000\ud2b8 \uc2a4\ud130\ub514] \ubc31\ud14c\uc2a4\ud2b8 \uc644\uc131\ud558\uae30 (\uc218\uc775 \uace1\uc120 \uc77d\ub294 \ubc29\ubc95)",
+  "url": "https://muren.tistory.com/entry/\ud000\ud2b8-\uc2a4\ud130\ub514-\ubc31\ud14c\uc2a4\ud2b8-\uc644\uc131\ud558\uae30-\uc218\uc775-\uace1\uc120-\uc77d\ub294-\ubc29\ubc95",
+  "published": "2026-09-07T05:09:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "66456cc793dea7a3714f",
+  "host": "muren.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud83d\udcd8 \ud000\ud2b8 \ud22c\uc790 \uacf5\ubd80 10\ub2e8\uacc4",
+  "url": "https://twentytwentyone.tistory.com/2054",
+  "published": "2026-09-07T05:09:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e56bf5677a49a937e5d0",
+  "host": "twentytwentyone.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ubc31\ud14c\uc2a4\ud2b8, \ud000\ud2b8 \uc804\ub7b5 \uac80\uc99d, \ucd94\ucc9c \ud50c\ub7ab\ud3fc, \uc720\uc758 \uc0ac\ud56d",
+  "url": "https://moneyplant25.tistory.com/entry/\ubc31\ud14c\uc2a4\ud2b8-\ud000\ud2b8-\uc804\ub7b5-\uac80\uc99d-\ucd94\ucc9c-\ud50c\ub7ab\ud3fc-\uc720\uc758-\uc0ac\ud56d",
+  "published": "2026-09-07T05:09:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a68e0b4487f239dd7fb0",
+  "host": "moneyplant25.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud000\ud2b8 \ud22c\uc790\uc758 \ud575\uc2ec: \ubc31\ud14c\uc2a4\ud2b8\ub85c \ud22c\uc790 \uc804\ub7b5\uc758 \uc131\uacfc\ub97c \uac80\uc99d\ud558\ub294 \ubc29\ubc95",
+  "url": "https://digitalbourgeois.tistory.com/250",
+  "published": "2026-09-07T05:09:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e3b7eaab1b95620234c2",
+  "host": "digitalbourgeois.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud000\ud2b8 \ud2b8\ub808\uc774\ub354 \ucee4\ub9ac\ud058\ub7fc 25\ucc28\uc2dc : \uc774\ub3d9\ud3c9\uade0 \uc804\ub7b5 \ubc31\ud14c\uc2a4\ud2b8 &ndash; \ub2e8\uc21c \uc804\ub7b5\uc740 \uc2e4\uc81c\ub85c \ub3c8\uc774 \ub420\uae4c?",
+  "url": "https://infohwanil.tistory.com/entry/\ud000\ud2b8-\ud2b8\ub808\uc774\ub354-\ucee4\ub9ac\ud058\ub7fc-25\ucc28\uc2dc-\uc774\ub3d9\ud3c9\uade0-\uc804\ub7b5-\ubc31\ud14c\uc2a4\ud2b8-\u2013-\ub2e8\uc21c-\uc804\ub7b5\uc740-\uc2e4\uc81c\ub85c-\ub3c8\uc774-\ub420\uae4c",
+  "published": "2026-09-07T05:09:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "453b49b94f0547133ecb",
+  "host": "infohwanil.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud574\uc678 \uc120\ubb3c \uc790\ub3d9\ub9e4\ub9e4 \uc644\ubcbd \uac00\uc774\ub4dc &ndash; \uc7a5\uc810, \ub2e8\uc810, \uc804\ub7b5 \ubc0f \uc138\ud305 \ubc29\ubc95",
+  "url": "https://dollarfree.tistory.com/entry/\ud574\uc678-\uc120\ubb3c-\uc790\ub3d9\ub9e4\ub9e4-\uc644\ubcbd-\uac00\uc774\ub4dc-\u2013-\uc7a5\uc810-\ub2e8\uc810-\uc804\ub7b5-\ubc0f-\uc138\ud305-\ubc29\ubc95",
+  "published": "2026-09-07T05:09:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6985a5a35e5bbc6db231",
+  "host": "dollarfree.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc8fc\uc2dd \ud22c\uc790 \uc790\ub3d9\ud654: \ud574\uc678\uc120\ubb3c \uc790\ub3d9\ub9e4\ub9e4 \ud504\ub85c\uadf8\ub7a8 \uac00\uc774\ub4dc",
+  "url": "https://topadvisor.tistory.com/entry/\uc8fc\uc2dd-\ud22c\uc790-\uc790\ub3d9\ud654-\ud574\uc678\uc120\ubb3c-\uc790\ub3d9\ub9e4\ub9e4-\ud504\ub85c\uadf8\ub7a8-\uac00\uc774\ub4dc",
+  "published": "2026-09-07T05:09:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "562af94454a7f78f453b",
+  "host": "topadvisor.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "(\ud574\uc678\uc120\ubb3c \uc790\ub3d9\ub9e4\ub9e4 \uc54c\uace0\ub9ac\uc998) (1) \ub9e4\ub9e4 \uc54c\uace0\ub9ac\uc998 \uac1c\ub150 \uc124\uba85",
+  "url": "https://springcoming.tistory.com/230",
+  "published": "2026-09-07T05:09:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7cb65aeded659dbaa2c4",
+  "host": "springcoming.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud574\uc678\uc120\ubb3c \uc790\ub3d9\ub9e4\ub9e4 \uc194\ub8e8\uc158 - \uc218\uc775\uc131\uacfc \ud6a8\uc728\uc131\uc744 \ub3d9\uc2dc\uc5d0 \uc7a1\ub294 \uc804\ub7b5",
+  "url": "https://prosoft365.tistory.com/63",
+  "published": "2026-09-07T05:09:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4afc6eeeb0959965c53f",
+  "host": "prosoft365.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud574\uc678\uc120\ubb3c \uc790\ub3d9\ub9e4\ub9e4 \ud504\ub85c\uadf8\ub7a8 \ube44\uad50",
+  "url": "https://gomarkets.tistory.com/37",
+  "published": "2026-09-07T05:09:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4945517063e069b08525",
+  "host": "gomarkets.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud574\uc678\uc120\ubb3c\uc194\ub8e8\uc158 - \uc790\ub3d9\ub9e4\ub9e4\ud504\ub85c\uadf8\ub7a8(\ucd08\ubcf4\uc790\ub97c \uc704\ud55c \uc124\uba85)",
+  "url": "https://prosoft365.tistory.com/16",
+  "published": "2026-09-07T05:10:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9b05bcbd1ae68afe17cb",
+  "host": "prosoft365.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud574\uc678\uc120\ubb3c \ub300\uc5ec\uacc4\uc88c \uc790\ub3d9\ub9e4\ub9e4 \uc2dc\uc2a4\ud15c\uc758 \uc6d0\ub9ac\uc640 \ud6a8\uc728\uc801 \uc6b4\uc6a9\ubc95",
+  "url": "https://leadersnews.tistory.com/6",
+  "published": "2026-09-07T05:10:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "\ubd84\ubd09"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35732a667abd50138d2a",
+  "host": "leadersnews.tistory.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Newest &#39;algorithm&#39; Questions - Stack Overflow",
+  "url": "https://stackoverflow.com/tags/algorithm",
+  "published": "2026-09-07T05:10:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5aa3ec4eb40ddde9fd03",
+  "host": "stackoverflow.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Newest &#39;algorithms&#39; Questions - Computer Science Stack Exchange",
+  "url": "https://cs.stackexchange.com/tags/algorithms",
+  "published": "2026-09-07T05:10:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8f17041638550b133b42",
+  "host": "cs.stackexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Newest &#39;algorithms&#39; Questions - TeX - LaTeX Stack Exchange",
+  "url": "https://tex.stackexchange.com/tags/algorithms",
+  "published": "2026-09-07T05:10:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1ab20f348ffa6a3388e1",
+  "host": "tex.stackexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "LODE 2.0 - Semantic Artefact Viewer",
+  "url": "http://purl.org/spar/fabio/Algorithm",
+  "published": "2026-09-07T05:10:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e31b89d43bc50405eb2a",
+  "host": "purl.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms | Brilliant Math &amp; Science Wiki",
+  "url": "https://brilliant.org/wiki/algorithm/",
+  "published": "2026-09-07T05:10:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en-us",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "440959e3975404441b17",
+  "host": "brilliant.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cultureel Woordenboek - Wiskunde ~ algoritme",
+  "url": "https://www.cultureelwoordenboek.nl/wiskunde/algoritme",
+  "published": "2026-09-07T05:10:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.cultureelwoordenboek.nl/navigatie/images/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1a550b2f6b77ae1c3832",
+  "host": "www.cultureelwoordenboek.nl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Encyclopedia of Mathematics",
+  "url": "https://encyclopediaofmath.org/wiki/Algorithm",
+  "published": "2026-09-07T05:10:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6f08835448b8792270bd",
+  "host": "encyclopediaofmath.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritme \u2013 Store norske leksikon",
+  "url": "https://wikidata-externalid-url.toolforge.org/?p=4342&url_prefix=https://snl.no/&id=algoritme",
+  "published": "2026-09-07T05:11:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "no",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "41190ed95ec65705645a",
+  "host": "wikidata-externalid-url.toolforge.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus | Journalistikon",
+  "url": "https://journalistikon.de/algorithmus",
+  "published": "2026-09-07T05:11:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "651a5ca1a937287992f1",
+  "host": "journalistikon.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KBpedia: Algorithm Reference Concept",
+  "url": "https://kbpedia.org/knowledge-graph/reference-concept/?uri=Algorithm",
+  "published": "2026-09-07T05:11:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://kbpedia.org/resources/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b0630c2a92f10b2f7ec3",
+  "host": "kbpedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritme - Specifikation, korrekthed, effektivitet - Lex",
+  "url": "https://wikidata-externalid-url.toolforge.org/?p=8313&url_prefix=https://lex.dk/&id=algoritme",
+  "published": "2026-09-07T05:11:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "da",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a443e1d098fed0f14183",
+  "host": "wikidata-externalid-url.toolforge.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

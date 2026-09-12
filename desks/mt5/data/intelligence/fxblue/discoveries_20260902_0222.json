@@ -1,0 +1,362 @@
+[
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user premium",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=premium&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user premium2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=premium2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user premiumfxbot",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=premiumfxbot&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user presentmaker",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=presentmaker&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user prestigefields",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=prestigefields&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user prestigesouthern",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=prestigesouthern&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user prime-eagle-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=prime-eagle-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user prince-fx-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=prince-fx-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pristinefx",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pristinefx&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pristinefxmodel",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pristinefxmodel&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro-auto-trader",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro-auto-trader&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro-fx-3",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro-fx-3&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro4ex1",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro4ex1&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro4ex31",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro4ex31&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro4ex42",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro4ex42&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro4exreal",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro4exreal&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro4exsafe",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro4exsafe&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro_system10",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro_system10&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro_system3",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro_system3&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro_system4",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro_system4&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro_system5",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro_system5&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro_system6",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro_system6&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro_system7",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro_system7&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pro_system8",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pro_system8&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user proautotrader-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=proautotrader-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user probability-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=probability-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user probability-ea-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=probability-ea-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user procon3",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=procon3&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user procon661",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=procon661&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user procon700",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=procon700&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user professional_trading",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=professional_trading&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user profit-alliance-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=profit-alliance-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user profit-hedge",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=profit-hedge&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user profit-trader-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=profit-trader-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user profit_defender",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=profit_defender&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user profit_defender_demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=profit_defender_demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user profit_multiplier",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=profit_multiplier&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user profitabletrader",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=profitabletrader&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user profitretriever2022",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=profitretriever2022&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user profits-compounder",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=profits-compounder&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T02:24:13+00:00"
+ }
+]

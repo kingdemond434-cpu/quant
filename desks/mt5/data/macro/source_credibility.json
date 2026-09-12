@@ -1,0 +1,57 @@
+{
+ "at": "2026-09-12T07:12:09.406019+00:00",
+ "min_source_n": 12,
+ "min_tier_sources": 4,
+ "note": "Tier priors are a starting ordering; both levels re-fit from measured verification outcomes written by attribution.py. Speed is reported SEPARATELY from reliability -- a reliable source that arrives after the move has an unpriced fraction of zero and is worth nothing to trade on.",
+ "sources": [
+  {
+   "lead_s": null,
+   "n_falsified": 0,
+   "n_speed": 0,
+   "n_verified": 0,
+   "p_true": 0.9756,
+   "source": "BOE",
+   "status": "UNMEASURED",
+   "tier": "OFFICIAL",
+   "verdict": "speed UNMEASURED"
+  },
+  {
+   "lead_s": null,
+   "n_falsified": 0,
+   "n_speed": 0,
+   "n_verified": 0,
+   "p_true": 0.9756,
+   "source": "FED",
+   "status": "UNMEASURED",
+   "tier": "OFFICIAL",
+   "verdict": "speed UNMEASURED"
+  }
+ ],
+ "tiers": {
+  "OFFICIAL": {
+   "alpha": 40.0,
+   "beta": 1.0,
+   "status": "UNMEASURED"
+  },
+  "SOCIAL_OSINT": {
+   "alpha": 3.0,
+   "beta": 4.0,
+   "status": "UNMEASURED"
+  },
+  "SPECIALIST": {
+   "alpha": 8.0,
+   "beta": 3.0,
+   "status": "UNMEASURED"
+  },
+  "UNKNOWN": {
+   "alpha": 1.0,
+   "beta": 1.0,
+   "status": "UNMEASURED"
+  },
+  "WIRE": {
+   "alpha": 20.0,
+   "beta": 2.0,
+   "status": "UNMEASURED"
+  }
+ }
+}

@@ -1,0 +1,1802 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Global Market Coverage - TradingHours.com",
+  "url": "https://www.tradinghours.com/data/coverage",
+  "published": "2026-09-10T20:58:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5d747415e625eda2fad0",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "DBIE",
+  "url": "https://data.rbi.org.in/",
+  "published": "2026-09-10T20:58:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "05671c7cafb43d496587",
+  "host": "data.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Releases | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/scripts/statistics.aspx",
+  "published": "2026-09-10T20:58:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://rbidocs.rbi.org.in/rdocs/content/docs/PSDDP04062020.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fce638e2c9d19945ae9c",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data on Overseas Investment | Official Website of Reserve Bank of India",
+  "url": "https://www.rbi.org.in/scripts/Data_Overseas_Investment.aspx",
+  "published": "2026-09-10T20:58:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35fd560811b79c6b537c",
+  "host": "www.rbi.org.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://www.tradinghours.com/data",
+  "published": "2026-09-10T20:58:43+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "6a7fd1fb6674df8b810a",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u9999\u6e2f\u91d1\u878d\u7ba1\u7406\u5c40 - \u6578\u64da\u8207\u7d71\u8a08\u8cc7\u6599",
+  "url": "https://www.hkma.gov.hk/chi/data-publications-and-research/data-and-statistics/",
+  "published": "2026-09-10T20:58:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-hk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f440d007171ab7279dd4",
+  "host": "www.hkma.gov.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-10T20:58:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "26fc74480ea382d17bed",
+  "host": "futures.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-10T20:58:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8939b1a155dc1fe754c",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-10T20:58:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "567599af37d534837cef",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Citado - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:Citi&page=Algoritmo_de_Strassen&id=9444650&wpFormIdentifier=titleform",
+  "published": "2026-09-10T20:58:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3fb09e2fe469b837913b",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "URL-mallongigilo - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:UrlShortener&url=https%3A%2F%2Feo.wikipedia.org%2Fwiki%2FAlgoritmo_de_Strassen",
+  "published": "2026-09-10T20:58:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "15c004c4965b6ae46edd",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&useparsoid=0",
+  "published": "2026-09-10T20:58:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "70bf981e795e882347ef",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Libro-kreilo - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:Libro&bookcmd=book_creator&referer=Algoritmo+de+Strassen",
+  "published": "2026-09-10T20:58:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3dbf3f302bd514c1f38a",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "El\u015duti kiel PDF - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:DownloadAsPdf&page=Algoritmo_de_Strassen&action=show-download-screen",
+  "published": "2026-09-10T20:58:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b830d2ae8d96bf6f2039",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&printable=yes",
+  "published": "2026-09-10T20:59:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93f6a238e255e2db2955",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vikipedio",
+  "url": "https://eo.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-10T20:59:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [
+   "https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0dd33f262809f7f62763",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Coppersmith-Winograd - Vikipedio",
+  "url": "https://eo.wikipedia.org/wiki/Algoritmo_de_Coppersmith-Winograd",
+  "published": "2026-09-10T20:59:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "814736f2823fb420bb90",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Karacuba - Vikipedio",
+  "url": "https://eo.wikipedia.org/wiki/Algoritmo_de_Karatsuba",
+  "published": "2026-09-10T20:59:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2bb8669ed714337d60fc",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&veaction=edit&section=1",
+  "published": "2026-09-10T20:59:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "334432c3e770aa58668f",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Redaktado de Algoritmo de Strassen (sekcio) - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&action=edit&section=1",
+  "published": "2026-09-10T20:59:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1735858d699fb5f5afe3",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&veaction=edit&section=2",
+  "published": "2026-09-10T20:59:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "265a1ad019de20cbaa17",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Redaktado de Algoritmo de Strassen (sekcio) - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&action=edit&section=2",
+  "published": "2026-09-10T20:59:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2c2b227379dd86f49c1",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&veaction=edit&section=3",
+  "published": "2026-09-10T20:59:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "05ae452984d2f7e2f18d",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Redaktado de Algoritmo de Strassen (sekcio) - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&action=edit&section=3",
+  "published": "2026-09-10T20:59:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43a40d1e00934a683d4e",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&veaction=edit&section=4",
+  "published": "2026-09-10T20:59:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5c84e7e935185f5fcd2",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Redaktado de Algoritmo de Strassen (sekcio) - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&action=edit&section=4",
+  "published": "2026-09-10T20:59:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45dfb82b7bc8682f30bf",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&veaction=edit&section=5",
+  "published": "2026-09-10T20:59:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09ba7651752d2794e546",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "One losing strategy cost me half of my last 100 trades. It came from 3,925 fluke backtests my own gate had approved. | StratProof",
+  "url": "https://stratproof.com/blog/my-graduation-gate-let-3925-fluke-strategies-through",
+  "published": "2026-09-10T20:59:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fca585046f20361bedfe",
+  "host": "stratproof.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "&#x27;bars_mutation passes 63%&#x27; is not what it looks like. What backtest search-method tables actually tell you. | StratProof",
+  "url": "https://stratproof.com/blog/random-search-vs-mutation-crypto-strategies",
+  "published": "2026-09-10T20:59:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "299dc537ba4285886fb4",
+  "host": "stratproof.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline",
+  "published": "2026-09-10T20:59:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e4cc738e98afb03ee701",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=US.NYSE%2CGB.LSE%2CJP.JPX%2CAU.ASX",
+  "published": "2026-09-10T20:59:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "201f7ae1598ba09e16c6",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=US.NYSE%2CUS.NASDAQ%2CCA.TSX",
+  "published": "2026-09-10T20:59:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8f8072d238ff055b9cd0",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=GB.LSE%2CDE.XFRA%2CFR.EURONEXT%2CCH.SIX",
+  "published": "2026-09-10T21:00:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "46717991f384ac959c98",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=JP.JPX%2CHK.HKEX%2CCN.SSE%2CSG.SGX",
+  "published": "2026-09-10T21:00:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ede7cb2d26114a441eed",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=US.NYSE%2CCA.TSX%2CBR.BOVESPA%2CMX.BMV",
+  "published": "2026-09-10T21:00:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8b9119132abb17cec542",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours Timeline - See Market Schedules at a Glance - TradingHours.com",
+  "url": "https://www.tradinghours.com/timeline?markets=SA.TADAWUL%2CIL.TASE%2CZA.JSE",
+  "published": "2026-09-10T21:00:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "night_session",
+   "orderflow",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9ba960f378c527eea1c5",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingHours.com - Market Holidays & Trading Hours Calendars",
+  "url": "https://www.tradinghours.com",
+  "published": "2026-09-10T21:00:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "90858fe209e22927cc1f",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Vita:Strassen-algoritmus \u2013 Wikip\u00e9dia",
+  "url": "https://hu.wikipedia.org/wiki/Vita:Strassen-algoritmus",
+  "published": "2026-09-10T21:00:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "hu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7b35b43607d36e5f5bb9",
+  "host": "hu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen-algoritmus \u2013 Wikip\u00e9dia",
+  "url": "https://hu.wikipedia.org/w/index.php?title=Strassen-algoritmus&oldid=28407650",
+  "published": "2026-09-10T21:00:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "hu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f3850f6dd15fb3c39fe0",
+  "host": "hu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen-algoritmus \u2013 Wikip\u00e9dia",
+  "url": "https://hu.wikipedia.org/w/index.php?title=Strassen-algoritmus&useparsoid=0",
+  "published": "2026-09-10T21:00:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "hu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae28ea5b92e5365edff5",
+  "host": "hu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen-algoritmus \u2013 Wikip\u00e9dia",
+  "url": "https://hu.wikipedia.org/w/index.php?title=Strassen-algoritmus&printable=yes",
+  "published": "2026-09-10T21:00:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "hu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "73ee3915c43a5cedd9bf",
+  "host": "hu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ellen\u0151rz\u00e9si napl\u00f3 (review) \u2013 Wikip\u00e9dia",
+  "url": "https://hu.wikipedia.org/w/index.php?title=Speci%C3%A1lis:Rendszernapl%C3%B3k&type=review&page=Strassen-algoritmus",
+  "published": "2026-09-10T21:00:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "hu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1c42a04d205c409c8066",
+  "host": "hu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen-algoritmus \u2013 Wikip\u00e9dia",
+  "url": "https://hu.wikipedia.org/w/index.php?title=Strassen-algoritmus&veaction=edit&section=1",
+  "published": "2026-09-10T21:00:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "hu",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "915c4a6318fc92b66e43",
+  "host": "hu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dyskusja:Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/wiki/Dyskusja:Algorytm_Strassena",
+  "published": "2026-09-10T21:00:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "24567506e27d534df6e8",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&veaction=edit",
+  "published": "2026-09-10T21:00:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "819cf1d94bd2338558c7",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Edytujesz Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&action=edit",
+  "published": "2026-09-10T21:00:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "81651a11c5a7078afceb",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&oldid=78388478",
+  "published": "2026-09-10T21:01:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "819440ba040dd58c6cc7",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&useparsoid=0",
+  "published": "2026-09-10T21:01:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "39286317a75496dc8d59",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tworzenie ksi\u0105\u017cki \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Specjalna:Ksi%C4%85%C5%BCka&bookcmd=book_creator&referer=Algorytm+Strassena",
+  "published": "2026-09-10T21:01:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dba21585cd681f3b3ab1",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm Strassena \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/w/index.php?title=Algorytm_Strassena&printable=yes",
+  "published": "2026-09-10T21:01:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8190f34bad6d4cf8e7a3",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorytm \u2013 Wikipedia, wolna encyklopedia",
+  "url": "https://pl.wikipedia.org/wiki/Algorytm",
+  "published": "2026-09-10T21:01:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4bdfe9bbb805d2fde786",
+  "host": "pl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassenov algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=Strassenov_algoritmus&veaction=edit",
+  "published": "2026-09-10T21:01:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "051dbf20927a7f57da7f",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassenov algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=Strassenov_algoritmus&oldid=7962408",
+  "published": "2026-09-10T21:01:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bff21532221e8e25b821",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassenov algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=Strassenov_algoritmus&useparsoid=0",
+  "published": "2026-09-10T21:01:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10e46127cd5b10f196ee",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tvorba knihy - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=%C5%A0peci%C3%A1lne:Knihy&bookcmd=book_creator&referer=Strassenov+algoritmus",
+  "published": "2026-09-10T21:01:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "413d2bd248727c6de579",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassenov algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/w/index.php?title=Strassenov_algoritmus&printable=yes",
+  "published": "2026-09-10T21:02:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6924d61319e2e23c9d66",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmus - Wikip\u00e9dia",
+  "url": "https://sk.wikipedia.org/wiki/Algoritmus",
+  "published": "2026-09-10T21:02:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sk",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d6811ec9c19178b24ee",
+  "host": "sk.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/sr/%C5%A0trasenov_algoritam",
+  "published": "2026-09-10T21:02:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "acb71c333422069834bc",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0428\u0442\u0440\u0430\u0441\u0435\u043d\u043e\u0432 \u0430\u043b\u0433\u043e\u0440\u0438\u0442\u0430\u043c \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/sr-ec/%C5%A0trasenov_algoritam",
+  "published": "2026-09-10T21:02:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr-Cyrl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2436418c5519eaea7a7",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/sr-el/%C5%A0trasenov_algoritam",
+  "published": "2026-09-10T21:02:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr-Latn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aa0f12a4f909d2ddfbc1",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&veaction=edit",
+  "published": "2026-09-10T21:02:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a00b7f3db4af3e85dda6",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0443\u0440\u0435\u0452\u0438\u0432\u0430\u045a\u0435 \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&action=edit",
+  "published": "2026-09-10T21:02:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9ae640ca3b938e67c60b",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0438\u0441\u0442\u043e\u0440\u0438\u0458\u0430 \u0438\u0437\u043c\u0435\u043d\u0430 \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&action=history",
+  "published": "2026-09-10T21:02:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a17aa8e03c7e70c80078",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u043a\u043e\u0458\u0435 \u0432\u043e\u0434\u0435 \u043e\u0432\u0430\u043c\u043e \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/wiki/%D0%9F%D0%BE%D1%81%D0%B5%D0%B1%D0%BD%D0%BE:%D0%A8%D1%82%D0%B0_%D0%B2%D0%BE%D0%B4%D0%B8_%D0%BE%D0%B2%D0%B0%D0%BC%D0%BE/%C5%A0trasenov_algoritam",
+  "published": "2026-09-10T21:02:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75fe0c7925a625c6543e",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&oldid=31175923",
+  "published": "2026-09-10T21:02:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91ec3c84db4aab7aa721",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u041f\u043e\u0434\u0430\u0446\u0438 \u043e \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0438 \u201e\u0160trasenov algoritam\u201d \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&action=info",
+  "published": "2026-09-10T21:02:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "064f680f84d278863242",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0160trasenov algoritam \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&veaction=edit&section=1",
+  "published": "2026-09-10T21:03:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "859ffcf0aaabaa7778a2",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0423\u0440\u0435\u0452\u0443\u0458\u0435\u0442\u0435 \u0160trasenov algoritam (\u043e\u0434\u0435\u0459\u0430\u043a) \u2014 \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sr.wikipedia.org/w/index.php?title=%C5%A0trasenov_algoritam&action=edit&section=1",
+  "published": "2026-09-10T21:03:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "95f09c1b52ec191414f3",
+  "host": "sr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading",
+  "url": "https://www.ninjatraderbrokerage.com/eu/en-fr/futures/why-trade-futures/futures-vs-forex-and-cfds/",
+  "published": "2026-09-10T21:03:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a4f86b90e34c5e9b5230",
+  "host": "www.ninjatraderbrokerage.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "TradingView PineScript Developer Service",
+  "url": "https://4xdev.com/services/tradingview-programming",
+  "published": "2026-09-10T21:03:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ba04f054be83cf09fa0d",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtesting and optimization",
+  "url": "https://4xdev.com/services/backtesting-and-optimization",
+  "published": "2026-09-10T21:03:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a2f1cb971307705c6442",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Buy Professional Forex Indicators. \ud83e\uddf0 Tools For Traders | 4xDev",
+  "url": "https://4xdev.com/tools",
+  "published": "2026-09-10T21:03:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7eac7cb1b8dac1e0c2d3",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Buy TradingView Indicators. Custom Pine Script Tools | 4xDev",
+  "url": "https://4xdev.com/tools/tradingview",
+  "published": "2026-09-10T21:03:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ffdbe56b3c58c48778ab",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Protector Software. Protection of the Trading Tools | 4xDev",
+  "url": "https://4xdev.com/products/forex-protector-software",
+  "published": "2026-09-10T21:03:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eeee46e4b8f368a9b849",
+  "host": "4xdev.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingHours.com - Market Holidays & Trading Hours Calendars",
+  "url": "https://www.tradinghours.com/",
+  "published": "2026-09-10T21:03:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a8b37a05c7fa1ec76f5c",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MIC Code Search - TradingHours.com",
+  "url": "https://www.tradinghours.com/mic",
+  "published": "2026-09-10T21:03:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "956b45a6649d3fcf8159",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Currency Holidays - TradingHours.com",
+  "url": "https://www.tradinghours.com/currencies",
+  "published": "2026-09-10T21:03:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "745bab8c3ba830fd3178",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SIFMA Recommended Trading Hours, Holidays & Early Close Schedule - TradingHours.com",
+  "url": "https://www.tradinghours.com/sifma",
+  "published": "2026-09-10T21:03:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0470dd71870c390d7f84",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Is the Stock Market Open? - TradingHours.com",
+  "url": "https://www.tradinghours.com/open",
+  "published": "2026-09-10T21:03:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8b5eba9847daccdde114",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "http://www.quantifiableedges.com/",
+  "published": "2026-09-10T21:03:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "53cc175e67cc24db669f",
+  "host": "www.quantifiableedges.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog - The Essentials of Trading in UAE",
+  "url": "http://www.theessentialsoftrading.com/Blog/",
+  "published": "2026-09-10T21:04:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a5388c34b1426db6ce6",
+  "host": "www.theessentialsoftrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Wall Street Currents: Quant Currents",
+  "url": "http://www.wallstreetcurrents.com/p/quant-currents.html",
+  "published": "2026-09-10T21:04:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "H1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "95357896a4596a0a5e0c",
+  "host": "www.wallstreetcurrents.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
