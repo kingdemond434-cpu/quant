@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-12T04:08:20.769500+00:00",
+  "generated_at": "2026-09-12T06:47:34.806748+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
@@ -18,14 +18,14 @@
     },
     "universal_survivors": 67,
     "shadow_sleeves": 103,
-    "shadow_observations": 659,
+    "shadow_observations": 646,
     "shadow_last_run": "2026-09-12"
   },
   "freshness": {
     "research_loop": "2026-09-04T03:31:09.889825+00:00",
-    "research_pipeline": "2026-09-12T04:02:17+00:00",
+    "research_pipeline": "2026-09-12T06:44:21+00:00",
     "external_gauntlet": "2026-09-11T15:36:02+00:00",
-    "universal_gate": "2026-09-12T04:02:17+00:00",
+    "universal_gate": "2026-09-12T06:44:21+00:00",
     "allocation": "2026-09-04T03:30:52.359489+00:00",
     "markout": "2026-08-30T08:35:16+00:00",
     "markout_usable": false,
@@ -33,7 +33,7 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-09-12T04:08:20.205059+00:00",
+    "generated_at": "2026-09-12T06:47:34.605178+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 5,
       "DISPOSED_SUPERSEDED": 9,
