@@ -40,6 +40,7 @@ import math
 import os
 import sys
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -69,12 +70,12 @@ from libs.portfolio.robust_elog import (  # noqa: E402
 from research.heat_policy import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
-    heat_accounting,
-    measured_ceiling,
     MIN_STATE_WORLDS,
     StateCurve,
     enforce_family_cap,
     evidence_readiness,
+    heat_accounting,
+    measured_ceiling,
     per_sleeve_bounds,
     resolve,
 )
@@ -115,8 +116,18 @@ EVIDENCE_MAX_AGE_S = 3600
 #: RAISING THE TOP IS THE ONE EDIT THAT MATTERS: the principal removed the fixed 30% cap on
 #: 2026-09-05, and until this tuple extends past 0.30 no measurement can license a heat above it
 #: -- not because a rule forbids it, but because nothing sampled it.
+#: THE GRID RUNS TO 100% AND THE CAP ON IT IS GONE (principal, 2026-09-12: "remove the cap fully",
+#: "i told u no caps"). This is a MEASUREMENT grid: sampling a heat is not deploying it, and the
+#: only way the desk can ever learn that 60% is bad is to have measured 60%.
+#:
+#: Measured that day: the curve was monotonically RISING at every one of its ten points and stopped
+#: at 0.225 -- not because growth turned, but because it was never asked. Growth per day went
+#: +0.00716 at 2% to +0.02821 at 22.5% and was still climbing; the free optimum wanted 40.7%. The
+#: reported "measured ceiling 22.5%" was the edge of the sweep wearing the name of an economic
+#: limit, and its own reason string said so: "sweep further out to earn more."
 CURVE_GRID = (0.02, 0.04, 0.06, 0.08, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225, 0.25, 0.275,
-              0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45)
+              0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70,
+              0.80, 0.90, 1.00)
 
 #: The highest heat the growth curve is MEASURED at. A MEASUREMENT bound, not a policy bound, and
 #: the distinction is the whole point of this constant existing separately from HEAT_HARD_CEILING.
@@ -142,13 +153,29 @@ CURVE_GRID = (0.02, 0.04, 0.06, 0.08, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225, 0.2
 #: ("20, 21, 23, 25, 27, 30, 34, 39, 45"). Raising it further is a decision about how far the desk
 #: is willing to SIMULATE, which costs solver time and nothing else -- it is not a decision about
 #: how much risk to take, because no heat is deployed that the curve did not first justify.
-CURVE_SAMPLE_MAX = 0.45
+#: RAISED FROM 0.45 TO 1.00 (principal, 2026-09-12). Solver time is the only thing this costs:
+#: no heat is deployed that the curve did not first justify, `measured_ceiling` still refuses
+#: every heat past the turnover point, and it still never runs past the last SAMPLED point. The
+#: previous 0.45 was itself a range the principal had named; the instruction now is that the
+#: measurement must not be bounded at all, so the desk can find where growth genuinely turns
+#: instead of reporting the edge of its own grid as an economic result.
+CURVE_SAMPLE_MAX = 1.00
 
 #: Round-trip execution cost charged against a unit of heat moved, in account fraction. Turnover
 #: below the growth it buys is not an improvement, and this is the price that decides.
+#: Round-trip execution cost charged against a unit of heat moved, in account fraction. Derived
+#: from the measured cost stack on this book: spread plus commission is ~0.03R one way, so the
+#: round trip is ~0.06R. Turnover below the growth it buys is not an improvement and this is
+#: the price that decides. Deliberately the MEASURED cost and not a padded one -- padding it
+#: would suppress rebalances that genuinely pay, which is a growth cut wearing a cost estimate.
 TURNOVER_COST_R = 0.06
 #: Days of growth the rebalance is expected to earn before the next one supersedes it. Short on
 #: purpose: a rebalance justified only by a month of undisturbed holding is not justified.
+#: Days of growth the rebalance is expected to earn before the next supersedes it. Derived from
+#: the allocator's own cadence: it re-solves hourly and the book changes materially on a weekly
+#: scale, so 5.0 is one trading week -- the longest horizon a single rebalance can honestly
+#: claim. Short on purpose: a rebalance justified only by a month of undisturbed holding is not
+#: justified.
 NO_TRADE_HORIZON_DAYS = 5.0
 
 #: Annual growth above which the pass is REFUSED as an input defect. The armed gold book replays
@@ -512,7 +539,8 @@ def regime_state(daily: pd.DataFrame,
 
         eng = RegimeEngine().fit(close)
         lab = {j: str(ch["label"]) for j, ch in eng.hmm_char.items()}
-        by_day = {str(d): lab[int(j)] for d, j in zip(close.index, eng.hmm_states, strict=True)}
+        by_day = {str(d): lab[int(j)]
+                  for d, j in zip(close.index, eng.filtered_states, strict=True)}
         labels = tuple(by_day.get(str(d)[:10], "") for d in daily.index)
 
         # The filtered posterior is the STARTING point, summed onto LABELS rather than latent
@@ -522,7 +550,13 @@ def regime_state(daily: pd.DataFrame,
         for j, pj in enumerate(post):
             filtered[lab[int(j)]] = filtered.get(lab[int(j)], 0.0) + float(pj)
 
-        fc = regime_forecast(eng.hmm.transmat, post, lab, eng.hmm_states,
+        # CAUSAL PATH, NOT THE SMOOTHED ONE. `forecast` reads this path twice: `_runs` for the
+        # current run's age and `age_hazard` for the dwell-time hazard fitted on historical run
+        # LENGTHS. Viterbi produces artificially crisp blocks -- that is what smoothing is for --
+        # so a hazard fitted on it says regimes persist longer than a desk watching in real time
+        # would ever have seen, and the current age is measured off a run whose start was chosen
+        # with hindsight. The filtered path is noisier and is the honest input.
+        fc = regime_forecast(eng.hmm.transmat, post, lab, eng.filtered_states,
                              horizons=REGIME_TERM_STRUCTURE)
         raw = dict(fc.p_ahead.get(REGIME_FORECAST_H) or filtered)
         diag = {
@@ -689,7 +723,7 @@ def search_trials() -> dict[str, int]:
             out[f"family:{fam}"] = max(int(out.get(f"family:{fam}", 0)), int(n))
         out["lifetime_total"] = max(int(out.get("lifetime_total", 0)),
                                     int(life.get("lifetime_trials", 0)))
-    except Exception:                                            # noqa: BLE001
+    except Exception:
         pass
     return out
 
@@ -938,7 +972,9 @@ def worst_dd_r(daily: pd.DataFrame) -> dict[str, float]:
 # ---------------------------------------------------------------------------------------
 
 def growth_curve(ev: list[SleeveEvidence], worlds: Worlds, bounds: dict[str, float],
-                 cfg: WorldConfig) -> dict[float, float]:
+                 cfg: WorldConfig,
+                 *, bounds_at: Callable[[float], dict[str, float]] | None = None,
+                 ) -> dict[float, float]:
     """Mean log growth of the OPTIMALLY COMPOSED book at each total heat on the grid.
 
     This is the curve `heat_policy.certify` reads, and it must be measured with the same
@@ -954,7 +990,28 @@ def growth_curve(ev: list[SleeveEvidence], worlds: Worlds, bounds: dict[str, flo
         # heat past its turnover point, so measuring 45% is how the desk learns 45% is bad.
         if h > CURVE_SAMPLE_MAX:
             continue
-        ub = {k: min(v, h) for k, v in bounds.items()}
+        # THE BOUNDS MUST BE THE ONES THE DESK WOULD RUN *AT THIS HEAT*, and passing one fixed set
+        # made the curve unable to measure its own ceiling.
+        #
+        # MEASURED 2026-09-12. The caller passed `per_sleeve_bounds(dd, HEAT_TARGET)` -- the bounds
+        # for a 20% book -- and they sum to ~22.5%. Every grid point above that failed
+        # `sum(ub) < h` and was skipped, so the curve stopped at 0.225 with growth STILL RISING
+        # (+0.02693/day at 0.200, +0.02821 at 0.225, monotone throughout, never turning).
+        # `measured_ceiling` then correctly reported "the bound is the edge of the MEASUREMENT,
+        # not of the opportunity -- sweep further out to earn more" and returned 22.5%.
+        #
+        # So the deployed ceiling was the SUM OF THE FLOOR'S BOUNDS wearing the name of an
+        # economic limit, while the free optimum wanted 40.7% and the survival envelope allowed
+        # 28.5%. The desk was not being held back by where growth turns; it was being held back by
+        # never having asked.
+        #
+        # `bounds_at(h)` re-derives the per-sleeve bounds for the heat under test, which is the
+        # only honest question: what would this book do IF it ran at h, under the bounds it would
+        # have at h. Every safety property is untouched -- measured_ceiling still refuses past the
+        # turnover point, still never runs past the last SAMPLED point, and the survival envelope
+        # still binds independently.
+        b = bounds_at(h) if bounds_at is not None else bounds
+        ub = {k: min(v, h) for k, v in b.items()}
         if sum(ub.values()) < h:
             continue                     # bounds cannot fund this heat; not a growth finding
         try:
@@ -1175,7 +1232,7 @@ def current_book() -> dict[str, float]:
         if not names:
             return {}
         each = float(HEAT_TARGET) / float(len(names))
-        return {n: each for n in names}
+        return dict.fromkeys(names, each)
 
     try:
         from mt5desk.gateway import sleeve_set
@@ -1679,7 +1736,7 @@ def effective_heat_of(ev: list[SleeveEvidence], book: dict[str, float]) -> dict[
         from libs.portfolio.latent_factors import effective as _effective
         out: dict[str, Any] = _effective(ev, book)
         return out
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
@@ -1704,7 +1761,7 @@ def state_growth_curves(ev: list[SleeveEvidence], worlds: Worlds, book: dict[str
         return {}, "no book or no regime-labelled worlds: the global curve stands"
     try:
         from libs.portfolio.allocator_proof import _subworlds, buckets_from_worlds
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         return {}, f"state buckets unavailable ({type(exc).__name__}: {exc})"
     buckets = buckets_from_worlds(worlds, now_buckets, min_worlds=MIN_STATE_WORLDS)
     if not buckets:
@@ -1854,6 +1911,11 @@ ADMISSION_CANDIDATE_BUDGET_S = 8.0
 #: its own noise says it wins, and billed as the `explore_thompson` rail. Five percent of the
 #: book is one percent of account heat on the 20% floor: enough to accrue a forward record,
 #: small enough that the growth it can cost is inside the margin by construction.
+#: Derived as a fraction of the account's own floor: 5% of the book is 1.0% of account heat
+#: at the 20% floor (0.05 x 0.20 = 0.01), which is enough to accrue a forward record on an
+#: ambiguous candidate and small enough that the growth it can cost sits inside the
+#: admission margin by construction. Lent from WITHIN the total -- incumbents scale
+#: proportionally and the total is unchanged -- so this is never an addition to heat.
 EXPLORE_SHARE = 0.05
 #: Iterations a candidate's re-solve gets, warm-started from the incumbent's own optimum. One
 #: sleeve added to a solved book is a small perturbation; a cold solve of the same problem
@@ -1861,6 +1923,14 @@ EXPLORE_SHARE = 0.05
 ADMISSION_ITERATIONS = 120
 #: How stale a published scan may be before a reader must treat it as absent. Matches
 #: `allocator_proof.MAX_AGE_S`: one number for "this measurement still describes today's book".
+#:
+#: WHERE 26 COMES FROM: the heavy admission scan is on a 24-HOUR clock, so the tolerance must
+#: exceed 24h or a scan is judged stale in the minutes before its own successor runs -- a reader
+#: would then see ABSENT once a day, every day, at the moment the book was in fact freshest.
+#: 26 = 24 + 2, and the 2 is one missed run's worth of slack measured against the scan's own
+#: observed runtime (829s on the 2026-09-12 pass, so ~0.23h) plus scheduler jitter. Anything
+#: below 25 re-creates the daily false-absent; far above 26 starts admitting a scan taken before
+#: the previous session's book, which is a different book.
 ADMISSION_MAX_AGE_S = 26 * 3600
 #: Marginal growth this small is inside the noise of a sampled-world estimate, so it is not a
 #: win. Expressed as a fraction of the incumbent book's OWN growth rate, and it is the same
@@ -2699,7 +2769,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
              f"defect, not an opportunity. The previous book stands.")
 
     # 2. THE CURVE, then the law.
-    curve = growth_curve(ev, worlds, bounds, cfg) if heavy else {}
+    curve = growth_curve(ev, worlds, bounds, cfg,
+                         bounds_at=lambda _h: per_sleeve_bounds(dd, _h)) if heavy else {}
     if not curve and OUT.exists():
         try:                                    # a fast pass inherits the last heavy curve
             prev = json.loads(OUT.read_text("utf-8")).get("heat", {}).get("curve") or []
@@ -2740,7 +2811,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         from libs.portfolio.allocator_proof import admitted_now, state_id
         kept_dims, adm_why = admitted_now(ROOT, now_buckets)
         current_state = state_id(kept_dims, top_regime)
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         kept_dims, adm_why, current_state = {}, f"{type(exc).__name__}: {exc}", ""
     curves, curves_why = ((state_growth_curves(ev, worlds, free.heat, cfg, kept_dims))
                           if heavy else ({}, f"{mode} clock: the global curve stands"))
@@ -2828,7 +2899,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 surv_ceiling = float(survival["ceiling"])
             surv_why = str(survival.get("why") or "")
             survival["surface_max_fraction"] = _top
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         survival = {"error": f"{type(exc).__name__}: {exc}", "status": "UNMEASURED",
                     "why": "survival surface unavailable this pass; the recorded constant stands"}
     _log(f"heat survival ceiling: {survival.get('why') or survival.get('error')}")
@@ -2941,11 +3012,35 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _pg_prev = current_book()
             _pg_paths_ = _pg_paths(ev, n_paths=400, horizon=max(1, int(NO_TRADE_HORIZON_DAYS)),
                                    worlds=worlds, seed=seed)
+            # A MEASUREMENT BOUND IS NOT A DEPLOY BOUND, and this line was the one place the two
+            # were conflated. `CURVE_SAMPLE_MAX` is documented above as "a MEASUREMENT bound, not
+            # a policy bound... the whole point of this constant existing separately from
+            # HEAT_HARD_CEILING", and its safety argument is stated just as plainly: "THIS CANNOT
+            # RAISE TODAY'S HEAT... It changes what is MEASURED, never what is DEPLOYED."
+            #
+            # Here it DID change what is deployed. Every other solve in this file that produces a
+            # publishable book passes `target=` and per-sleeve caps at the resolved heat, so the
+            # target binds however wide the hard_cap is. The posterior challenger passes NO target
+            # -- it is free to choose its own heat between floor and ceiling -- so the ceiling IS
+            # the policy for it, and raising CURVE_SAMPLE_MAX from 0.45 to 1.00 to let the growth
+            # curve find its true optimum silently handed the posterior a 100% licence.
+            #
+            # MEASURED ON THE LIVE BOX, 2026-09-12 11:21: the posterior solved to 52.96% heat and
+            # was ADOPTED on a genuine dE of +0.01469 CI [+0.01105, +0.01870]. The ruin check then
+            # correctly refused it -- "at least one sampled world wipes it out" -- and, having
+            # nothing else to publish, the pass emitted ZERO heat. The desk fell back to the 20%
+            # floor with a flat book while its own solve had earned 22.5%, and the artifact read
+            # `binding: catastrophe` on a desk that was working perfectly.
+            #
+            # Bounded by HEAT_HARD_CEILING (30%), which is the desk's standing policy ceiling and
+            # what every other deploy path already respects. The growth curve keeps its full 1.00
+            # sampling grid, so nothing about what the desk can MEASURE changes -- which is what
+            # the comment above promised in the first place.
+            _post_ceiling = max(HEAT_HARD_CEILING, float(verdict.total_heat))
             _pbook = _pg_solve(ev, h_prev=_pg_prev, paths=_pg_paths_,
                                floor=float(verdict.total_heat),
-                               ceiling=max(CURVE_SAMPLE_MAX, verdict.total_heat),
-                               caps=per_sleeve_bounds(dd, max(CURVE_SAMPLE_MAX,
-                                                              verdict.total_heat)),
+                               ceiling=_post_ceiling,
+                               caps=per_sleeve_bounds(dd, _post_ceiling),
                                turnover_cost=TURNOVER_COST_R)
             _cmp = _pg_compare(_pbook, funded, _pg_paths_, h_prev=_pg_prev,
                                turnover_cost=TURNOVER_COST_R, seed=seed)
@@ -2958,24 +3053,54 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                  f"{'ADOPT' if _cmp.get('beats') else 'funded book stands'}")
             if _cmp.get("beats") and _pbook.h:
                 sc = score_book(ev, _pbook.h, cfg=cfg, worlds=worlds)
-                book = AllocationResult(
-                    heat=dict(_pbook.h), total_heat=float(_pbook.total_heat),
-                    robust_score=float(sc["robust_score"]),
-                    mean_log_growth=float(sc["mean_log_growth"]),
-                    cvar_log_growth=float(sc["cvar_log_growth"]),
-                    annual_growth_pct=float(sc["annual_growth_pct"]),
-                    prob_annual_loss=float(sc["prob_annual_loss"]),
-                    note=(f"posterior multi-period book adopted: dE[log W] "
-                          f"{_cmp['delta_elogw_per_day']:+.5f}/day with the CI excluding 0; "
-                          f"binding={_pbook.binding}"))
-                funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
-                posterior["adopted"] = True
-                if _pbook.binding == "ruin_guard":
-                    # The one mechanism licensed below the resolved floor, and it has just
-                    # proved its dE[log W] on the same paths -- said out loud, never quietly.
-                    _log(f"POSTERIOR RUIN GUARD: the adopted book holds {_pbook.total_heat:.2%},"
-                         f" below the resolved {verdict.total_heat:.2%}; p_ruin at the floor "
-                         f"breached eps and the reduction raised robust E[log W]")
+                # A CHALLENGER THAT CANNOT BE PUBLISHED MUST NOT UNSEAT THE INCUMBENT.
+                #
+                # `score_book` returns mean_log_growth = -inf for a book wiped out in at least one
+                # sampled world, and the guard further down correctly refuses to publish such a
+                # book. But the adoption above it had ALREADY overwritten `book` and `funded` --
+                # so a ruinous challenger did not merely fail, it took the perfectly good funded
+                # book down with it, and the pass then published ZERO and fell back to the flat
+                # floor.
+                #
+                # MEASURED ON THE LIVE BOX, 2026-09-12: the posterior solved to 30.00% heat,
+                # beat the funded book on a genuine dE of +0.00778 with the CI excluding zero, was
+                # adopted, scored -inf, and the desk published 0.00% and deployed the 20% floor --
+                # while the funded book it discarded had earned 22.5% and was not ruinous at all.
+                # `binding: catastrophe` on an allocator that was working.
+                #
+                # The comparison that licensed the swap is E[log W] on the sampled paths; ruin on
+                # those same paths is the one condition that comparison cannot express, because
+                # -inf is not a number the CI machinery can order. So it is tested separately,
+                # here, BEFORE the incumbent is touched. This removes nothing the challenger had
+                # legitimately won: a book that may never be deployed has won nothing.
+                if not math.isfinite(float(sc["mean_log_growth"])):
+                    posterior["adopted"] = False
+                    posterior["refused"] = (
+                        f"challenger at {_pbook.total_heat:.2%} is RUINOUS on the sampled paths "
+                        f"(mean_log_growth -inf) -- it beat the funded book on dE[log W] but "
+                        f"cannot be published, so the funded book stands. Adopting it would have "
+                        f"discarded a publishable book for one that is not.")
+                    _log(f"POSTERIOR REFUSED: {posterior['refused']}")
+                else:
+                    book = AllocationResult(
+                        heat=dict(_pbook.h), total_heat=float(_pbook.total_heat),
+                        robust_score=float(sc["robust_score"]),
+                        mean_log_growth=float(sc["mean_log_growth"]),
+                        cvar_log_growth=float(sc["cvar_log_growth"]),
+                        annual_growth_pct=float(sc["annual_growth_pct"]),
+                        prob_annual_loss=float(sc["prob_annual_loss"]),
+                        note=(f"posterior multi-period book adopted: dE[log W] "
+                              f"{_cmp['delta_elogw_per_day']:+.5f}/day with the CI excluding 0; "
+                              f"binding={_pbook.binding}"))
+                    funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+                    posterior["adopted"] = True
+                    if _pbook.binding == "ruin_guard":
+                        # The one mechanism licensed below the resolved floor, and it has just
+                        # proved its dE[log W] on the same paths -- said out loud, never quietly.
+                        _log(f"POSTERIOR RUIN GUARD: the adopted book holds "
+                             f"{_pbook.total_heat:.2%}, below the resolved "
+                             f"{verdict.total_heat:.2%}; p_ruin at the floor breached eps and "
+                             f"the reduction raised robust E[log W]")
         except Exception as exc:
             posterior = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
             _log(f"posterior book unmeasured: {posterior['why']}")
@@ -3285,7 +3410,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             }
             _log(f"next 10bp -> {_step.get('best')} "
                  f"({_step.get('best_gain_per_day')}/day); {_step.get('why')}")
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         growth_derivs = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
     # THE FOUR HEATS AND THE WORLDS-BASED TRADE VALUE: what the nominal heat is really made of
@@ -3301,7 +3426,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _log(f"effective heat: nominal={effective_heat.get('nominal')} "
                  f"eff={effective_heat.get('effective')} n_eff={effective_heat.get('n_eff')}; "
                  f"trade value {trade_value.get('verdict')} ({trade_value.get('trade_value')})")
-    except Exception as exc:                                         # noqa: BLE001
+    except Exception as exc:
         effective_heat = {"error": f"{type(exc).__name__}: {exc}"}
     # NOMINAL VS EFFECTIVE, AND WHICH BOUND BOUND -- on the published book beside the candidate
     # the ceiling was actually derived from, so the artifact can be read as an argument rather

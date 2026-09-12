@@ -1081,6 +1081,22 @@ def build() -> dict[str, Any]:
             "growth_pct": None if start in (None, 0) or equity is None else 100 * (equity / start - 1),
             "source_updated_at": None if account_at is None else account_at.isoformat(),
             "source_age_seconds": account_age,
+            # AN EQUITY NOBODY CAN DATE IS NOT AN EQUITY (2026-09-12). The public board showed
+            # 752.51 while the account held 607.68, with `source_age_seconds: None` -- so the
+            # figure was wrong AND the staleness detector could not fire, because it keys off an
+            # age the payload did not have. A number with no age reads as current to every human
+            # who looks at it, which is the most expensive kind of wrong a dashboard can be.
+            #
+            # The chain is the cause: the VPS regenerates this board from ITS copy of the box's
+            # artifacts, so `generated_at` is always fresh no matter how old the inputs are. That
+            # is the "green pipeline, no work" shape one layer up -- the pipeline genuinely ran.
+            # `dated` is what a renderer must check before printing the number as fact.
+            "dated": account_at is not None,
+            "trust": ("LIVE" if account_age is not None and account_age <= 120 else
+                      "STALE" if account_age is not None else "UNDATED"),
+            "undated_warning": (None if account_at is not None else
+                                "this equity carries no source timestamp, so its age is UNKNOWN "
+                                "and it must not be read as current (L1.28a)"),
         },
         "research": {
             "candidates_tested": qquant.get("survivors_total"),
