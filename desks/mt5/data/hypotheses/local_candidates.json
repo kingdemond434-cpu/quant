@@ -1,14 +1,14 @@
 {
- "built_at": "2026-09-12T06:14:27+00:00",
+ "built_at": "2026-09-12T07:14:10+00:00",
  "source": "desks/mt5/research/local_converter.py",
  "stats": {
-  "rows_read": 244039,
-  "left_for_the_model": 233517,
-  "symbol_by_alias": 5607,
-  "family_by_keyword": 6245,
+  "rows_read": 245333,
+  "left_for_the_model": 234748,
+  "symbol_by_alias": 5642,
+  "family_by_keyword": 6267,
   "converted": 127,
-  "symbol_not_in_universe": 47867,
-  "duplicate_exposure": 10398
+  "symbol_not_in_universe": 47984,
+  "duplicate_exposure": 10461
  },
  "candidates": [
   {
@@ -20,7 +20,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Feature: `DataQueryFileAPIClient` - functionality to read delta files Install using:\r\n\r\n```bash\r\npip install git+https://github.com/macrosynergy/macrosynergy@feature/dq-delta-files\r\n```\r\n\r\n---\r\n\r\n# DataQueryFileAPIClient - example calls\r\n\r\nThis guide shows representative usage patterns for reviewers to quickly understand intended API flows and edge cases.\r\n\r\n---\r\n\r\n## 1. Instantiate client + inspe",
-   "converted_at": "2026-09-12T06:12:20+00:00",
+   "converted_at": "2026-09-12T07:12:23+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -32,7 +32,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Feature: `ProxyPnL` calculations including transaction costs Docs URL: https://docs.macrosynergy.com/feature-proxy_pnl/macrosynergy.pnl.html\r\n\r\n---\r\nSetting out the draft PR for proxy PnL as a means of having an easy review place for @sandresen1 and @emhbrine to review and catch up with the work @Magnus167 and I have done. Before we merge it in (once every functionality is completed), we should ma",
-   "converted_at": "2026-09-12T06:12:22+00:00",
+   "converted_at": "2026-09-12T07:12:25+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -44,7 +44,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Feature : View Metrics ~view lags~ Closes #660 .\r\n\r\nSlightly modified implementation of function described in #660, view_lags.\r\nImplementation here is for generic non-value metric. \r\n\r\nDocstring:\r\n```python\r\n\"\"\"\r\nA function to visualise the `eop_lag`, `mop_lag` or `grading` metrics for a given\r\nJPMaQS dataset. It generates a heatmap, where the x-axis is the observation\r\ndate, the y-axis is the tic",
-   "converted_at": "2026-09-12T06:12:22+00:00",
+   "converted_at": "2026-09-12T07:12:25+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -56,7 +56,7 @@
    "selector": null,
    "source": "local_converter/mql5_catalog",
    "evidence": "GOLD BURGER EA for MT5: Complete Setup, Trading Logic, Order Flow and Risk Management Guide",
-   "converted_at": "2026-09-12T06:12:25+00:00",
+   "converted_at": "2026-09-12T07:12:28+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -68,7 +68,7 @@
    "selector": null,
    "source": "local_converter/mql5_catalog",
    "evidence": "Trading Silver with PSAR SUPERTREND EA plus ZigandZag & PSAR Oscillator Confirming",
-   "converted_at": "2026-09-12T06:12:25+00:00",
+   "converted_at": "2026-09-12T07:12:28+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -80,7 +80,7 @@
    "selector": null,
    "source": "local_converter/mql5_catalog",
    "evidence": "XAUUSD - 15Min Asian session optimization",
-   "converted_at": "2026-09-12T06:12:25+00:00",
+   "converted_at": "2026-09-12T07:12:28+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -92,7 +92,7 @@
    "selector": null,
    "source": "local_converter/mql5_prospector",
    "evidence": "AAPL cfd - ORB strategy",
-   "converted_at": "2026-09-12T06:12:26+00:00",
+   "converted_at": "2026-09-12T07:12:29+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -104,7 +104,7 @@
    "selector": null,
    "source": "local_converter/mql5_prospector",
    "evidence": "Arbitrage Triangle EURGBP-EURUSD-GBPUSD",
-   "converted_at": "2026-09-12T06:12:26+00:00",
+   "converted_at": "2026-09-12T07:12:29+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -116,7 +116,7 @@
    "selector": null,
    "source": "local_converter/mql5_prospector",
    "evidence": "Gold FVG Finder",
-   "converted_at": "2026-09-12T06:12:26+00:00",
+   "converted_at": "2026-09-12T07:12:29+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -128,7 +128,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Approaching Tax-Time seasonal boost $SPY",
-   "converted_at": "2026-09-12T06:12:27+00:00",
+   "converted_at": "2026-09-12T07:12:29+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -140,7 +140,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Crude Oil and Trend Following",
-   "converted_at": "2026-09-12T06:12:27+00:00",
+   "converted_at": "2026-09-12T07:12:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -152,7 +152,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "FTSE 100 around FOMC announcements",
-   "converted_at": "2026-09-12T06:12:27+00:00",
+   "converted_at": "2026-09-12T07:12:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -164,7 +164,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Aluminum Smelting Cointegration Strategy in QSTrader",
-   "converted_at": "2026-09-12T06:12:27+00:00",
+   "converted_at": "2026-09-12T07:12:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -176,7 +176,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Bitcoin Seasonality: Fooled by Randomness",
-   "converted_at": "2026-09-12T06:12:28+00:00",
+   "converted_at": "2026-09-12T07:12:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -188,7 +188,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Elevated CBI And New SPX Low Carry Bullish Implications",
-   "converted_at": "2026-09-12T06:12:28+00:00",
+   "converted_at": "2026-09-12T07:12:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -200,7 +200,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "SPX Golden Cross History Since 1928",
-   "converted_at": "2026-09-12T06:12:28+00:00",
+   "converted_at": "2026-09-12T07:12:31+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -212,7 +212,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Treasury Bonds: Buy and Hold or Trend Follow?",
-   "converted_at": "2026-09-12T06:12:29+00:00",
+   "converted_at": "2026-09-12T07:12:31+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -224,7 +224,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Russell Death Cross Implications for SPX",
-   "converted_at": "2026-09-12T06:12:29+00:00",
+   "converted_at": "2026-09-12T07:12:31+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -236,7 +236,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Profitably Trading the SPX Opening Range. Code Included.",
-   "converted_at": "2026-09-12T06:12:29+00:00",
+   "converted_at": "2026-09-12T07:12:32+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -248,7 +248,7 @@
    "selector": null,
    "source": "local_converter/intelligence",
    "evidence": "Cross-Asset Price-Based Regimes for Gold",
-   "converted_at": "2026-09-12T06:12:29+00:00",
+   "converted_at": "2026-09-12T07:12:32+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -260,7 +260,7 @@
    "selector": null,
    "source": "local_converter/youtube",
    "evidence": "Trading WORLD CHAMPION Reveals the Orderflow Strategy That Won the Robbins Cup (Step-by-Step)",
-   "converted_at": "2026-09-12T06:12:30+00:00",
+   "converted_at": "2026-09-12T07:12:32+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -272,7 +272,7 @@
    "selector": null,
    "source": "local_converter/alpha_evolution",
    "evidence": "AUDCAD.formula.fade scale(div(decay(range, 5), max2(spread, spread)), 2) scale(div(decay(range, 5), max2(spread, spread)), 2): a momentum-type measure of range, spread, z-scored on its own history and faded against its direction when it is extreme",
-   "converted_at": "2026-09-12T06:12:31+00:00",
+   "converted_at": "2026-09-12T07:12:33+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -284,7 +284,7 @@
    "selector": null,
    "source": "local_converter/arxiv_qfin",
    "evidence": "Regimes in the Order Flow Financial markets alternate between periods of relative stability and instability, with structural breaks marking the transitions between these regimes. Identifying such breaks in real time is a central requirement for any trading or risk system operating at high frequency. This report studies Bayesian Online Changepoint Detection (BOCPD) and two extensions proposed in th",
-   "converted_at": "2026-09-12T06:12:54+00:00",
+   "converted_at": "2026-09-12T07:12:53+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -296,7 +296,7 @@
    "selector": null,
    "source": "local_converter/bis_speeches",
    "evidence": "The cooperative spirit at the heart of the digital euro Lecture by Mr Piero Cipollone, Member of the Executive Board of the European Central Bank, at the annual meeting of the Federation of Italian Cooperative Credit Banks (Federcasse), Rome, 17 July 2026.",
-   "converted_at": "2026-09-12T06:13:04+00:00",
+   "converted_at": "2026-09-12T07:13:01+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -308,7 +308,7 @@
    "selector": null,
    "source": "local_converter/central_banks",
    "evidence": "Central Bank Digital Currency Experiments: Progress Report on the Pilot Program (June 2026)",
-   "converted_at": "2026-09-12T06:13:37+00:00",
+   "converted_at": "2026-09-12T07:13:29+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -320,7 +320,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "CHFJPY.triangle residual revert z>=3.0 h=8 CHFJPY regressed on USDCHF + USDJPY (triangle): CHFJPY is USDCHF against USDJPY up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -332,7 +332,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "EURGBP.triangle residual revert z>=2.0 h=8 EURGBP regressed on EURUSD + GBPUSD (triangle): EURGBP is EURUSD against GBPUSD up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -344,7 +344,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "CHFNOK.triangle residual revert z>=3.0 h=8 CHFNOK regressed on USDCHF + USDNOK (triangle): CHFNOK is USDCHF against USDNOK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -356,7 +356,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "CHFSEK.triangle residual revert z>=3.0 h=8 CHFSEK regressed on USDCHF + USDSEK (triangle): CHFSEK is USDCHF against USDSEK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -368,7 +368,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "CHFHUF.triangle residual revert z>=3.0 h=8 CHFHUF regressed on USDCHF + USDHUF (triangle): CHFHUF is USDCHF against USDHUF up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -380,7 +380,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "NOKSEK.triangle residual revert z>=3.0 h=8 NOKSEK regressed on USDNOK + USDSEK (triangle): NOKSEK is USDNOK against USDSEK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -392,7 +392,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "CHFPLN.triangle residual revert z>=2.5 h=8 CHFPLN regressed on USDCHF + USDPLN (triangle): CHFPLN is USDCHF against USDPLN up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.5 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -404,7 +404,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "ZARJPY.triangle residual revert z>=3.0 h=8 ZARJPY regressed on USDZAR + USDJPY (triangle): ZARJPY is USDZAR against USDJPY up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -416,7 +416,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "NZDHUF.triangle residual revert z>=2.0 h=8 NZDHUF regressed on NZDUSD + USDHUF (triangle): NZDHUF is NZDUSD against USDHUF up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -428,7 +428,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "AUDHUF.triangle residual revert z>=3.0 h=8 AUDHUF regressed on AUDUSD + USDHUF (triangle): AUDHUF is AUDUSD against USDHUF up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -440,7 +440,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "GBPHUF.triangle residual revert z>=3.0 h=8 GBPHUF regressed on GBPUSD + USDHUF (triangle): GBPHUF is GBPUSD against USDHUF up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -452,7 +452,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "CHFDKK.triangle residual revert z>=3.0 h=8 CHFDKK regressed on USDCHF + USDDKK (triangle): CHFDKK is USDCHF against USDDKK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -464,7 +464,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "CHFSGD.triangle residual revert z>=3.0 h=8 CHFSGD regressed on USDCHF + USDSGD (triangle): CHFSGD is USDCHF against USDSGD up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -476,7 +476,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "GBPNOK.triangle residual revert z>=2.0 h=8 GBPNOK regressed on GBPUSD + USDNOK (triangle): GBPNOK is GBPUSD against USDNOK up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -488,7 +488,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "GBPZAR.triangle residual revert z>=3.0 h=8 GBPZAR regressed on GBPUSD + USDZAR (triangle): GBPZAR is GBPUSD against USDZAR up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -500,7 +500,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "USDRUB.commodity_rub residual revert z>=2.0 h=8 USDRUB regressed on XBRUSD + USDX (commodity_rub): Russia's external account is dominated by energy exports, so RUB is partly a commodity price wearing a currency's name. The residual is faded beyond 2.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -512,7 +512,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "GBPMXN.triangle residual revert z>=2.5 h=8 GBPMXN regressed on GBPUSD + USDMXN (triangle): GBPMXN is GBPUSD against USDMXN up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.5 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -524,7 +524,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "SGDJPY.triangle residual revert z>=3.0 h=8 SGDJPY regressed on USDSGD + USDJPY (triangle): SGDJPY is USDSGD against USDJPY up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -536,7 +536,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "EURRUB.triangle residual revert z>=3.0 h=8 EURRUB regressed on EURUSD + USDRUB (triangle): EURRUB is EURUSD against USDRUB up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -548,7 +548,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "EURILS.triangle residual revert z>=2.5 h=8 EURILS regressed on EURUSD + USDILS (triangle): EURILS is EURUSD against USDILS up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.5 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -560,7 +560,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "EURZAR.triangle residual revert z>=3.0 h=8 EURZAR regressed on EURUSD + USDZAR (triangle): EURZAR is EURUSD against USDZAR up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 3.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -572,7 +572,7 @@
    "selector": null,
    "source": "local_converter/factor_residual",
    "evidence": "AUDNZD.triangle residual revert z>=2.0 h=8 AUDNZD regressed on AUDUSD + NZDUSD (triangle): AUDNZD is AUDUSD against NZDUSD up to the cross spread; the residual is flow specific to this cross rather than to either currency. The residual is faded beyond 2.0 sigma.",
-   "converted_at": "2026-09-12T06:13:38+00:00",
+   "converted_at": "2026-09-12T07:13:30+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -584,7 +584,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony) market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -596,7 +596,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony) market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -608,7 +608,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony) market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -620,7 +620,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony) market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -632,7 +632,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony) market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -644,7 +644,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony) market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -656,7 +656,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony) market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -668,7 +668,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony) market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -680,7 +680,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades cross-country divergence in policy and conditions creates relative-value FX/rates trades strip the dollar; the residual of a cross is the two countries' relative state",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -692,7 +692,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades cross-country divergence in policy and conditions creates relative-value FX/rates trades strip the dollar; the residual of a cross is the two countries' relative state",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -704,7 +704,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades cross-country divergence in policy and conditions creates relative-value FX/rates trades strip the dollar; the residual of a cross is the two countries' relative state",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -716,7 +716,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades cross-country divergence in policy and conditions creates relative-value FX/rates trades strip the dollar; the residual of a cross is the two countries' relative state",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -728,7 +728,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades cross-country divergence in policy and conditions creates relative-value FX/rates trades strip the dollar; the residual of a cross is the two countries' relative state",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -740,7 +740,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades cross-country divergence in policy and conditions creates relative-value FX/rates trades strip the dollar; the residual of a cross is the two countries' relative state",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -752,7 +752,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades cross-country divergence in policy and conditions creates relative-value FX/rates trades strip the dollar; the residual of a cross is the two countries' relative state",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -764,7 +764,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [A]: real-yield / gold relationship; asset-yield vs cash-rate equilibrium gap real-yield / gold relationship; asset-yield vs cash-rate equilibrium gap gold as a zero-coupon real asset priced off the real rate it forgoes",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -776,7 +776,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [B]: policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission cha policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission chain condition FX direction on the macro impulse's percentile rank, lagged for publication",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -788,7 +788,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [B]: policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission cha policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission chain condition FX direction on the macro impulse's percentile rank, lagged for publication",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -800,7 +800,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) sign of trailing return, vol-scaled, ensemble of speeds",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -812,7 +812,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) sign of trailing return, vol-scaled, ensemble of speeds",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -824,7 +824,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) sign of trailing return, vol-scaled, ensemble of speeds",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -836,7 +836,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) sign of trailing return, vol-scaled, ensemble of speeds",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -848,7 +848,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) sign of trailing return, vol-scaled, ensemble of speeds",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -860,7 +860,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) sign of trailing return, vol-scaled, ensemble of speeds",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -872,7 +872,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) sign of trailing return, vol-scaled, ensemble of speeds",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -884,7 +884,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) time-series momentum across asset classes (Moskowitz-Ooi-Pedersen) sign of trailing return, vol-scaled, ensemble of speeds",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -896,7 +896,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: carry across asset classes carry across asset classes broker swap differential is a directly measured carry premium",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -908,7 +908,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: carry across asset classes carry across asset classes broker swap differential is a directly measured carry premium",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -920,7 +920,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: carry across asset classes carry across asset classes broker swap differential is a directly measured carry premium",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -932,7 +932,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: carry across asset classes carry across asset classes broker swap differential is a directly measured carry premium",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -944,7 +944,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: carry across asset classes carry across asset classes broker swap differential is a directly measured carry premium",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -956,7 +956,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: carry across asset classes carry across asset classes broker swap differential is a directly measured carry premium",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -968,7 +968,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: carry across asset classes carry across asset classes broker swap differential is a directly measured carry premium",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -980,7 +980,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "AQR [A]: betting-against-beta / defensive: low-beta names outperform per unit of risk betting-against-beta / defensive: low-beta names outperform per unit of risk residual continuation in low-beta names: the defensive premium as a residual drift",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -992,7 +992,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Man AHL [A]: multi-speed trend; fastest speeds carry the crisis alpha multi-speed trend; fastest speeds carry the crisis alpha enter only at the turn where the fast speed disagrees with the slow: crisis alpha",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1004,7 +1004,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Man AHL [A]: multi-speed trend; fastest speeds carry the crisis alpha multi-speed trend; fastest speeds carry the crisis alpha enter only at the turn where the fast speed disagrees with the slow: crisis alpha",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1016,7 +1016,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Cubist [A]: mid-frequency anomalies from price-volume + order-book + alternative data, feature-combine mid-frequency anomalies from price-volume + order-book + alternative data, feature-combined tick-derived flow imbalance as the price-volume anomaly the desk can measure",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1028,7 +1028,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Cubist [A]: mid-frequency anomalies from price-volume + order-book + alternative data, feature-combine mid-frequency anomalies from price-volume + order-book + alternative data, feature-combined tick-derived flow imbalance as the price-volume anomaly the desk can measure",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1040,7 +1040,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "social [C]: Medallion uses hidden Markov models / regime switching as the core Medallion uses hidden Markov models / regime switching as the core if the claim has any content, it is that regime ENDINGS are tradeable",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1052,7 +1052,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "social [C]: Medallion uses hidden Markov models / regime switching as the core Medallion uses hidden Markov models / regime switching as the core if the claim has any content, it is that regime ENDINGS are tradeable",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1064,7 +1064,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "social [C]: Medallion uses hidden Markov models / regime switching as the core Medallion uses hidden Markov models / regime switching as the core if the claim has any content, it is that regime ENDINGS are tradeable",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1076,7 +1076,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Renaissance [B]: an early effect came from the 15-minute gap between S&P options and futures closing times  an early effect came from the 15-minute gap between S&P options and futures closing times (Zuckerman) venue-timing mismatch around the cash close; plumbing_miner resolves the stamp hour",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1088,7 +1088,7 @@
    "selector": null,
    "source": "local_converter/fund_playbook",
    "evidence": "Bridgewater [A]: trade growth/inflation SURPRISES relative to what is discounted, not levels trade growth/inflation SURPRISES relative to what is discounted, not levels the desk's calendar carries forecast and previous but no actual",
-   "converted_at": "2026-09-12T06:13:50+00:00",
+   "converted_at": "2026-09-12T07:13:40+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1100,7 +1100,7 @@
    "selector": null,
    "source": "local_converter/github_topics",
    "evidence": "Singni725/EUROUSD-EMA-Cross-MQL5-EA Automate Euro/USD trading on MT5 using EMA cross signals with this expert advisor for precise entry and exit points.",
-   "converted_at": "2026-09-12T06:13:54+00:00",
+   "converted_at": "2026-09-12T07:13:43+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1112,7 +1112,7 @@
    "selector": null,
    "source": "local_converter/microstructure",
    "evidence": "AUDCAD.spread_state.spike_reversion {'mode': 'spike_reversion', 'min_move_atr': 0.5, 'hold_bars': 4, 'spike_pct': 0.98} the broker's own spread state: a spread spike on a moving bar is liquidity, not information; fade it",
-   "converted_at": "2026-09-12T06:14:00+00:00",
+   "converted_at": "2026-09-12T07:13:48+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1124,7 +1124,7 @@
    "selector": null,
    "source": "local_converter/microstructure",
    "evidence": "AUDCHF.spread_state.spike_reversion {'mode': 'spike_reversion', 'min_move_atr': 0.5, 'hold_bars': 8, 'spike_pct': 0.95} the broker's own spread state: a spread spike on a moving bar is liquidity, not information; fade it",
-   "converted_at": "2026-09-12T06:14:00+00:00",
+   "converted_at": "2026-09-12T07:13:48+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1136,7 +1136,7 @@
    "selector": null,
    "source": "local_converter/microstructure",
    "evidence": "AUDSGD.spread_state.spike_reversion {'mode': 'spike_reversion', 'min_move_atr': 0.5, 'hold_bars': 12, 'spike_pct': 0.98} the broker's own spread state: a spread spike on a moving bar is liquidity, not information; fade it",
-   "converted_at": "2026-09-12T06:14:00+00:00",
+   "converted_at": "2026-09-12T07:13:48+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1148,7 +1148,7 @@
    "selector": null,
    "source": "local_converter/microstructure",
    "evidence": "CHFJPY.spread_state.spike_reversion {'mode': 'spike_reversion', 'min_move_atr': 0.5, 'hold_bars': 4, 'spike_pct': 0.95} the broker's own spread state: a spread spike on a moving bar is liquidity, not information; fade it",
-   "converted_at": "2026-09-12T06:14:00+00:00",
+   "converted_at": "2026-09-12T07:13:48+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1160,7 +1160,7 @@
    "selector": null,
    "source": "local_converter/plumbing",
    "evidence": "EURUSD.cme_fx_close@0.into side=+1 cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 0, side +1",
-   "converted_at": "2026-09-12T06:14:04+00:00",
+   "converted_at": "2026-09-12T07:13:51+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1172,7 +1172,7 @@
    "selector": null,
    "source": "local_converter/plumbing",
    "evidence": "GBPUSD.cme_fx_close@0.into side=+1 cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 0, side +1",
-   "converted_at": "2026-09-12T06:14:04+00:00",
+   "converted_at": "2026-09-12T07:13:51+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1184,7 +1184,7 @@
    "selector": null,
    "source": "local_converter/plumbing",
    "evidence": "USDJPY.cash_equity_close@23.into side=-1 cash_equity_close (US cash close: index rebalancing, closing auctions, CFD marks): into at stamp hour 23, side -1",
-   "converted_at": "2026-09-12T06:14:04+00:00",
+   "converted_at": "2026-09-12T07:13:51+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1196,7 +1196,7 @@
    "selector": null,
    "source": "local_converter/plumbing",
    "evidence": "XAUUSD.cme_fx_close@1.into side=+1 cme_fx_close (CME currency futures settle; basis trades and spot hedges rebalance): into at stamp hour 1, side +1",
-   "converted_at": "2026-09-12T06:14:04+00:00",
+   "converted_at": "2026-09-12T07:13:51+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1208,7 +1208,7 @@
    "selector": null,
    "source": "local_converter/reddit",
    "evidence": "Has anyone any experience selling silver in person (agreed upon local police station) from pmsforsale? For, say, 2 10 oz generic bars of silver .9999?",
-   "converted_at": "2026-09-12T06:14:11+00:00",
+   "converted_at": "2026-09-12T07:13:57+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1220,7 +1220,7 @@
    "selector": null,
    "source": "local_converter/reddit",
    "evidence": "Icmarkets freezing during NFP (2nd time happened for me)",
-   "converted_at": "2026-09-12T06:14:11+00:00",
+   "converted_at": "2026-09-12T07:13:57+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1232,7 +1232,7 @@
    "selector": null,
    "source": "local_converter/reddit",
    "evidence": "Retail positioning, currency strength, S/R zones and daily AI trade plans for FX and gold",
-   "converted_at": "2026-09-12T06:14:11+00:00",
+   "converted_at": "2026-09-12T07:13:57+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1244,7 +1244,7 @@
    "selector": null,
    "source": "local_converter/reddit",
    "evidence": "I pulled realised vol, forwards and carry for USDMXN, USDJPY and four EM pairs and turned them into stop sizes. Numbers inside",
-   "converted_at": "2026-09-12T06:14:12+00:00",
+   "converted_at": "2026-09-12T07:13:58+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1256,7 +1256,7 @@
    "selector": "asia",
    "source": "local_converter/scheduled_chatgpt",
    "evidence": "London Volatility Capture bias-off ablation Asia-range breakout, retest or sweep reversal during the London open; bias filter disabled as the required ablation",
-   "converted_at": "2026-09-12T06:14:14+00:00",
+   "converted_at": "2026-09-12T07:13:59+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1268,7 +1268,7 @@
    "selector": "london",
    "source": "local_converter/scheduled_chatgpt",
    "evidence": "London Volatility Capture public source behavior Reproduce the public EA exactly, including its globally measured recent-extreme age, so the defect has a measured control",
-   "converted_at": "2026-09-12T06:14:14+00:00",
+   "converted_at": "2026-09-12T07:13:59+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1280,7 +1280,7 @@
    "selector": null,
    "source": "local_converter/survivor_distiller",
    "evidence": "EURCHF.discovered.step_band_up from external.EURCHF.discovered.p=c14e361e680e6d0b discovered on EURCHF: session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price (mutation: step_band_up)",
-   "converted_at": "2026-09-12T06:14:14+00:00",
+   "converted_at": "2026-09-12T07:14:00+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1292,7 +1292,7 @@
    "selector": null,
    "source": "local_converter/survivor_distiller",
    "evidence": "AUDNZD.discovered.step_band_up from external.AUDNZD.discovered.p=c76b860ff91ee920 discovered on AUDNZD: session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price (mutation: step_band_up)",
-   "converted_at": "2026-09-12T06:14:14+00:00",
+   "converted_at": "2026-09-12T07:14:00+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1304,7 +1304,7 @@
    "selector": null,
    "source": "local_converter/survivor_distiller",
    "evidence": "NZDCAD.discovered.swap_side from external.NZDCAD.discovered.p=0ffb1e19a04f260e discovered on NZDCAD: distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed (mutation: swap_side)",
-   "converted_at": "2026-09-12T06:14:14+00:00",
+   "converted_at": "2026-09-12T07:14:00+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1316,7 +1316,7 @@
    "selector": null,
    "source": "local_converter/tradingview_scripts",
    "evidence": "Bitcoin SuperFlip | Supertrend EMA Trend-Following Strategy ",
-   "converted_at": "2026-09-12T06:14:15+00:00",
+   "converted_at": "2026-09-12T07:14:01+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1328,7 +1328,7 @@
    "selector": null,
    "source": "local_converter/world",
    "evidence": "Free download of the &#x27;AAPL cfd - ORB strategy&#x27; expert by &#x27;andrewmagar&#x27; for MetaTrader 5 in the MQL5 Code Base, 2026.08.19",
-   "converted_at": "2026-09-12T06:14:16+00:00",
+   "converted_at": "2026-09-12T07:14:01+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1340,7 +1340,7 @@
    "selector": null,
    "source": "local_converter/world",
    "evidence": "Principal Component Analysis in Excel ~ PART III",
-   "converted_at": "2026-09-12T06:14:17+00:00",
+   "converted_at": "2026-09-12T07:14:02+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1352,7 +1352,7 @@
    "selector": null,
    "source": "local_converter/world",
    "evidence": "UK financial regulators to begin overseeing Critical Third Parties announced by HM Treasury | Bank of England \u2013 the UK&#39;s central bank",
-   "converted_at": "2026-09-12T06:14:18+00:00",
+   "converted_at": "2026-09-12T07:14:02+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1364,7 +1364,7 @@
    "selector": null,
    "source": "local_converter/world",
    "evidence": "See the Little-Known Triangle Patterns that Unleash 56%... 72%... Even 140% GAINS\u2014Automatically!",
-   "converted_at": "2026-09-12T06:14:18+00:00",
+   "converted_at": "2026-09-12T07:14:03+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1376,7 +1376,7 @@
    "selector": null,
    "source": "local_converter/world",
    "evidence": "Large Language Models in Trading: Models and Market Dynamics &#8211; Relative Value Arbitrage",
-   "converted_at": "2026-09-12T06:14:19+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1388,7 +1388,7 @@
    "selector": null,
    "source": "local_converter/world",
    "evidence": "Evaluating Option-Based Strategies and Dollar-Cost Averaging &#8211; Relative Value Arbitrage",
-   "converted_at": "2026-09-12T06:14:19+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1400,7 +1400,7 @@
    "selector": null,
    "source": "local_converter/world",
    "evidence": "options trading strategies &#8211; Relative Value Arbitrage",
-   "converted_at": "2026-09-12T06:14:19+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1412,7 +1412,7 @@
    "selector": null,
    "source": "local_converter/world",
    "evidence": "NEW! The Alpha Formula: High Powered Strategies to Beat The Market Wit &ndash; TradingMarkets",
-   "converted_at": "2026-09-12T06:14:19+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1424,7 +1424,7 @@
    "selector": null,
    "source": "local_converter/world",
    "evidence": "The Rand as a Carry Trade Target: Risk, Returns and Policy Implications",
-   "converted_at": "2026-09-12T06:14:19+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1436,7 +1436,7 @@
    "selector": null,
    "source": "local_converter/youtube",
    "evidence": "XAUUSD/Gold New York Session Breakout Strategy | Buy &amp; Sell Levels Today 28/08/2026  #trading",
-   "converted_at": "2026-09-12T06:14:20+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1448,7 +1448,7 @@
    "selector": null,
    "source": "local_converter/youtube",
    "evidence": "GBPJPY Analysis Today: BUY or SELL? 213.630 Key Level | GBPJPY Forecast | GBP/JPY Technical Analysis",
-   "converted_at": "2026-09-12T06:14:20+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1460,7 +1460,7 @@
    "selector": null,
    "source": "local_converter/youtube",
    "evidence": "\ud83d\udcc8MACD + Moving Average Strategy Explained #MACD #Forex #MovingAverage #EURUSD #WealthixMarket",
-   "converted_at": "2026-09-12T06:14:20+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1472,7 +1472,7 @@
    "selector": null,
    "source": "local_converter/youtube",
    "evidence": "\ud83d\udd34 BTC Live trading 367 / 07.09.2026 #bitcoin  #nfp  #forex #gold #gbpjpytrading  #crypto",
-   "converted_at": "2026-09-12T06:14:20+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1484,7 +1484,7 @@
    "selector": null,
    "source": "local_converter/youtube",
    "evidence": "LIVE GOLD TRADING \ud83d\udd25 XAUUSD BIG MOVE! \ud83d\udcc8 | Gold Trading Live #shorts #mcx #xagusd #comex #mcxmarket",
-   "converted_at": "2026-09-12T06:14:20+00:00",
+   "converted_at": "2026-09-12T07:14:04+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1496,7 +1496,7 @@
    "selector": null,
    "source": "local_converter/central_banks",
    "evidence": "Mr. Greenspan discusses financial reform and the importance of the State Charter  (Central Bank Articles and Speeches, 3 May 97)",
-   "converted_at": "2026-09-12T06:14:20+00:00",
+   "converted_at": "2026-09-12T07:14:05+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1508,7 +1508,7 @@
    "selector": null,
    "source": "local_converter/central_banks",
    "evidence": "Dr. Brash explains the Reserve Bank of New Zealand's new inflation target, and New Zealander's expectations about inflation and growth  (Central Bank Articles and Speeches, 23 Jan 97)",
-   "converted_at": "2026-09-12T06:14:20+00:00",
+   "converted_at": "2026-09-12T07:14:05+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1520,7 +1520,7 @@
    "selector": "london",
    "source": "local_converter/central_banks",
    "evidence": "Mr. Clementi explains how London's banks and markets will help to forge links between the euro area and the rest of the world  (Central Bank Articles and Speeches, 10 Feb 98)",
-   "converted_at": "2026-09-12T06:14:20+00:00",
+   "converted_at": "2026-09-12T07:14:05+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   },
   {
@@ -1532,7 +1532,7 @@
    "selector": null,
    "source": "local_converter/central_banks",
    "evidence": "Mr Roth remarks on the euro and Swiss franc: two sister currencies?  (Central Bank Articles and Speeches, 24 Feb 2000)",
-   "converted_at": "2026-09-12T06:14:21+00:00",
+   "converted_at": "2026-09-12T07:14:05+00:00",
    "why": "resolved deterministically against the universe registry, the executable family set and converter_vocabulary.json; no model judgement was used and none is claimed"
   }
  ]

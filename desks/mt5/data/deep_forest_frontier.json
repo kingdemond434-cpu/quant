@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-12T05:00:34.678334+00:00",
+ "updated": "2026-09-12T07:17:07.210019+00:00",
  "vectors": {
   "5ch \u682a\u677f / \u5148\u7269\u677f": {
    "outcome": "NAMED_ONLY",
@@ -4912,11 +4912,11 @@
    "region": "cn"
   },
   "\u96ea\u7403": {
-   "outcome": "NAMED_ONLY",
+   "outcome": "YIELDED",
    "first_seen": "2026-09-10T15:40:36.549670+00:00",
-   "last_attempt": "",
-   "attempts": 0,
-   "findings": 0,
+   "last_attempt": "2026-09-12T07:17:07.209707+00:00",
+   "attempts": 1,
+   "findings": 5,
    "blocker": "",
    "language": "zh",
    "region": "cn"
