@@ -185,6 +185,160 @@ def _capital_faults() -> list[dict]:
     return faults
 
 
+#: The OpenRouter side, organ by organ: (artifact, max age in hours, what it is).
+#: EVERY LLM ORGAN IS HERE, not only the two the principal named -- deepseek and kimi are the loud
+#: ones, and the quiet ones (the code auditor, the panel, the blind researcher, the hypothesis
+#: generator) are exactly the organs that can stop without anyone noticing, because nothing
+#: downstream complains when a stream of ideas simply thins.
+LLM_ORGANS: tuple[tuple[str, int, str], ...] = (
+    ("data/code_audit.jsonl", 48, "the LLM code auditor's findings"),
+    ("data/max_audit_report.json", 48, "the maximal audit sweep"),
+    ("data/deep_audit.json", 72, "the deep architecture audit"),
+    ("data/free_research.json", 24, "the free-tier panel's research"),
+    ("data/external_panel_log.jsonl", 24, "the external panel's recommendations"),
+    ("data/hypothesis_queue.jsonl", 24, "LLM hypothesis generation"),
+    ("data/kimi_hunt.json", 12, "kimi's deep-forest hunt"),
+    ("data/intelligence/kimi", 12, "kimi's donations to the compiler"),
+    ("data/intelligence/deepseek", 12, "deepseek's donations to the compiler"),
+    ("desks/mt5/reports/AUDIT_INTAKE.json", 24, "the classified cold-audit intake the CEO reads"),
+)
+
+
+def _llm_faults() -> list[dict]:
+    """The OpenRouter half of "never stale": audits, hypothesis generation, kimi, deepseek.
+
+    THE PRINCIPAL'S INSTRUCTION, 2026-09-12: this fixer checks the OpenRouter side too, and not
+    only the two named seats -- everything on that side.
+
+    DARK IS NOT STALE, AND THE DIFFERENCE IS THE WHOLE POINT. If the seat has no key, every LLM
+    organ is silent for one reason, and reporting ten stale artifacts sends the reader chasing ten
+    ghosts instead of pasting one key. So the seat is checked FIRST and a dark seat short-circuits
+    into a single NEEDS_KEY row that names the file and nothing else. That is also why this
+    function never prints, logs or returns any part of the key itself: it asks only whether one
+    resolves.
+
+    Measured on this box 2026-09-12: `check_llm_seat` resolved 0 seats and all seven cold-audit
+    artifacts were absent -- the audit lane had never run here, which read from the outside like
+    an audit that kept finding nothing.
+    """
+    faults: list[dict] = []
+    sys.path[:0] = [str(ROOT)]
+    n_seats: int | None = None
+    try:
+        from libs.ops import llm_seat
+        n_seats = len(llm_seat.seats())
+    except Exception as exc:
+        faults.append({"organ": "llm seat", "state": "UNMEASURED",
+                       "fault": f"seat layer not importable: {type(exc).__name__}: {exc}",
+                       "needs_human": True})
+        return faults
+
+    if not n_seats:
+        return [{
+            "organ": "llm seat", "state": "NEEDS_KEY",
+            "fault": ("no LLM seat resolves, so EVERY OpenRouter organ is dark -- audits, "
+                      "hypothesis generation, kimi and deepseek alike. Not stale: never ran."),
+            "fix": ("paste the OpenRouter key into data/secrets/llm_panel.json (the providers[0] "
+                    "'key' field, currently empty). The seat layer re-reads it at every organ "
+                    "start, so nothing needs restarting and no task needs re-registering."),
+            "needs_human": True,
+            "why_only_one_row": ("the ten LLM artifacts below it are all silent for this one "
+                                 "reason; listing them separately would be ten ghosts."),
+        }]
+
+    now = datetime.now(tz=UTC)
+    for rel, max_h, what in LLM_ORGANS:
+        p = ROOT / rel
+        if p.is_dir():
+            files = sorted(p.glob("*.json")) + sorted(p.glob("*.jsonl"))
+            newest = max((f.stat().st_mtime for f in files), default=None)
+            if newest is None:
+                faults.append({"organ": rel, "state": "EMPTY", "is": what, "needs_human": True,
+                               "fault": "a seat has a key but this donation directory is empty"})
+                continue
+            age_h = (now.timestamp() - newest) / 3600.0
+        elif not p.exists():
+            faults.append({"organ": rel, "state": "ABSENT", "is": what, "needs_human": True,
+                           "fault": f"a seat resolves but {rel} has never been produced"})
+            continue
+        else:
+            age_h = (now.timestamp() - p.stat().st_mtime) / 3600.0
+        if age_h > max_h:
+            faults.append({"organ": rel, "state": "STALE", "is": what, "needs_human": True,
+                           "age_hours": round(age_h, 1),
+                           "fault": f"{age_h:.0f}h old against a {max_h}h contract, with a "
+                                    f"working seat -- so the organ itself stopped"})
+    return faults
+
+
+def _uncovered_certificates() -> list[dict]:
+    """Certificates with no forward clock. Capital the desk EARNED and is not deploying.
+
+    A ten-gate certificate is the most expensive object this desk produces -- it costs a share of
+    a fixed family-wise error budget that every other hypothesis then has to clear. A certificate
+    with no clock is that cost paid and the position never taken, and it is invisible in every
+    count the desk publishes: `missing_sleeves: 0` is true, because from the shadow lane's point
+    of view nothing is missing -- the certificate was never enrolled to begin with.
+
+    Measured 2026-09-12: 63 of 67 certificates hold a LIVE clock; four do not.
+    """
+    import json as _json
+    try:
+        surv = _json.loads((ROOT / "desks/mt5/reports/UNIVERSAL_SURVIVORS.json")
+                           .read_text(encoding="utf-8"))["survivors"]
+        reg = _json.loads((ROOT / "desks/mt5/data/sleeve_registry.json")
+                          .read_text(encoding="utf-8"))["sleeves"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return [{"cert": "(all)", "needs_human": True,
+                 "fault": f"unreadable: {type(exc).__name__}"}]
+    keys = set()
+    for v in reg.values():
+        i = (v or {}).get("identity") or {}
+        keys.add((i.get("symbol"), i.get("family"), i.get("selector")))
+
+    # ASK THE ENGINE, DO NOT GUESS. `certified_sleeves()` is the exact function `shadow_forward`
+    # enrols from, and it already prints an ENROL-GAP line naming why it dropped a certificate.
+    # Reading the registry alone would say "no clock" and stop there, which is a symptom; the
+    # engine's own reason is the defect. Measured 2026-09-12: six certificates were dropped with
+    # "shadow_spec.params is NoneType, not a mapping" -- a certificate written without the
+    # parameterisation that passed the gates, which the engine correctly refuses to guess.
+    enrollable: set[tuple] = set()
+    engine_note: str | None = None
+    try:
+        sys.path[:0] = [str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / "research")]
+        import shadow_forward as _sf
+        for row in _sf.certified_sleeves():
+            enrollable.add((row[0], row[3] if len(row) > 3 else None, row[1]))
+    except Exception as exc:
+        engine_note = (f"forward engine not importable here ({type(exc).__name__}: {exc}) -- "
+                       f"enrollability is the ENGINE's fact and is UNMEASURED, not assumed")
+
+    out = []
+    for name, c in surv.items():
+        s = c.get("shadow_spec") or {}
+        k = (s.get("symbol"), s.get("family"), s.get("selector"))
+        if k in keys:
+            continue
+        if engine_note is None and k in enrollable:
+            # The engine WILL enrol it; it simply has not run since the certificate was written.
+            # That is a cadence fact, not a defect, and the next shadow pass closes it.
+            continue
+        why = (engine_note or
+               (f"params is {type(s.get('params')).__name__}, not a mapping"
+                if not isinstance(s.get("params"), dict)
+                else "the forward engine does not make this certificate enrollable"))
+        out.append({"cert": name[:80], "symbol": s.get("symbol"), "family": s.get("family"),
+                    "selector": s.get("selector"), "side": s.get("side"), "needs_human": True,
+                    "engine_reason": why,
+                    "fault": ("a ten-gate certificate with NO forward clock and none coming -- "
+                              "the family-wise trial budget was spent and no capital rides on it"),
+                    "fix": ("fix the WRITER of the certificate so it records the parameterisation "
+                            "that passed, then re-run the shadow pass. Never hand-enrol it: "
+                            "guessing the parameters enrols a different strategy under a "
+                            "certificate that was earned by another one.")})
+    return out
+
+
 def _safe(fn, fam: str) -> bool:
     try:
         return fn(fam) is not None
@@ -250,14 +404,21 @@ def run(apply: bool) -> dict:
         })
 
     capital = _capital_faults()
+    llm = _llm_faults()
+    uncovered = _uncovered_certificates()
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "health_age_min": round(age, 1),
-        "status": "OK" if not (escalated or capital) else "NEEDS_HUMAN",
+        "status": ("OK" if not (escalated or capital or llm or uncovered) else "NEEDS_HUMAN"),
         "n_acted": len(acted), "n_escalated": len(escalated),
         "applied": bool(apply),
         "acted": acted, "escalated": escalated,
         "capital_faults": capital,
+        "llm_faults": llm,
+        "uncovered_certificates": uncovered,
+        "uncovered_note": ("a ten-gate certificate with no forward clock is the desk's most "
+                           "expensive object left on the shelf: the family-wise error budget was "
+                           "spent to earn it and no capital is riding on it."),
         "uncontracted": uncontracted,
         "uncontracted_note": ("these run but have no artifact contract, so nothing would notice "
                               "if they stopped. Not broken -- unwatched. Add each to "
@@ -283,6 +444,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"                 {str(r['diagnosis'])[:110]}")
     for r in doc.get("capital_faults", []):
         print(f"  CAPITAL FAULT  {str(r['sleeve'])[:28]:<28} {str(r['fault'])[:70]}")
+    for r in doc.get("llm_faults", []):
+        print(f"  {r['state']!s:<14} {str(r['organ'])[:28]:<28} {str(r['fault'])[:72]}")
+        if r.get("fix"):
+            print(f"  {'':<14} FIX: {str(r['fix'])[:100]}")
+    unc = doc.get("uncovered_certificates") or []
+    if unc:
+        print(f"  NO CLOCK       {len(unc)} certificate(s) earned and not deployed:")
+        for r in unc[:8]:
+            print(f"  {'':<14} {r['symbol']!s:<10} {str(r['family'])[:24]:<24} "
+                  f"{r['selector']!s}")
     if doc.get("uncontracted"):
         print(f"  unwatched      {len(doc['uncontracted'])} organ(s) with no artifact contract: "
               f"{', '.join(doc['uncontracted'][:6])}")
