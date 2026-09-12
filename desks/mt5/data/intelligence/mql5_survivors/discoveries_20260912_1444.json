@@ -1,0 +1,348 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2336750",
+  "symbols": [
+   "AUDNZD",
+   "CADCHF",
+   "CHFJPY",
+   "EURGBP",
+   "GBPJPY",
+   "USDCAD",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD",
+   "XTIUSD"
+  ],
+  "found_at": "2026-09-12T14:44:11+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 6.252,
+  "growth_pct": 524.07,
+  "weeks": 74.0,
+  "pf": 1.43,
+  "max_dd_pct": null,
+  "trades": 1025.0,
+  "win_pct": 587.0,
+  "algo_pct": 11.0,
+  "subscribers": 0.0,
+  "author": "/en/users/lxtrong82",
+  "author_other_signals": [
+   {
+    "sid": "2353073",
+    "title": "'LxTrong Exness' by Trong Le Xuan",
+    "growth": "90%",
+    "curve_points": 20,
+    "curve_dd": -23.0
+   },
+   {
+    "sid": "2372500",
+    "title": "'LTHue Exness' by Trong Le Xuan",
+    "growth": "-2%",
+    "curve_points": 20,
+    "curve_dd": -53.0
+   }
+  ],
+  "hour_histogram": {
+   "00": 2,
+   "15": 1,
+   "18": 1,
+   "07": 2,
+   "09": 1,
+   "11": 2,
+   "08": 1,
+   "06": 2,
+   "12": 2,
+   "13": 1,
+   "02": 1,
+   "23": 2,
+   "03": 1,
+   "16": 1,
+   "10": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2376950",
+  "symbols": [],
+  "found_at": "2026-09-12T14:44:11+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 8.514,
+  "growth_pct": 377.88,
+  "weeks": 264.0,
+  "pf": 1.17,
+  "max_dd_pct": null,
+  "trades": 12614.0,
+  "win_pct": 8558.0,
+  "algo_pct": 97.0,
+  "subscribers": 0.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [
+   {
+    "sid": "2265877",
+    "title": "'Gold Reaper New V2 2' by Profalgo Limited",
+    "growth": "304%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2204998",
+    "title": "'Gold Reaper Goldtrade Pro Daytrade Pro' by Profalgo Limited",
+    "growth": "963%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   },
+   {
+    "sid": "2084890",
+    "title": "'Goldtrade Pro ICM' by Profalgo Limited",
+    "growth": "643%",
+    "curve_points": 20,
+    "curve_dd": -9.0
+   }
+  ],
+  "hour_histogram": {
+   "10": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2360068",
+  "symbols": [
+   "AUDCAD",
+   "NZDCAD"
+  ],
+  "found_at": "2026-09-12T14:44:11+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 32.876,
+  "growth_pct": 2260.38,
+  "weeks": 110.0,
+  "pf": 1.94,
+  "max_dd_pct": null,
+  "trades": 1203.0,
+  "win_pct": 789.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/mnimoos",
+  "author_other_signals": [
+   {
+    "sid": "2388397",
+    "title": "'Harmonizer Mid Risk PAMM' by Amir Hossein Moharreri",
+    "growth": "173%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2388399",
+    "title": "'Harmonizer High Risk PAMM' by Amir Hossein Moharreri",
+    "growth": "103%",
+    "curve_points": 20,
+    "curve_dd": -3.0
+   }
+  ],
+  "hour_histogram": {
+   "20": 1,
+   "11": 3,
+   "10": 1,
+   "12": 4,
+   "09": 2,
+   "01": 1,
+   "03": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2362349",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP"
+  ],
+  "found_at": "2026-09-12T14:44:11+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 5.305,
+  "growth_pct": 637.63,
+  "weeks": 36.0,
+  "pf": 3.31,
+  "max_dd_pct": null,
+  "trades": 745.0,
+  "win_pct": 707.0,
+  "algo_pct": 100.0,
+  "subscribers": 5.0,
+  "author": "/en/users/test-standart",
+  "author_other_signals": [
+   {
+    "sid": "2372984",
+    "title": "'Profile Darwinex' by Konstantin Kulikov",
+    "growth": "42%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2341858",
+    "title": "'Friday Monday' by Konstantin Kulikov",
+    "growth": "70%",
+    "curve_points": 20,
+    "curve_dd": -58.0
+   },
+   {
+    "sid": "2342063",
+    "title": "'News Trade EA' by Konstantin Kulikov",
+    "growth": "65%",
+    "curve_points": 20,
+    "curve_dd": -3.0
+   }
+  ],
+  "hour_histogram": {
+   "20": 2,
+   "12": 1,
+   "22": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2386818",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDUSD",
+   "BTCUSD",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD"
+  ],
+  "found_at": "2026-09-12T14:44:11+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 4.488,
+  "growth_pct": 395.36,
+  "weeks": 67.0,
+  "pf": 1.76,
+  "max_dd_pct": null,
+  "trades": 1331.0,
+  "win_pct": 862.0,
+  "algo_pct": 94.0,
+  "subscribers": 0.0,
+  "author": "/en/users/guenterb",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "08": 1,
+   "13": 1,
+   "22": 1,
+   "09": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2271995",
+  "symbols": [
+   "BTCUSD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-12T14:44:11+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 4.518,
+  "growth_pct": 334.27,
+  "weeks": 95.0,
+  "pf": 1.17,
+  "max_dd_pct": null,
+  "trades": 1937.0,
+  "win_pct": 809.0,
+  "algo_pct": 99.0,
+  "subscribers": 1.0,
+  "author": "/en/users/jimmy282",
+  "author_other_signals": [
+   {
+    "sid": "2340546",
+    "title": "'Complete Portfolio 1' by Jimmy Peter Eriksson",
+    "growth": "260%",
+    "curve_points": 20,
+    "curve_dd": -14.0
+   },
+   {
+    "sid": "2340550",
+    "title": "'Pattern Recognition Portfolio' by Jimmy Peter Eriksson",
+    "growth": "106%",
+    "curve_points": 20,
+    "curve_dd": -15.0
+   },
+   {
+    "sid": "2344108",
+    "title": "'Prop Firm Gold x Market Anomalies Combo' by Jimmy Peter Eriksson",
+    "growth": "86%",
+    "curve_points": 20,
+    "curve_dd": -10.0
+   }
+  ],
+  "hour_histogram": {
+   "09": 2,
+   "15": 2,
+   "16": 3,
+   "20": 2,
+   "14": 3,
+   "18": 1,
+   "13": 1,
+   "08": 1,
+   "17": 3,
+   "19": 1,
+   "21": 1,
+   "11": 1
+  }
+ }
+]
