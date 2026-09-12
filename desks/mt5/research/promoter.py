@@ -232,7 +232,7 @@ def artifact_of(row: dict) -> dict:
         v = validate(a)
         return {"version_hash": v["version_hash"], "ok": bool(v["ok"]),
                 "problems": list(v["problems"])}
-    except Exception as exc:                                        # noqa: BLE001
+    except Exception as exc:
         return {"version_hash": None, "ok": False,
                 "problems": [f"artifact unavailable: {type(exc).__name__}: {exc}"]}
 
@@ -931,9 +931,78 @@ def promoted_risk_frac(row: dict | None, *, cap: float = PROMOTED_RISK_FRAC) -> 
         return 0.0, ("the allocator's solve gives this sleeve no heat; the row carries zero and "
                      "the sleeve holds no capital until a solve wants it")
     frac = min(h, float(cap))
-    return round(frac, 6), (
+
+    # ESTIMATION ERROR IS PRICED, AND THIS IS THE MISSING HALF OF PROMOTION.
+    #
+    # `libs/risk/kelly_shrink.py` has existed on this tree with a full derivation and was imported
+    # by NOTHING (measured 2026-09-12). Without it promotion is a BINARY door doing a job that
+    # wants a continuous answer: a sleeve that cleared the bar on 14 days of evidence and one with
+    # 180 days at the same Sharpe are sized identically, because the allocator prices dE[log W]
+    # but not the UNCERTAINTY of the Sharpe it was handed.
+    #
+    #     shrink = S^2 / (S^2 + SE(S)^2),  SE from Lo (2002)
+    #
+    # which is the James-Stein / normal-posterior shrinkage toward a zero-edge prior. It ramps
+    # continuously with evidence -- roughly 0.17x Kelly at day 15, 0.36x at 40, 0.55x at 90,
+    # 0.71x at 180 -- so strong evidence self-authorises size and weak evidence cannot.
+    #
+    # THIS RAISES E[log W], IT DOES NOT REDUCE AGGRESSIVENESS, and the distinction matters because
+    # the standing order forbids the second. The module's own docstring records the measurement:
+    # estimation noise alone does NOT move the growth optimum (E[log W] is linear in mu, so
+    # symmetric noise about a correct mean cannot shift the argmax). What justifies the shrink is
+    # that S-hat is BIASED for the quantity being bet on -- an edge reaches this function BECAUSE
+    # it measured well, so it carries a winner's curse, and the growth-optimal input is the
+    # posterior mean under a prior that most candidates have none. Betting the raw S-hat is
+    # betting an over-estimate, which is below-optimal growth, not above it.
+    #
+    # UNMEASURED EVIDENCE LEAVES THE NUMBER ALONE. If the row carries no Sharpe or no day count
+    # the shrink is not applied and the reason says so. Shrinking on ABSENCE would be reducing
+    # size by fiat on a sleeve nobody measured, which is the one thing the standing order rules
+    # out -- and it is also just wrong: an unmeasured SE is not a large SE.
+    shrink, shrink_why = _evidence_shrink(row)
+    if shrink is None:
+        return round(frac, 6), (
+            f"the allocator's current solve gives this sleeve {h:.2%} heat"
+            + (f", written at the {cap:.0%} promoter ceiling" if h > cap else "")
+            + f"; estimation shrink UNMEASURED ({shrink_why}), so the allocator's number stands")
+    shrunk = frac * shrink
+    return round(shrunk, 6), (
         f"the allocator's current solve gives this sleeve {h:.2%} heat"
-        + (f", written at the {cap:.0%} promoter ceiling" if h > cap else ""))
+        + (f", written at the {cap:.0%} promoter ceiling" if h > cap else "")
+        + f"; x{shrink:.3f} estimation shrink ({shrink_why}) -> {shrunk:.2%}")
+
+
+def _evidence_shrink(row: dict | None) -> tuple[float | None, str]:
+    """(shrink factor, why) from the row's own forward evidence, or (None, why) if unmeasured.
+
+    The Sharpe is annualised from the row's expectancy and its dispersion where both are present;
+    where the row already carries an annualised Sharpe that is used directly. `days_active` is the
+    forward day count -- NOT the trade count, because the standard error is over TIME, and a
+    sleeve that fired forty times in two days has two days of independent information.
+    """
+    if not isinstance(row, dict):
+        return None, "no row"
+    try:
+        from libs.risk.kelly_shrink import shrink_fraction
+    except Exception as exc:
+        return None, f"kelly_shrink unimportable: {type(exc).__name__}"
+
+    s = row.get("sharpe_ann") or row.get("sharpe_annual") or row.get("sharpe")
+    try:
+        s = float(s)
+    except (TypeError, ValueError):
+        return None, "the row carries no annualised Sharpe"
+    days = row.get("days_active") or row.get("days") or row.get("forward_days")
+    try:
+        days = float(days)
+    except (TypeError, ValueError):
+        return None, "the row carries no forward day count"
+    if days < 5:
+        return None, f"only {days:.0f} forward day(s); below the 5 the estimator needs"
+    f = shrink_fraction(s, days)
+    if not (f > 0.0):
+        return None, f"shrink returned {f} at S={s:.2f} over {days:.0f}d -- unproven edge"
+    return f, f"S={s:.2f} over {days:.0f} forward day(s)"
 
 
 def capital_verdict(view: dict, name: str, *, symbol: str = "", family: str = "",
@@ -1535,7 +1604,7 @@ def main() -> None:
                 # is refused by the handler below. Fail-closed on the one path that spends money.
                 gap = (executables.executor_gap(family) if _sleeve_timeframe(params) == "H1"
                        else executables.executor_gap(family, _sleeve_timeframe(params)))
-            except Exception as exc:                                    # noqa: BLE001
+            except Exception as exc:
                 gap = (f"executor registry unavailable on this box "
                        f"({type(exc).__name__}: {exc}) -- refusing the row, not the pass")
             if gap:
