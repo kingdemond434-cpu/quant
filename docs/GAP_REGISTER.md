@@ -1904,3 +1904,117 @@ CANONICALLY_MERGED / DEPLOYED / RUNTIME_VERIFIED: pending. Preserve Claude's com
 Next: release gates, canonical push, verify unchanged target module before applying only this
 patch on hel8, preserve original frontier snapshot, observe scheduled crawl then compiler intake.
 No operational closure until new output and real consumer evidence exist.
+
+Continuation evidence at 2026-09-12T23:11Z:
+- CANONICALLY_MERGED: `17f0b69b3`, pushed to `origin/desk-sync-clean`.
+- DEPLOYED: hel8 `e8462e4fa`; `world_frontier.py` SHA256
+  `abec7b99396c7f9e64f57e9cbd926c744b416107e18c949ef0f4c6d37f4e0049`.
+  All 29 focused tests pass on that host. First deployment commit `acf7642d0` was empty:
+  SSH precommit guard restored the old code. Detected by hash comparison, then completed via
+  documented `QUANT_ALLOW_SSH_PY=1` under the principal's explicit deployment instruction.
+  No guard or money-path rule changed. Rollback snapshot preserved at
+  `/home/quant/frontier-rollback-20260912/frontier.before-17f0b69b3.json`, SHA256
+  `af2c4f0e6bab1b4009b6057943202da97661b3ba54dd42d2022086fca71bc386`.
+- RUNTIME_VERIFIED: pending scheduled crawl (next timer 23:12:16Z) and consumer.
+- Downstream resource/access blocker: existing compiler PID 2647253 had elapsed 25m34s,
+  RSS 1,332,944KB and `mem_cgroup_handle_over_high`; do not duplicate/restart its work.
+  Its two output files are also root-owned mode0644. Fixing crawl persistence alone does not
+  close full conversion recovery. Exact follow-up: resumable bounded compiler batches with
+  atomic output publication, measure memory and output postconditions before cadence changes.
+- Hourly discovery at 23:03:09Z: 12 OK / 5 FAILED; killed/deferred categories separate.
+  `acquire_datasets` wrongly declares `main` although its entry is `acquire()`;
+  `fetch_futures_curves.main(argv=None)` inherits `--organ/--budget-s` and exits in argparse.
+  Exact next patch: adapt the declared acquire convention, pass empty argv to CLI consumers,
+  test against real entrypoints; root-owned `prospector_targets.json` and
+  `conversion_ledger.json` separately prevent their publication. Keep these defects OPEN.
+- Tier-1 `FRONTIER_INTELLIGENCE.json` at 22:37:40Z has 0 rows scouted, 0 new candidates,
+  three DISCOVERED entries and no in-flight/proven entries. Its implementer explicitly writes
+  plans/queue entries only. That is no evidence of implemented or tested throughput.
+- Migration read-only comparison: old/new shadow rows 96/102; all 96 old identities present,
+  zero changed `forward_start`, zero lower n; summed n 596/657. These are aggregate snapshot
+  comparisons, not verification of original trade ledgers or native provenance. Both old
+  access and new Windows access work for SCP; old key disallows shell execution by design,
+  so a consistent SQLite snapshot/query needs the established box-side producer. Never
+  reopen the key's write path. Original old/new JSON snapshots: `/tmp/quant-midnight-109/`.
+- Certificate comparison: 58 old / 61 new; 52 shared keys, only 37 byte-equivalent JSON rows;
+  six old keys absent and 15 changed. Missing keys are the five old parameterless session
+  breakouts plus the old qquant hunt16 key. All 61 new rows have mapping-valued params, but
+  exact replacements, explicit chart identity and prior revocations remain unreconciled;
+  do not revive the old keys or count these raw totals as independently valid certificates.
+
+Daily discovery frontier, retrieved **2026-09-12 UTC** (same shared queue, operational recovery
+first): the Bank of England's **11 August 2026** release,
+[April 2026 FX turnover survey](https://www.bankofengland.co.uk/markets/london-foreign-exchange-joint-standing-committee/results-of-the-semi-annual-fx-turnover-survey-april-2026),
+adds a newer official observation to the December 2025 BIS mechanism already logged above.
+It reports UK FX turnover up 20% from October 2025, with options up 49%. This is a
+market-structure observation, not a directional signal or independent edge. The relevant
+counterexample remains dealer internalisation: higher turnover need not imply greater price
+impact. Existing hedging-demand literature and failure memory overlap; do not create another
+family or treat a renamed mechanism as independent. No durable complete prior source-coverage
+cursor was found, so novelty since a complete cursor stays UNMEASURED.
+
+Disposition: **DEFER(2026-09-13)**, extend the existing hedge-demand investigation only after
+operational recovery. Falsifier: preregister whether changes in published instrument/counterparty
+turnover shares improve out-of-sample prediction of native Fusion spread/volatility transitions
+and net residual returns over an unconditional baseline, using publication-time lags, original
+release vintages, explicit charts, costs, placebo release times and full-search accounting.
+The semiannual frequency limits power; missing lawful PIT vintage history and synchronized native
+spread data are explicit blockers. Retain only if unchanged gates and measured OOS portfolio
+contribution justify acquisition/maintenance cost. No profit, independence or new experiment
+claimed. Highest feasible addition this cycle is the implemented repair restoring the existing
+crawler's ability to retain new ground, rather than a new research architecture.
+
+Measured postconditions, 2026-09-12T23:15Z, same issue (no blanket closure):
+
+```json
+{
+  "issue_id": "world-crawler:persistence",
+  "status": "OPEN_DOWNSTREAM_CONVERSION_BLOCKED",
+  "IMPLEMENTED": "17f0b69b3",
+  "TESTED": {"focused_tests": 29, "canonical_release_gates": "ALL_GREEN", "hel8_tests": 29},
+  "CANONICALLY_MERGED": "origin/desk-sync-clean@17f0b69b3",
+  "DEPLOYED": {"host": "ubuntu-8gb-fsn1-1", "commit": "e8462e4fa"},
+  "RUNTIME_VERIFIED": {
+    "scheduled_producer": true,
+    "service": "quant-world-crawler.service",
+    "started_at": "2026-09-12T23:12:16Z",
+    "completed_at": "2026-09-12T23:13:48Z",
+    "exit_code": 0,
+    "runtime_seconds": 91.8,
+    "memory_peak_mb": 57.8,
+    "fetches_before": 2377,
+    "fetches_after": 2437,
+    "sources_before": 15263,
+    "sources_after": 15539,
+    "seed_additions": 121,
+    "new_sources_discovered": 155,
+    "old_sources_missing": 0,
+    "fetch_counter_regressions": 0,
+    "leads_emitted": 36,
+    "artifact": "desks/mt5/data/intelligence/world/discoveries_20260912_2313.json",
+    "sha256": "94aafad568a4f06a2b25143bf16bb9652d27faff119c6834b643ba91118c0575",
+    "canonical_consumer_function_check": {
+      "reader": "miner_candidate_compiler._rows/_read + compile_row",
+      "rows_consumed": 36,
+      "NEEDS_SYMBOL_EXTRACTION": 27,
+      "NEEDS_EXACT_RULE_EXTRACTION": 9,
+      "executable_candidates": 0,
+      "mode": "READ_ONLY_DIAGNOSTIC"
+    },
+    "full_scheduled_conversion": false
+  },
+  "fully_closed_operational_issues": 0,
+  "new_backtests_or_gate_judgments_this_assignment": 0,
+  "new_survivors_claimed": 0,
+  "new_native_forward_evidence_independently_verified": 0,
+  "next_action": "Resume the existing compiler from its state under the shared lease; repair bounded batch persistence and copied output ownership in the shared implementation, then verify scheduled deepening/candidate output. Do not restart PID 2647253 or reset search/forward history. Reconcile the six missing and 15 changed certificate rows against originals before migration acceptance."
+}
+```
+
+The generic source failure detector and existing hourly/catch-up routes remain in place;
+retries now use the same repaired save. Other host adoption of this source fix is not claimed.
+Snapshots retained durably on serving host in
+`data/cro_ai_logs/midnight_20260912_epoch109/{old,new,comparison.json}`. Public dashboard still
+projects old-source issue evidence from September 11 and midnight evidence from September 3;
+no source alias changed or stale observation restamped. Current discovery/certificate/forward
+aggregate totals are not proof of native observations, exact certificates or migration cutover.
