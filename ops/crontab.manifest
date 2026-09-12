@@ -1058,6 +1058,12 @@ SYSTEMD unit="quant-dataaxis.timer" on="*-*-* 14:00:00" exec="ops/run_dataaxis_d
 # this file would have rebuilt a desk that certifies and never enrols -- certificates
 # accumulating with no capital behind them, and nothing to say why.
 SYSTEMD unit="quant-nightly-catchup.timer" on="*-*-* 00,03,06,09,12,15,18,21:00:00" exec="desks/mt5/research/nightly_catchup.py"
+# THE TWO COST PRODUCERS (2026-09-12). Both were measured MENTIONED by
+# check_enforcement_execution: each has a main(), each writes an artifact
+# (data/cost_surface.json, data/carry_state.json), and neither was scheduled anywhere --
+# so the desk kept charging one flat spread per symbol at every hour and zero overnight
+# financing, which is what both modules were written to end. Scheduled daily: a spread
+# surface and a financing table move on a session calendar, not on an hour.
 SYSTEMD unit="quant-desk-refresh.timer" on="OnUnitActiveSec=180" exec="ops/refresh_desk_state.sh"
 SYSTEMD unit="quant-seat-dataaxis.timer" on="*-*-* *:05:00 UTC" exec="ops/run_dataaxis_dig.sh"
 SYSTEMD unit="quant-seat-prospector.timer" on="*-*-* *:45:00 UTC" exec="ops/run_prospector_dig.sh"
