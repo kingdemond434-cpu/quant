@@ -39,10 +39,13 @@
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-09-12T09:10:48.713612+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/check_forward_clock.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-12T13:19:44.063355+00:00",
+   "status": "RUNNING"
   },
   "forward_identity_reconciliation": {
    "finished_at": "2026-09-12T12:18:51.838307+00:00",
@@ -81,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-12T12:18:51.838307+00:00"
+ "updated_at": "2026-09-12T13:19:44.063355+00:00"
 }
