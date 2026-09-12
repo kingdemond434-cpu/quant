@@ -213,7 +213,186 @@ def ingest_cot() -> dict:
     }
 
 
-INGESTERS = {"cot": ingest_cot}
+# ---------------------------------------------------------------------------- MACRO STATE AXES
+
+#: BIS policy rates, every reporting central bank, one flat CSV inside a zip. THE CARRY FAMILY'S
+#: ACTUAL INPUT: carry IS a rate differential, and until now the desk priced it off broker swap
+#: quotes -- a vendor's number for the thing, net of the vendor's own spread, rather than the
+#: thing. A policy rate is published and never revised in place, so this axis is PIT-safe by
+#: construction and has no vintage games at all.
+BIS_URL = "https://data.bis.org/static/bulk/WS_CBPOL_csv_flat.zip"
+
+BIS_AREA_CCY = {
+    "US": "USD", "XM": "EUR", "JP": "JPY", "GB": "GBP", "CH": "CHF", "CA": "CAD",
+    "AU": "AUD", "NZ": "NZD", "SE": "SEK", "NO": "NOK", "MX": "MXN", "ZA": "ZAR",
+    "TR": "TRY", "PL": "PLN", "HU": "HUF", "CZ": "CZK", "IL": "ILS", "KR": "KRW",
+    "IN": "INR", "BR": "BRL", "CN": "CNY", "DK": "DKK", "SG": "SGD",
+}
+
+#: MT5 pair -> (base, quote). The differential the carry family wants is base minus quote, which
+#: is the return to being long the pair and holding it -- so the SIGN follows the desk's symbol
+#: convention, not the currency's. USDJPY carry is US minus Japan; EURUSD is euro area minus US.
+CARRY_PAIRS = {
+    "EURUSD": ("EUR", "USD"), "GBPUSD": ("GBP", "USD"), "AUDUSD": ("AUD", "USD"),
+    "NZDUSD": ("NZD", "USD"), "USDJPY": ("USD", "JPY"), "USDCHF": ("USD", "CHF"),
+    "USDCAD": ("USD", "CAD"), "USDMXN": ("USD", "MXN"), "USDZAR": ("USD", "ZAR"),
+    "USDTRY": ("USD", "TRY"), "USDSEK": ("USD", "SEK"), "USDNOK": ("USD", "NOK"),
+    "USDPLN": ("USD", "PLN"), "USDHUF": ("USD", "HUF"), "USDCZK": ("USD", "CZK"),
+    "EURGBP": ("EUR", "GBP"), "EURJPY": ("EUR", "JPY"), "EURCHF": ("EUR", "CHF"),
+    "GBPJPY": ("GBP", "JPY"), "AUDJPY": ("AUD", "JPY"), "CADJPY": ("CAD", "JPY"),
+    "NZDJPY": ("NZD", "JPY"), "CHFJPY": ("CHF", "JPY"), "AUDNZD": ("AUD", "NZD"),
+    "EURAUD": ("EUR", "AUD"), "EURCAD": ("EUR", "CAD"), "GBPAUD": ("GBP", "AUD"),
+    "GBPCAD": ("GBP", "CAD"), "GBPCHF": ("GBP", "CHF"), "EURNOK": ("EUR", "NOK"),
+    "EURSEK": ("EUR", "SEK"), "EURPLN": ("EUR", "PLN"), "EURHUF": ("EUR", "HUF"),
+}
+
+FRED_SERIES = {
+    "DGS10": "US 10y constant-maturity yield",
+    "DGS2": "US 2y constant-maturity yield",
+    "T10Y2Y": "10y-2y term spread",
+    "DTWEXBGS": "broad trade-weighted USD index",
+    "T10YIE": "10y breakeven inflation",
+    "BAMLH0A0HYM2": "US high-yield OAS -- credit appetite",
+    "VIXCLS": "VIX",
+}
+FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+
+ECB_URL = ("https://data-api.ecb.europa.eu/service/data/{flow}/{key}"
+           "?lastNObservations={n}&format=csvdata")
+ECB_SERIES = {
+    "eur_usd_ref": ("EXR", "D.USD.EUR.SP00.A", "ECB euro reference rate vs USD"),
+    "eur_aaa_1y": ("YC", "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_1Y", "euro-area AAA 1y spot yield"),
+    "eur_aaa_10y": ("YC", "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y", "euro-area AAA 10y spot yield"),
+}
+
+
+def _bis_col(row, want):
+    """BIS columns are 'CODE:Label'. Match on the CODE so a label change cannot break this."""
+    for k in row:
+        if k and k.split(":")[0].strip().upper() == want:
+            return k
+    return None
+
+
+def ingest_bis():
+    """Policy rates -> a dated carry differential for every MT5 pair we can form both legs of."""
+    import zipfile
+    req = urllib.request.Request(BIS_URL, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=TIMEOUT * 2) as r:
+        blob = r.read()
+    z = zipfile.ZipFile(io.BytesIO(blob))
+    text = z.read(z.namelist()[0]).decode("utf-8", "replace")
+
+    by_ccy = {}
+    c_area = c_time = c_val = None
+    for row in csv.DictReader(io.StringIO(text)):
+        if c_area is None:
+            c_area = _bis_col(row, "REF_AREA")
+            c_time = _bis_col(row, "TIME_PERIOD")
+            c_val = _bis_col(row, "OBS_VALUE")
+            if not (c_area and c_time and c_val):
+                break
+        area = str(row.get(c_area, "")).split(":")[0].strip().upper()
+        ccy = BIS_AREA_CCY.get(area)
+        if not ccy:
+            continue
+        try:
+            v = float(row[c_val])
+        except (TypeError, ValueError):
+            continue
+        day = str(row[c_time]).strip()[:10]
+        if len(day) < 7:
+            continue
+        by_ccy.setdefault(ccy, {})[day] = v
+
+    rows = []
+    for sym, (base, quote) in CARRY_PAIRS.items():
+        b, q = by_ccy.get(base), by_ccy.get(quote)
+        if not b or not q:
+            continue
+        for day in sorted(set(b) & set(q)):
+            rows.append({"symbol": sym, "knowable_at": day, "base": base, "quote": quote,
+                         "base_rate": b[day], "quote_rate": q[day],
+                         "carry_differential": round(b[day] - q[day], 6)})
+    syms = sorted({r["symbol"] for r in rows})
+    return {"axis": "policy", "id": "bis_policy_rates", "source": BIS_URL,
+            "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "n_rows": len(rows), "symbols": syms, "n_symbols": len(syms),
+            "currencies": sorted(by_ccy),
+            "shape": "(symbol, knowable_at, carry_differential) -- the carry family's own input",
+            "rows": rows}
+
+
+def _csv_series(text, date_col, val_col):
+    out = []
+    for row in csv.DictReader(io.StringIO(text)):
+        d, v = row.get(date_col), row.get(val_col)
+        if not d or v in (None, "", "."):
+            continue
+        try:
+            out.append((str(d)[:10], float(v)))
+        except (TypeError, ValueError):
+            continue
+    return sorted(out)
+
+
+def ingest_fred():
+    """US rates, spreads, dollar, breakevens, credit and vol -- the macro STATE series.
+
+    THE VINTAGE CAVEAT IS REAL AND RECORDED. fredgraph.csv serves the CURRENT vintage, so a
+    revised series silently back-dates knowledge. For DAILY MARKET series -- yields, the dollar
+    index, VIX, OAS -- there is nothing to revise and the risk is negligible. It would NOT be
+    negligible for GDP or payrolls, and no survey or national-accounts series is in this list.
+    """
+    series, failed = {}, {}
+    for sid, what in FRED_SERIES.items():
+        try:
+            req = urllib.request.Request(FRED_URL.format(sid=sid), headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                text = r.read().decode("utf-8", "replace")
+            hdr = text.splitlines()[0].split(",")
+            pts = _csv_series(text, hdr[0], hdr[1] if len(hdr) > 1 else sid)
+            if pts:
+                series[sid] = {"what": what, "n": len(pts), "first": pts[0][0],
+                               "last": pts[-1][0],
+                               "points": [{"d": d, "v": v} for d, v in pts]}
+        except Exception as exc:
+            failed[sid] = f"{type(exc).__name__}: {str(exc)[:60]}"
+    return {"axis": "macro_state", "id": "fred_series", "source": "fredgraph.csv",
+            "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "n_series": len(series), "n_failed": len(failed), "failed": failed,
+            "vintage_note": ("CURRENT vintage only. Daily market series barely revise; no survey "
+                             "or national-accounts series is in this list on purpose."),
+            "shape": "series[sid].points -- one dated state variable each",
+            "series": series}
+
+
+def ingest_ecb():
+    """Euro-area reference rates and the AAA curve -- the state the EUR crosses condition on."""
+    series, failed = {}, {}
+    for name, (flow, key, what) in ECB_SERIES.items():
+        try:
+            url = ECB_URL.format(flow=flow, key=key, n=4000)
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                text = r.read().decode("utf-8", "replace")
+            pts = _csv_series(text, "TIME_PERIOD", "OBS_VALUE")
+            if pts:
+                series[name] = {"what": what, "n": len(pts), "first": pts[0][0],
+                                "last": pts[-1][0],
+                                "points": [{"d": d, "v": v} for d, v in pts]}
+        except Exception as exc:
+            failed[name] = f"{type(exc).__name__}: {str(exc)[:60]}"
+    return {"axis": "macro_state", "id": "ecb_sdw", "source": "data-api.ecb.europa.eu",
+            "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "n_series": len(series), "n_failed": len(failed), "failed": failed,
+            "vintage_note": "SDMX carries the vintage; these are published and not revised.",
+            "shape": "series[name].points -- one dated state variable each",
+            "series": series}
+
+
+INGESTERS = {"cot": ingest_cot, "bis": ingest_bis,
+              "fred": ingest_fred, "ecb": ingest_ecb}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -227,10 +406,21 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{a.axis}: INGEST FAILED -- {type(exc).__name__}: {exc}")
         print("  UNMEASURED, not empty: a failed fetch is not evidence that the axis is barren.")
         return 1
-    print(f"{a.axis}: {doc['n_rows']} row(s) over {doc['n_symbols']} MT5 symbol(s)")
-    print(f"  symbols  : {', '.join(doc['symbols'])}")
-    print(f"  lag      : {doc['knowable_lag_days']}d (survey -> publication; indexed on KNOWABLE)")
-    print(f"  unmapped : {doc['n_unmapped']} CFTC market(s) with no MT5 instrument")
+    if "n_rows" in doc:
+        print(f"{a.axis}: {doc['n_rows']} row(s) over {doc['n_symbols']} MT5 symbol(s)")
+        print(f"  symbols  : {', '.join(doc['symbols'])}")
+        if "knowable_lag_days" in doc:
+            print(f"  lag      : {doc['knowable_lag_days']}d (survey -> publication)")
+        if "n_unmapped" in doc:
+            print(f"  unmapped : {doc['n_unmapped']} market(s) with no MT5 instrument")
+        if "currencies" in doc:
+            print(f"  ccys     : {', '.join(doc['currencies'])}")
+    else:
+        print(f"{a.axis}: {doc['n_series']} series, {doc['n_failed']} failed")
+        for k, v in (doc.get("series") or {}).items():
+            print(f"    {k:<14} {v['n']:>6} pts  {v['first']} -> {v['last']}  {v['what'][:42]}")
+        for k, v in (doc.get("failed") or {}).items():
+            print(f"    {k:<14} FAILED {v[:58]}")
     if not a.apply:
         print("  --apply not given; nothing written")
         return 0
