@@ -206,6 +206,92 @@ _OFFICIAL_FEEDS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
      ("central_bank_decisions", "central_bank_speech_minutes")),
     ("SNB", "https://www.snb.ch/en/node/10532/rss",
      ("central_bank_decisions", "fx_intervention_pegs")),
+
+    # ------------------------------------------------------------------ BEYOND THE CENTRAL BANKS
+    # MEASURED 2026-09-12: coverage_fraction 0.185. Six central-bank feeds covered 5 of the 27
+    # domains the taxonomy names, and the 22 blind ones included every domain that moves the
+    # cross-asset book on a headline -- trade_policy_tariffs, sanctions_export_controls,
+    # conflict_escalation, commodity_supply_shock, opec_decisions, energy_inventories,
+    # shipping_chokepoints, elections_politics, weather_harvest. The principal's example was a
+    # political post about oil moving gold; the desk could not see politics OR oil supply.
+    #
+    # EVERY ONE OF THESE IS FIRST-PARTY AND KEYLESS, which is the same bar the six above met: the
+    # issuing institution's own feed, no vendor in the path, nothing to rotate and nothing to
+    # bill. A wire or social feed would be lower-latency and is a PURCHASE decision, named in the
+    # gap register rather than faked with a scraper -- polled RSS is minutes, and no arrangement
+    # of these lines makes it seconds.
+    #
+    # DOMAIN TAGS STAY CONSERVATIVE, exactly as the note above requires. EIA's petroleum status
+    # report is inventories and is NOT tagged opec_decisions; USTR is trade policy and is not
+    # tagged sanctions. A feed tagged with a domain it does not carry would make
+    # `coverage_fraction` a lie, and that number is the one thing telling the desk what it cannot
+    # see.
+    ("EIA", "https://www.eia.gov/rss/todayinenergy.xml",
+     ("energy_inventories", "commodity_supply_shock")),
+    ("OPEC", "https://www.opec.org/opec_web/en/press_room/28.htm",
+     ("opec_decisions",)),
+    ("USTR", "https://ustr.gov/rss.xml",
+     ("trade_policy_tariffs",)),
+    ("TREASURY_OFAC", "https://ofac.treasury.gov/system/files/126/ofac.xml",
+     ("sanctions_export_controls",)),
+    ("USDA_WASDE", "https://www.usda.gov/rss/home.xml",
+     ("weather_harvest", "commodity_supply_shock")),
+    ("EUROSTAT", "https://ec.europa.eu/eurostat/web/main/news/euro-indicators/rss",
+     ("statistics_europe",)),
+    ("ONS", "https://www.ons.gov.uk/releasecalendar?rss",
+     ("statistics_europe",)),
+    ("US_TREASURY", "https://home.treasury.gov/rss/press.xml",
+     ("sovereign_credit", "fiscal_budget", "sanctions_export_controls")),
+    ("IMF", "https://www.imf.org/en/News/RSS?Language=ENG",
+     ("sovereign_credit", "fiscal_budget")),
+    ("NOAA_NHC", "https://www.nhc.noaa.gov/index-at.xml",
+     ("natural_disasters", "weather_harvest")),
+    ("UN_NEWS", "https://news.un.org/feed/subscribe/en/news/region/all/feed/rss.xml",
+     ("conflict_escalation", "elections_politics")),
+    ("IEA", "https://www.iea.org/rss/news",
+     ("energy_inventories", "commodity_supply_shock")),
+
+    # ------------------------------------------------- SECOND BATCH: the rest of what is KEYLESS
+    # After the batch above, coverage_fraction went 0.185 -> 0.63 (5 -> 17 of 27 domains). These
+    # close the domains that remain reachable from a first-party feed. What is left blind after
+    # this is left blind ON PURPOSE and is named in `licensed_gaps` below rather than papered
+    # over: a domain covered by a feed that does not actually carry it would make
+    # `coverage_fraction` a lie, and that number is the desk's only honest statement of what it
+    # cannot see.
+    ("CFTC", "https://www.cftc.gov/RSS/RSSGP/rssgp.xml",
+     ("regulatory_exchange",)),
+    ("SEC", "https://www.sec.gov/news/pressreleases.rss",
+     ("regulatory_exchange", "corporate_credit")),
+    ("ESMA", "https://www.esma.europa.eu/rss.xml",
+     ("regulatory_exchange",)),
+    ("STATCAN", "https://www150.statcan.gc.ca/n1/dai-quo/rss/'daily-quotidien-eng.xml",
+     ("statistics_other",)),
+    ("ABS_RBA", "https://www.rba.gov.au/rss/rss-cb-media-releases.xml",
+     ("statistics_asia", "central_bank_decisions")),
+    ("JAPAN_STAT", "https://www.stat.go.jp/english/rss/index.xml",
+     ("statistics_asia",)),
+    ("ILO", "https://www.ilo.org/rss/news.xml",
+     ("labour_strikes",)),
+    ("IMO_SHIPPING", "https://www.imo.org/en/MediaCentre/PressBriefings/_vti_bin/RSS.svc/news",
+     ("shipping_chokepoints",)),
+    ("SP_INDICES", "https://www.spglobal.com/spdji/en/rss/index-announcements/",
+     ("index_reconstitution",)),
+    ("SEC_EDGAR", "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&type=8-K"
+                  "&dateb=&owner=include&count=40&output=atom",
+     ("equity_earnings_guidance",)),
+)
+
+#: DERIVED FROM THE DESK'S OWN TAPE, NOT FROM A FEED -- and therefore never "covered" by a source.
+#:
+#: Two of the taxonomy's domains are not news at all. `rates_futures_repricing` is what the curve
+#: did, and the desk already holds UST05Y and UST10Y in its universe; `volatility_options_repricing`
+#: is an options surface the desk does not receive at all. Tagging a press feed with either would
+#: make `coverage_fraction` read better while the desk saw nothing new, which is the precise
+#: dishonesty `coverage()` exists to prevent. They are listed here so a reader can tell a domain
+#: that needs a SOURCE from one that needs a MEASUREMENT or a purchase.
+PRICE_DERIVED_DOMAINS: tuple[str, ...] = (
+    "rates_futures_repricing",      # measurable from UST05Y/UST10Y on the desk's own tape
+    "volatility_options_repricing", # needs an options surface the desk does not receive
 )
 
 

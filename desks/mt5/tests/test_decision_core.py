@@ -496,11 +496,22 @@ def test_cap_by_heat_budgets_from_the_allocator_verdict_when_given() -> None:
 
 
 def test_cap_by_heat_orders_by_the_allocators_marginal_value() -> None:
+    """RANK DECIDES THE ORDER; the floor mandate decides how far down the order funding reaches.
+
+    This test pins the ORDERING, which is what its name is about: the allocator's marginal value
+    puts `new` ahead of `old`, and registry order stands in when no rank is given. It used to pin
+    the CUT as well -- exactly one admitted leg -- and that stopped being right when the floor
+    fill landed (2026-09-11). Two 0.15 legs against a derived 20% budget leave the book at 15%
+    with a fundable leg deferred, and a 15% book under a 20% floor is the idle capital the
+    principal's standing order forbids: "trading should never be idle ... capital should never be
+    idle ever". So the fill takes the next leg IN RANK ORDER and the book lands at 30%, inside
+    MAX_HEAT_CEILING. The property that survives is the one being tested -- who goes first.
+    """
     sl = [{"name": "old", "q_charge": 0.15}, {"name": "new", "q_charge": 0.15}]
     admitted, _ = dc.cap_by_heat(sl, EQ, rank={"new": 0.02, "old": 0.01})
-    assert [s["name"] for s in admitted] == ["new"]
+    assert [s["name"] for s in admitted] == ["new", "old"]
     admitted, _ = dc.cap_by_heat(sl, EQ)
-    assert [s["name"] for s in admitted] == ["old"]
+    assert [s["name"] for s in admitted] == ["old", "new"]
 
 
 def test_the_slide_is_a_tolerance_and_the_ceiling_is_absolute() -> None:

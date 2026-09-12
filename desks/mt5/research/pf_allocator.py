@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 import time
 from contextlib import suppress
@@ -155,7 +156,34 @@ NO_TRADE_HORIZON_DAYS = 5.0
 #: produced by anything real on this desk. Set well above every honest number so it can only fire
 #: on a defect, and it fires by refusing the pass rather than by clipping the number -- a clipped
 #: number is a defect wearing a plausible answer.
-IMPLAUSIBLE_ANNUAL_PCT = 5000.0
+#: PRINCIPAL OVERRIDE (2026-09-11, instructed in session 01WZHzZoD3QX9Tx668fkAaw6): "make it
+#: follow the optimum always no coping or getting scared js cuz returns show extreme".
+#: QUANT_IMPLAUSIBLE_ANNUAL_PCT raises or removes the fence (0 or a negative value disables it).
+#:
+#: WHAT THE FENCE WAS FOR, kept here because the override does not make the reasoning wrong.
+#: It fires on a BROKEN INPUT, not on a big number -- the case that justified it produced 2.8e14
+#: percent from sleeves stacked on mismatched date clocks. On 2026-09-11 the desk's own realised
+#: record was measured against it and the fence lost that argument on the evidence: six trading
+#: days at +0.0327 log/day realised against the model's +0.0174 claim, i.e. the model was HALF
+#: the realised rate, not a fantasy multiple of it. On a EUR 600 account four figures a year is
+#: arithmetic, not absurdity.
+#:
+#: WHAT DISABLING IT COSTS, stated plainly. The fence was the only check standing between a
+#: date-misalignment defect and a sized book: with it off, an input error that inflates growth
+#: is deployed rather than refused. The compensating measurements are `heat.effective`
+#: (where the heat actually lands) and the survival ceiling from `kelly_surface.envelope`,
+#: both of which still bind every pass and neither of which is disabled here.
+#: THE DEFAULT NOW APPLIES THE OVERRIDE INSTEAD OF DESCRIBING IT (2026-09-11). The reasoning
+#: above was written and the constant was left at 5000, so the fence went on refusing every pass
+#: while the file explained why it should not. Measured that evening: three consecutive passes
+#: reported a free optimum of 2.8e5 - 5.1e5 percent a year, which is 0.0319 log/day -- BELOW the
+#: +0.0327 log/day the desk realised over the preceding six trading days. A fence that refuses a
+#: rate the account has already earned is not measuring plausibility, and 5000%/yr is 0.0156
+#: log/day, under half the realised rate. The bar is set where it can only catch ARITHMETIC
+#: corruption (the 2.8e14 date-clock defect is seven orders of magnitude above it) and can never
+#: again fire on a book a real account could produce. Set QUANT_IMPLAUSIBLE_ANNUAL_PCT=0 to
+#: remove it entirely.
+IMPLAUSIBLE_ANNUAL_PCT = float(os.environ.get("QUANT_IMPLAUSIBLE_ANNUAL_PCT", "1e7"))
 
 #: Regime-mixture bounds. No regime the desk has enough history for is ever assigned zero worlds
 #: (MIN), and no regime may own more than MAX of the population however certain the classifier
@@ -1116,6 +1144,22 @@ def current_book() -> dict[str, float]:
     Read from the previous allocation when there is one, else from the gateway's own sleeve set
     priced at Q_OPT. NOT from a list in this file: a second opinion about what is live is the
     exact drift this whole module exists to remove.
+
+    THE FALLBACK IS NORMALISED TO THE MANDATE FLOOR, and until 2026-09-11 it was not. Q_OPT is a
+    PER-SLEEVE nominal quantum, so a flat book of it totals whatever the roster size happens to
+    make: 46 live sleeves x 1.2702% = 58.43% "held" heat, and 100 sleeves would have read 127%.
+    A baseline whose total is a function of how many rows are live is not a measurement of
+    anything, and it fed `bind_verdict`, whose one hard rule is that it may not hold the desk
+    outside the mandated band.
+
+    THAT BUILT A TRAP THE BOOK COULD NOT ESCAPE. Measured this evening: the plausibility fence
+    refused a pass, the book published empty, so the next pass found no `book` to read and fell
+    through to this branch, which returned 58.43% -- out of band -- so `bind_verdict` declined to
+    hold it and published the empty solve AGAIN. Once the book emptied it could never come back
+    under its own power, and the gateway logged `sizing: no allocator book` on every pass while
+    the allocator logged "the previous book stands". Scaling the flat book to HEAT_TARGET keeps
+    the baseline in band, so a refused pass now HOLDS instead of zeroing, which is what the
+    refusal always claimed to do.
     """
     if OUT.exists():
         try:
@@ -1125,17 +1169,22 @@ def current_book() -> dict[str, float]:
                 return {str(k): float(v) for k, v in book.items()}
         except (OSError, ValueError):
             pass
+
+    def _flat(names: list[str]) -> dict[str, float]:
+        """A flat book over `names` totalling the mandate floor, not Q_OPT x len(names)."""
+        if not names:
+            return {}
+        each = float(HEAT_TARGET) / float(len(names))
+        return {n: each for n in names}
+
     try:
         from mt5desk.gateway import sleeve_set
-        from mt5desk.gateway_config_fallback import Q_OPT
-        return {str(s["name"]): float(Q_OPT) for s in sleeve_set()}
+        return _flat([str(s["name"]) for s in sleeve_set()])
     except Exception:
         try:
-            from mt5desk.gateway_config_fallback import Q_OPT
-
             from research.promoter import GOLD_SLEEVE_NAMES, _load_gold_retired
             retired = set(_load_gold_retired())
-            return {n: float(Q_OPT) for n in GOLD_SLEEVE_NAMES if n not in retired}
+            return _flat([n for n in GOLD_SLEEVE_NAMES if n not in retired])
         except Exception:
             return {}
 
@@ -1158,16 +1207,57 @@ def bind_verdict(nt: dict[str, Any], prev_book: dict[str, float], held: dict[str
     ceiling: a held book outside the band is a defect the filter has no authority over, and the
     solve goes out unchanged with the reason on `nt["why_not_binding"]`. A held book the worlds
     cannot score is not a book to keep either. `nt["binding"]` says which way it went.
+
+    OUT OF BAND NEVER MEANS ZERO (2026-09-11, principal: "fix that permanently"). Declining to
+    hold is only safe when there is a SOLVE to publish instead. Measured this evening: the
+    plausibility fence refused three consecutive passes, so `book` arrived EMPTY, the held book
+    read 58.43% (out of band), this branch declined to bind -- and the empty solve went out. Zero
+    heat, `allocator_ok=False`, `CATASTROPHE GUARD: allocator produced no usable book`, and the
+    gateway logging `sizing: no allocator book` on every pass. Refusing to hold 58% because it is
+    above a 30% ceiling, and publishing 0% instead, misses the ceiling by more than holding did
+    and violates the 20% floor as well; it is the strictly worst of the three available answers.
+
+    So when there is no solve to fall back on, the held book is SCALED into the band rather than
+    discarded -- same composition, mandated total. The growth numbers travel with a note saying
+    which total they were measured at, because scaling the weights does not rescore them and
+    publishing them as if it had would be the defect wearing a plausible answer.
     """
     nt["binding"] = False
     if nt.get("verdict") != "NO CHANGE":
         return book, funded
     held_total = float(sum(float(v) for v in prev_book.values()))
-    if not prev_book or not math.isfinite(float(held.get("mean_log_growth", float("nan")))):
+    scorable = bool(prev_book) and math.isfinite(float(held.get("mean_log_growth", float("nan"))))
+    out_of_band = held_total < floor - 1e-4 or held_total > ceiling + 1e-4
+    # A solve worth publishing instead of the held book: non-empty and carrying real heat.
+    have_solve = bool(book.heat) and book.total_heat > 1e-9
+    if not scorable:
         nt["why_not_binding"] = "no scorable held book to keep"
-    elif held_total < floor - 1e-4 or held_total > ceiling + 1e-4:
+    elif out_of_band and have_solve:
         nt["why_not_binding"] = (f"held book at {held_total:.2%} is outside the mandated "
-                                 f"[{floor:.0%}, {ceiling:.0%}] band")
+                                 f"[{floor:.0%}, {ceiling:.0%}] band; publishing the solve")
+    elif out_of_band:
+        target = min(max(held_total, floor), ceiling)
+        k = target / held_total if held_total > 1e-12 else 0.0
+        scaled = {str(s): float(v) * k for s, v in prev_book.items() if float(v) * k > 1e-5}
+        nt["binding"] = True
+        nt["held_rescaled"] = {"from": round(held_total, 6), "to": round(target, 6),
+                               "factor": round(k, 6)}
+        nt["why_not_binding"] = ""
+        kept = AllocationResult(
+            heat=scaled, total_heat=float(sum(scaled.values())),
+            robust_score=float(held["robust_score"]),
+            mean_log_growth=float(held["mean_log_growth"]),
+            cvar_log_growth=float(held["cvar_log_growth"]),
+            annual_growth_pct=float(held["annual_growth_pct"]),
+            prob_annual_loss=float(held["prob_annual_loss"]),
+            marginal=dict(book.marginal),
+            note=(f"held and rescaled: the solve was empty, so the held book was scaled "
+                  f"{held_total:.2%} -> {target:.2%} into the mandated band rather than "
+                  f"published as zero. Growth numbers were measured at {held_total:.2%}."))
+        _log(f"NO SOLVE TO PUBLISH: holding the book, rescaled {held_total:.2%} -> "
+             f"{target:.2%} into the [{floor:.0%}, {ceiling:.0%}] band across "
+             f"{len(scaled)} sleeves. Zero heat is not the safe answer here.")
+        return kept, {k2: round(v, 6) for k2, v in scaled.items()}
     else:
         nt["binding"] = True
         kept = AllocationResult(
@@ -2599,7 +2689,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # a number that large is a broken input, and the one that produced 2.8e14% was sleeves stacked
     # on mismatched date clocks. The fence does not clip the number -- clipping would hide the
     # defect behind a plausible-looking answer -- it refuses the whole pass.
-    implausible = free.annual_growth_pct > IMPLAUSIBLE_ANNUAL_PCT
+    # A fence at or below zero is OFF (QUANT_IMPLAUSIBLE_ANNUAL_PCT=0), and the pass then follows
+    # the optimum whatever it computes -- the principal's instruction of 2026-09-11.
+    implausible = (IMPLAUSIBLE_ANNUAL_PCT > 0
+                   and free.annual_growth_pct > IMPLAUSIBLE_ANNUAL_PCT)
     if implausible:
         _log(f"REFUSING THIS PASS: free optimum reports {free.annual_growth_pct:.3g}% a year, "
              f"above the {IMPLAUSIBLE_ANNUAL_PCT:.0f}% plausibility fence. That is an input "

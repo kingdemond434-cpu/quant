@@ -747,6 +747,46 @@ CACHE_DIR = REPORTS / "gauntlet_cache"
 #: When each symbol's cells were last BUILT (not merely considered). The rotation key.
 BUILD_CURSOR = REPORTS.parent / "data" / "hypotheses" / "gauntlet_build_cursor.json"
 
+#: Every cell id this desk has ever JUDGED, and when it was first judged. The NEW-FIRST key.
+#:
+#: WHY A SECOND CURSOR. The build cursor rotates by SYMBOL, which is right for converging a
+#: standing docket: whatever an hour misses is at the front of the next one. It is wrong for a
+#: NEW cell, because a freshly converted candidate on an already-built symbol inherits that
+#: symbol's recent timestamp and sorts to the BACK -- behind ~20,000 cells the desk has already
+#: judged, in a rotation that takes ~6.4 hours to come round.
+#:
+#: That is the wrong trade. Re-judging a cell whose daily series gained one point since
+#: yesterday reproduces yesterday's verdict; judging a cell for the FIRST time is the only thing
+#: a sweep does that can change what the desk knows. So never-judged cells go first, always, and
+#: the symbol rotation orders everything behind them exactly as before.
+SEEN_CELLS = REPORTS.parent / "data" / "hypotheses" / "gauntlet_seen_cells.json"
+
+
+def _seen_cells() -> dict[str, str]:
+    """cell id -> ISO time it was first judged. Unreadable reads as EMPTY, which is the safe
+    direction: every cell then looks new, the sweep judges in cursor order as it always did, and
+    one rotation is spent -- never a cell that stops being judged (L1.28a)."""
+    try:
+        doc = json.loads(SEEN_CELLS.read_text("utf-8"))
+        return {str(k): str(v) for k, v in doc.items()} if isinstance(doc, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_seen_cells(seen: dict[str, str], judged: set[str]) -> None:
+    """Record the cells this sweep actually judged, so they stop counting as new."""
+    fresh = {c for c in judged if c and c not in seen}
+    if not fresh:
+        return
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    seen.update(dict.fromkeys(fresh, now))
+    try:
+        SEEN_CELLS.parent.mkdir(parents=True, exist_ok=True)
+        SEEN_CELLS.write_text(json.dumps(seen, indent=0, sort_keys=True), encoding="utf-8")
+        print(f"  seen-cells: +{len(fresh)} first-judged this sweep ({len(seen)} known)")
+    except OSError as exc:
+        print(f"  seen-cells NOT saved ({exc}); next sweep re-prioritises these as new")
+
 
 def _build_cursor() -> dict[str, str]:
     """symbol -> ISO time its cells were last built. Missing reads as "never", which sorts first.
@@ -931,17 +971,31 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     """
     from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 
+    # `built_symbols` IS THE ROTATION KEY, and its absence broke the rotation completely.
+    # MEASURED 2026-09-11: the pool warmed 2,012 cells while the serial loop reported
+    # `built_fresh = 0`, so `_built_syms` stayed EMPTY, so `_save_build_cursor` returned at its
+    # `if not built` guard and the cursor was never stamped. The next sweep therefore sorted by
+    # an unchanged cursor, put the same head of the docket first again, and left the same 11,146
+    # cells deferred -- 20,352 unique cells with only 7,923 ever reaching the matrix, every hour,
+    # forever. The docstring above worries about precisely this ("rebuild the head of the docket
+    # every hour and never reach the tail") and guards the pool's ORDER, which was never the
+    # problem: the pool built in the right order and nothing recorded that it had.
     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
-               "unreached": 0, "seconds": 0.0, "failures": {}}
+               "unreached": 0, "seconds": 0.0, "failures": {}, "built_symbols": set()}
     t0 = time.time()
     it = iter(specs)
     pending: dict = {}
+    #: future -> spec, kept past the `pending.pop` so the completion handler can still name the
+    #: symbol it just built. `pending` is popped before the result is read.
+    pending_spec: dict = {}
     with ProcessPoolExecutor(max_workers=WORKERS) as pool:
         def _submit_next() -> bool:
             sp = next(it, None)
             if sp is None:
                 return False
-            pending[pool.submit(_warm_one, sp, meta)] = sp
+            _fut = pool.submit(_warm_one, sp, meta)
+            pending[_fut] = sp
+            pending_spec[_fut] = sp
             summary["submitted"] += 1
             return True
 
@@ -967,6 +1021,13 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
                 st = str(r.get("status") or "ERROR")
                 if st == "WARMED":
                     summary["warmed"] += 1
+                    # WARMED only, never HIT: the cursor records when a symbol's cells were last
+                    # BUILT, and a cache hit spends no build budget. Stamping hits would push
+                    # cheap symbols to the back and starve the expensive ones that need the slot.
+                    _sp = pending_spec.get(f) or {}
+                    _s = str(_sp.get("sym") or "")
+                    if _s:
+                        summary["built_symbols"].add(_s)
                 elif st == "HIT":
                     summary["hit"] += 1
                 else:
@@ -1676,7 +1737,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     # bets) was charged as fully independent: a HARSHER bar than the sealed policy, hidden
     # inside the gate, on the one door every hourly candidate walks through (found 2026-08-27
     # when the principal asked "are you sure we use the same tests for all of these").
-    # `charged_trial_count` fails closed to raw*7 whenever the census cannot measure.
+    from research.gate_policy import fail_closed_trial_count
+    # `charged_trial_count` fails closed to POLICY's number whenever the census cannot measure.
     try:
         from mt5desk.canonical import calibrated_census_report
         from research.gate_policy import charged_trial_count
@@ -1686,7 +1748,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         n_trials, _trial_basis = charged_trial_count(
             matrix.shape[1], _census.get("n_effective"), _census.get("method"))
     except Exception as _exc:
-        n_trials = max(2, math.ceil(matrix.shape[1] * TRIALS_MULTIPLIER))
+        n_trials = fail_closed_trial_count(matrix.shape[1])  # spec: fail_closed_to fixed_campaign_trials(597), NOT the batch tax
         _trial_basis = f"raw_cells_x7_fail_closed ({type(_exc).__name__})"
         _census = {"unavailable": str(_exc)[:120]}
 
@@ -2053,15 +2115,28 @@ def main():
     # reason. Verdicts are unaffected -- cells are independent and judged by the same matrix.
     _cursor = _build_cursor()
     _built_syms: set[str] = set()
+    _seen = _seen_cells()
+
+    def _is_new(sp: dict) -> int:
+        """0 for a cell this desk has never judged, 1 otherwise. Cheap: no frame is loaded."""
+        try:
+            return 0 if cell_id({"sym": sp.get("sym"), "family": sp.get("family"),
+                                 "params": sp.get("params") or {}}) not in _seen else 1
+        except Exception:
+            return 0
     # CHART GROUPS STAY CONTIGUOUS INSIDE SYMBOL GROUPS, for the same reason symbol groups stay
     # contiguous at all: the frame cache is what makes the build cheap, and one symbol's M5 and
     # H1 frames are two different entries in it.
     eligible_specs = sorted(
         eligible_specs,
-        key=lambda sp: (_cursor.get(str(sp.get("sym") or ""), ""),
+        key=lambda sp: (_is_new(sp),
+                        _cursor.get(str(sp.get("sym") or ""), ""),
                         str(sp.get("sym") or ""),
                         timeframe_of(sp.get("params"), str(sp.get("family") or "")),
                         str(sp.get("family") or "")))
+    _n_new = sum(1 for sp in eligible_specs if _is_new(sp) == 0)
+    print(f"  docket order: {_n_new} never-judged cell(s) first, then "
+          f"{len(eligible_specs) - _n_new} in symbol-rotation order")
     # PARALLEL PRE-WARM, BEFORE THE LOOP THAT HAS ALWAYS RUN. Workers build the uncached cells
     # into the on-disk cache in this exact order until the build budget is spent; the loop
     # below then finds them and takes its cached branch, and defers whatever the pool did not
@@ -2072,6 +2147,9 @@ def main():
     _prewarm = None
     if WORKERS > 1 and len(eligible_specs) > 1:
         _prewarm = _prewarm_cache(eligible_specs, meta, _build_t0 + FRESH_BUILD_BUDGET_SEC)
+        # THE POOL'S BUILDS COUNT AS BUILDS. Without this the cursor never advances and the
+        # docket never rotates -- see `_prewarm_cache.summary["built_symbols"]`.
+        _built_syms |= set(_prewarm.get("built_symbols") or ())
     # STAGE 0, REPORT-ONLY (V8). `stage0_prefilter` says why it cannot be more than that here:
     # a spec carries no return stream, and the cells that do (cached series) have already paid
     # their build. It judges every cached series on the loop's cached branch below, counts what
@@ -2200,6 +2278,14 @@ def main():
     result["prewarm"] = _prewarm
     result["peak_rss_mb"] = round(_rss_mb(), 1)
     _save_build_cursor(_cursor, _built_syms)
+    # A CELL COUNTS AS SEEN ONLY WHEN IT WAS JUDGED, never when it was deferred or blocked.
+    # `deferred_verdicts` and `blocked_verdicts` carry `passed: None` and a reason precisely
+    # because they are work not yet done; stamping those would drop them out of the new-first
+    # queue without anyone having looked at them, which is the exact shape of a cell that
+    # silently stops being tested.
+    _save_seen_cells(_seen, {str(v.get("cell") or "")
+                             for v in (result.get("verdicts") or [])
+                             if isinstance(v, dict) and v.get("passed") is not None})
     result["build_rotation"] = {
         "symbols_built_this_run": len(_built_syms),
         "symbols_in_cursor": len(_cursor),

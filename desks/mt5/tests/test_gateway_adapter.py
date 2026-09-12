@@ -363,9 +363,12 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
           "_logs": logs, "_intents": intents, "_book": book, "_closes": closes}
     # `_sleeve_identity` rides along because the send site spreads it onto the intent row; it is
     # pure over the sleeve dict and the harness would otherwise report the adapter broken.
+    # `unarmed_why` rides along for the same reason: the WOULD-PLACE log line names which of the
+    # three arming terms is false, so the send site calls it and the harness would otherwise
+    # raise NameError inside `<gw>` and report the adapter broken at a line about logging.
     return _exec(("run_family_sleeves", "resolve_family_order", "_family_chart",
                   "_family_constructor", "_family_takes_side", "_family_call_params",
-                  "_sleeve_identity"), ns)
+                  "_sleeve_identity", "unarmed_why"), ns)
 
 
 def _run_family(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
@@ -401,7 +404,11 @@ def test_unarmed_the_family_executor_logs_the_exact_order_and_marks_the_bar(tmp_
     last_bar = dc.h1_frame(rows).index[-2]
     ttl = dc.family_ttl_until(last_bar, 12)
     (line,) = [x for x in ns["_logs"] if "WOULD PLACE" in x]
-    assert line == (f"[{_NAME}] WOULD PLACE (generic exec not armed; enable=GENERIC_EXEC_ENABLED): "
+    # THE LINE NAMES WHICH ARMING TERM IS FALSE, and pinning that is the point of this test.
+    # "not armed" told an operator nothing: three independent terms gate a generic send and the
+    # log named none of them, so the next move was always to go and read the code. `unarmed_why`
+    # reports the one that is actually false -- here the GENERIC_EXEC_ENABLED file is absent.
+    assert line == (f"[{_NAME}] WOULD PLACE (generic exec blocked: GENERIC_EXEC_ENABLED absent): "
                     f"BUY 0.12 EURUSD @market sl=1.10500 tp=1.11500 ttl_until={ttl}")
     assert st["generic"][_NAME] == {"last_signal_bar": str(last_bar)}
     # The theoretical book saw the intent, armed or not.

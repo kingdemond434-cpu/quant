@@ -1133,11 +1133,24 @@ def cap_by_heat(sleeves: list[dict], equity: float,
         # bounds the fill exactly as it bounds the limit. A venue that declares no daily limit
         # passes None and leaves this untouched.
         ceiling = min(ceiling, float(vcap))
+    # A MEASURED ALLOCATION IS NOT TOPPED UP; A FALLBACK BUDGET IS. The fill above is the only
+    # thing here allowed past `limit` (budget + slide), and that licence comes from the MANDATE:
+    # capital must be at work at the floor, so a book left under it by the slide is a defect.
+    # It is NOT a licence to overrule the allocator. When `solved` is not None the allocator
+    # measured this number THIS pass -- 10% means 10%, including when the catastrophe or ruin
+    # guard deliberately sized the book down -- so the fill binds at `limit` like everything
+    # else. Measured 2026-09-11: without the distinction a solved 10% budget filled to 16% and a
+    # declared 12% venue cap was breached, i.e. the floor law was being used to override the two
+    # bars that exist to bound it.
+    if solved is None:
+        fill_to, fill_bound = float(HEAT_TARGET), ceiling
+    else:
+        fill_to, fill_bound = min(budget, ceiling), limit
     filled: list[str] = []
-    if used < HEAT_TARGET - 1e-12 and deferred_rows:
+    if used < fill_to - 1e-12 and deferred_rows:
         still: list[tuple[dict, float]] = []
         for s, q in deferred_rows:
-            if used >= HEAT_TARGET - 1e-12 or used + q > ceiling + 1e-12:
+            if used >= fill_to - 1e-12 or used + q > fill_bound + 1e-12:
                 still.append((s, q))
                 continue
             admitted.append(s)
@@ -1148,7 +1161,7 @@ def cap_by_heat(sleeves: list[dict], equity: float,
 
     if not dropped:
         return list(sleeves), (
-            f"PORTFOLIO HEAT: filled to the {HEAT_TARGET:.0%} floor at {used:.1%} "
+            f"PORTFOLIO HEAT: filled to the resolved {fill_to:.1%} at {used:.1%} "
             f"[{budget_src}]; admitted every sleeve ({len(admitted)})" if filled else None)
     # WHICH BAR ACTUALLY BOUND. A book trimmed by the venue's daily-loss rule and one trimmed by
     # the growth budget are the same short book on screen, and the operator's next move differs
