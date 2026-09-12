@@ -12,6 +12,27 @@ rem Free tier is forced, so this costs nothing however often it runs.
 setlocal
 set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "QUANT_FREE_TIER=1"
+rem DEEPSEEK RUNS ON A DIFFERENT FREE FAMILY, BECAUSE DEEPSEEK IS NOT ONE (2026-09-12).
+rem
+rem Measured against this account's own catalogue: 445 models served, 19 of them free, and NOT
+rem ONE is a DeepSeek, Kimi, Qwen, Moonshot, GLM or MiniMax id. That is why deepseek-r1:free and
+rem kimi-k2:free both return 404 and kimi's chain walks past three dead entries to nemotron. The
+rem free tier here is nvidia/nemotron, google/gemma, inclusionai/ling, poolside, cohere, nex-agi.
+rem
+rem The flywheel's value is a genuinely DIFFERENT PRIOR from Claude's, not the DeepSeek brand, so
+rem gemma is a real substitute for its purpose. It is also deliberately a different vendor from
+rem the nemotron kimi lands on: two seats agreeing because they are the same model is not
+rem cross-family evidence, it is one opinion counted twice.
+rem
+rem Set EXPLICITLY here rather than defaulted in code: deepseek_cycle refuses to substitute a
+rem model silently ("a silent substitution would corrupt the only measurement this flywheel
+rem exists to produce"), and that refusal is right. This is configuration, on the record.
+rem gemma free is RATE-LIMITED UPSTREAM (HTTP 429 from Google AI Studio on first call),
+rem so bulk uses the vendor that is demonstrably answering -- 446 calls today without a
+rem refusal -- at a DIFFERENT size from the ultra kimi lands on, so the two seats are not
+rem the same model counted twice.
+set "DEEPSEEK_BULK_MODEL=nvidia/nemotron-3-super-120b-a12b:free"
+set "DEEPSEEK_DEEP_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free"
 set "SSL_CERT_FILE=C:\Program Files\Python314\Lib\site-packages\certifi\cacert.pem"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-AuditLane.log"
 set "PY=C:\Program Files\Python314\python.exe"
