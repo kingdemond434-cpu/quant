@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quant Desk — live</title>
+<style>
+/* ── PALETTE ──────────────────────────────────────────────────────────────────
+   Near-black ground, warm gold for structure, semantic green/red for direction.
+   Everything muted except the numbers: the number is the only thing that should
+   pull the eye. ------------------------------------------------------------- */
+:root{
+  --bg:#080908; --panel:#0f100f; --panel2:#131513; --line:#1e211e;
+  --ink:#e8e9e7; --dim:#8b8f8a; --micro:#6a6e68;
+  --gold:#d8b36a; --gold-dim:#8a7442;
+  --green:#3ddc84; --green-dim:#1d6b41; --red:#f2555a; --red-dim:#7a2a2d;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+/* micro-label: the 10px letterspaced uppercase mono that gives the whole board
+   its instrument-panel feel. Used for every field name, never for a value. */
+.micro{font:500 9.5px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--micro)}
+.num{font:600 30px/1 var(--mono);letter-spacing:-.01em}
+.num-sm{font:600 17px/1 var(--mono)}
+.pos{color:var(--green)} .neg{color:var(--red)} .neutral{color:var(--ink)}
+
+/* ── SHELL ─────────────────────────────────────────────────────────────────── */
+.app{display:grid;grid-template-columns:186px 1fr;min-height:100vh}
+.side{background:#0b0c0b;border-right:1px solid var(--line);padding:14px 0;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;gap:9px;align-items:center;padding:2px 14px 16px}
+.brand .mark{width:26px;height:26px;border-radius:7px;border:1px solid var(--gold-dim);
+  display:grid;place-items:center;color:var(--gold);font:700 12px/1 var(--mono);flex:none}
+.brand b{font-size:12.5px;letter-spacing:.02em;display:block}
+.brand span{font:500 8.5px/1.3 var(--mono);letter-spacing:.12em;color:var(--micro);text-transform:uppercase}
+.navgrp{padding:11px 14px 5px}
+.nav a{display:flex;align-items:center;gap:8px;padding:6px 14px;font-size:12.5px;color:var(--dim);
+  border-left:2px solid transparent}
+.nav a:hover{color:var(--ink);background:#101110}
+.nav a.on{color:var(--ink);background:#121412;border-left-color:var(--gold)}
+.nav .dot{width:4px;height:4px;border-radius:50%;background:#2a2d2a;flex:none}
+.nav a.on .dot{background:var(--gold)}
+
+.main{min-width:0}
+.top{display:flex;align-items:center;gap:14px;padding:11px 18px;border-bottom:1px solid var(--line);
+  background:#0b0c0b;position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.top h1{font-size:13.5px;margin:0;font-weight:600}
+.top h1 em{font-style:normal;color:var(--dim);font-weight:400;margin-left:7px;font-size:11.5px}
+.spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;
+  padding:4px 10px;font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.pill .led{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 7px var(--green)}
+.pill.warn{border-color:#3a3320;color:var(--gold)} .pill.warn .led{background:var(--gold);box-shadow:0 0 7px var(--gold)}
+.pill.bad{border-color:#3a2224;color:var(--red)} .pill.bad .led{background:var(--red);box-shadow:0 0 7px var(--red)}
+.clock{font:500 11px/1 var(--mono);color:var(--dim)}
+
+.band{display:flex;align-items:center;gap:9px;padding:7px 18px;border-bottom:1px solid var(--line);
+  background:#0a0b0a;font:500 10.5px/1 var(--mono);letter-spacing:.07em;color:var(--dim)}
+.band .led{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 7px var(--green)}
+.band b{color:var(--green);letter-spacing:.1em}
+
+.wrap{padding:16px 18px 44px;max-width:1440px}
+.sect{margin:22px 0 9px;display:flex;align-items:baseline;gap:10px}
+.sect .t{font:500 9.5px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim)}
+.sect .r{flex:1;height:1px;background:var(--line)}
+
+.grid{display:grid;gap:11px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1080px){.g4,.g5{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.app{grid-template-columns:1fr}.side{display:none}
+  .g2,.g3,.g4,.g5{grid-template-columns:1fr}}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.card .hd{display:flex;align-items:center;gap:9px;padding:11px 13px 0}
+.card .hd .ic{width:21px;height:21px;border-radius:6px;background:#161816;display:grid;place-items:center;
+  font-size:11px;flex:none;border:1px solid var(--line)}
+.card .hd .nm{font-size:12.5px;font-weight:600}
+.card .hd .sub{font:500 9.5px/1.2 var(--mono);letter-spacing:.09em;color:var(--micro);text-transform:uppercase}
+.card .hd .rt{margin-left:auto;text-align:right}
+.card .bd{padding:11px 13px 13px}
+
+/* the stat strip that runs under a hero card: label above, value below, hairline between */
+.strip{display:grid;border-top:1px solid var(--line)}
+.strip .c{padding:9px 13px;border-right:1px solid var(--line)}
+.strip .c:last-child{border-right:0}
+.strip .c .v{margin-top:5px;font:600 13px/1.15 var(--mono)}
+.strip .c .n{margin-top:3px;font-size:10.5px;color:var(--dim);line-height:1.35}
+
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 13px}
+.kpi .v{margin-top:7px}
+.kpi .n{margin-top:5px;font-size:10.5px;color:var(--dim)}
+
+.spark{display:block;width:100%;height:62px}
+.gauge{display:flex;align-items:center;gap:13px}
+.gauge .txt .lab{font-size:12.5px;font-weight:600;margin-bottom:3px}
+.gauge .txt .why{font-size:10.5px;color:var(--dim);line-height:1.45}
+
+table{width:100%;border-collapse:collapse}
+th{font:500 9px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--micro);
+  text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 11px;font-size:12px;border-bottom:1px solid #141614;vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.m{font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap}
+.tag{display:inline-block;font:500 9px/1 var(--mono);letter-spacing:.09em;padding:3px 6px;border-radius:4px;
+  border:1px solid var(--line);color:var(--dim);text-transform:uppercase}
+.tag.ok{color:var(--green);border-color:#183a28} .tag.bad{color:var(--red);border-color:#3a2224}
+.tag.warn{color:var(--gold);border-color:#3a3320}
+.scroll{overflow-x:auto}
+.foot{margin-top:26px;padding-top:13px;border-top:1px solid var(--line);font-size:10.5px;color:var(--micro);line-height:1.6}
+.unmeas{color:var(--micro);font-style:italic}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="mark">Q</div>
+      <div><b id="bname">QUANT DESK</b><span id="bcap">multi-asset mt5</span></div>
+    </div>
+    <div class="navgrp micro">Markets</div>
+    <nav class="nav">
+      <a class="on" href="#overview"><i class="dot"></i>Macro Desk</a>
+      <a href="#clocks"><i class="dot"></i>Forward Clocks</a>
+      <a href="#book"><i class="dot"></i>The Book</a>
+    </nav>
+    <div class="navgrp micro">Workspace</div>
+    <nav class="nav">
+      <a href="#journal"><i class="dot"></i>Journal</a>
+      <a href="#risk"><i class="dot"></i>Risk Lab</a>
+      <a href="#processes"><i class="dot"></i>Processes</a>
+      <a href="#breadth"><i class="dot"></i>Breadth</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <h1>Macro Desk <em>live fundamental read</em></h1>
+      <div class="spacer"></div>
+      <span class="clock" id="clk">—</span>
+      <span class="pill" id="venue"><i class="led"></i><span>—</span></span>
+    </div>
+    <div class="band" id="band"><i class="led"></i><b id="bandv">LOADING</b><span id="bandw"></span></div>
+
+    <div class="wrap">
+      <div class="sect"><span class="t">Overview</span><span class="r"></span></div>
+      <div class="grid g2" id="hero"></div>
+
+      <div class="sect" id="journal"><span class="t">The Receipts</span><span class="r"></span></div>
+      <div class="grid g5" id="kpis"></div>
+      <div class="grid g2" style="margin-top:11px" id="curve"></div>
+
+      <div class="sect" id="clocks"><span class="t">Forward Clocks</span><span class="r"></span></div>
+      <div class="grid g4" id="clockcards"></div>
+
+      <div class="sect" id="risk"><span class="t">Risk Lab</span><span class="r"></span></div>
+      <div class="grid g4" id="riskcards"></div>
+
+      <div class="sect" id="processes"><span class="t">Surveillance</span><span class="r"></span></div>
+      <div class="card"><div class="scroll"><table id="proc">
+        <thead><tr><th>Process</th><th>Verdict</th><th>Artifact age</th><th>Last run</th><th>Detail</th></tr></thead>
+        <tbody></tbody></table></div></div>
+
+      <div class="foot" id="foot"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── HELPERS ───────────────────────────────────────────────────────────────────
+   Every formatter returns the UNMEASURED marker for null/undefined rather than a
+   zero. An absent measurement is never a passing one -- that is the desk's own
+   law (L1.28a) and the board must not be the place it gets broken. */
+const U = '<span class="unmeas">UNMEASURED</span>';
+const isNum = v => typeof v === 'number' && isFinite(v);
+const f2 = (v,d=2) => isNum(v) ? v.toFixed(d) : null;
+const money = (v,c='EUR') => isNum(v) ? (v<0?'-':'') + (c==='EUR'?'€':'$') + Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : null;
+const pct = (v,d=2) => isNum(v) ? (v>0?'+':'') + v.toFixed(d) + '%' : null;
+const sign = v => !isNum(v) ? 'neutral' : v > 0 ? 'pos' : v < 0 ? 'neg' : 'neutral';
+const or = (s) => s === null || s === undefined ? U : s;
+const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ago = iso => { if(!iso) return null; const m=(Date.now()-Date.parse(iso))/60000;
+  if(!isFinite(m)) return null; return m<1?'just now':m<60?Math.round(m)+'m ago':m<1440?(m/60).toFixed(1)+'h ago':(m/1440).toFixed(1)+'d ago'; };
+
+/* An area sparkline. Pure SVG so nothing loads from a CDN and the CSP stays tight. */
+function spark(vals, colour){
+  if(!Array.isArray(vals) || vals.length < 2)
+    return '<div class="spark" style="display:grid;place-items:center"><span class="micro">no series yet</span></div>';
+  const W=560,H=62,lo=Math.min(...vals),hi=Math.max(...vals),span=(hi-lo)||1;
+  const x=i=>i*(W/(vals.length-1)), y=v=>H-4-((v-lo)/span)*(H-12);
+  const line=vals.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const id='g'+Math.random().toString(36).slice(2,8);
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${colour}" stop-opacity=".30"/>
+      <stop offset="100%" stop-color="${colour}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${line} L${W},${H} L0,${H} Z" fill="url(#${id})"/>
+    <path d="${line}" fill="none" stroke="${colour}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
+
+/* The circular dial. `v` is 0..100; null renders an empty ring and says UNMEASURED,
+   because a dial at zero and a dial with no reading look identical otherwise. */
+function dial(v, label, why){
+  const R=27,C=2*Math.PI*R, known=isNum(v);
+  const frac=known?Math.max(0,Math.min(100,v))/100:0;
+  const col = !known ? '#2a2d2a' : v>=65 ? 'var(--green)' : v>=45 ? 'var(--gold)' : 'var(--red)';
+  return `<div class="gauge">
+    <svg width="70" height="70" viewBox="0 0 70 70" style="flex:none">
+      <circle cx="35" cy="35" r="${R}" fill="none" stroke="#1a1d1a" stroke-width="5"/>
+      <circle cx="35" cy="35" r="${R}" fill="none" stroke="${col}" stroke-width="5"
+        stroke-linecap="round" stroke-dasharray="${(C*frac).toFixed(1)} ${C.toFixed(1)}"
+        transform="rotate(-90 35 35)"/>
+      <text x="35" y="38" text-anchor="middle" fill="${known?'var(--ink)':'#3a3d3a'}"
+        style="font:600 17px var(--mono)">${known?Math.round(v):'—'}</text>
+      <text x="35" y="51" text-anchor="middle" fill="var(--micro)" style="font:500 7px var(--mono);letter-spacing:.12em">SCORE</text>
+    </svg>
+    <div class="txt"><div class="lab">${esc(label)}</div><div class="why">${why}</div></div></div>`;
+}
+
+const cell = (lab, val, note) =>
+  `<div class="c"><div class="micro">${esc(lab)}</div><div class="v">${or(val)}</div>${note?`<div class="n">${note}</div>`:''}</div>`;
+const kpi = (lab, val, cls, note) =>
+  `<div class="kpi"><div class="micro">${esc(lab)}</div><div class="v num ${cls||''}">${or(val)}</div>${note?`<div class="n">${note}</div>`:''}</div>`;
+
+/* ── RENDER ────────────────────────────────────────────────────────────────── */
+function render(d){
+  const acc=d.account||{}, st=d.stats||{}, ck=d.clocks||{}, pr=d.processes||{}, hl=d.health||{};
+  const cur = acc.currency || 'EUR';
+  document.getElementById('bname').textContent = (d.identity||{}).name || 'QUANT DESK';
+  document.getElementById('bcap').textContent  = (d.identity||{}).caption || '';
+  document.getElementById('clk').textContent   = new Date().toISOString().slice(11,19)+' UTC · built '+((d.generated_at||'').slice(0,16).replace('T',' '));
+
+  /* LIVENESS IS THE FIRST THING ON THE PAGE, because every figure under it
+     inherits the age of the newest artifact. A pretty board over stale inputs is
+     the failure this whole exercise exists to stop. */
+  const age=(Date.now()-Date.parse(d.generated_at||0))/60000;
+  const armed = ck.gateway_armed === true;
+  const live = isFinite(age) && age < 30 && String(hl.status||'').toUpperCase()==='LIVE';
+  const vp=document.getElementById('venue');
+  vp.className='pill'+(live?'':' warn');
+  vp.innerHTML=`<i class="led"></i><span>${esc(acc.venue||'no venue')}</span>`;
+  const bd=document.getElementById('band');
+  bd.className='band';
+  document.getElementById('bandv').textContent = live ? (armed?'TRADEABLE — gateway armed':'LIVE — gateway not armed') : 'LATE — the box has not reported recently';
+  document.getElementById('bandv').style.color = live&&armed ? 'var(--green)' : 'var(--gold)';
+  bd.querySelector('.led').style.background = live&&armed ? 'var(--green)' : 'var(--gold)';
+  bd.querySelector('.led').style.boxShadow = '0 0 7px '+(live&&armed?'var(--green)':'var(--gold)');
+  document.getElementById('bandw').textContent = isFinite(age)
+    ? `payload ${ago(d.generated_at)} · ${ck.with_forward_trades??'—'} clocks with forward trades · ${ck.certified_total??'—'} certificates`
+    : '';
+
+  /* HERO: equity, and the book. Two cards, each a sparkline over a dial and a
+     four-cell micro strip -- the shape the principal asked for. */
+  const ecRaw=d.equity_curve;
+  const eq=Array.isArray(ecRaw)?ecRaw.map(p=>isNum(p)?p:(p&&(p.equity??p.v??p.value))).filter(isNum):[];
+  const growth=acc.growth_pct;
+  const heat=(d.decay&&d.decay.heat)||null;
+  const bookPct = isNum(ck.live_sleeves)&&isNum(ck.configured)&&ck.configured ? 100*ck.live_sleeves/ck.configured : null;
+
+  document.getElementById('hero').innerHTML = `
+    <div class="card">
+      <div class="hd"><div class="ic">◆</div>
+        <div><div class="nm">${esc(acc.venue||'ACCOUNT')}</div><div class="sub">live account · ${esc(cur)}</div></div>
+        <div class="rt"><div class="num-sm">${or(money(acc.equity,cur))}</div>
+          <div class="micro ${sign(growth)}" style="margin-top:4px">${or(pct(growth))}</div></div></div>
+      <div class="bd">${spark(eq, growth>=0?'var(--green)':'var(--red)')}</div>
+      <div class="bd" style="padding-top:0">${dial(
+        isNum(growth)? Math.max(0,Math.min(100,50+growth*5)) : null, 'Equity trajectory',
+        eq.length>1 ? 'Sampled from the live account, not reconstructed from the ledger.'
+                    : 'Fewer than two equity samples on file — the curve needs the sampler to run.')}</div>
+      <div class="strip" style="grid-template-columns:repeat(4,1fr)">
+        ${cell('Balance', money(acc.balance,cur))}
+        ${cell('Open P&L', money(acc.open_pnl,cur))}
+        ${cell('Margin', money(acc.margin,cur))}
+        ${cell('Free margin', money(acc.free_margin,cur))}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><div class="ic">▦</div>
+        <div><div class="nm">THE BOOK</div><div class="sub">sleeves · clocks · certificates</div></div>
+        <div class="rt"><div class="num-sm">${or(ck.live_sleeves)}</div>
+          <div class="micro" style="margin-top:4px">LIVE SLEEVES</div></div></div>
+      <div class="bd">${spark(
+          [ck.retired||0, ck.certified_total||0, ck.with_forward_trades||0, ck.configured||0], 'var(--gold)')}</div>
+      <div class="bd" style="padding-top:0">${dial(bookPct, 'Book coverage',
+        `${or(ck.with_forward_trades)} of ${or(ck.configured)} configured sleeves carry forward trades. `+
+        `${or(ck.evidence_blocked)} evidence-blocked, ${or(ck.missing)} missing.`)}</div>
+      <div class="strip" style="grid-template-columns:repeat(4,1fr)">
+        ${cell('Configured', ck.configured)}
+        ${cell('Certificates', ck.certified_total)}
+        ${cell('Fwd trades', ck.with_forward_trades)}
+        ${cell('Retired', ck.retired)}
+      </div>
+    </div>`;
+
+  /* KPI STRIP — the numbers the principal asked for by name. */
+  const wr=st.win_rate, shp=st.sharpe_daily, mdd=st.max_dd_r, cdd=st.current_dd_r, ct=st.closed_trades;
+  document.getElementById('kpis').innerHTML =
+    kpi('Net P&L (today)', money(st.today_pnl ?? acc.today_pnl, cur), sign(st.today_pnl ?? acc.today_pnl),
+        `${or(ct)} closed trade${ct===1?'':'s'} recorded`) +
+    kpi('Win rate', isNum(wr)? (wr<=1? (wr*100).toFixed(1) : wr.toFixed(1))+'%' : null, '',
+        isNum(wr)&&wr===0&&ct===0 ? 'no closed trade yet — this is not a 0% edge' : 'closed trades only') +
+    kpi('Sharpe (daily)', f2(shp), sign(shp),
+        shp==null ? 'no closed-trade series to ratio yet' : 'from the daily P&L series') +
+    kpi('Max drawdown', isNum(mdd)? mdd.toFixed(2)+'R' : null, mdd<0?'neg':'', 'worst peak-to-trough, in R') +
+    kpi('Current DD', isNum(cdd)? cdd.toFixed(2)+'R' : null, cdd<0?'neg':'', 'distance below the peak now');
+
+  /* Equity curve + execution honesty panel. */
+  const ex=d.execution||{};
+  document.getElementById('curve').innerHTML = `
+    <div class="card"><div class="hd"><div class="ic">◈</div>
+      <div><div class="nm">Equity curve</div><div class="sub">${esc(d.equity_curve_source||'source undeclared')}</div></div>
+      <div class="rt"><div class="num-sm ${sign(growth)}">${or(money(acc.equity,cur))}</div></div></div>
+      <div class="bd">${spark(eq,'var(--green)')}</div></div>
+    <div class="card"><div class="hd"><div class="ic">⇄</div>
+      <div><div class="nm">Execution</div><div class="sub">intent → fill attribution</div></div></div>
+      <div class="strip" style="grid-template-columns:repeat(3,1fr)">
+        ${cell('Matched fills', ex.matched_fills)}
+        ${cell('Attributed deals', ex.attributed_deals)}
+        ${cell('Open trades', Array.isArray(ex.open_trades)?ex.open_trades.length:null)}
+      </div>
+      <div class="bd"><div class="micro">Why</div>
+        <div style="margin-top:6px;font-size:11.5px;color:var(--dim);line-height:1.55">${esc(ex.why||'—')}</div></div></div>`;
+
+  /* Clocks + risk. */
+  document.getElementById('clockcards').innerHTML =
+    kpi('Clock status', ck.status, String(ck.status).toUpperCase()==='OPERATING'?'pos':'', 'shadow lane health') +
+    kpi('Represented', ck.represented, '', 'sleeves the forward lane can see') +
+    kpi('Evidence blocked', ck.evidence_blocked, ck.evidence_blocked?'neg':'pos', 'cannot gather evidence') +
+    kpi('Quarantined', ck.quarantined_uncertified, ck.quarantined_uncertified?'neg':'pos', 'uncertified candidates held');
+
+  const rel=d.release||{}, rd=d.readiness||{};
+  document.getElementById('riskcards').innerHTML =
+    kpi('Gateway', armed?'ARMED':'NOT ARMED', armed?'pos':'neg', 'order authority') +
+    kpi('Release', rel.ok===true?'SEALED':(rel.ok===false?'DRIFTED':null), rel.ok===true?'pos':'neg', 'money-path identity') +
+    kpi('Readiness', rd.status, String(rd.status||'').toUpperCase()==='READY'?'pos':'', 'live-capital readiness') +
+    kpi('Health', hl.status, String(hl.status||'').toUpperCase()==='LIVE'?'pos':'', 'box liveness');
+
+  /* SURVEILLANCE — every process, worst first. This is the table the principal
+     asked for: name, when it last worked, and whether it is healthy. */
+  const rows=(pr.processes||[]);
+  const tb=document.querySelector('#proc tbody');
+  tb.innerHTML = rows.length ? rows.map(r=>{
+    const v=String(r.verdict||'');
+    const cls = v==='OK'||v==='RUNNING' ? 'ok' : (v==='UNCONTRACTED'||v==='DISABLED' ? 'warn' : 'bad');
+    const a=r.artifact_age_min;
+    return `<tr><td><b>${esc(r.name)}</b>${r.purpose?`<div style="color:var(--micro);font-size:10.5px;margin-top:3px">${esc(r.purpose)}</div>`:''}</td>
+      <td><span class="tag ${cls}">${esc(v)}</span></td>
+      <td class="m">${isNum(a)? (a<90? Math.round(a)+'m' : (a/60).toFixed(1)+'h') : '—'}${isNum(r.contract_max_age_min)?` <span style="color:var(--micro)">/ ${r.contract_max_age_min}m</span>`:''}</td>
+      <td class="m">${esc(r.last_run||'—')}</td>
+      <td style="color:var(--dim);font-size:11px">${esc(r.why||r.last_result||'')}</td></tr>`;
+  }).join('') : `<tr><td colspan="5" class="unmeas">process_health.json not present — run ops/process_health.py</td></tr>`;
+
+  const c=pr.counts||{};
+  document.getElementById('foot').innerHTML =
+    `${or(pr.n_processes)} processes on ${esc(pr.host||'the box')} · ${or(pr.n_needing_attention)} needing attention `+
+    `· ${Object.entries(c).map(([k,v])=>`${k} ${v}`).join(' · ')}<br>`+
+    `${esc(d.disclaimer||'Research and operator telemetry. Missing values read UNMEASURED rather than zero — an absent measurement is never a passing one.')}<br>`+
+    `Source web/desk_state.json, rebuilt by scripts/build_zentech_state.py · process rows from ops/process_health.py`;
+}
+
+fetch('./desk_state.json?t='+Date.now())
+  .then(r=>r.json()).then(render)
+  .catch(e=>{document.getElementById('bandv').textContent='CANNOT READ desk_state.json';
+    document.getElementById('bandv').style.color='var(--red)';
+    document.getElementById('bandw').textContent=String(e);});
+setInterval(()=>fetch('./desk_state.json?t='+Date.now()).then(r=>r.json()).then(render).catch(()=>{}), 60000);
+</script>
+</body>
+</html>
