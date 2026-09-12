@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-12T10:25:02.842074+00:00",
+  "updated_at": "2026-09-12T10:55:02.950100+00:00",
   "source_gate_policy_valid": true,
   "certified_qquant_sleeves": 1,
   "processed_qquant_sleeves": 1,
@@ -7,7 +7,7 @@
     "certificate": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
     "cell": "AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
     "forward_start": "2026-08-23T13:51:10.738675+00:00",
-    "last_attempt_at": "2026-09-12T10:25:02.842074+00:00",
+    "last_attempt_at": "2026-09-12T10:55:02.950100+00:00",
     "promotion_authority": true,
     "order_authority": false,
     "n": 3,

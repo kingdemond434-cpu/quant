@@ -47,7 +47,7 @@
       "shadow_n": 43,
       "shadow_days": 16,
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T01:53:57+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.003793/day is not above the 0.000219/day noise margin -- standalone Sharpe 2.10 at correlation -0.01 to the held book",
       "restored_from": "STANDBY",
@@ -109,7 +109,7 @@
       "shadow_n": 73,
       "shadow_days": 16,
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "8c959fcfe1d89451",
         "ok": false,
@@ -171,7 +171,7 @@
       "shadow_n": 77,
       "shadow_days": 17,
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T01:53:57+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.004273/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.36 at correlation -0.03 to the held book",
       "restored_from": "STANDBY",
@@ -210,7 +210,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_asia_v2' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T07:16:14+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
@@ -248,7 +248,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_asia_v3' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T07:16:14+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
@@ -286,7 +286,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_asia_v4' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T07:16:14+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
@@ -324,7 +324,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_london_am_v2' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "76d3294f692f48aa",
         "ok": false,
@@ -356,7 +356,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_london_am_v3' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "2a9076c595eee423",
         "ok": false,
@@ -388,7 +388,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_london_am_v4' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "105ec4ce38c2d40c",
         "ok": false,
@@ -420,7 +420,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_afternoon_v2' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "0c5648f41c8dd935",
         "ok": false,
@@ -452,7 +452,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_afternoon_v3' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "46f8d1fa8e5ea5ea",
         "ok": false,
@@ -484,7 +484,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_afternoon_v4' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "18107538babc5487",
         "ok": false,
@@ -540,7 +540,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audcad_discovered_asia_p_7c996ac8456c8919' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "8fc97af041d94b89",
         "ok": false,
@@ -596,7 +596,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audcad_discovered_asia_p_8030fb339510dceb' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "476a68e8f6bf5fb2",
         "ok": false,
@@ -652,7 +652,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audcad_discovered_asia_p_a7324e7affe1f80a' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "24c9c94cf98a2f5e",
         "ok": false,
@@ -708,7 +708,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001670/day (+42.10%/yr) and it earns 5.00% heat -- standalone Sharpe 4.73 at correlation +0.02 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audchf|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "43b6fd5aad3bc0b2",
         "ok": false,
@@ -770,7 +770,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audnzd_discovered_asia_p_c76b860ff91ee920' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "aa71fb4214893976",
         "ok": false,
@@ -826,7 +826,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audusd_discovered_asia_p_8e61ea22743f15b7' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "a9ac38e8088ef0b5",
         "ok": false,
@@ -882,7 +882,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audusd_discovered_asia_p_a5bbf78b5c8595c0' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "4bafff025d09739f",
         "ok": false,
@@ -938,7 +938,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audusd_discovered_asia_p_cf0368e026d6b477' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "0e2e062be7ea817b",
         "ok": false,
@@ -994,7 +994,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audusd_discovered_asia_p_de80ad4f2ef91116' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "9963394b39761718",
         "ok": false,
@@ -1050,7 +1050,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001526/day (+38.45%/yr) and it earns 5.00% heat -- standalone Sharpe 5.27 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'cadchf|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "c9e5a4810a870d31",
         "ok": false,
@@ -1112,7 +1112,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'cadjpy_session_range_breakout_asia_session_range_breakout' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T08:06:47+00:00",
       "demote_reason": "standby on the current reading -- refused: +0.000037/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.54 at correlation +0.03 to the held book",
       "restored_from": "STANDBY",
@@ -1174,7 +1174,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'cadjpy_session_range_breakout_asia_5_wb_12' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T08:06:47+00:00",
       "demote_reason": "standby on the current reading -- refused: +0.000037/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.54 at correlation +0.03 to the held book",
       "restored_from": "STANDBY",
@@ -1236,7 +1236,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'cadjpy_session_range_breakout_asia_0_wb_12' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T08:06:47+00:00",
       "demote_reason": "standby on the current reading -- refused: +0.000037/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.54 at correlation +0.03 to the held book",
       "restored_from": "STANDBY",
@@ -1298,7 +1298,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'chfdkk_overnight_gap_decay_asia_p_44136fa355b3678a' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "265a01f8db276d4e",
         "ok": false,
@@ -1360,7 +1360,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.018825/day (+474.38%/yr) and it earns 4.72% heat -- standalone Sharpe 6.32 at correlation +0.01 to the held book; the allocator's current solve gives this sleeve 4.72% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'chfnok|carry|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "8a389a88e4e82579",
         "ok": false,
@@ -1416,7 +1416,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_16bd35526c7f3515' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "4bb9227399f6aeb3",
         "ok": false,
@@ -1472,7 +1472,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_4cba1afa572a99cd' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "c99df2e1e132e8ec",
         "ok": false,
@@ -1528,7 +1528,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_6c7943b997558157' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "dd6d77a133135937",
         "ok": false,
@@ -1584,7 +1584,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_9bc1f7c40f200e78' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "1f6a0686dc672ef3",
         "ok": false,
@@ -1640,7 +1640,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_a5bbf78b5c8595c0' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "a47847f5f08f30d0",
         "ok": false,
@@ -1696,7 +1696,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_c14e361e680e6d0b' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "4befdaf56949e85c",
         "ok": false,
@@ -1752,7 +1752,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_c7d53510458ba32c' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "f6c6f38c41ff3747",
         "ok": false,
@@ -1808,7 +1808,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_e266baf78567bef3' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "0b8f3e09017b9ace",
         "ok": false,
@@ -1864,7 +1864,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurgbp_discovered_asia_p_8e61ea22743f15b7' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "19a279612097f623",
         "ok": false,
@@ -1920,7 +1920,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurgbp_discovered_asia_p_f31f02aa2b9d79b1' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "d81228917dd1d8a2",
         "ok": false,
@@ -1976,7 +1976,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurjpy_session_range_breakout_asia_session_range_breakout' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T08:06:47+00:00",
       "demote_reason": "standby on the current reading -- refused: +0.000012/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.37 at correlation +0.02 to the held book",
       "restored_from": "STANDBY",
@@ -2038,7 +2038,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurjpy_session_range_breakout_asia_5_wb_12' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T08:06:47+00:00",
       "demote_reason": "standby on the current reading -- refused: +0.000012/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.37 at correlation +0.02 to the held book",
       "restored_from": "STANDBY",
@@ -2100,7 +2100,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurjpy_session_range_breakout_asia_0_wb_12' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T08:06:47+00:00",
       "demote_reason": "standby on the current reading -- refused: +0.000012/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.37 at correlation +0.02 to the held book",
       "restored_from": "STANDBY",
@@ -2162,7 +2162,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.002745/day (+69.17%/yr) and it earns 5.00% heat -- standalone Sharpe 3.09 at correlation -0.02 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurnok|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "c9ce202b964f12bf",
         "ok": false,
@@ -2224,7 +2224,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurusd_discovered_asia_p_6d034b421914e1a2' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "deee76d5c6e165f6",
         "ok": false,
@@ -2280,7 +2280,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurusd_discovered_asia_p_f8bd412f38e33d20' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "80f15d083cc46b16",
         "ok": false,
@@ -2336,7 +2336,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001283/day (+32.34%/yr) and it earns 5.00% heat -- standalone Sharpe 4.08 at correlation -0.01 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurzar|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T07:04:22+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.000523/day is not above the 0.000178/day noise margin -- standalone Sharpe 3.36 at correlation +0.02 to the held book",
       "restored_from": "STANDBY",
@@ -2398,7 +2398,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpchf_overnight_gap_decay_asia_p_44136fa355b3678a' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "fe3891539c8667aa",
         "ok": false,
@@ -2458,11 +2458,11 @@
         "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 1.22 at correlation +0.25 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
-      "demoted_at": "2026-09-12T10:05:33+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
+      "demoted_at": "2026-09-12T10:55:32+00:00",
       "demote_reason": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 1.22 at correlation +0.25 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T09:48:19+00:00",
+      "restored_at": "2026-09-12T10:48:02+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
       "artifact": {
@@ -2518,11 +2518,11 @@
         "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 1.22 at correlation +0.25 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
-      "demoted_at": "2026-09-12T10:05:33+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
+      "demoted_at": "2026-09-12T10:55:32+00:00",
       "demote_reason": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 1.22 at correlation +0.25 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T09:48:19+00:00",
+      "restored_at": "2026-09-12T10:48:02+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
       "artifact": {
@@ -2580,7 +2580,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.003346/day (+84.32%/yr) and it earns 5.00% heat -- standalone Sharpe 5.12 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpmxn|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "c680d9b42f682662",
         "ok": false,
@@ -2642,7 +2642,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001657/day (+41.76%/yr) and it earns 2.23% heat -- standalone Sharpe 3.49 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 2.23% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpnok|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "c56a661812500d12",
         "ok": false,
@@ -2704,7 +2704,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001184/day (+29.84%/yr) and it earns 2.84% heat -- standalone Sharpe 3.75 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 2.84% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpsek|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "de78a38f2628761d",
         "ok": false,
@@ -2766,7 +2766,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001499/day (+37.77%/yr) and it earns 4.52% heat -- standalone Sharpe 3.86 at correlation +0.02 to the held book; the allocator's current solve gives this sleeve 4.52% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpzar|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "76ca7059f8c1bf98",
         "ok": false,
@@ -2828,7 +2828,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'nzdcad_discovered_asia_p_0ffb1e19a04f260e' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "ef65b5f980cd5f43",
         "ok": false,
@@ -2884,7 +2884,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdcad_discovered_asia_p_193aadf2caba3698' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "f10ddc759e349258",
         "ok": false,
@@ -2940,7 +2940,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdcad_discovered_asia_p_56aadf0a3018c790' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "e76793375efa2b27",
         "ok": false,
@@ -2996,7 +2996,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdchf_discovered_asia_p_19dd11ec392fa005' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "23710a682858c41b",
         "ok": false,
@@ -3052,7 +3052,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdjpy_session_range_breakout_asia_session_range_breakout' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T08:06:47+00:00",
       "demote_reason": "standby on the current reading -- refused: +0.000182/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book",
       "restored_from": "STANDBY",
@@ -3114,7 +3114,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdjpy_session_range_breakout_asia_5_wb_12' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T08:06:47+00:00",
       "demote_reason": "standby on the current reading -- refused: +0.000182/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book",
       "restored_from": "STANDBY",
@@ -3176,7 +3176,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdjpy_session_range_breakout_asia_0_wb_12' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T08:06:47+00:00",
       "demote_reason": "standby on the current reading -- refused: +0.000182/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book",
       "restored_from": "STANDBY",
@@ -3238,7 +3238,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001218/day (+30.69%/yr) and it earns 5.00% heat -- standalone Sharpe 4.15 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdmxn|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "b96eb09aa2bb24de",
         "ok": false,
@@ -3300,7 +3300,7 @@
         "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.000683/day (+17.22%/yr) and it earns 4.64% heat -- standalone Sharpe 3.54 at correlation +0.00 to the held book; the allocator's current solve gives this sleeve 4.64% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdzar|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "f3432ca370d4e057",
         "ok": false,
@@ -3362,7 +3362,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd_session_range_breakout_asia_session_range_breakout' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T07:16:14+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
@@ -3424,7 +3424,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd_session_range_breakout_asia_5_wb_12' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T07:16:14+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
@@ -3486,7 +3486,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd_session_range_breakout_asia_5_wb_8' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T07:16:14+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
@@ -3548,7 +3548,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd_session_range_breakout_asia_0_wb_12' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "demoted_at": "2026-09-12T07:16:14+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
@@ -3610,7 +3610,7 @@
         "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T09:31:39.508704+00:00",
+      "admit_scan": "2026-09-12T10:55:08.631437+00:00",
       "artifact": {
         "version_hash": "de2cbdb580d8705c",
         "ok": false,
