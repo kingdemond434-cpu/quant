@@ -30,86 +30,86 @@
  },
  "compute_efficiency": {
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
-  "certificates_added": 1,
-  "certificates_per_cpu_hour": 191.199552,
-  "measured_cpu_hours": 0.00523,
+  "certificates_added": 0,
+  "certificates_per_cpu_hour": 0.0,
+  "measured_cpu_hours": 0.00186,
   "stage_rows": [
    {
-    "certificate_delta": 1,
+    "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 7167.063,
+    "duration_seconds": 2503.888,
     "name": "canonical_external_pipeline"
    },
    {
-    "certificate_delta": 0,
-    "cpu_seconds": 6.924424,
-    "duration_seconds": 228.167,
+    "certificate_delta": -1,
+    "cpu_seconds": null,
+    "duration_seconds": 5310.542,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.148448,
-    "duration_seconds": 21.799,
+    "cpu_seconds": 3.454002,
+    "duration_seconds": 23.729,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.082396,
-    "duration_seconds": 4.996,
+    "cpu_seconds": 0.075746,
+    "duration_seconds": 4.271,
     "name": "certificate_projection"
    },
    {
-    "certificate_delta": 0,
-    "cpu_seconds": 0.088676,
-    "duration_seconds": 28.782,
+    "certificate_delta": 1,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 32.29,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.178449,
-    "duration_seconds": 6.707,
+    "cpu_seconds": 1.298548,
+    "duration_seconds": 8.326,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.064383,
-    "duration_seconds": 2.268,
+    "cpu_seconds": 0.075892,
+    "duration_seconds": 8.762,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 6.448997,
-    "duration_seconds": 24.657,
+    "cpu_seconds": 1.052717,
+    "duration_seconds": 7.593,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.088084,
-    "duration_seconds": 6.362,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 6.718,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.299729,
-    "duration_seconds": 3.57,
+    "cpu_seconds": 0.284442,
+    "duration_seconds": 3.707,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.114164,
-    "duration_seconds": 5.782,
+    "cpu_seconds": 0.097995,
+    "duration_seconds": 2.503,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.302046,
-    "duration_seconds": 3.156,
+    "cpu_seconds": 0.281484,
+    "duration_seconds": 3.763,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0887,
-    "duration_seconds": 3.563,
+    "cpu_seconds": 0.074804,
+    "duration_seconds": 2.036,
     "name": "forward_clock_fence"
    }
   ]
@@ -213,24 +213,29 @@
   }
  ],
  "forward_truth": {
-  "active_clocks": 62,
-  "fusion_native": 56,
+  "active_clocks": 65,
+  "fusion_native": 61,
   "proxy": 0,
   "rule": "proxy or stale evidence may accumulate diagnostically but cannot become native proof",
-  "source_unmeasured": 6,
-  "stale": 1,
+  "source_unmeasured": 4,
+  "stale": 4,
   "stale_keys": [
-   "xau_m15_anti_breakout"
+   "xau_m5_anti_breakout_overlap",
+   "xau_m5_anti_momentum_ny",
+   "xau_m15_anti_breakout",
+   "xau_m15_anti_momentum"
   ]
  },
- "generated_at": "2026-09-12T04:07:37.987646+00:00",
+ "generated_at": "2026-09-12T06:46:54.172333+00:00",
  "headline": {
   "candidates_discovered": 20196,
   "candidates_lost": 13,
-  "certificates_added": 1,
+  "certificates_added": 0,
   "forward_clocks": 107,
   "hard_failures": [
    "canonical_external_pipeline",
+   "external_queue_projection",
+   "forward_identity_reconciliation",
    "forward_lane_heal"
   ]
  },
@@ -461,7 +466,7 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 30,
-  "measured_at": "2026-09-12T04:07:09+00:00",
+  "measured_at": "2026-09-12T06:46:33+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
@@ -472,7 +477,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 1484.5,
+  "mem_available_mb": 2922.2,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -705,7 +710,7 @@
    {
     "cell": "EURCHF.discovered.p=9bc1f7c40f200e78",
     "certificate": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
-    "deadline_at": "2026-09-11 10:06:37.311547+00:00",
+    "deadline_at": "2026-09-10 14:41:01.623916+00:00",
     "enrolled": false,
     "overdue": true
    },
@@ -782,21 +787,21 @@
    {
     "cell": "USDCHF.discovered.p=19dd11ec392fa005",
     "certificate": "external.USDCHF.discovered.p=19dd11ec392fa005",
-    "deadline_at": "2026-09-11 09:10:40.338374+00:00",
+    "deadline_at": "2026-09-04 11:06:39.719050+00:00",
     "enrolled": false,
     "overdue": true
    },
    {
     "cell": "USDCAD.discovered.p=56aadf0a3018c790",
     "certificate": "external.USDCAD.discovered.p=56aadf0a3018c790",
-    "deadline_at": "2026-09-11 09:10:40.339404+00:00",
+    "deadline_at": "2026-09-04 11:06:39.718163+00:00",
     "enrolled": false,
     "overdue": true
    },
    {
     "cell": "USDCAD.discovered.p=193aadf2caba3698",
     "certificate": "external.USDCAD.discovered.p=193aadf2caba3698",
-    "deadline_at": "2026-09-11 09:10:40.339434+00:00",
+    "deadline_at": "2026-09-04 11:06:39.719003+00:00",
     "enrolled": false,
     "overdue": true
    }

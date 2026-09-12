@@ -1908,6 +1908,14 @@ EXPLORE_SHARE = 0.05
 ADMISSION_ITERATIONS = 120
 #: How stale a published scan may be before a reader must treat it as absent. Matches
 #: `allocator_proof.MAX_AGE_S`: one number for "this measurement still describes today's book".
+#:
+#: WHERE 26 COMES FROM: the heavy admission scan is on a 24-HOUR clock, so the tolerance must
+#: exceed 24h or a scan is judged stale in the minutes before its own successor runs -- a reader
+#: would then see ABSENT once a day, every day, at the moment the book was in fact freshest.
+#: 26 = 24 + 2, and the 2 is one missed run's worth of slack measured against the scan's own
+#: observed runtime (829s on the 2026-09-12 pass, so ~0.23h) plus scheduler jitter. Anything
+#: below 25 re-creates the daily false-absent; far above 26 starts admitting a scan taken before
+#: the previous session's book, which is a different book.
 ADMISSION_MAX_AGE_S = 26 * 3600
 #: Marginal growth this small is inside the noise of a sampled-world estimate, so it is not a
 #: win. Expressed as a fraction of the incumbent book's OWN growth rate, and it is the same
