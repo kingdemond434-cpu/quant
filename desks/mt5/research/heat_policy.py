@@ -85,6 +85,7 @@ proved its dE[log W] (growth governance, rule 1).
 from __future__ import annotations
 
 import math
+import os
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -391,13 +392,43 @@ def per_sleeve_bounds(worst_dd_r: dict[str, float], total_heat: float,
     total = max(float(total_heat), 0.0)
     if effective_heat is not None:
         cap, _why, _detail = effective_ceiling(effective_heat)
-        total = min(total, cap)
+        # PRINCIPAL OVERRIDE (2026-09-11, instructed twice in session 01WZHzZoD3QX9Tx668fkAaw6):
+        # "do both let it deploy as much heat optimum fr growth as possible 24 7 all sessions".
+        #
+        # WHAT THIS SWITCH TURNS OFF, stated plainly because the number it releases is real risk.
+        # The effective-heat cap sizes per-sleeve bounds against the independence the book has
+        # EARNED (n_eff), not the nominal total it was asked to carry. Measured on this book
+        # 2026-09-11: nominal 20.6% against effective 8.3% at n_eff 6.09 from 66 sleeves -- so
+        # the bounds were sized for six independent bets because that is what 66 correlated
+        # sleeves are worth. With QUANT_HEAT_NOMINAL_BOUNDS=1 they are sized for the nominal
+        # instead, which is what lets the curve sample past 22.5% and the allocator express the
+        # 33.7% free optimum it already computes.
+        #
+        # IT IS AN ENV SWITCH AND NOT AN EDIT so that reverting is one command and the measured
+        # rationale above stays in the code rather than being deleted by the change.
+        if os.environ.get("QUANT_HEAT_NOMINAL_BOUNDS") != "1":
+            total = min(total, cap)
     # THE CAP RE-CERTIFIES ITSELF (principal, 2026-09-07). `rails.rail_multiplier` is 1.0 unless
     # `missed_growth` has MEASURED that this cap costs forward E[log W], in which case it is
     # walked one step looser per pass and clipped at the rail's declared `hi`. It is never walked
     # tighter by that loop, and it cannot exceed its bound -- a rail that can walk to "no rail"
     # is not a rail.
-    share_cap = MAX_SLEEVE_HEAT_SHARE * _rail_mult("sleeve_share_cap") * total
+    # PRINCIPAL OVERRIDE (2026-09-11, same instruction). QUANT_SLEEVE_SHARE_CAP replaces the
+    # 0.25 concentration cap. Its own docstring records what that cap was bought with -- measured
+    # 2026-09-02, told to spend 20% with no per-sleeve bound the optimiser put 14.4 of those 20
+    # points into ONE sleeve it funds at exactly zero when free, because a near-cash sleeve is
+    # the cheapest place to park a budget nobody believes in. Raising this does not by itself
+    # buy growth; it buys the optimiser permission to concentrate, and whether that is growth or
+    # parking is answered by where the heat actually lands, which `pf_allocation.heat.effective`
+    # reports every pass.
+    _share = MAX_SLEEVE_HEAT_SHARE
+    _override = os.environ.get("QUANT_SLEEVE_SHARE_CAP")
+    if _override:
+        try:
+            _share = max(0.0, min(1.0, float(_override)))
+        except ValueError:
+            _share = MAX_SLEEVE_HEAT_SHARE
+    share_cap = _share * _rail_mult("sleeve_share_cap") * total
     out: dict[str, float] = {}
     for name, dd in worst_dd_r.items():
         dd_r = float(dd) if dd and float(dd) > 0 else _DEFAULT_DD_R

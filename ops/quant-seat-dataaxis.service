@@ -18,4 +18,4 @@ Type=oneshot
 WorkingDirectory=/home/quant/quant-platform
 TimeoutStartSec=3h
 SuccessExitStatus=0
-ExecStart=/bin/bash -c 'flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1'
+ExecStart=/bin/bash -c 'export QUANT_FREE_TIER=1; flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1'

@@ -1,8 +1,22 @@
+# HOURLY, AT NO EXTRA SPEND (2026-09-12, principal: "make all openrouter mining n research
+# side as frequent as possible for max benefits like hrly if not already").
+#
+# This ran ONCE A DAY. Twenty-three of every twenty-four hours produced nothing from this seat,
+# and a hypothesis never generated is lost permanently -- the preamble's own words.
+#
+# WHY HOURLY IS FREE RATHER THAN 24x THE BILL. scripts/seats.resolve() already substitutes
+# zero-cost models when the paid balance is exhausted, and _free_tier_active() fails TOWARD free.
+# FREE TIER ONLY, ON EVERY RUN (principal, 2026-09-12: "make everything free tier on
+# openrouter"). The service forces QUANT_FREE_TIER=1 unconditionally, so there is no paid
+# hour at all and the monthly bill for this seat is zero by construction rather than by
+# a cap that has to hold. Attempts go up 24x against a spend of nothing. A free-tier hunt is worth immeasurably more than no
+# hunt, and every finding faces the identical gauntlet either way, so this buys ATTEMPTS and
+# never leniency.
 [Unit]
 Description=Timer for early-window seat: dataaxis
 
 [Timer]
-OnCalendar=*-*-* 05:00:00 UTC
+OnCalendar=*-*-* *:05:00 UTC
 RandomizedDelaySec=180
 Persistent=true
 Unit=quant-seat-dataaxis.service

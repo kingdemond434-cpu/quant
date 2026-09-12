@@ -118,7 +118,14 @@ def test_no_preferred_model_names_what_was_actually_offered(monkeypatch) -> None
 
 def test_the_cap_is_checked_before_spending(monkeypatch) -> None:
     """THE TEST THAT PROTECTS REAL MONEY. Checking after the call is how the desk's external panel
-    discovered exhaustion mid-run with nothing to show for the spend."""
+    discovered exhaustion mid-run with nothing to show for the spend.
+
+    SPENDING IS NOW OPT-IN (2026-09-12), so this states the opt-in explicitly rather than relying
+    on the default. The dollar cap governs PAID runs; a free run is governed by the daily REQUEST
+    budget instead, and letting the dollar cap bind a free run would take the desk dark over money
+    it never spent -- pinned in tests/ops/test_llm_seat_free_tier.py.
+    """
+    monkeypatch.setenv("QUANT_FREE_TIER", "0")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     monkeypatch.setenv("LLM_MONTHLY_CAP_USD", "1.0")
     llm_seat.SPEND_LEDGER.parent.mkdir(parents=True, exist_ok=True)
@@ -220,11 +227,29 @@ def test_a_flagship_beats_a_higher_versioned_downgrade(monkeypatch) -> None:
 
 
 def test_openrouter_prefixed_ids_are_understood(monkeypatch) -> None:
+    """Vendor-prefixed ids rank correctly, and `-mini` / `:free` are still refused as downgrades.
+
+    PINNED UNDER PAID POLICY. Free-tier became the default on 2026-09-12, which changes WHICH id
+    wins here (`deepseek/deepseek-r1:free`) without changing the ranking this test is about. The
+    opt-out is set so the assertion keeps testing the flagship parser rather than the tier policy;
+    the free-tier behaviour has its own file.
+    """
+    monkeypatch.setenv("QUANT_FREE_TIER", "0")
     monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
     monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: ({"data": [{"id": i} for i in (
         "openai/gpt-5", "openai/gpt-5-mini", "anthropic/claude-opus-4",
         "deepseek/deepseek-r1:free")]}, None))
     assert llm_seat.discover_model(llm_seat.primary_seat())[0] == "openai/gpt-5"
+
+
+def test_the_same_listing_picks_the_free_model_under_the_default_policy(monkeypatch) -> None:
+    """The other half of the pair above: same catalogue, default policy, free id wins."""
+    monkeypatch.delenv("QUANT_FREE_TIER", raising=False)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
+    monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: ({"data": [{"id": i} for i in (
+        "openai/gpt-5", "openai/gpt-5-mini", "anthropic/claude-opus-4",
+        "deepseek/deepseek-r1:free")]}, None))
+    assert llm_seat.discover_model(llm_seat.primary_seat())[0] == "deepseek/deepseek-r1:free"
 
 
 def test_the_bare_alias_beats_a_dated_snapshot(monkeypatch) -> None:

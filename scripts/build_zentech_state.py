@@ -744,6 +744,50 @@ def _age_human(seconds: float | None) -> str:
     return f"{s / 60:.0f}m"
 
 
+def _clocks_block() -> dict[str, Any]:
+    """THE FORWARD CLOCKS, which the dashboard had no key for at all.
+
+    MEASURED 2026-09-11: `web/desk_state.json` carried `account`, `breadth`, `coverage`, `decay`,
+    `equity_curve`, `execution`, `graph`, `health`, `identity`, `issues`, `organs` -- and nothing
+    naming a forward clock. Meanwhile `shadow_health.json` reported 89 configured sleeves, 83 of
+    them with forward trades and zero evidence-blocked. So the clocks were running the whole time
+    and the board could not show one, which is indistinguishable on screen from the clocks having
+    stopped -- and that is exactly how it was read, repeatedly.
+
+    SOURCED FROM THE HEALTH ARTIFACT, NOT RECOUNTED HERE. `shadow_health.json` is what the shadow
+    organ publishes and what `organ_contract` holds to a cadence; counting the clocks a second
+    way in this file would create a second opinion about how many there are, which is the drift
+    this desk keeps paying for. `live` comes from `sleeves.json` because a clock that matured and
+    a sleeve the gateway will actually trade are different facts and both belong on the board.
+
+    Absent artifacts publish UNMEASURED rather than zero (L1.28a): a board that prints 0 clocks
+    when it cannot read the file is making a claim it has not measured.
+    """
+    health = _read(DESK / "reports" / "shadow" / "shadow_health.json")
+    sleeves = _read(DESK / "data" / "sleeves.json")
+    if not health:
+        return {"status": "UNMEASURED",
+                "why": "reports/shadow/shadow_health.json is absent or unreadable -- the number "
+                       "of forward clocks is unknown, which is not the same as none"}
+    rows = sleeves if isinstance(sleeves, list) else ((sleeves or {}).get("sleeves") or [])
+    live = [r for r in rows if str((r or {}).get("status", "")).upper() == "LIVE"]
+    return {
+        "status": str(health.get("status") or "UNKNOWN"),
+        "updated_at": health.get("updated_at"),
+        "configured": health.get("configured_sleeves"),
+        "represented": health.get("represented_sleeves"),
+        "with_forward_trades": health.get("sleeves_with_forward_trades"),
+        "certified_total": health.get("certified_sleeves_total"),
+        "retired": health.get("retired_shadow_sleeves"),
+        "evidence_blocked": health.get("evidence_blocked_sleeves"),
+        "quarantined_uncertified": health.get("quarantined_uncertified_candidates"),
+        "missing": len(health.get("missing_sleeves") or []),
+        "gateway_armed": health.get("gateway_armed"),
+        "registry_rows": len(rows),
+        "live_sleeves": len(live),
+    }
+
+
 def _organs(now: datetime) -> dict[str, Any]:
     """WHICH ORGAN IS DEAD -- the question `_box_liveness` deliberately does not answer.
 
@@ -1071,6 +1115,15 @@ def build() -> dict[str, Any]:
     payload["wiring"] = _wiring_block()
     payload["coverage"] = _coverage_block()
     payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}
+    payload["clocks"] = _clocks_block()
+    # EVERY PROCESS, NOT A CURATED FEW (principal 2026-09-12: "genuinely every single built
+    # process we have so i can monitor everyday n notice if anything ever goes stale or not
+    # working reverted etc"). Read from the artifact `ops/process_health.py` publishes, so the
+    # board never becomes a second opinion about what is running.
+    payload["processes"] = (_read(DESK / "reports" / "process_health.json")
+                            or {"status": "UNMEASURED",
+                                "why": ("desks/mt5/reports/process_health.json is absent -- run "
+                                        "ops/process_health.py. No reading is not a clean board.")})
     payload["stats"] = _ledger_stats(rows)
     payload["stats"]["today_pnl"] = payload["account"]["today_pnl"]
     payload["pipeline"] = _funnel(universal)

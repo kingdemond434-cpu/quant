@@ -149,6 +149,24 @@ DEFAULT_MONTHLY_CAP_USD = 20.0
 #: money the principal did not agree to.
 _USD_PER_1K_TOKENS = 0.02
 
+#: FREE TIER IS THE DEFAULT, EVERYWHERE (2026-09-12, principal: "make everything free tier on
+#: openrouter... all the paid run things js run on free tiers instead").
+#:
+#: WHY A DEFAULT AND NOT A FLAG ON EACH ORGAN. A flag has to be remembered at every call site, and
+#: the organs that resolve a seat here are spread across six scripts and three libraries -- one
+#: forgotten export is a paid run nobody authorised. Defaulting the policy ON and requiring
+#: QUANT_FREE_TIER=0 to spend makes the safe state the automatic one.
+#:
+#: IT IS NOT A THROTTLE. Free models are weaker than flagships and every finding still faces the
+#: identical ten gates, so this buys ATTEMPTS and never leniency -- and the cadence it pays for is
+#: 24x: the six seats went from daily to hourly in the same change. kimi_hunter measured this
+#: trade already and its conclusion holds: a free-tier hunt is worth immeasurably more than no
+#: hunt, and the binding constraint was never model quality, it was the seat being dark.
+def free_tier_only() -> bool:
+    """True unless the principal explicitly re-enables spending with QUANT_FREE_TIER=0."""
+    return os.environ.get("QUANT_FREE_TIER", "1") != "0"
+
+
 _CTX: ssl.SSLContext | None = None
 
 
@@ -257,6 +275,31 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
     ids = [i for i in ids if i]
     if not ids:
         return "", "provider listed no models"
+    if free_tier_only():
+        # FREE FIRST -- AND THE SUFFIX MUST COME OFF BEFORE RANKING, or this goes dark.
+        #
+        # `:free` and `-free` are in _DOWNGRADE_TOKENS, so flagship_rank REFUSES every free id by
+        # design: a `gpt-6:free` must never outrank a paid `gpt-6` when both are available. Simply
+        # narrowing `ids` to the free ones would therefore leave `ranked` empty, `generic` empty
+        # too, and return "no flagship model found" -- every seat dark, with an error that reads
+        # like a provider outage. Caught before this shipped; it is the exact shape of the
+        # ship-the-caller-before-the-callee outage this desk already paid for once.
+        #
+        # Stripping the suffix and ranking the BASE name keeps the auto-upgrade property inside
+        # the free tier: the day a better free model is listed, it wins on version, with no edit.
+        free_ids = [i for i in ids if i.endswith((":free", "-free"))]
+        if free_ids:
+            base = {re.sub(r"[:\-]free$", "", i): i for i in free_ids}
+            ranked_free = [(r, orig) for stripped, orig in base.items()
+                           if (r := flagship_rank(stripped)) is not None]
+            if not ranked_free:
+                ranked_free = [(g, orig) for stripped, orig in base.items()
+                               if (g := _generic_rank(stripped)) is not None]
+            if ranked_free:
+                return max(ranked_free)[1], None
+            # Free models exist but none carries a parseable version. Take one rather than going
+            # dark -- an unrankable free seat still answers, and a dark seat answers nothing.
+            return sorted(free_ids)[0], None
     ranked = [(r, i) for i in ids if (r := flagship_rank(i)) is not None]
     if ranked:
         return max(ranked)[1], None
@@ -302,6 +345,48 @@ def month_spend_usd(now: datetime | None = None) -> float:
     return round(total, 4)
 
 
+#: OpenRouter's free tier is capped in REQUESTS PER DAY, not dollars -- and that is the limit the
+#: desk actually runs into once every organ is free. The published ceiling is 1,000/day for an
+#: account that has ever purchased credit and 50/day for one that has not. The default below sits
+#: under the higher number with room for retries; set QUANT_FREE_DAILY_MAX=40 on an account that
+#: has never purchased, or the day's budget is gone before the first sweep finishes.
+DEFAULT_FREE_DAILY_MAX = 900
+
+
+def free_daily_max() -> int:
+    try:
+        return max(1, int(os.environ.get("QUANT_FREE_DAILY_MAX", DEFAULT_FREE_DAILY_MAX)))
+    except ValueError:
+        return DEFAULT_FREE_DAILY_MAX
+
+
+def calls_today(now: datetime | None = None) -> int:
+    """Requests made today, from the same append-only ledger the spend rollup reads."""
+    stamp = (now or datetime.now(UTC)).strftime("%Y-%m-%d")
+    if not SPEND_LEDGER.exists():
+        return 0
+    n = 0
+    try:
+        lines = SPEND_LEDGER.read_text("utf-8").splitlines()
+    except OSError:
+        return 0
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if str(row.get("utc", "")).startswith(stamp):
+            n += 1
+    return n
+
+
+def free_budget_left(now: datetime | None = None) -> int:
+    """How many free requests today's budget still has. Negative is never returned."""
+    return max(0, free_daily_max() - calls_today(now))
+
+
 def monthly_cap_usd() -> float:
     raw = os.environ.get("LLM_MONTHLY_CAP_USD", "").strip()
     try:
@@ -335,7 +420,23 @@ def chat(
                     "or OPENAI_API_KEY / DEEPSEEK_API_KEY / XAI_API_KEY, or write "
                     "data/secrets/llm_panel.json")
     spent, cap = month_spend_usd(), monthly_cap_usd()
-    if spent >= cap:
+    # THE CAP CANNOT BIND A FREE RUN, and letting it would be the worst failure mode available:
+    # the ledger accrues an ESTIMATED cost (_USD_PER_1K_TOKENS is a deliberate over-estimate), so
+    # a month of free-tier calls would book phantom spend and then refuse free calls for the rest
+    # of the month -- the desk going dark over money it never spent.
+    # THE FREE TIER'S LIMIT IS REQUESTS PER DAY, so that is what gets checked when the run is
+    # free. Stopping one call short of the ceiling is the difference between an organ that skips
+    # a cycle and an account rate-limited into darkness for the rest of the day -- and a dark
+    # account takes EVERY organ with it, not just the one that spent the last request.
+    if free_tier_only():
+        left = free_budget_left()
+        if left <= 0:
+            return "", (f"free-tier daily request budget exhausted: {calls_today()} call(s) "
+                        f"today against a {free_daily_max()} ceiling. This is a SKIP, not a "
+                        f"failure -- the budget resets at 00:00 UTC and the next cadence picks "
+                        f"it up. Raise QUANT_FREE_DAILY_MAX only if the provider's real limit "
+                        f"is higher than the one assumed here.")
+    if spent >= cap and not free_tier_only():
         return "", (f"monthly cap reached: ${spent:.2f} of ${cap:.2f}. Raise it with "
                     "$LLM_MONTHLY_CAP_USD if the spend is proven worth it.")
     model, err = discover_model(s)
@@ -377,7 +478,23 @@ def chat_messages(
     if s is None:
         return "", "no seat: export OPENROUTER_API_KEY (see chat())"
     spent, cap = month_spend_usd(), monthly_cap_usd()
-    if spent >= cap:
+    # THE CAP CANNOT BIND A FREE RUN, and letting it would be the worst failure mode available:
+    # the ledger accrues an ESTIMATED cost (_USD_PER_1K_TOKENS is a deliberate over-estimate), so
+    # a month of free-tier calls would book phantom spend and then refuse free calls for the rest
+    # of the month -- the desk going dark over money it never spent.
+    # THE FREE TIER'S LIMIT IS REQUESTS PER DAY, so that is what gets checked when the run is
+    # free. Stopping one call short of the ceiling is the difference between an organ that skips
+    # a cycle and an account rate-limited into darkness for the rest of the day -- and a dark
+    # account takes EVERY organ with it, not just the one that spent the last request.
+    if free_tier_only():
+        left = free_budget_left()
+        if left <= 0:
+            return "", (f"free-tier daily request budget exhausted: {calls_today()} call(s) "
+                        f"today against a {free_daily_max()} ceiling. This is a SKIP, not a "
+                        f"failure -- the budget resets at 00:00 UTC and the next cadence picks "
+                        f"it up. Raise QUANT_FREE_DAILY_MAX only if the provider's real limit "
+                        f"is higher than the one assumed here.")
+    if spent >= cap and not free_tier_only():
         return "", (f"monthly LLM spend cap reached (${spent:.2f} of ${cap:.2f}) -- raise "
                     "$LLM_MONTHLY_CAP_USD if the spend is proven worth it.")
     model, err = discover_model(s)

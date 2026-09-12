@@ -547,7 +547,9 @@ def _build_prompt(role_name: str, role_brief: str, cold: dict[str, Any]) -> tupl
     """The OUTPUT CONTRACT. Free text from a model is not a finding until it is machine-parseable
     -- an eloquent paragraph nobody can route is exactly the 'report nobody actions' failure the
     wiring agent was built to detect one layer up."""
+    from libs.doctrine.constitution import DATA_AXIS_MANDATE
     system = (
+        DATA_AXIS_MANDATE +
         "You are DeepSeek, this quant desk's second research flywheel: an independent cold-phase "
         "generator, never a decider. You have NO authority to promote a survivor, allocate "
         "capital, override policy, or merge code -- whatever you propose enters the SAME "

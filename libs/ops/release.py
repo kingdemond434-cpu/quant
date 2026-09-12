@@ -347,6 +347,16 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
                ci_run_id=os.environ.get("GITHUB_RUN_ID"),
                tested_sha=head if tested else None, worktree_dirty=dirty,
                previous_code_sha=prev_sha, previous_release_id=prev_id)
+    # SIGN THE SEAL (blueprint item 1). The signature covers code_sha, money_path_hash and
+    # immutable_hash, so a record whose money path was rewritten on disk after sealing stops
+    # verifying -- which is precisely the 2026-09-11 sftp trample, and precisely what a
+    # signature over the commit alone would have waved through. A box with no signing key seals
+    # exactly as before and `verify` says "cannot verify", never "valid": absence is not a pass.
+    try:
+        from libs.ops import release_signing
+        doc, _sig_why = release_signing.stamp(doc, r)
+    except Exception as exc:                       # signing must never block a seal outright
+        doc["signature_error"] = f"{type(exc).__name__}: {exc}"
     if write:
         _write(doc, root)
     return doc
