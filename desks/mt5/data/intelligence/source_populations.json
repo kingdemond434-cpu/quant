@@ -1,4 +1,461 @@
 {
  "note": "unique survivor populations keyed by apex domain; localized hosts are language WINDOWS, not new populations",
- "populations": {}
+ "populations": {
+  "forexcracked.com": {
+   "apex": "forexcracked.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT5"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "Best MT5 Automated Trading Robots - MT5 EA Free Download",
+   "url": "https://www.forexcracked.com/tag/mt5-ea/",
+   "reachable": true,
+   "score": 19,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": true,
+   "has_mt": true,
+   "has_copy": true,
+   "has_live_account": true,
+   "population_links": 15,
+   "status": "GRADUATED"
+  },
+  "theforexgeek.com": {
+   "apex": "theforexgeek.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT5"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "Best Forex Expert Advisor (EA) for MetaTrader 5 (MT5)",
+   "url": "https://theforexgeek.com/best-expert-advisor-for-mt5/",
+   "reachable": true,
+   "score": 18,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": true,
+   "has_mt": true,
+   "has_copy": true,
+   "has_live_account": true,
+   "population_links": 2,
+   "status": "GRADUATED"
+  },
+  "newyorkcityservers.com": {
+   "apex": "newyorkcityservers.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT5"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "Best MT5 Expert Advisors: Top EAs for Automated Trading",
+   "url": "https://newyorkcityservers.com/blog/best-mt5-expert-advisors",
+   "reachable": true,
+   "score": 15,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": true,
+   "has_mt": true,
+   "has_copy": false,
+   "has_live_account": true,
+   "population_links": 5,
+   "status": "GRADUATED"
+  },
+  "marketmasterea.com": {
+   "apex": "marketmasterea.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT5"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "Market Master EA | Expert Advisor for MetaTrader 5 (MT5)",
+   "url": "https://www.marketmasterea.com/",
+   "reachable": true,
+   "score": 18,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": true,
+   "has_mt": true,
+   "has_copy": true,
+   "has_live_account": true,
+   "population_links": 1,
+   "status": "GRADUATED"
+  },
+  "tradersentiments.com": {
+   "apex": "tradersentiments.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT5"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "MT5 EA Builder - Generate MQL5 Expert Advisor Code",
+   "url": "https://tradersentiments.com/mt5-ea-builder",
+   "reachable": true,
+   "score": 18,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": true,
+   "has_mt": true,
+   "has_copy": true,
+   "has_live_account": true,
+   "population_links": 3,
+   "status": "GRADUATED"
+  },
+  "forex-ea.com": {
+   "apex": "forex-ea.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT5"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "Trading Expert Advisors For MT5 - Forex Robots At MQL5.com",
+   "url": "https://forex-ea.com/en/",
+   "reachable": true,
+   "score": 18,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": true,
+   "has_mt": true,
+   "has_copy": true,
+   "has_live_account": true,
+   "population_links": 0,
+   "status": "GRADUATED"
+  },
+  "cheaperforex.com": {
+   "apex": "cheaperforex.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT5"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "10 Best MT5 Expert Advisors For 2026 - cheaperforex.com",
+   "url": "https://cheaperforex.com/best-mt5-expert-advisors-2026/",
+   "reachable": true,
+   "score": 18,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": true,
+   "has_mt": true,
+   "has_copy": true,
+   "has_live_account": true,
+   "population_links": 1,
+   "status": "GRADUATED"
+  },
+  "metatrader4.com": {
+   "apex": "metatrader4.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT4"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "Expert Advisors - Auto Trading - MetaTrader 4 Help",
+   "url": "https://www.metatrader4.com/en/trading-platform/help/autotrading/experts",
+   "reachable": true,
+   "score": 7,
+   "has_ranking": false,
+   "has_return": false,
+   "has_drawdown": false,
+   "has_mt": true,
+   "has_copy": true,
+   "has_live_account": false,
+   "population_links": 13,
+   "status": "CANDIDATE"
+  },
+  "investfox.com": {
+   "apex": "investfox.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT4"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "Top 6 Best Expert Advisors for MT4 - Listed and reviewed - investfox",
+   "url": "https://investfox.com/education/platforms/best-mt4-expert-advisors/",
+   "reachable": true,
+   "score": 9,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": false,
+   "has_mt": true,
+   "has_copy": false,
+   "has_live_account": false,
+   "population_links": 1,
+   "status": "CANDIDATE"
+  },
+  "fxexpertadvisors.com": {
+   "apex": "fxexpertadvisors.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT4"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "How to Run an Expert Advisor (EA) in MetaTrader 4 (MT4) - Forex Expert ...",
+   "url": "https://fxexpertadvisors.com/how-to-run-ea-in-mt4/",
+   "reachable": true,
+   "score": 9,
+   "has_ranking": false,
+   "has_return": true,
+   "has_drawdown": false,
+   "has_mt": true,
+   "has_copy": false,
+   "has_live_account": true,
+   "population_links": 0,
+   "status": "CANDIDATE"
+  },
+  "forexfactory.com": {
+   "apex": "forexfactory.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea MT4"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "(FREE) Profitable EA on MT4 - Forex Factory",
+   "url": "https://www.forexfactory.com/thread/1302929-free-profitable-ea-on-mt4",
+   "reachable": true,
+   "score": 9,
+   "has_ranking": false,
+   "has_return": true,
+   "has_drawdown": true,
+   "has_mt": true,
+   "has_copy": false,
+   "has_live_account": false,
+   "population_links": 9,
+   "status": "CANDIDATE"
+  },
+  "ea.com": {
+   "apex": "ea.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea ranking"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "EA SPORTS FC\u2122 27 - Top 27 men's and women's ratings",
+   "url": "https://www.ea.com/games/ea-sports-fc/fc-27/news/fc27-ratings-top-27",
+   "reachable": true,
+   "score": 6,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": false,
+   "has_mt": false,
+   "has_copy": false,
+   "has_live_account": false,
+   "population_links": 2,
+   "status": "LOW_VALUE"
+  },
+  "fut.gg": {
+   "apex": "fut.gg",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea ranking"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "EA FC 27 Top 100 Player Ratings - FUT.GG",
+   "url": "https://www.fut.gg/players/rating-predictions/top-100/",
+   "reachable": true,
+   "score": 6,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": false,
+   "has_mt": false,
+   "has_copy": false,
+   "has_live_account": false,
+   "population_links": 0,
+   "status": "LOW_VALUE"
+  },
+  "fcratings.com": {
+   "apex": "fcratings.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea ranking"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "FC 27 Ratings | EA Sports FC Kick Off Database",
+   "url": "https://www.fcratings.com/",
+   "reachable": true,
+   "score": 6,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": false,
+   "has_mt": false,
+   "has_copy": false,
+   "has_live_account": false,
+   "population_links": 0,
+   "status": "LOW_VALUE"
+  },
+  "everythingedinburgh.com": {
+   "apex": "everythingedinburgh.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea ranking"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "EA FC 26 Player Ratings 2026 | Top 100 Best Players",
+   "url": "https://everythingedinburgh.com/games/gaming/ea-fc-26-player-ratings/",
+   "reachable": true,
+   "score": 6,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": false,
+   "has_mt": false,
+   "has_copy": false,
+   "has_live_account": false,
+   "population_links": 0,
+   "status": "LOW_VALUE"
+  },
+  "soccergaming.com": {
+   "apex": "soccergaming.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea ranking"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "EA Sports FC 27 Player Ratings Revealed | Soccer Gaming",
+   "url": "https://soccergaming.com/fc-27-player-ratings-top-27-mens-and-womens-players/",
+   "reachable": true,
+   "score": 9,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": false,
+   "has_mt": false,
+   "has_copy": true,
+   "has_live_account": false,
+   "population_links": 3,
+   "status": "CANDIDATE"
+  },
+  "easysbc.io": {
+   "apex": "easysbc.io",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea ranking"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "EA FC 27 Players and Meta Ratings Database - easysbc.io",
+   "url": "https://www.easysbc.io/players",
+   "reachable": true,
+   "score": 3,
+   "has_ranking": true,
+   "has_return": false,
+   "has_drawdown": false,
+   "has_mt": false,
+   "has_copy": false,
+   "has_live_account": false,
+   "population_links": 1,
+   "status": "LOW_VALUE"
+  },
+  "mmoexp.com": {
+   "apex": "mmoexp.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea ranking"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "EA FC 27 Elite Tier Analysis: Ranking Top Players, Meta PlayStyles ...",
+   "url": "https://www.mmoexp.com/News/ea-fc-27-elite-tier-analysis-ranking-top-players-meta-playstyles-day-1-gameplay-impact.html",
+   "reachable": true,
+   "score": 6,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": false,
+   "has_mt": false,
+   "has_copy": false,
+   "has_live_account": false,
+   "population_links": 7,
+   "status": "LOW_VALUE"
+  },
+  "bleacherreport.com": {
+   "apex": "bleacherreport.com",
+   "first_seen": "2026-09-12T02:18:11+00:00",
+   "last_seen": "2026-09-12T02:18:11+00:00",
+   "discovered_via": {
+    "locale": "ja",
+    "query": "ea ranking"
+   },
+   "language_windows": [
+    "ja"
+   ],
+   "title": "EA FC 27 Player Ratings Revealed for Mbappe, Haaland, Kane, Putellas ...",
+   "url": "https://bleacherreport.com/articles/25473341-ea-fc-27-player-ratings-revealed-mbappe-haaland-kane-putellas-top-stars-release-date",
+   "reachable": true,
+   "score": 12,
+   "has_ranking": true,
+   "has_return": true,
+   "has_drawdown": false,
+   "has_mt": false,
+   "has_copy": true,
+   "has_live_account": true,
+   "population_links": 0,
+   "status": "GRADUATED"
+  }
+ }
 }
