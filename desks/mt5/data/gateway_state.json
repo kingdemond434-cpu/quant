@@ -23,94 +23,104 @@
     }
   },
   "position": null,
-  "last_bracket_date": "2026-08-21",
-  "last_reconcile": "2026-08-17T00:05:02+00:00",
+  "last_bracket_date": "2026-09-11",
+  "last_reconcile": "2026-09-12T02:53:02+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
     "gold_asia": {
-      "date": "2026-08-21",
-      "hi": 4543.67,
-      "lo": 4508.81,
+      "date": "2026-09-11",
+      "recovered": true,
+      "lot": 0.02,
+      "hi": 4340.44,
+      "lo": 4300.89,
       "spec": {
         "buy_stop": {
-          "price": 4543.67,
-          "sl": 4508.61,
-          "tp": 4613.39
+          "price": 4340.44,
+          "sl": 4300.69,
+          "tp": 4419.54
         },
         "sell_stop": {
-          "price": 4508.81,
-          "sl": 4543.870000000001,
-          "tp": 4439.09
+          "price": 4300.89,
+          "sl": 4340.64,
+          "tp": 4221.79
         }
-      },
-      "placed_at": "2026-08-21T19:51:15+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10015,
-            "comment": "Invalid price"
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10009,
-            "comment": "Request executed"
-          }
-        ]
+      }
+    },
+    "gold_asia_v2": {
+      "date": "2026-09-11",
+      "recovered": true,
+      "lot": 0.01,
+      "hi": 4340.44,
+      "lo": 4300.89,
+      "spec": {
+        "buy_stop": {
+          "price": 4340.44,
+          "sl": 4300.69,
+          "tp": 4419.54
+        },
+        "sell_stop": {
+          "price": 4300.89,
+          "sl": 4340.64,
+          "tp": 4221.79
+        }
+      }
+    },
+    "gold_asia_v3": {
+      "date": "2026-09-11",
+      "recovered": true,
+      "lot": 0.01,
+      "hi": 4340.44,
+      "lo": 4300.89,
+      "spec": {
+        "buy_stop": {
+          "price": 4340.44,
+          "sl": 4300.69,
+          "tp": 4419.54
+        },
+        "sell_stop": {
+          "price": 4300.89,
+          "sl": 4340.64,
+          "tp": 4221.79
+        }
+      }
+    },
+    "gold_asia_v4": {
+      "date": "2026-09-11",
+      "recovered": true,
+      "hi": 4340.44,
+      "lo": 4300.89,
+      "spec": {
+        "buy_stop": {
+          "price": 4340.44,
+          "sl": 4300.69,
+          "tp": 4419.54
+        },
+        "sell_stop": {
+          "price": 4300.89,
+          "sl": 4340.64,
+          "tp": 4221.79
+        }
       }
     },
     "gold_london_am": {
-      "date": "2026-08-21",
-      "hi": 4602.03,
-      "lo": 4558.51,
+      "date": "2026-09-11",
+      "hi": 4357.47,
+      "lo": 4340.57,
+      "lot": 0.02,
       "spec": {
         "buy_stop": {
-          "price": 4602.03,
-          "sl": 4558.3099999999995,
-          "tp": 4689.07
+          "price": 4357.47,
+          "sl": 4329.02,
+          "tp": 4413.97
         },
         "sell_stop": {
-          "price": 4558.51,
-          "sl": 4602.2300000000005,
-          "tp": 4471.47
+          "price": 4340.57,
+          "sl": 4369.0199999999995,
+          "tp": 4284.07
         }
       },
-      "placed_at": "2026-08-21T19:51:16+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10015,
-            "comment": "Invalid price"
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10009,
-            "comment": "Request executed"
-          }
-        ]
-      }
-    },
-    "gold_afternoon": {
-      "date": "2026-08-21",
-      "hi": 4604.53,
-      "lo": 4563.57,
-      "spec": {
-        "buy_stop": {
-          "price": 4604.53,
-          "sl": 4563.37,
-          "tp": 4686.45
-        },
-        "sell_stop": {
-          "price": 4563.57,
-          "sl": 4604.73,
-          "tp": 4481.65
-        }
-      },
-      "placed_at": "2026-08-21T19:51:16+00:00",
+      "placed_at": "2026-09-11T14:44:58+00:00",
       "result": {
         "shadow": false,
         "orders": [
@@ -129,5 +139,195 @@
     }
   },
   "lot": 0.06,
-  "equity": 21127.01
+  "equity": 607.68,
+  "placement_health": {
+    "consecutive_total_rejections": 0,
+    "last_ok": "2026-09-11T14:44:58+00:00",
+    "last_error": {
+      "time": "2026-08-25T04:00:03+00:00",
+      "sleeve": "gold_asia",
+      "diagnoses": [
+        "10027 AutoTrading disabled by client: the terminal's AutoTrading button is off. One click, in the terminal."
+      ]
+    }
+  },
+  "scalp": {
+    "xau_m5_anti_momentum_ny": {
+      "last_signal_bar": "2026-09-11 23:55:00+00:00"
+    },
+    "xau_m15_anti_breakout": {
+      "last_signal_bar": "2026-09-11 23:45:00+00:00"
+    },
+    "xau_m5_anti_breakout_overlap": {
+      "last_signal_bar": "2026-09-11 23:55:00+00:00"
+    }
+  },
+  "vetoed_today": {},
+  "placement_pass": "2026-09-11T23:58:59+00:00",
+  "netting_booked": {},
+  "orig_stop_dist": {
+    "220699210": 40.07000000000062,
+    "220699212": 41.77000000000044
+  },
+  "generic": {
+    "audcad_discovered_asia_p_7c996ac8456c8919": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "audcad_discovered_asia_p_8030fb339510dceb": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "audcad_discovered_asia_p_a7324e7affe1f80a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "audchf_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "audnzd_discovered_asia_p_c76b860ff91ee920": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "audusd_discovered_asia_p_8e61ea22743f15b7": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "audusd_discovered_asia_p_a5bbf78b5c8595c0": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "audusd_discovered_asia_p_cf0368e026d6b477": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "audusd_discovered_asia_p_de80ad4f2ef91116": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "cadchf_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "cadjpy_session_range_breakout_asia_session_range_breakout": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "cadjpy_session_range_breakout_asia_5_wb_12": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "cadjpy_session_range_breakout_asia_0_wb_12": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "chfdkk_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "chfnok_carry_asia_p_98d776f3e210d3e2": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_16bd35526c7f3515": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_4cba1afa572a99cd": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_6c7943b997558157": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_9bc1f7c40f200e78": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_a5bbf78b5c8595c0": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_c14e361e680e6d0b": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_c7d53510458ba32c": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurchf_discovered_asia_p_e266baf78567bef3": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurgbp_discovered_asia_p_8e61ea22743f15b7": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurgbp_discovered_asia_p_f31f02aa2b9d79b1": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurjpy_session_range_breakout_asia_session_range_breakout": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurjpy_session_range_breakout_asia_5_wb_12": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurjpy_session_range_breakout_asia_0_wb_12": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurnok_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurusd_discovered_asia_p_6d034b421914e1a2": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurusd_discovered_asia_p_f8bd412f38e33d20": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "gbpchf_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "gbpjpy_session_range_breakout_asia_session_range_breakout": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "gbpjpy_session_range_breakout_asia_5_wb_12": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "gbpmxn_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "gbpnok_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "gbpsek_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "gbpzar_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "nzdcad_discovered_asia_p_0ffb1e19a04f260e": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "usdcad_discovered_asia_p_193aadf2caba3698": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "usdcad_discovered_asia_p_56aadf0a3018c790": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "usdchf_discovered_asia_p_19dd11ec392fa005": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "usdjpy_session_range_breakout_asia_session_range_breakout": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "usdjpy_session_range_breakout_asia_5_wb_12": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "usdjpy_session_range_breakout_asia_0_wb_12": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "usdmxn_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "xauusd_session_range_breakout_asia_session_range_breakout": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "xauusd_session_range_breakout_asia_5_wb_12": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "xauusd_session_range_breakout_asia_5_wb_8": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "xauusd_session_range_breakout_asia_0_wb_12": {
+      "last_signal_bar": "2026-09-11 22:00:00+00:00"
+    },
+    "audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte": {
+      "last_signal_bar": "2026-09-11 17:00:00+00:00"
+    }
+  }
 }
