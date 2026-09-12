@@ -1,0 +1,19 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "ECB",
+    "currency": "EUR",
+    "feed": "https://www.ecb.europa.eu/rss/press.html",
+    "published_utc": "2026-09-12T10:15:00+00:00",
+    "title": "Christine Lagarde: Europe seen from Normandy",
+    "link": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp260912~fafa4b35b0.en.html",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "EURJPY",
+      "EURGBP",
+      "EURAUD",
+      "EURCHF"
+    ]
+  }
+]
