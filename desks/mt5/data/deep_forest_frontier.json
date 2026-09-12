@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-12T09:01:16.396843+00:00",
+ "updated": "2026-09-12T10:56:55.006684+00:00",
  "vectors": {
   "5ch \u682a\u677f / \u5148\u7269\u677f": {
    "outcome": "NAMED_ONLY",
@@ -272,10 +272,10 @@
    "region": "ar"
   },
   "BCRP estad\u00edsticas": {
-   "outcome": "NAMED_ONLY",
+   "outcome": "EMPTY",
    "first_seen": "2026-09-10T15:40:36.553957+00:00",
-   "last_attempt": "",
-   "attempts": 0,
+   "last_attempt": "2026-09-12T10:56:55.005227+00:00",
+   "attempts": 1,
    "findings": 0,
    "blocker": "",
    "language": "es",
@@ -1692,12 +1692,12 @@
    "region": "sg"
   },
   "Hawamer / Arabic trading boards": {
-   "outcome": "NAMED_ONLY",
+   "outcome": "BLOCKED",
    "first_seen": "2026-09-10T15:40:36.551209+00:00",
-   "last_attempt": "",
-   "attempts": 0,
+   "last_attempt": "2026-09-12T10:56:55.005321+00:00",
+   "attempts": 1,
    "findings": 0,
-   "blocker": "",
+   "blocker": "BLOCKED",
    "language": "ar",
    "region": "sa"
   },
@@ -3022,10 +3022,10 @@
    "region": "se"
   },
   "Riksbank staff papers": {
-   "outcome": "NAMED_ONLY",
+   "outcome": "EMPTY",
    "first_seen": "2026-09-10T15:40:36.553145+00:00",
-   "last_attempt": "",
-   "attempts": 0,
+   "last_attempt": "2026-09-12T10:56:55.005354+00:00",
+   "attempts": 1,
    "findings": 0,
    "blocker": "",
    "language": "sv",
@@ -3192,10 +3192,10 @@
    "region": "institutional"
   },
   "SET market statistics": {
-   "outcome": "NAMED_ONLY",
+   "outcome": "EMPTY",
    "first_seen": "2026-09-10T15:40:36.550595+00:00",
-   "last_attempt": "",
-   "attempts": 0,
+   "last_attempt": "2026-09-12T10:56:55.006018+00:00",
+   "attempts": 1,
    "findings": 0,
    "blocker": "",
    "language": "en",
@@ -4342,12 +4342,12 @@
    "region": "ru"
   },
   "\u0426\u0411 \u0420\u0424 \u0438\u0441\u0441\u043b\u0435\u0434\u043e\u0432\u0430\u043d\u0438\u044f": {
-   "outcome": "NAMED_ONLY",
+   "outcome": "BLOCKED",
    "first_seen": "2026-09-10T15:40:36.553613+00:00",
-   "last_attempt": "",
-   "attempts": 0,
+   "last_attempt": "2026-09-12T10:56:55.005994+00:00",
+   "attempts": 1,
    "findings": 0,
-   "blocker": "",
+   "blocker": "BLOCKED",
    "language": "ru",
    "region": "ru"
   },

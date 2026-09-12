@@ -22039,7 +22039,7 @@
         },
         "stress_costs": {
           "passed": false,
-          "exp_x3": -22.9788
+          "exp_x3": -22.9785
         },
         "lockbox": {
           "passed": false,
@@ -22047,7 +22047,7 @@
         },
         "expected_value": {
           "passed": false,
-          "ev": -7.59
+          "ev": -7.5897
         }
       },
       "days": 732,
@@ -60465,7 +60465,7 @@
         },
         "stress_costs": {
           "passed": false,
-          "exp_x3": -31.4272
+          "exp_x3": -31.4269
         },
         "lockbox": {
           "passed": false,
@@ -60473,7 +60473,7 @@
         },
         "expected_value": {
           "passed": false,
-          "ev": -10.438
+          "ev": -10.4377
         }
       },
       "days": 842,
@@ -61165,7 +61165,7 @@
         },
         "in_sample_screen": {
           "passed": false,
-          "sharpe": -0.7065
+          "sharpe": -0.7064
         },
         "deflated_sharpe": {
           "passed": false,
@@ -61193,7 +61193,7 @@
         },
         "stress_costs": {
           "passed": false,
-          "exp_x3": -4.6019
+          "exp_x3": -4.6022
         },
         "lockbox": {
           "passed": false,
@@ -61201,7 +61201,7 @@
         },
         "expected_value": {
           "passed": false,
-          "ev": -1.5044
+          "ev": -1.5047
         }
       },
       "days": 423,
@@ -72917,7 +72917,7 @@
         },
         "in_sample_screen": {
           "passed": false,
-          "sharpe": -0.1266
+          "sharpe": -0.1265
         },
         "deflated_sharpe": {
           "passed": false,
@@ -72935,21 +72935,21 @@
         },
         "cpcv": {
           "passed": false,
-          "mean_oos_sharpe": -0.1257,
+          "mean_oos_sharpe": -0.1256,
           "folds": 15
         },
         "walk_forward": {
           "passed": false,
-          "oos_sharpe": -0.0311,
+          "oos_sharpe": -0.031,
           "stability": 0.25
         },
         "stress_costs": {
           "passed": false,
-          "exp_x3": -0.5514
+          "exp_x3": -0.5513
         },
         "lockbox": {
           "passed": false,
-          "lockbox_sharpe": -0.0311
+          "lockbox_sharpe": -0.031
         },
         "expected_value": {
           "passed": false,
@@ -152005,7 +152005,7 @@
     }
   ],
   "hunts_absent": [],
-  "swept_at": "2026-09-12T10:32:12.704810+00:00",
-  "wall_s": 308.7,
+  "swept_at": "2026-09-12T11:31:47.006758+00:00",
+  "wall_s": 283.2,
   "workers": 8
 }

@@ -2,17 +2,17 @@
  "axis": "macro_state",
  "id": "fred_series",
  "source": "fredgraph.csv",
- "at": "2026-09-12T09:44:01+00:00",
+ "at": "2026-09-12T11:43:31+00:00",
  "n_series": 0,
  "n_failed": 7,
  "failed": {
-  "DGS10": "ConnectionResetError: [WinError 10054] An existing connection was forcibly closed ",
-  "DGS2": "TimeoutError: The read operation timed out",
-  "T10Y2Y": "TimeoutError: The read operation timed out",
+  "DGS10": "TimeoutError: The read operation timed out",
+  "DGS2": "ConnectionResetError: [WinError 10054] An existing connection was forcibly closed ",
+  "T10Y2Y": "ConnectionResetError: [WinError 10054] An existing connection was forcibly closed ",
   "DTWEXBGS": "TimeoutError: The read operation timed out",
-  "T10YIE": "TimeoutError: The read operation timed out",
+  "T10YIE": "ConnectionResetError: [WinError 10054] An existing connection was forcibly closed ",
   "BAMLH0A0HYM2": "ConnectionResetError: [WinError 10054] An existing connection was forcibly closed ",
-  "VIXCLS": "ConnectionResetError: [WinError 10054] An existing connection was forcibly closed "
+  "VIXCLS": "TimeoutError: The read operation timed out"
  },
  "vintage_note": "CURRENT vintage only. Daily market series barely revise; no survey or national-accounts series is in this list on purpose.",
  "shape": "series[sid].points -- one dated state variable each",

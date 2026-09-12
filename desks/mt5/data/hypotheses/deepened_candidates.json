@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-12T06:02:21+00:00",
+ "built_at": "2026-09-12T11:14:21+00:00",
  "candidates": [
   {
    "genome_id": "12286c48cd59b9f8",
@@ -133,10 +133,29 @@
    "mechanism_note": "deepened from source text: session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
    "deepened": true,
    "evidence": "session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
+  },
+  {
+   "genome_id": "8018437b887c90ab",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "params": {
+    "selector": "asia",
+    "condition": "None"
+   },
+   "source": "miner:reddit",
+   "source_url": "",
+   "source_title": "Yet another profitable \"IA Grail\" for trading gold on Forex?",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "deepened from source text: [survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates",
+   "deepened": true,
+   "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
   }
  ],
- "recovered_this_run": 0,
+ "recovered_this_run": 1,
  "dispositions": {
-  "BLOCKED_SEAT_UNAVAILABLE": 29485
+  "REJECTED": 38,
+  "BLOCKED_SEAT_UNAVAILABLE": 8,
+  "STILL_NEEDS_EXACT_RULE_EXTRACTION": 5,
+  "RECOVERED_EXACT_RECIPE": 1
  }
 }

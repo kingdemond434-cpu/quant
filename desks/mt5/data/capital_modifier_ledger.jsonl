@@ -589,3 +589,6 @@
 {"t": "2026-09-11T17:52:37.478742+00:00", "sleeve": "CADJPY_asia_FAILED_BREAK", "state": "NY_MID", "category": "REDUCE", "multiplier": 0.6142, "n_state": 1, "mu_state": -1.138456, "mu_uncond": 0.076827, "heat": 0.005605}
 {"t": "2026-09-11T17:57:41.874165+00:00", "sleeve": "CADJPY_asia_FAILED_BREAK", "state": "NY_MID", "category": "REDUCE", "multiplier": 0.6142, "n_state": 1, "mu_state": -1.138456, "mu_uncond": 0.076827, "heat": 0.005605}
 {"t": "2026-09-12T05:59:00.578382+00:00", "sleeve": "CHFNOK_carry_asia", "state": "ASIA_CLOSE", "category": "NORMAL", "multiplier": 1.0561, "n_state": 1, "mu_state": 1.423171, "mu_uncond": 0.431448, "heat": 0.0472}
+{"t": "2026-09-12T11:40:51.605111+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_MID", "category": "NORMAL", "multiplier": 1.2917, "n_state": 9, "mu_state": 1.116624, "mu_uncond": 0.431448, "heat": 0.0472}
+{"t": "2026-09-12T11:47:38.256430+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_MID", "category": "NORMAL", "multiplier": 1.2917, "n_state": 9, "mu_state": 1.116624, "mu_uncond": 0.431448, "heat": 0.0472}
+{"t": "2026-09-12T11:52:06.188165+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_MID", "category": "NORMAL", "multiplier": 1.2917, "n_state": 9, "mu_state": 1.116624, "mu_uncond": 0.431448, "heat": 0.0472}

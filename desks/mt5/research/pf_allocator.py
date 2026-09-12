@@ -3012,11 +3012,35 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _pg_prev = current_book()
             _pg_paths_ = _pg_paths(ev, n_paths=400, horizon=max(1, int(NO_TRADE_HORIZON_DAYS)),
                                    worlds=worlds, seed=seed)
+            # A MEASUREMENT BOUND IS NOT A DEPLOY BOUND, and this line was the one place the two
+            # were conflated. `CURVE_SAMPLE_MAX` is documented above as "a MEASUREMENT bound, not
+            # a policy bound... the whole point of this constant existing separately from
+            # HEAT_HARD_CEILING", and its safety argument is stated just as plainly: "THIS CANNOT
+            # RAISE TODAY'S HEAT... It changes what is MEASURED, never what is DEPLOYED."
+            #
+            # Here it DID change what is deployed. Every other solve in this file that produces a
+            # publishable book passes `target=` and per-sleeve caps at the resolved heat, so the
+            # target binds however wide the hard_cap is. The posterior challenger passes NO target
+            # -- it is free to choose its own heat between floor and ceiling -- so the ceiling IS
+            # the policy for it, and raising CURVE_SAMPLE_MAX from 0.45 to 1.00 to let the growth
+            # curve find its true optimum silently handed the posterior a 100% licence.
+            #
+            # MEASURED ON THE LIVE BOX, 2026-09-12 11:21: the posterior solved to 52.96% heat and
+            # was ADOPTED on a genuine dE of +0.01469 CI [+0.01105, +0.01870]. The ruin check then
+            # correctly refused it -- "at least one sampled world wipes it out" -- and, having
+            # nothing else to publish, the pass emitted ZERO heat. The desk fell back to the 20%
+            # floor with a flat book while its own solve had earned 22.5%, and the artifact read
+            # `binding: catastrophe` on a desk that was working perfectly.
+            #
+            # Bounded by HEAT_HARD_CEILING (30%), which is the desk's standing policy ceiling and
+            # what every other deploy path already respects. The growth curve keeps its full 1.00
+            # sampling grid, so nothing about what the desk can MEASURE changes -- which is what
+            # the comment above promised in the first place.
+            _post_ceiling = max(HEAT_HARD_CEILING, float(verdict.total_heat))
             _pbook = _pg_solve(ev, h_prev=_pg_prev, paths=_pg_paths_,
                                floor=float(verdict.total_heat),
-                               ceiling=max(CURVE_SAMPLE_MAX, verdict.total_heat),
-                               caps=per_sleeve_bounds(dd, max(CURVE_SAMPLE_MAX,
-                                                              verdict.total_heat)),
+                               ceiling=_post_ceiling,
+                               caps=per_sleeve_bounds(dd, _post_ceiling),
                                turnover_cost=TURNOVER_COST_R)
             _cmp = _pg_compare(_pbook, funded, _pg_paths_, h_prev=_pg_prev,
                                turnover_cost=TURNOVER_COST_R, seed=seed)
@@ -3029,24 +3053,54 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                  f"{'ADOPT' if _cmp.get('beats') else 'funded book stands'}")
             if _cmp.get("beats") and _pbook.h:
                 sc = score_book(ev, _pbook.h, cfg=cfg, worlds=worlds)
-                book = AllocationResult(
-                    heat=dict(_pbook.h), total_heat=float(_pbook.total_heat),
-                    robust_score=float(sc["robust_score"]),
-                    mean_log_growth=float(sc["mean_log_growth"]),
-                    cvar_log_growth=float(sc["cvar_log_growth"]),
-                    annual_growth_pct=float(sc["annual_growth_pct"]),
-                    prob_annual_loss=float(sc["prob_annual_loss"]),
-                    note=(f"posterior multi-period book adopted: dE[log W] "
-                          f"{_cmp['delta_elogw_per_day']:+.5f}/day with the CI excluding 0; "
-                          f"binding={_pbook.binding}"))
-                funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
-                posterior["adopted"] = True
-                if _pbook.binding == "ruin_guard":
-                    # The one mechanism licensed below the resolved floor, and it has just
-                    # proved its dE[log W] on the same paths -- said out loud, never quietly.
-                    _log(f"POSTERIOR RUIN GUARD: the adopted book holds {_pbook.total_heat:.2%},"
-                         f" below the resolved {verdict.total_heat:.2%}; p_ruin at the floor "
-                         f"breached eps and the reduction raised robust E[log W]")
+                # A CHALLENGER THAT CANNOT BE PUBLISHED MUST NOT UNSEAT THE INCUMBENT.
+                #
+                # `score_book` returns mean_log_growth = -inf for a book wiped out in at least one
+                # sampled world, and the guard further down correctly refuses to publish such a
+                # book. But the adoption above it had ALREADY overwritten `book` and `funded` --
+                # so a ruinous challenger did not merely fail, it took the perfectly good funded
+                # book down with it, and the pass then published ZERO and fell back to the flat
+                # floor.
+                #
+                # MEASURED ON THE LIVE BOX, 2026-09-12: the posterior solved to 30.00% heat,
+                # beat the funded book on a genuine dE of +0.00778 with the CI excluding zero, was
+                # adopted, scored -inf, and the desk published 0.00% and deployed the 20% floor --
+                # while the funded book it discarded had earned 22.5% and was not ruinous at all.
+                # `binding: catastrophe` on an allocator that was working.
+                #
+                # The comparison that licensed the swap is E[log W] on the sampled paths; ruin on
+                # those same paths is the one condition that comparison cannot express, because
+                # -inf is not a number the CI machinery can order. So it is tested separately,
+                # here, BEFORE the incumbent is touched. This removes nothing the challenger had
+                # legitimately won: a book that may never be deployed has won nothing.
+                if not math.isfinite(float(sc["mean_log_growth"])):
+                    posterior["adopted"] = False
+                    posterior["refused"] = (
+                        f"challenger at {_pbook.total_heat:.2%} is RUINOUS on the sampled paths "
+                        f"(mean_log_growth -inf) -- it beat the funded book on dE[log W] but "
+                        f"cannot be published, so the funded book stands. Adopting it would have "
+                        f"discarded a publishable book for one that is not.")
+                    _log(f"POSTERIOR REFUSED: {posterior['refused']}")
+                else:
+                    book = AllocationResult(
+                        heat=dict(_pbook.h), total_heat=float(_pbook.total_heat),
+                        robust_score=float(sc["robust_score"]),
+                        mean_log_growth=float(sc["mean_log_growth"]),
+                        cvar_log_growth=float(sc["cvar_log_growth"]),
+                        annual_growth_pct=float(sc["annual_growth_pct"]),
+                        prob_annual_loss=float(sc["prob_annual_loss"]),
+                        note=(f"posterior multi-period book adopted: dE[log W] "
+                              f"{_cmp['delta_elogw_per_day']:+.5f}/day with the CI excluding 0; "
+                              f"binding={_pbook.binding}"))
+                    funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+                    posterior["adopted"] = True
+                    if _pbook.binding == "ruin_guard":
+                        # The one mechanism licensed below the resolved floor, and it has just
+                        # proved its dE[log W] on the same paths -- said out loud, never quietly.
+                        _log(f"POSTERIOR RUIN GUARD: the adopted book holds "
+                             f"{_pbook.total_heat:.2%}, below the resolved "
+                             f"{verdict.total_heat:.2%}; p_ruin at the floor breached eps and "
+                             f"the reduction raised robust E[log W]")
         except Exception as exc:
             posterior = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
             _log(f"posterior book unmeasured: {posterior['why']}")

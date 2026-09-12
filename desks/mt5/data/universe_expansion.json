@@ -1,44 +1,10 @@
 {
- "expanded_at": "2026-09-12T10:26:02+00:00",
+ "expanded_at": "2026-09-12T11:26:02+00:00",
  "fusion_symbols": 250,
  "tradable": 250,
  "added": [],
- "refreshed": 246,
+ "refreshed": 248,
  "short_history": [
-  {
-   "symbol": "CHFHUF",
-   "class": "Forex Exotics",
-   "bars": 0,
-   "timeframes_written": [
-    "H4",
-    "D1"
-   ],
-   "timeframes_thin": [
-    "M1:0/180000",
-    "M5:0/36000",
-    "M15:0/12000",
-    "M30:0/6000",
-    "H1:0/3000"
-   ],
-   "why": "fewer than 3000 H1 bars -- cannot support the ten gates; recorded rather than silently dropped"
-  },
-  {
-   "symbol": "AT&T",
-   "class": "Equities",
-   "bars": 0,
-   "timeframes_written": [
-    "H4",
-    "D1"
-   ],
-   "timeframes_thin": [
-    "M1:0/180000",
-    "M5:0/36000",
-    "M15:0/12000",
-    "M30:0/6000",
-    "H1:0/3000"
-   ],
-   "why": "fewer than 3000 H1 bars -- cannot support the ten gates; recorded rather than silently dropped"
-  },
   {
    "symbol": "SpaceX",
    "class": "Equities",
@@ -75,12 +41,12 @@
  "failed": [],
  "by_class": {
   "Forex": 29,
-  "Forex Exotics": 56,
+  "Forex Exotics": 57,
   "Commodities": 12,
   "Energy": 3,
   "Indices": 16,
   "Crypto": 14,
-  "Equities": 102,
+  "Equities": 103,
   "Soft Commodity": 11,
   "Bonds": 3
  },
@@ -107,9 +73,9 @@
   "M5": 0,
   "M15": 0,
   "M30": 0,
-  "H1": 246,
-  "H4": 246,
-  "D1": 246
+  "H1": 248,
+  "H4": 248,
+  "D1": 248
  },
  "timeframes_thin": {
   "AUDCAD": [
@@ -299,6 +265,12 @@
    "M30:0/6000"
   ],
   "CHFDKK": [
+   "M1:0/180000",
+   "M5:0/36000",
+   "M15:0/12000",
+   "M30:0/6000"
+  ],
+  "CHFHUF": [
    "M1:0/180000",
    "M5:0/36000",
    "M15:0/12000",
@@ -1283,6 +1255,12 @@
    "M30:0/6000"
   ],
   "Pinterest": [
+   "M1:0/180000",
+   "M5:0/36000",
+   "M15:0/12000",
+   "M30:0/6000"
+  ],
+  "AT&T": [
    "M1:0/180000",
    "M5:0/36000",
    "M15:0/12000",
