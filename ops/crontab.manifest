@@ -1048,12 +1048,23 @@ SYSTEMD unit="quant-dataaxis.timer" on="*-*-* 14:00:00" exec="ops/run_dataaxis_d
 # is read from those files exactly: every one carries an explicit UTC suffix, and frontier2
 # fires at 06:20 UTC (inside the measured-productive window above), which the 03:00 this
 # manifest carried until 2026-09-05 never was.
-SYSTEMD unit="quant-seat-dataaxis.timer" on="*-*-* 05:00:00 UTC" exec="ops/run_dataaxis_dig.sh"
-SYSTEMD unit="quant-seat-prospector.timer" on="*-*-* 06:00:00 UTC" exec="ops/run_prospector_dig.sh"
-SYSTEMD unit="quant-seat-litminer.timer" on="*-*-* 07:00:00 UTC" exec="ops/run_litminer_dig.sh"
-SYSTEMD unit="quant-seat-frontier.timer" on="*-*-* 08:00:00 UTC" exec="ops/run_frontier_rotation.sh"
-SYSTEMD unit="quant-seat-frontier2.timer" on="*-*-* 06:20:00 UTC" exec="ops/run_frontier_rotation.sh"
-SYSTEMD unit="quant-seat-launch-yield.timer" on="*-*-* 10:00:00 UTC" exec="scripts/check_seat_launch_yield.py"
+# ROTTED BEHIND THE UNITS (2026-09-12). Both units are COMMITTED and both were absent here, so
+# a restore from this manifest would have rebuilt a desk missing its dashboard refresh and its
+# midnight controller -- which is the exact DR failure this file exists to prevent. The
+# schedules below are read from the unit files, which are the one part the manifest can be
+# sure of.
+# NEVER IN THE MANIFEST (2026-09-12) though the unit has been committed and running. Its
+# `enrol_clocks` step is what puts certified sleeves onto forward clocks, so a restore from
+# this file would have rebuilt a desk that certifies and never enrols -- certificates
+# accumulating with no capital behind them, and nothing to say why.
+SYSTEMD unit="quant-nightly-catchup.timer" on="*-*-* 00,03,06,09,12,15,18,21:00:00" exec="desks/mt5/research/nightly_catchup.py"
+SYSTEMD unit="quant-desk-refresh.timer" on="OnUnitActiveSec=180" exec="ops/refresh_desk_state.sh"
+SYSTEMD unit="quant-seat-dataaxis.timer" on="*-*-* *:05:00 UTC" exec="ops/run_dataaxis_dig.sh"
+SYSTEMD unit="quant-seat-prospector.timer" on="*-*-* *:45:00 UTC" exec="ops/run_prospector_dig.sh"
+SYSTEMD unit="quant-seat-litminer.timer" on="*-*-* *:35:00 UTC" exec="ops/run_litminer_dig.sh"
+SYSTEMD unit="quant-seat-frontier.timer" on="*-*-* *:15:00 UTC" exec="ops/run_frontier_rotation.sh"
+SYSTEMD unit="quant-seat-frontier2.timer" on="*-*-* *:25:00 UTC" exec="ops/run_frontier_rotation.sh"
+SYSTEMD unit="quant-seat-launch-yield.timer" on="*-*-* *:55:00 UTC" exec="scripts/check_seat_launch_yield.py"
 # The ONLY producer of coverage.json, and therefore the L1.50 ratchet's only input.
 SYSTEMD unit="quant-coverage-ratchet.timer" on="Sun *-*-* 01:00:00 UTC" exec="ops/gates.sh"
 
@@ -1139,7 +1150,10 @@ SYSTEMD unit="quant-refresh.timer" on="*:0/3" exec=""
 # deploy/quant-research.service, which remains the autonomous research supervisor.
 # EVIDENCE: ops/quant-midnight-frontier.timer, ops/quant-midnight-frontier.service
 # CONFIDENCE: committed-unit
-SYSTEMD unit="quant-midnight-frontier.timer" on="*-*-* 00:00:00 Europe/Dublin" exec="ops/run_midnight_frontier.sh"
+# EXEC ROTTED (2026-09-12): the committed unit runs run_midnight_codex_controller.sh, not
+# run_midnight_frontier.sh. A manifest naming a script the unit does not run reconstitutes
+# the WRONG desk, which is worse than naming none -- the restore looks complete.
+SYSTEMD unit="quant-midnight-frontier.timer" on="*-*-* 00:00:00 Europe/Dublin" exec="ops/run_midnight_codex_controller.sh"
 
 # python research cycle at 08:01 -- the second head of the dual schedule (cron 02:00 above).
 # EVIDENCE: docs/PROJECT_HANDOFF.md:35 ("quant-cro.timer (08:01 UTC python research cycle)");

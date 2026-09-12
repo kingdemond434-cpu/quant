@@ -73,17 +73,100 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # now its own row below, where it can be read as what it is.
     "MT5-Hourly":         ("desks/mt5/data/events.jsonl", 180,
                            "every research leg appends here; silence means no leg ran"),
-    "MT5-GauntletRotation": ("desks/mt5/data/hypotheses/gauntlet_build_cursor.json", 240,
-                             "which symbols the gauntlet last BUILT -- a stale cursor means the "
-                             "docket has stopped rotating and the tail is never reached"),
+    # NOT A TASK, AND NAMING IT LIKE ONE COST A PERMANENT FALSE ALARM. There is no
+    # `MT5-Gauntlet-Rotation` in the scheduler and there never was: rotation is a PROPERTY of
+    # MT5-Gauntlet, measured by whether its build cursor advances. Because process_health joins
+    # contracts to scheduled tasks by name, this row reported NOT_SCHEDULED -- "this organ cannot
+    # run at all" -- on every single pass, about an organ that runs hourly and is healthy.
+    #
+    # The suffix makes the ownership explicit while keeping the signal, which is real and was
+    # being drowned by the false half: a cursor that stops advancing means the docket has stopped
+    # rotating and the tail is never reached, which is how 11,146 cells sat deferred forever.
+    "MT5-Gauntlet (rotation)": ("desks/mt5/data/hypotheses/gauntlet_build_cursor.json", 240,
+                                "which symbols the gauntlet last BUILT -- a stale cursor means "
+                                "the docket has stopped rotating and the tail is never reached. "
+                                "Owned by MT5-Gauntlet; this is not a task of its own"),
     "MT5-Universe":       ("desks/mt5/data/universe/universe.json", 1440,
                            "the symbol registry the whole hypothesis lane reads"),
     "MT5-LocalConvert":   ("desks/mt5/data/hypotheses/local_candidates.json", 180,
                            "deterministic row -> candidate conversion"),
+    # THE ORGANS BUILT 2026-09-12. Every one was UNCONTRACTED on the day it was written, which is
+    # the gap that lets a new organ stop without anyone noticing -- exactly the class the
+    # principal asked to end. A contract is the difference between an organ and a hope.
+    "MT5-DataAxis":       ("desks/mt5/reports/DATA_AXES.json", 180,
+                           "which free data axes this box can actually reach"),
+    "MT5-AxisIngest":     ("desks/mt5/reports/AXIS_INGEST.json", 1560,
+                           "reachable axes turned into dated series a family can condition on"),
+    "MT5-CEODocket":      ("desks/mt5/reports/CEO_DOCKET.json", 1560,
+                           "the daily ranked proposals the frontier scout produced"),
+    "MT5-NeverStale":     ("desks/mt5/reports/NEVER_STALE.json", 60,
+                           "the watchdog's own reading -- if THIS goes stale nothing is watching"),
+    "MT5-ProcessHealth":  ("desks/mt5/reports/process_health.json", 60,
+                           "every process, its last run and whether it is healthy"),
     "MT5-Healers":        ("desks/mt5/logs/MT5-Healers.log", 180,
                            "proof the standing fixers actually ran"),
     "MT5-MoatRecorder":   ("desks/mt5/data/moat_coverage.json", 180,
                            "moat capture coverage"),
+    # THE FOURTEEN UNCONTRACTED ORGANS (2026-09-12). Every one appeared on the board as
+    # "no artifact contract: this process could stop and nothing would notice" -- which is
+    # exactly the gap that lets a new organ die quietly, and the principal asked for it closed.
+    #
+    # EACH PATH WAS VERIFIED TO EXIST ON THE TRADING BOX BEFORE IT WAS WRITTEN HERE, with its
+    # real age read at the same time. That check is not ceremony: this file already carries a
+    # scar from naming an artifact its organ does not produce, which reported a healthy organ
+    # FAILING at 357m and taught the reader to distrust the whole board. A contract pointed at
+    # the wrong file manufactures a defect, and that is worse than having no contract.
+    #
+    # A LOG IS A LEGITIMATE ARTIFACT for an organ whose product is an ACTION rather than a
+    # document -- the healer, the boot check, the deadman. MT5-Healers already worked this way.
+    # What a log must never do is stand in for a document the organ genuinely writes.
+    "MT5-Frontier":       ("desks/mt5/reports/FRONTIER_INTELLIGENCE.json", 180,
+                           "the frontier scout's hourly intelligence sweep"),
+    "MT5-MoatMiner":      ("desks/mt5/data/moat_miner_state.json", 180,
+                           "which slice of the 245-symbol moat the miner last profiled"),
+    "MT5-MoatSilver":     ("desks/mt5/logs/MT5-MoatSilver.log", 180,
+                           "bronze -> silver day-file conversion for the moat tape"),
+    "MT5-QQuantGatesCertify": ("desks/mt5/reports/QQUANT_GATES.json", 180,
+                               "the qquant lane's gate verdicts"),
+    "MT5-QQuantShadow":   ("desks/mt5/reports/shadow/qquant_shadow_state.json", 180,
+                           "the qquant forward lane's clocks"),
+    "MT5-RiskUnitsFence": ("data/risk_units.json", 180,
+                           "the risk-unit fence -- what one R is worth per instrument"),
+    "MT5-UniversalGate":  ("desks/mt5/logs/MT5-UniversalGate.log", 180,
+                           "the ten-gate certifier; UNIVERSAL_SURVIVORS.json is MT5-Gauntlet's "
+                           "row, so this watches that the gate RAN rather than its shared output"),
+    "MT5-CacheWarm":      ("desks/mt5/logs/MT5-CacheWarm.log", 180,
+                           "pre-warms the gauntlet's bar cache; when it stops, every sweep pays "
+                           "the fetch cost again and the docket's tail is never reached"),
+    "MT5-IdentityHealer": ("desks/mt5/logs/MT5-IdentityHealer.log", 180,
+                           "clears IDENTITY_BROKEN clocks. It had NEVER ONCE RUN before "
+                           "2026-09-12 and nothing noticed, which is this row's whole reason"),
+    "MT5-TerminalBoot":   ("desks/mt5/logs/MT5-TerminalBoot.log", 180,
+                           "keeps the MT5 terminal up -- without it every other organ's "
+                           "market data goes stale while each reports success"),
+    # DAILY OR EVENT-DRIVEN, so the age is generous on purpose. An alarm that fires on a
+    # legitimately quiet organ is the cry-wolf failure, and these three are quiet by design.
+    "MT5-ResearchReports": ("desks/mt5/reports/RESEARCH_REPORT_CLOCK.json", 1560,
+                            "the research report clock"),
+    "MT5-NewsDesk":       ("desks/mt5/logs/MT5-NewsDesk.log", 1440,
+                           "the news daemon; its log moves when news moves, so a quiet window "
+                           "is not a defect and only a silent DAY is"),
+    "MT5-FusionDeadman":  ("desks/mt5/logs/fusion_deadman.log", 1440,
+                           "the Fusion dead-man watch"),
+    # THE ONLY LOSS ON THIS DESK THAT CANNOT BE UNDONE. Every other defect costs time; an
+    # unrecorded day costs the thing the time was buying, because 2029 cannot re-record 2026.
+    # 90 minutes against a 30-minute clock: this must be noticed inside the window the broker
+    # still serves tick history for, not on a daily review.
+    # WIRED 2026-09-12, after check_enforcement_execution measured libs/research/dist_shift.py
+    # DECORATIVE: built 2026-07-29 and never called from outside its own module or its tests. A
+    # detector that runs nowhere has detected nothing. Its first live pass flagged EURUSD DRIFT
+    # with two funded sleeves riding on it.
+    "MT5-ShiftWatch":     ("desks/mt5/reports/DIST_SHIFT.json", 180,
+                           "whether each live sleeve's symbol still trades in the distribution "
+                           "its thresholds were calibrated in"),
+    "MT5-MoatCapture":    ("desks/mt5/reports/MOAT_CAPTURE.json", 90,
+                           "per-day capture completeness -- which SYMBOLS a short day is "
+                           "missing, while a targeted re-pull can still recover them"),
 }
 
 

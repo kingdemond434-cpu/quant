@@ -3903,6 +3903,25 @@ _PRODUCER_CADENCE = {
               "whether it is genuinely creative or an excellent summariser. Its cadence is stated "
               "in its own header (one month); going stale means the seat stopped running and the "
               "12-month comparison silently loses its baseline."),
+    # THE TWO E8 DOCUMENTS CARRY MEASURED NUMBERS, so they earn a CADENCE rather than a terminal
+    # claim (2026-09-12). Everything else left unclaimed was a runbook or a derived view; these
+    # are different, and calling them terminal would have been the convenient answer rather than
+    # the true one. CLAUDE.md says of the plan: "Read the doc before discussing it -- the numbers
+    # there are measured." Measured numbers go stale by construction.
+    #
+    # 30 days because readiness here moves with FORWARD EVIDENCE, which accrues on clocks: n per
+    # sleeve, matched_fills, and the count of INDEPENDENT mechanisms. A month is long enough that
+    # an unchanged doc is genuinely unchanged and short enough that a stale pass probability is
+    # caught before it is quoted at a decision.
+    "docs/PROP_FIRM_E8.md": (
+        30.0, "L1.41: states a measured pass probability (~92%), a median time to pass (~36 days) "
+              "and a readiness verdict counted in INDEPENDENT MECHANISMS -- all of which move as "
+              "forward evidence accrues. A stale copy claims a readiness the desk no longer has, "
+              "and this is the document a decision to fund a challenge would be taken from."),
+    "docs/BOOK_E8_MEASURED.md": (
+        30.0, "L1.41: the measured book behind the E8 plan. Same clock as PROP_FIRM_E8 because it "
+              "is the evidence that document's numbers are computed from -- letting the two drift "
+              "would leave a plan quoting a book that no longer exists."),
     "docs/DISCRETIONARY_DESK.md": (
         14.0, "L1.6/L1.41: re-stated from the resolver's measured output (noise floors, realised "
               "costs, conditional hit rates, cost-adjusted breakeven) -- if it goes "
@@ -3911,6 +3930,50 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    # THE DERIVED LESSON VAULT, claimed as a DIRECTORY CLASS (2026-09-12). 286 of the 294
+    # unclaimed docs artifacts were these. docs/lesson_vault/ is regenerated wholesale by
+    # scripts/build_lesson_vault.py from docs/desk_lessons.jsonl, which is the source of truth --
+    # CLAUDE.md states it plainly: "It is a DERIVED VIEW -- edit docs/desk_lessons.jsonl, never
+    # the vault, or the two drift." So no file inside owes a disposition of its own: the vault
+    # cannot go stale independently of its source, and a per-file claim would have to be written
+    # for every lesson the desk ever learns. The generator precedent above applies exactly --
+    # claim the class once, instances inherit it.
+    #
+    # The SOURCE is separately governed: desk_lessons.jsonl is the corpus every organ injects
+    # from, and `scripts/lessons.py --orphans` must stay at zero.
+    "docs/lesson_vault/":
+        "DERIVED VIEW, regenerated in full by scripts/build_lesson_vault.py from "
+        "docs/desk_lessons.jsonl. Nothing inside is authored and nothing inside can go stale on "
+        "its own: staleness here is staleness of the source, which is governed where the source "
+        "is. Claimed as a directory class because the vault takes a new file for every lesson "
+        "the desk ever records.",
+    # OPERATIONAL RUNBOOKS. These describe how to act on a box, not what the desk has measured,
+    # so they accumulate no inventory and owe no cadence -- but "no law" is recorded here as a
+    # DECISION rather than left as an omission.
+    "docs/BOX_HANDOFF.md":
+        "A RUNBOOK: how to hand a box over. It describes procedure, not measurement, so there is "
+        "no number in it that can silently become false. It changes when the procedure changes, "
+        "which is an edit with an author, not a cadence with a clock.",
+    "docs/BOX_PERMISSIONS.md":
+        "A RUNBOOK: which accounts and rights the box needs. Same class as BOX_HANDOFF -- "
+        "procedure, not measurement.",
+    "docs/BOX_RECOVERY_RUNBOOK.md":
+        "A RUNBOOK: how to rebuild a box. Its correctness is proven by USE (a recovery drill), "
+        "never by age, and a re-work clock on it would schedule edits to a procedure nobody had "
+        "found wrong.",
+    "docs/DESK_CYCLE_PROMPT.md":
+        "A TEMPLATE, not a finding: the standing prompt a cycle is launched with. It owes no "
+        "cadence for the same reason a protocol library does -- it accumulates no inventory.",
+    "docs/LIVE_BRANCH_RECONCILIATION_2026-09-05.md":
+        "A DATED MEASUREMENT, stamped in its own filename, recording the branch state at "
+        "2026-09-05. Its content is true of that instant and of no other, so a re-work clock "
+        "would schedule rewrites of history -- the CANONICAL_RELEASE_RECONCILIATION precedent "
+        "directly above, verbatim.",
+    "docs/research/TIER1_PROGRAM.md":
+        "DERIVED, never authored: regenerated by `scripts/check_tier1_program.py --render` from "
+        "docs/research/tier1_program.json, which is the ledger the checker verifies against this "
+        "repository and exits 1 on a lie. CLAUDE.md states the rule -- 'never edit the Markdown, "
+        "it is derived'. Staleness here is staleness of the JSON, governed where the JSON is.",
     "docs/CANONICAL_RELEASE_RECONCILIATION.md":
         "A DATED MEASUREMENT, taken 2026-09-05T00:02Z and stamped as such in its own first "
         "paragraph ('this file is the measurement... nothing here is an estimate'). It records the "

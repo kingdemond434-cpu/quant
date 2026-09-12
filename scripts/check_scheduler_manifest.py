@@ -286,7 +286,32 @@ def _exec_script_of(service_text: str) -> str | None:
     return None
 
 
-def _to_repo_rel(root: Path, path_str: str) -> str:
+def _working_dir_of(service_text: str) -> str | None:
+    """The unit's WorkingDirectory, mapped onto this repo, or None when it declares none.
+
+    SYSTEMD RESOLVES A RELATIVE ExecStart AGAINST WorkingDirectory, and ignoring that produced a
+    false BREACH that blocked the trading box's push. `quant-nightly-catchup.service` declares
+    WorkingDirectory=<root>/desks/mt5 and runs `research/nightly_catchup.py`, which is correct and
+    on disk -- but resolved against the REPO ROOT it looks absent, so the fence reported a dead
+    unit for an organ that runs fine. Worse, that organ is the one whose `enrol_clocks` step puts
+    certified sleeves on forward clocks, so the false report pointed away from working machinery.
+
+    This file's own standing rule for a false positive is to fix the CHECK, never to reword the
+    organ to satisfy it.
+    """
+    for line in service_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("WorkingDirectory=") and not stripped.startswith("#"):
+            wd = stripped.removeprefix("WorkingDirectory=").strip().strip("'\"")
+            if wd.startswith(_VPS_ROOT + "/"):
+                return wd[len(_VPS_ROOT) + 1:]
+            if wd == _VPS_ROOT:
+                return ""
+            return None if wd.startswith("/") else wd
+    return None
+
+
+def _to_repo_rel(root: Path, path_str: str, work_dir: str | None = None) -> str:
     """Map a unit-file ExecStart path (VPS-absolute) onto this repo. Strip the known VPS
     prefix first; fall back to basename search under ops/ then scripts/ so a moved checkout
     still resolves; return the raw string when unmappable (it will fail the exists check,
@@ -294,6 +319,11 @@ def _to_repo_rel(root: Path, path_str: str) -> str:
     if path_str.startswith(_VPS_ROOT + "/"):
         return path_str[len(_VPS_ROOT) + 1:]
     if not path_str.startswith("/"):
+        # RELATIVE TO THE UNIT'S WorkingDirectory, exactly as systemd resolves it.
+        if work_dir:
+            joined = f"{work_dir.rstrip('/')}/{path_str}"
+            if (root / joined).is_file():
+                return joined
         return path_str
     base = Path(path_str).name
     for cand in (f"ops/{base}", f"scripts/{base}"):
@@ -325,11 +355,12 @@ def check_committed_timers(root: Path, man: Manifest) -> list[str]:
         if not service.is_file():
             problems.append(f"{rel_timer}: no companion {service.name} committed")
             continue
-        exec_raw = _exec_script_of(service.read_text("utf-8"))
+        service_text = service.read_text("utf-8")
+        exec_raw = _exec_script_of(service_text)
         if exec_raw is None:
             problems.append(f"{service.relative_to(root).as_posix()}: no ExecStart script")
             continue
-        rel = _to_repo_rel(root, exec_raw)
+        rel = _to_repo_rel(root, exec_raw, _working_dir_of(service_text))
         if not (root / rel).is_file():
             problems.append(f"{rel_timer}: ExecStart script {rel} does not exist in repo")
         if rel not in man.raw:
