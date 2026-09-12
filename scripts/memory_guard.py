@@ -61,26 +61,82 @@ _SAMPLES = 3
 _SAMPLE_GAP_S = 3
 
 
+def _available_once() -> int | None:
+    """One reading of available memory in MB, on whichever OS this is. None = cannot measure.
+
+    /proc/meminfo IS LINUX-ONLY, AND THAT COST THIS DESK EVERY PUSH FROM THE TRADING BOX.
+    Measured 2026-09-12: on Windows the open() raises OSError, the old code returned 0, and
+    `wait_for_headroom` therefore reported "only 0MB available after 600s, need 700MB" on a box
+    with EIGHTY-SEVEN GIGABYTES free. ops/gates.sh refuses to run the gates when the guard says
+    no, the pre-push hook refuses to push when the gates did not run, and so every `git push`
+    from the box had been rejected for a shortage that did not exist. The guard was written for
+    the Linux VPS and nobody had noticed it was structurally unable to pass on Windows.
+
+    RETURNING None RATHER THAN 0 IS THE POINT. Zero is a MEASUREMENT -- it means the box is out
+    of memory -- and returning it for "I do not know how to measure this platform" is an absence
+    resolving to the most alarming possible verdict (L1.28a). None propagates as UNMEASURED, and
+    an unmeasurable box is not throttled to nothing.
+    """
+    try:                                            # Linux / WSL
+        with open("/proc/meminfo", encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) // 1024
+    except OSError:
+        pass
+    if sys.platform.startswith("win"):
+        try:                                        # Windows, no dependency
+            import ctypes
+
+            class _MS(ctypes.Structure):
+                _fields_ = [("dwLength", ctypes.c_ulong),
+                            ("dwMemoryLoad", ctypes.c_ulong),
+                            ("ullTotalPhys", ctypes.c_ulonglong),
+                            ("ullAvailPhys", ctypes.c_ulonglong),
+                            ("ullTotalPageFile", ctypes.c_ulonglong),
+                            ("ullAvailPageFile", ctypes.c_ulonglong),
+                            ("ullTotalVirtual", ctypes.c_ulonglong),
+                            ("ullAvailVirtual", ctypes.c_ulonglong),
+                            ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+            st = _MS()
+            st.dwLength = ctypes.sizeof(_MS)
+            if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(st)):
+                # The BINDING number is the smaller of physical and commit headroom: a box with
+                # free RAM and an exhausted commit charge cannot allocate either, which is the
+                # shape that actually broke the gauntlet at 16 workers earlier today.
+                return int(min(st.ullAvailPhys, st.ullAvailPageFile) // (1024 * 1024))
+        except Exception:
+            return None
+    try:                                            # anything else with psutil installed
+        import psutil
+        return int(psutil.virtual_memory().available // (1024 * 1024))
+    except Exception:
+        return None
+
+
 def available_mb() -> int:
-    """MemAvailable in MB, as the median of three spaced readings."""
+    """MemAvailable in MB, as the median of three spaced readings. -1 when unmeasurable."""
     reads: list[int] = []
     for i in range(_SAMPLES):
         if i:
             time.sleep(_SAMPLE_GAP_S)
-        try:
-            with open("/proc/meminfo", encoding="utf-8") as fh:
-                for line in fh:
-                    if line.startswith("MemAvailable:"):
-                        reads.append(int(line.split()[1]) // 1024)
-                        break
-        except OSError:
-            return 0
-    return sorted(reads)[len(reads) // 2] if reads else 0
+        one = _available_once()
+        if one is None:
+            return -1
+        reads.append(one)
+    return sorted(reads)[len(reads) // 2] if reads else -1
 
 
 def wait_for_headroom(need_mb: int, max_wait_s: int) -> tuple[bool, str]:
     start = time.monotonic()
     first = available_mb()
+    # UNMEASURABLE IS NOT A SHORTAGE. A platform this guard cannot read must not be throttled to
+    # nothing -- it proceeds, and says that it could not measure, which is a verdict rather than
+    # a silent pass.
+    if first < 0:
+        return True, ("UNMEASURED: available memory cannot be read on this platform, so the "
+                      "guard is not the thing standing in the way. Proceeding.")
     if first >= need_mb:
         return True, f"{first}MB available, need {need_mb}MB"
     while time.monotonic() - start < max_wait_s:
