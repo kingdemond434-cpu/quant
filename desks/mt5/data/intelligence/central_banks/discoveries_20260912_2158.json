@@ -1,0 +1,19 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "ECB",
+    "currency": "EUR",
+    "feed": "https://www.ecb.europa.eu/rss/press.html",
+    "published_utc": "2026-09-12T20:00:00+00:00",
+    "title": "Christine Lagarde: Interview with Ouest-France",
+    "link": "https://www.ecb.europa.eu//press/inter/date/2026/html/ecb.in260912~3cc706f4d6.en.html",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "EURJPY",
+      "EURGBP",
+      "EURAUD",
+      "EURCHF"
+    ]
+  }
+]

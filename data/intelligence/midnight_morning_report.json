@@ -1,15 +1,14 @@
 {
  "authority": "REPORT ONLY: no gate, certificate, allocation, promotion, sizing, or order authority",
  "candidate_conservation": {
-  "accounted": 20174,
+  "accounted": 20173,
   "balanced": false,
   "blocked": 0,
   "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
-  "discovered": 20188,
+  "discovered": 20186,
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
-  "lost": 14,
+  "lost": 13,
   "lost_cells": [
-   "AUDCAD.cross_asset_residual.p=32a0b5f688b0fed7",
    "GBPJPY.lvc_asia_london.p=44136fa355b3678a",
    "GBPZAR.lvc_asia_london.p=44136fa355b3678a",
    "EURZAR.lvc_asia_london.p=44136fa355b3678a",
@@ -24,7 +23,7 @@
    "XCUUSD.lvc_asia_london.p=44136fa355b3678a",
    "USDPLN.lvc_asia_london.p=44136fa355b3678a"
   ],
-  "queued": 18653,
+  "queued": 18652,
   "rejected": 1521,
   "resumable_deferred": 18662,
   "tested": 0
@@ -33,84 +32,84 @@
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.004338,
+  "measured_cpu_hours": 0.004972,
   "stage_rows": [
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 2499.032,
+    "duration_seconds": 3027.106,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.227656,
-    "duration_seconds": 8.328,
+    "cpu_seconds": 7.914074,
+    "duration_seconds": 217.5,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.48842,
-    "duration_seconds": 14.696,
+    "cpu_seconds": 3.566495,
+    "duration_seconds": 24.996,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.069776,
-    "duration_seconds": 3.6,
+    "cpu_seconds": 0.092709,
+    "duration_seconds": 3.194,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.123217,
-    "duration_seconds": 19.862,
+    "cpu_seconds": 2.823643,
+    "duration_seconds": 27.086,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.238024,
-    "duration_seconds": 9.034,
+    "cpu_seconds": 1.382027,
+    "duration_seconds": 10.604,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.075561,
-    "duration_seconds": 54.799,
+    "cpu_seconds": 0.070276,
+    "duration_seconds": 4.277,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 7.574664,
-    "duration_seconds": 343.111,
+    "cpu_seconds": 1.176045,
+    "duration_seconds": 9.721,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 5.847,
+    "duration_seconds": 7.791,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.277806,
-    "duration_seconds": 1.976,
+    "cpu_seconds": 0.341454,
+    "duration_seconds": 5.405,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.112057,
-    "duration_seconds": 1.324,
+    "cpu_seconds": 0.128679,
+    "duration_seconds": 4.08,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.337252,
-    "duration_seconds": 3.486,
+    "cpu_seconds": 0.322002,
+    "duration_seconds": 5.62,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.091989,
-    "duration_seconds": 2.859,
+    "cpu_seconds": 0.080374,
+    "duration_seconds": 3.908,
     "name": "forward_clock_fence"
    }
   ]
@@ -225,10 +224,10 @@
    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
   ]
  },
- "generated_at": "2026-09-12T19:11:22.867653+00:00",
+ "generated_at": "2026-09-12T21:57:19.223347+00:00",
  "headline": {
-  "candidates_discovered": 20188,
-  "candidates_lost": 14,
+  "candidates_discovered": 20186,
+  "candidates_lost": 13,
   "certificates_added": 0,
   "forward_clocks": 107,
   "hard_failures": [
@@ -465,18 +464,18 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 30,
-  "measured_at": "2026-09-12T19:11:04+00:00",
+  "measured_at": "2026-09-12T21:56:46+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
   "canonical_lane": "quant-external-pipeline.service",
   "policy": "restart the same canonical service while deferred work decreases; escalate no-progress or missing-data cells by root cause",
-  "stalled_cells": 18667
+  "stalled_cells": 18665
  },
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 2651.2,
+  "mem_available_mb": 2446.1,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,

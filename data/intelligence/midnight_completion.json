@@ -1,7 +1,7 @@
 {
  "after": {
   "active_forward_clocks": 44,
-  "external_screen_survivors": 20188,
+  "external_screen_survivors": 20281,
   "queue_by_status": {
    "AWAITING_CANONICAL_GAUNTLET": 13,
    "BLOCKED_CANONICAL_DOCKET_MISSING": 114,
@@ -25,15 +25,14 @@
   "universal_certificates": 67
  },
  "candidate_conservation": {
-  "accounted": 20174,
+  "accounted": 20173,
   "balanced": false,
   "blocked": 0,
   "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
-  "discovered": 20188,
+  "discovered": 20186,
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
-  "lost": 14,
+  "lost": 13,
   "lost_cells": [
-   "AUDCAD.cross_asset_residual.p=32a0b5f688b0fed7",
    "GBPJPY.lvc_asia_london.p=44136fa355b3678a",
    "GBPZAR.lvc_asia_london.p=44136fa355b3678a",
    "EURZAR.lvc_asia_london.p=44136fa355b3678a",
@@ -48,7 +47,7 @@
    "XCUUSD.lvc_asia_london.p=44136fa355b3678a",
    "USDPLN.lvc_asia_london.p=44136fa355b3678a"
   ],
-  "queued": 18653,
+  "queued": 18652,
   "rejected": 1521,
   "resumable_deferred": 18662,
   "tested": 0
@@ -61,7 +60,7 @@
   "forward_clock_fence",
   "candidate_conservation"
  ],
- "generated_at": "2026-09-12T19:11:20.491516+00:00",
+ "generated_at": "2026-09-12T21:57:16.298280+00:00",
  "hard_failures": [
   "canonical_external_pipeline",
   "forward_identity_reconciliation",
@@ -73,7 +72,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 2651.2,
+  "mem_available_mb": 2446.1,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -90,7 +89,7 @@
    "cpu_seconds": 0.0,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 2499.032,
+   "duration_seconds": 3027.106,
    "name": "canonical_external_pipeline",
    "passes": [
     {
@@ -100,7 +99,7 @@
     }
    ],
    "returncode": 1,
-   "stderr_tail": "Job for quant-external-pipeline.service failed.\nSee \"systemctl --user status quant-external-pipeline.service\" and \"journalctl --user -xeu quant-external-pipeline.service\" for details.\n",
+   "stderr_tail": "Job for quant-external-pipeline.service failed because a timeout was exceeded.\nSee \"systemctl --user status quant-external-pipeline.service\" and \"journalctl --user -xeu quant-external-pipeline.service\" for details.\n",
    "stdout_tail": ""
   },
   {
@@ -110,14 +109,14 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/promote_external_to_queue.py"
    ],
-   "cpu_seconds": 1.227656,
+   "cpu_seconds": 7.914074,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 8.328,
+   "duration_seconds": 217.5,
    "name": "external_queue_projection",
    "passes": [
     {
-     "cpu_seconds": 1.2276559999999999,
+     "cpu_seconds": 7.914074,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -133,21 +132,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/reconcile_external_queue.py"
    ],
-   "cpu_seconds": 3.48842,
+   "cpu_seconds": 3.566495,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 14.696,
+   "duration_seconds": 24.996,
    "name": "external_queue_reconciliation",
    "passes": [
     {
-     "cpu_seconds": 3.48842,
+     "cpu_seconds": 3.5664949999999997,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "{\n \"reconciled_at\": \"2026-09-12T19:01:16.939685+00:00\",\n \"authority\": \"EXTERNAL_GAUNTLET_ONLY; queue rows have no promotion authority\",\n \"queue_path\": \"desks/mt5/data/research_queue.json\",\n \"docket_path\": \"desks/mt5/data/hypotheses/external_survivors.json\",\n \"report_path\": \"desks/mt5/reports/universal_gates_external.json\",\n \"counts\": {\n  \"passed\": 0,\n  \"rejected\": 0,\n  \"awaiting\": 13,\n  \"blocked\": 0,\n  \"ignored\": 24280\n }\n}\n"
+   "stdout_tail": "{\n \"reconciled_at\": \"2026-09-12T21:55:00.234059+00:00\",\n \"authority\": \"EXTERNAL_GAUNTLET_ONLY; queue rows have no promotion authority\",\n \"queue_path\": \"desks/mt5/data/research_queue.json\",\n \"docket_path\": \"desks/mt5/data/hypotheses/external_survivors.json\",\n \"report_path\": \"desks/mt5/reports/universal_gates_external.json\",\n \"counts\": {\n  \"passed\": 0,\n  \"rejected\": 0,\n  \"awaiting\": 13,\n  \"blocked\": 0,\n  \"ignored\": 24280\n }\n}\n"
   },
   {
    "accepted": true,
@@ -156,21 +155,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/build_gauntlet_survivors.py"
    ],
-   "cpu_seconds": 0.069776,
+   "cpu_seconds": 0.092709,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 3.6,
+   "duration_seconds": 3.194,
    "name": "certificate_projection",
    "passes": [
     {
-     "cpu_seconds": 0.06977600000000006,
+     "cpu_seconds": 0.09270899999999926,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "gauntlet survivors: 67 candidate(s) written from real MT5 evidence; 21 carry all eight gates, 46 have at least one gate UNMEASURED (which the promotion gate counts as failed)\n  written at 2026-09-12T19:01:28+00:00 -> data/gauntlet_survivors.json\n"
+   "stdout_tail": "gauntlet survivors: 67 candidate(s) written from real MT5 evidence; 21 carry all eight gates, 46 have at least one gate UNMEASURED (which the promotion gate counts as failed)\n  written at 2026-09-12T21:55:22+00:00 -> data/gauntlet_survivors.json\n"
   },
   {
    "accepted": true,
@@ -181,14 +180,14 @@
     "start",
     "quant-desk-pull.service"
    ],
-   "cpu_seconds": 1.123217,
+   "cpu_seconds": 2.823643,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 19.862,
+   "duration_seconds": 27.086,
    "name": "fusion_state_pull",
    "passes": [
     {
-     "cpu_seconds": 1.123217,
+     "cpu_seconds": 2.823643,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -204,14 +203,14 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "desks/mt5/research/forward_reconcile.py"
    ],
-   "cpu_seconds": 1.238024,
+   "cpu_seconds": 1.382027,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 9.034,
+   "duration_seconds": 10.604,
    "name": "forward_identity_reconciliation",
    "passes": [
     {
-     "cpu_seconds": 1.2380240000000002,
+     "cpu_seconds": 1.3820270000000008,
      "outstanding_after": null,
      "returncode": 1
     }
@@ -227,14 +226,14 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_forward_clock.py"
    ],
-   "cpu_seconds": 0.075561,
+   "cpu_seconds": 0.070276,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 54.799,
+   "duration_seconds": 4.277,
    "name": "forward_clock_reconciliation",
    "passes": [
     {
-     "cpu_seconds": 0.07556099999999955,
+     "cpu_seconds": 0.07027599999999978,
      "outstanding_after": null,
      "returncode": 1
     }
@@ -250,21 +249,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/heal_forward_lane.py"
    ],
-   "cpu_seconds": 7.574664,
+   "cpu_seconds": 1.176045,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 343.111,
+   "duration_seconds": 9.721,
    "name": "forward_lane_heal",
    "passes": [
     {
-     "cpu_seconds": 7.574664,
+     "cpu_seconds": 1.1760450000000002,
      "outstanding_after": null,
      "returncode": 1
     }
    ],
    "returncode": 1,
    "stderr_tail": "ENROL-GAP: certified qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY dropped before enrolment -- `shadow_spec.params` is NoneType, not a mapping -- unrunnable without guessing the parameterization that passed\nENROL-GAP: certified external.XAUUSD.session_range_breakout dropped before enrolment -- `shadow_spec.params` is NoneType, not a mapping -- unrunnable without guessing the parameterization that passed\nENROL-GAP: certified external.USDJPY.session_range_breakout dropped before enrolment -- `shadow_spec.params` is NoneType, not a mapping -- unrunnable without guessing the parameterization that passed\nENROL-GAP: certified external.CADJPY.session_range_breakout dropped before enrolment -- `shadow_spec.params` is NoneType, not a mapping -- unrunnable without guessing the parameterization that passed\nENROL-GAP: certified external.GBPJPY.session_range_breakout dropped before enrolment -- `shadow_spec.params` is NoneType, not a mapping -- unrunnable without guessing the parameterization that passed\nENROL-GAP: certified external.EURJPY.session_range_breakout dropped before enrolment -- `shadow_spec.params` is NoneType, not a mapping -- unrunnable without guessing the parameterization that passed\n",
-   "stdout_tail": "FORWARD LANE 2026-09-12T19:05:16+00:00\n  blocked sleeves: 0\n\n  STALLED (20) -- alive-looking rows that are not accruing: {'STALE_ATTEMPT': 20}\n    STALE_ATTEMPT  XAUUSD.asia                                engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  USDJPY.asia                                engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  CADJPY.asia                                engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  EURJPY.asia                                engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  CADJPY.asia#rr=2.5                         engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  CADJPY.asia#rr=1.5                         engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  EURJPY.asia#rr=1.5                         engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  EURJPY.asia#rr=2.5                         engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  GBPJPY.asia#rr=1.5                         engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  GBPJPY.asia#rr=2.5                         engine last evaluated this row 44.0h ago; the hourly cycle is not reac\n\n  authorized runs: 61, with a forward clock: 61, idle: 0\n\n  -> /home/quant/quant-platform/data/forward_lane_health.json\n"
+   "stdout_tail": "FORWARD LANE 2026-09-12T21:56:21+00:00\n  blocked sleeves: 0\n\n  STALLED (62) -- alive-looking rows that are not accruing: {'STALE_ATTEMPT': 62}\n    STALE_ATTEMPT  XAUUSD.asia                                engine last evaluated this row 46.8h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  USDJPY.asia                                engine last evaluated this row 46.8h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  CADJPY.asia                                engine last evaluated this row 46.9h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  EURJPY.asia                                engine last evaluated this row 46.9h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  CADJPY.asia#rr=2.5                         engine last evaluated this row 46.9h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  CADJPY.asia#rr=1.5                         engine last evaluated this row 46.9h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  EURJPY.asia#rr=1.5                         engine last evaluated this row 46.9h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  EURJPY.asia#rr=2.5                         engine last evaluated this row 46.9h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  GBPJPY.asia#rr=1.5                         engine last evaluated this row 46.9h ago; the hourly cycle is not reac\n    STALE_ATTEMPT  GBPJPY.asia#rr=2.5                         engine last evaluated this row 46.9h ago; the hourly cycle is not reac\n\n  authorized runs: 61, with a forward clock: 61, idle: 0\n\n  -> /home/quant/quant-platform/data/forward_lane_health.json\n"
   },
   {
    "accepted": true,
@@ -278,7 +277,7 @@
    "cpu_seconds": 0.0,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 5.847,
+   "duration_seconds": 7.791,
    "name": "zero_capital_shadow_forward",
    "passes": [
     {
@@ -298,14 +297,14 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "desks/mt5/research/portfolio_evidence.py"
    ],
-   "cpu_seconds": 0.277806,
+   "cpu_seconds": 0.341454,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 1.976,
+   "duration_seconds": 5.405,
    "name": "mechanism_independence",
    "passes": [
     {
-     "cpu_seconds": 0.277806,
+     "cpu_seconds": 0.3414540000000006,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -321,21 +320,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_sameday_pipeline.py"
    ],
-   "cpu_seconds": 0.112057,
+   "cpu_seconds": 0.128679,
    "deferred_resource": false,
    "diagnostic_finding": true,
-   "duration_seconds": 1.324,
+   "duration_seconds": 4.08,
    "name": "same_day_fence",
    "passes": [
     {
-     "cpu_seconds": 0.11205700000000007,
+     "cpu_seconds": 0.128679,
      "outstanding_after": null,
      "returncode": 1
     }
    ],
    "returncode": 1,
    "stderr_tail": "",
-   "stdout_tail": "ing box (bars, inputs), not in the gate.\n  - UNSTAMPED-CLOCK: 6 active forward row(s) carry no `forward_start`, so their day count runs from the first trade ever taken rather than from pre-registration -- evidence gathered during selection is being counted as forward evidence. Rows: AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1, AUDNZD.discovered.asia#band=[0.75, 1.0]_feature=hour_horizon=6_side=-1, AUDNZD.discovered.asia#band=[0.9, 1.0]_feature=ru_48_horizon=3_side=-1, AUDNZD.discovered.asia#band=[0.9, 1.0]_feature=ru_96_horizon=1_side=-1, EURAUD.discovered.asia#band=[0.0, 0.1]_feature=ext_residz_AUDCAD_horizon=6_side=1, GBPAUD.discovered.asia#band=[0.0, 0.1]_feature=ext_residz_AUDUSD_horizon=3_side=1\n  - IDLE-CLOCK: 1 live clock(s) have not been refreshed in over 3.0h -- the shadow cycle replays every 15 minutes, so this means the cycle is failing or the engine is skipping them. Evidence stops accruing while the day counter keeps running, which is the worst combination: the clock matures on stale data. Rows: qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY (44.1h)\n  - CLOCK-OVERSTATED: 32 live clock(s) store a `days_active` larger than their own `forward_start` allows -- worst by 10 day(s) (stored 11, derived 0). A promote lane reading the stored field would clear a 14-day window the sleeve has not served. Rows: AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1, AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURDKK_z_horizon=1_side=-1, AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1, AUDCHF.overnight_gap_decay.asia, AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=6_side=-1, AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1 ...\n\nrepair-invoke: SKIPPED (same-day pipeline breach) -- gap-wirer fired 319min ago, cooldown 360min. The breach stands and this fence still exits non-zero; only the actuator is rate-limited.\n"
+   "stdout_tail": "ing box (bars, inputs), not in the gate.\n  - UNSTAMPED-CLOCK: 6 active forward row(s) carry no `forward_start`, so their day count runs from the first trade ever taken rather than from pre-registration -- evidence gathered during selection is being counted as forward evidence. Rows: AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1, AUDNZD.discovered.asia#band=[0.75, 1.0]_feature=hour_horizon=6_side=-1, AUDNZD.discovered.asia#band=[0.9, 1.0]_feature=ru_48_horizon=3_side=-1, AUDNZD.discovered.asia#band=[0.9, 1.0]_feature=ru_96_horizon=1_side=-1, EURAUD.discovered.asia#band=[0.0, 0.1]_feature=ext_residz_AUDCAD_horizon=6_side=1, GBPAUD.discovered.asia#band=[0.0, 0.1]_feature=ext_residz_AUDUSD_horizon=3_side=1\n  - IDLE-CLOCK: 1 live clock(s) have not been refreshed in over 3.0h -- the shadow cycle replays every 15 minutes, so this means the cycle is failing or the engine is skipping them. Evidence stops accruing while the day counter keeps running, which is the worst combination: the clock matures on stale data. Rows: qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY (46.8h)\n  - CLOCK-OVERSTATED: 32 live clock(s) store a `days_active` larger than their own `forward_start` allows -- worst by 10 day(s) (stored 11, derived 0). A promote lane reading the stored field would clear a 14-day window the sleeve has not served. Rows: AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1, AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURDKK_z_horizon=1_side=-1, AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1, AUDCHF.overnight_gap_decay.asia, AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=6_side=-1, AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1 ...\n\nrepair-invoke: SKIPPED (same-day pipeline breach) -- gap-wirer fired 114min ago, cooldown 360min. The breach stands and this fence still exits non-zero; only the actuator is rate-limited.\n"
   },
   {
    "accepted": true,
@@ -344,21 +343,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_cert_yield.py"
    ],
-   "cpu_seconds": 0.337252,
+   "cpu_seconds": 0.322002,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 3.486,
+   "duration_seconds": 5.62,
    "name": "certificate_yield_fence",
    "passes": [
     {
-     "cpu_seconds": 0.33725199999999944,
+     "cpu_seconds": 0.32200200000000123,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "MACHINERY, not candidates: the last sweep is 27.6h old (hourly cadence). Nothing can certify because nothing is judging.\n  submitted=705 judged=1534 unmeasured=0 passed=0 trials=597\n  binding gate: {'economic_prior': 816, 'in_sample_screen': 464, 'observations': 200, 'deflated_sharpe': 41, 'symbol_eligibility': 13}\n  ONE CURABLE GATE AWAY: 38 cell(s) passed EVERY validity gate and failed only power gate(s):\n    EURAUD    cross_asset_residual days=360 oos_sharpe=0.3194 fails=deflated_sharpe (hurdle 0.3786)\n    E35       pca_residual         days=109 oos_sharpe=0.3076 fails=deflated_sharpe (hurdle 0.3786)\n    EURAUD    cross_asset_residual days=387 oos_sharpe=0.3042 fails=deflated_sharpe (hurdle 0.3786)\n    EURAUD    cross_asset_residual days=319 oos_sharpe=0.2991 fails=deflated_sharpe (hurdle 0.3786)\n    E35       relative_value       days=132 oos_sharpe=0.2597 fails=deflated_sharpe (hurdle 0.3786)\n  -> /home/quant/quant-platform/data/cert_yield.json\n"
+   "stdout_tail": "MACHINERY, not candidates: the last sweep is 30.4h old (hourly cadence). Nothing can certify because nothing is judging.\n  submitted=705 judged=1534 unmeasured=0 passed=0 trials=597\n  binding gate: {'economic_prior': 816, 'in_sample_screen': 464, 'observations': 200, 'deflated_sharpe': 41, 'symbol_eligibility': 13}\n  ONE CURABLE GATE AWAY: 38 cell(s) passed EVERY validity gate and failed only power gate(s):\n    EURAUD    cross_asset_residual days=360 oos_sharpe=0.3194 fails=deflated_sharpe (hurdle 0.3786)\n    E35       pca_residual         days=109 oos_sharpe=0.3076 fails=deflated_sharpe (hurdle 0.3786)\n    EURAUD    cross_asset_residual days=387 oos_sharpe=0.3042 fails=deflated_sharpe (hurdle 0.3786)\n    EURAUD    cross_asset_residual days=319 oos_sharpe=0.2991 fails=deflated_sharpe (hurdle 0.3786)\n    E35       relative_value       days=132 oos_sharpe=0.2597 fails=deflated_sharpe (hurdle 0.3786)\n  -> /home/quant/quant-platform/data/cert_yield.json\n"
   },
   {
    "accepted": true,
@@ -367,14 +366,14 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_forward_clock_ratchet.py"
    ],
-   "cpu_seconds": 0.091989,
+   "cpu_seconds": 0.080374,
    "deferred_resource": false,
    "diagnostic_finding": true,
-   "duration_seconds": 2.859,
+   "duration_seconds": 3.908,
    "name": "forward_clock_fence",
    "passes": [
     {
-     "cpu_seconds": 0.09198899999999988,
+     "cpu_seconds": 0.08037399999999906,
      "outstanding_after": null,
      "returncode": 1
     }
@@ -384,5 +383,5 @@
    "stdout_tail": "SDCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_240_horizon=6_side=-1 boundary moved 2026-09-04T05:10:43.156729+00:00 -> 2026-09-12T10:32:19.655106+00:00, 8.22 day(s) of served forward evidence destroyed with no recorded restart (shadow_state.json)\n  SILENT RE-BASE: USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_48_horizon=3_side=-1 boundary moved 2026-09-04T05:10:43.223759+00:00 -> 2026-09-12T10:32:19.655138+00:00, 8.22 day(s) of served forward evidence destroyed with no recorded restart (shadow_state.json)\n  SILENT RE-BASE: USDJPY.asia boundary moved 2026-08-27T03:34:48.772869+00:00 -> 2026-09-03T12:03:36+00:00, 7.35 day(s) of served forward evidence destroyed with no recorded restart (sleeve_registry.json)\n  SILENT RE-BASE: USDJPY.asia#rr=1.5 boundary moved 2026-08-27T03:34:48.716568+00:00 -> 2026-09-03T12:03:36+00:00, 7.35 day(s) of served forward evidence destroyed with no recorded restart (sleeve_registry.json)\n  SILENT RE-BASE: USDJPY.asia#rr=2.5 boundary moved 2026-08-27T03:34:48.836782+00:00 -> 2026-09-03T12:03:36+00:00, 7.35 day(s) of served forward evidence destroyed with no recorded restart (sleeve_registry.json)\n  SILENT RE-BASE: XAUUSD.asia boundary moved 2026-08-27T03:34:49.037701+00:00 -> 2026-09-03T12:03:36+00:00, 7.35 day(s) of served forward evidence destroyed with no recorded restart (sleeve_registry.json)\n  SILENT RE-BASE: XAUUSD.asia#rr=1.5 boundary moved 2026-08-27T03:34:48.973309+00:00 -> 2026-09-03T12:03:36+00:00, 7.35 day(s) of served forward evidence destroyed with no recorded restart (sleeve_registry.json)\n  SILENT RE-BASE: XAUUSD.asia#rr=1.5_wait_bars=8 boundary moved 2026-08-27T03:34:49.147736+00:00 -> 2026-09-03T12:03:36+00:00, 7.35 day(s) of served forward evidence destroyed with no recorded restart (sleeve_registry.json)\n  SILENT RE-BASE: XAUUSD.asia#rr=2.5 boundary moved 2026-08-27T03:34:49.090008+00:00 -> 2026-09-03T12:03:36+00:00, 7.35 day(s) of served forward evidence destroyed with no recorded restart (sleeve_registry.json)\n"
   }
  ],
- "started_at": "2026-09-12T18:19:08.754612+00:00"
+ "started_at": "2026-09-12T19:40:26.384033+00:00"
 }
