@@ -182,7 +182,8 @@ def _global_regime_labeller():
         c = c.groupby(c.index.date).last().iloc[-2000:]
         eng = RegimeEngine().fit(c)
         lab = {j: str(ch["label"]) for j, ch in eng.hmm_char.items()}
-        by_day = {str(d): lab[int(j)] for d, j in zip(c.index, eng.hmm_states, strict=False)}
+        by_day = {str(d): lab[int(j)]
+                  for d, j in zip(c.index, eng.filtered_states, strict=False)}
         return lambda t: by_day.get(str(t.when)[:10], "")
     except Exception:
         return None

@@ -69,12 +69,12 @@ from libs.portfolio.robust_elog import (  # noqa: E402
 from research.heat_policy import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
-    heat_accounting,
-    measured_ceiling,
     MIN_STATE_WORLDS,
     StateCurve,
     enforce_family_cap,
     evidence_readiness,
+    heat_accounting,
+    measured_ceiling,
     per_sleeve_bounds,
     resolve,
 )
@@ -512,7 +512,8 @@ def regime_state(daily: pd.DataFrame,
 
         eng = RegimeEngine().fit(close)
         lab = {j: str(ch["label"]) for j, ch in eng.hmm_char.items()}
-        by_day = {str(d): lab[int(j)] for d, j in zip(close.index, eng.hmm_states, strict=True)}
+        by_day = {str(d): lab[int(j)]
+                  for d, j in zip(close.index, eng.filtered_states, strict=True)}
         labels = tuple(by_day.get(str(d)[:10], "") for d in daily.index)
 
         # The filtered posterior is the STARTING point, summed onto LABELS rather than latent
@@ -522,7 +523,13 @@ def regime_state(daily: pd.DataFrame,
         for j, pj in enumerate(post):
             filtered[lab[int(j)]] = filtered.get(lab[int(j)], 0.0) + float(pj)
 
-        fc = regime_forecast(eng.hmm.transmat, post, lab, eng.hmm_states,
+        # CAUSAL PATH, NOT THE SMOOTHED ONE. `forecast` reads this path twice: `_runs` for the
+        # current run's age and `age_hazard` for the dwell-time hazard fitted on historical run
+        # LENGTHS. Viterbi produces artificially crisp blocks -- that is what smoothing is for --
+        # so a hazard fitted on it says regimes persist longer than a desk watching in real time
+        # would ever have seen, and the current age is measured off a run whose start was chosen
+        # with hindsight. The filtered path is noisier and is the honest input.
+        fc = regime_forecast(eng.hmm.transmat, post, lab, eng.filtered_states,
                              horizons=REGIME_TERM_STRUCTURE)
         raw = dict(fc.p_ahead.get(REGIME_FORECAST_H) or filtered)
         diag = {
@@ -689,7 +696,7 @@ def search_trials() -> dict[str, int]:
             out[f"family:{fam}"] = max(int(out.get(f"family:{fam}", 0)), int(n))
         out["lifetime_total"] = max(int(out.get("lifetime_total", 0)),
                                     int(life.get("lifetime_trials", 0)))
-    except Exception:                                            # noqa: BLE001
+    except Exception:
         pass
     return out
 
@@ -1175,7 +1182,7 @@ def current_book() -> dict[str, float]:
         if not names:
             return {}
         each = float(HEAT_TARGET) / float(len(names))
-        return {n: each for n in names}
+        return dict.fromkeys(names, each)
 
     try:
         from mt5desk.gateway import sleeve_set
@@ -1679,7 +1686,7 @@ def effective_heat_of(ev: list[SleeveEvidence], book: dict[str, float]) -> dict[
         from libs.portfolio.latent_factors import effective as _effective
         out: dict[str, Any] = _effective(ev, book)
         return out
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
@@ -1704,7 +1711,7 @@ def state_growth_curves(ev: list[SleeveEvidence], worlds: Worlds, book: dict[str
         return {}, "no book or no regime-labelled worlds: the global curve stands"
     try:
         from libs.portfolio.allocator_proof import _subworlds, buckets_from_worlds
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         return {}, f"state buckets unavailable ({type(exc).__name__}: {exc})"
     buckets = buckets_from_worlds(worlds, now_buckets, min_worlds=MIN_STATE_WORLDS)
     if not buckets:
@@ -2740,7 +2747,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         from libs.portfolio.allocator_proof import admitted_now, state_id
         kept_dims, adm_why = admitted_now(ROOT, now_buckets)
         current_state = state_id(kept_dims, top_regime)
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         kept_dims, adm_why, current_state = {}, f"{type(exc).__name__}: {exc}", ""
     curves, curves_why = ((state_growth_curves(ev, worlds, free.heat, cfg, kept_dims))
                           if heavy else ({}, f"{mode} clock: the global curve stands"))
@@ -2828,7 +2835,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 surv_ceiling = float(survival["ceiling"])
             surv_why = str(survival.get("why") or "")
             survival["surface_max_fraction"] = _top
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         survival = {"error": f"{type(exc).__name__}: {exc}", "status": "UNMEASURED",
                     "why": "survival surface unavailable this pass; the recorded constant stands"}
     _log(f"heat survival ceiling: {survival.get('why') or survival.get('error')}")
@@ -3285,7 +3292,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             }
             _log(f"next 10bp -> {_step.get('best')} "
                  f"({_step.get('best_gain_per_day')}/day); {_step.get('why')}")
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         growth_derivs = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
     # THE FOUR HEATS AND THE WORLDS-BASED TRADE VALUE: what the nominal heat is really made of
@@ -3301,7 +3308,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _log(f"effective heat: nominal={effective_heat.get('nominal')} "
                  f"eff={effective_heat.get('effective')} n_eff={effective_heat.get('n_eff')}; "
                  f"trade value {trade_value.get('verdict')} ({trade_value.get('trade_value')})")
-    except Exception as exc:                                         # noqa: BLE001
+    except Exception as exc:
         effective_heat = {"error": f"{type(exc).__name__}: {exc}"}
     # NOMINAL VS EFFECTIVE, AND WHICH BOUND BOUND -- on the published book beside the candidate
     # the ceiling was actually derived from, so the artifact can be read as an argument rather

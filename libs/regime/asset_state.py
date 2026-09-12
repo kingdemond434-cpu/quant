@@ -243,7 +243,13 @@ def fit_asset_state(close: pd.Series, symbol: str, clock: str,
         filtered: dict[str, float] = {}
         for j, pj in enumerate(post):
             filtered[lab[int(j)]] = filtered.get(lab[int(j)], 0.0) + float(pj)
-        fc = forecast(eng.hmm.transmat, post, lab, eng.hmm_states,
+        # CAUSAL PATH, NOT THE SMOOTHED ONE. `forecast` reads this path twice: `_runs` for the
+        # current run's age and `age_hazard` for the dwell-time hazard fitted on historical run
+        # LENGTHS. Viterbi produces artificially crisp blocks -- that is what smoothing is for --
+        # so a hazard fitted on it says regimes persist longer than a desk watching in real time
+        # would ever have seen, and the current age is measured off a run whose start was chosen
+        # with hindsight. The filtered path is noisier and is the honest input.
+        fc = forecast(eng.hmm.transmat, post, lab, eng.filtered_states,
                       horizons=tuple(spec["horizons"]))
         h0 = int(spec["horizons"][0])
         st = AssetState(

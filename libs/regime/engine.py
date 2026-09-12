@@ -74,6 +74,8 @@ class RegimeEngine:
         self.gmm: Any = None                   # sklearn GaussianMixture (untyped) once fitted
         self.x: np.ndarray = np.zeros((0, 3))
         self.hmm_states: np.ndarray = np.zeros(0, dtype="int64")
+        #: Causal per-day labels (argmax of the forward filter). Sizing paths read THIS.
+        self.filtered_states: np.ndarray = np.zeros(0, dtype="int64")
         self.hmm_char: dict[int, dict[str, object]] = {}
         self.gmm_char: dict[int, dict[str, object]] = {}
         self.posteriors: np.ndarray = np.zeros((0, n_states))
@@ -84,6 +86,30 @@ class RegimeEngine:
         self.hmm.fit(x)
         self.hmm_states = self.hmm.predict(x)
         self.posteriors = self.hmm.filter_posterior(x)
+        # THE CAUSAL LABEL, AND THE ONLY ONE ANY SIZING PATH MAY READ.
+        #
+        # `hmm.predict` is Viterbi, and Viterbi has a BACKWARD PASS:
+        #
+        #     states[-1] = argmax(delta[-1])
+        #     for t in range(n - 2, -1, -1):
+        #         states[t] = psi[t + 1, states[t + 1]]
+        #
+        # The label at t is chosen by the label at t+1, so every historical entry in
+        # `hmm_states` was assigned using observations from AFTER the day it describes. That is
+        # the standard public-HMM recipe and it is a lookahead leak. Found 2026-09-12 by reading
+        # the Aurum desk's regime_hmm.py, whose docstring names this exact trap; the leak was
+        # live here, in `pf_allocator`'s `by_day` map, which conditions the state growth curves
+        # that SET HEAT.
+        #
+        # `filter_posterior` is P(state_t | x_1..t) -- the forward filter, which by construction
+        # has seen nothing after t. Its argmax is the label a desk could actually have known on
+        # the day, and it is what every conditioning map now uses.
+        #
+        # `hmm_states` IS KEPT, because smoothed labels are the right instrument for DESCRIBING
+        # history (what regime was that month, really) and `_characterise` is exactly that use.
+        # The rule is not "Viterbi is wrong"; it is "Viterbi may never reach a number that sizes
+        # a position".
+        self.filtered_states = np.argmax(self.posteriors, axis=1).astype("int64")
         self.hmm_char = _characterise(self.hmm_states, raw, self.k)
         self.gmm = fit_gmm(x, n_states=self.k, seed=self.seed)
         gmm_states = self.gmm.predict(x)
