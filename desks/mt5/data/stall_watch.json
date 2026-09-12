@@ -1,58 +1,55 @@
 {
     "memory":  {
-                   "free_phys_mb":  7429,
+                   "free_phys_mb":  73368,
                    "total_commit_mb":  251842,
                    "total_phys_mb":  98298,
                    "top_commit":  [
                                       {
-                                          "pid":  6804,
-                                          "name":  "python.exe",
-                                          "commit_mb":  16458,
+                                          "pid":  3060,
+                                          "name":  "pf_allocator.py",
+                                          "commit_mb":  14369,
+                                          "rss_mb":  12951
+                                      },
+                                      {
+                                          "pid":  12000,
+                                          "name":  "falsifier_run.py",
+                                          "commit_mb":  8547,
+                                          "rss_mb":  6941
+                                      },
+                                      {
+                                          "pid":  6812,
+                                          "name":  "terminal64.exe",
+                                          "commit_mb":  2148,
+                                          "rss_mb":  112
+                                      },
+                                      {
+                                          "pid":  16804,
+                                          "name":  "hourly_cycle.py",
+                                          "commit_mb":  1205,
+                                          "rss_mb":  17
+                                      },
+                                      {
+                                          "pid":  13404,
+                                          "name":  "pythonw.exe",
+                                          "commit_mb":  851,
                                           "rss_mb":  118
                                       },
                                       {
-                                          "pid":  17468,
-                                          "name":  "python.exe",
-                                          "commit_mb":  12167,
-                                          "rss_mb":  2498
-                                      },
-                                      {
-                                          "pid":  7748,
-                                          "name":  "python.exe",
-                                          "commit_mb":  12071,
-                                          "rss_mb":  2449
-                                      },
-                                      {
-                                          "pid":  8140,
-                                          "name":  "python.exe",
-                                          "commit_mb":  12056,
-                                          "rss_mb":  2461
-                                      },
-                                      {
-                                          "pid":  15268,
-                                          "name":  "python.exe",
-                                          "commit_mb":  11648,
-                                          "rss_mb":  953
-                                      },
-                                      {
-                                          "pid":  14252,
-                                          "name":  "python.exe",
-                                          "commit_mb":  11494,
-                                          "rss_mb":  749
+                                          "pid":  5676,
+                                          "name":  "macro_desk.py",
+                                          "commit_mb":  619,
+                                          "rss_mb":  21
                                       }
                                   ],
-                   "free_commit_mb":  24532
+                   "free_commit_mb":  217137
                },
     "actions":  [
                     "TASK MISSING: MT5-ShadowSync is not registered at all -- re-register from ops/ (deletion, not failure)"
                 ],
     "low_mem_strikes":  0,
-    "free_gb":  980.9,
+    "free_gb":  980.1,
     "procs":  {
-                  "external_gauntlet.15780":  {
-                                                  "cpu":  2563.0625,
-                                                  "at":  "2026-09-12T11:50:23.8209498+02:00"
-                                              }
+
               },
-    "checked_at":  "2026-09-12T09:50:33.2595043Z"
+    "checked_at":  "2026-09-12T10:20:06.6679130Z"
 }

@@ -2,7 +2,7 @@
  "3M": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -34,14 +34,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "ADAUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -51,12 +51,12 @@
    }
   },
   "asset_class": "Crypto",
-  "bars": 47446,
+  "bars": 47447,
   "contract_size": 100.0,
   "currency_profit": "USD",
   "digits": 4,
   "median_spread_pts": 33.0,
-  "spread_pts_at_collection": 32.0,
+  "spread_pts_at_collection": 31.0,
   "swap_long": -15.0,
   "swap_short": -15.0,
   "symbol": "ADAUSD",
@@ -73,14 +73,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "ADP": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -112,14 +112,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "AMD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -151,14 +151,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "AT&T": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -197,7 +197,7 @@
  "AUDCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -228,18 +228,18 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUDCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    }
   },
@@ -266,14 +266,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUDHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -305,14 +305,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -321,7 +321,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -351,22 +351,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUDNZD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -396,14 +396,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUDSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -435,14 +435,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUDUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -451,7 +451,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -481,14 +481,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUS200": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -520,14 +520,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AVAXUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -537,7 +537,7 @@
    }
   },
   "asset_class": "Crypto",
-  "bars": 39548,
+  "bars": 39549,
   "contract_size": 1000.0,
   "currency_profit": "USD",
   "digits": 3,
@@ -559,14 +559,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "Accenture": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -598,14 +598,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Adobe": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -637,14 +637,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Airbnb": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -676,14 +676,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "AlibabaGroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -715,14 +715,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Alphabet-A": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -754,14 +754,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Alphabet-C": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -793,14 +793,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Amazon": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -832,14 +832,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "AmericanExpress": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -871,14 +871,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Amgen": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -910,14 +910,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Apple": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -949,14 +949,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "AppliedMaterials": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -988,14 +988,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Atlassian": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -1027,14 +1027,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "BCHUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -1044,7 +1044,7 @@
    }
   },
   "asset_class": "Crypto",
-  "bars": 49680,
+  "bars": 49681,
   "contract_size": 1.0,
   "currency_profit": "USD",
   "digits": 2,
@@ -1066,14 +1066,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "BNBUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -1083,7 +1083,7 @@
    }
   },
   "asset_class": "Crypto",
-  "bars": 47461,
+  "bars": 47462,
   "contract_size": 1.0,
   "currency_profit": "USD",
   "digits": 2,
@@ -1105,14 +1105,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "BTCUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -1121,12 +1121,12 @@
     "was": 1900.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
   "asset_class": "Crypto",
-  "bars": 49664,
+  "bars": 49665,
   "contract_size": 1.0,
   "currency_profit": "USD",
   "digits": 2,
@@ -1134,7 +1134,7 @@
   "last": "2026-08-17 23:00:00+00:00",
   "median_spread_pts": 1788.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 1782.0,
+  "spread_pts_at_collection": 1792.0,
   "swap_long": -15.0,
   "swap_short": -7.5,
   "symbol": "BTCUSD",
@@ -1151,14 +1151,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "Baidu": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -1190,14 +1190,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "BankofAmericaCorp": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -1229,14 +1229,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Berkshire": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1263,7 +1263,7 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
@@ -1287,7 +1287,7 @@
  "BlackRock": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1317,7 +1317,7 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
@@ -1341,7 +1341,7 @@
  "Boeing": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1368,14 +1368,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Booking": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1402,14 +1402,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Broadcom": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1436,14 +1436,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "CA60": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1470,18 +1470,18 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CADCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    }
   },
@@ -1508,22 +1508,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CADJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -1553,14 +1553,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CHFDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1587,14 +1587,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CHFHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1628,7 +1628,7 @@
  "CHFJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -1637,7 +1637,7 @@
     "was": 1.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -1667,14 +1667,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CHFNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1701,14 +1701,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CHFPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1738,14 +1738,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CHFSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1772,14 +1772,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CHFSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1806,14 +1806,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CHINAH": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1840,14 +1840,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "COFARA": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1874,14 +1874,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "COFROB": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1908,14 +1908,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "CORN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1942,14 +1942,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "COTTON": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -1976,14 +1976,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "CVSHealth": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2010,14 +2010,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Caterpillar": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2044,14 +2044,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "CharlesSchwab": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2078,14 +2078,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Charter": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2112,14 +2112,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Chevron": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2146,14 +2146,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Cisco": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2180,14 +2180,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Citigroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2214,14 +2214,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Coca-Cola": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2248,14 +2248,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Coinbase": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2282,14 +2282,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Comcast": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2316,14 +2316,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "CostcoWholesale": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2350,19 +2350,19 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "DOGEUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
   "asset_class": "Crypto",
-  "bars": 47416,
+  "bars": 47417,
   "contract_size": 1000.0,
   "currency_profit": "USD",
   "digits": 5,
@@ -2384,19 +2384,19 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "DOTUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
   "asset_class": "Crypto",
-  "bars": 47406,
+  "bars": 47407,
   "contract_size": 50.0,
   "currency_profit": "USD",
   "digits": 3,
@@ -2418,14 +2418,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "DocuSign": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2452,14 +2452,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Doordash": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2486,14 +2486,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Dow": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2520,14 +2520,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "E35": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2554,14 +2554,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EOSUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2588,14 +2588,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "ETHUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -2604,12 +2604,12 @@
     "was": 251.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
   "asset_class": "Crypto",
-  "bars": 49666,
+  "bars": 49667,
   "contract_size": 1.0,
   "currency_profit": "USD",
   "digits": 2,
@@ -2617,7 +2617,7 @@
   "last": "2026-08-17 23:00:00+00:00",
   "median_spread_pts": 242.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 306.0,
+  "spread_pts_at_collection": 316.0,
   "swap_long": -15.0,
   "swap_short": -10.0,
   "symbol": "ETHUSD",
@@ -2634,14 +2634,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURAUD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -2650,7 +2650,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -2680,14 +2680,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2714,22 +2714,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -2759,14 +2759,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURCZK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2793,14 +2793,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2827,14 +2827,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURGBP": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -2843,7 +2843,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -2873,14 +2873,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURHKD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2907,14 +2907,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2941,14 +2941,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURILS": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -2978,22 +2978,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -3023,14 +3023,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURMXN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3057,14 +3057,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3091,14 +3091,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURNZD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3128,14 +3128,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3162,14 +3162,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURRUB": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3196,14 +3196,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3233,14 +3233,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3267,14 +3267,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURTRY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3301,14 +3301,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -3317,7 +3317,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -3347,14 +3347,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURZAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3381,14 +3381,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EUSTX50": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3415,14 +3415,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "ElectronicArts": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3449,14 +3449,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "ExxonMobil": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3483,14 +3483,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "FRA40": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3517,14 +3517,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "Ford": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3551,22 +3551,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "GBPAUD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -3596,14 +3596,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3630,18 +3630,18 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    }
   },
@@ -3668,14 +3668,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3702,14 +3702,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3739,22 +3739,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -3784,14 +3784,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPMXN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3818,14 +3818,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3852,14 +3852,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPNZD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3889,14 +3889,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3923,14 +3923,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3957,14 +3957,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -3994,14 +3994,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPTRY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4028,14 +4028,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -4044,7 +4044,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -4074,14 +4074,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPZAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4108,14 +4108,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GER40": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4142,14 +4142,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GeneralElectric": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4179,14 +4179,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "GeneralMotors": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4213,14 +4213,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "GileadSciences": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4247,14 +4247,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "GoldmanSachs": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4281,14 +4281,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "HK50": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4315,14 +4315,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "HKDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4349,14 +4349,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "HomeDepot": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4383,14 +4383,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Honeywell": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4417,14 +4417,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "IBM": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4451,14 +4451,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Intel": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4485,14 +4485,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Intuit": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4519,14 +4519,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "IntuitiveSurgical": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4553,14 +4553,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "JPMorganChase": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4587,14 +4587,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "JPN225": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4624,14 +4624,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "Johnson&Johnson": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4661,24 +4661,24 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "LNKUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
   "asset_class": "Crypto",
-  "bars": 44743,
+  "bars": 44744,
   "contract_size": 10.0,
   "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 34.0,
-  "spread_pts_at_collection": 37.0,
+  "spread_pts_at_collection": 38.0,
   "swap_long": -15.0,
   "swap_short": -15.0,
   "symbol": "LNKUSD",
@@ -4695,19 +4695,19 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "LTCUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
   "asset_class": "Crypto",
-  "bars": 49665,
+  "bars": 49666,
   "contract_size": 1.0,
   "currency_profit": "USD",
   "digits": 2,
@@ -4729,14 +4729,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "LucidGroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4763,14 +4763,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Lyft": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4797,19 +4797,19 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "MATICUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
   "asset_class": "Crypto",
-  "bars": 39481,
+  "bars": 39482,
   "contract_size": 10000.0,
   "currency_profit": "USD",
   "digits": 4,
@@ -4831,14 +4831,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "MXNJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4865,14 +4865,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "Mastercard": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4899,14 +4899,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "McDonalds": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4933,14 +4933,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Medtronic": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -4967,14 +4967,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Merck": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5001,14 +5001,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Meta": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5035,14 +5035,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "MicronTechnology": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5069,14 +5069,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Microsoft": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5103,14 +5103,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "MorganStanley": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5137,14 +5137,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "NAS100": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5171,14 +5171,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NETH25": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5205,14 +5205,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NIO": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5239,14 +5239,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "NOKJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5273,14 +5273,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NOKSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5307,14 +5307,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NVIDIA": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5344,22 +5344,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "NZDCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -5389,14 +5389,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NZDCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5423,14 +5423,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NZDHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5457,22 +5457,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NZDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -5502,14 +5502,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NZDSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5536,14 +5536,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NZDUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -5552,7 +5552,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -5582,14 +5582,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "Netflix": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5616,14 +5616,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Nike": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5650,14 +5650,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "OJ": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5684,14 +5684,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "Oracle": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5718,14 +5718,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "PayPal": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5752,14 +5752,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Pepsi": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5786,14 +5786,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Pfizer": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5820,14 +5820,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "PhilipMorrisInternational": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5854,14 +5854,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Pinterest": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5891,14 +5891,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Procter&Gamble": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5925,14 +5925,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Qualcomm": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5959,14 +5959,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "RobinhoodMarkets": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -5993,14 +5993,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Roku": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6030,14 +6030,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "S&PGlobal": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6064,14 +6064,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "SEKJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6098,14 +6098,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "SGDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6132,24 +6132,24 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "SOLUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
   "asset_class": "Crypto",
-  "bars": 39435,
+  "bars": 39436,
   "contract_size": 1000.0,
   "currency_profit": "USD",
   "digits": 3,
   "median_spread_pts": 145.5,
-  "spread_pts_at_collection": 200.0,
+  "spread_pts_at_collection": 190.0,
   "swap_long": -15.0,
   "swap_short": -15.0,
   "symbol": "SOLUSD",
@@ -6166,14 +6166,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "SOYBEAN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6200,14 +6200,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "SUGAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6234,14 +6234,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "SUGARRAW": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6268,14 +6268,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "Salesforce": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6302,14 +6302,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "ServiceNow": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6336,14 +6336,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Shopify": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6370,14 +6370,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Snapchat": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6404,14 +6404,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Snowflake": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6438,14 +6438,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Spotify": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6472,14 +6472,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Starbucks": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6506,14 +6506,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "TMEGroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6540,14 +6540,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "TSMC": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6574,14 +6574,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Target": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6608,14 +6608,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Tesla": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6642,14 +6642,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "TexasInstruments": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6676,14 +6676,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "ThermoFisherScientific": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6710,14 +6710,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Toyota": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6747,14 +6747,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Travelers": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6781,14 +6781,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Twilio": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6815,14 +6815,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "UK100": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6849,14 +6849,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "UKCOCOA": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6883,14 +6883,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "UKGILT": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6917,14 +6917,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "US2000": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6951,14 +6951,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "US30": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6985,14 +6985,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "US500": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7019,14 +7019,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USCOCOA": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7053,14 +7053,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
  "USDBRL": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7087,14 +7087,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -7103,7 +7103,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -7133,14 +7133,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -7149,7 +7149,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -7179,14 +7179,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDCNH": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7213,14 +7213,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDCZK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7247,14 +7247,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7281,14 +7281,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDHKD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7315,14 +7315,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7349,14 +7349,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDIDR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7383,14 +7383,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDILS": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7417,14 +7417,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDINR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7451,14 +7451,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
@@ -7467,7 +7467,7 @@
     "was": 0.0
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -7497,14 +7497,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDKRW": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7531,14 +7531,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDMXN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7565,14 +7565,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7599,14 +7599,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7633,14 +7633,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDRUB": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7667,14 +7667,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7701,14 +7701,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7735,14 +7735,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDTHB": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7769,14 +7769,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDTRY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7803,14 +7803,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDX": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7837,14 +7837,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDZAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7871,14 +7871,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "UST05Y": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7905,14 +7905,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "UST10Y": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7939,14 +7939,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "Uber": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -7973,14 +7973,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "UnionPacific": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8007,14 +8007,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "UnitedHealth": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8041,14 +8041,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "UnitedParcelService": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8075,14 +8075,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Verizon": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8109,14 +8109,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "Visa": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8143,14 +8143,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "WHEAT": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8177,7 +8177,7 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 1.0,
   "volume_step": 1.0
  },
@@ -8201,7 +8201,7 @@
  "Walmart": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8228,14 +8228,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "WaltDisney": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8262,14 +8262,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "WellsFargo": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8296,14 +8296,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  },
  "XAGEUR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8330,22 +8330,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XAGUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -8375,14 +8375,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XALUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8409,14 +8409,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XAUAUD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8443,14 +8443,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XAUEUR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8477,22 +8477,22 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XAUUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    },
    "median_spread_pts": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "broker_reported"
    }
   },
@@ -8522,14 +8522,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XBRUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8556,14 +8556,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XCUUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8590,24 +8590,24 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XLMUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
   "asset_class": "Crypto",
-  "bars": 44662,
+  "bars": 44663,
   "contract_size": 10000.0,
   "currency_profit": "USD",
   "digits": 5,
   "median_spread_pts": 41.0,
-  "spread_pts_at_collection": 44.0,
+  "spread_pts_at_collection": 46.0,
   "swap_long": -15.0,
   "swap_short": -15.0,
   "symbol": "XLMUSD",
@@ -8624,14 +8624,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XNGUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8658,14 +8658,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XNIUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8692,14 +8692,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XPBUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8726,14 +8726,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XPDUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8760,14 +8760,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XPTUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8794,14 +8794,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XTIUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8828,14 +8828,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XZNUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8862,14 +8862,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "ZARJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8896,14 +8896,14 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.01,
   "volume_step": 0.01
  },
  "eBay": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-12T09:26:18+00:00",
+    "at": "2026-09-12T10:27:07+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -8930,7 +8930,7 @@
    "M15:0/12000",
    "M30:0/6000"
   ],
-  "updated_at": "2026-09-12T09:26:02+00:00",
+  "updated_at": "2026-09-12T10:26:02+00:00",
   "volume_min": 0.1,
   "volume_step": 0.1
  }

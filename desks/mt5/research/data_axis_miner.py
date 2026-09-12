@@ -267,12 +267,57 @@ def discover(limit_files: int = 1200) -> dict:
                 seats[seat] += 1
                 examples.setdefault(host, m.group(0)[:180])
 
+    # THE CRAWLER'S OWN DATASET EXTRACTION, which was being written and read by nothing.
+    #
+    # `deep_forest_miner` already separates DATASET pages from claim pages as it crawls 502
+    # grounds across 51 regions, and writes them to data/deep_forest_datasets.jsonl -- 111 KB of
+    # them, refreshed today, and measured 2026-09-12 the only references to that path in the
+    # entire repository are the miner's own constant and its own report string. Nothing consumed
+    # it. The world crawler was doing exactly the work the desk needed and depositing it in a file
+    # with no reader, which is the same III.16 defect as an organ that never runs, one layer over.
+    #
+    # These rows are better candidates than a bare URL count, because the crawler already knows
+    # the publisher, the region and the ground it came from -- a central bank's statistics page in
+    # Egypt is a different proposition from a forum post linking to one, and the CEO docket can
+    # only rank them if it can see which is which.
+    crawled: Counter[str] = Counter()
+    regions: dict[str, str] = {}
+    grounds: dict[str, str] = {}
+    df = DESK / "data" / "deep_forest_datasets.jsonl"
+    if df.exists():
+        try:
+            lines = df.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            lines = []
+        for ln in lines:
+            ln = ln.strip()
+            if not ln:
+                continue
+            try:
+                row = json.loads(ln)
+            except ValueError:
+                continue
+            host = str(row.get("host") or "").lower()
+            if not host or host in known:
+                continue
+            crawled[host] += 1
+            regions.setdefault(host, str(row.get("region") or row.get("cluster") or "?"))
+            grounds.setdefault(host, str(row.get("ground") or "")[:80])
+            examples.setdefault(host, str(row.get("url") or "")[:180])
+
+    merged: Counter[str] = Counter(hosts)
+    merged.update(crawled)
     cands = [{"host": h, "mentions": n, "example": examples.get(h),
-              "status": "CANDIDATE -- cited in the corpus, never probed",
+              "from_crawler": h in crawled,
+              "region": regions.get(h), "ground": grounds.get(h) or None,
+              "status": "CANDIDATE -- cited in the corpus or crawled, never probed",
               "next": "probe it, then bind it to the MT5 instruments it can condition"}
-             for h, n in hosts.most_common(40)]
+             for h, n in merged.most_common(60)]
     return {
         "files_scanned": n_files,
+        "n_from_crawler": sum(1 for c in cands if c.get("from_crawler")),
+        "crawler_regions": dict(Counter(c.get("region") for c in cands
+                                        if c.get("from_crawler")).most_common(12)),
         "n_candidate_hosts": len(cands),
         "candidate_hosts": cands,
         "by_seat": dict(seats.most_common(15)),

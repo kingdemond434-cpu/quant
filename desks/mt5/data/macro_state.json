@@ -1,12 +1,13 @@
 {
- "updated": "2026-09-12T09:26:35.241927+00:00",
+ "updated": "2026-09-12T10:26:30.953406+00:00",
  "series": {
-  "UNRATE": {
-   "series": "UNRATE",
+  "INDPRO": {
+   "series": "INDPRO",
    "ok": true,
-   "last": 4.0,
-   "last_date": "2025-01-01",
-   "z": -0.984541688380747
+   "last": 102.9939,
+   "last_date": "2026-07-31",
+   "z": 1.5875934159495095,
+   "mom": 0.05979010797122544
   },
   "PAYEMS": {
    "series": "PAYEMS",
@@ -15,6 +16,13 @@
    "last_date": "2025-01-01",
    "z": 1.73441873917903,
    "mom": 0.21593792998012537
+  },
+  "UNRATE": {
+   "series": "UNRATE",
+   "ok": true,
+   "last": 4.0,
+   "last_date": "2025-01-01",
+   "z": -0.984541688380747
   },
   "CPILFESL": {
    "series": "CPILFESL",
@@ -31,14 +39,6 @@
    "last_date": "2025-01-01",
    "z": 2.262197268791182,
    "mom_yoy": 0.7090840921264062
-  },
-  "INDPRO": {
-   "series": "INDPRO",
-   "ok": true,
-   "last": 102.9939,
-   "last_date": "2026-07-31",
-   "z": 1.5875934159495095,
-   "mom": 0.05979010797122544
   },
   "DFF": {
    "series": "DFF",
@@ -61,52 +61,48 @@
    "last_date": "2026-09-09",
    "z": -0.3329495281560354
   },
-  "UMCSENT": {
-   "series": "UMCSENT",
-   "ok": false
-  },
-  "RETAILSMxSA": {
-   "series": "RETAILSMxSA",
-   "ok": false
-  },
-  "T5YIE": {
-   "series": "T5YIE",
-   "ok": false
-  },
   "T10YIE": {
    "series": "T10YIE",
-   "ok": false
-  },
-  "DFEDTARU": {
-   "series": "DFEDTARU",
-   "ok": false
-  },
-  "T10Y2Y": {
-   "series": "T10Y2Y",
-   "ok": false
-  },
-  "RRPONTSYD": {
-   "series": "RRPONTSYD",
    "ok": false
   },
   "SOFR": {
    "series": "SOFR",
    "ok": false
   },
-  "VIXCLS": {
-   "series": "VIXCLS",
+  "DFEDTARU": {
+   "series": "DFEDTARU",
+   "ok": false
+  },
+  "T5YIE": {
+   "series": "T5YIE",
+   "ok": false
+  },
+  "RRPONTSYD": {
+   "series": "RRPONTSYD",
+   "ok": false
+  },
+  "RETAILSMxSA": {
+   "series": "RETAILSMxSA",
+   "ok": false
+  },
+  "UMCSENT": {
+   "series": "UMCSENT",
+   "ok": false
+  },
+  "T10Y2Y": {
+   "series": "T10Y2Y",
    "ok": false
   },
   "DCOILWTICO": {
    "series": "DCOILWTICO",
    "ok": false
   },
-  "DTWEXBGS": {
-   "series": "DTWEXBGS",
-   "ok": false
-  },
   "WALCL": {
    "series": "WALCL",
+   "ok": false
+  },
+  "VIXCLS": {
+   "series": "VIXCLS",
    "ok": false
   },
   "BAMLH0A0HYM2": {
@@ -115,6 +111,10 @@
   },
   "GOLDAMGBD228NLBM": {
    "series": "GOLDAMGBD228NLBM",
+   "ok": false
+  },
+  "DTWEXBGS": {
+   "series": "DTWEXBGS",
    "ok": false
   }
  },

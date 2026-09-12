@@ -6,13 +6,13 @@
   "trial_census": {
     "hunt12": {
       "n_raw": 2201,
-      "n_effective": 1239.75,
+      "n_effective": 1239.76,
       "inflation": 1.78,
       "sr0_raw": 0.4665,
       "sr0_effective": 0.4439,
       "threshold_relief": 0.0226,
       "method": "null_calibrated_participation_ratio",
-      "why": "observed participation rank 606.59; fixed 8-permutation independent-null rank 1076.92; calibrated to 1239.75 of 2201 trials",
+      "why": "observed participation rank 606.60; fixed 8-permutation independent-null rank 1076.92; calibrated to 1239.76 of 2201 trials",
       "guard": "both counts are reported deliberately. Lowering N makes every threshold easier, so the correction must be visible and defensible, not silent.",
       "n_raw_declared": 15596,
       "trial_count_basis": "fixed_campaign_trials(597)",
@@ -7753,7 +7753,7 @@
         },
         "in_sample_screen": {
           "passed": false,
-          "sharpe": -0.951
+          "sharpe": -0.9518
         },
         "deflated_sharpe": {
           "passed": false,
@@ -7771,28 +7771,28 @@
         },
         "cpcv": {
           "passed": false,
-          "mean_oos_sharpe": -1.0808,
+          "mean_oos_sharpe": -1.0817,
           "folds": 15
         },
         "walk_forward": {
           "passed": false,
-          "oos_sharpe": -1.2428,
+          "oos_sharpe": -1.2405,
           "stability": 0.0
         },
         "stress_costs": {
           "passed": false,
-          "exp_x3": -9.4785
+          "exp_x3": -9.4798
         },
         "lockbox": {
           "passed": false,
-          "lockbox_sharpe": -1.2428
+          "lockbox_sharpe": -1.2405
         },
         "expected_value": {
           "passed": false,
-          "ev": -3.0828
+          "ev": -3.0835
         }
       },
-      "days": 789,
+      "days": 790,
       "id": "BCHUSD breakout LONG asia FAILED_BREAK",
       "hunt": "hunt12.json"
     },
@@ -22011,7 +22011,7 @@
         },
         "in_sample_screen": {
           "passed": false,
-          "sharpe": -0.9815
+          "sharpe": -0.9828
         },
         "deflated_sharpe": {
           "passed": false,
@@ -22029,28 +22029,28 @@
         },
         "cpcv": {
           "passed": false,
-          "mean_oos_sharpe": -1.1628,
+          "mean_oos_sharpe": -1.1641,
           "folds": 15
         },
         "walk_forward": {
           "passed": false,
-          "oos_sharpe": -1.4055,
+          "oos_sharpe": -1.4075,
           "stability": 0.0
         },
         "stress_costs": {
           "passed": false,
-          "exp_x3": -22.9563
+          "exp_x3": -22.9788
         },
         "lockbox": {
           "passed": false,
-          "lockbox_sharpe": -1.4055
+          "lockbox_sharpe": -1.4075
         },
         "expected_value": {
           "passed": false,
-          "ev": -7.5822
+          "ev": -7.59
         }
       },
-      "days": 731,
+      "days": 732,
       "id": "DOGEUSD breakout LONG asia FAILED_BREAK",
       "hunt": "hunt12.json"
     },
@@ -60437,7 +60437,7 @@
         },
         "in_sample_screen": {
           "passed": false,
-          "sharpe": -1.139
+          "sharpe": -1.14
         },
         "deflated_sharpe": {
           "passed": false,
@@ -60455,28 +60455,28 @@
         },
         "cpcv": {
           "passed": false,
-          "mean_oos_sharpe": -1.2811,
+          "mean_oos_sharpe": -1.2821,
           "folds": 15
         },
         "walk_forward": {
           "passed": false,
-          "oos_sharpe": -1.6251,
+          "oos_sharpe": -1.627,
           "stability": 0.0
         },
         "stress_costs": {
           "passed": false,
-          "exp_x3": -31.4147
+          "exp_x3": -31.4272
         },
         "lockbox": {
           "passed": false,
-          "lockbox_sharpe": -1.6251
+          "lockbox_sharpe": -1.627
         },
         "expected_value": {
           "passed": false,
-          "ev": -10.4336
+          "ev": -10.438
         }
       },
-      "days": 841,
+      "days": 842,
       "id": "LTCUSD breakout LONG asia FAILED_BREAK",
       "hunt": "hunt12.json"
     },
@@ -61165,7 +61165,7 @@
         },
         "in_sample_screen": {
           "passed": false,
-          "sharpe": -0.7066
+          "sharpe": -0.7065
         },
         "deflated_sharpe": {
           "passed": false,
@@ -61183,25 +61183,25 @@
         },
         "cpcv": {
           "passed": false,
-          "mean_oos_sharpe": -0.8052,
+          "mean_oos_sharpe": -0.8051,
           "folds": 15
         },
         "walk_forward": {
           "passed": false,
-          "oos_sharpe": -1.2403,
+          "oos_sharpe": -1.2404,
           "stability": 0.0
         },
         "stress_costs": {
           "passed": false,
-          "exp_x3": -4.6013
+          "exp_x3": -4.6019
         },
         "lockbox": {
           "passed": false,
-          "lockbox_sharpe": -1.2403
+          "lockbox_sharpe": -1.2404
         },
         "expected_value": {
           "passed": false,
-          "ev": -1.5038
+          "ev": -1.5044
         }
       },
       "days": 423,
@@ -72917,7 +72917,7 @@
         },
         "in_sample_screen": {
           "passed": false,
-          "sharpe": -0.1265
+          "sharpe": -0.1266
         },
         "deflated_sharpe": {
           "passed": false,
@@ -72935,7 +72935,7 @@
         },
         "cpcv": {
           "passed": false,
-          "mean_oos_sharpe": -0.1256,
+          "mean_oos_sharpe": -0.1257,
           "folds": 15
         },
         "walk_forward": {
@@ -72945,7 +72945,7 @@
         },
         "stress_costs": {
           "passed": false,
-          "exp_x3": -0.5513
+          "exp_x3": -0.5514
         },
         "lockbox": {
           "passed": false,
@@ -89217,7 +89217,7 @@
         },
         "deflated_sharpe": {
           "passed": false,
-          "dsr": 0.227,
+          "dsr": 0.2269,
           "sr0": 0.4337,
           "n_trials": 597
         },
@@ -104092,7 +104092,7 @@
         },
         "deflated_sharpe": {
           "passed": false,
-          "dsr": 0.0634,
+          "dsr": 0.0633,
           "sr0": 0.4337,
           "n_trials": 597
         },
@@ -152005,7 +152005,7 @@
     }
   ],
   "hunts_absent": [],
-  "swept_at": "2026-09-12T09:31:59.722957+00:00",
-  "wall_s": 296.0,
+  "swept_at": "2026-09-12T10:32:12.704810+00:00",
+  "wall_s": 308.7,
   "workers": 8
 }

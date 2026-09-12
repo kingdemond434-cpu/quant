@@ -95,3 +95,6 @@
 {"at": "2026-09-12T09:44:10+00:00", "run": "deepen", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 0.032, "cpu_s": 0.031}
 {"at": "2026-09-12T09:44:12+00:00", "run": "merge_docket", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 1.096, "cpu_s": 0.016}
 {"at": "2026-09-12T10:02:49+00:00", "run": "backtest", "kind": "hourly_cycle", "outcome": "TIMEOUT", "wall_s": 1117.268, "cpu_s": 0.031}
+{"at": "2026-09-12T10:14:49+00:00", "run": "external_gauntlet", "kind": "hourly_cycle", "outcome": "TIMEOUT", "wall_s": 720.41, "cpu_s": 0.0}
+{"at": "2026-09-12T10:25:20+00:00", "run": "falsifier_run", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 631.218, "cpu_s": 0.0}
+{"at": "2026-09-12T10:36:49+00:00", "run": "recertify_canon", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 688.495, "cpu_s": 0.0}

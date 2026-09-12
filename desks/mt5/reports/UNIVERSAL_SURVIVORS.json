@@ -1498,7 +1498,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -1531,7 +1531,7 @@
           "ev": 0.5929
         }
       },
-      "gated_at": "2026-09-12T09:03:09.580665+00:00",
+      "gated_at": "2026-09-12T10:12:32.713270+00:00",
       "shadow_spec": {
         "symbol": "CHFNOK",
         "selector": "asia",
@@ -1549,32 +1549,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "carry",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 258,
+          "candidates": 353,
           "certified": 1,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.003858705749368351,
+          "p": 0.002835828492014495,
           "beta": [
-            1.011,
-            260.989
+            1.0124,
+            355.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -1985,7 +1985,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -2018,7 +2018,7 @@
           "ev": 0.3017
         }
       },
-      "gated_at": "2026-09-12T09:03:08.796582+00:00",
+      "gated_at": "2026-09-12T10:12:31.879259+00:00",
       "shadow_spec": {
         "symbol": "GBPMXN",
         "selector": "asia",
@@ -2034,32 +2034,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "overnight_gap_decay",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 232,
+          "candidates": 197,
           "certified": 12,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.05089398689124792,
+          "p": 0.05976313816740883,
           "beta": [
-            12.011,
-            223.989
+            12.0124,
+            188.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -2338,7 +2338,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -2371,7 +2371,7 @@
           "ev": 0.2292
         }
       },
-      "gated_at": "2026-09-12T09:04:06.897673+00:00",
+      "gated_at": "2026-09-12T10:13:35.053014+00:00",
       "shadow_spec": {
         "symbol": "USDMXN",
         "selector": "asia",
@@ -2387,32 +2387,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "overnight_gap_decay",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 232,
+          "candidates": 197,
           "certified": 12,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.05089398689124792,
+          "p": 0.05976313816740883,
           "beta": [
-            12.011,
-            223.989
+            12.0124,
+            188.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -2863,7 +2863,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -2896,7 +2896,7 @@
           "ev": 0.3655
         }
       },
-      "gated_at": "2026-09-12T09:03:36.606758+00:00",
+      "gated_at": "2026-09-12T10:12:59.859701+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2920,32 +2920,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -3029,7 +3029,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -3062,7 +3062,7 @@
           "ev": 0.4011
         }
       },
-      "gated_at": "2026-09-12T09:03:38.952131+00:00",
+      "gated_at": "2026-09-12T10:13:02.180725+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -3086,32 +3086,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -3195,7 +3195,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -3228,7 +3228,7 @@
           "ev": 0.2826
         }
       },
-      "gated_at": "2026-09-12T09:05:04.606730+00:00",
+      "gated_at": "2026-09-12T10:14:58.113418+00:00",
       "shadow_spec": {
         "symbol": "EURGBP",
         "selector": "asia",
@@ -3252,32 +3252,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -3361,7 +3361,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -3394,7 +3394,7 @@
           "ev": 0.1761
         }
       },
-      "gated_at": "2026-09-12T09:03:12.962412+00:00",
+      "gated_at": "2026-09-12T10:12:36.246793+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -3418,32 +3418,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -3675,7 +3675,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -3708,7 +3708,7 @@
           "ev": 0.2777
         }
       },
-      "gated_at": "2026-09-12T09:05:47.732478+00:00",
+      "gated_at": "2026-09-12T10:15:31.528382+00:00",
       "shadow_spec": {
         "symbol": "AUDCAD",
         "selector": "asia",
@@ -3732,32 +3732,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -3841,7 +3841,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -3874,7 +3874,7 @@
           "ev": 0.3115
         }
       },
-      "gated_at": "2026-09-12T09:06:57.758146+00:00",
+      "gated_at": "2026-09-12T10:16:39.365418+00:00",
       "shadow_spec": {
         "symbol": "AUDNZD",
         "selector": "asia",
@@ -3898,49 +3898,39 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
       },
       "replay2_agreement": {
-        "status": "MEASURED",
-        "max_abs_r_gap": 0.0,
-        "n_trades_both": 1602,
-        "n_engine": 1602,
-        "n_replay": 1602,
-        "n_disagree": 0,
-        "agree_within_tolerance": true,
-        "why": "agree within tolerance",
-        "cost_price_units": 0.00011827,
-        "signals_outside_replay2_contract": 0,
-        "n_signals": 7777,
-        "contract_note": "replay2 models next-open fills, intrabar stop/target with stop first, TTL exits and one position at a time; trigger/bank/trail/pyramid signals are outside that contract and a gap on them is expected"
+        "status": "UNMEASURED",
+        "why": "no rebuilt cell to replay: annotation budget (300s) exhausted before this cell was rebuilt; the certificate is written and the trade-level annotations are UNMEASURED"
       },
       "complexity": {
         "status": "MEASURED",
@@ -3953,8 +3943,8 @@
         "basis": "free params = params minus input/chart identity keys (family_inputs.IDENTITY_KEYS); conditions = free params outside TRADE_SHAPE_KEYS ['hold_bars', 'horizon', 'rr', 'side', 'stop_atr', 'target_atr', 'ttl_bars', 'wait_bars']",
         "expression_nodes": null,
         "expression_nodes_why": "no grammar expression on params (a feature name is a leaf, not an expression)",
-        "turnover_per_day": 0.731841,
-        "turnover_basis": "1602 engine trades over 2189 calendar days (rebuilt cell)"
+        "turnover_per_day": 0.710827,
+        "turnover_basis": "1556 active trading days over 2189 calendar days (trade count unavailable: the cached series carries one R per day)"
       },
       "baselines": {
         "status": "MEASURED",
@@ -3967,21 +3957,21 @@
           "units": "calendar-day Sharpe; strategy in daily R (0 when flat), buy-and-hold in daily fractional close-to-close; total-return excess omitted as incommensurable"
         },
         "monkey": {
-          "beat_rate": 0.0,
-          "p_value": 1.0,
+          "beat_rate": 0.5,
+          "p_value": 0.500998003992016,
           "n_baselines": 500,
-          "real_statistic": -0.028281437777505573,
-          "baseline_median": -0.028281437777505573,
+          "real_statistic": 0.028245431174653696,
+          "baseline_median": 0.028244736752050376,
           "clears_target": false,
           "target": 0.9,
-          "reading": "NO TIMING EDGE: 0.0% of exposure-matched monkeys did worse -- a coin flip with the same time-in-market does as well or better. Whatever this rule earns comes from BEING in the market, not from choosing when.",
+          "reading": "WEAK: only 50.0% of exposure-matched monkeys did worse (target 90%). The rule is ahead of a coin flip but not by enough to distinguish timing skill from the luck of one draw.",
           "unmeasurable": null,
-          "positions_basis": "net side of engine trades open on each day (rebuilt cell)"
+          "positions_basis": "active-day indicator, long (build_cell passes side=1; trades unavailable)"
         },
         "exposure_timing": {
-          "exposure_share": 1.0,
-          "timing_share": -0.0,
-          "time_in_market": 1.0
+          "exposure_share": 1.0006312743621908,
+          "timing_share": -0.000631274362190835,
+          "time_in_market": 0.9993573264781491
         }
       }
     },
@@ -4081,7 +4071,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -4114,7 +4104,7 @@
           "ev": 0.37
         }
       },
-      "gated_at": "2026-09-12T09:06:58.996927+00:00",
+      "gated_at": "2026-09-12T10:16:39.427584+00:00",
       "shadow_spec": {
         "symbol": "AUDUSD",
         "selector": "asia",
@@ -4138,49 +4128,39 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
       },
       "replay2_agreement": {
-        "status": "MEASURED",
-        "max_abs_r_gap": 0.0,
-        "n_trades_both": 900,
-        "n_engine": 900,
-        "n_replay": 900,
-        "n_disagree": 0,
-        "agree_within_tolerance": true,
-        "why": "agree within tolerance",
-        "cost_price_units": 0.00019213,
-        "signals_outside_replay2_contract": 0,
-        "n_signals": 3712,
-        "contract_note": "replay2 models next-open fills, intrabar stop/target with stop first, TTL exits and one position at a time; trigger/bank/trail/pyramid signals are outside that contract and a gap on them is expected"
+        "status": "UNMEASURED",
+        "why": "no rebuilt cell to replay: annotation budget (300s) exhausted before this cell was rebuilt; the certificate is written and the trade-level annotations are UNMEASURED"
       },
       "complexity": {
         "status": "MEASURED",
@@ -4193,8 +4173,8 @@
         "basis": "free params = params minus input/chart identity keys (family_inputs.IDENTITY_KEYS); conditions = free params outside TRADE_SHAPE_KEYS ['hold_bars', 'horizon', 'rr', 'side', 'stop_atr', 'target_atr', 'ttl_bars', 'wait_bars']",
         "expression_nodes": null,
         "expression_nodes_why": "no grammar expression on params (a feature name is a leaf, not an expression)",
-        "turnover_per_day": 0.416281,
-        "turnover_basis": "900 engine trades over 2162 calendar days (rebuilt cell)"
+        "turnover_per_day": 0.197502,
+        "turnover_basis": "427 active trading days over 2162 calendar days (trade count unavailable: the cached series carries one R per day)"
       },
       "baselines": {
         "status": "MEASURED",
@@ -4207,21 +4187,21 @@
           "units": "calendar-day Sharpe; strategy in daily R (0 when flat), buy-and-hold in daily fractional close-to-close; total-return excess omitted as incommensurable"
         },
         "monkey": {
-          "beat_rate": 0.0,
-          "p_value": 1.0,
+          "beat_rate": 1.0,
+          "p_value": 0.001996007984031936,
           "n_baselines": 500,
-          "real_statistic": -0.1678317738673349,
-          "baseline_median": -0.002676857329152254,
-          "clears_target": false,
+          "real_statistic": 0.19429939000764726,
+          "baseline_median": 0.0024850033069819715,
+          "clears_target": true,
           "target": 0.9,
-          "reading": "NO TIMING EDGE: 0.0% of exposure-matched monkeys did worse -- a coin flip with the same time-in-market does as well or better. Whatever this rule earns comes from BEING in the market, not from choosing when.",
+          "reading": "BEATS RANDOM: 100.0% of exposure-matched monkeys did worse. The rule's edge is in WHEN it is positioned, not in how often -- an equally-exposed coin flip does not reproduce it.",
           "unmeasurable": null,
-          "positions_basis": "net side of engine trades open on each day (rebuilt cell)"
+          "positions_basis": "active-day indicator, long (build_cell passes side=1; trades unavailable)"
         },
         "exposure_timing": {
-          "exposure_share": 0.012410545108754114,
-          "timing_share": 0.9875894548912459,
-          "time_in_market": 0.2903645833333333
+          "exposure_share": 0.010582449430277446,
+          "timing_share": 0.9894175505697225,
+          "time_in_market": 0.2779947916666667
         }
       }
     },
@@ -4839,7 +4819,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -4872,7 +4852,7 @@
           "ev": 0.2617
         }
       },
-      "gated_at": "2026-09-12T09:03:40.871583+00:00",
+      "gated_at": "2026-09-12T10:13:04.168925+00:00",
       "shadow_spec": {
         "symbol": "NZDCAD",
         "selector": "asia",
@@ -4896,32 +4876,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -5005,7 +4985,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -5038,7 +5018,7 @@
           "ev": 0.2275
         }
       },
-      "gated_at": "2026-09-12T09:02:17.290316+00:00",
+      "gated_at": "2026-09-12T10:11:15.460056+00:00",
       "shadow_spec": {
         "symbol": "GBPAUD",
         "selector": "asia",
@@ -5062,32 +5042,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -5171,7 +5151,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -5204,7 +5184,7 @@
           "ev": 0.3186
         }
       },
-      "gated_at": "2026-09-12T09:07:33.681218+00:00",
+      "gated_at": "2026-09-12T10:16:39.601396+00:00",
       "shadow_spec": {
         "symbol": "USDCHF",
         "selector": "asia",
@@ -5228,32 +5208,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -5327,7 +5307,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -5360,7 +5340,7 @@
           "ev": 0.2638
         }
       },
-      "gated_at": "2026-09-12T09:07:33.743760+00:00",
+      "gated_at": "2026-09-12T10:16:39.668488+00:00",
       "shadow_spec": {
         "symbol": "USDCHF",
         "selector": "asia",
@@ -5384,32 +5364,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -5483,7 +5463,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -5516,7 +5496,7 @@
           "ev": 0.3164
         }
       },
-      "gated_at": "2026-09-12T09:07:33.615402+00:00",
+      "gated_at": "2026-09-12T10:16:39.521502+00:00",
       "shadow_spec": {
         "symbol": "EURJPY",
         "selector": "asia",
@@ -5540,32 +5520,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -5639,7 +5619,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -5672,7 +5652,7 @@
           "ev": 0.3478
         }
       },
-      "gated_at": "2026-09-12T09:04:07.597648+00:00",
+      "gated_at": "2026-09-12T10:13:35.895033+00:00",
       "shadow_spec": {
         "symbol": "EURAUD",
         "selector": "asia",
@@ -5696,32 +5676,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -5961,7 +5941,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -5994,7 +5974,7 @@
           "ev": 0.1834
         }
       },
-      "gated_at": "2026-09-12T09:06:20.066986+00:00",
+      "gated_at": "2026-09-12T10:16:04.725699+00:00",
       "shadow_spec": {
         "symbol": "AUDNZD",
         "selector": "asia",
@@ -6018,32 +5998,32 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
@@ -6127,7 +6107,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -6160,7 +6140,7 @@
           "ev": 0.1707
         }
       },
-      "gated_at": "2026-09-12T09:06:53.112547+00:00",
+      "gated_at": "2026-09-12T10:16:39.247098+00:00",
       "shadow_spec": {
         "symbol": "AUDNZD",
         "selector": "asia",
@@ -6184,49 +6164,39 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
       },
       "replay2_agreement": {
-        "status": "MEASURED",
-        "max_abs_r_gap": 0.0,
-        "n_trades_both": 5435,
-        "n_engine": 5435,
-        "n_replay": 5435,
-        "n_disagree": 0,
-        "agree_within_tolerance": true,
-        "why": "agree within tolerance",
-        "cost_price_units": 0.00011827,
-        "signals_outside_replay2_contract": 0,
-        "n_signals": 9329,
-        "contract_note": "replay2 models next-open fills, intrabar stop/target with stop first, TTL exits and one position at a time; trigger/bank/trail/pyramid signals are outside that contract and a gap on them is expected"
+        "status": "UNMEASURED",
+        "why": "no rebuilt cell to replay: annotation budget (300s) exhausted before this cell was rebuilt; the certificate is written and the trade-level annotations are UNMEASURED"
       },
       "complexity": {
         "status": "MEASURED",
@@ -6239,8 +6209,8 @@
         "basis": "free params = params minus input/chart identity keys (family_inputs.IDENTITY_KEYS); conditions = free params outside TRADE_SHAPE_KEYS ['hold_bars', 'horizon', 'rr', 'side', 'stop_atr', 'target_atr', 'ttl_bars', 'wait_bars']",
         "expression_nodes": null,
         "expression_nodes_why": "no grammar expression on params (a feature name is a leaf, not an expression)",
-        "turnover_per_day": 2.486276,
-        "turnover_basis": "5435 engine trades over 2186 calendar days (rebuilt cell)"
+        "turnover_per_day": 0.540256,
+        "turnover_basis": "1181 active trading days over 2186 calendar days (trade count unavailable: the cached series carries one R per day)"
       },
       "baselines": {
         "status": "MEASURED",
@@ -6253,21 +6223,21 @@
           "units": "calendar-day Sharpe; strategy in daily R (0 when flat), buy-and-hold in daily fractional close-to-close; total-return excess omitted as incommensurable"
         },
         "monkey": {
-          "beat_rate": 0.0,
-          "p_value": 1.0,
+          "beat_rate": 1.0,
+          "p_value": 0.001996007984031936,
           "n_baselines": 500,
-          "real_statistic": -0.30115102743609456,
-          "baseline_median": -0.023807360637190765,
-          "clears_target": false,
+          "real_statistic": 0.30949389861539256,
+          "baseline_median": 0.024078252291684345,
+          "clears_target": true,
           "target": 0.9,
-          "reading": "NO TIMING EDGE: 0.0% of exposure-matched monkeys did worse -- a coin flip with the same time-in-market does as well or better. Whatever this rule earns comes from BEING in the market, not from choosing when.",
+          "reading": "BEATS RANDOM: 100.0% of exposure-matched monkeys did worse. The rule's edge is in WHEN it is positioned, not in how often -- an equally-exposed coin flip does not reproduce it.",
           "unmeasurable": null,
-          "positions_basis": "net side of engine trades open on each day (rebuilt cell)"
+          "positions_basis": "active-day indicator, long (build_cell passes side=1; trades unavailable)"
         },
         "exposure_timing": {
-          "exposure_share": 0.09180455971228471,
-          "timing_share": 0.9081954402877154,
-          "time_in_market": 0.7657657657657657
+          "exposure_share": 0.08923660647367346,
+          "timing_share": 0.9107633935263264,
+          "time_in_market": 0.7599742599742599
         }
       }
     },
@@ -6293,7 +6263,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.625371
+          "variance_measured_this_sweep": 1.625367
         },
         "pbo": {
           "passed": true,
@@ -6326,7 +6296,7 @@
           "ev": 0.2159
         }
       },
-      "gated_at": "2026-09-12T09:06:56.888210+00:00",
+      "gated_at": "2026-09-12T10:16:39.306865+00:00",
       "shadow_spec": {
         "symbol": "AUDNZD",
         "selector": "asia",
@@ -6350,49 +6320,39 @@
         "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
         "sealed": true,
         "code_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
-        "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
+        "running_sha": "6c5f055892bd9a7f63507b831d9340701889616f",
         "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
         "why": null
       },
       "p_forward_success": {
         "status": "RECORDED_PREDICTION",
         "family": "discovered",
-        "p": 0.002745226583626977,
+        "p": 0.00309769291229368,
         "beta": [
-          0.011,
-          3.989
+          0.0124,
+          3.9876
         ],
         "stage": "forward_survived",
         "denominator_known": false,
         "counts": {
-          "candidates": 20345,
+          "candidates": 17144,
           "certified": 33,
           "forward_enrolled": 0,
           "forward_survived": 0,
           "live": 0
         },
         "p_certified_stage": {
-          "p": 0.0016222409408980544,
+          "p": 0.0019251452514374371,
           "beta": [
-            33.011,
-            20315.989
+            33.0124,
+            17114.9876
           ]
         },
         "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
       },
       "replay2_agreement": {
-        "status": "MEASURED",
-        "max_abs_r_gap": 0.0,
-        "n_trades_both": 1120,
-        "n_engine": 1120,
-        "n_replay": 1120,
-        "n_disagree": 0,
-        "agree_within_tolerance": true,
-        "why": "agree within tolerance",
-        "cost_price_units": 0.00011827,
-        "signals_outside_replay2_contract": 0,
-        "n_signals": 3730,
-        "contract_note": "replay2 models next-open fills, intrabar stop/target with stop first, TTL exits and one position at a time; trigger/bank/trail/pyramid signals are outside that contract and a gap on them is expected"
+        "status": "UNMEASURED",
+        "why": "no rebuilt cell to replay: annotation budget (300s) exhausted before this cell was rebuilt; the certificate is written and the trade-level annotations are UNMEASURED"
       },
       "complexity": {
         "status": "MEASURED",
@@ -6405,8 +6365,8 @@
         "basis": "free params = params minus input/chart identity keys (family_inputs.IDENTITY_KEYS); conditions = free params outside TRADE_SHAPE_KEYS ['hold_bars', 'horizon', 'rr', 'side', 'stop_atr', 'target_atr', 'ttl_bars', 'wait_bars']",
         "expression_nodes": null,
         "expression_nodes_why": "no grammar expression on params (a feature name is a leaf, not an expression)",
-        "turnover_per_day": 0.513997,
-        "turnover_basis": "1120 engine trades over 2179 calendar days (rebuilt cell)"
+        "turnover_per_day": 0.158788,
+        "turnover_basis": "346 active trading days over 2179 calendar days (trade count unavailable: the cached series carries one R per day)"
       },
       "baselines": {
         "status": "MEASURED",
@@ -6419,21 +6379,21 @@
           "units": "calendar-day Sharpe; strategy in daily R (0 when flat), buy-and-hold in daily fractional close-to-close; total-return excess omitted as incommensurable"
         },
         "monkey": {
-          "beat_rate": 0.0,
-          "p_value": 1.0,
+          "beat_rate": 1.0,
+          "p_value": 0.001996007984031936,
           "n_baselines": 500,
-          "real_statistic": -0.2069987570429243,
-          "baseline_median": -0.01503043120697269,
-          "clears_target": false,
+          "real_statistic": 0.22441930814970507,
+          "baseline_median": 0.013732004666857003,
+          "clears_target": true,
           "target": 0.9,
-          "reading": "NO TIMING EDGE: 0.0% of exposure-matched monkeys did worse -- a coin flip with the same time-in-market does as well or better. Whatever this rule earns comes from BEING in the market, not from choosing when.",
+          "reading": "BEATS RANDOM: 100.0% of exposure-matched monkeys did worse. The rule's edge is in WHEN it is positioned, not in how often -- an equally-exposed coin flip does not reproduce it.",
           "unmeasurable": null,
-          "positions_basis": "net side of engine trades open on each day (rebuilt cell)"
+          "positions_basis": "active-day indicator, long (build_cell passes side=1; trades unavailable)"
         },
         "exposure_timing": {
-          "exposure_share": 0.052279019057586494,
-          "timing_share": 0.9477209809424134,
-          "time_in_market": 0.23499031633311815
+          "exposure_share": 0.046663156486598356,
+          "timing_share": 0.9533368435134018,
+          "time_in_market": 0.22336991607488701
         }
       }
     }
@@ -6468,6 +6428,6 @@
     "lockbox_oos_sharpe_min": 0.0,
     "expected_value_min_exclusive": 0.0
   },
-  "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility apply before portfolio entry.",
-  "swept_at": "2026-09-12T10:07:04.992565+00:00"
+  "note": "UNIVERSAL 10-GATE PASS ONLY.",
+  "swept_at": "2026-09-12T10:16:39.918494+00:00"
 }

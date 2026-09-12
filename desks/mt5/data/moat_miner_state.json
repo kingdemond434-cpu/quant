@@ -1,8 +1,8 @@
 {
- "last_mined": "2026-09-12T09:45:06+00:00",
+ "last_mined": "2026-09-12T10:15:01+00:00",
  "symbols_profiled": 40,
- "hypotheses_added": 3,
- "cursor": 20,
+ "hypotheses_added": 0,
+ "cursor": 60,
  "symbols_available": 245,
  "slice": 40,
  "runs_per_full_pass": 7
