@@ -73,13 +73,26 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # now its own row below, where it can be read as what it is.
     "MT5-Hourly":         ("desks/mt5/data/events.jsonl", 180,
                            "every research leg appends here; silence means no leg ran"),
-    "MT5-GauntletRotation": ("desks/mt5/data/hypotheses/gauntlet_build_cursor.json", 240,
+    "MT5-Gauntlet-Rotation": ("desks/mt5/data/hypotheses/gauntlet_build_cursor.json", 240,
                              "which symbols the gauntlet last BUILT -- a stale cursor means the "
                              "docket has stopped rotating and the tail is never reached"),
     "MT5-Universe":       ("desks/mt5/data/universe/universe.json", 1440,
                            "the symbol registry the whole hypothesis lane reads"),
     "MT5-LocalConvert":   ("desks/mt5/data/hypotheses/local_candidates.json", 180,
                            "deterministic row -> candidate conversion"),
+    # THE ORGANS BUILT 2026-09-12. Every one was UNCONTRACTED on the day it was written, which is
+    # the gap that lets a new organ stop without anyone noticing -- exactly the class the
+    # principal asked to end. A contract is the difference between an organ and a hope.
+    "MT5-DataAxis":       ("desks/mt5/reports/DATA_AXES.json", 180,
+                           "which free data axes this box can actually reach"),
+    "MT5-AxisIngest":     ("desks/mt5/reports/AXIS_INGEST.json", 1560,
+                           "reachable axes turned into dated series a family can condition on"),
+    "MT5-CEODocket":      ("desks/mt5/reports/CEO_DOCKET.json", 1560,
+                           "the daily ranked proposals the frontier scout produced"),
+    "MT5-NeverStale":     ("desks/mt5/reports/NEVER_STALE.json", 60,
+                           "the watchdog's own reading -- if THIS goes stale nothing is watching"),
+    "MT5-ProcessHealth":  ("desks/mt5/reports/process_health.json", 60,
+                           "every process, its last run and whether it is healthy"),
     "MT5-Healers":        ("desks/mt5/logs/MT5-Healers.log", 180,
                            "proof the standing fixers actually ran"),
     "MT5-MoatRecorder":   ("desks/mt5/data/moat_coverage.json", 180,
