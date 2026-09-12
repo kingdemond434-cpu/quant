@@ -16,7 +16,6 @@ import math
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from itertools import pairwise
-from typing import cast
 
 import numpy as np
 
@@ -584,7 +583,8 @@ def volatility_manifold_state(
     def errors(rows: np.ndarray) -> np.ndarray:
         centered = rows - center
         reconstruction = (centered @ basis.T) @ basis
-        return cast("np.ndarray", np.mean((centered - reconstruction) ** 2, axis=1))
+        # np.mean over an axis is typed as ndarray now; the cast asserted nothing.
+        return np.mean((centered - reconstruction) ** 2, axis=1)
 
     calibration_error = errors(train)
     held_out_error = errors(x[train_rows:])

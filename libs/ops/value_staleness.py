@@ -291,7 +291,10 @@ def proc_start(pid: int) -> float | None:
                      if ln.startswith("btime "))
     except (OSError, ValueError, StopIteration, IndexError):
         return None
-    return btime + starttime / os.sysconf("SC_CLK_TCK")
+    # POSIX-ONLY: reached only after /proc/stat parsed, which cannot happen on
+    # Windows. float() makes the Any from sysconf explicit rather than leaked.
+    ticks = float(os.sysconf("SC_CLK_TCK"))  # type: ignore[attr-defined]
+    return float(btime) + starttime / ticks
 
 
 def live_daemons(root: Path, *, min_uptime_h: float = _MIN_UPTIME_H,

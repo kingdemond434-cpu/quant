@@ -71,12 +71,15 @@ def pit(y: _ArrayIn, mu: _ArrayIn, sigma: _ArrayIn) -> np.ndarray:
 
 def pit_ks(u: _ArrayIn) -> float:
     """KS distance of PIT values from uniform. 0 is perfectly calibrated."""
-    u = np.sort(np.clip(np.asarray(u, dtype=float), 0.0, 1.0))
-    n = u.size
+    # A NEW NAME, NOT A REBIND. `u` is declared as a UNION (Sequence[float] | ndarray), so
+    # assigning the sorted array back onto it keeps the union type and `.size` is then an
+    # attribute only one arm has. The array is what the rest of this function works with.
+    arr = np.sort(np.clip(np.asarray(u, dtype=float), 0.0, 1.0))
+    n = arr.size
     if n == 0:
         return float("nan")
     i = np.arange(1, n + 1)
-    return float(max(np.max(i / n - u), np.max(u - (i - 1) / n)))
+    return float(max(np.max(i / n - arr), np.max(arr - (i - 1) / n)))
 
 
 @dataclass(frozen=True)
