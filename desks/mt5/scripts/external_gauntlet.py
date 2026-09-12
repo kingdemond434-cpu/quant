@@ -762,6 +762,60 @@ BUILD_CURSOR = REPORTS.parent / "data" / "hypotheses" / "gauntlet_build_cursor.j
 SEEN_CELLS = REPORTS.parent / "data" / "hypotheses" / "gauntlet_seen_cells.json"
 
 
+#: WHICH GATE KILLED WHICH CELL, kept across sweeps (2026-09-12).
+#:
+#: The verdicts already carry `terminal_gate`. They were written to universal_gates_external.json
+#: and OVERWRITTEN every sweep, so the desk held this hour's rejections and no history at all --
+#: which is why `negative_knowledge` had to report "likely failure gate: UNMEASURED, no artifact
+#: on this box records which gate rejected which cell". It was there and it was being thrown away
+#: once an hour.
+#:
+#: APPEND ONLY ON CHANGE, which is what keeps this bounded. Re-judging 21,000 cells an hour and
+#: appending every verdict would write half a million rows a day to say nothing new; a cell whose
+#: verdict is unchanged is not information. The index below holds the last recorded verdict per
+#: cell, and a row is written only when the verdict differs from it -- so the ledger's growth is
+#: the rate at which the desk CHANGES ITS MIND, which is exactly the quantity worth storing.
+GATE_LEDGER = REPORTS.parent / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+GATE_INDEX = REPORTS.parent / "data" / "hypotheses" / "gate_verdict_index.json"
+
+
+def _append_gate_ledger(verdicts: list) -> dict:
+    """Record each cell's terminal gate, once per change. Never raises -- this is bookkeeping."""
+    try:
+        idx = json.loads(GATE_INDEX.read_text("utf-8"))
+        if not isinstance(idx, dict):
+            idx = {}
+    except (OSError, ValueError):
+        idx = {}
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    rows = []
+    for v in verdicts:
+        if not isinstance(v, dict):
+            continue
+        cell = str(v.get("cell") or "")
+        if not cell:
+            continue
+        gate = str(v.get("terminal_gate") or ("PASSED" if v.get("passed") else "UNKNOWN"))
+        key = f"{gate}|{1 if v.get('passed') else 0}"
+        if idx.get(cell) == key:
+            continue
+        idx[cell] = key
+        rows.append({"at": now, "cell": cell, "sym": v.get("sym"), "family": v.get("family"),
+                     "passed": bool(v.get("passed")), "terminal_gate": gate,
+                     "downstream_status": v.get("downstream_status")})
+    if not rows:
+        return {"appended": 0, "known": len(idx)}
+    try:
+        GATE_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with GATE_LEDGER.open("a", encoding="utf-8") as fh:
+            for r in rows:
+                fh.write(json.dumps(r, default=str) + chr(10))
+        GATE_INDEX.write_text(json.dumps(idx, indent=0, sort_keys=True), encoding="utf-8")
+    except OSError as exc:
+        return {"appended": 0, "known": len(idx), "error": str(exc)[:120]}
+    return {"appended": len(rows), "known": len(idx)}
+
+
 def _seen_cells() -> dict[str, str]:
     """cell id -> ISO time it was first judged. Unreadable reads as EMPTY, which is the safe
     direction: every cell then looks new, the sweep judges in cursor order as it always did, and
@@ -2304,6 +2358,11 @@ def main():
     result.setdefault("gate_fails", {})["economic_prior"] = (
         int(result.get("gate_fails", {}).get("economic_prior", 0)) + len(prior_rejections)
     )
+    # THE GATE LEDGER (2026-09-12). Reproduction writes its own file and touches no shared
+    # record, exactly as the report and the cursors already do.
+    if not _repro_active():
+        result["gate_ledger"] = _safe(lambda: _append_gate_ledger(result["verdicts"]),
+                                      "gate_ledger")
 
     # Save. REPRODUCTION WRITES ITS OWN FILE AND NOTHING ELSE. This report is read by the
     # research-health fence and the funnel census; a one-cell re-run overwriting it would make the

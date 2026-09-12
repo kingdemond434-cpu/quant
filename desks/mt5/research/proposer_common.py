@@ -326,6 +326,57 @@ def _stamped(source: str, candidates: list[dict]) -> tuple[list[dict], list[dict
     return ok, refused
 
 
+def _lane_filtered(candidates: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Refuse hypothesis-lane rows on instruments the TWO-LANE MANDATE does not hunt.
+
+    THE PRINCIPAL, 2026-09-06: single-name equities are traded on news, financial reports and
+    earnings reaction -- never hunted for statistical hypotheses. Routing was wired at
+    `run_external_backtest.route_by_lane`, which is the BACKTEST's door and not the DOCKET's.
+
+    MEASURED 2026-09-12 by the frontier map, which is why this exists: 10,927 of 21,582 docket
+    cells -- 51% -- sit on symbols `universe_policy.may_hypothesise` returns False for, they hold
+    ZERO certificates between them at a 0.046% upper bound, and 447 of them were first seen in
+    SEPTEMBER, i.e. after the mandate. The leak is live, not historical debt.
+
+    IT IS NOT A RISK REDUCTION AND THE STANDING ORDER DOES NOT COVER IT. Trial count is a SHARED
+    cost: the deflated-Sharpe charge and the program-level SPA/PBO tests divide one family-wise
+    error budget across every hypothesis tested, so each equity cell raises the bar every FX,
+    metals and energy cell has to clear. Refusing them at the door LOWERS the bar for the classes
+    the method actually suits. This makes the desk's research more aggressive, not less.
+
+    NOTHING HISTORICAL IS DELETED. The 10,480 rows already in the docket stay exactly where they
+    are and keep their verdicts; this closes the door, it does not rewrite the record.
+    """
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception:
+        # NO POLICY, NO FILTER. Refusing every row because the policy module is unimportable
+        # would take the whole intake dark over a missing import; absence of the rule is not the
+        # rule, and the rows are passed with nothing claimed about them (L1.28a).
+        return candidates, []
+    ok: list[dict] = []
+    refused: list[dict] = []
+    for c in candidates:
+        sym = str(c.get("symbol") or c.get("sym") or "").strip()
+        if not sym:
+            ok.append(c)
+            continue
+        try:
+            allowed = bool(may_hypothesise(sym))
+        except Exception:
+            allowed = True          # an unreadable verdict is not a refusal
+        if allowed:
+            ok.append(c)
+        else:
+            refused.append({"symbol": sym, "family": c.get("family"),
+                            "why": ("the two-lane mandate (2026-09-06): this instrument is "
+                                    "traded on news and earnings reaction, never hunted for "
+                                    "statistical hypotheses. Its cells spend a shared "
+                                    "family-wise error budget that every FX and metals "
+                                    "hypothesis then has to clear.")})
+    return ok, refused
+
+
 def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
 
@@ -336,8 +387,16 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     and on `donation_counts()` for the proposer's own report.
     """
     global LAST_DONATION
-    LAST_DONATION = {"source": source, "donated": 0, "refused_unstamped": 0, "refusals": []}
+    LAST_DONATION = {"source": source, "donated": 0, "refused_unstamped": 0,
+                     "refused_wrong_lane": 0, "refusals": [], "lane_refusals": []}
     if not candidates:
+        return None
+    candidates, lane_refused = _lane_filtered(candidates)
+    LAST_DONATION["refused_wrong_lane"] = len(lane_refused)
+    LAST_DONATION["lane_refusals"] = lane_refused[:20]
+    if not candidates:
+        # Every row was the wrong lane. Writing an empty contract would record a proposer that
+        # produced nothing, when it produced rows the mandate turned away.
         return None
     candidates, refused = _stamped(source, candidates)
     LAST_DONATION["refused_unstamped"] = len(refused)
@@ -366,7 +425,8 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                                 "generated_at": datetime.now(tz=UTC).isoformat(),
                                 "tests_run": tests_run, "discoveries": candidates,
                                 "counts": {"donated": len(candidates),
-                                           "refused_unstamped": len(refused)},
+                                           "refused_unstamped": len(refused),
+                                           "refused_wrong_lane": len(lane_refused)},
                                 "refusals": refused[:20],
                                 "rule": ("a candidate without a point-in-time stamp is refused "
                                          "here and counted, never written: absence of an "

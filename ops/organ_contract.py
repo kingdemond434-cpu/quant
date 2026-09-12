@@ -227,6 +227,57 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "ten critics on DIFFERENT evidence and different vendors, a reviewer forbidden to "
         "resolve a dissent, and a meta-reviewer whose only job is to catch dissents that went "
         "missing"),
+    "MT5-FrontierAudit (quantbench)": (
+        "desks/mt5/reports/QUANTBENCH.json", 1560,
+        "every defect this desk has actually survived, as an executable probe against the "
+        "CURRENT tree -- with a case count that ratchets, so deleting one is a visible act"),
+    "MT5-FrontierAudit (capacity frontier)": (
+        "desks/mt5/reports/CAPACITY_FRONTIER.json", 1560,
+        "how many multiples of today's round trip each mechanism's edge survives, against the "
+        "multiple its symbol's spread already widens by intraday -- and the venue's own verdict "
+        "that it publishes no order book at all"),
+    "MT5-FrontierAudit (capacity floor)": (
+        "desks/mt5/reports/CAPACITY.json", 1560,
+        "the LOWER capacity bound: the equity below which the venue's minimum lot forces more "
+        "risk per trade than the policy asked for"),
+    "MT5-FrontierAudit (execution science)": (
+        "desks/mt5/reports/EXECUTION_SCIENCE.json", 1560,
+        "signal alpha and execution drag separated by scoring the SAME signals at a zero cost "
+        "multiplier, and each fill-and-exit policy ranked on held-out bars"),
+    "MT5-FrontierAudit (sub-hour replay)": (
+        "desks/mt5/reports/SUBHOUR_COUNTERFACTUALS.json", 1560,
+        "counterfactuals for the sub-H1 sleeves action_counterfactuals skips, at the resolution "
+        "they actually trade, plus the error the H1 approximation was making"),
+    "MT5-FrontierAudit (information value)": (
+        "desks/mt5/reports/INFORMATION_VALUE.json", 1560,
+        "which MISSING observation is worth obtaining, harvested from every UNMEASURED verdict "
+        "the desk publishes, plus the acquired series nothing has ever referenced"),
+    "MT5-FrontierAudit (market ecology)": (
+        "desks/mt5/reports/MARKET_ECOLOGY.json", 1560,
+        "the tape footprint each participant class must leave if it is there -- systematic "
+        "rebalance, vol-control, CTA triggers, dealer gamma, round-number magnets, session "
+        "makers -- each against a block-permuted null, plus the desk's own edge-decay slope"),
+    # F28 and F11/F27. budget_market prices the three resources; meta_controller spends those
+    # prices across nine kinds of action. Both were built and running nowhere.
+    "MT5-FrontierAudit (budget market)": (
+        "desks/mt5/reports/BUDGET_MARKET.json", 1560,
+        "compute, trials and capital priced against each other in dE[log W] per unit of each, "
+        "with every denominator's basis stated and an unmeasurable one publishing UNMEASURED"),
+    "MT5-FrontierAudit (meta controller)": (
+        "desks/mt5/reports/META_CONTROLLER.json", 1560,
+        "nine kinds of research action -- new hypothesis, deepen, acquire, falsify, investigate, "
+        "gather forward, evolve, transfer, abandon -- ranked per unit of the resource each one "
+        "actually consumes, with the binding resource named"),
+    "MT5-FrontierAudit (frontier map)": (
+        "desks/mt5/reports/FRONTIER_MAP.json", 1560,
+        "the one map: data x mechanism x market x horizon x state x representation x execution x "
+        "payoff, with occupancy, confidence width and expected information per region, and the "
+        "regions ONE axis from somewhere the desk has already been"),
+    "MT5-FrontierAudit (negative knowledge)": (
+        "desks/mt5/reports/NEGATIVE_KNOWLEDGE.json", 1560,
+        "a trained P(survive) over the desk's own 21,582 judged cells, with an absolute "
+        "exploration floor and its own out-of-sample evidence stated as UNMEASURED when the "
+        "held-out window holds too few survivors to judge it"),
     "MT5-FrontierAudit (joint evolution)": (
         "desks/mt5/reports/JOINT_EVOLUTION.json", 1560,
         "whether the desk's strategy LAYERS are separable -- the share of fitness variance each "

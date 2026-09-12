@@ -32,4 +32,31 @@ cd /d C:\opt\quant
 "%PY%" -u "desks\mt5\research\world_model.py" --apply >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\representation_discovery.py" --apply >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\joint_evolution.py" --apply >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\negative_knowledge.py" --apply >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\frontier_map.py" --apply >>"%LOG%" 2>&1
+rem THE THREE-RESOURCE LOOP, IN DEPENDENCY ORDER (F28 + F11/F27, 2026-09-12).
+rem scaling_laws fits survivors per compute-hour, which is the ONLY input that gives compute
+rem a price; budget_market quotes all three resources; meta_controller spends those prices on
+rem nine kinds of action. Run out of order and the controller reads yesterday's prices.
+rem scaling_laws returns UNMEASURED until the compute ledger holds seven days -- it held two
+rem on the day this was wired, and that is a data limit rather than a defect.
+"%PY%" -u -m libs.ops.scaling_laws >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\budget_market.py" --apply >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\market_ecology.py" --apply >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\information_value.py" --apply >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\execution_science.py" --apply >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\subhour_counterfactuals.py" --apply >>"%LOG%" 2>&1
+rem BOTH HALVES OF CAPACITY (F21). capacity.py answers the LOWER bound -- the venue's
+rem minimum lot forcing more risk per trade than the policy asked for, which its own
+rem docstring rightly calls the binding constraint at this account size -- and it had no
+rem runner and no contract since the day it was written. capacity_frontier answers the
+rem upper bound in the only unit this venue supplies: how many multiples of today's round
+rem trip each mechanism survives.
+"%PY%" -u "desks\mt5\research\capacity.py" >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\capacity_frontier.py" --apply >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\meta_controller.py" --apply >>"%LOG%" 2>&1
+rem THE BENCH RUNS LAST (F18), and the order is the point: every probe reads an artifact
+rem this lane has just regenerated, so a stale report cannot be mistaken for a returned
+rem defect. It reports UNMEASURABLE on an artifact older than the code that produces it.
+"%PY%" -u "desks\mt5\research\quantbench.py" --apply >>"%LOG%" 2>&1
 exit /b 0

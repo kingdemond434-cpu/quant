@@ -168,17 +168,46 @@ def measure(sleeves: list[dict[str, Any]] | None = None,
                 break
             except Exception:                                           # noqa: BLE001, S110
                 continue
+    source = "caller"
     if sleeves is None:
         sleeves = []
+        source = "decision_core.roster"
         try:
             sleeves = [s for s in core.roster()[0] if isinstance(s, dict)]
         except Exception:                                               # noqa: BLE001
             sleeves = []
+        if not sleeves:
+            # THE ROSTER WAS THIS ORGAN'S ONLY SOURCE AND IT RAISES ON THIS BOX.
+            #
+            # Measured 2026-09-12: `from research import decision_core` fails with ImportError,
+            # the except above swallows it, and `measure()` has returned "0/0 measured" for as
+            # long as the file has existed -- an organ that runs, writes a report and says
+            # nothing. That is III.16 exactly, and it is invisible because 0/0 is a perfectly
+            # well-formed answer.
+            #
+            # data/sleeves.json is the file every other organ on this desk reads, and its LIVE
+            # rows carry `risk_frac`, which is precisely the policy fraction `assess` wants. The
+            # fallback is not a second source of truth: it is the SAME roster, read from the file
+            # the roster is built from.
+            #
+            # THE SOURCE IS RECORDED IN THE OUTPUT. A fallback nobody can see in the artifact is
+            # how a desk ends up not knowing which of two answers it is reading.
+            source = "data/sleeves.json (LIVE rows) -- roster unavailable"
+            try:
+                doc = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8"))
+                rows_in = doc if isinstance(doc, list) else (doc.get("sleeves") or [])
+                sleeves = [s for s in rows_in
+                           if isinstance(s, dict)
+                           and str(s.get("status", "")).upper() == "LIVE"]
+            except Exception:                                           # noqa: BLE001
+                sleeves = []
+                source = "NONE -- roster unavailable and data/sleeves.json unreadable"
     rows = [assess(s, equity) for s in sleeves]
     flagged = over_risked(rows)
     return {
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "equity_eur": equity,
+        "sleeve_source": source,
         "sleeves": len(rows),
         "measured": sum(1 for r in rows if r.get("status") == "MEASURED"),
         "binding_now": sum(1 for r in rows if r.get("binding_now")),
