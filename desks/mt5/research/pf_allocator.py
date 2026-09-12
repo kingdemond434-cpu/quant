@@ -40,6 +40,7 @@ import math
 import os
 import sys
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -115,8 +116,18 @@ EVIDENCE_MAX_AGE_S = 3600
 #: RAISING THE TOP IS THE ONE EDIT THAT MATTERS: the principal removed the fixed 30% cap on
 #: 2026-09-05, and until this tuple extends past 0.30 no measurement can license a heat above it
 #: -- not because a rule forbids it, but because nothing sampled it.
+#: THE GRID RUNS TO 100% AND THE CAP ON IT IS GONE (principal, 2026-09-12: "remove the cap fully",
+#: "i told u no caps"). This is a MEASUREMENT grid: sampling a heat is not deploying it, and the
+#: only way the desk can ever learn that 60% is bad is to have measured 60%.
+#:
+#: Measured that day: the curve was monotonically RISING at every one of its ten points and stopped
+#: at 0.225 -- not because growth turned, but because it was never asked. Growth per day went
+#: +0.00716 at 2% to +0.02821 at 22.5% and was still climbing; the free optimum wanted 40.7%. The
+#: reported "measured ceiling 22.5%" was the edge of the sweep wearing the name of an economic
+#: limit, and its own reason string said so: "sweep further out to earn more."
 CURVE_GRID = (0.02, 0.04, 0.06, 0.08, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225, 0.25, 0.275,
-              0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45)
+              0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70,
+              0.80, 0.90, 1.00)
 
 #: The highest heat the growth curve is MEASURED at. A MEASUREMENT bound, not a policy bound, and
 #: the distinction is the whole point of this constant existing separately from HEAT_HARD_CEILING.
@@ -142,7 +153,13 @@ CURVE_GRID = (0.02, 0.04, 0.06, 0.08, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225, 0.2
 #: ("20, 21, 23, 25, 27, 30, 34, 39, 45"). Raising it further is a decision about how far the desk
 #: is willing to SIMULATE, which costs solver time and nothing else -- it is not a decision about
 #: how much risk to take, because no heat is deployed that the curve did not first justify.
-CURVE_SAMPLE_MAX = 0.45
+#: RAISED FROM 0.45 TO 1.00 (principal, 2026-09-12). Solver time is the only thing this costs:
+#: no heat is deployed that the curve did not first justify, `measured_ceiling` still refuses
+#: every heat past the turnover point, and it still never runs past the last SAMPLED point. The
+#: previous 0.45 was itself a range the principal had named; the instruction now is that the
+#: measurement must not be bounded at all, so the desk can find where growth genuinely turns
+#: instead of reporting the edge of its own grid as an economic result.
+CURVE_SAMPLE_MAX = 1.00
 
 #: Round-trip execution cost charged against a unit of heat moved, in account fraction. Turnover
 #: below the growth it buys is not an improvement, and this is the price that decides.
@@ -945,7 +962,9 @@ def worst_dd_r(daily: pd.DataFrame) -> dict[str, float]:
 # ---------------------------------------------------------------------------------------
 
 def growth_curve(ev: list[SleeveEvidence], worlds: Worlds, bounds: dict[str, float],
-                 cfg: WorldConfig) -> dict[float, float]:
+                 cfg: WorldConfig,
+                 *, bounds_at: Callable[[float], dict[str, float]] | None = None,
+                 ) -> dict[float, float]:
     """Mean log growth of the OPTIMALLY COMPOSED book at each total heat on the grid.
 
     This is the curve `heat_policy.certify` reads, and it must be measured with the same
@@ -961,7 +980,28 @@ def growth_curve(ev: list[SleeveEvidence], worlds: Worlds, bounds: dict[str, flo
         # heat past its turnover point, so measuring 45% is how the desk learns 45% is bad.
         if h > CURVE_SAMPLE_MAX:
             continue
-        ub = {k: min(v, h) for k, v in bounds.items()}
+        # THE BOUNDS MUST BE THE ONES THE DESK WOULD RUN *AT THIS HEAT*, and passing one fixed set
+        # made the curve unable to measure its own ceiling.
+        #
+        # MEASURED 2026-09-12. The caller passed `per_sleeve_bounds(dd, HEAT_TARGET)` -- the bounds
+        # for a 20% book -- and they sum to ~22.5%. Every grid point above that failed
+        # `sum(ub) < h` and was skipped, so the curve stopped at 0.225 with growth STILL RISING
+        # (+0.02693/day at 0.200, +0.02821 at 0.225, monotone throughout, never turning).
+        # `measured_ceiling` then correctly reported "the bound is the edge of the MEASUREMENT,
+        # not of the opportunity -- sweep further out to earn more" and returned 22.5%.
+        #
+        # So the deployed ceiling was the SUM OF THE FLOOR'S BOUNDS wearing the name of an
+        # economic limit, while the free optimum wanted 40.7% and the survival envelope allowed
+        # 28.5%. The desk was not being held back by where growth turns; it was being held back by
+        # never having asked.
+        #
+        # `bounds_at(h)` re-derives the per-sleeve bounds for the heat under test, which is the
+        # only honest question: what would this book do IF it ran at h, under the bounds it would
+        # have at h. Every safety property is untouched -- measured_ceiling still refuses past the
+        # turnover point, still never runs past the last SAMPLED point, and the survival envelope
+        # still binds independently.
+        b = bounds_at(h) if bounds_at is not None else bounds
+        ub = {k: min(v, h) for k, v in b.items()}
         if sum(ub.values()) < h:
             continue                     # bounds cannot fund this heat; not a growth finding
         try:
@@ -2706,7 +2746,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
              f"defect, not an opportunity. The previous book stands.")
 
     # 2. THE CURVE, then the law.
-    curve = growth_curve(ev, worlds, bounds, cfg) if heavy else {}
+    curve = growth_curve(ev, worlds, bounds, cfg,
+                         bounds_at=lambda _h: per_sleeve_bounds(dd, _h)) if heavy else {}
     if not curve and OUT.exists():
         try:                                    # a fast pass inherits the last heavy curve
             prev = json.loads(OUT.read_text("utf-8")).get("heat", {}).get("curve") or []
