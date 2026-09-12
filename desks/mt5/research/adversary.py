@@ -183,17 +183,62 @@ def run_canaries(gate) -> dict[str, Any]:
     rows = [judge(c, gate) for c in CANARIES]
     rejected = sum(1 for r in rows if r["rejected"])
     rate = rejected / len(rows) if rows else None
-    survivors = [r for r in rows if not r["rejected"]]
+
+    # PASSED AND UNJUDGED ARE DIFFERENT FACTS AND MUST NOT SHARE A SENTENCE.
+    #
+    # `rejected = (passed is False)` deliberately treats an unjudged canary as not-rejected, and
+    # that is right for the RATE: a gate that cannot run has not proved anything and must fail
+    # closed. But the verdict STRING said "<canary> passed -- the gates admit i.i.d. noise, so no
+    # certificate carries information", which is a different and much larger claim, and it was
+    # made about canaries the gate never saw.
+    #
+    # MEASURED 2026-09-12: a deployment error -- external_gauntlet.py shipped calling
+    # `fail_closed_trial_count` before gate_policy.py defining it -- raised ImportError inside the
+    # gate. All five canaries came back judged=False, and ADVERSARY.json announced that the gates
+    # admit noise, that the harness permits lookahead, and that every backtest ever run was void.
+    # None of it was true; re-run with the import fixed, the same gates rejected 5/5 on every one
+    # of in_sample_screen, deflated_sharpe, cpcv, walk_forward, stress_costs, lockbox and
+    # expected_value.
+    #
+    # The cost of that confusion is not cosmetic. "Every certificate is suspect" is the loudest
+    # alarm this desk can raise, and an alarm that fires on a broken import is an alarm people
+    # learn to disbelieve -- which is precisely when the real one arrives.
+    passed_rows = [r for r in rows if r["judged"] and not r["rejected"]]
+    unjudged_rows = [r for r in rows if not r["judged"]]
+    survivors = passed_rows + unjudged_rows
+
+    if passed_rows:
+        verdict = "A CANARY SURVIVED. " + "; ".join(
+            f"{s['canary']} passed -- {s['why_fatal_if_passed']}" for s in passed_rows)
+        if unjudged_rows:
+            why = "; ".join(str(s.get("gate_error") or "no reason given")[:90]
+                            for s in unjudged_rows)
+            verdict += (f"; and {len(unjudged_rows)} more could not be judged at all "
+                        f"({why})")
+    elif unjudged_rows:
+        verdict = ("UNMEASURED: the gate could not judge "
+                   f"{len(unjudged_rows)} of {len(rows)} canaries, so this run proves NOTHING "
+                   "about whether the gates still gate -- it is not evidence that a canary "
+                   "survived. Fix the gate and re-run. Reasons: "
+                   + "; ".join(str(s.get("gate_error") or "no reason given")[:120]
+                               for s in unjudged_rows))
+    else:
+        verdict = ("every canary rejected; the gates can still fail, so their passes carry "
+                   "information")
+
     return {
         "canaries": rows,
         "rejection_rate": rate,
         "required": REQUIRED_REJECTION_RATE,
         "intact": rate == REQUIRED_REJECTION_RATE,
         "survivors": [s["canary"] for s in survivors],
-        "verdict": ("every canary rejected; the gates can still fail, so their passes carry "
-                    "information" if not survivors else
-                    "A CANARY SURVIVED. " + "; ".join(
-                        f"{s['canary']} passed -- {s['why_fatal_if_passed']}" for s in survivors)),
+        # Named separately so a reader -- and any organ that alerts on this file -- can tell a
+        # gate that FAILED from a gate that never RAN without parsing the prose.
+        "passed": [s["canary"] for s in passed_rows],
+        "unjudged": [s["canary"] for s in unjudged_rows],
+        "status": ("OK" if not survivors else
+                   "GATE_BROKEN" if passed_rows else "UNMEASURED"),
+        "verdict": verdict,
     }
 
 

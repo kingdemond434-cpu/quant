@@ -20,7 +20,7 @@ SPEC_PATH = BASE / "policy" / "gate_spec.yaml"
 
 def _load_spec() -> dict:
     """Load gate specification from YAML."""
-    with open(SPEC_PATH, "r", encoding="utf-8") as f:
+    with open(SPEC_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -176,6 +176,31 @@ def charged_trial_count(raw_cells: int, effective_cells: Any,
     # No fixed count in the spec: fail closed to the old raw burden rather than guess.
     return (max(2, math.ceil(max(0, raw_cells) * TRIALS_MULTIPLIER)),
             "raw_cells_x_campaign_multiplier_fail_closed")
+
+
+def fail_closed_trial_count(raw_cells: int) -> int:
+    """The charge to use when the CENSUS could not be computed. Policy's number, not the batch's.
+
+    `charged_trial_count` is wrapped in a try/except at three call sites, because the effective-
+    cell census it takes as input can throw. Every one of those except-branches fell back to
+    `ceil(raw_cells * TRIALS_MULTIPLIER)` -- the batch-width tax the fixed wall exists to remove,
+    reintroduced on the failure path. So a census error did not merely lose the dependence
+    relief, it silently made a candidate's bar a property of how many cells were scheduled
+    alongside it, which is the defect in full.
+
+    `gate_spec.yaml` already says what should happen here in as many words:
+
+        fail_closed_to: "fixed_campaign_trials(597)"
+
+    and the code did something else. Failing closed means falling back to a HARSHER-OR-EQUAL bar
+    that is still POLICY -- not to a different policy that happens to be harsher on average. When
+    the spec carries no fixed count at all there is nothing to fall back to and the raw burden is
+    the honest answer, which is the one case `charged_trial_count` still handles that way.
+    """
+    fixed = _SPEC_FIXED_TRIALS
+    if isinstance(fixed, int) and fixed >= 2:
+        return fixed
+    return max(2, math.ceil(max(0, raw_cells) * TRIALS_MULTIPLIER))
 
 
 def get_gate_classification() -> dict[str, str]:
