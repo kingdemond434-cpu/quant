@@ -19,7 +19,6 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from statistics import NormalDist
-from typing import cast
 
 import numpy as np
 
@@ -38,7 +37,8 @@ __all__ = [
 
 def _finite(values: Iterable[float]) -> np.ndarray:
     arr = np.asarray(tuple(values), dtype="float64")
-    return cast("np.ndarray", arr[np.isfinite(arr)])
+    # The cast was redundant once numpy typed boolean indexing: it returns ndarray already.
+    return arr[np.isfinite(arr)]
 
 
 def threshold_sensitivity(

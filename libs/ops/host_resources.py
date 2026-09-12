@@ -98,7 +98,12 @@ def tmpfs_used_mb(path: str = "/tmp") -> int | None:  # noqa: S108 -- read-only:
     if _fstype(path) != "tmpfs":
         return None
     try:
-        st = os.statvfs(path)
+        # POSIX-ONLY BY CONSTRUCTION. The tmpfs check above already returned None
+        # on Windows, so this line is unreachable there -- but mypy under a 3.14
+        # Windows target still resolves `os` to the Windows stub, where statvfs
+        # does not exist. The ignore records that this is a PLATFORM fact, not a
+        # missing attribute.
+        st = os.statvfs(path)  # type: ignore[attr-defined]
     except OSError:
         return None
     return int((st.f_blocks - st.f_bfree) * st.f_frsize) // (1024 * 1024)

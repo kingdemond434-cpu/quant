@@ -290,8 +290,15 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
         free_ids = [i for i in ids if i.endswith((":free", "-free"))]
         if free_ids:
             base = {re.sub(r"[:\-]free$", "", i): i for i in free_ids}
-            ranked_free = [(r, orig) for stripped, orig in base.items()
-                           if (r := flagship_rank(stripped)) is not None]
+            # VARIABLE-LENGTH RANK KEY, because the two rankers return different arities:
+            # flagship_rank yields a 4-tuple and _generic_rank a 3-tuple. Both are only ever fed
+            # to max(), which compares tuples element-wise, and the fallback list is used ONLY
+            # when the flagship list is empty -- so the two arities are never compared against
+            # each other and the common annotation is honest rather than a widening to silence
+            # the checker.
+            ranked_free: list[tuple[tuple[int, ...], str]] = [
+                (r, orig) for stripped, orig in base.items()
+                if (r := flagship_rank(stripped)) is not None]
             if not ranked_free:
                 ranked_free = [(g, orig) for stripped, orig in base.items()
                                if (g := _generic_rank(stripped)) is not None]

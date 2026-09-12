@@ -185,10 +185,11 @@ def measure_panel_breadth(signal: np.ndarray, target: np.ndarray, *,
     # exactly this deletion per pair; mean-imputing instead would bias every correlation toward
     # zero, which INFLATES breadth -- the over-claim direction this module exists to prevent.
     with np.errstate(invalid="ignore", divide="ignore"):
-        # numpy ships np.ma.corrcoef untyped; the ignore is on the CALL, not the result, so a
-        # future typed numpy turns this into an unused-ignore error rather than hiding a real one.
-        c = np.ma.corrcoef(  # type: ignore[no-untyped-call]
-            np.ma.masked_invalid(m), rowvar=False, allow_masked=True)
+        # THE FUTURE THIS COMMENT PREDICTED ARRIVED (2026-09-12). numpy now types
+        # np.ma.corrcoef, so the ignore became an unused-ignore error -- which is exactly the
+        # behaviour the original author wanted: the marker expired loudly instead of quietly
+        # hiding a real problem. Removed, nothing else changed.
+        c = np.ma.corrcoef(np.ma.masked_invalid(m), rowvar=False, allow_masked=True)
     cm = np.ma.filled(c, np.nan)
     k = cm.shape[0]
     iu = np.triu_indices(k, k=1)

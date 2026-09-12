@@ -55,7 +55,9 @@ def ew_cov(m: np.ndarray, halflife: float = 60.0, shrink: float = 0.2) -> np.nda
 
 def corr_of(cov: np.ndarray) -> np.ndarray:
     sd = np.sqrt(np.clip(np.diag(cov), 1e-18, None))
-    return cov / np.outer(sd, sd)
+    # np.asarray pins the result type: the division itself is typed Any by numpy's stubs, and
+    # leaking Any out of a function declared to return ndarray disables checking for every caller.
+    return np.asarray(cov / np.outer(sd, sd))
 
 
 def factor_model(m: np.ndarray, k: int = 3, halflife: float = 60.0) -> dict[str, Any]:
