@@ -59,6 +59,27 @@ def _git(args: list[str], timeout: float = 30.0) -> str | None:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+def _same_bytes(rel: str, upstream: str) -> bool | None:
+    """Do the working tree and upstream hold the SAME content for this path?
+
+    Compared over NORMALISED line endings, because this repo has already paid for the other
+    answer once: the immutable fence hashed raw bytes and a CRLF working tree against an LF
+    worktree made identical code hash differently, leaving the fence permanently unsatisfiable.
+
+    None when either side cannot be read -- which the caller treats as AT RISK, since an
+    unreadable comparison is not evidence of safety.
+    """
+    try:
+        here = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
+    except OSError:
+        return None
+    out = subprocess.run(["git", "show", f"{upstream}:{rel}"],
+                         cwd=ROOT, capture_output=True, timeout=30)
+    if out.returncode != 0:
+        return None
+    return here == out.stdout.replace(b"\r\n", b"\n")
+
+
 def adopt_would_revert(upstream: str) -> dict[str, Any]:
     """Which MONEY-PATH files adoption would overwrite with an OLDER version.
 
@@ -99,9 +120,26 @@ def adopt_would_revert(upstream: str) -> dict[str, Any]:
                 ["git", "merge-base", "--is-ancestor", "HEAD", upstream],
                 cwd=ROOT, capture_output=True, timeout=30)
             if reach.returncode != 0:
-                at_risk.append({"file": rel,
-                                "why": "the box's version is not reachable from upstream -- "
-                                       "adoption would overwrite it with an older copy"})
+                # ANCESTRY IS NOT THE QUESTION -- CONTENT IS, and the first version asked only the
+                # first. Measured 2026-09-12: families.py was flagged AT_RISK while the box, the
+                # working tree and upstream all held byte-identical content (sha 137e0e49b6f77de2)
+                # -- the file had reached upstream by a code-only ship commit the box's own branch
+                # never merged, so it was unreachable AS A COMMIT and perfectly safe AS BYTES.
+                #
+                # Adoption writes BYTES. A guard that reports a loss where none can occur is a
+                # guard that gets ignored, and this one stands between an unattended hourly
+                # process and the files that size real positions -- it cannot afford to cry wolf.
+                identical = _same_bytes(rel, upstream)
+                if identical is True:
+                    continue
+                at_risk.append({
+                    "file": rel,
+                    "why": ("the box's version is not reachable from upstream AND its content "
+                            "differs -- adoption would overwrite it with an older copy"
+                            if identical is False else
+                            "the box's version is not reachable from upstream and its content "
+                            "could not be compared; treated as at risk, because an unreadable "
+                            "comparison is not evidence of safety")})
     return {
         "state": "AT_RISK" if at_risk else "SAFE",
         "upstream": upstream,
@@ -110,6 +148,11 @@ def adopt_would_revert(upstream: str) -> dict[str, Any]:
         "at_risk": at_risk,
         "rule": ("adoption may only ever move the money path FORWARD. A file the box holds and "
                  "upstream does not is unpushed work, and landing upstream's tree destroys it."),
+        "comparison": ("ancestry AND content. A file unreachable as a commit but byte-identical "
+                       "upstream is SAFE -- adoption writes bytes, not history -- and reporting "
+                       "it as a loss would make this guard noise. Line endings are normalised "
+                       "before comparing, because a CRLF working tree against an LF blob is the "
+                       "bug that once made the immutable fence permanently unsatisfiable."),
     }
 
 

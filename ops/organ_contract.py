@@ -227,6 +227,26 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "ten critics on DIFFERENT evidence and different vendors, a reviewer forbidden to "
         "resolve a dissent, and a meta-reviewer whose only job is to catch dissents that went "
         "missing"),
+    "MT5-FrontierAudit (evidence vault)": (
+        "desks/mt5/reports/EVIDENCE_VAULT.json", 1560,
+        "sealed holdout tiers with irreversible reveal counters, a dependency fingerprint over "
+        "the judge and the cost model, and the certificates minted under a lower "
+        "multiple-testing charge than the one in force"),
+    "MT5-FrontierAudit (causal discovery)": (
+        "desks/mt5/reports/CAUSAL_DISCOVERY.json", 1560,
+        "the PC constraint phase over the live book: which dependencies vanish given a third "
+        "series, which edges the data can ORIENT, which it cannot and what experiment would -- "
+        "with conflicting orientations counted as the assumption violation they are"),
+    "MT5-FrontierAudit (credit assignment)": (
+        "desks/mt5/reports/CREDIT_ASSIGNMENT.json", 1560,
+        "realised forward R attributed back through certificate and docket row to the scientist "
+        "that proposed it -- ranked by what it EARNED, with the certificate count beside it, and "
+        "the certificates that have earned nothing counted"),
+    "MT5-FrontierAudit (adversary evolution)": (
+        "desks/mt5/reports/ADVERSARY_EVOLUTION.json", 1560,
+        "a PERSISTENT population of parameterised attacks judged by the real ten gates, each "
+        "declaring the verdict it ought to receive -- so a breach is a breach and a clean edge "
+        "refused is the gates' other error"),
     "MT5-FrontierAudit (modifier counterfactuals)": (
         "desks/mt5/reports/MODIFIER_COUNTERFACTUALS.json", 1560,
         "every applied capital multiplier priced in E[log W] against the SAME average heat "
@@ -241,6 +261,11 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "seven structural invariants, each PROVEN by exhaustion, ENFORCED by a complete static "
         "enumeration, or carried as a named OBLIGATION -- never as a weaker check reported as "
         "the same thing"),
+    "MT5-FrontierAudit (meta R&D)": (
+        "desks/mt5/reports/META_RND.json", 1560,
+        "the arena a challenger research-system must beat -- sealed traps, the adversary, the "
+        "forward credit record -- with the knobs it may move enumerated and the ones it may "
+        "never move enumerated beside them"),
     "MT5-FrontierAudit (quantbench)": (
         "desks/mt5/reports/QUANTBENCH.json", 1560,
         "every defect this desk has actually survived, as an executable probe against the "

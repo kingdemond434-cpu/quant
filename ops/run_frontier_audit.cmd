@@ -55,9 +55,31 @@ rem trip each mechanism survives.
 "%PY%" -u "desks\mt5\research\capacity.py" >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\capacity_frontier.py" --apply >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\meta_controller.py" --apply >>"%LOG%" 2>&1
+rem RECURSIVE META-R&D (F25), immediately BEFORE the bench and the verifier so it records
+rem the arena state as it stood this pass. Its three arenas are the bench, the adversary
+rem and the credit record -- which is why it could not be built before them.
+"%PY%" -u "desks\mt5\research\meta_rnd.py" --apply >>"%LOG%" 2>&1
 rem THE BENCH RUNS LAST (F18), and the order is the point: every probe reads an artifact
 rem this lane has just regenerated, so a stale report cannot be mistaken for a returned
 rem defect. It reports UNMEASURABLE on an artifact older than the code that produces it.
+rem THE EVIDENCE VAULT (F19). Seals each symbol's holdout tier ONCE, counts reveals, and
+rem fingerprints the judge, engine, families, cost model and contract terms -- so a
+rem verdict minted before any of them changed is visible as such.
+"%PY%" -u "desks\mt5\research\evidence_vault.py" --apply >>"%LOG%" 2>&1
+rem CAUSAL DISCOVERY (F16). The desk already enumerates rival explanations and has never
+rem decided between them. A collider is the one orientation observational data can settle,
+rem and the CONFLICT count is a diagnostic on the assumptions rather than noise.
+"%PY%" -u "desks\mt5\research\causal_discovery.py" --apply >>"%LOG%" 2>&1
+rem CREDIT FLOWS BACK TO THE SCIENTIST (F12). The chain was entirely on disk -- forward
+rem clock, sleeve, certificate, docket row, source -- and nobody had walked it, so a
+rem miner was rewarded for passing a screen and never asked what its output earned.
+"%PY%" -u "desks\mt5\research\credit_assignment.py" --apply >>"%LOG%" 2>&1
+rem THE ADVERSARY THAT LEARNS (F17). Each generation is ONE run_gauntlet over the whole
+rem population, so two generations cost two dockets of 14 cells -- small against an
+rem hourly sweep of thousands. The population PERSISTS, which is what makes it
+rem co-evolution: when a gate tightens, the attacks that used to score lose their
+rem fitness and the population moves.
+"%PY%" -u "desks\mt5\research\adversary_evolution.py" --apply --generations 2 >>"%LOG%" 2>&1
 rem GOVERNANCE PRICED (F24). missed_growth walks 22 rails against the growth curve and
 rem capital_modifiers scores every applied multiplier; both existed, both were correct,
 rem and neither was on a clock. modifier_counterfactuals prices the applied multipliers in

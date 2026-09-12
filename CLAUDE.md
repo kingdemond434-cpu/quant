@@ -49,15 +49,30 @@ vocabulary. Do not decide something the desk already decided.
   check. One-time: `desks\mt5\scripts\install_adopt_release_task.ps1` registers it AND runs the
   first adoption immediately (re-running the whole installer on a live box has failed with
   "Access is denied" on the S4U principals; this touches one task).
-- **Box memory: 8 GB by every counter the box has published; the principal says 80 GB.** Four
-  independent readings agree on 8 GB (`stall_watch` 2026-08-28: free RAM cycling 3329→448 MB
-  around a 3.7 GB searcher; 2026-09-08: `phys 142MB free / virt 11719MB`; a page file "full at
-  12,756MB"; `external_gauntlet` 2026-09-05: one 4882 MB process "leaving 280MB free"). An
-  80 GB box does not starve on a 4.9 GB process; **80 GB is the DISK** (the Hetzner CX32 shape:
-  4 vCPU / 8 GB / 80 GB). Never size a floor off the claim: the 8192 MB gauntlet floor of
-  2026-09-08 morning would have refused every hourly sweep (`rc=75`) and was reverted the same
-  day. `stall_watch.json` now publishes `memory.total_phys_mb` and the six largest commit
-  holders, so the dashboard answers this; read it before arguing it.
+- **Box memory: the TRADING box has 96 GB. The 8 GB reading was a different machine.**
+  Re-measured 2026-09-12 on the Contabo trading box (62.171.172.249) from the two sources this
+  file already names: `stall_watch.json` publishes `memory.total_phys_mb: 98298` with
+  `free_phys_mb: 8118`, and `Win32_OperatingSystem` reports **98,298 MB total / 59,364 MB free**.
+  So the standing note below was right about its evidence and wrong about which box it described.
+
+  THE EARLIER READINGS STAND AND ARE ABOUT THE VPS (`ubuntu-4gb-hel1-5`, Hetzner CX32: 4 vCPU /
+  8 GB / 80 GB), where the 8 GB figure and the "80 GB is the DISK" conclusion remain correct:
+  `stall_watch` 2026-08-28 free RAM cycling 3329→448 MB around a 3.7 GB searcher; 2026-09-08
+  `phys 142MB free / virt 11719MB`; a page file "full at 12,756MB"; `external_gauntlet`
+  2026-09-05 one 4882 MB process "leaving 280MB free". The 8192 MB gauntlet floor of 2026-09-08
+  would still have refused every hourly sweep there.
+
+  WHAT THIS COST, and it is why the correction is worth the lines: `miner_candidate_compiler`
+  carried `MAX_ROWS_PER_PASS = 1_000_000` as a memory bound sized for the smaller machine. On
+  the trading box it BOUND every pass, deferring 420 files of donations an hour. The cap is now
+  DERIVED from measured free physical memory (25% of it at 2 KB per row, floored at the historic
+  1,000,000 so an unreadable counter changes nothing) -- 9,582,896 on this box. The first pass
+  after: 1,066,117 rows accounted with nothing deferred, executable candidates 445 → 557, and
+  exact-rule tasks 12,166 → 31,369.
+
+  **NEVER SIZE A FLOOR OFF A CLAIM, AND NEVER OFF THE OTHER BOX EITHER.** Measure the machine the
+  code is running on: `stall_watch.json` publishes `memory.total_phys_mb` and the six largest
+  commit holders on each box, so read it there before arguing it.
 - **Reaching the box without pasting: Claude Code ON the box, in Remote Control.** This cloud
   container has no SSH to anything (HTTPS through its proxy only), so an SSH server on the box
   helps the principal's laptop, never a cloud session. The principal was told 2026-09-08 to run

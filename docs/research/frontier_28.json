@@ -30,17 +30,20 @@
    "id": "F1",
    "rank": 1,
    "title": "Canonical release / capital authority",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "need": "exactly one canonical branch and release lineage, protected and immutable; builds tied to an exact commit/data/config hash; live boxes accept ONLY signed release artifacts; no healer, sync process or agent may overwrite money-path files directly",
-   "gap": "the active branch is unprotected; Adopt-Release can land a tree that reverts a correct local fix when origin does not yet carry it",
+   "gap": "",
    "exists": [
     "libs/ops/release_signing.py",
     "libs/ops/release.py",
     "desks/mt5/scripts/Adopt-And-Seal.ps1",
     "ops/githooks/moneypath_precommit_guard.py",
-    "data/release_identity.json"
+    "data/release_identity.json",
+    "ops/release_authority.py",
+    "ops/run_release_authority.cmd"
    ],
-   "note": "the principal names this the most important remaining NON-RESEARCH item"
+   "note": "the principal names this the most important remaining NON-RESEARCH item",
+   "landed": "the release guards existed and had no caller: `release.verify()` answers whether the running tree matches the written release across seven component hashes and `release_signing.verify` authenticates that record, and neither had a caller outside tests. `ops/release_authority.py` now runs both every 15 minutes as MT5-ReleaseAuthority with a contract. THE FOURTH CLAUSE IS THE ONE THE PRINCIPAL CITED and it is now measured correctly: Adopt-Release lands the branch's tree IN PLACE, which is catastrophic when the box is ahead. The guard reported families.py AT_RISK on 2026-09-12 while the box, the working tree and upstream all held byte-identical content -- the file had reached upstream by a code-only ship commit the box's branch never merged, so it was unreachable AS A COMMIT and perfectly safe AS BYTES. Adoption writes bytes, so the guard now compares CONTENT as well as ancestry (over normalised line endings, the bug that once made the immutable fence unsatisfiable) and reads SAFE. A guard standing between an unattended hourly process and the files that size positions cannot afford to cry wolf. TWO CLAUSES REMAIN AND BOTH ARE THE PRINCIPAL'S, not this session's: RELEASE.json is UNSIGNED -- signing needs a key under data/secrets/**, which never leaves the box and is an authority decision -- and branch protection is a GitHub setting. Both are reported by the running verifier rather than assumed."
   },
   {
    "id": "F2",
@@ -187,9 +190,14 @@
    "id": "F12",
    "rank": 12,
    "title": "Connect all search populations to delayed truth",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "need": "a population's ultimate reward comes from FORWARD/LIVE incremental portfolio contribution, not screening success; credit flows backwards live outcome -> sleeve -> hypothesis -> representation -> search operator -> scientist -> dataset",
-   "gap": "the population that created each candidate is already recorded and generator weights are read; the credit path stops short of live"
+   "gap": "",
+   "landed": "the credit chain was ENTIRELY ON DISK and nobody had walked it: forward clock -> sleeve -> certificate -> docket row -> scientist -> representation lane. Closed 2026-09-12, and 61 of 61 certificates now trace to the source that proposed them. Credit is REALISED R, never certificates minted -- a source that mints forty certificates earning nothing has produced forty ways to spend a fixed error budget. Top scientist: orthogonal_sweep:overnight_gap_decay at +55.10R over 86 trades from 12 certificates. By lane: external_claim +70.68R from 5 certificates (14.14 R per certificate, the best of any lane), symbolic_grammar +37.95R from 22 (1.73), mined_anomaly +9.84R from 1. AND THE NUMBER A ROLLUP HIDES: 33 of 61 certificates have NO credited forward evidence at all, 23 of them `discovered` -- the same lane F6 measured at 0.192% certification against 0.633% for every other branch, confirmed now from the earnings side. Live is the intended evidence and is too thin (16 deals against a floor of 30), so forward is used and labelled on every row. Nothing reweights a generator: doing that automatically off a thin forward record is how a desk starves the lane that was merely unlucky.",
+   "exists": [
+    "desks/mt5/research/credit_assignment.py",
+    "ops/run_frontier_audit.cmd"
+   ]
   },
   {
    "id": "F13",
@@ -237,20 +245,28 @@
    "id": "F16",
    "rank": 16,
    "title": "Causal discovery, not only causal stories",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "need": "causal-DAG discovery, conditional independence tests, natural experiments, event discontinuities, instrumental variables where defensible, automated distinguishing experiments -- the system CHOOSES between two causal explanations rather than describing both",
-   "gap": "mechanisms already require a forced participant/payer and alternative explanations are enforced"
+   "gap": "",
+   "landed": "the PC algorithm's constraint phase over the live book's returns, with partial correlation and a Fisher z-test as the independence oracle. First run 2026-09-12: 10 nodes, 5,706 shared bars, 29 of 45 edges survive and 16 are removed by a conditional independence test with the separating set recorded. IT CHOOSES ONLY WHERE DATA CAN. A chain X->Z->Y and a confounder X<-Z->Y leave the same footprint and are reported as indistinguishable rather than resolved by preference; a COLLIDER reverses that footprint and is the one orientation observational data settles. 49 v-structures were found and only 8 edges are oriented CONSISTENTLY -- 21 were claimed in BOTH directions and neither direction is reported. That conflict count is the useful output: inside PC it is the signature of a violated assumption, and causal sufficiency is already known false on this panel because the dollar and risk cycles are common causes of nearly every pair and neither is a node. Every unorientable edge carries the experiment that would settle it -- a lead-lag asymmetry, a session-boundary discontinuity, or the third leg of the triangle as an instrument -- so it is a research task rather than a shrug.",
+   "exists": [
+    "desks/mt5/research/causal_discovery.py",
+    "ops/run_frontier_audit.cmd"
+   ]
   },
   {
    "id": "F17",
    "rank": 17,
    "title": "Adversarial co-evolution",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "need": "an EVOLVING adversary population: every time the scientist improves, the destroyer invents new timestamp perturbations, synthetic leaks, state shifts, cost regimes, execution failures, covariance breaks and selection traps, so researchers evolve against a moving target",
-   "gap": "adversary.py is already excellent -- real-gauntlet poison canaries, silent-defect hunting, promoter gaming, anti-echo genealogy -- but the adversary is static",
+   "gap": "",
    "exists": [
-    "desks/mt5/research/adversary.py"
-   ]
+    "desks/mt5/research/adversary.py",
+    "desks/mt5/research/adversary_evolution.py",
+    "ops/run_frontier_audit.cmd"
+   ],
+   "landed": "the five hand-written canaries are CORNERS of a continuous eight-gene failure space; a persistent population now searches between them, judged by the REAL ten gates via adversary.docket_cell and external_gauntlet.run_gauntlet. It inherits across runs, so when a gate tightens the attacks that used to score lose their fitness and the population moves -- the moving target the principal asked for. EVERY GENOME DECLARES THE VERDICT IT OUGHT TO RECEIVE, and that took two tries: the first version scored any pass as a breach and reported three, all with leak near 1.0, which docket_cell's own docstring had already named as the caller cheating before the harness ever saw it. In this harness a strong honest edge and a leak are the same array and only the STAMP separates them, so ground truth is derived from the genome's own pathologies and the stamp is the honest timestamp of the information it carries. Measured 2026-09-12: ZERO breaches across two generations, the fittest attack stopped at deflated_sharpe / pbo / reality_check_spa. AND THE CONTROL ARM GAVE THE DESK ITS FIRST FALSE-REJECTION MEASUREMENT: three clean genomes -- 0.22 to 0.28 signal/outcome correlation at 5.5-7.8x costs, correctly stamped, no pathology -- all refused, all at deflated_sharpe, dsr 0.0000 to 0.0001 against sr0 0.3786 at the FIXED 597-trial charge. That corroborates the desk's own record of 42 of 42 judged cells rejected at 597 trials, and turns the fixed trial charge from a suspicion into a measured bottleneck on certification."
   },
   {
    "id": "F18",
@@ -270,9 +286,14 @@
    "id": "F19",
    "rank": 19,
    "title": "Cryptographic Evidence Vault",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "need": "multiple sealed holdout tiers, irreversible reveal counters, ancestry-aware trial charges, signed code/data/config hashes, an independent certificate authority, LIMITED verdict feedback to researchers, and automatic certificate invalidation when any economically relevant dependency changes",
-   "gap": "the alpha state machine already prevents illegal stage skipping with explicit evidence requirements"
+   "gap": "",
+   "landed": "sealed holdout tiers (12 sealed 2026-09-12, the most recent 20% of each live symbol's history, content-hashed, sealed ONCE and never re-sealed -- a tier resealed each pass tracks the data forward and proves nothing), irreversible reveal counters, and a dependency fingerprint over the judge, the engine, the family definitions, the cost model and the contract terms. THE ANCESTRY-AWARE TRIAL CHARGE IS THE FINDING, and it needed no new instrumentation because every certificate already records the charge its verdict was granted under: the registry holds TWO regimes -- 15 certificates at n_trials 203 / sr0 0.0808 (all 2026-08-26) and 46 at 597 / sr0 0.3786. The charge nearly tripled and the bar rose 4.7x, so 15 of 61 certificates cleared a standard the desk no longer applies, and nothing said so. That is the same gate F17's clean controls are refused by today. It does NOT make those certificates wrong -- untested against the current standard is a weaker and different claim, and the remedy is a re-judge rather than a revocation. Invalidation is PROPOSED and never executed: certificate_hygiene is the only organ that moves a row, and a vault that revoked silently would be the second certificate authority F26's invariant forbids. Two clauses are NAMED AS NOT BUILT rather than quietly skipped: an independent certificate authority (two judges would mostly prove two programs agree, against this desk's one-canonical-validator rule) and limited verdict feedback (buildable, but it changes what every downstream organ can read).",
+   "exists": [
+    "desks/mt5/research/evidence_vault.py",
+    "ops/run_frontier_audit.cmd"
+   ]
   },
   {
    "id": "F20",
@@ -353,9 +374,15 @@
    "id": "F25",
    "rank": 25,
    "title": "Recursive Meta-R&D",
-   "status": "OPEN",
+   "status": "LANDED",
    "need": "the system may modify researcher prompts, role structures, grammar primitives, search operators, experiment schedulers, representations and search algorithms -- but every meta-version competes against the incumbent on sealed historical traps + synthetic benchmarks + prospective campaigns, and only an objectively better research system becomes champion",
-   "hard_boundary": "NEVER give this subsystem direct authority over live money-path code"
+   "hard_boundary": "NEVER give this subsystem direct authority over live money-path code",
+   "gap": "",
+   "landed": "a meta-version tournament with three real arenas, which is why it is last: it could not be built before the things it judges with existed. Sealed historical traps are `quantbench` (11 defects this desk survived, as executable probes); synthetic benchmarks are `adversary_evolution` (attacks with declared ground truth plus a reserved control arm); prospective campaigns are `credit_assignment` (realised forward R per scientist, 118.47R so far with 33 certificates still silent). THE ONE RULE THAT MAKES SELF-MODIFICATION SAFE: a system graded on its own score will lower its own bar, so the synthetic arena is the ADVERSARY and weakening a gate fails BY CONSTRUCTION -- breaches rise. False rejections are reported and never scored, because cutting them by making the gates permissive is the same lever with a friendlier name. Six movable knobs are enumerated (tree beam and inheritance, joint-evolution draws, composite beam, adversary mutation rate, the exploration floor) and four forbidden classes are enumerated beside them -- gate thresholds, heat, sizing, and the trial charge, the last because F19 measured what happens when it moves. Verified 2026-09-12: a research knob is accepted as a challenger and `deflated_sharpe.threshold` is REFUSED. The champion holds by default and a challenger must be strictly better on a measurable arena and worse on none; the prospective arm stays OPEN with the evidence it awaits named, because declaring a winner on two arenas of three is what this desk criticises its own forward lane for.",
+   "exists": [
+    "desks/mt5/research/meta_rnd.py",
+    "ops/run_frontier_audit.cmd"
+   ]
   },
   {
    "id": "F26",

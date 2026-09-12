@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import pathlib
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -75,7 +76,66 @@ def _rows(doc) -> list[dict]:
 #: 368 MB. The desk box carries 3.1 GB resident of 8.4 GB, so a pass at four times today's intake
 #: still fits with room, which is what this ceiling is set to allow. A number chosen for memory
 #: that nobody ever measured is just a smaller version of the filename filter below.
-MAX_ROWS_PER_PASS = 1_000_000
+#: THE FLOOR, not the cap. Kept at the value that has always been used so a box that cannot be
+#: measured behaves exactly as before.
+MAX_ROWS_FLOOR = 1_000_000
+
+#: Bytes of resident memory one intake row costs, measured generously. A row is a small dict plus
+#: its content hash and its source string; 2 KB each is several times what they actually take, and
+#: erring high is the right direction for a bound whose failure mode is an OOM on a box that also
+#: runs the gateway.
+BYTES_PER_ROW = 2048
+
+#: Share of FREE physical memory the intake may claim. A quarter leaves the gauntlet, the gateway
+#: and the recorders the rest of it -- this organ is not the most important thing running.
+FREE_MEMORY_SHARE = 0.25
+
+
+def _max_rows_per_pass() -> int:
+    """The row bound, derived from memory ACTUALLY FREE rather than from a constant.
+
+    THE CONSTANT WAS SIZED FOR A DIFFERENT MACHINE. Measured on the trading box 2026-09-12:
+    98,298 MB total physical, 59,364 MB free -- and the bound was 1,000,000 rows, which it hit,
+    deferring 420 files of donations every pass. The repo's standing note that this desk runs on
+    8 GB is about the VPS (a Hetzner CX32), not the Contabo box that trades, and a bound carried
+    across from the smaller machine was throwing away research the larger one had room for.
+
+    IT IS MEASURED, NOT RAISED. Hardcoding a bigger number would repeat the original mistake one
+    size up and would be wrong the moment this runs on the VPS again. A box whose memory cannot
+    be read keeps the historical floor exactly, because an unreadable counter is not permission.
+    """
+    try:
+        import ctypes
+
+        class _MS(ctypes.Structure):
+            _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", ctypes.c_ulonglong),
+                        ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong),
+                        ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong),
+                        ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+        st = _MS()
+        st.dwLength = ctypes.sizeof(_MS)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(st)):  # type: ignore[attr-defined]
+            return MAX_ROWS_FLOOR
+        free = int(st.ullAvailPhys)
+    except Exception:
+        # Not Windows, or the call is unavailable. /proc/meminfo is the other machine's answer.
+        try:
+            txt = pathlib.Path("/proc/meminfo").read_text(encoding="utf-8")
+            kb = next(int(ln.split()[1]) for ln in txt.splitlines()
+                      if ln.startswith("MemAvailable:"))
+            free = kb * 1024
+        except Exception:
+            return MAX_ROWS_FLOOR
+    allowed = int(free * FREE_MEMORY_SHARE / BYTES_PER_ROW)
+    return max(MAX_ROWS_FLOOR, allowed)
+
+
+MAX_ROWS_PER_PASS = _max_rows_per_pass()
 
 #: What the last intake pass left unread when the bound bound (2026-09-08). The shortfall used
 #: to be a printed line and nothing else -- research opportunity cost that no artifact carried.
@@ -191,8 +251,11 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                                      "bound_hit": True})
                 print(f"compiler: MAX_ROWS_PER_PASS ({MAX_ROWS_PER_PASS:,}) reached; "
                       f"{len(all_paths) - (i + 1)} file(s) wait for the next pass. This is a "
-                      f"memory bound being hit, not a judgement -- raise it or shorten "
-                      f"WINDOW_DAYS.")
+                      f"memory bound being hit, not a judgement. The bound is DERIVED from free "
+                      f"physical memory at import ({FREE_MEMORY_SHARE:.0%} of it at "
+                      f"{BYTES_PER_ROW}B per row, floored at {MAX_ROWS_FLOOR:,}), so hitting it "
+                      f"means this box genuinely has no room -- shorten WINDOW_DAYS or free "
+                      f"memory rather than raising a constant.")
                 return found
     return found
 
