@@ -1,0 +1,306 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2336750",
+  "symbols": [
+   "AUDNZD",
+   "CADCHF",
+   "CHFJPY",
+   "EURGBP",
+   "GBPJPY",
+   "USDCAD",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD",
+   "XTIUSD"
+  ],
+  "found_at": "2026-09-12T12:29:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 6.252,
+  "growth_pct": 524.07,
+  "weeks": 74.0,
+  "pf": 1.43,
+  "max_dd_pct": null,
+  "trades": 1025.0,
+  "win_pct": 587.0,
+  "algo_pct": 11.0,
+  "subscribers": 0.0,
+  "author": "/en/users/lxtrong82",
+  "author_other_signals": [
+   {
+    "sid": "2353073",
+    "title": "'LxTrong Exness' by Trong Le Xuan",
+    "growth": "90%",
+    "curve_points": 20,
+    "curve_dd": -23.0
+   },
+   {
+    "sid": "2372500",
+    "title": "'LTHue Exness' by Trong Le Xuan",
+    "growth": "-2%",
+    "curve_points": 20,
+    "curve_dd": -53.0
+   }
+  ],
+  "hour_histogram": {
+   "00": 2,
+   "15": 1,
+   "18": 1,
+   "07": 2,
+   "09": 1,
+   "11": 2,
+   "08": 1,
+   "06": 2,
+   "12": 2,
+   "13": 1,
+   "02": 1,
+   "23": 2,
+   "03": 1,
+   "16": 1,
+   "10": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2363457",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-12T12:29:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "new_fast_growth",
+   "high_pf",
+   "gold"
+  ],
+  "ev_score": 6.869,
+  "growth_pct": 971.44,
+  "weeks": 26.0,
+  "pf": 2.43,
+  "max_dd_pct": null,
+  "trades": 1506.0,
+  "win_pct": 1171.0,
+  "algo_pct": 0.0,
+  "subscribers": 0.0,
+  "author": "/en/users/andreejoeventus",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "08": 1,
+   "16": 3,
+   "12": 2,
+   "15": 2,
+   "07": 1,
+   "10": 4,
+   "13": 5,
+   "14": 1,
+   "20": 1,
+   "02": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2361280",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-12T12:29:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 2.779,
+  "growth_pct": 378.76,
+  "weeks": 28.0,
+  "pf": 2.07,
+  "max_dd_pct": null,
+  "trades": 362.0,
+  "win_pct": 237.0,
+  "algo_pct": 91.0,
+  "subscribers": 0.0,
+  "author": "/en/users/dermasupratman",
+  "author_other_signals": [
+   {
+    "sid": "2346593",
+    "title": "'Vasa Trading Sistem 22' by Evan Rahma Pradipta",
+    "growth": "83%",
+    "curve_points": 20,
+    "curve_dd": -12.0
+   },
+   {
+    "sid": "2370297",
+    "title": "'Vasa Trading Sistem 17' by Evan Rahma Pradipta",
+    "growth": "21%",
+    "curve_points": 20,
+    "curve_dd": -22.0
+   },
+   {
+    "sid": "2385226",
+    "title": "'VTS Yolo Scalp' by Evan Rahma Pradipta",
+    "growth": "88%",
+    "curve_points": 20,
+    "curve_dd": -47.0
+   }
+  ],
+  "hour_histogram": {
+   "13": 4,
+   "17": 3,
+   "19": 1,
+   "06": 1,
+   "14": 5,
+   "15": 1,
+   "21": 1,
+   "16": 1,
+   "20": 1,
+   "04": 1,
+   "03": 1,
+   "01": 1,
+   "23": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2362349",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP"
+  ],
+  "found_at": "2026-09-12T12:29:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 5.305,
+  "growth_pct": 637.63,
+  "weeks": 36.0,
+  "pf": 3.31,
+  "max_dd_pct": null,
+  "trades": 745.0,
+  "win_pct": 707.0,
+  "algo_pct": 100.0,
+  "subscribers": 5.0,
+  "author": "/en/users/test-standart",
+  "author_other_signals": [
+   {
+    "sid": "2372984",
+    "title": "'Profile Darwinex' by Konstantin Kulikov",
+    "growth": "42%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2341858",
+    "title": "'Friday Monday' by Konstantin Kulikov",
+    "growth": "70%",
+    "curve_points": 20,
+    "curve_dd": -58.0
+   },
+   {
+    "sid": "2342063",
+    "title": "'News Trade EA' by Konstantin Kulikov",
+    "growth": "65%",
+    "curve_points": 20,
+    "curve_dd": -3.0
+   }
+  ],
+  "hour_histogram": {
+   "20": 2,
+   "12": 1,
+   "22": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2337490",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-12T12:29:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 4.08,
+  "growth_pct": 349.16,
+  "weeks": 71.0,
+  "pf": 1.21,
+  "max_dd_pct": null,
+  "trades": 329.0,
+  "win_pct": 227.0,
+  "algo_pct": 98.0,
+  "subscribers": 0.0,
+  "author": "/en/users/alex33055",
+  "author_other_signals": [
+   {
+    "sid": "2337459",
+    "title": "'HiGold' by Oleksandr Khrypunenko",
+    "growth": "55%",
+    "curve_points": 20,
+    "curve_dd": -11.0
+   },
+   {
+    "sid": "2357666",
+    "title": "'Prop firm signal 1' by Oleksandr Khrypunenko",
+    "growth": "29%",
+    "curve_points": 20,
+    "curve_dd": -22.0
+   },
+   {
+    "sid": "2357667",
+    "title": "'Prop firm signal 2' by Oleksandr Khrypunenko",
+    "growth": "23%",
+    "curve_points": 20,
+    "curve_dd": -33.0
+   }
+  ],
+  "hour_histogram": {
+   "19": 1,
+   "18": 2,
+   "13": 1,
+   "05": 2,
+   "01": 2,
+   "00": 3,
+   "21": 1,
+   "10": 1,
+   "08": 2,
+   "15": 1,
+   "16": 1,
+   "11": 1,
+   "07": 2
+  }
+ }
+]
