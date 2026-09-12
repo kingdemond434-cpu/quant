@@ -167,6 +167,16 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # F1 OF THE 28, and the principal ranks it first of everything remaining. The release and
     # signing guards both existed and neither had a caller: the box that moves money never
     # verified which build it was running or whether the record saying so was authentic.
+    # THE RECONCILER THAT HAD NEVER RUN ON THE BOX THAT TRADES. forward_reconcile is called from
+    # daily_cycle.py:134 and daily_cycle is not scheduled here, so 32 clocks sat ACTIVE and
+    # structurally unpromotable, accruing evidence they could never cash.
+    "MT5-ForwardReconcile": ("desks/mt5/data/forward_reconcile.json", 1560,
+                             "every clock certified or retired -- nothing squats"),
+    # Certificates that passed the gates and can never be enrolled still counted toward the total
+    # and still spent a share of the fixed family-wise error budget.
+    "MT5-CertHygiene":    ("desks/mt5/reports/CERTIFICATE_HYGIENE.json", 1560,
+                           "certificates the enrolment engine can never run, evicted with their "
+                           "evidence kept"),
     "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY.json", 45,
                              "does the running tree match a SIGNED release, and would the hourly "
                              "adopter overwrite unpushed money-path work"),

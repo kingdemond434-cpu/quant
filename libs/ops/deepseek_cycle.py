@@ -256,11 +256,44 @@ def budget_gate() -> dict[str, Any]:
     somebody about arithmetic.
     """
     try:
-        from libs.ops.llm_seat import month_spend_usd, monthly_cap_usd
+        from libs.ops.llm_seat import (
+            free_budget_left,
+            free_daily_max,
+            free_tier_only,
+            month_spend_usd,
+            monthly_cap_usd,
+        )
     except ImportError as exc:
         return {"ok": False, "verdict": "CAP_UNREADABLE",
                 "why": f"cannot import the spend ledger ({exc}) -- refusing to spend against an "
                        "unknown budget. UNKNOWN is not headroom"}
+
+    # A DOLLAR CAP CANNOT HOLD A FREE RUN, and this gate was doing exactly that.
+    #
+    # `llm_spend.jsonl` books an ESTIMATED cost on every call from a deliberately over-stated
+    # $/1k-token constant, free calls included. Measured on the trading box 2026-09-12: 446 calls
+    # that day, every one on `nvidia/nemotron-3-ultra-550b-a55b:free`, ledgered at $13.44 -- and
+    # this gate read the month at $24.97 against a $20 cap and held DeepSeek off entirely.
+    #
+    # So the second brain was switched off by money it never spent. `llm_seat.chat` was fixed for
+    # exactly this earlier the same day; this gate is a SECOND, independent reader of the same
+    # ledger and kept the bug. The free tier's real limit is REQUESTS PER DAY, so that is what
+    # binds when the run is free.
+    if free_tier_only():
+        left = free_budget_left()
+        return {
+            "ok": left > 0,
+            "verdict": "WITHIN_FREE_BUDGET" if left > 0 else "FREE_REQUESTS_EXHAUSTED",
+            "free_requests_left": left, "free_daily_max": free_daily_max(),
+            "month_spend_usd": month_spend_usd(),
+            "why": (f"free tier: {left} of {free_daily_max()} request(s) left today. The dollar "
+                    f"ledger is an ESTIMATE and books cost for free calls, so it is not the bound "
+                    f"here" if left > 0 else
+                    f"free-tier daily request budget exhausted ({free_daily_max()} used). Exit 0: "
+                    f"a spent budget is a normal state of a 24/7 organ, and it resets at 00:00 "
+                    f"UTC"),
+        }
+
     spent, cap = month_spend_usd(), monthly_cap_usd()
     return {
         "ok": spent < cap,
