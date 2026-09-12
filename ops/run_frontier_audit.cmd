@@ -58,5 +58,15 @@ rem trip each mechanism survives.
 rem THE BENCH RUNS LAST (F18), and the order is the point: every probe reads an artifact
 rem this lane has just regenerated, so a stale report cannot be mistaken for a returned
 rem defect. It reports UNMEASURABLE on an artifact older than the code that produces it.
+rem GOVERNANCE PRICED (F24). missed_growth walks 22 rails against the growth curve and
+rem capital_modifiers scores every applied multiplier; both existed, both were correct,
+rem and neither was on a clock. modifier_counterfactuals prices the applied multipliers in
+rem E[log W] at CONSTANT average heat, which is the unit F24 asks for.
+"%PY%" -u "desks\mt5\research\missed_growth.py" >>"%LOG%" 2>&1
+"%PY%" -u "desks\mt5\research\modifier_counterfactuals.py" --apply >>"%LOG%" 2>&1
+rem THE STRUCTURAL VERIFIER (F26), beside the bench. The bench asks whether a defect the
+rem desk survived has returned; this asks whether a property that must NEVER hold has
+rem started holding. Different questions, and a desk needs both.
+"%PY%" -u "desks\mt5\research\formal_invariants.py" --apply >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\quantbench.py" --apply >>"%LOG%" 2>&1
 exit /b 0

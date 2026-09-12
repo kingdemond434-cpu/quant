@@ -336,14 +336,18 @@
    "id": "F24",
    "rank": 24,
    "title": "Every risk/growth modifier proves itself counterfactually",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "need": "every shrink, cap, gate, regime haircut, correlation penalty, decay prior and execution buffer carries a counterfactual ledger -- Elog with it versus without -- and BOOST decisions likewise prove positive contribution; governance becomes empirically priced",
    "exists": [
     "libs/portfolio/rails.py",
     "desks/mt5/research/missed_growth.py",
-    "libs/portfolio/capital_modifiers.py"
+    "libs/portfolio/capital_modifiers.py",
+    "desks/mt5/research/modifier_counterfactuals.py",
+    "ops/run_frontier_audit.cmd"
    ],
-   "note": "GROWTH_GOVERNANCE Rule 1 already demands this of any NEW modifier; the existing ones are not all priced"
+   "note": "GROWTH_GOVERNANCE Rule 1 already demands this of any NEW modifier; the existing ones are not all priced",
+   "gap": "",
+   "landed": "every applied capital multiplier priced in E[log W], and both existing organs put on a clock -- missed_growth walks 22 rails against the allocator's growth curve and capital_modifiers scores 693 ledger rows, and NEITHER had a runner or a contract. The counterfactual had to be got right twice: dividing the multiplier out is a TAUTOLOGY, because with positive mean returns a boost always beats a smaller position whatever states it chose -- the first run scored every category PROVES_GROWTH at t up to 42, including NORMAL, whose multiplier is nominally 1.0. The counterfactual arm now holds the SAME AVERAGE HEAT spread flat, so scale cancels and what remains is the modifier's timing. Measured 2026-09-12 on 139 matched sleeve-days: NO_MEASURED_CONTRIBUTION for every priced category, STRONG_BOOST at -0.0025 log-growth per sleeve-day with paired t = -1.31. The report reconciles itself with capital_modifiers.score, which measures the same rows as COSTING growth on mean R: different questions -- that is about the STATES selected, this is about the modifier at constant heat -- and reading either as the other is how a desk deletes a modifier for the wrong reason. 21 rails remain UNPRICED and are named, because a rail whose counterfactual is unmeasured is not a rail that is free."
   },
   {
    "id": "F25",
@@ -357,9 +361,15 @@
    "id": "F26",
    "rank": 26,
    "title": "Formal verification where proof is possible",
-   "status": "OPEN",
+   "status": "LANDED",
    "need": "property/model checking or SMT for structural invariants: no illegal alpha-state transition, no certificate bypass, no future observation access, no uncharged trial path, no unsigned deployment, no impossible sizing state, no multiple capital authorities",
-   "note": "statistical questions stay statistical; STRUCTURAL questions should be proved rather than tested"
+   "note": "statistical questions stay statistical; STRUCTURAL questions should be proved rather than tested",
+   "gap": "",
+   "landed": "all seven invariants, each with a verdict that carries its own epistemic weight. PROVEN means checked over the ENTIRE space: the alpha state machine's 49 ordered pairs are total, both simple paths from CANDIDATE to ACTIVE pass PROBATION, RETIRED is terminal and reachable from all six other states, and every promote_target is an allowed edge. The sizing state is proven over its 15 published quantities. ENFORCED means a complete enumeration of the DIRECT writers in this tree: exactly one capital authority (pf_allocator), and the donation door verified by EXECUTING it. OBLIGATION is the third verdict and names what would discharge it -- the trial-charge property is vacuous under a FIXED 597-cell campaign charge, which is a different situation from the one the invariant was written for and is not reported as a pass. no_certificate_bypass is VIOLATED and stays violated: universal_gate.py, full_pipeline.py and full_pipeline_v2.py each declare in their own first line that they mint certificates, and full_pipeline is on a VPS timer at 06:00 daily. That is the condition that produced 18 unrunnable certificates, and whitelisting it would be the verifier lying to keep itself green.",
+   "exists": [
+    "desks/mt5/research/formal_invariants.py",
+    "ops/run_frontier_audit.cmd"
+   ]
   },
   {
    "id": "F27",

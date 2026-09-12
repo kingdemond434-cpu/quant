@@ -356,8 +356,51 @@ def _providers(*, deep: bool = False) -> list[tuple[str, str, str]]:
     # adopt and check_llm_routing names the ones that have not.
     # BOTH LANES ARE FREE NOW. `deep` still selects the DEPTH of the protocol (the
     # wave sequence and its budget); it no longer selects a paid chain.
-    chain = ROUTINE_MODEL_CHAIN
+    #
+    # THE CATALOGUE IS ASKED BEFORE THE CHAIN IS WALKED (2026-09-12), and the reason is measured.
+    # ROUTINE_MODEL_CHAIN leads with moonshotai/kimi-k2, deepseek/deepseek-r1 and
+    # qwen/qwen3-235b -- the mandate's preferred seats -- and NONE of them exists on this
+    # account's free catalogue. Every run walked them and took HTTP 404, three doors at a time,
+    # and `data/intelligence/kimi` has never been created since the hunter was written.
+    #
+    # A hardcoded model id is a time bomb the desk already has a law about: llm_seat's own
+    # docstring says a pinned preference list "keeps choosing the older model forever while every
+    # status line still reads healthy". The same bomb here reads as an outage instead.
+    #
+    # So the declared chain is FILTERED against what the provider actually serves, and anything
+    # the catalogue offers that the chain does not name is APPENDED as a tail. The declared order
+    # is still the policy -- the mandate's seats are tried first WHEN THEY EXIST -- and a
+    # catalogue that cannot be read leaves the chain exactly as it was, because an unreachable
+    # catalogue is not evidence that a model is missing.
+    chain = _served_first(ROUTINE_MODEL_CHAIN)
     return [(r.model, r.base_url, r.key) for r in build_chain(chain, KEYS)]
+
+
+def _served_first(declared: tuple[str, ...]) -> tuple[str, ...]:
+    """Declared ids the provider actually serves, then everything free it serves that we did not.
+
+    Returns `declared` unchanged when the catalogue cannot be read. An unreachable catalogue is
+    not evidence that a model is missing, and dropping the whole chain on a network blip would
+    turn a transient into an outage.
+    """
+    try:
+        from libs.ops import llm_seat
+        seat = llm_seat.primary_seat()
+        if seat is None:
+            return declared
+        body, err = llm_seat._get(f"{seat.base_url}/models", seat.key, timeout=20.0)
+        if err:
+            return declared
+        served = {str(m.get("id") or "") for m in (body.get("data") or [])}
+    except Exception:
+        return declared
+    if not served:
+        return declared
+    keep = tuple(m for m in declared if m in served)
+    free_tail = tuple(sorted(i for i in served
+                             if i.endswith((":free", "-free")) and i not in keep))
+    merged = keep + free_tail
+    return merged or declared
 
 
 def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
@@ -371,6 +414,38 @@ def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
                                           "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
         out = json.loads(r.read())
+    # A 200 WITH AN ERROR BODY IS THE PROVIDER TALKING, NOT A BUG IN THIS FILE.
+    #
+    # OpenRouter answers some refusals -- a free-tier daily limit above all -- with HTTP 200 and
+    # a body carrying `error` and no `choices`. `out["choices"]` then raised a bare KeyError with
+    # an EMPTY message, the caller printed "FAILED (KeyError )", and the hunter walked its entire
+    # model chain printing that fourteen times per wave. Measured 2026-09-12: 567 such lines in
+    # MT5-AuditLane.log, and data/intelligence/kimi has never been created, so nothing this
+    # hunter found has ever reached the compiler.
+    #
+    # The provider's own message said what was wrong the whole time. Turning it into a KeyError
+    # threw away the one actionable fact in the response -- the same defect llm_seat had when it
+    # believed a published ceiling over a measured refusal.
+    err = out.get("error") if isinstance(out, dict) else None
+    if err or "choices" not in (out or {}):
+        msg = ""
+        code = ""
+        if isinstance(err, dict):
+            msg = str(err.get("message") or "")
+            code = str(err.get("code") or "")
+        detail = msg or f"no `choices` in the response: {json.dumps(out)[:200]}"
+        # TEACH THE WHOLE DESK, not just this run. A daily free-tier refusal is the one error
+        # every other organ on this box is about to hit, and llm_seat already knows how to
+        # remember it so the rest of the day is spent on something else.
+        low = f"{msg} {code}".lower()
+        if any(k in low for k in ("free-models-per-day", "per-day", "daily limit",
+                                  "requests per day", "quota exceeded", "rate limit")):
+            try:
+                from libs.ops import llm_seat as _seat
+                _seat.note_free_limit_hit(f"kimi_hunter {model}: {detail}")
+            except Exception:
+                pass
+        raise RuntimeError(f"provider refused ({code or 'no code'}): {detail}")
     m = out["choices"][0]["message"]
     return str(m.get("content") or m.get("reasoning") or "")
 
@@ -652,13 +727,40 @@ def main() -> None:
         # ATTEMPT, never the hunt. Failures accumulate into the artifact so a run that ends
         # blocked says which doors it tried and what each one answered.
         txt, used = "", ""
+        # THE BUDGET IS CHECKED ONCE, BEFORE THE WALK, NOT NINETEEN TIMES DURING IT.
+        #
+        # Measured 2026-09-12: with the day's free allowance spent, this hunter walked all
+        # nineteen served models and took nineteen 429s -- per wave, three waves, every hour. The
+        # allowance is per ACCOUNT, so the second refusal was already certain when the first
+        # arrived, and every request after it spent the retry budget of an account that is
+        # rate-limited into darkness. llm_seat learns the real ceiling from the provider's own
+        # 429; asking it first costs nothing and turns an hour of noise into one honest line.
+        _left = None
+        try:
+            from libs.ops import llm_seat as _seat
+            _left = _seat.free_budget_left()
+        except Exception:
+            _left = None
+        if _left is not None and _left <= 0:
+            print(f"    SKIPPING wave {w}: the provider's daily free allowance is spent "
+                  f"({_seat.calls_today()} call(s) against a learned ceiling of "
+                  f"{_seat.observed_free_ceiling()}). This is a SKIP, not an outage -- the "
+                  f"budget resets at 00:00 UTC and the next cadence picks it up.")
+            attempts.append({"wave": w, "model": "(none tried)",
+                             "error": "free daily allowance spent before the walk"})
+            break
         for model, base, key in chain:
             try:
                 txt = _ask(base, key, CHARTER, user, model=model)
             except Exception as e:  # blind-except intentional (BLE001)
                 code = getattr(e, "code", "")
-                attempts.append({"wave": w, "model": model, "error": f"{type(e).__name__} {code}"})
-                print(f"    {model}: FAILED ({type(e).__name__} {code})"
+                # THE MESSAGE, NOT JUST THE TYPE. "FAILED (KeyError )" told an operator nothing;
+                # the provider's own sentence tells them whether to wait, switch model or fix a
+                # key, and it was being discarded at the one place it mattered.
+                why = str(e)[:160] or f"{type(e).__name__} {code}"
+                attempts.append({"wave": w, "model": model,
+                                 "error": f"{type(e).__name__} {code}", "why": why})
+                print(f"    {model}: FAILED ({type(e).__name__} {code}) {why}"
                       + ("  [out of credit]" if code == 402 else ""))
                 continue
             if txt.strip():

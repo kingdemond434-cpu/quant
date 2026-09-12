@@ -227,6 +227,20 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "ten critics on DIFFERENT evidence and different vendors, a reviewer forbidden to "
         "resolve a dissent, and a meta-reviewer whose only job is to catch dissents that went "
         "missing"),
+    "MT5-FrontierAudit (modifier counterfactuals)": (
+        "desks/mt5/reports/MODIFIER_COUNTERFACTUALS.json", 1560,
+        "every applied capital multiplier priced in E[log W] against the SAME average heat "
+        "spread flat -- the modifier's timing, not its level, so a modifier that doubles "
+        "everything scores zero"),
+    "MT5-FrontierAudit (missed growth)": (
+        "desks/mt5/reports/MISSED_GROWTH.json", 1560,
+        "22 rails walked against the allocator's own growth curve, each carrying what it cost "
+        "and what it earned -- and naming the event it is still waiting for"),
+    "MT5-FrontierAudit (formal invariants)": (
+        "desks/mt5/reports/FORMAL_INVARIANTS.json", 1560,
+        "seven structural invariants, each PROVEN by exhaustion, ENFORCED by a complete static "
+        "enumeration, or carried as a named OBLIGATION -- never as a weaker check reported as "
+        "the same thing"),
     "MT5-FrontierAudit (quantbench)": (
         "desks/mt5/reports/QUANTBENCH.json", 1560,
         "every defect this desk has actually survived, as an executable probe against the "
