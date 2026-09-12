@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-12T07:17:07.210019+00:00",
+ "updated": "2026-09-12T09:01:16.396843+00:00",
  "vectors": {
   "5ch \u682a\u677f / \u5148\u7269\u677f": {
    "outcome": "NAMED_ONLY",
@@ -852,10 +852,10 @@
    "region": "ng"
   },
   "CBS StatLine": {
-   "outcome": "NAMED_ONLY",
+   "outcome": "EMPTY",
    "first_seen": "2026-09-10T15:40:36.553098+00:00",
-   "last_attempt": "",
-   "attempts": 0,
+   "last_attempt": "2026-09-12T09:01:16.396284+00:00",
+   "attempts": 1,
    "findings": 0,
    "blocker": "",
    "language": "nl",
@@ -1892,12 +1892,12 @@
    "region": "institutional"
   },
   "International Coffee Organization": {
-   "outcome": "NAMED_ONLY",
+   "outcome": "BLOCKED",
    "first_seen": "2026-09-10T15:40:36.552477+00:00",
-   "last_attempt": "",
-   "attempts": 0,
+   "last_attempt": "2026-09-12T09:01:16.396338+00:00",
+   "attempts": 1,
    "findings": 0,
-   "blocker": "",
+   "blocker": "BLOCKED",
    "language": "en",
    "region": "institutional"
   },
@@ -3922,11 +3922,11 @@
    "region": "it"
   },
   "YouTube JP \u30c8\u30ec\u30fc\u30c9\u89e3\u8aac": {
-   "outcome": "NAMED_ONLY",
+   "outcome": "YIELDED",
    "first_seen": "2026-09-10T15:40:36.549922+00:00",
-   "last_attempt": "",
-   "attempts": 0,
-   "findings": 0,
+   "last_attempt": "2026-09-12T09:01:16.396355+00:00",
+   "attempts": 1,
+   "findings": 1,
    "blocker": "",
    "language": "ja",
    "region": "jp"

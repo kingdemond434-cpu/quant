@@ -1,5 +1,5 @@
 {
- "at": "2026-09-12T02:53:48+00:00",
+ "at": "2026-09-12T07:23:45+00:00",
  "root": "C:/opt/quant/desks/mt5/data/universe",
  "mode": "head_tail",
  "chunk_bytes": 65536,
@@ -8,17 +8,17 @@
   "3M_D1.parquet": {
    "sha": "f74067d342ddb662",
    "bytes": 55581,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "3M_H1.parquet": {
    "sha": "31128e947bc0436e",
    "bytes": 295515,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "3M_H4.parquet": {
    "sha": "579245746ae8cf27",
    "bytes": 103415,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "A_H1.parquet": {
    "sha": "15f8445abf07be2a",
@@ -118,17 +118,17 @@
   "Accenture_D1.parquet": {
    "sha": "0ffd901941c30f45",
    "bytes": 61385,
-   "mtime": "2026-09-12T02:26:42+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "Accenture_H1.parquet": {
    "sha": "0aa5c3003c61b614",
    "bytes": 276474,
-   "mtime": "2026-09-12T02:26:42+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "Accenture_H4.parquet": {
    "sha": "26cb9fb023fb6729",
    "bytes": 102242,
-   "mtime": "2026-09-12T02:26:42+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "ACN_H1.parquet": {
    "sha": "6ee1ffbaf32d3933",
@@ -141,19 +141,19 @@
    "mtime": "2026-09-11T17:12:03+00:00"
   },
   "ADAUSD_D1.parquet": {
-   "sha": "f4a28a147881925d",
+   "sha": "bebcc93eedbe727e",
    "bytes": 97853,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "ADAUSD_H1.parquet": {
-   "sha": "260b398a0fc9eec2",
-   "bytes": 1202314,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "0c1577c10f1f3a58",
+   "bytes": 1202450,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "ADAUSD_H4.parquet": {
-   "sha": "8109fee553ac85d6",
-   "bytes": 394099,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "1f3c5f0620ed7492",
+   "bytes": 394123,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "ADBE.24H_H1.parquet": {
    "sha": "7bf7a1f38363a380",
@@ -183,32 +183,32 @@
   "Adobe_D1.parquet": {
    "sha": "3f06d505ee7777eb",
    "bytes": 57759,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "Adobe_H1.parquet": {
    "sha": "37ec6cddae5977b3",
    "bytes": 340103,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "Adobe_H4.parquet": {
    "sha": "fed2e9329ebfd33b",
    "bytes": 109440,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "ADP_D1.parquet": {
    "sha": "72effabda62e2c7f",
    "bytes": 55553,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "ADP_H1.parquet": {
    "sha": "8a6db6faa8b95930",
    "bytes": 298532,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "ADP_H4.parquet": {
    "sha": "348caa99a9521cf7",
    "bytes": 103161,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "ADPR_H1.parquet": {
    "sha": "cc3e68e3cf45af6d",
@@ -243,7 +243,7 @@
   "AFG_D1.parquet": {
    "sha": "346ebbfd1eaa766b",
    "bytes": 41589,
-   "mtime": "2026-09-12T01:00:03+00:00"
+   "mtime": "2026-09-12T04:58:52+00:00"
   },
   "AFG_H1.parquet": {
    "sha": "4c0dbb522e57b4bb",
@@ -253,7 +253,7 @@
   "AFL_D1.parquet": {
    "sha": "6886c16f92732b2c",
    "bytes": 43074,
-   "mtime": "2026-09-12T01:00:03+00:00"
+   "mtime": "2026-09-12T04:58:52+00:00"
   },
   "AFL_H1.parquet": {
    "sha": "3e7c03104a5aca74",
@@ -298,17 +298,17 @@
   "Airbnb_D1.parquet": {
    "sha": "e914c3e48d9827ac",
    "bytes": 57533,
-   "mtime": "2026-09-12T02:26:51+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "Airbnb_H1.parquet": {
    "sha": "be97655496d62a37",
    "bytes": 248976,
-   "mtime": "2026-09-12T02:26:50+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "Airbnb_H4.parquet": {
    "sha": "1ea6d7ac32db70c6",
    "bytes": 96177,
-   "mtime": "2026-09-12T02:26:50+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "AKAM_H1.parquet": {
    "sha": "bea43ccb0e5b014b",
@@ -353,17 +353,17 @@
   "AlibabaGroup_D1.parquet": {
    "sha": "885d1aa890d5e6a6",
    "bytes": 61725,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "AlibabaGroup_H1.parquet": {
    "sha": "112bb9e2f7f5fcc2",
    "bytes": 262198,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "AlibabaGroup_H4.parquet": {
    "sha": "dffd4be3bbe07976",
    "bytes": 102413,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "ALK_H1.parquet": {
    "sha": "facd9cdd750a9014",
@@ -378,3654 +378,3704 @@
   "Alphabet-A_D1.parquet": {
    "sha": "684f1273708d12b3",
    "bytes": 55509,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Alphabet-A_H1.parquet": {
    "sha": "abca961d6d2c2d97",
    "bytes": 313318,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Alphabet-A_H4.parquet": {
    "sha": "0f8e11ccd753356b",
    "bytes": 104893,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Alphabet-C_D1.parquet": {
    "sha": "75fa3102e475f1a4",
    "bytes": 57202,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Alphabet-C_H1.parquet": {
    "sha": "0b9092dec0398361",
    "bytes": 318095,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Alphabet-C_H4.parquet": {
    "sha": "21ae799073c54bf2",
    "bytes": 106860,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Amazon_D1.parquet": {
    "sha": "576654095ee74185",
    "bytes": 54577,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Amazon_H1.parquet": {
    "sha": "4b26fa17fd411e8b",
    "bytes": 306556,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Amazon_H4.parquet": {
    "sha": "04872d49003060b1",
    "bytes": 102130,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "AMD_D1.parquet": {
    "sha": "43ff17208e029740",
    "bytes": 57899,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "AMD_H1.parquet": {
    "sha": "58fc11c59cf86de9",
    "bytes": 329471,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "AMD_H4.parquet": {
    "sha": "8e68b5e83f828748",
    "bytes": 110140,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "AmericanExpress_D1.parquet": {
    "sha": "e1912c2dcfbff6ea",
    "bytes": 55869,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "AmericanExpress_H1.parquet": {
    "sha": "f5a66196c51c83b6",
    "bytes": 311028,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "AmericanExpress_H4.parquet": {
    "sha": "ecb31a189c4bc6cc",
    "bytes": 105478,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "Amgen_D1.parquet": {
    "sha": "32df21f5f554b642",
    "bytes": 55768,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "Amgen_H1.parquet": {
    "sha": "17ad22ed0196aa19",
    "bytes": 309263,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "Amgen_H4.parquet": {
    "sha": "59965408c1699c09",
    "bytes": 104656,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "Apple_D1.parquet": {
    "sha": "0017c22d6a9e9700",
    "bytes": 56661,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Apple_H1.parquet": {
    "sha": "6b758a676cb8d2b7",
    "bytes": 323003,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "Apple_H4.parquet": {
    "sha": "84788599b642afdb",
    "bytes": 107516,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "AppliedMaterials_D1.parquet": {
    "sha": "c9e3088637bc2417",
    "bytes": 57138,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "AppliedMaterials_H1.parquet": {
    "sha": "499cb41b992722f8",
    "bytes": 324312,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "AppliedMaterials_H4.parquet": {
    "sha": "d9bd658d80fb271b",
    "bytes": 108621,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "AT&T_D1.parquet": {
    "sha": "5bc514038eaebadd",
    "bytes": 51098,
-   "mtime": "2026-09-12T02:26:39+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "AT&T_H1.parquet": {
    "sha": "9e39c1b9d9ae8c99",
    "bytes": 178008,
-   "mtime": "2026-09-12T02:26:39+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "AT&T_H4.parquet": {
    "sha": "a06aa1c1b829eb51",
    "bytes": 77323,
-   "mtime": "2026-09-12T02:26:39+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "Atlassian_D1.parquet": {
    "sha": "e0c6ff4d7a3c1755",
    "bytes": 56543,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Atlassian_H1.parquet": {
    "sha": "4813fbafb1530dce",
    "bytes": 314922,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Atlassian_H4.parquet": {
    "sha": "8eb436b8db770a83",
    "bytes": 106282,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "AUDCAD_D1.parquet": {
    "sha": "7fab79f3996f6e19",
    "bytes": 82567,
-   "mtime": "2026-09-12T02:26:02+00:00"
+   "mtime": "2026-09-12T06:26:02+00:00"
   },
   "AUDCAD_H1.parquet": {
    "sha": "dc24424a56aa689d",
    "bytes": 1087607,
-   "mtime": "2026-09-12T02:26:02+00:00"
+   "mtime": "2026-09-12T06:26:02+00:00"
   },
   "AUDCAD_H4.parquet": {
    "sha": "273f9d586ddcb2c1",
    "bytes": 380067,
-   "mtime": "2026-09-12T02:26:02+00:00"
+   "mtime": "2026-09-12T06:26:02+00:00"
   },
   "AUDCAD_M15.parquet": {
-   "sha": "fce9c5f9b939ace7",
-   "bytes": 2268329,
-   "mtime": "2026-09-12T00:59:34+00:00"
+   "sha": "4039ed78d1f3066f",
+   "bytes": 2079707,
+   "mtime": "2026-09-12T05:55:58+00:00"
   },
   "AUDCHF_D1.parquet": {
    "sha": "0ea7c1a549388e46",
    "bytes": 83982,
-   "mtime": "2026-09-12T02:26:02+00:00"
+   "mtime": "2026-09-12T06:26:02+00:00"
   },
   "AUDCHF_H1.parquet": {
    "sha": "41653f6f88fb5110",
    "bytes": 1201529,
-   "mtime": "2026-09-12T02:26:02+00:00"
+   "mtime": "2026-09-12T06:26:02+00:00"
   },
   "AUDCHF_H4.parquet": {
    "sha": "ace9e3b0c2712d97",
    "bytes": 410113,
-   "mtime": "2026-09-12T02:26:02+00:00"
+   "mtime": "2026-09-12T06:26:02+00:00"
   },
   "AUDHUF_D1.parquet": {
    "sha": "2ad964767991b8db",
    "bytes": 75026,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "AUDHUF_H1.parquet": {
    "sha": "90b7f061ea4276ec",
    "bytes": 1388651,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "AUDHUF_H4.parquet": {
    "sha": "ca40bd4a73e50719",
    "bytes": 403885,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "AUDJPY_D1.parquet": {
    "sha": "50152e9975ae648d",
    "bytes": 67426,
-   "mtime": "2026-09-12T02:26:02+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "AUDJPY_H1.parquet": {
    "sha": "543a1caab940fb9e",
    "bytes": 1106839,
-   "mtime": "2026-09-12T02:26:02+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "AUDJPY_H4.parquet": {
    "sha": "51a6a6a1f6743c6c",
    "bytes": 342369,
-   "mtime": "2026-09-12T02:26:02+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "AUDNZD_D1.parquet": {
    "sha": "d95d323fef85daf8",
    "bytes": 82819,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "AUDNZD_H1.parquet": {
    "sha": "8fcfb2e7c258ca63",
    "bytes": 1103078,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "AUDNZD_H4.parquet": {
    "sha": "867a52f8b7115a57",
    "bytes": 394644,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "AUDNZD_M15.parquet": {
-   "sha": "e8892832d05506ef",
-   "bytes": 2362017,
-   "mtime": "2026-09-12T00:59:34+00:00"
+   "sha": "73dedd213a411c27",
+   "bytes": 2168109,
+   "mtime": "2026-09-12T05:55:58+00:00"
   },
   "AUDSGD_D1.parquet": {
    "sha": "bd272206866f7888",
    "bytes": 82585,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "AUDSGD_H1.parquet": {
    "sha": "a541b69e5466caf7",
    "bytes": 1207222,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "AUDSGD_H4.parquet": {
    "sha": "c9c6158188c429af",
    "bytes": 401955,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "AUDUSD_D1.parquet": {
    "sha": "5c96af3c0f9341fd",
    "bytes": 83464,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "AUDUSD_H1.parquet": {
    "sha": "07762679f4a66acd",
    "bytes": 1115963,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "AUDUSD_H4.parquet": {
    "sha": "fe0aa8f5b185db9c",
    "bytes": 400857,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "AUS200_D1.parquet": {
    "sha": "c453381425197f94",
    "bytes": 66202,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "AUS200_H1.parquet": {
    "sha": "f0dacaab99a79902",
    "bytes": 1087672,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "AUS200_H4.parquet": {
    "sha": "5a777ff2976982ab",
    "bytes": 333618,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "AVAXUSD_D1.parquet": {
-   "sha": "257bfb938574489c",
-   "bytes": 72047,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "sha": "0c274bfcaf4e49d5",
+   "bytes": 72043,
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "AVAXUSD_H1.parquet": {
-   "sha": "03c2e7a40be15a6b",
-   "bytes": 1146000,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "sha": "13c6e1c400455f23",
+   "bytes": 1146146,
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "AVAXUSD_H4.parquet": {
-   "sha": "84b235f16893dec4",
-   "bytes": 355268,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "sha": "0f596db716186365",
+   "bytes": 355285,
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "Baidu_D1.parquet": {
    "sha": "93985ac05d72878c",
    "bytes": 60925,
-   "mtime": "2026-09-12T02:26:53+00:00"
+   "mtime": "2026-09-12T06:26:52+00:00"
   },
   "Baidu_H1.parquet": {
    "sha": "2044fb458536d0b7",
    "bytes": 254417,
-   "mtime": "2026-09-12T02:26:53+00:00"
+   "mtime": "2026-09-12T06:26:52+00:00"
   },
   "Baidu_H4.parquet": {
    "sha": "1c134caebf0f5280",
    "bytes": 99974,
-   "mtime": "2026-09-12T02:26:53+00:00"
+   "mtime": "2026-09-12T06:26:52+00:00"
   },
   "BankofAmericaCorp_D1.parquet": {
    "sha": "e8e1a93448074109",
    "bytes": 56634,
-   "mtime": "2026-09-12T02:26:47+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "BankofAmericaCorp_H1.parquet": {
    "sha": "53d2b90bbcd628d4",
    "bytes": 211272,
-   "mtime": "2026-09-12T02:26:47+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "BankofAmericaCorp_H4.parquet": {
    "sha": "cd510ec3ff66351c",
    "bytes": 89531,
-   "mtime": "2026-09-12T02:26:47+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "BCHUSD_D1.parquet": {
-   "sha": "d74a9fac4c26190e",
-   "bytes": 87506,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "7040fecd3872f16a",
+   "bytes": 87501,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "BCHUSD_H1.parquet": {
-   "sha": "1105bd5df315fd6a",
-   "bytes": 1496870,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "c5ba9c7e52c5656d",
+   "bytes": 1496914,
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "BCHUSD_H4.parquet": {
-   "sha": "c87700d90131440f",
-   "bytes": 464317,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "e6a43af927a1c524",
+   "bytes": 464333,
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "Berkshire_D1.parquet": {
    "sha": "acf43b6755bb4e42",
    "bytes": 60827,
-   "mtime": "2026-09-12T02:26:53+00:00"
+   "mtime": "2026-09-12T06:26:52+00:00"
   },
   "Berkshire_H1.parquet": {
    "sha": "47e408d2c62baa3e",
    "bytes": 278818,
-   "mtime": "2026-09-12T02:26:53+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "Berkshire_H4.parquet": {
    "sha": "ef06d319953ced61",
    "bytes": 102185,
-   "mtime": "2026-09-12T02:26:53+00:00"
+   "mtime": "2026-09-12T06:26:52+00:00"
   },
   "BlackRock_D1.parquet": {
    "sha": "21e723647bb5c30d",
    "bytes": 63127,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "BlackRock_H1.parquet": {
    "sha": "4472581142c0542f",
    "bytes": 293833,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "BlackRock_H4.parquet": {
    "sha": "56cba2f13bf1cab8",
    "bytes": 104936,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "BNBUSD_D1.parquet": {
-   "sha": "bb9cb0d5f3b7f5ac",
+   "sha": "55310f448fee01eb",
    "bytes": 90725,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "BNBUSD_H1.parquet": {
-   "sha": "ead237fe60243bcf",
-   "bytes": 1381635,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "7fd496e5f390cff7",
+   "bytes": 1381804,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "BNBUSD_H4.parquet": {
-   "sha": "83fe3239c647776a",
-   "bytes": 432745,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "sha": "854dd3e47da717af",
+   "bytes": 432851,
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "Boeing_D1.parquet": {
    "sha": "334c6351ad5f81f3",
    "bytes": 56105,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Boeing_H1.parquet": {
    "sha": "6e8fc4fe2371623f",
    "bytes": 303986,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Boeing_H4.parquet": {
    "sha": "07fa0df7b1acf1d7",
    "bytes": 105248,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Booking_D1.parquet": {
    "sha": "fc73024653b6e180",
    "bytes": 55662,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Booking_H1.parquet": {
    "sha": "7b392962d7be6724",
    "bytes": 297068,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Booking_H4.parquet": {
    "sha": "0664c39a2c97e5ac",
    "bytes": 102111,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Broadcom_D1.parquet": {
    "sha": "7c908f36fa6d1adb",
    "bytes": 57059,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Broadcom_H1.parquet": {
    "sha": "ec8bfb9d8d968f43",
    "bytes": 328636,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "Broadcom_H4.parquet": {
    "sha": "d93428d66e67c0b9",
    "bytes": 108176,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:33+00:00"
   },
   "BTCUSD_D1.parquet": {
-   "sha": "49146941e919f17e",
+   "sha": "a3a62909700b294b",
    "bytes": 93876,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "BTCUSD_H1.parquet": {
-   "sha": "62a1b04d523de857",
-   "bytes": 1801297,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "bb9a0e842a5ea926",
+   "bytes": 1801406,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "BTCUSD_H4.parquet": {
-   "sha": "ffb9d54eb35d89cd",
-   "bytes": 510320,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "c27545a53a5ac062",
+   "bytes": 510441,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "CA60_D1.parquet": {
    "sha": "306d327701357afc",
    "bytes": 61592,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "CA60_H1.parquet": {
    "sha": "7db5104b25aa5311",
    "bytes": 670684,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "CA60_H4.parquet": {
    "sha": "a82d436a6a8a1c5d",
    "bytes": 208908,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "CADCHF_D1.parquet": {
    "sha": "6a2663522e55d5b9",
    "bytes": 83343,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:04+00:00"
   },
   "CADCHF_H1.parquet": {
    "sha": "ba5091c4046b641a",
    "bytes": 1160128,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "CADCHF_H4.parquet": {
    "sha": "2c5360775c1e4a2c",
    "bytes": 408498,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:03+00:00"
   },
   "CADJPY_D1.parquet": {
    "sha": "643d4099888fa832",
    "bytes": 67284,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:04+00:00"
   },
   "CADJPY_H1.parquet": {
    "sha": "9139448b20be142c",
    "bytes": 1097793,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:04+00:00"
   },
   "CADJPY_H4.parquet": {
    "sha": "fb32939a323db6c6",
    "bytes": 341197,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:04+00:00"
   },
   "Caterpillar_D1.parquet": {
    "sha": "9c95083bbb5948b2",
    "bytes": 57089,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Caterpillar_H1.parquet": {
    "sha": "b783c9a3e54b76c5",
    "bytes": 332705,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Caterpillar_H4.parquet": {
    "sha": "cc9daf9eeaae63a2",
    "bytes": 108358,
-   "mtime": "2026-09-12T02:26:25+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "CharlesSchwab_D1.parquet": {
    "sha": "32f47df9a846dc81",
    "bytes": 58787,
-   "mtime": "2026-09-12T02:26:38+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "CharlesSchwab_H1.parquet": {
    "sha": "a6bb487b68889901",
    "bytes": 235098,
-   "mtime": "2026-09-12T02:26:38+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "CharlesSchwab_H4.parquet": {
    "sha": "4138cbb0356902bb",
    "bytes": 95330,
-   "mtime": "2026-09-12T02:26:38+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "Charter_D1.parquet": {
    "sha": "7266e52ad300ef95",
    "bytes": 57753,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Charter_H1.parquet": {
    "sha": "57c2b4a7645f1878",
    "bytes": 342318,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Charter_H4.parquet": {
    "sha": "1a76ca0fc1114da6",
    "bytes": 108401,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Chevron_D1.parquet": {
    "sha": "041841c7e10e1540",
    "bytes": 55263,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Chevron_H1.parquet": {
    "sha": "25560b22ec7321b1",
    "bytes": 288797,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Chevron_H4.parquet": {
    "sha": "fa4560ee801b47d0",
    "bytes": 102870,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "CHFDKK_D1.parquet": {
    "sha": "4bbc48cb26af3f87",
    "bytes": 86354,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:10+00:00"
   },
   "CHFDKK_H1.parquet": {
    "sha": "0607221dcf202da1",
    "bytes": 1651331,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "CHFDKK_H4.parquet": {
    "sha": "d6edd4c432ca7ed6",
    "bytes": 487573,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:10+00:00"
   },
   "CHFHUF_D1.parquet": {
    "sha": "b9491943187e0f2d",
    "bytes": 78821,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:10+00:00"
   },
   "CHFHUF_H1.parquet": {
    "sha": "3812a70c5614137d",
    "bytes": 1604640,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:10+00:00"
   },
   "CHFHUF_H4.parquet": {
    "sha": "168127cd275bba75",
    "bytes": 436798,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:10+00:00"
   },
   "CHFJPY_D1.parquet": {
    "sha": "8b41254f41ab95b1",
    "bytes": 67998,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:04+00:00"
   },
   "CHFJPY_H1.parquet": {
    "sha": "d23e85446ea2ef13",
    "bytes": 1214978,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:04+00:00"
   },
   "CHFJPY_H4.parquet": {
    "sha": "a07327efa6c0fcbc",
    "bytes": 364508,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:04+00:00"
   },
   "CHFNOK_D1.parquet": {
    "sha": "f6f9642f6604cd4f",
    "bytes": 89266,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:11+00:00"
   },
   "CHFNOK_H1.parquet": {
    "sha": "9c315c682be13014",
    "bytes": 1858799,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:10+00:00"
   },
   "CHFNOK_H4.parquet": {
    "sha": "feb43b7aa3569fa0",
    "bytes": 510011,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:11+00:00"
   },
   "CHFPLN_D1.parquet": {
    "sha": "5d560a4f021194c8",
    "bytes": 82161,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:11+00:00"
   },
   "CHFPLN_H1.parquet": {
    "sha": "5be48ec443129772",
    "bytes": 1120029,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:11+00:00"
   },
   "CHFPLN_H4.parquet": {
    "sha": "bc81cdc903022f33",
    "bytes": 379463,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:11+00:00"
   },
   "CHFSEK_D1.parquet": {
    "sha": "5891715d06ac7fc1",
    "bytes": 87493,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:12+00:00"
   },
   "CHFSEK_H1.parquet": {
    "sha": "85cd62f8249c59ab",
    "bytes": 1854864,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:12+00:00"
   },
   "CHFSEK_H4.parquet": {
    "sha": "442aadd69a7f503d",
    "bytes": 490582,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:12+00:00"
   },
   "CHFSGD_D1.parquet": {
    "sha": "3c842db13dd451dc",
    "bytes": 83223,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:12+00:00"
   },
   "CHFSGD_H1.parquet": {
    "sha": "8fa3448814ff99d2",
    "bytes": 1244901,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:12+00:00"
   },
   "CHFSGD_H4.parquet": {
    "sha": "bbb12c8a0a5ac5cf",
    "bytes": 424819,
-   "mtime": "2026-09-12T02:26:07+00:00"
+   "mtime": "2026-09-12T06:26:12+00:00"
   },
   "CHINAH_D1.parquet": {
    "sha": "2c64225b64c4af1b",
    "bytes": 66156,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "CHINAH_H1.parquet": {
    "sha": "50d4ad52da80a3bf",
    "bytes": 854901,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "CHINAH_H4.parquet": {
    "sha": "098886e029ef1319",
    "bytes": 295683,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "Cisco_D1.parquet": {
    "sha": "ec6da00e46813320",
    "bytes": 53593,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Cisco_H1.parquet": {
    "sha": "c9203366b26bfe0d",
    "bytes": 250803,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Cisco_H4.parquet": {
    "sha": "9c7bc733753e70a8",
    "bytes": 94612,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Citigroup_D1.parquet": {
    "sha": "bfe4b6bbf642f5e7",
    "bytes": 60761,
-   "mtime": "2026-09-12T02:26:34+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Citigroup_H1.parquet": {
    "sha": "01c612c028365dd2",
    "bytes": 248016,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Citigroup_H4.parquet": {
    "sha": "76bdcdbe75b05df9",
    "bytes": 99225,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Coca-Cola_D1.parquet": {
    "sha": "7b63de455877d706",
    "bytes": 49619,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "Coca-Cola_H1.parquet": {
    "sha": "33e24a2567b6b778",
    "bytes": 228606,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "Coca-Cola_H4.parquet": {
    "sha": "8887bfdc9b4f7a9e",
    "bytes": 87268,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:34+00:00"
   },
   "COFARA_D1.parquet": {
    "sha": "cdc04275d9930b56",
    "bytes": 53041,
-   "mtime": "2026-09-12T02:26:54+00:00"
+   "mtime": "2026-09-12T06:26:52+00:00"
   },
   "COFARA_H1.parquet": {
    "sha": "0e7793b1ea564851",
    "bytes": 400319,
-   "mtime": "2026-09-12T02:26:54+00:00"
+   "mtime": "2026-09-12T06:26:52+00:00"
   },
   "COFARA_H4.parquet": {
    "sha": "c85c43d1fc670398",
    "bytes": 178189,
-   "mtime": "2026-09-12T02:26:54+00:00"
+   "mtime": "2026-09-12T06:26:52+00:00"
   },
   "COFROB_D1.parquet": {
    "sha": "1f036e119b4dfede",
    "bytes": 53471,
-   "mtime": "2026-09-12T02:26:54+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "COFROB_H1.parquet": {
    "sha": "6db007521cba5f0b",
    "bytes": 385843,
-   "mtime": "2026-09-12T02:26:54+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "COFROB_H4.parquet": {
    "sha": "78a846292a247e8e",
    "bytes": 139324,
-   "mtime": "2026-09-12T02:26:54+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "Coinbase_D1.parquet": {
    "sha": "f24523d13fc5bff5",
    "bytes": 57687,
-   "mtime": "2026-09-12T02:26:47+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "Coinbase_H1.parquet": {
    "sha": "08e90f4ce46f36e0",
    "bytes": 289878,
-   "mtime": "2026-09-12T02:26:47+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "Coinbase_H4.parquet": {
    "sha": "4d4eb19639f6cea4",
    "bytes": 101920,
-   "mtime": "2026-09-12T02:26:47+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "Comcast_D1.parquet": {
    "sha": "163a4e314a75ab1d",
    "bytes": 52679,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "Comcast_H1.parquet": {
    "sha": "41c5701fe80efad2",
    "bytes": 238384,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "Comcast_H4.parquet": {
    "sha": "40c22c90901e5723",
    "bytes": 91891,
-   "mtime": "2026-09-12T02:26:26+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "CORN_D1.parquet": {
    "sha": "cbb5925b1fdcc36e",
    "bytes": 60418,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "CORN_H1.parquet": {
    "sha": "60510f241da30d63",
    "bytes": 652451,
-   "mtime": "2026-09-12T02:26:54+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "CORN_H4.parquet": {
    "sha": "b98d51c0e2041efa",
    "bytes": 248410,
-   "mtime": "2026-09-12T02:26:54+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "CostcoWholesale_D1.parquet": {
    "sha": "8f18741a8cc66f54",
    "bytes": 57537,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "CostcoWholesale_H1.parquet": {
    "sha": "fa85406e3a6a9e2a",
    "bytes": 342074,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "CostcoWholesale_H4.parquet": {
    "sha": "c2e4df23ac68463d",
    "bytes": 108699,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "COTTON_D1.parquet": {
    "sha": "04206bfaa1542186",
    "bytes": 55658,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "COTTON_H1.parquet": {
    "sha": "35bd96b547b0e762",
    "bytes": 707723,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "COTTON_H4.parquet": {
    "sha": "a8756bd8d4e5c25b",
    "bytes": 227349,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "CVSHealth_D1.parquet": {
    "sha": "8c120365fc7622ae",
    "bytes": 59935,
-   "mtime": "2026-09-12T02:26:34+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "CVSHealth_H1.parquet": {
    "sha": "4d4b6d3d3cf3bbe6",
    "bytes": 232235,
-   "mtime": "2026-09-12T02:26:34+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "CVSHealth_H4.parquet": {
    "sha": "53f43fd5d309cca0",
    "bytes": 96187,
-   "mtime": "2026-09-12T02:26:34+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "DocuSign_D1.parquet": {
    "sha": "60fd7865357f153c",
    "bytes": 60277,
-   "mtime": "2026-09-12T02:26:41+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "DocuSign_H1.parquet": {
    "sha": "cdb959d3e6978d1c",
    "bytes": 243575,
-   "mtime": "2026-09-12T02:26:41+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "DocuSign_H4.parquet": {
    "sha": "a004c190eed9f0dc",
    "bytes": 98254,
-   "mtime": "2026-09-12T02:26:41+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "DOGEUSD_D1.parquet": {
-   "sha": "4238aa04474e3eb8",
-   "bytes": 111562,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "cac4bc9dd928e58b",
+   "bytes": 111554,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "DOGEUSD_H1.parquet": {
-   "sha": "b028087660a80159",
-   "bytes": 1510157,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "6dd205ad29f1259e",
+   "bytes": 1510189,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "DOGEUSD_H4.parquet": {
-   "sha": "7389099c56c0fc03",
-   "bytes": 500846,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "75ed1ce27d28ddd9",
+   "bytes": 500949,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "Doordash_D1.parquet": {
    "sha": "e94055866c8ba169",
    "bytes": 59962,
-   "mtime": "2026-09-12T02:26:45+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "Doordash_H1.parquet": {
    "sha": "354e8226887b1524",
    "bytes": 278592,
-   "mtime": "2026-09-12T02:26:45+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Doordash_H4.parquet": {
    "sha": "b313f615a9c65542",
    "bytes": 101355,
-   "mtime": "2026-09-12T02:26:45+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "DOTUSD_D1.parquet": {
-   "sha": "a9f5340625d8d3d1",
-   "bytes": 89576,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "664ffa2aa72adf4b",
+   "bytes": 89572,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "DOTUSD_H1.parquet": {
-   "sha": "d4f602c61b95c653",
-   "bytes": 1203171,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "da8b93e42a0b3d4f",
+   "bytes": 1203322,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "DOTUSD_H4.parquet": {
-   "sha": "4298cdde9d7aec21",
-   "bytes": 387662,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "c187d73ee11ec266",
+   "bytes": 387681,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "Dow_D1.parquet": {
    "sha": "2e7d16c24e3815f6",
    "bytes": 52809,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "Dow_H1.parquet": {
    "sha": "2d201a301d13d761",
    "bytes": 246993,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "Dow_H4.parquet": {
    "sha": "b6f18ee84291c354",
    "bytes": 94261,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "E35_D1.parquet": {
    "sha": "2799ab45f6f635c8",
    "bytes": 68543,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "E35_H1.parquet": {
    "sha": "a8ac6aa3582f2744",
    "bytes": 712161,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "E35_H4.parquet": {
    "sha": "37899d33d4ff4809",
    "bytes": 249675,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "eBay_D1.parquet": {
    "sha": "7289787a98cc9eff",
    "bytes": 54909,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "eBay_H1.parquet": {
    "sha": "7c68ab2acd3da2de",
    "bytes": 272127,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "eBay_H4.parquet": {
    "sha": "90602be67be0befe",
    "bytes": 99894,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "ElectronicArts_D1.parquet": {
    "sha": "6b23f3a8d5b6305e",
    "bytes": 52754,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "ElectronicArts_H1.parquet": {
    "sha": "c1a320b39a182abe",
    "bytes": 258793,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "ElectronicArts_H4.parquet": {
    "sha": "5a61439cc29f66d3",
    "bytes": 95065,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "EOSUSD_D1.parquet": {
    "sha": "056f73e8b1c7fba2",
    "bytes": 88070,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "EOSUSD_H1.parquet": {
    "sha": "deabe7bb80ef9c89",
    "bytes": 1174981,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "EOSUSD_H4.parquet": {
    "sha": "dfff4e21800411dc",
    "bytes": 375330,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "ETHUSD_D1.parquet": {
-   "sha": "9a9b9aa604357b8d",
+   "sha": "fe39c23dbc786a43",
    "bytes": 88990,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "ETHUSD_H1.parquet": {
-   "sha": "cf6c9df757e149cf",
-   "bytes": 1645243,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "9a5642f1db8ab741",
+   "bytes": 1645327,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "ETHUSD_H4.parquet": {
-   "sha": "5ed579a1c49ed72c",
-   "bytes": 477449,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "6991b3e761c0b0a0",
+   "bytes": 477556,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "EURAUD_D1.parquet": {
    "sha": "5163cad622a23a67",
    "bytes": 84854,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURAUD_H1.parquet": {
    "sha": "762b4b97adc1ad2b",
    "bytes": 1349355,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:04+00:00"
   },
   "EURAUD_H4.parquet": {
    "sha": "610b50d6795896c3",
    "bytes": 444451,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:04+00:00"
   },
   "EURCAD_D1.parquet": {
    "sha": "fc6decb5a3beb26a",
    "bytes": 84879,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURCAD_H1.parquet": {
    "sha": "7428916408bb9c5a",
    "bytes": 1319423,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURCAD_H4.parquet": {
    "sha": "225049b2308fb9b4",
    "bytes": 438792,
-   "mtime": "2026-09-12T02:26:03+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURCHF_D1.parquet": {
    "sha": "88d756afdb6721ee",
    "bytes": 83422,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURCHF_H1.parquet": {
    "sha": "88a10a939a70a846",
    "bytes": 1167235,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURCHF_H4.parquet": {
    "sha": "046a3b4662ba338b",
    "bytes": 403112,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURCZK_D1.parquet": {
    "sha": "c8106bc4ccdec60f",
    "bytes": 79775,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURCZK_H1.parquet": {
    "sha": "7ab6e1df4963f2b1",
    "bytes": 1331074,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:12+00:00"
   },
   "EURCZK_H4.parquet": {
    "sha": "315b19995f3453bf",
    "bytes": 405594,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:12+00:00"
   },
   "EURDKK_D1.parquet": {
    "sha": "fc0b0020b8edbdc3",
    "bytes": 74362,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURDKK_H1.parquet": {
    "sha": "d029f170340d2cf9",
    "bytes": 778463,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURDKK_H4.parquet": {
    "sha": "fe4a333368e9942f",
    "bytes": 281660,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURGBP_D1.parquet": {
    "sha": "7dfb6416ee26b0d9",
    "bytes": 80502,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURGBP_H1.parquet": {
    "sha": "fa402a9352535a0d",
    "bytes": 938753,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURGBP_H4.parquet": {
    "sha": "7b66568591ebb431",
    "bytes": 347096,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURHKD_D1.parquet": {
    "sha": "0ed61450d44674a4",
    "bytes": 85256,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURHKD_H1.parquet": {
    "sha": "0fb1c3c27fa40227",
    "bytes": 1733148,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURHKD_H4.parquet": {
    "sha": "e491a9dd5b7139c5",
    "bytes": 485192,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURHUF_D1.parquet": {
    "sha": "f7a8f71da2b988ee",
    "bytes": 69900,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURHUF_H1.parquet": {
    "sha": "7a2a619d68d9eaee",
    "bytes": 1309433,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURHUF_H4.parquet": {
    "sha": "20b829af9e58e760",
    "bytes": 385537,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURILS_D1.parquet": {
    "sha": "67455a02b46ae24a",
    "bytes": 85301,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURILS_H1.parquet": {
    "sha": "863df28e0f1557cd",
    "bytes": 1567391,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURILS_H4.parquet": {
    "sha": "2b8de44f4fad17e3",
    "bytes": 478339,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:13+00:00"
   },
   "EURJPY_D1.parquet": {
    "sha": "c199be720263a0c0",
    "bytes": 67698,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "EURJPY_H1.parquet": {
    "sha": "39614ee4f6803fc7",
    "bytes": 1184996,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:05+00:00"
   },
   "EURJPY_H4.parquet": {
    "sha": "b5524158edea71b3",
    "bytes": 358210,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "EURMXN_D1.parquet": {
    "sha": "dd2c1c93c15176fc",
    "bytes": 84702,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURMXN_H1.parquet": {
    "sha": "0bd964833d22daf3",
    "bytes": 1881061,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURMXN_H4.parquet": {
    "sha": "81b7543928b4224e",
    "bytes": 482620,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURNOK_D1.parquet": {
    "sha": "9210729a49361771",
    "bytes": 87967,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURNOK_H1.parquet": {
    "sha": "9a2ad27f33efca8d",
    "bytes": 1813478,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURNOK_H4.parquet": {
    "sha": "e5ffc1a1dfe9c382",
    "bytes": 496960,
-   "mtime": "2026-09-12T02:26:08+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURNZD_D1.parquet": {
    "sha": "efa2b01ed92138f1",
    "bytes": 85191,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "EURNZD_H1.parquet": {
    "sha": "e4e4dfd18884e4a7",
    "bytes": 1445651,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "EURNZD_H4.parquet": {
    "sha": "8d07c9feced9b3bb",
    "bytes": 460769,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "EURPLN_D1.parquet": {
    "sha": "49226ad191ce297b",
    "bytes": 85394,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURPLN_H1.parquet": {
    "sha": "25a7de5ff2923806",
    "bytes": 1469205,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURPLN_H4.parquet": {
    "sha": "9768e179f3180e28",
    "bytes": 461210,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURRUB_D1.parquet": {
    "sha": "94594092991e13c4",
    "bytes": 24898,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURRUB_H1.parquet": {
    "sha": "83ac2a0135c91c99",
    "bytes": 455710,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURRUB_H4.parquet": {
    "sha": "45d89a7174254ff4",
    "bytes": 122991,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURSEK_D1.parquet": {
    "sha": "abf33970f08cc75e",
    "bytes": 87779,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EURSEK_H1.parquet": {
    "sha": "ce0ffe5e7eaf4267",
    "bytes": 1763395,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURSEK_H4.parquet": {
    "sha": "19fad44086949efe",
    "bytes": 487535,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:14+00:00"
   },
   "EURSGD_D1.parquet": {
    "sha": "2245136e5306b946",
    "bytes": 84248,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EURSGD_H1.parquet": {
    "sha": "1e1994c41382352b",
    "bytes": 1205815,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EURSGD_H4.parquet": {
    "sha": "0e8e317b3cbb5bdb",
    "bytes": 422939,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EURTRY_D1.parquet": {
    "sha": "1f1bae1f86e93f98",
    "bytes": 91677,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EURTRY_H1.parquet": {
    "sha": "2e31ed60b95f06e3",
    "bytes": 1960058,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EURTRY_H4.parquet": {
    "sha": "144ed55a8172a01a",
    "bytes": 524160,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EURUSD_D1.parquet": {
    "sha": "c12d31403123cfd5",
    "bytes": 84219,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "EURUSD_H1.parquet": {
    "sha": "f790f8c09b4afce5",
    "bytes": 1231787,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "EURUSD_H4.parquet": {
    "sha": "1205fc2f334afa83",
    "bytes": 428798,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "EURZAR_D1.parquet": {
    "sha": "346d0f1d88dd2c7f",
    "bytes": 87443,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EURZAR_H1.parquet": {
    "sha": "e43981a214e55c7c",
    "bytes": 1811526,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EURZAR_H4.parquet": {
    "sha": "049d142777dfedb2",
    "bytes": 491817,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "EUSTX50_D1.parquet": {
    "sha": "c36c9b4762fae239",
    "bytes": 66636,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "EUSTX50_H1.parquet": {
    "sha": "feae9ad2d109e889",
    "bytes": 973900,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "EUSTX50_H4.parquet": {
    "sha": "2e6d00ab3a71b27d",
    "bytes": 327423,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "ExxonMobil_D1.parquet": {
    "sha": "625c588a00bbf5ce",
    "bytes": 59524,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "ExxonMobil_H1.parquet": {
    "sha": "31a6915f448fc9b2",
    "bytes": 243721,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "ExxonMobil_H4.parquet": {
    "sha": "cd5ad86e5b1cf38f",
    "bytes": 97533,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "Ford_D1.parquet": {
    "sha": "751045935e0eb0e9",
    "bytes": 46163,
-   "mtime": "2026-09-12T02:26:50+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "Ford_H1.parquet": {
    "sha": "00cc1e29a05a32fe",
    "bytes": 161416,
-   "mtime": "2026-09-12T02:26:50+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "Ford_H4.parquet": {
    "sha": "b89cf04e37cf7e02",
    "bytes": 67044,
-   "mtime": "2026-09-12T02:26:50+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "FRA40_D1.parquet": {
    "sha": "f4fa48fc30e63426",
    "bytes": 67500,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "FRA40_H1.parquet": {
    "sha": "0b50ccc56c10d4b3",
    "bytes": 925368,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "FRA40_H4.parquet": {
    "sha": "c291445e40250009",
    "bytes": 278500,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "GBPAUD_D1.parquet": {
    "sha": "6f44f2db99bb299a",
    "bytes": 85768,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "GBPAUD_H1.parquet": {
    "sha": "24fc382b9ddcf83f",
    "bytes": 1451598,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "GBPAUD_H4.parquet": {
    "sha": "8fbc63a1844813d4",
    "bytes": 453029,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "GBPCAD_D1.parquet": {
    "sha": "10e2f8a8f5adc0b8",
    "bytes": 85054,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPCAD_H1.parquet": {
    "sha": "64289f54015e1964",
    "bytes": 1356054,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "GBPCAD_H4.parquet": {
    "sha": "ec9b6985a59d3485",
    "bytes": 445135,
-   "mtime": "2026-09-12T02:26:04+00:00"
+   "mtime": "2026-09-12T06:26:06+00:00"
   },
   "GBPCHF_D1.parquet": {
    "sha": "bf3b56bc83d632bc",
    "bytes": 84469,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPCHF_H1.parquet": {
    "sha": "d28720f7af69b7d8",
    "bytes": 1275365,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPCHF_H4.parquet": {
    "sha": "63c0075182b9c288",
    "bytes": 420806,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPDKK_D1.parquet": {
    "sha": "4b2338314b52f19c",
    "bytes": 86056,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPDKK_H1.parquet": {
    "sha": "5128c323e6086410",
    "bytes": 1549073,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "GBPDKK_H4.parquet": {
    "sha": "a35de203a4b19e05",
    "bytes": 433055,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPHUF_D1.parquet": {
    "sha": "e53df31f0ee5308d",
    "bytes": 85072,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPHUF_H1.parquet": {
    "sha": "5ee86ca5012aee3d",
    "bytes": 1670131,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPHUF_H4.parquet": {
    "sha": "ee5a0f4ffa73b46f",
    "bytes": 452715,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPJPY_D1.parquet": {
    "sha": "eb25fe15f23390f7",
    "bytes": 68354,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPJPY_H1.parquet": {
    "sha": "613e6d63e67af911",
    "bytes": 1234534,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPJPY_H4.parquet": {
    "sha": "83309e19a3fe54f0",
    "bytes": 365604,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPMXN_D1.parquet": {
    "sha": "0b81d1ae9242d29a",
    "bytes": 86606,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPMXN_H1.parquet": {
    "sha": "7eccbfde09aa82cd",
    "bytes": 1927214,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPMXN_H4.parquet": {
    "sha": "97c0c40c28c0425a",
    "bytes": 506612,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPNOK_D1.parquet": {
    "sha": "0cb4753b60a8feda",
    "bytes": 86561,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPNOK_H1.parquet": {
    "sha": "8ba2c9aa777e52c4",
    "bytes": 1730039,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPNOK_H4.parquet": {
    "sha": "dc007eb2d892c98f",
    "bytes": 473290,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPNZD_D1.parquet": {
    "sha": "5a54606d5792a343",
    "bytes": 85866,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPNZD_H1.parquet": {
    "sha": "15376e1a239f3706",
    "bytes": 1478905,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPNZD_H4.parquet": {
    "sha": "4ba7b492cf7b57be",
    "bytes": 467083,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPPLN_D1.parquet": {
    "sha": "28153226fe5e21b8",
    "bytes": 84473,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPPLN_H1.parquet": {
    "sha": "042c58b598ca6a10",
    "bytes": 1550488,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPPLN_H4.parquet": {
    "sha": "cae4d0a36ca597f5",
    "bytes": 434917,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPSEK_D1.parquet": {
    "sha": "2601fbd83e904fd2",
    "bytes": 85935,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GBPSEK_H1.parquet": {
    "sha": "5934c3019654341d",
    "bytes": 1670288,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPSEK_H4.parquet": {
    "sha": "721c513d7a782afd",
    "bytes": 470973,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:16+00:00"
   },
   "GBPSGD_D1.parquet": {
    "sha": "6679b5498d69dcb4",
    "bytes": 83993,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GBPSGD_H1.parquet": {
    "sha": "7553d886fcce7090",
    "bytes": 1275862,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GBPSGD_H4.parquet": {
    "sha": "7163b5b8e30f947d",
    "bytes": 427422,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GBPTRY_D1.parquet": {
    "sha": "055345ceb39fe444",
    "bytes": 91999,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GBPTRY_H1.parquet": {
    "sha": "32308c93a78054a7",
    "bytes": 1990717,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GBPTRY_H4.parquet": {
    "sha": "3b65bbc07a0c7888",
    "bytes": 509646,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GBPUSD_D1.parquet": {
    "sha": "d3693d69036b049f",
    "bytes": 85063,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPUSD_H1.parquet": {
    "sha": "ed631ccae0eee42c",
    "bytes": 1307382,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPUSD_H4.parquet": {
    "sha": "d3995127a810f5dd",
    "bytes": 421523,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "GBPZAR_D1.parquet": {
    "sha": "4d8cd75f8c22522a",
    "bytes": 87635,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GBPZAR_H1.parquet": {
    "sha": "2b9d04908d71318d",
    "bytes": 1832016,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GBPZAR_H4.parquet": {
    "sha": "a55aa4311a1893bd",
    "bytes": 478394,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "GeneralElectric_D1.parquet": {
    "sha": "0c648cca316b1d55",
    "bytes": 60395,
-   "mtime": "2026-09-12T02:26:53+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "GeneralElectric_H1.parquet": {
    "sha": "6739d2ac0d4b63ea",
    "bytes": 278784,
-   "mtime": "2026-09-12T02:26:53+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "GeneralElectric_H4.parquet": {
    "sha": "ee621bf37301295c",
    "bytes": 102055,
-   "mtime": "2026-09-12T02:26:53+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "GeneralMotors_D1.parquet": {
    "sha": "df504156efc04d30",
    "bytes": 58297,
-   "mtime": "2026-09-12T02:26:49+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "GeneralMotors_H1.parquet": {
    "sha": "792217086d22fb87",
    "bytes": 225047,
-   "mtime": "2026-09-12T02:26:49+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "GeneralMotors_H4.parquet": {
    "sha": "fd01fa02cbfc4e7a",
    "bytes": 92975,
-   "mtime": "2026-09-12T02:26:49+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "GER40_D1.parquet": {
    "sha": "8d88a1bdf3dae7c0",
    "bytes": 68406,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "GER40_H1.parquet": {
    "sha": "4535870f42bbb73c",
    "bytes": 1114414,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "GER40_H4.parquet": {
    "sha": "0fa8227e2773fa04",
    "bytes": 355996,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "GileadSciences_D1.parquet": {
    "sha": "8d63234253677c7c",
    "bytes": 55048,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "GileadSciences_H1.parquet": {
    "sha": "58281e36c715b073",
    "bytes": 273725,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "GileadSciences_H4.parquet": {
    "sha": "5f62c6c40ca22c7d",
    "bytes": 100718,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "GoldmanSachs_D1.parquet": {
    "sha": "5eb2e2884b225b07",
    "bytes": 57867,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "GoldmanSachs_H1.parquet": {
    "sha": "b4eb54a27fd7082c",
    "bytes": 339486,
-   "mtime": "2026-09-12T02:26:31+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "GoldmanSachs_H4.parquet": {
    "sha": "ee31718c57f76c9a",
    "bytes": 110114,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "HK50_D1.parquet": {
    "sha": "fdaba3d9ca6dd601",
    "bytes": 66459,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "HK50_H1.parquet": {
    "sha": "d00d92d62ccc7015",
    "bytes": 1015691,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "HK50_H4.parquet": {
    "sha": "190433edc9e783dd",
    "bytes": 327614,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "HKDJPY_D1.parquet": {
    "sha": "5876c0ee8d0e496e",
    "bytes": 62904,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "HKDJPY_H1.parquet": {
    "sha": "97eac132af83789c",
    "bytes": 786450,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "HKDJPY_H4.parquet": {
    "sha": "20b6c4b9a72a18be",
    "bytes": 267961,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:17+00:00"
   },
   "HomeDepot_D1.parquet": {
    "sha": "8dd5489f3725678d",
    "bytes": 56214,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "HomeDepot_H1.parquet": {
    "sha": "7bbb68ffbd670b66",
    "bytes": 312454,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "HomeDepot_H4.parquet": {
    "sha": "5367fdbcbc2c99e5",
    "bytes": 106210,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "Honeywell_D1.parquet": {
    "sha": "6a72eb47cc7facd9",
    "bytes": 54056,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "Honeywell_H1.parquet": {
    "sha": "a1b2d247dc064a4e",
    "bytes": 275979,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "Honeywell_H4.parquet": {
    "sha": "814f994b12818f13",
    "bytes": 100024,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:35+00:00"
   },
   "IBM_D1.parquet": {
    "sha": "1fbbbd957806f693",
    "bytes": 56297,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "IBM_H1.parquet": {
    "sha": "7a0e69a7d5f395e9",
    "bytes": 305322,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "IBM_H4.parquet": {
    "sha": "abbeab987d7567ed",
    "bytes": 105263,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "Intel_D1.parquet": {
    "sha": "fb0ac9eac9b9036b",
    "bytes": 55008,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "Intel_H1.parquet": {
    "sha": "990c43ad7bdf4046",
    "bytes": 269441,
-   "mtime": "2026-09-12T02:26:27+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "Intel_H4.parquet": {
    "sha": "3129268a266197d4",
    "bytes": 100040,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "Intuit_D1.parquet": {
    "sha": "bf45c65a2f88b5bf",
    "bytes": 64190,
-   "mtime": "2026-09-12T02:26:35+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "Intuit_H1.parquet": {
    "sha": "0ec514e3cf6bd9ef",
    "bytes": 291931,
-   "mtime": "2026-09-12T02:26:35+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "Intuit_H4.parquet": {
    "sha": "2d527b2fe3dc67cf",
    "bytes": 105780,
-   "mtime": "2026-09-12T02:26:35+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "IntuitiveSurgical_D1.parquet": {
    "sha": "6ccbbec33785f0ef",
    "bytes": 62289,
-   "mtime": "2026-09-12T02:26:52+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "IntuitiveSurgical_H1.parquet": {
    "sha": "ed2270335737887e",
    "bytes": 291936,
-   "mtime": "2026-09-12T02:26:52+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "IntuitiveSurgical_H4.parquet": {
    "sha": "ef33505a5c040e65",
    "bytes": 104552,
-   "mtime": "2026-09-12T02:26:52+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "Johnson&Johnson_D1.parquet": {
    "sha": "0fd8a7200d87e5e5",
    "bytes": 54147,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "Johnson&Johnson_H1.parquet": {
    "sha": "b1eb917e79864286",
    "bytes": 272342,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "Johnson&Johnson_H4.parquet": {
    "sha": "c09554e3ce6211a7",
    "bytes": 99203,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:40+00:00"
   },
   "JPMorganChase_D1.parquet": {
    "sha": "733b8e2f7e9ba9e0",
    "bytes": 57068,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "JPMorganChase_H1.parquet": {
    "sha": "d78f0f01fbd40d95",
    "bytes": 319425,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "JPMorganChase_H4.parquet": {
    "sha": "09ff074c8362190d",
    "bytes": 107916,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "JPN225_D1.parquet": {
    "sha": "a1e9eba7aa68631a",
    "bytes": 69433,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "JPN225_H1.parquet": {
    "sha": "e394ce3de78d699b",
    "bytes": 1252480,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "JPN225_H4.parquet": {
    "sha": "fdf60b750ccacbcf",
    "bytes": 373259,
-   "mtime": "2026-09-12T02:26:18+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "LNKUSD_D1.parquet": {
-   "sha": "948287b15701ceb5",
+   "sha": "3f08c97ea4dd782e",
    "bytes": 90417,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "LNKUSD_H1.parquet": {
-   "sha": "965c4d28a819d2cc",
-   "bytes": 1193400,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "d0c18313195c815e",
+   "bytes": 1193532,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "LNKUSD_H4.parquet": {
-   "sha": "980d52da3d988dc1",
-   "bytes": 397092,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "1f59a6defb0cfc86",
+   "bytes": 397108,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "LTCUSD_D1.parquet": {
-   "sha": "03c51c75a636fdc5",
-   "bytes": 82861,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "802389fc5f8fc948",
+   "bytes": 82857,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "LTCUSD_H1.parquet": {
-   "sha": "18ac1269782a7708",
-   "bytes": 1175619,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "8ab2cadea9708199",
+   "bytes": 1175651,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "LTCUSD_H4.parquet": {
-   "sha": "5b727a3ba01e8d7e",
-   "bytes": 391072,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "sha": "2b5fd1f58a71e4ff",
+   "bytes": 391157,
+   "mtime": "2026-09-12T06:26:28+00:00"
   },
   "LucidGroup_D1.parquet": {
    "sha": "22e7c291a24b2eb0",
    "bytes": 51520,
-   "mtime": "2026-09-12T02:26:48+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "LucidGroup_H1.parquet": {
    "sha": "4b262f28dab8cdd7",
    "bytes": 190910,
-   "mtime": "2026-09-12T02:26:48+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "LucidGroup_H4.parquet": {
    "sha": "3fa737259df4a842",
    "bytes": 78708,
-   "mtime": "2026-09-12T02:26:48+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "Lyft_D1.parquet": {
    "sha": "9fadae2bf7725df1",
    "bytes": 55924,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Lyft_H1.parquet": {
    "sha": "c6414cc45cfd2b73",
    "bytes": 187573,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Lyft_H4.parquet": {
    "sha": "d5f582f93b3d4994",
    "bytes": 82658,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Mastercard_D1.parquet": {
    "sha": "3f2d7c8a15b6a004",
    "bytes": 60986,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "Mastercard_H1.parquet": {
    "sha": "092ebdb8e19a9def",
    "bytes": 285361,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "Mastercard_H4.parquet": {
    "sha": "61ef14fc4d95eb53",
    "bytes": 102965,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "MATICUSD_D1.parquet": {
-   "sha": "2d6d0c90cf9c9e6a",
-   "bytes": 73738,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "sha": "89fde439a222efaa",
+   "bytes": 73733,
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "MATICUSD_H1.parquet": {
-   "sha": "24e44a0a5e212c83",
-   "bytes": 945695,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "sha": "afed1ef07cc80991",
+   "bytes": 945723,
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "MATICUSD_H4.parquet": {
-   "sha": "d73180933cbc7afd",
-   "bytes": 319181,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "sha": "9f97e9e2a51c6656",
+   "bytes": 319189,
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "McDonalds_D1.parquet": {
    "sha": "2ca8999eeb051a6c",
    "bytes": 54908,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "McDonalds_H1.parquet": {
    "sha": "24dd4801bacc11d6",
    "bytes": 294268,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "McDonalds_H4.parquet": {
    "sha": "968cc1f76f1a81e3",
    "bytes": 102940,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "Medtronic_D1.parquet": {
    "sha": "520ec6d79e4399a4",
    "bytes": 58631,
-   "mtime": "2026-09-12T02:26:34+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "Medtronic_H1.parquet": {
    "sha": "7468b7791d48c236",
    "bytes": 213126,
-   "mtime": "2026-09-12T02:26:34+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "Medtronic_H4.parquet": {
    "sha": "22f70b9d0f1c95f0",
    "bytes": 91619,
-   "mtime": "2026-09-12T02:26:34+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "Merck_D1.parquet": {
    "sha": "62652b5b8bf6a0db",
    "bytes": 54011,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "Merck_H1.parquet": {
    "sha": "f1bcc8770483921e",
    "bytes": 265929,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "Merck_H4.parquet": {
    "sha": "9b6dfa58a4f717bd",
    "bytes": 98628,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "Meta_D1.parquet": {
    "sha": "2f005217a9b4cfe5",
    "bytes": 58247,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "Meta_H1.parquet": {
    "sha": "ad995cb82daa1d0b",
    "bytes": 355146,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "Meta_H4.parquet": {
    "sha": "03d12df39472d237",
    "bytes": 111594,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "MicronTechnology_D1.parquet": {
    "sha": "d40ecf2afe757b11",
    "bytes": 61756,
-   "mtime": "2026-09-12T02:26:51+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "MicronTechnology_H1.parquet": {
    "sha": "c4d4c983fb9e55c8",
    "bytes": 278964,
-   "mtime": "2026-09-12T02:26:51+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "MicronTechnology_H4.parquet": {
    "sha": "363a02ef07af0382",
    "bytes": 103619,
-   "mtime": "2026-09-12T02:26:51+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "Microsoft_D1.parquet": {
    "sha": "5ef31e8a84ba4398",
    "bytes": 57805,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "Microsoft_H1.parquet": {
    "sha": "34f0fb09fb65c72d",
    "bytes": 340713,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "Microsoft_H4.parquet": {
    "sha": "5b2fdcf7e54391e3",
    "bytes": 110634,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:36+00:00"
   },
   "MorganStanley_D1.parquet": {
    "sha": "cd77a34f48583bbf",
    "bytes": 59998,
-   "mtime": "2026-09-12T02:26:40+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "MorganStanley_H1.parquet": {
    "sha": "00009a6d447f4f50",
    "bytes": 256146,
-   "mtime": "2026-09-12T02:26:40+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "MorganStanley_H4.parquet": {
    "sha": "6bc513fdd0fd88f2",
    "bytes": 98821,
-   "mtime": "2026-09-12T02:26:40+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "MXNJPY_D1.parquet": {
    "sha": "fc4f91a0189d61ee",
    "bytes": 59082,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "MXNJPY_H1.parquet": {
    "sha": "d45f98f2e9ddd491",
    "bytes": 715087,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "MXNJPY_H4.parquet": {
    "sha": "40135b7efbf282e8",
    "bytes": 234542,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NAS100_D1.parquet": {
    "sha": "1d98d501a84c7fe3",
    "bytes": 70368,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "NAS100_H1.parquet": {
    "sha": "adf3a7b704fb7142",
    "bytes": 1421813,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "NAS100_H4.parquet": {
    "sha": "6424636c86da2f50",
    "bytes": 396274,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "Netflix_D1.parquet": {
    "sha": "463e0449f0b2dfbe",
    "bytes": 56394,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "Netflix_H1.parquet": {
    "sha": "f9c7ba603c62e1ae",
    "bytes": 296119,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "Netflix_H4.parquet": {
    "sha": "9cfb6703470e10a2",
    "bytes": 104909,
-   "mtime": "2026-09-12T02:26:23+00:00"
+   "mtime": "2026-09-12T06:26:31+00:00"
   },
   "NETH25_D1.parquet": {
    "sha": "08c7a1276bccdc23",
    "bytes": 62520,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "NETH25_H1.parquet": {
    "sha": "8d88278bbb21608a",
    "bytes": 665679,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "NETH25_H4.parquet": {
    "sha": "f4d66cf90b54ed79",
    "bytes": 222051,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "Nike_D1.parquet": {
    "sha": "81ec68d66b183b78",
    "bytes": 56094,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "Nike_H1.parquet": {
    "sha": "ece8c71af89d2f24",
    "bytes": 300097,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "Nike_H4.parquet": {
    "sha": "ffb46825a78ae9c6",
    "bytes": 105516,
-   "mtime": "2026-09-12T02:26:28+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "NIO_D1.parquet": {
    "sha": "a4cdff0ea01507de",
    "bytes": 51789,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "NIO_H1.parquet": {
    "sha": "6add239eb518e7f4",
    "bytes": 184314,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "NIO_H4.parquet": {
    "sha": "1a53b1e89bd5ff22",
    "bytes": 77724,
-   "mtime": "2026-09-12T02:26:46+00:00"
+   "mtime": "2026-09-12T06:26:47+00:00"
   },
   "NOKJPY_D1.parquet": {
    "sha": "d9cffb07b66b477b",
    "bytes": 62424,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NOKJPY_H1.parquet": {
    "sha": "5c078a37c01ce572",
    "bytes": 787144,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NOKJPY_H4.parquet": {
    "sha": "7dfa2890ae8d5392",
    "bytes": 263972,
-   "mtime": "2026-09-12T02:26:11+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NOKSEK_D1.parquet": {
    "sha": "f205d4537f693dce",
    "bytes": 82783,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NOKSEK_H1.parquet": {
    "sha": "a2bcbfd123092ffa",
    "bytes": 1155082,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NOKSEK_H4.parquet": {
    "sha": "2ce05159c18ba099",
    "bytes": 401267,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NVIDIA_D1.parquet": {
    "sha": "42c486e948ca4541",
    "bytes": 60039,
-   "mtime": "2026-09-12T02:26:48+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "NVIDIA_H1.parquet": {
    "sha": "3a14f6d7502fe899",
    "bytes": 281740,
-   "mtime": "2026-09-12T02:26:48+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "NVIDIA_H4.parquet": {
    "sha": "6b748fac1cc7e299",
    "bytes": 101959,
-   "mtime": "2026-09-12T02:26:48+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "NZDCAD_D1.parquet": {
    "sha": "58ad4631ff2ca805",
    "bytes": 82002,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "NZDCAD_H1.parquet": {
    "sha": "d26c597f7796fa0b",
    "bytes": 1086067,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "NZDCAD_H4.parquet": {
    "sha": "d9a816969aea7e78",
    "bytes": 373409,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:07+00:00"
   },
   "NZDCAD_M15.parquet": {
-   "sha": "5c726ae4e1ef3586",
-   "bytes": 2196078,
-   "mtime": "2026-09-12T00:59:50+00:00"
+   "sha": "388256ac55887f94",
+   "bytes": 2016456,
+   "mtime": "2026-09-12T05:55:59+00:00"
   },
   "NZDCHF_D1.parquet": {
    "sha": "db7e09748cb45d2c",
    "bytes": 83726,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "NZDCHF_H1.parquet": {
    "sha": "0c94f76de0cb5c48",
    "bytes": 1196856,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "NZDCHF_H4.parquet": {
    "sha": "4e9b74340d467b0c",
    "bytes": 414492,
-   "mtime": "2026-09-12T02:26:05+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "NZDHUF_D1.parquet": {
    "sha": "a9706448be4e9def",
    "bytes": 74643,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NZDHUF_H1.parquet": {
    "sha": "a49140e96769aae4",
    "bytes": 1410783,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NZDHUF_H4.parquet": {
    "sha": "9aa090183ce1b56d",
    "bytes": 404481,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:18+00:00"
   },
   "NZDJPY_D1.parquet": {
    "sha": "d821f27207c42515",
    "bytes": 66751,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "NZDJPY_H1.parquet": {
    "sha": "3cd91767634327fb",
    "bytes": 1047347,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "NZDJPY_H4.parquet": {
    "sha": "c970905f5948baf4",
    "bytes": 332520,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "NZDSGD_D1.parquet": {
    "sha": "d759c2cef23caf49",
    "bytes": 83514,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "NZDSGD_H1.parquet": {
    "sha": "245aa2490f9e229c",
    "bytes": 1234529,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "NZDSGD_H4.parquet": {
    "sha": "d124200f354bf217",
    "bytes": 414654,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "NZDUSD_D1.parquet": {
    "sha": "43f63015f792a458",
    "bytes": 83398,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "NZDUSD_H1.parquet": {
    "sha": "eb6e16af1630823a",
    "bytes": 1133835,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "NZDUSD_H4.parquet": {
    "sha": "80fdd3096ea883ba",
    "bytes": 408925,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "OJ_D1.parquet": {
    "sha": "1e82401806b58652",
    "bytes": 60188,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "OJ_H1.parquet": {
    "sha": "0a17fd8eafd8e440",
    "bytes": 288703,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "OJ_H4.parquet": {
    "sha": "6382cef5db882a6d",
    "bytes": 154064,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "Oracle_D1.parquet": {
    "sha": "ea8a6617054f1980",
    "bytes": 61484,
-   "mtime": "2026-09-12T02:26:42+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Oracle_H1.parquet": {
    "sha": "34e6719cc8460722",
    "bytes": 275452,
-   "mtime": "2026-09-12T02:26:42+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "Oracle_H4.parquet": {
    "sha": "7352d262a67598f4",
    "bytes": 103029,
-   "mtime": "2026-09-12T02:26:42+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "PayPal_D1.parquet": {
    "sha": "69bacb88811476a3",
    "bytes": 55899,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "PayPal_H1.parquet": {
    "sha": "0c8ae65547b2091b",
    "bytes": 294901,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "PayPal_H4.parquet": {
    "sha": "971db3aecfc9819a",
    "bytes": 103989,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "Pepsi_D1.parquet": {
    "sha": "fcb63fae22905765",
    "bytes": 54345,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "Pepsi_H1.parquet": {
    "sha": "9afe435ce1929a79",
    "bytes": 270267,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "Pepsi_H4.parquet": {
    "sha": "cb2e9bf01cc8d4cc",
    "bytes": 99570,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "Pfizer_D1.parquet": {
    "sha": "900454acafbf3c95",
    "bytes": 54622,
-   "mtime": "2026-09-12T02:26:44+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Pfizer_H1.parquet": {
    "sha": "aa73fcd511ff71ac",
    "bytes": 200050,
-   "mtime": "2026-09-12T02:26:44+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Pfizer_H4.parquet": {
    "sha": "3acd39636ccb480b",
    "bytes": 84168,
-   "mtime": "2026-09-12T02:26:44+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "PhilipMorrisInternational_D1.parquet": {
    "sha": "0a59bb10285c90f3",
    "bytes": 59349,
-   "mtime": "2026-09-12T02:26:36+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "PhilipMorrisInternational_H1.parquet": {
    "sha": "cf1398fae715c9b6",
    "bytes": 241215,
-   "mtime": "2026-09-12T02:26:36+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "PhilipMorrisInternational_H4.parquet": {
    "sha": "3055c060e39554dc",
    "bytes": 95927,
-   "mtime": "2026-09-12T02:26:36+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "Pinterest_D1.parquet": {
    "sha": "0035d52a9481749d",
    "bytes": 57327,
-   "mtime": "2026-09-12T02:26:38+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "Pinterest_H1.parquet": {
    "sha": "65641b8eace07595",
    "bytes": 205789,
-   "mtime": "2026-09-12T02:26:38+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "Pinterest_H4.parquet": {
    "sha": "e1263bfee4521795",
    "bytes": 89116,
-   "mtime": "2026-09-12T02:26:38+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "Procter&Gamble_D1.parquet": {
    "sha": "541722e06bf32d70",
    "bytes": 53171,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "Procter&Gamble_H1.parquet": {
    "sha": "cea45d4485e9447c",
    "bytes": 253216,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "Procter&Gamble_H4.parquet": {
    "sha": "0f9879945e4146b1",
    "bytes": 95351,
-   "mtime": "2026-09-12T02:26:32+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "Qualcomm_D1.parquet": {
    "sha": "9035363bd701d8a4",
    "bytes": 60341,
-   "mtime": "2026-09-12T02:26:40+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "Qualcomm_H1.parquet": {
    "sha": "c611463049d0d792",
    "bytes": 261799,
-   "mtime": "2026-09-12T02:26:40+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "Qualcomm_H4.parquet": {
    "sha": "8f4a69271957a1e9",
    "bytes": 100584,
-   "mtime": "2026-09-12T02:26:40+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "RobinhoodMarkets_D1.parquet": {
    "sha": "9290ece1a5704b0e",
    "bytes": 50299,
-   "mtime": "2026-09-12T02:26:52+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "RobinhoodMarkets_H1.parquet": {
    "sha": "8d332bd02d8e92ad",
    "bytes": 233686,
-   "mtime": "2026-09-12T02:26:52+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "RobinhoodMarkets_H4.parquet": {
    "sha": "35f4390b9fe8236d",
    "bytes": 85408,
-   "mtime": "2026-09-12T02:26:52+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "Roku_D1.parquet": {
    "sha": "63fc701dae39a745",
    "bytes": 61862,
-   "mtime": "2026-09-12T02:26:40+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "Roku_H1.parquet": {
    "sha": "8430c27d7572c9fc",
    "bytes": 262076,
-   "mtime": "2026-09-12T02:26:40+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "Roku_H4.parquet": {
    "sha": "9b6d0ee6fc7121b3",
    "bytes": 102517,
-   "mtime": "2026-09-12T02:26:40+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "S&PGlobal_D1.parquet": {
    "sha": "05927a83b6dbc309",
    "bytes": 61184,
-   "mtime": "2026-09-12T02:26:52+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "S&PGlobal_H1.parquet": {
    "sha": "13ed22d72d7cc8c2",
    "bytes": 280192,
-   "mtime": "2026-09-12T02:26:52+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "S&PGlobal_H4.parquet": {
    "sha": "8503ad8a422bc757",
    "bytes": 101677,
-   "mtime": "2026-09-12T02:26:52+00:00"
+   "mtime": "2026-09-12T06:26:51+00:00"
   },
   "Salesforce_D1.parquet": {
    "sha": "abeb82156b1f2abe",
    "bytes": 56908,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "Salesforce_H1.parquet": {
    "sha": "433bc05c706479dc",
    "bytes": 320757,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "Salesforce_H4.parquet": {
    "sha": "41feb6167cdc6c37",
    "bytes": 108518,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:37+00:00"
   },
   "SEKJPY_D1.parquet": {
    "sha": "b2809c9ed39bc076",
    "bytes": 62295,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "SEKJPY_H1.parquet": {
    "sha": "cb428869ff4e8c5e",
    "bytes": 776642,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "SEKJPY_H4.parquet": {
    "sha": "fcbce2e5842ea4b2",
    "bytes": 260826,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "ServiceNow_D1.parquet": {
    "sha": "abee064cec3a7fa7",
    "bytes": 62469,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "ServiceNow_H1.parquet": {
    "sha": "93b09deedc41e2cc",
    "bytes": 271003,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "ServiceNow_H4.parquet": {
    "sha": "c8092e0d64b4b08c",
    "bytes": 102391,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "SGDJPY_D1.parquet": {
    "sha": "33595379d4309663",
    "bytes": 67596,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "SGDJPY_H1.parquet": {
    "sha": "27da22efdc50a9cf",
    "bytes": 1131636,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "SGDJPY_H4.parquet": {
    "sha": "980e69063505b2bb",
    "bytes": 347179,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "Shopify_D1.parquet": {
    "sha": "00d619764e9019cf",
    "bytes": 59824,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Shopify_H1.parquet": {
    "sha": "9a34fbc2ce8ec48f",
    "bytes": 263563,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Shopify_H4.parquet": {
    "sha": "a6baf5b0f3df60f8",
    "bytes": 100318,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Snapchat_D1.parquet": {
    "sha": "9f739caa931825c3",
    "bytes": 52990,
-   "mtime": "2026-09-12T02:26:48+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "Snapchat_H1.parquet": {
    "sha": "be48fe07efd2ac03",
    "bytes": 184479,
-   "mtime": "2026-09-12T02:26:48+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "Snapchat_H4.parquet": {
    "sha": "5624b2aadc354ab2",
    "bytes": 79091,
-   "mtime": "2026-09-12T02:26:48+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "Snowflake_D1.parquet": {
    "sha": "9d642a30f3906e7f",
    "bytes": 61847,
-   "mtime": "2026-09-12T02:26:50+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "Snowflake_H1.parquet": {
    "sha": "feecd30ad20ec282",
    "bytes": 277841,
-   "mtime": "2026-09-12T02:26:50+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "Snowflake_H4.parquet": {
    "sha": "163aa14af46d9cb2",
    "bytes": 104511,
-   "mtime": "2026-09-12T02:26:50+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "SOLUSD_D1.parquet": {
-   "sha": "5b863c837bdbe4dc",
+   "sha": "e0ec57041a157040",
    "bytes": 74958,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "SOLUSD_H1.parquet": {
-   "sha": "bd6c508c2fc7c9a6",
-   "bytes": 1391248,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "sha": "996f479b3ba2d1a2",
+   "bytes": 1391309,
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "SOLUSD_H4.parquet": {
-   "sha": "999fa7ecc3dfa42e",
-   "bytes": 406478,
-   "mtime": "2026-09-12T02:26:22+00:00"
+   "sha": "9709c542a8d3caf0",
+   "bytes": 406504,
+   "mtime": "2026-09-12T06:26:30+00:00"
   },
   "SOYBEAN_D1.parquet": {
    "sha": "6f851d521a47a02b",
    "bytes": 52481,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "SOYBEAN_H1.parquet": {
    "sha": "abfeffd4f9ea81e4",
    "bytes": 724407,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "SOYBEAN_H4.parquet": {
    "sha": "5032a9b9d79be873",
    "bytes": 256613,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "Spotify_D1.parquet": {
    "sha": "c267eea40077402f",
    "bytes": 63036,
-   "mtime": "2026-09-12T02:26:45+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Spotify_H1.parquet": {
    "sha": "42bec5b0642d90b4",
    "bytes": 294511,
-   "mtime": "2026-09-12T02:26:45+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Spotify_H4.parquet": {
    "sha": "f168871664a86471",
    "bytes": 105461,
-   "mtime": "2026-09-12T02:26:45+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Starbucks_D1.parquet": {
    "sha": "62ae32202167cc7a",
    "bytes": 59170,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Starbucks_H1.parquet": {
    "sha": "605d87fe6077c5e8",
    "bytes": 220956,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Starbucks_H4.parquet": {
    "sha": "371b7b15a4b82263",
    "bytes": 93621,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "SUGAR_D1.parquet": {
    "sha": "8f88d18fb5113416",
    "bytes": 60248,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "SUGAR_H1.parquet": {
    "sha": "85e9ca04eb31bdf0",
    "bytes": 459530,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "SUGAR_H4.parquet": {
    "sha": "e6ee721544eda25e",
    "bytes": 159810,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "SUGARRAW_D1.parquet": {
    "sha": "d67f6eda0004e10a",
    "bytes": 54052,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "SUGARRAW_H1.parquet": {
    "sha": "a7d58a51adb5a9fe",
    "bytes": 351148,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "SUGARRAW_H4.parquet": {
    "sha": "a03e854723ba35eb",
    "bytes": 130265,
-   "mtime": "2026-09-12T02:26:55+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "Target_D1.parquet": {
    "sha": "9e96d07956ceb851",
    "bytes": 62618,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:42+00:00"
   },
   "Target_H1.parquet": {
    "sha": "dd5763246d372276",
    "bytes": 262470,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "Target_H4.parquet": {
    "sha": "734ad2ea98b1adea",
    "bytes": 102510,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "Tesla_D1.parquet": {
    "sha": "e0ba2380fcaeca54",
    "bytes": 58076,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "Tesla_H1.parquet": {
    "sha": "09265e684e5b15d3",
    "bytes": 343445,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "Tesla_H4.parquet": {
    "sha": "5c851586c7c0c3b9",
    "bytes": 111187,
-   "mtime": "2026-09-12T02:26:24+00:00"
+   "mtime": "2026-09-12T06:26:32+00:00"
   },
   "TexasInstruments_D1.parquet": {
    "sha": "e91c79dd25de9d8c",
    "bytes": 60848,
-   "mtime": "2026-09-12T02:26:37+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "TexasInstruments_H1.parquet": {
    "sha": "bb2c0eaacce026b6",
    "bytes": 255625,
-   "mtime": "2026-09-12T02:26:37+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "TexasInstruments_H4.parquet": {
    "sha": "8f86e35e81c4a00e",
    "bytes": 100310,
-   "mtime": "2026-09-12T02:26:37+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "ThermoFisherScientific_D1.parquet": {
    "sha": "f397f91a1b905dfb",
    "bytes": 60837,
-   "mtime": "2026-09-12T02:26:43+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "ThermoFisherScientific_H1.parquet": {
    "sha": "4f23e31db982ed70",
    "bytes": 274792,
-   "mtime": "2026-09-12T02:26:43+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "ThermoFisherScientific_H4.parquet": {
    "sha": "5a40a3955c3a0eb1",
    "bytes": 101459,
-   "mtime": "2026-09-12T02:26:43+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "TMEGroup_D1.parquet": {
    "sha": "418f3b5ff9ed2b98",
    "bytes": 50622,
-   "mtime": "2026-09-12T02:26:51+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "TMEGroup_H1.parquet": {
    "sha": "f39aa6f6331698cd",
    "bytes": 181182,
-   "mtime": "2026-09-12T02:26:51+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "TMEGroup_H4.parquet": {
    "sha": "4aa4470be1d79775",
    "bytes": 77361,
-   "mtime": "2026-09-12T02:26:51+00:00"
+   "mtime": "2026-09-12T06:26:50+00:00"
   },
   "Toyota_D1.parquet": {
    "sha": "5495e0894d5aaea5",
    "bytes": 59097,
-   "mtime": "2026-09-12T02:26:44+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Toyota_H1.parquet": {
    "sha": "18e24624c3e6fa5b",
    "bytes": 252162,
-   "mtime": "2026-09-12T02:26:43+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Toyota_H4.parquet": {
    "sha": "018dfda88366ad12",
    "bytes": 96413,
-   "mtime": "2026-09-12T02:26:43+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Travelers_D1.parquet": {
    "sha": "800ffa5ca3808a51",
    "bytes": 54793,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "Travelers_H1.parquet": {
    "sha": "7295757b3b803b6d",
    "bytes": 298912,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "Travelers_H4.parquet": {
    "sha": "3b69f49db5f9e33c",
    "bytes": 101597,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "TSMC_D1.parquet": {
    "sha": "2e5d07fa292ad61c",
    "bytes": 61877,
-   "mtime": "2026-09-12T02:26:49+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "TSMC_H1.parquet": {
    "sha": "f3d18a073fbf3503",
    "bytes": 281005,
-   "mtime": "2026-09-12T02:26:49+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "TSMC_H4.parquet": {
    "sha": "1264851b64b8bfd7",
    "bytes": 104202,
-   "mtime": "2026-09-12T02:26:49+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "Twilio_D1.parquet": {
    "sha": "4f55cdd7d10ea1ec",
    "bytes": 61509,
-   "mtime": "2026-09-12T02:26:44+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Twilio_H1.parquet": {
    "sha": "c8c7f4922e926908",
    "bytes": 266893,
-   "mtime": "2026-09-12T02:26:44+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Twilio_H4.parquet": {
    "sha": "0ae69ff528300db8",
    "bytes": 101888,
-   "mtime": "2026-09-12T02:26:44+00:00"
+   "mtime": "2026-09-12T06:26:46+00:00"
   },
   "Uber_D1.parquet": {
    "sha": "5dd0e3ed325b90b6",
    "bytes": 59707,
-   "mtime": "2026-09-12T02:26:49+00:00"
+   "mtime": "2026-09-12T06:26:49+00:00"
   },
   "Uber_H1.parquet": {
    "sha": "b42acbc7af186326",
    "bytes": 245542,
-   "mtime": "2026-09-12T02:26:49+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "Uber_H4.parquet": {
    "sha": "f5372de7d5588b5e",
    "bytes": 98389,
-   "mtime": "2026-09-12T02:26:49+00:00"
+   "mtime": "2026-09-12T06:26:48+00:00"
   },
   "UK100_D1.parquet": {
    "sha": "cc134a240fe72933",
    "bytes": 67237,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "UK100_H1.parquet": {
    "sha": "984e0aaf143b8d4c",
    "bytes": 1108538,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "UK100_H4.parquet": {
    "sha": "9aa17a0867951dd6",
    "bytes": 360391,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "UKCOCOA_D1.parquet": {
    "sha": "c4da02546e49ae85",
    "bytes": 53779,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "UKCOCOA_H1.parquet": {
    "sha": "9f24cba8439a9772",
    "bytes": 349260,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "UKCOCOA_H4.parquet": {
    "sha": "a7ae312943fceb56",
    "bytes": 137830,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:53+00:00"
   },
   "UKGILT_D1.parquet": {
    "sha": "5efa5473ab21eb47",
    "bytes": 30854,
-   "mtime": "2026-09-12T02:26:57+00:00"
+   "mtime": "2026-09-12T06:26:55+00:00"
   },
   "UKGILT_H1.parquet": {
    "sha": "4160e97e393a380e",
    "bytes": 202577,
-   "mtime": "2026-09-12T02:26:57+00:00"
+   "mtime": "2026-09-12T06:26:55+00:00"
   },
   "UKGILT_H4.parquet": {
    "sha": "735c6854744c0c7b",
    "bytes": 76597,
-   "mtime": "2026-09-12T02:26:57+00:00"
+   "mtime": "2026-09-12T06:26:55+00:00"
   },
   "UnionPacific_D1.parquet": {
    "sha": "847fb0fe2e5934ed",
    "bytes": 60610,
-   "mtime": "2026-09-12T02:26:36+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "UnionPacific_H1.parquet": {
    "sha": "c9c1a40b38c04203",
    "bytes": 252613,
-   "mtime": "2026-09-12T02:26:36+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "UnionPacific_H4.parquet": {
    "sha": "27020f47d7dec410",
    "bytes": 98770,
-   "mtime": "2026-09-12T02:26:36+00:00"
+   "mtime": "2026-09-12T06:26:43+00:00"
   },
   "UnitedHealth_D1.parquet": {
    "sha": "050f1a7dae43ae84",
    "bytes": 57279,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "UnitedHealth_H1.parquet": {
    "sha": "5171483094d44d11",
    "bytes": 328809,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "UnitedHealth_H4.parquet": {
    "sha": "edfae49715ca0577",
    "bytes": 108407,
-   "mtime": "2026-09-12T02:26:29+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "UnitedParcelService_D1.parquet": {
    "sha": "06e41f645afd8fd2",
    "bytes": 61808,
-   "mtime": "2026-09-12T02:26:37+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "UnitedParcelService_H1.parquet": {
    "sha": "04597520f2ef1616",
    "bytes": 262840,
-   "mtime": "2026-09-12T02:26:37+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "UnitedParcelService_H4.parquet": {
    "sha": "3cf6cce8f8c519fc",
    "bytes": 101379,
-   "mtime": "2026-09-12T02:26:37+00:00"
+   "mtime": "2026-09-12T06:26:44+00:00"
   },
   "US2000_D1.parquet": {
    "sha": "67895a99098c9b34",
    "bytes": 34568,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "US2000_H1.parquet": {
    "sha": "9b3445ce47322247",
    "bytes": 583209,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "US2000_H4.parquet": {
    "sha": "a6f068ced273d26e",
    "bytes": 174093,
-   "mtime": "2026-09-12T02:26:20+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "US30_D1.parquet": {
    "sha": "4bb5136714889f09",
    "bytes": 69518,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "US30_H1.parquet": {
    "sha": "78909fc44fa05f05",
    "bytes": 1374532,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "US30_H4.parquet": {
    "sha": "a9f084ab5136dcc9",
    "bytes": 390443,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "US500_D1.parquet": {
    "sha": "4f26ebed206074d8",
    "bytes": 68205,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "US500_H1.parquet": {
    "sha": "b06e59d70e203592",
    "bytes": 1277709,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "US500_H4.parquet": {
    "sha": "c130bf57a953ed3d",
    "bytes": 374243,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:26+00:00"
   },
   "USCOCOA_D1.parquet": {
    "sha": "c57c19b4c1219449",
    "bytes": 55821,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "USCOCOA_H1.parquet": {
    "sha": "59b5408436e11d18",
    "bytes": 443542,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "USCOCOA_H4.parquet": {
    "sha": "3d55148faafd9557",
    "bytes": 190197,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "USDBRL_D1.parquet": {
    "sha": "93acb19a991e318b",
    "bytes": 73436,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDBRL_H1.parquet": {
    "sha": "a1b4fc773fb37551",
    "bytes": 538258,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDBRL_H4.parquet": {
    "sha": "e2b4c68d6a121b34",
    "bytes": 202633,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDCAD_D1.parquet": {
    "sha": "45662acd98af5667",
    "bytes": 84033,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "USDCAD_H1.parquet": {
    "sha": "6f858ee97a181342",
    "bytes": 1214373,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "USDCAD_H4.parquet": {
    "sha": "e3a314735998402f",
    "bytes": 420751,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "USDCHF_D1.parquet": {
    "sha": "02cadada9645ff2d",
    "bytes": 83885,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "USDCHF_H1.parquet": {
    "sha": "2d1257825f9d493d",
    "bytes": 1176033,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "USDCHF_H4.parquet": {
    "sha": "30ca197d2d939b24",
    "bytes": 395891,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:08+00:00"
   },
   "USDCNH_D1.parquet": {
    "sha": "29575c16e626ba5b",
    "bytes": 87288,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDCNH_H1.parquet": {
    "sha": "72be042754a1db0c",
    "bytes": 1670525,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDCNH_H4.parquet": {
    "sha": "738ed90e6759f331",
    "bytes": 479148,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDCZK_D1.parquet": {
    "sha": "e6962cdb7bed7098",
    "bytes": 86688,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDCZK_H1.parquet": {
    "sha": "9181722733dcbdc1",
    "bytes": 1569176,
-   "mtime": "2026-09-12T02:26:12+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDCZK_H4.parquet": {
    "sha": "c6641860194a6f60",
    "bytes": 457711,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDDKK_D1.parquet": {
    "sha": "0f0f53fdb8eb2b92",
    "bytes": 86711,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDDKK_H1.parquet": {
    "sha": "de8c6380adfda869",
    "bytes": 1708117,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDDKK_H4.parquet": {
    "sha": "419af824b5cf0b5b",
    "bytes": 483218,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDHKD_D1.parquet": {
    "sha": "e0c84559626faed1",
    "bytes": 79002,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "USDHKD_H1.parquet": {
    "sha": "25ec5310e44ffed5",
    "bytes": 959760,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "USDHKD_H4.parquet": {
    "sha": "29b0edc5425edecf",
    "bytes": 354519,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "USDHUF_D1.parquet": {
    "sha": "88906cd686a44c12",
    "bytes": 71492,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDHUF_H1.parquet": {
    "sha": "6d62576576223a7c",
    "bytes": 1395994,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:19+00:00"
   },
   "USDHUF_H4.parquet": {
    "sha": "cede24a2976e9866",
    "bytes": 396289,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDIDR_D1.parquet": {
    "sha": "69dd9fd28b90d91f",
    "bytes": 54298,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "USDIDR_H1.parquet": {
    "sha": "314db82a141452aa",
    "bytes": 728956,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "USDIDR_H4.parquet": {
    "sha": "66cfa3d63db25744",
    "bytes": 230144,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "USDILS_D1.parquet": {
    "sha": "6fcec06bcabd0f0c",
    "bytes": 85210,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDILS_H1.parquet": {
    "sha": "816c5d5570b73495",
    "bytes": 1595969,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDILS_H4.parquet": {
    "sha": "86266fefafa5b24a",
    "bytes": 484706,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDINR_D1.parquet": {
    "sha": "33477b038869d94b",
    "bytes": 55297,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "USDINR_H1.parquet": {
    "sha": "737ee70273e572fc",
    "bytes": 638965,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "USDINR_H4.parquet": {
    "sha": "5972e51070645cd3",
    "bytes": 217501,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "USDJPY_D1.parquet": {
    "sha": "ea0eef8b29825816",
    "bytes": 67246,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "USDJPY_H1.parquet": {
    "sha": "f07e9dfd63edf9fe",
    "bytes": 1151411,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "USDJPY_H4.parquet": {
    "sha": "5ff74ec3a2700759",
    "bytes": 354554,
-   "mtime": "2026-09-12T02:26:06+00:00"
+   "mtime": "2026-09-12T06:26:09+00:00"
   },
   "USDKRW_D1.parquet": {
    "sha": "d12585d0f80f5298",
    "bytes": 52278,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "USDKRW_H1.parquet": {
    "sha": "599e68d15350457b",
    "bytes": 740504,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "USDKRW_H4.parquet": {
    "sha": "cac55cfed499c3a6",
    "bytes": 243355,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "USDMXN_D1.parquet": {
    "sha": "a29202706eeabeae",
    "bytes": 87296,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDMXN_H1.parquet": {
    "sha": "9a1c5f852473c092",
    "bytes": 1840669,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDMXN_H4.parquet": {
    "sha": "1674a59b3fdc95b7",
    "bytes": 490226,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDNOK_D1.parquet": {
    "sha": "2336eb1551a95051",
    "bytes": 88032,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDNOK_H1.parquet": {
    "sha": "5c7f7710613ca3d8",
    "bytes": 1811113,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDNOK_H4.parquet": {
    "sha": "0dd73e3b0210bdf3",
    "bytes": 482899,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDPLN_D1.parquet": {
    "sha": "04cd6a67bb78a5a1",
    "bytes": 86584,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDPLN_H1.parquet": {
    "sha": "20283f1892577517",
    "bytes": 1655921,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDPLN_H4.parquet": {
    "sha": "eacc71297ec03d90",
    "bytes": 483690,
-   "mtime": "2026-09-12T02:26:13+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDRUB_D1.parquet": {
    "sha": "ddae68c2950bd552",
    "bytes": 60339,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDRUB_H1.parquet": {
    "sha": "79a3a0e0c01b22dc",
    "bytes": 808919,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDRUB_H4.parquet": {
    "sha": "0b87b082cde7cff7",
    "bytes": 254360,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDSEK_D1.parquet": {
    "sha": "4c6e04536d7cbcdb",
    "bytes": 87731,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDSEK_H1.parquet": {
    "sha": "1bd64d26bdfbd76f",
    "bytes": 1823363,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDSEK_H4.parquet": {
    "sha": "2b75fa778d172293",
    "bytes": 478460,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:20+00:00"
   },
   "USDSGD_D1.parquet": {
    "sha": "64a5b710ecab1c01",
    "bytes": 82676,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDSGD_H1.parquet": {
    "sha": "4c02044a57508fad",
    "bytes": 1083226,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDSGD_H4.parquet": {
    "sha": "adeff0b66c69c806",
    "bytes": 392502,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDTHB_D1.parquet": {
    "sha": "bac6e5ff1695f420",
    "bytes": 67582,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDTHB_H1.parquet": {
    "sha": "58f46d60016a9f18",
    "bytes": 940471,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDTHB_H4.parquet": {
    "sha": "1018cee1899033bf",
    "bytes": 314933,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDTRY_D1.parquet": {
    "sha": "d54da08611f2d8e8",
    "bytes": 88883,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDTRY_H1.parquet": {
    "sha": "f721da8390e93b49",
    "bytes": 1928534,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDTRY_H4.parquet": {
    "sha": "ef32f0aff8fc8e84",
    "bytes": 502091,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDX_D1.parquet": {
    "sha": "32342e70ab9c3821",
    "bytes": 63773,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "USDX_H1.parquet": {
    "sha": "4f904e7a632daa13",
    "bytes": 737326,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "USDX_H4.parquet": {
    "sha": "da9fb9bd07c131fe",
    "bytes": 278240,
-   "mtime": "2026-09-12T02:26:19+00:00"
+   "mtime": "2026-09-12T06:26:27+00:00"
   },
   "USDZAR_D1.parquet": {
    "sha": "1a3b492becfd49d6",
    "bytes": 87748,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDZAR_H1.parquet": {
    "sha": "a5e7472baf5707cd",
    "bytes": 1873087,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "USDZAR_H4.parquet": {
    "sha": "bfe2801be8f52f13",
    "bytes": 482171,
-   "mtime": "2026-09-12T02:26:14+00:00"
+   "mtime": "2026-09-12T06:26:21+00:00"
   },
   "UST05Y_D1.parquet": {
    "sha": "8350e915aef5335e",
    "bytes": 24001,
-   "mtime": "2026-09-12T02:26:57+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "UST05Y_H1.parquet": {
    "sha": "953efc0c02675b54",
    "bytes": 256412,
-   "mtime": "2026-09-12T02:26:57+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "UST05Y_H4.parquet": {
    "sha": "244f308a548549c7",
    "bytes": 92564,
-   "mtime": "2026-09-12T02:26:57+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "UST10Y_D1.parquet": {
    "sha": "7c8cab411095bb57",
    "bytes": 24096,
-   "mtime": "2026-09-12T02:26:57+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "UST10Y_H1.parquet": {
    "sha": "163797337b3a2e1b",
    "bytes": 264984,
-   "mtime": "2026-09-12T02:26:57+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "UST10Y_H4.parquet": {
    "sha": "33d8c51f69cc2429",
    "bytes": 92775,
-   "mtime": "2026-09-12T02:26:57+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "Verizon_D1.parquet": {
    "sha": "cb87e2db76e23893",
    "bytes": 50450,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "Verizon_H1.parquet": {
    "sha": "1754038bed54dd35",
    "bytes": 226265,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "Verizon_H4.parquet": {
    "sha": "6415445bbdfef1bc",
    "bytes": 86975,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "Visa_D1.parquet": {
    "sha": "a1b6bb36a41819eb",
    "bytes": 56083,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "Visa_H1.parquet": {
    "sha": "51f85635dbc999c8",
    "bytes": 313086,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "Visa_H4.parquet": {
    "sha": "c58b34603ed9fe0e",
    "bytes": 106229,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "Walmart_D1.parquet": {
    "sha": "7eb2bf175095d77a",
    "bytes": 53996,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:39+00:00"
   },
   "Walmart_H1.parquet": {
    "sha": "1bda85ed26fff4a0",
    "bytes": 269834,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "Walmart_H4.parquet": {
    "sha": "986c720a07fa5520",
    "bytes": 97574,
-   "mtime": "2026-09-12T02:26:30+00:00"
+   "mtime": "2026-09-12T06:26:38+00:00"
   },
   "WaltDisney_D1.parquet": {
    "sha": "7c1b1d11a653a46a",
    "bytes": 55170,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "WaltDisney_H1.parquet": {
    "sha": "fe73893c753dfdca",
    "bytes": 282027,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "WaltDisney_H4.parquet": {
    "sha": "dd70dac703f64ff6",
    "bytes": 101898,
-   "mtime": "2026-09-12T02:26:33+00:00"
+   "mtime": "2026-09-12T06:26:41+00:00"
   },
   "WellsFargo_D1.parquet": {
    "sha": "b243a7a1a452ce3f",
    "bytes": 58256,
-   "mtime": "2026-09-12T02:26:41+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "WellsFargo_H1.parquet": {
    "sha": "cc61e61e8207ce69",
    "bytes": 230041,
-   "mtime": "2026-09-12T02:26:41+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "WellsFargo_H4.parquet": {
    "sha": "37d841ac45fd26ca",
    "bytes": 93815,
-   "mtime": "2026-09-12T02:26:41+00:00"
+   "mtime": "2026-09-12T06:26:45+00:00"
   },
   "WHEAT_D1.parquet": {
    "sha": "0f798413944375da",
    "bytes": 60709,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "WHEAT_H1.parquet": {
    "sha": "a1527b0805a4d76e",
    "bytes": 763916,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "WHEAT_H4.parquet": {
    "sha": "1b94a403335cb02c",
    "bytes": 280694,
-   "mtime": "2026-09-12T02:26:56+00:00"
+   "mtime": "2026-09-12T06:26:54+00:00"
   },
   "XAGEUR_D1.parquet": {
    "sha": "c98e1a9b9c55100a",
    "bytes": 65227,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "XAGEUR_H1.parquet": {
    "sha": "7265e5989bb44860",
    "bytes": 974078,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "XAGEUR_H4.parquet": {
    "sha": "d68c9c1b1d2e6ce1",
    "bytes": 324016,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "XAGUSD_D1.parquet": {
    "sha": "d507e8ca8b88ceb2",
    "bytes": 67383,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "XAGUSD_H1.parquet": {
    "sha": "36877c0148d726ec",
    "bytes": 1054354,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "XAGUSD_H4.parquet": {
    "sha": "281c977b1b2a913e",
    "bytes": 343483,
-   "mtime": "2026-09-12T02:26:15+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "XALUSD_D1.parquet": {
    "sha": "197af2581f74a339",
    "bytes": 63115,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XALUSD_H1.parquet": {
    "sha": "9406b5859f7d9c6e",
    "bytes": 805141,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:22+00:00"
   },
   "XALUSD_H4.parquet": {
    "sha": "86a293a046db21c0",
    "bytes": 307975,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUAUD_D1.parquet": {
    "sha": "a354a0f21e0f3bb3",
    "bytes": 67885,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUAUD_H1.parquet": {
    "sha": "94ff5146faa2f678",
    "bytes": 1319669,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUAUD_H4.parquet": {
    "sha": "2f1bcf1a5ac55e84",
    "bytes": 380627,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUEUR_D1.parquet": {
    "sha": "4bb82ee8ce20c6fe",
    "bytes": 65248,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUEUR_H1.parquet": {
    "sha": "a1cf8b0c28a272db",
    "bytes": 1219766,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUEUR_H4.parquet": {
    "sha": "b762b4225da1e1cd",
    "bytes": 362836,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUUSD_D1.parquet": {
    "sha": "be08b57da6ffe9af",
    "bytes": 65770,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUUSD_H1.parquet": {
    "sha": "489fdbd7b6f4dd6e",
    "bytes": 1226316,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUUSD_H4.parquet": {
    "sha": "5ab38bb1f8ad6c22",
    "bytes": 363518,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XAUUSD_M1.parquet": {
    "sha": "9686f70032ee7a20",
    "bytes": 603306,
-   "mtime": "2026-09-12T02:50:15+00:00"
+   "mtime": "2026-09-12T06:50:07+00:00"
   },
   "XAUUSD_M15.parquet": {
    "sha": "13a8aa3e8dbae144",
    "bytes": 746082,
-   "mtime": "2026-09-12T02:50:15+00:00"
+   "mtime": "2026-09-12T06:50:07+00:00"
   },
   "XAUUSD_M5.parquet": {
    "sha": "94f5c056e4a7ac68",
    "bytes": 664363,
-   "mtime": "2026-09-12T02:50:15+00:00"
+   "mtime": "2026-09-12T06:50:07+00:00"
   },
   "XBRUSD_D1.parquet": {
    "sha": "acfaf53429ccace0",
    "bytes": 67007,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XBRUSD_H1.parquet": {
    "sha": "068f4b161236f021",
    "bytes": 877079,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XBRUSD_H4.parquet": {
    "sha": "3bbac277946f4a77",
    "bytes": 310175,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XCUUSD_D1.parquet": {
    "sha": "887c721ec194bd5f",
    "bytes": 66970,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XCUUSD_H1.parquet": {
    "sha": "5451ceb7eb7fc7a5",
    "bytes": 997380,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XCUUSD_H4.parquet": {
    "sha": "fda21020eff84877",
    "bytes": 361842,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XLMUSD_D1.parquet": {
-   "sha": "c0eeadaf7a58a2f0",
+   "sha": "c150e6bb2fe9ccac",
    "bytes": 115730,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "XLMUSD_H1.parquet": {
-   "sha": "3359b258f2fae35d",
-   "bytes": 1481084,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "1e81bbd1e42148bc",
+   "bytes": 1481224,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "XLMUSD_H4.parquet": {
-   "sha": "7a2074a5471f13c4",
-   "bytes": 500411,
-   "mtime": "2026-09-12T02:26:21+00:00"
+   "sha": "edcf80d1834bbca8",
+   "bytes": 500446,
+   "mtime": "2026-09-12T06:26:29+00:00"
   },
   "XNGUSD_D1.parquet": {
    "sha": "3722f6d6f94fb771",
    "bytes": 59754,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XNGUSD_H1.parquet": {
    "sha": "2d01e5357e33463f",
    "bytes": 684621,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XNGUSD_H4.parquet": {
    "sha": "c9c1ee8ffb834d75",
    "bytes": 234354,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XNIUSD_D1.parquet": {
    "sha": "5d9ac47e8f8269af",
    "bytes": 65412,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XNIUSD_H1.parquet": {
    "sha": "1169054203def47d",
    "bytes": 772805,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XNIUSD_H4.parquet": {
    "sha": "d18fadc44ce2c69d",
    "bytes": 291044,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XPBUSD_D1.parquet": {
    "sha": "8e0ed6e1e4285199",
    "bytes": 59813,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XPBUSD_H1.parquet": {
    "sha": "39c39ce458099ab9",
    "bytes": 676041,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:23+00:00"
   },
   "XPBUSD_H4.parquet": {
    "sha": "03f6555d2643dbe4",
    "bytes": 271003,
-   "mtime": "2026-09-12T02:26:16+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XPDUSD_D1.parquet": {
    "sha": "5a8daa54069e4a36",
    "bytes": 68804,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XPDUSD_H1.parquet": {
    "sha": "12511eaff08d0e1f",
    "bytes": 1233695,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XPDUSD_H4.parquet": {
    "sha": "dfdae7a914ce9e08",
    "bytes": 369073,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XPTUSD_D1.parquet": {
    "sha": "daf1106e40dd8b04",
    "bytes": 66401,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XPTUSD_H1.parquet": {
    "sha": "1669ba9a8c756c24",
    "bytes": 1122408,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XPTUSD_H4.parquet": {
    "sha": "e19d9dbe11977332",
    "bytes": 352618,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XTIUSD_D1.parquet": {
    "sha": "34891f866de19716",
    "bytes": 67532,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "XTIUSD_H1.parquet": {
    "sha": "7cfc94a60b01f4de",
    "bytes": 952689,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XTIUSD_H4.parquet": {
    "sha": "571776d509595f1c",
    "bytes": 312477,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:25+00:00"
   },
   "XZNUSD_D1.parquet": {
    "sha": "28fc15191cb96f02",
    "bytes": 64002,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XZNUSD_H1.parquet": {
    "sha": "a7f0f6fba5485fe6",
    "bytes": 857007,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "XZNUSD_H4.parquet": {
    "sha": "3d28f05433402750",
    "bytes": 322250,
-   "mtime": "2026-09-12T02:26:17+00:00"
+   "mtime": "2026-09-12T06:26:24+00:00"
   },
   "ZARJPY_D1.parquet": {
    "sha": "35e7c8ba7d599da5",
    "bytes": 58893,
-   "mtime": "2026-09-12T02:26:10+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "ZARJPY_H1.parquet": {
    "sha": "fd0443f02d8610df",
    "bytes": 724896,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   },
   "ZARJPY_H4.parquet": {
    "sha": "18871e228f927737",
    "bytes": 235101,
-   "mtime": "2026-09-12T02:26:09+00:00"
+   "mtime": "2026-09-12T06:26:15+00:00"
   }
  },
- "rollup": "166fa354e132fd83",
+ "rollup": "e5f1eb806e76bc58",
  "unreadable": [],
  "method": "size + mtime-to-the-second + sha over the first and last chunk; catches an appended bar, a rewritten file and a repaired history, and misses only a length- and timestamp-preserving mutation in the middle of a file",
  "why": "the release seal pins the code a verdict came from; this pins the bars it was measured on, so a re-run can tell a code change from a data change",
  "since_last": {
-  "why": "no previous identity on this host: nothing to compare"
+  "added": [],
+  "removed": [],
+  "changed": [
+   "ADAUSD_D1.parquet",
+   "ADAUSD_H1.parquet",
+   "ADAUSD_H4.parquet",
+   "AUDCAD_M15.parquet",
+   "AUDNZD_M15.parquet",
+   "AVAXUSD_D1.parquet",
+   "AVAXUSD_H1.parquet",
+   "AVAXUSD_H4.parquet",
+   "BCHUSD_D1.parquet",
+   "BCHUSD_H1.parquet",
+   "BCHUSD_H4.parquet",
+   "BNBUSD_D1.parquet",
+   "BNBUSD_H1.parquet",
+   "BNBUSD_H4.parquet",
+   "BTCUSD_D1.parquet",
+   "BTCUSD_H1.parquet",
+   "BTCUSD_H4.parquet",
+   "DOGEUSD_D1.parquet",
+   "DOGEUSD_H1.parquet",
+   "DOGEUSD_H4.parquet",
+   "DOTUSD_D1.parquet",
+   "DOTUSD_H1.parquet",
+   "DOTUSD_H4.parquet",
+   "ETHUSD_D1.parquet",
+   "ETHUSD_H1.parquet",
+   "ETHUSD_H4.parquet",
+   "LNKUSD_D1.parquet",
+   "LNKUSD_H1.parquet",
+   "LNKUSD_H4.parquet",
+   "LTCUSD_D1.parquet",
+   "LTCUSD_H1.parquet",
+   "LTCUSD_H4.parquet",
+   "MATICUSD_D1.parquet",
+   "MATICUSD_H1.parquet",
+   "MATICUSD_H4.parquet",
+   "NZDCAD_M15.parquet",
+   "SOLUSD_D1.parquet",
+   "SOLUSD_H1.parquet",
+   "SOLUSD_H4.parquet",
+   "XLMUSD_D1.parquet",
+   "XLMUSD_H1.parquet",
+   "XLMUSD_H4.parquet"
+  ],
+  "same": false,
+  "old_rollup": "166fa354e132fd83",
+  "new_rollup": "e5f1eb806e76bc58",
+  "comparable": true,
+  "why": ""
  }
 }

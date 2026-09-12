@@ -2,3 +2,4 @@
 {"at": "2026-09-05T17:29:11.288808+00:00", "n_nominal": 31, "effective_breadth": 1.324, "binding_reading": "exposure_systematic", "n_clusters_occupied": 4, "n_clusters_empty": 11}
 {"at": "2026-09-05T17:29:56.959339+00:00", "n_nominal": 31, "effective_breadth": 1.324, "binding_reading": "exposure_systematic", "n_clusters_occupied": 4, "n_clusters_empty": 11}
 {"at": "2026-09-05T17:30:30.907990+00:00", "n_nominal": 31, "effective_breadth": 1.324, "binding_reading": "exposure_systematic", "n_clusters_occupied": 4, "n_clusters_empty": 11}
+{"at": "2026-09-12T09:14:15.637560+00:00", "n_nominal": 56, "effective_breadth": 4.879, "binding_reading": "exposure_full_sample", "n_clusters_occupied": 4, "n_clusters_empty": 11, "n_eff_time": 8.083}

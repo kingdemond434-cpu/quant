@@ -1,127 +1,1247 @@
 {
-  "server": "FusionMarkets-Demo",
+  "server": "FusionMarkets-Live",
   "is_fusion": true,
-  "account": 441575,
+  "account": 495044,
   "symbols": {
-    "AUDCAD": {
-      "server": "FusionMarkets-Demo",
+    "3M": {
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "Accenture": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "ADAUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Adobe": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "ADP": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Airbnb": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "AlibabaGroup": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Alphabet-A": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Alphabet-C": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Amazon": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "AMD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "AmericanExpress": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Amgen": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Apple": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "AppliedMaterials": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "AT&T": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Atlassian": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "AUDCAD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "AUDCHF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "AUDHUF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "AUDJPY": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
     },
     "AUDNZD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "AUDSGD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "AUDUSD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "AUS200": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "AVAXUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Baidu": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "BankofAmericaCorp": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "BCHUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Berkshire": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "BlackRock": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "BNBUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Boeing": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Booking": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Broadcom": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "BTCUSD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "CA60": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CADCHF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "CADJPY": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "Caterpillar": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CharlesSchwab": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Charter": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Chevron": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CHFDKK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CHFHUF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "CHFJPY": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "CHFNOK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CHFPLN": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CHFSEK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CHFSGD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CHINAH": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Cisco": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Citigroup": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Coca-Cola": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "COFARA": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "COFROB": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Coinbase": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Comcast": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CORN": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CostcoWholesale": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "COTTON": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "CVSHealth": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "DocuSign": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "DOGEUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Doordash": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "DOTUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Dow": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "E35": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "eBay": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "ElectronicArts": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EOSUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "ETHUSD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
     },
     "EURAUD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "EURCAD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "EURCHF": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "EURCZK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURDKK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "EURGBP": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "EURHKD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURHUF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURILS": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "EURJPY": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "EURMXN": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURNOK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURNZD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURPLN": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURRUB": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURSEK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURSGD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EURTRY": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "EURUSD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "EURZAR": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "EUSTX50": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "ExxonMobil": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Ford": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "FRA40": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "GBPAUD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "GBPCAD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GBPCHF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GBPDKK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GBPHUF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "GBPJPY": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "GBPMXN": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GBPNOK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GBPNZD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GBPPLN": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GBPSEK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GBPSGD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GBPTRY": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "GBPUSD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "GBPZAR": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GeneralElectric": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GeneralMotors": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GER40": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GileadSciences": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "GoldmanSachs": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "HK50": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "HKDJPY": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "HomeDepot": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Honeywell": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "IBM": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Intel": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Intuit": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "IntuitiveSurgical": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Johnson&Johnson": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "JPMorganChase": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "JPN225": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "LNKUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "LTCUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "LucidGroup": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Lyft": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Mastercard": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "MATICUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "McDonalds": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Medtronic": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Merck": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Meta": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "MicronTechnology": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Microsoft": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "MorganStanley": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "MXNJPY": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "NAS100": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Netflix": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "NETH25": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Nike": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "NIO": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "NOKJPY": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "NOKSEK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "NVIDIA": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "NZDCAD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "NZDCHF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "NZDHUF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "NZDJPY": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "NZDSGD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "NZDUSD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "OJ": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Oracle": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "PayPal": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Pepsi": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Pfizer": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "PhilipMorrisInternational": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Pinterest": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Procter&Gamble": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Qualcomm": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "RobinhoodMarkets": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Roku": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "S&PGlobal": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Salesforce": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "SEKJPY": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "ServiceNow": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "SGDJPY": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Shopify": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Snapchat": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Snowflake": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "SOLUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "SOYBEAN": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Spotify": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Starbucks": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "SUGAR": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "SUGARRAW": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Target": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Tesla": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "TexasInstruments": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "ThermoFisherScientific": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "TMEGroup": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Toyota": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Travelers": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "TSMC": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Twilio": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Uber": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "UK100": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "UKCOCOA": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "UKGILT": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "UnionPacific": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "UnitedHealth": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "UnitedParcelService": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "US2000": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "US30": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "US500": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USCOCOA": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDBRL": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "USDCAD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
     },
     "USDCHF": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "USDCNH": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDCZK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDDKK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDHKD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDHUF": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDIDR": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDILS": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDINR": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "USDJPY": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "USDKRW": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDMXN": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDNOK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDPLN": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDRUB": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDSEK": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDSGD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDTHB": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDTRY": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDX": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "USDZAR": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "UST05Y": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "UST10Y": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Verizon": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Visa": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "Walmart": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "WaltDisney": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "WellsFargo": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "WHEAT": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XAGEUR": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "XAGUSD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "XALUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XAUAUD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XAUEUR": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     },
     "XAUUSD": {
-      "server": "FusionMarkets-Demo",
+      "server": "FusionMarkets-Live",
       "is_fusion": true,
-      "account": 441575
+      "account": 495044
+    },
+    "XBRUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XCUUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XLMUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XNGUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XNIUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XPBUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XPDUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XPTUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XTIUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "XZNUSD": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
+    },
+    "ZARJPY": {
+      "server": "FusionMarkets-Live",
+      "is_fusion": true,
+      "account": 495044
     }
   }
 }

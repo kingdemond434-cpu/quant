@@ -1,13 +1,13 @@
 {
- "at": "2026-09-12T07:20:05.420883+00:00",
+ "at": "2026-09-12T09:50:45.591601+00:00",
  "attribution": {
-  "at": "2026-09-12T07:20:10.007717+00:00",
+  "at": "2026-09-12T09:50:58.028741+00:00",
   "categories_seen": [
    "UNCLASSIFIED",
    "central_bank_policy"
   ],
   "ledger": {
-   "at": "2026-09-12T07:20:10.014188+00:00",
+   "at": "2026-09-12T09:50:58.037799+00:00",
    "categories": 2,
    "categories_with_sample": [],
    "min_category_n": 30,
@@ -53,7 +53,7 @@
  "categories_minted": [],
  "category_loadings": {},
  "coverage": {
-  "at": "2026-09-12T07:20:05.437994+00:00",
+  "at": "2026-09-12T09:50:45.628940+00:00",
   "coverage_fraction": 0.926,
   "domains_blind": [
    "rates_futures_repricing",
@@ -382,7 +382,7 @@
   ]
  },
  "credibility": {
-  "at": "2026-09-12T07:20:05.437954+00:00",
+  "at": "2026-09-12T09:50:45.628907+00:00",
   "min_source_n": 12,
   "min_tier_sources": 4,
   "note": "Tier priors are a starting ordering; both levels re-fit from measured verification outcomes written by attribution.py. Speed is reported SEPARATELY from reliability -- a reliable source that arrives after the move has an unpriced fraction of zero and is worth nothing to trade on.",
@@ -448,7 +448,7 @@
  "interrupt": null,
  "items_seen": 90,
  "ledger": {
-  "at": "2026-09-12T07:20:05.429274+00:00",
+  "at": "2026-09-12T09:50:45.615519+00:00",
   "categories": 2,
   "categories_with_sample": [],
   "min_category_n": 30,
@@ -784,7 +784,7 @@
   "why": "the layer has never sized a position -- no category has passed replay clearance -- so there is no with-minus-without to measure. Ledger rows and replay clearance are the leading indicators until there is."
  },
  "replay": {
-  "at": "2026-09-12T07:20:10.006943+00:00",
+  "at": "2026-09-12T09:50:58.027428+00:00",
   "categories_cleared_for_capital": [
    "UNCLASSIFIED"
   ],
@@ -805,7 +805,7 @@
   "gate": "assess.py refuses capital authority to any category not in categories_cleared_for_capital. With an empty ledger that is every category, which is why nothing in this package can size a position today.",
   "ledger_rows": 113,
   "replayed": {
-   "at": "2026-09-12T07:20:10.007024+00:00",
+   "at": "2026-09-12T09:50:58.027536+00:00",
    "clean": true,
    "errors": [],
    "n_events": 113,
@@ -827,7 +827,7 @@
  "rows_written": 0,
  "source_failures": [],
  "taxonomy": {
-  "at": "2026-09-12T07:20:05.437896+00:00",
+  "at": "2026-09-12T09:50:45.628860+00:00",
   "emergent": [],
   "n_categories": 16,
   "seed_areas_never_observed": [

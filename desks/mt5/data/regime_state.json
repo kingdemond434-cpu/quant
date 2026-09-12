@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-09-12T00:59:31.427653+00:00",
+  "swept_at": "2026-09-12T08:58:22.254301+00:00",
   "sleeves": {
     "AUDCAD|discovered_asia": {
       "n": 0,
@@ -30,8 +30,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 20,
-      "shadow_exp_r": 0.2126,
+      "shadow_n": 40,
+      "shadow_exp_r": -0.1049,
       "woke_on_shadow": false
     },
     "AUDUSD|discovered_asia": {
@@ -89,6 +89,17 @@
       "shadow_exp_r": 0.9934,
       "woke_on_shadow": false
     },
+    "EURAUD|discovered_asia": {
+      "n": 0,
+      "exp_r": 0.0,
+      "avg_win_r": 0.0,
+      "avg_loss_r": 0.0,
+      "max_dd_r": 0.0,
+      "flag": "ok",
+      "shadow_n": 16,
+      "shadow_exp_r": 0.0542,
+      "woke_on_shadow": false
+    },
     "EURCHF|discovered_asia": {
       "n": 0,
       "exp_r": 0.0,
@@ -129,8 +140,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 14,
-      "shadow_exp_r": 0.0443,
+      "shadow_n": 15,
+      "shadow_exp_r": 0.1105,
       "woke_on_shadow": false
     },
     "EURNOK|overnight_gap_decay_asia": {
@@ -272,8 +283,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 14,
-      "shadow_exp_r": -0.0126,
+      "shadow_n": 9,
+      "shadow_exp_r": -0.2082,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {

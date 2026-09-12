@@ -1,1 +1,1 @@
-{"cursor": 80, "note": "rotation cursor -- coverage is a cycle, never a completed sweep"}
+{"cursor": 120, "class_cursors": {"equity": 15, "metal": 0, "index": 0, "crypto": 0}, "note": "per-class rotation cursors -- every class is a cycle, never a completed sweep; the budget sets how often each cycle comes round"}

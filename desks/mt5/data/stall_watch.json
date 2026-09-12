@@ -1,55 +1,58 @@
 {
     "memory":  {
-                   "free_phys_mb":  57893,
+                   "free_phys_mb":  7429,
                    "total_commit_mb":  251842,
                    "total_phys_mb":  98298,
                    "top_commit":  [
                                       {
-                                          "pid":  14056,
-                                          "name":  "pf_allocator.py",
-                                          "commit_mb":  15125,
-                                          "rss_mb":  13730
-                                      },
-                                      {
-                                          "pid":  10604,
-                                          "name":  "pf_allocator.py",
-                                          "commit_mb":  13799,
-                                          "rss_mb":  12385
-                                      },
-                                      {
-                                          "pid":  4816,
-                                          "name":  "python.exe",
-                                          "commit_mb":  6903,
-                                          "rss_mb":  2485
-                                      },
-                                      {
                                           "pid":  6804,
                                           "name":  "python.exe",
-                                          "commit_mb":  6624,
-                                          "rss_mb":  2221
+                                          "commit_mb":  16458,
+                                          "rss_mb":  118
                                       },
                                       {
-                                          "pid":  6812,
-                                          "name":  "terminal64.exe",
-                                          "commit_mb":  2121,
-                                          "rss_mb":  107
+                                          "pid":  17468,
+                                          "name":  "python.exe",
+                                          "commit_mb":  12167,
+                                          "rss_mb":  2498
                                       },
                                       {
-                                          "pid":  16628,
-                                          "name":  "warm_gauntlet_cache.py",
-                                          "commit_mb":  1271,
-                                          "rss_mb":  98
+                                          "pid":  7748,
+                                          "name":  "python.exe",
+                                          "commit_mb":  12071,
+                                          "rss_mb":  2449
+                                      },
+                                      {
+                                          "pid":  8140,
+                                          "name":  "python.exe",
+                                          "commit_mb":  12056,
+                                          "rss_mb":  2461
+                                      },
+                                      {
+                                          "pid":  15268,
+                                          "name":  "python.exe",
+                                          "commit_mb":  11648,
+                                          "rss_mb":  953
+                                      },
+                                      {
+                                          "pid":  14252,
+                                          "name":  "python.exe",
+                                          "commit_mb":  11494,
+                                          "rss_mb":  749
                                       }
                                   ],
-                   "free_commit_mb":  196223
+                   "free_commit_mb":  24532
                },
     "actions":  [
                     "TASK MISSING: MT5-ShadowSync is not registered at all -- re-register from ops/ (deletion, not failure)"
                 ],
     "low_mem_strikes":  0,
-    "free_gb":  982,
+    "free_gb":  980.9,
     "procs":  {
-
+                  "external_gauntlet.15780":  {
+                                                  "cpu":  2563.0625,
+                                                  "at":  "2026-09-12T11:50:23.8209498+02:00"
+                                              }
               },
-    "checked_at":  "2026-09-12T07:20:06.6120348Z"
+    "checked_at":  "2026-09-12T09:50:33.2595043Z"
 }

@@ -11,9 +11,9 @@
       "max_hold": 9,
       "exec": "scalp_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "principal_override": {
         "by": "principal, instructed in session 01WZHzZoD3QX9Tx668fkAaw6 (2026-09-11)",
         "true_sharpe_own_days": 3.712,
@@ -23,13 +23,15 @@
         "reverts_if": "research/promoter.py re-judges hourly and will write STANDBY back unless a heavy admission scan on the defect-#4-corrected code funds it"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0037930268,
-        "heat_earned": 0.060443,
-        "joined": "joined on 'xau_m5_anti_breakout_overlap'",
-        "why": "standby on the current reading -- refused: -0.003793/day is not above the 0.000219/day noise margin -- standalone Sharpe 2.10 at correlation -0.01 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'xau_m5_anti_breakout_overlap' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xau_m5_anti_breakout_overlap' (funded book))"
       },
       "certificate": "forward_clock",
       "forward_verdict": {
@@ -44,12 +46,12 @@
       "shadow_exp": 0.05039940883579628,
       "shadow_n": 43,
       "shadow_days": 16,
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "demoted_at": "2026-09-12T01:53:57+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.003793/day is not above the 0.000219/day noise margin -- standalone Sharpe 2.10 at correlation -0.01 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T02:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
       "artifact": {
@@ -71,7 +73,7 @@
       "max_hold": 6,
       "exec": "scalp_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -84,14 +86,14 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'xau_m15_anti_breakout' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'xau_m15_anti_breakout' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xau_m15_anti_breakout' (funded book))"
       },
       "certificate": "forward_clock",
       "forward_verdict": {
@@ -107,7 +109,7 @@
       "shadow_n": 73,
       "shadow_days": 16,
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "8c959fcfe1d89451",
         "ok": false,
@@ -133,9 +135,9 @@
       "max_hold": 9,
       "exec": "scalp_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "principal_override": {
         "by": "principal, instructed in session 01WZHzZoD3QX9Tx668fkAaw6 (2026-09-11)",
         "true_sharpe_own_days": 3.944,
@@ -145,13 +147,15 @@
         "reverts_if": "research/promoter.py re-judges hourly and will write STANDBY back unless a heavy admission scan on the defect-#4-corrected code funds it"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0042727913,
-        "heat_earned": 0.062351,
-        "joined": "joined on 'xau_m5_anti_momentum_ny'",
-        "why": "standby on the current reading -- refused: -0.004273/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.36 at correlation -0.03 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'xau_m5_anti_momentum_ny' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xau_m5_anti_momentum_ny' (funded book))"
       },
       "certificate": "forward_clock",
       "forward_verdict": {
@@ -166,108 +170,142 @@
       "shadow_exp": 0.057864251752676565,
       "shadow_n": 77,
       "shadow_days": 17,
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "demoted_at": "2026-09-12T01:53:57+00:00",
       "demote_reason": "standby on the current reading -- refused: -0.004273/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.36 at correlation -0.03 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T02:48:01+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "08bb1ac77cc86dd0",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "gold_asia_v2",
       "symbol": "XAUUSD",
       "window": "asia",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "principal_override": {
         "by": "principal, instructed in session 01WZHzZoD3QX9Tx668fkAaw6 (2026-09-11)",
         "why": "additional bracket in the asia window, requested after being told explicitly that decision_core.roster carries name/symbol/window/sig_hour/rng/state/risk_frac and NOT the rr parameter -- so this trades IDENTICALLY to gold_asia rather than at a different reward ratio. It is a second copy of the same bet, not a variant.",
         "correlation_note": "PROP_FIRM_E8.md measures 4 correlated sleeves at 77% pass probability against 92% for 4 independent mechanisms. cap_by_heat still bounds the book at the 30% ceiling, so these compete for the same heat rather than adding to it."
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0007864858,
-        "heat_earned": 0.014498,
-        "joined": "joined on 'xauusd|asia'",
-        "why": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'gold_asia_v2' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_asia_v2' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T07:16:14+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "58f6565afbdf900d",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "gold_asia_v3",
       "symbol": "XAUUSD",
       "window": "asia",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "principal_override": {
         "by": "principal, session 01WZHzZoD3QX9Tx668fkAaw6 (2026-09-11)",
         "why": "third asia bracket; same signal as gold_asia, sized auto_ramp"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0007864858,
-        "heat_earned": 0.014498,
-        "joined": "joined on 'xauusd|asia'",
-        "why": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'gold_asia_v3' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_asia_v3' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T07:16:14+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "c0f08bc4c131f68b",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "gold_asia_v4",
       "symbol": "XAUUSD",
       "window": "asia",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "principal_override": {
         "by": "principal, session 01WZHzZoD3QX9Tx668fkAaw6 (2026-09-11)",
         "why": "fourth asia bracket; same signal as gold_asia, sized auto_ramp"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0007864858,
-        "heat_earned": 0.014498,
-        "joined": "joined on 'xauusd|asia'",
-        "why": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'gold_asia_v4' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_asia_v4' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T07:16:14+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "c39dde8187ebd689",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "gold_london_am_v2",
       "symbol": "XAUUSD",
       "window": "london_am",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -276,17 +314,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'gold_london_am_v2' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'gold_london_am_v2' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_london_am_v2' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "76d3294f692f48aa",
         "ok": false,
@@ -299,7 +337,7 @@
       "name": "gold_london_am_v3",
       "symbol": "XAUUSD",
       "window": "london_am",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -308,17 +346,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'gold_london_am_v3' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'gold_london_am_v3' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_london_am_v3' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "2a9076c595eee423",
         "ok": false,
@@ -331,7 +369,7 @@
       "name": "gold_london_am_v4",
       "symbol": "XAUUSD",
       "window": "london_am",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -340,17 +378,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'gold_london_am_v4' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'gold_london_am_v4' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_london_am_v4' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "105ec4ce38c2d40c",
         "ok": false,
@@ -363,7 +401,7 @@
       "name": "gold_afternoon_v2",
       "symbol": "XAUUSD",
       "window": "afternoon",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -372,17 +410,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'gold_afternoon_v2' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'gold_afternoon_v2' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_afternoon_v2' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "0c5648f41c8dd935",
         "ok": false,
@@ -395,7 +433,7 @@
       "name": "gold_afternoon_v3",
       "symbol": "XAUUSD",
       "window": "afternoon",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -404,17 +442,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'gold_afternoon_v3' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'gold_afternoon_v3' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_afternoon_v3' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "46f8d1fa8e5ea5ea",
         "ok": false,
@@ -427,7 +465,7 @@
       "name": "gold_afternoon_v4",
       "symbol": "XAUUSD",
       "window": "afternoon",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -436,17 +474,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'gold_afternoon_v4' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'gold_afternoon_v4' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gold_afternoon_v4' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "18107538babc5487",
         "ok": false,
@@ -463,7 +501,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -492,17 +530,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'audcad_discovered_asia_p_7c996ac8456c8919' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'audcad_discovered_asia_p_7c996ac8456c8919' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audcad_discovered_asia_p_7c996ac8456c8919' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "8fc97af041d94b89",
         "ok": false,
@@ -519,7 +557,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -548,17 +586,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'audcad_discovered_asia_p_8030fb339510dceb' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'audcad_discovered_asia_p_8030fb339510dceb' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audcad_discovered_asia_p_8030fb339510dceb' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "476a68e8f6bf5fb2",
         "ok": false,
@@ -575,7 +613,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -604,17 +642,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'audcad_discovered_asia_p_a7324e7affe1f80a' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'audcad_discovered_asia_p_a7324e7affe1f80a' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audcad_discovered_asia_p_a7324e7affe1f80a' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "24c9c94cf98a2f5e",
         "ok": false,
@@ -662,15 +700,15 @@
         "status": "LIVE",
         "risk_frac": 0.03,
         "streak": 2,
-        "delta_elogw_per_day": 0.0027498584,
-        "heat_earned": 0.1,
+        "delta_elogw_per_day": 0.0016704612,
+        "heat_earned": 0.05,
         "joined": "joined on 'audchf|overnight_gap_decay|asia'",
-        "allocator_heat": 0.1,
+        "allocator_heat": 0.05,
         "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.002750/day (+69.30%/yr) and it earns 10.00% heat -- standalone Sharpe 4.73 at correlation +0.05 to the held book; the allocator's current solve gives this sleeve 10.00% heat, written at the 3% promoter ceiling (joined on 'audchf|overnight_gap_decay|asia')"
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001670/day (+42.10%/yr) and it earns 5.00% heat -- standalone Sharpe 4.73 at correlation +0.02 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audchf|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "43b6fd5aad3bc0b2",
         "ok": false,
@@ -678,10 +716,10 @@
           "no cost basis"
         ]
       },
-      "demoted_at": "2026-09-11T23:59:52+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001938/day is not above the 0.000136/day noise margin -- standalone Sharpe 4.73 at correlation +0.05 to the held book",
+      "demoted_at": "2026-09-12T07:04:22+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000104/day is not above the 0.000178/day noise margin -- standalone Sharpe 3.95 at correlation +0.04 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
     },
@@ -693,7 +731,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -722,17 +760,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'audnzd_discovered_asia_p_c76b860ff91ee920' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'audnzd_discovered_asia_p_c76b860ff91ee920' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audnzd_discovered_asia_p_c76b860ff91ee920' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "aa71fb4214893976",
         "ok": false,
@@ -749,7 +787,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -778,17 +816,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'audusd_discovered_asia_p_8e61ea22743f15b7' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'audusd_discovered_asia_p_8e61ea22743f15b7' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audusd_discovered_asia_p_8e61ea22743f15b7' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "a9ac38e8088ef0b5",
         "ok": false,
@@ -805,7 +843,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -834,17 +872,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'audusd_discovered_asia_p_a5bbf78b5c8595c0' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'audusd_discovered_asia_p_a5bbf78b5c8595c0' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audusd_discovered_asia_p_a5bbf78b5c8595c0' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "4bafff025d09739f",
         "ok": false,
@@ -861,7 +899,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -890,17 +928,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'audusd_discovered_asia_p_cf0368e026d6b477' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'audusd_discovered_asia_p_cf0368e026d6b477' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audusd_discovered_asia_p_cf0368e026d6b477' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "0e2e062be7ea817b",
         "ok": false,
@@ -917,7 +955,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -946,17 +984,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'audusd_discovered_asia_p_de80ad4f2ef91116' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'audusd_discovered_asia_p_de80ad4f2ef91116' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audusd_discovered_asia_p_de80ad4f2ef91116' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "9963394b39761718",
         "ok": false,
@@ -1004,15 +1042,15 @@
         "status": "LIVE",
         "risk_frac": 0.03,
         "streak": 2,
-        "delta_elogw_per_day": 0.0069483898,
-        "heat_earned": 0.1,
+        "delta_elogw_per_day": 0.0015257765,
+        "heat_earned": 0.05,
         "joined": "joined on 'cadchf|overnight_gap_decay|asia'",
-        "allocator_heat": 0.1,
+        "allocator_heat": 0.05,
         "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.006948/day (+175.10%/yr) and it earns 10.00% heat -- standalone Sharpe 5.27 at correlation -0.01 to the held book; the allocator's current solve gives this sleeve 10.00% heat, written at the 3% promoter ceiling (joined on 'cadchf|overnight_gap_decay|asia')"
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001526/day (+38.45%/yr) and it earns 5.00% heat -- standalone Sharpe 5.27 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'cadchf|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "c9e5a4810a870d31",
         "ok": false,
@@ -1020,10 +1058,10 @@
           "no cost basis"
         ]
       },
-      "demoted_at": "2026-09-11T23:59:52+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.002205/day is not above the 0.000136/day noise margin -- standalone Sharpe 5.27 at correlation -0.01 to the held book",
+      "demoted_at": "2026-09-12T07:04:22+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000181/day is not above the 0.000178/day noise margin -- standalone Sharpe 4.31 at correlation +0.01 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
     },
@@ -1035,9 +1073,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.CADJPY.session_range_breakout",
@@ -1063,22 +1101,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0015970589,
-        "heat_earned": 0.021789,
-        "joined": "joined on 'cadjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.001597/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.54 at correlation -0.01 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'cadjpy_session_range_breakout_asia_session_range_breakout' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'cadjpy_session_range_breakout_asia_session_range_breakout' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001597/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.54 at correlation -0.01 to the held book",
+      "admit_streak": 1,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T08:06:47+00:00",
+      "demote_reason": "standby on the current reading -- refused: +0.000037/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.54 at correlation +0.03 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "8fb16454c2f8738e",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "cadjpy_session_range_breakout_asia_5_wb_12",
@@ -1088,9 +1135,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.CADJPY.session_range_breakout.rr=1.5_wb=12",
@@ -1116,22 +1163,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0015970589,
-        "heat_earned": 0.021789,
-        "joined": "joined on 'cadjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.001597/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.54 at correlation -0.01 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'cadjpy_session_range_breakout_asia_5_wb_12' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'cadjpy_session_range_breakout_asia_5_wb_12' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001597/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.54 at correlation -0.01 to the held book",
+      "admit_streak": 1,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T08:06:47+00:00",
+      "demote_reason": "standby on the current reading -- refused: +0.000037/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.54 at correlation +0.03 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "6fd2f8b617de582d",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "cadjpy_session_range_breakout_asia_0_wb_12",
@@ -1141,9 +1197,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.CADJPY.session_range_breakout.rr=2.0_wb=12",
@@ -1169,22 +1225,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0015970589,
-        "heat_earned": 0.021789,
-        "joined": "joined on 'cadjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.001597/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.54 at correlation -0.01 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'cadjpy_session_range_breakout_asia_0_wb_12' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'cadjpy_session_range_breakout_asia_0_wb_12' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001597/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.54 at correlation -0.01 to the held book",
+      "admit_streak": 1,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T08:06:47+00:00",
+      "demote_reason": "standby on the current reading -- refused: +0.000037/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.54 at correlation +0.03 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "9a5b18aa4ac9ea89",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "chfdkk_overnight_gap_decay_asia_p_44136fa355b3678a",
@@ -1194,9 +1259,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
@@ -1222,16 +1287,18 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0074227993,
-        "heat_earned": 0.1,
-        "joined": "joined on 'chfdkk|overnight_gap_decay|asia'",
-        "why": "standby on the current reading -- refused: -0.007423/day is not above the 0.000219/day noise margin -- standalone Sharpe 4.87 at correlation +0.02 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'chfdkk_overnight_gap_decay_asia_p_44136fa355b3678a' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'chfdkk_overnight_gap_decay_asia_p_44136fa355b3678a' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "265a01f8db276d4e",
         "ok": false,
@@ -1239,10 +1306,10 @@
           "no cost basis"
         ]
       },
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.007423/day is not above the 0.000219/day noise margin -- standalone Sharpe 4.87 at correlation +0.02 to the held book",
+      "demoted_at": "2026-09-12T07:04:22+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000178/day is not above the 0.000178/day noise margin -- standalone Sharpe 3.99 at correlation +0.02 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
     },
@@ -1285,15 +1352,15 @@
         "status": "LIVE",
         "risk_frac": 0.03,
         "streak": 2,
-        "delta_elogw_per_day": 0.019666682,
+        "delta_elogw_per_day": 0.0195412515,
         "heat_earned": 0.0472,
         "joined": "joined on 'chfnok|carry|asia'",
         "allocator_heat": 0.0472,
         "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.019667/day (+495.60%/yr) and it earns 4.72% heat -- standalone Sharpe 6.32 at correlation +0.05 to the held book; the allocator's current solve gives this sleeve 4.72% heat, written at the 3% promoter ceiling (joined on 'chfnok|carry|asia')"
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.019541/day (+492.44%/yr) and it earns 4.72% heat -- standalone Sharpe 6.32 at correlation +0.01 to the held book; the allocator's current solve gives this sleeve 4.72% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'chfnok|carry|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "8a389a88e4e82579",
         "ok": false,
@@ -1310,7 +1377,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1339,17 +1406,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurchf_discovered_asia_p_16bd35526c7f3515' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurchf_discovered_asia_p_16bd35526c7f3515' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_16bd35526c7f3515' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "4bb9227399f6aeb3",
         "ok": false,
@@ -1366,7 +1433,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1395,17 +1462,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurchf_discovered_asia_p_4cba1afa572a99cd' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurchf_discovered_asia_p_4cba1afa572a99cd' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_4cba1afa572a99cd' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "c99df2e1e132e8ec",
         "ok": false,
@@ -1422,7 +1489,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1451,17 +1518,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurchf_discovered_asia_p_6c7943b997558157' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurchf_discovered_asia_p_6c7943b997558157' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_6c7943b997558157' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "dd6d77a133135937",
         "ok": false,
@@ -1478,7 +1545,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1507,17 +1574,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurchf_discovered_asia_p_9bc1f7c40f200e78' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurchf_discovered_asia_p_9bc1f7c40f200e78' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_9bc1f7c40f200e78' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "1f6a0686dc672ef3",
         "ok": false,
@@ -1534,7 +1601,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1563,17 +1630,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurchf_discovered_asia_p_a5bbf78b5c8595c0' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurchf_discovered_asia_p_a5bbf78b5c8595c0' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_a5bbf78b5c8595c0' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "a47847f5f08f30d0",
         "ok": false,
@@ -1590,7 +1657,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1619,17 +1686,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurchf_discovered_asia_p_c14e361e680e6d0b' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurchf_discovered_asia_p_c14e361e680e6d0b' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_c14e361e680e6d0b' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "4befdaf56949e85c",
         "ok": false,
@@ -1646,7 +1713,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1675,17 +1742,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurchf_discovered_asia_p_c7d53510458ba32c' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurchf_discovered_asia_p_c7d53510458ba32c' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_c7d53510458ba32c' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "f6c6f38c41ff3747",
         "ok": false,
@@ -1702,7 +1769,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1731,17 +1798,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurchf_discovered_asia_p_e266baf78567bef3' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurchf_discovered_asia_p_e266baf78567bef3' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurchf_discovered_asia_p_e266baf78567bef3' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "0b8f3e09017b9ace",
         "ok": false,
@@ -1758,7 +1825,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1787,17 +1854,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurgbp_discovered_asia_p_8e61ea22743f15b7' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurgbp_discovered_asia_p_8e61ea22743f15b7' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurgbp_discovered_asia_p_8e61ea22743f15b7' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "19a279612097f623",
         "ok": false,
@@ -1814,7 +1881,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -1843,17 +1910,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurgbp_discovered_asia_p_f31f02aa2b9d79b1' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurgbp_discovered_asia_p_f31f02aa2b9d79b1' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurgbp_discovered_asia_p_f31f02aa2b9d79b1' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "d81228917dd1d8a2",
         "ok": false,
@@ -1870,9 +1937,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.EURJPY.session_range_breakout",
@@ -1898,22 +1965,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0019549569,
-        "heat_earned": 0.02406,
-        "joined": "joined on 'eurjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.001955/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.37 at correlation +0.03 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'eurjpy_session_range_breakout_asia_session_range_breakout' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurjpy_session_range_breakout_asia_session_range_breakout' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001955/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.37 at correlation +0.03 to the held book",
+      "admit_streak": 1,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T08:06:47+00:00",
+      "demote_reason": "standby on the current reading -- refused: +0.000012/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.37 at correlation +0.02 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "fad18304107c40e7",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "eurjpy_session_range_breakout_asia_5_wb_12",
@@ -1923,9 +1999,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.EURJPY.session_range_breakout.rr=1.5_wb=12",
@@ -1951,22 +2027,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0019549569,
-        "heat_earned": 0.02406,
-        "joined": "joined on 'eurjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.001955/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.37 at correlation +0.03 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'eurjpy_session_range_breakout_asia_5_wb_12' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurjpy_session_range_breakout_asia_5_wb_12' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001955/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.37 at correlation +0.03 to the held book",
+      "admit_streak": 1,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T08:06:47+00:00",
+      "demote_reason": "standby on the current reading -- refused: +0.000012/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.37 at correlation +0.02 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "c7d9fd39dedd695a",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "eurjpy_session_range_breakout_asia_0_wb_12",
@@ -1976,9 +2061,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
@@ -2004,22 +2089,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0019549569,
-        "heat_earned": 0.02406,
-        "joined": "joined on 'eurjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.001955/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.37 at correlation +0.03 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'eurjpy_session_range_breakout_asia_0_wb_12' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurjpy_session_range_breakout_asia_0_wb_12' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001955/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.37 at correlation +0.03 to the held book",
+      "admit_streak": 1,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T08:06:47+00:00",
+      "demote_reason": "standby on the current reading -- refused: +0.000012/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.37 at correlation +0.02 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "8b362d3143dccc4b",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "eurnok_overnight_gap_decay_asia_p_44136fa355b3678a",
@@ -2060,15 +2154,15 @@
         "status": "LIVE",
         "risk_frac": 0.03,
         "streak": 2,
-        "delta_elogw_per_day": 0.0075010608,
-        "heat_earned": 0.052371,
+        "delta_elogw_per_day": 0.0027448847,
+        "heat_earned": 0.05,
         "joined": "joined on 'eurnok|overnight_gap_decay|asia'",
-        "allocator_heat": 0.052371,
+        "allocator_heat": 0.05,
         "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.007501/day (+189.03%/yr) and it earns 5.24% heat -- standalone Sharpe 3.09 at correlation -0.02 to the held book; the allocator's current solve gives this sleeve 5.24% heat, written at the 3% promoter ceiling (joined on 'eurnok|overnight_gap_decay|asia')"
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.002745/day (+69.17%/yr) and it earns 5.00% heat -- standalone Sharpe 3.09 at correlation -0.02 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurnok|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "c9ce202b964f12bf",
         "ok": false,
@@ -2091,7 +2185,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -2120,17 +2214,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurusd_discovered_asia_p_6d034b421914e1a2' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurusd_discovered_asia_p_6d034b421914e1a2' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurusd_discovered_asia_p_6d034b421914e1a2' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "deee76d5c6e165f6",
         "ok": false,
@@ -2147,7 +2241,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -2176,17 +2270,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'eurusd_discovered_asia_p_f8bd412f38e33d20' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'eurusd_discovered_asia_p_f8bd412f38e33d20' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurusd_discovered_asia_p_f8bd412f38e33d20' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "80f15d083cc46b16",
         "ok": false,
@@ -2234,19 +2328,19 @@
         "status": "LIVE",
         "risk_frac": 0.03,
         "streak": 2,
-        "delta_elogw_per_day": 0.0096255014,
-        "heat_earned": 0.090648,
+        "delta_elogw_per_day": 0.0012832206,
+        "heat_earned": 0.05,
         "joined": "joined on 'eurzar|overnight_gap_decay|asia'",
-        "allocator_heat": 0.090648,
+        "allocator_heat": 0.05,
         "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.009626/day (+242.56%/yr) and it earns 9.06% heat -- standalone Sharpe 4.08 at correlation +0.00 to the held book; the allocator's current solve gives this sleeve 9.06% heat, written at the 3% promoter ceiling (joined on 'eurzar|overnight_gap_decay|asia')"
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001283/day (+32.34%/yr) and it earns 5.00% heat -- standalone Sharpe 4.08 at correlation -0.01 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurzar|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-11T23:59:52+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.002504/day is not above the 0.000136/day noise margin -- standalone Sharpe 4.08 at correlation +0.00 to the held book",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T07:04:22+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000523/day is not above the 0.000178/day noise margin -- standalone Sharpe 3.36 at correlation +0.02 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
       "artifact": {
@@ -2265,9 +2359,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
@@ -2293,16 +2387,18 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0002728374,
-        "heat_earned": 0.1,
-        "joined": "joined on 'gbpchf|overnight_gap_decay|asia'",
-        "why": "standby on the current reading -- refused: -0.000273/day is not above the 0.000219/day noise margin -- standalone Sharpe 4.65 at correlation +0.05 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'gbpchf_overnight_gap_decay_asia_p_44136fa355b3678a' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpchf_overnight_gap_decay_asia_p_44136fa355b3678a' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "fe3891539c8667aa",
         "ok": false,
@@ -2310,10 +2406,10 @@
           "no cost basis"
         ]
       },
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.000273/day is not above the 0.000219/day noise margin -- standalone Sharpe 4.65 at correlation +0.05 to the held book",
+      "demoted_at": "2026-09-12T07:04:22+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000748/day is not above the 0.000178/day noise margin -- standalone Sharpe 3.82 at correlation +0.04 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
     },
@@ -2356,19 +2452,26 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": -0.0022765298,
-        "heat_earned": 0.026274,
+        "delta_elogw_per_day": 4.6e-09,
+        "heat_earned": 0.0,
         "joined": "joined on 'gbpjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.002277/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.22 at correlation -0.02 to the held book"
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 1.22 at correlation +0.25 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.002277/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.22 at correlation -0.02 to the held book",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T09:07:41+00:00",
+      "demote_reason": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 1.22 at correlation +0.25 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "0de318f964a6c50d",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "gbpjpy_session_range_breakout_asia_5_wb_12",
@@ -2409,19 +2512,26 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": -0.0022765298,
-        "heat_earned": 0.026274,
+        "delta_elogw_per_day": 4.6e-09,
+        "heat_earned": 0.0,
         "joined": "joined on 'gbpjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.002277/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.22 at correlation -0.02 to the held book"
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 1.22 at correlation +0.25 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.002277/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.22 at correlation -0.02 to the held book",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T09:07:41+00:00",
+      "demote_reason": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 1.22 at correlation +0.25 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "9486bbb02a67131d",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "gbpmxn_overnight_gap_decay_asia_p_44136fa355b3678a",
@@ -2462,15 +2572,15 @@
         "status": "LIVE",
         "risk_frac": 0.03,
         "streak": 2,
-        "delta_elogw_per_day": 0.0381835077,
-        "heat_earned": 0.1,
+        "delta_elogw_per_day": 0.0033459419,
+        "heat_earned": 0.05,
         "joined": "joined on 'gbpmxn|overnight_gap_decay|asia'",
-        "allocator_heat": 0.1,
+        "allocator_heat": 0.05,
         "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.038184/day (+962.22%/yr) and it earns 10.00% heat -- standalone Sharpe 5.12 at correlation +0.02 to the held book; the allocator's current solve gives this sleeve 10.00% heat, written at the 3% promoter ceiling (joined on 'gbpmxn|overnight_gap_decay|asia')"
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.003346/day (+84.32%/yr) and it earns 5.00% heat -- standalone Sharpe 5.12 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpmxn|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "c680d9b42f682662",
         "ok": false,
@@ -2493,7 +2603,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.03,
+      "risk_frac": 0.022299,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -2522,17 +2632,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.03,
+        "risk_frac": 0.022299,
         "streak": 2,
-        "delta_elogw_per_day": 0.0113426836,
-        "heat_earned": 0.031071,
+        "delta_elogw_per_day": 0.0016570791,
+        "heat_earned": 0.022299,
         "joined": "joined on 'gbpnok|overnight_gap_decay|asia'",
-        "allocator_heat": 0.031071,
-        "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.011343/day (+285.84%/yr) and it earns 3.11% heat -- standalone Sharpe 3.49 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 3.11% heat, written at the 3% promoter ceiling (joined on 'gbpnok|overnight_gap_decay|asia')"
+        "allocator_heat": 0.022299,
+        "written_at_promoter_ceiling": false,
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001657/day (+41.76%/yr) and it earns 2.23% heat -- standalone Sharpe 3.49 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 2.23% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpnok|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "c56a661812500d12",
         "ok": false,
@@ -2555,7 +2665,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.03,
+      "risk_frac": 0.02842,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -2584,17 +2694,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.03,
+        "risk_frac": 0.02842,
         "streak": 2,
-        "delta_elogw_per_day": 0.0132996019,
-        "heat_earned": 0.040952,
+        "delta_elogw_per_day": 0.0011841121,
+        "heat_earned": 0.02842,
         "joined": "joined on 'gbpsek|overnight_gap_decay|asia'",
-        "allocator_heat": 0.040952,
-        "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.013300/day (+335.15%/yr) and it earns 4.10% heat -- standalone Sharpe 3.75 at correlation +0.06 to the held book; the allocator's current solve gives this sleeve 4.10% heat, written at the 3% promoter ceiling (joined on 'gbpsek|overnight_gap_decay|asia')"
+        "allocator_heat": 0.02842,
+        "written_at_promoter_ceiling": false,
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001184/day (+29.84%/yr) and it earns 2.84% heat -- standalone Sharpe 3.75 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 2.84% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpsek|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "de78a38f2628761d",
         "ok": false,
@@ -2602,10 +2712,10 @@
           "no cost basis"
         ]
       },
-      "demoted_at": "2026-09-11T23:59:52+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001893/day is not above the 0.000136/day noise margin -- standalone Sharpe 3.75 at correlation +0.06 to the held book",
+      "demoted_at": "2026-09-12T07:04:22+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000416/day is not above the 0.000178/day noise margin -- standalone Sharpe 3.09 at correlation +0.05 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
     },
@@ -2648,15 +2758,15 @@
         "status": "LIVE",
         "risk_frac": 0.03,
         "streak": 2,
-        "delta_elogw_per_day": 0.0214684454,
-        "heat_earned": 0.1,
+        "delta_elogw_per_day": 0.0014988565,
+        "heat_earned": 0.045224,
         "joined": "joined on 'gbpzar|overnight_gap_decay|asia'",
-        "allocator_heat": 0.1,
+        "allocator_heat": 0.045224,
         "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.021468/day (+541.00%/yr) and it earns 10.00% heat -- standalone Sharpe 3.86 at correlation +0.02 to the held book; the allocator's current solve gives this sleeve 10.00% heat, written at the 3% promoter ceiling (joined on 'gbpzar|overnight_gap_decay|asia')"
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001499/day (+37.77%/yr) and it earns 4.52% heat -- standalone Sharpe 3.86 at correlation +0.02 to the held book; the allocator's current solve gives this sleeve 4.52% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpzar|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "76ca7059f8c1bf98",
         "ok": false,
@@ -2664,10 +2774,10 @@
           "no cost basis"
         ]
       },
-      "demoted_at": "2026-09-11T23:59:52+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.002001/day is not above the 0.000136/day noise margin -- standalone Sharpe 3.86 at correlation +0.02 to the held book",
+      "demoted_at": "2026-09-12T07:04:22+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000290/day is not above the 0.000178/day noise margin -- standalone Sharpe 3.18 at correlation +0.01 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
     },
@@ -2679,7 +2789,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -2708,17 +2818,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'nzdcad_discovered_asia_p_0ffb1e19a04f260e' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'nzdcad_discovered_asia_p_0ffb1e19a04f260e' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'nzdcad_discovered_asia_p_0ffb1e19a04f260e' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "ef65b5f980cd5f43",
         "ok": false,
@@ -2735,7 +2845,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -2764,17 +2874,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'usdcad_discovered_asia_p_193aadf2caba3698' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'usdcad_discovered_asia_p_193aadf2caba3698' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdcad_discovered_asia_p_193aadf2caba3698' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "f10ddc759e349258",
         "ok": false,
@@ -2791,7 +2901,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -2820,17 +2930,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'usdcad_discovered_asia_p_56aadf0a3018c790' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'usdcad_discovered_asia_p_56aadf0a3018c790' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdcad_discovered_asia_p_56aadf0a3018c790' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "e76793375efa2b27",
         "ok": false,
@@ -2847,7 +2957,7 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -2876,17 +2986,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'usdchf_discovered_asia_p_19dd11ec392fa005' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'usdchf_discovered_asia_p_19dd11ec392fa005' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdchf_discovered_asia_p_19dd11ec392fa005' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "23710a682858c41b",
         "ok": false,
@@ -2903,9 +3013,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.USDJPY.session_range_breakout",
@@ -2931,22 +3041,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0013215591,
-        "heat_earned": 0.023524,
-        "joined": "joined on 'usdjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.001322/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'usdjpy_session_range_breakout_asia_session_range_breakout' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdjpy_session_range_breakout_asia_session_range_breakout' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001322/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book",
+      "admit_streak": 1,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T08:06:47+00:00",
+      "demote_reason": "standby on the current reading -- refused: +0.000182/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "d9f132c3c9b6fa91",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "usdjpy_session_range_breakout_asia_5_wb_12",
@@ -2956,9 +3075,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.USDJPY.session_range_breakout.rr=1.5_wb=12",
@@ -2984,22 +3103,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0013215591,
-        "heat_earned": 0.023524,
-        "joined": "joined on 'usdjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.001322/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'usdjpy_session_range_breakout_asia_5_wb_12' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdjpy_session_range_breakout_asia_5_wb_12' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001322/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book",
+      "admit_streak": 1,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T08:06:47+00:00",
+      "demote_reason": "standby on the current reading -- refused: +0.000182/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "608dd8895f5f0a63",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "usdjpy_session_range_breakout_asia_0_wb_12",
@@ -3009,9 +3137,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.USDJPY.session_range_breakout.rr=2.0_wb=12",
@@ -3037,22 +3165,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0013215591,
-        "heat_earned": 0.023524,
-        "joined": "joined on 'usdjpy|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.001322/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'usdjpy_session_range_breakout_asia_0_wb_12' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdjpy_session_range_breakout_asia_0_wb_12' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.001322/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book",
+      "admit_streak": 1,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T08:06:47+00:00",
+      "demote_reason": "standby on the current reading -- refused: +0.000182/day is not above the 0.000193/day noise margin -- standalone Sharpe 1.71 at correlation +0.04 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T08:48:02+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "0f45d3a4a7087724",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "usdmxn_overnight_gap_decay_asia_p_44136fa355b3678a",
@@ -3093,15 +3230,15 @@
         "status": "LIVE",
         "risk_frac": 0.03,
         "streak": 2,
-        "delta_elogw_per_day": 0.0188839973,
-        "heat_earned": 0.1,
+        "delta_elogw_per_day": 0.0012179175,
+        "heat_earned": 0.05,
         "joined": "joined on 'usdmxn|overnight_gap_decay|asia'",
-        "allocator_heat": 0.1,
+        "allocator_heat": 0.05,
         "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.018884/day (+475.88%/yr) and it earns 10.00% heat -- standalone Sharpe 4.15 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 10.00% heat, written at the 3% promoter ceiling (joined on 'usdmxn|overnight_gap_decay|asia')"
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.001218/day (+30.69%/yr) and it earns 5.00% heat -- standalone Sharpe 4.15 at correlation +0.03 to the held book; the allocator's current solve gives this sleeve 5.00% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdmxn|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "b96eb09aa2bb24de",
         "ok": false,
@@ -3109,10 +3246,10 @@
           "no cost basis"
         ]
       },
-      "demoted_at": "2026-09-11T23:59:52+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.002542/day is not above the 0.000136/day noise margin -- standalone Sharpe 4.15 at correlation +0.03 to the held book",
+      "demoted_at": "2026-09-12T07:04:22+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000557/day is not above the 0.000178/day noise margin -- standalone Sharpe 3.42 at correlation +0.03 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
     },
@@ -3155,15 +3292,15 @@
         "status": "LIVE",
         "risk_frac": 0.03,
         "streak": 2,
-        "delta_elogw_per_day": 0.0167469329,
-        "heat_earned": 0.1,
+        "delta_elogw_per_day": 0.0006833189,
+        "heat_earned": 0.046393,
         "joined": "joined on 'usdzar|overnight_gap_decay|asia'",
-        "allocator_heat": 0.1,
+        "allocator_heat": 0.046393,
         "written_at_promoter_ceiling": true,
-        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.016747/day (+422.02%/yr) and it earns 10.00% heat -- standalone Sharpe 3.54 at correlation +0.00 to the held book; the allocator's current solve gives this sleeve 10.00% heat, written at the 3% promoter ceiling (joined on 'usdzar|overnight_gap_decay|asia')"
+        "why": "admitted: re-solving at 20.00% total heat with it raises robust growth +0.000683/day (+17.22%/yr) and it earns 4.64% heat -- standalone Sharpe 3.54 at correlation +0.00 to the held book; the allocator's current solve gives this sleeve 4.64% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdzar|overnight_gap_decay|asia')"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "f3432ca370d4e057",
         "ok": false,
@@ -3171,10 +3308,10 @@
           "no cost basis"
         ]
       },
-      "demoted_at": "2026-09-11T23:59:52+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.003181/day is not above the 0.000136/day noise margin -- standalone Sharpe 3.54 at correlation +0.00 to the held book",
+      "demoted_at": "2026-09-12T07:04:22+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000909/day is not above the 0.000178/day noise margin -- standalone Sharpe 2.92 at correlation +0.00 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
     },
@@ -3186,9 +3323,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.XAUUSD.session_range_breakout",
@@ -3214,22 +3351,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0007864858,
-        "heat_earned": 0.014498,
-        "joined": "joined on 'xauusd|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'xauusd_session_range_breakout_asia_session_range_breakout' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd_session_range_breakout_asia_session_range_breakout' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T07:16:14+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "a153cdd06ff821f1",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "xauusd_session_range_breakout_asia_5_wb_12",
@@ -3239,9 +3385,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.XAUUSD.session_range_breakout.rr=1.5_wb=12",
@@ -3267,22 +3413,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0007864858,
-        "heat_earned": 0.014498,
-        "joined": "joined on 'xauusd|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'xauusd_session_range_breakout_asia_5_wb_12' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd_session_range_breakout_asia_5_wb_12' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T07:16:14+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "dec1a84c1cc1924c",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "xauusd_session_range_breakout_asia_5_wb_8",
@@ -3292,9 +3447,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
@@ -3320,22 +3475,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0007864858,
-        "heat_earned": 0.014498,
-        "joined": "joined on 'xauusd|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'xauusd_session_range_breakout_asia_5_wb_8' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd_session_range_breakout_asia_5_wb_8' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T07:16:14+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "5a757a3ce5fe0e2d",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "xauusd_session_range_breakout_asia_0_wb_12",
@@ -3345,9 +3509,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
-      "risk_frac_source": "none",
+      "risk_frac": 0.002559,
+      "status": "LIVE",
+      "risk_frac_source": "allocator_marginal",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.XAUUSD.session_range_breakout.rr=2.0_wb=12",
@@ -3373,22 +3537,31 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
-        "risk_frac": 0.0,
-        "streak": 0,
-        "delta_elogw_per_day": -0.0007864858,
-        "heat_earned": 0.014498,
-        "joined": "joined on 'xauusd|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book"
+        "status": "LIVE",
+        "risk_frac": 0.002559,
+        "streak": 2,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.002559,
+        "joined": "joined on 'xauusd_session_range_breakout_asia_0_wb_12' (funded book)",
+        "allocator_heat": 0.002559,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd_session_range_breakout_asia_0_wb_12' (funded book))"
       },
-      "admit_streak": 0,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
-      "demoted_at": "2026-09-12T01:53:57+00:00",
-      "demote_reason": "standby on the current reading -- refused: -0.000786/day is not above the 0.000219/day noise margin -- standalone Sharpe 1.90 at correlation +0.65 to the held book",
+      "admit_streak": 2,
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
+      "demoted_at": "2026-09-12T07:16:14+00:00",
+      "demote_reason": "standby on the current reading -- refused: -0.000118/day is not above the 0.000155/day noise margin -- standalone Sharpe 1.90 at correlation +0.19 to the held book",
       "restored_from": "STANDBY",
-      "restored_at": "2026-09-12T00:48:01+00:00",
+      "restored_at": "2026-09-12T07:48:01+00:00",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict"
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "artifact": {
+        "version_hash": "607b9f1f5485d110",
+        "ok": false,
+        "problems": [
+          "no cost basis"
+        ]
+      }
     },
     {
       "name": "audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte",
@@ -3398,7 +3571,7 @@
       "state": "NORMAL_DAY",
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.004255,
+      "risk_frac": 0.002559,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "certificate": {
@@ -3427,17 +3600,17 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.004255,
+        "risk_frac": 0.002559,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.004255,
+        "heat_earned": 0.002559,
         "joined": "joined on 'audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte' (funded book)",
-        "allocator_heat": 0.004255,
+        "allocator_heat": 0.002559,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.43% heat; the allocator's current solve gives this sleeve 0.43% heat (joined on 'audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte' (funded book))"
+        "why": "already funded by the allocator at 0.26% heat; the allocator's current solve gives this sleeve 0.26% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte' (funded book))"
       },
       "admit_streak": 2,
-      "admit_scan": "2026-09-12T01:00:54.462417+00:00",
+      "admit_scan": "2026-09-12T08:27:18.138247+00:00",
       "artifact": {
         "version_hash": "de2cbdb580d8705c",
         "ok": false,

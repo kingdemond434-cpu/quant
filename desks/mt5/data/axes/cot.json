@@ -2,7 +2,7 @@
  "axis": "positioning",
  "id": "cftc_cot_legacy",
  "source": "https://www.cftc.gov/dea/newcot/deafut.txt",
- "at": "2026-09-12T06:40:14+00:00",
+ "at": "2026-09-12T09:40:23+00:00",
  "n_rows": 4060,
  "symbols": [
   "AUDUSD",

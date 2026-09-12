@@ -1,16 +1,17 @@
 {
- "generated_utc": "2026-09-07T18:40:16.012063+00:00",
+ "generated_utc": "2026-09-12T08:59:55.492592+00:00",
+ "controller_variant": "A",
  "shares": {
-  "new_mechanism": 0.167,
-  "mutate_survivor": 0.0488,
-  "combine_survivors": 0.0468,
-  "conditional_state_edge": 0.0544,
-  "execution_improvement": 0.0806,
-  "exit_improvement": 0.0986,
-  "cross_asset_signal": 0.1791,
-  "alt_data_hypothesis": 0.1807,
-  "failure_derived": 0.0573,
-  "model_architecture": 0.0681,
-  "external_screen": 0.0187
+  "new_mechanism": 0.1202,
+  "mutate_survivor": 0.0836,
+  "combine_survivors": 0.0916,
+  "conditional_state_edge": 0.0807,
+  "execution_improvement": 0.0899,
+  "exit_improvement": 0.1049,
+  "cross_asset_signal": 0.1161,
+  "alt_data_hypothesis": 0.1281,
+  "failure_derived": 0.0796,
+  "model_architecture": 0.0861,
+  "external_screen": 0.0192
  }
 }

@@ -1,71 +1,123 @@
 {
- "swept_at": "2026-09-08T12:26:34+00:00",
- "symbols": 4,
- "symbol_chart_pairs": 5,
+ "swept_at": "2026-09-12T09:42:31+00:00",
+ "symbols": 8,
+ "symbol_chart_pairs": 17,
  "charts_swept": {
-  "H1": 4,
+  "D1": 6,
+  "H1": 5,
+  "H4": 5,
   "M15": 1
  },
  "off_chart_by_family": {
+  "clock_transition:not-on-D1 (clock_transition runs on M1/M5/M15/M30/H1 only -- the whole mechanism is ONE named stamp-hour -- a fix, a settlement, a handoff, a rollover -- and it already refuses a stamp hour the bars do not carry; declaring the domain says so before the sweep spends a pass discovering it on every symbol)": 6,
+  "clock_transition:not-on-H4 (clock_transition runs on M1/M5/M15/M30/H1 only -- the whole mechanism is ONE named stamp-hour -- a fix, a settlement, a handoff, a rollover -- and it already refuses a stamp hour the bars do not carry; declaring the domain says so before the sweep spends a pass discovering it on every symbol)": 5,
   "correlation_regime:not-on-M15 (correlation_regime runs on H1/H4/D1 only -- same bar-for-bar join as relative_value: a correlation BREAKDOWN measured on M1 bars across instruments with different quoting hours is a measurement of the quoting hours)": 1,
   "cross_asset_residual:not-on-M15 (cross_asset_residual runs on H1/H4/D1 only -- projects out several factor instruments bar for bar; below the hour the factor betas are biased toward zero by non-synchronous quoting and the 'unexplained' residual is mostly the asynchrony. The same reason keeps the eight-frame factor basket off the fine charts)": 1,
-  "lvc_asia_london:not-on-H1 (lvc_asia_london runs on M5 only -- a source-faithful reproduction of a public EA whose defaults are pinned to a named blob and whose windows are M5-bar counts (recent_extreme_bars=3 is fifteen minutes). Run on another chart it is no longer the thing it reproduces, and the ablation it exists to settle would be answered about a different strategy)": 4,
+  "execution_state:not-on-D1 (execution_state runs on M1/M5/M15/M30/H1 only -- the surface it reads is published by (weekday, STAMP HOUR), so a bar spanning four hours or a day cannot be placed in one of its buckets -- the family would return [] on every symbol there and be filed as a data gap rather than as an inexpressible claim)": 6,
+  "execution_state:not-on-H4 (execution_state runs on M1/M5/M15/M30/H1 only -- the surface it reads is published by (weekday, STAMP HOUR), so a bar spanning four hours or a day cannot be placed in one of its buckets -- the family would return [] on every symbol there and be filed as a data gap rather than as an inexpressible claim)": 5,
+  "fx_fixing_reversal:not-on-D1 (fx_fixing_reversal runs on M1/M5/M15/M30/H1 only -- the claim is about the hour containing the 16:00 London fix; a four-hour or daily bar cannot locate a fix, and the pre-fix window it measures is minutes to an hour wide)": 6,
+  "fx_fixing_reversal:not-on-H4 (fx_fixing_reversal runs on M1/M5/M15/M30/H1 only -- the claim is about the hour containing the 16:00 London fix; a four-hour or daily bar cannot locate a fix, and the pre-fix window it measures is minutes to an hour wide)": 5,
+  "generic:not-on-D1 (generic runs on M1/M5/M15/M30/H1 only -- its CONTEXT vocabulary is broker-hour session windows (asia/london/new_york/overlap); on a four-hour bar those masks resolve to two or three stamps a day and on a daily bar to none at all, so a coordinate naming a session would be tested somewhere else entirely. The OUTPUT horizons ('1h', '4h', 'daily') are converted to the chart's own bars by `family_generic._hold_bars`, so they mean the same market time on every chart here)": 6,
+  "generic:not-on-H4 (generic runs on M1/M5/M15/M30/H1 only -- its CONTEXT vocabulary is broker-hour session windows (asia/london/new_york/overlap); on a four-hour bar those masks resolve to two or three stamps a day and on a daily bar to none at all, so a coordinate naming a session would be tested somewhere else entirely. The OUTPUT horizons ('1h', '4h', 'daily') are converted to the chart's own bars by `family_generic._hold_bars`, so they mean the same market time on every chart here)": 5,
+  "hedging_demand_close:not-on-D1 (hedging_demand_close runs on M1/M5/M15/M30/H1 only -- fires in the institutional closing HOUR (close_hour, a broker stamp-hour); a chart whose bars span four hours or a day cannot carry that hour, so the family would return [] on every symbol and be filed as a data gap rather than as an inexpressible claim)": 6,
+  "hedging_demand_close:not-on-H4 (hedging_demand_close runs on M1/M5/M15/M30/H1 only -- fires in the institutional closing HOUR (close_hour, a broker stamp-hour); a chart whose bars span four hours or a day cannot carry that hour, so the family would return [] on every symbol and be filed as a data gap rather than as an inexpressible claim)": 5,
+  "lvc_asia_london:not-on-D1 (lvc_asia_london runs on M5 only -- a source-faithful reproduction of a public EA whose defaults are pinned to a named blob and whose windows are M5-bar counts (recent_extreme_bars=3 is fifteen minutes). Run on another chart it is no longer the thing it reproduces, and the ablation it exists to settle would be answered about a different strategy)": 6,
+  "lvc_asia_london:not-on-H1 (lvc_asia_london runs on M5 only -- a source-faithful reproduction of a public EA whose defaults are pinned to a named blob and whose windows are M5-bar counts (recent_extreme_bars=3 is fifteen minutes). Run on another chart it is no longer the thing it reproduces, and the ablation it exists to settle would be answered about a different strategy)": 5,
+  "lvc_asia_london:not-on-H4 (lvc_asia_london runs on M5 only -- a source-faithful reproduction of a public EA whose defaults are pinned to a named blob and whose windows are M5-bar counts (recent_extreme_bars=3 is fifteen minutes). Run on another chart it is no longer the thing it reproduces, and the ablation it exists to settle would be answered about a different strategy)": 5,
   "lvc_asia_london:not-on-M15 (lvc_asia_london runs on M5 only -- a source-faithful reproduction of a public EA whose defaults are pinned to a named blob and whose windows are M5-bar counts (recent_extreme_bars=3 is fifteen minutes). Run on another chart it is no longer the thing it reproduces, and the ablation it exists to settle would be answered about a different strategy)": 1,
   "macro_conditional:not-on-M15 (macro_conditional runs on H1/H4/D1 only -- the conditioning variable is a DAILY FRED print, lagged a publication day and forward-filled; emitting a decision on every M1 bar asserts 1,440 independent decisions a day from a number that moves once. Below the hour this multiplies cells without adding one bit of information, which is the definition of a meaningless cell)": 1,
+  "opening_range:not-on-D1 (opening_range runs on M1/M5/M15/M30/H1 only -- the range forms in the first bars after ONE named stamp-hour (open_hour, the cash open); a four-hour bar stamped 0/4/8/12/16/20 carries stamp 10 on no day and a daily bar carries no hour at all, so the family would return [] on every symbol there and be filed as a data gap rather than as an inexpressible claim)": 6,
+  "opening_range:not-on-H4 (opening_range runs on M1/M5/M15/M30/H1 only -- the range forms in the first bars after ONE named stamp-hour (open_hour, the cash open); a four-hour bar stamped 0/4/8/12/16/20 carries stamp 10 on no day and a daily bar carries no hour at all, so the family would return [] on every symbol there and be filed as a data gap rather than as an inexpressible claim)": 5,
   "pca_residual:not-on-M15 (pca_residual runs on H1/H4/D1 only -- extracts the universe's latent factors from a correlation matrix of factor instruments; at sub-hourly sampling that matrix is dominated by asynchronous quoting, and a Marchenko-Pastur cut on a noise structure that is not sampling noise keeps the wrong eigenvalues)": 1,
-  "relative_value:not-on-M15 (relative_value runs on H1/H4/D1 only -- joins this instrument to a peer BAR FOR BAR. Below the hour that join measures non-synchronous trading rather than a common factor -- an equity CFD prints only in its cash session while an FX cross prints around the clock -- so the inner join collapses and the residual is an artifact of quoting hours (the Scholes-Williams problem))": 1
+  "relative_value:not-on-M15 (relative_value runs on H1/H4/D1 only -- joins this instrument to a peer BAR FOR BAR. Below the hour that join measures non-synchronous trading rather than a common factor -- an equity CFD prints only in its cash session while an FX cross prints around the clock -- so the inner join collapses and the residual is an artifact of quoting hours (the Scholes-Williams problem))": 1,
+  "session_handoff:not-on-D1 (session_handoff runs on M1/M5/M15/M30/H1 only -- reads one session's first bars and trades a later session's named hour; both ends of the claim are stamp-hours, which a bar spanning four hours or a day does not resolve)": 6,
+  "session_handoff:not-on-H4 (session_handoff runs on M1/M5/M15/M30/H1 only -- reads one session's first bars and trades a later session's named hour; both ends of the claim are stamp-hours, which a bar spanning four hours or a day does not resolve)": 5
  },
  "off_chart_note": "families DECLARED inexpressible on a chart (families_orthogonal.FAMILY_TIMEFRAMES), with the reason. Kept apart from input_gaps on purpose: a session-hour family on a daily bar returns [] for a reason that is not a missing feed, and folding the two together is how absence reads as a clean verdict. Nothing here is a gate -- a cell that runs faces the identical ten.",
  "families_ran": {
-  "correlation_regime": 4,
-  "cross_asset_residual": 4,
-  "drawdown_conditional": 5,
-  "event_reaction": 1,
-  "fx_fixing_reversal": 5,
-  "liquidity_gamma_reversal": 5,
-  "macro_conditional": 4,
-  "overnight_gap_decay": 5,
-  "pca_residual": 4,
-  "relative_value": 4,
-  "spread_state": 5,
-  "turn_of_month": 5,
-  "vol_mean_reversion": 5,
-  "vol_transition": 5,
-  "generic": 4,
-  "hedging_demand_close": 4,
-  "multi_speed_trend": 4,
-  "session_handoff": 3,
-  "regime_transition": 2
+  "correlation_regime": 14,
+  "drawdown_conditional": 17,
+  "jump": 17,
+  "liquidity_gamma_reversal": 14,
+  "macro_conditional": 16,
+  "multi_speed_trend": 15,
+  "overnight_gap_decay": 17,
+  "relative_value": 14,
+  "turn_of_month": 17,
+  "vol_mean_reversion": 17,
+  "vol_transition": 17,
+  "cross_asset_residual": 15,
+  "fx_fixing_reversal": 6,
+  "opening_range": 5,
+  "orderflow_imbalance": 7,
+  "pca_residual": 14,
+  "spread_state": 16,
+  "regime_transition": 11,
+  "execution_state": 4,
+  "generic": 5,
+  "hedging_demand_close": 5,
+  "session_handoff": 4,
+  "liquidity_regime": 3,
+  "carry": 7,
+  "cot_positioning": 1
  },
  "input_gaps": {
-  "calendar_month:needs-source-evidence (active_month, side_bias)": 5,
-  "carry:no-signals (contract/swap terms)": 5,
-  "clock_transition:no-signals (price only)": 5,
-  "cot_positioning:no-signals (COT net positioning)": 5,
-  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 5,
-  "ensemble:not-sourced-here (its members are named on the candidate by weak_signal_compiler, which chooses them from the gauntlet's own failed-on-power cells; a sweep that enumerated ensembles over bars would be inventing member lists, and the family refuses without a runner for exactly that reason)": 5,
-  "formula:not-sourced-here (the expression is named by alpha_evolution's genetic search, which charges every expression it tried; a sweep that enumerated expressions here would be a second uncharged search over the same grammar)": 5,
+  "calendar_month:needs-source-evidence (active_month, side_bias)": 17,
+  "carry:no-signals (contract/swap terms)": 10,
+  "cot_positioning:no-signals (COT net positioning)": 16,
+  "cross_asset_residual:no-signals (2+ factor instruments, on this cell's own chart)": 1,
+  "cross_sectional:not-sourced-here (its peer set is the whole hypothesis-lane universe on one clock, so a cell is (universe slice x horizon x mode) and NOT (family x symbol): enumerating it per symbol here would run the same ranking 86 times and charge 86 trials for one hypothesis. The runner that owns the slice supplies `peers` and charges its own grid)": 17,
+  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 17,
+  "ensemble:not-sourced-here (its members are named on the candidate by weak_signal_compiler, which chooses them from the gauntlet's own failed-on-power cells; a sweep that enumerated ensembles over bars would be inventing member lists, and the family refuses without a runner for exactly that reason)": 17,
+  "event_reaction:not-sourced-here (its events are DATED FACTS FROM OUTSIDE THE TAPE -- an insider cluster's acceptance time, an earnings date, a macro print -- produced by a miner and carrying the moment the market could first know. A sweep enumerating them over bars would be inventing events, and the one field the whole study depends on is exactly the one it cannot invent. The miner that dates them charges its own grid)": 17,
+  "formula:not-sourced-here (the expression is named by alpha_evolution's genetic search, which charges every expression it tried; a sweep that enumerated expressions here would be a second uncharged search over the same grammar)": 17,
+  "lead_lag:not-sourced-here (the driver and the lag are measured by cross_asset_graph on the information graph; a sweep that paired every symbol with every other would be an uncharged search over pairs)": 17,
+  "liquidity_regime:no-signals (spread series from the tick tape)": 14,
+  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 10,
+  "pca_residual:no-signals (4+ factor instruments on this cell's own chart (the more of the universe, the better the latent factors))": 2,
+  "regime_transition:no-signals (price only)": 6,
+  "spread_state:no-signals (unknown)": 1,
+  "style_premia:not-sourced-here (style_premia_sweep supplies the instrument's own rollover (broker_swaps) and the risk driver and charges the whole style x instrument grid itself)": 17,
+  "triangle:not-sourced-here (research/triangle_miner.closed_triangles names the three legs and the two signs from the QUOTE SET -- a triangle exists when the broker quotes all three sides, which no search discovers. MEASURED 2026-09-10: 150 closed triangles out of 636,056 triples over 86 hypothesis-lane FX pairs, so the miner charges 150 trials where a sweep pairing every symbol with every other pair would be an uncharged search four thousand times larger)": 17,
+  "clock_transition:no-signals (price only)": 6,
+  "execution_state:no-signals (the venue's spread/activity surface by weekday-hour)": 2,
   "generic:no-signals (price only)": 1,
   "hedging_demand_close:no-signals (price only)": 1,
-  "lead_lag:not-sourced-here (the driver and the lag are measured by cross_asset_graph on the information graph; a sweep that paired every symbol with every other would be an uncharged search over pairs)": 5,
-  "liquidity_regime:no-signals (spread series from the tick tape)": 5,
-  "multi_speed_trend:no-signals (price only)": 1,
-  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 5,
-  "regime_transition:no-signals (price only)": 3,
+  "multi_speed_trend:no-signals (price only)": 2,
   "session_handoff:no-signals (price only)": 2,
-  "style_premia:not-sourced-here (style_premia_sweep supplies the instrument's own rollover (broker_swaps) and the risk driver and charges the whole style x instrument grid itself)": 5,
-  "event_reaction:no-signals (an economic calendar)": 4
+  "correlation_regime:no-signals (a peer instrument, on this cell's own chart)": 2,
+  "relative_value:no-signals (a peer instrument, on this cell's own chart)": 2,
+  "opening_range:no-signals (price only)": 1,
+  "liquidity_gamma_reversal:no-signals (price only)": 3
  },
  "family_errors": {},
  "family_errors_note": "exceptions raised BY THIS DESK'S CODE while calling a family. Distinct from input_gaps, which are data the box does not have: an error here is a defect to FIX, and folding the two together is how 297 identical TypeErrors read as a missing feed.",
  "untestable_by_family": {
+  "overnight_gap_decay:untestable (30 trading days < 60 the gates need)": 1,
+  "turn_of_month:untestable (59 trading days < 60 the gates need)": 1,
   "correlation_regime:untestable (47 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (52 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (49 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (39 trading days < 60 the gates need)": 1,
+  "cross_asset_residual:untestable (33 trading days < 60 the gates need)": 1,
+  "vol_mean_reversion:untestable (30 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (36 trading days < 60 the gates need)": 1,
+  "spread_state:untestable (41 trading days < 60 the gates need)": 1,
+  "vol_mean_reversion:untestable (43 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (37 trading days < 60 the gates need)": 1,
   "multi_speed_trend:untestable (57 trading days < 60 the gates need)": 1,
-  "regime_transition:untestable (58 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (57 trading days < 60 the gates need)": 1
+  "correlation_regime:untestable (29 trading days < 60 the gates need)": 1,
+  "relative_value:untestable (52 trading days < 60 the gates need)": 1,
+  "vol_mean_reversion:untestable (36 trading days < 60 the gates need)": 1,
+  "jump:untestable (51 trading days < 60 the gates need)": 1,
+  "vol_transition:untestable (32 trading days < 60 the gates need)": 1,
+  "liquidity_regime:untestable (14 trading days < 60 the gates need)": 1,
+  "orderflow_imbalance:untestable (16 trading days < 60 the gates need)": 1,
+  "spread_state:untestable (35 trading days < 60 the gates need)": 1,
+  "regime_transition:untestable (46 trading days < 60 the gates need)": 1,
+  "jump:untestable (40 trading days < 60 the gates need)": 1,
+  "vol_transition:untestable (35 trading days < 60 the gates need)": 1,
+  "cot_positioning:untestable (42 trading days < 60 the gates need)": 1,
+  "vol_mean_reversion:untestable (41 trading days < 60 the gates need)": 1
  },
  "untestable_note": "cells that traded but on fewer than 60 distinct days -- the gauntlet cannot judge them (CPCV purge+embargo and walk-forward folds need the observations), so proposing them wastes the cycle. This is a TESTABILITY route, not a quality screen: nothing here rejects a cell for being weak.",
  "hypotheses": [
@@ -75,19 +127,19 @@
    "timeframe": "H1",
    "params": {
     "factor_symbols": [
+     "BCHUSD",
      "ETHUSD",
-     "BTCUSD",
-     "EURCHF",
-     "XAUUSD",
-     "AUDHUF",
-     "AUS200",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
      "XNGUSD",
      "WHEAT"
     ]
    },
-   "n": 220,
-   "exp_r": 0.0846,
-   "max_dd_r": -28.53,
+   "n": 211,
+   "exp_r": 0.263,
+   "max_dd_r": -19.62,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments, on this cell's own chart"
@@ -118,6 +170,18 @@
   },
   {
    "symbol": "ADAJPY",
+   "family": "jump",
+   "timeframe": "H1",
+   "params": {},
+   "n": 139,
+   "exp_r": 0.183,
+   "max_dd_r": -3.86,
+   "source": "orthogonal_sweep:jump",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADAJPY",
    "family": "macro_conditional",
    "timeframe": "H1",
    "params": {
@@ -131,6 +195,20 @@
    "source": "orthogonal_sweep:macro_conditional",
    "mechanism_status": "NAMED",
    "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ADAJPY",
+   "family": "relative_value",
+   "timeframe": "H1",
+   "params": {
+    "peer_symbol": "ADAUSD"
+   },
+   "n": 1021,
+   "exp_r": 0.0226,
+   "max_dd_r": -13.7,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument, on this cell's own chart"
   },
   {
    "symbol": "ADAJPY",
@@ -170,23 +248,51 @@
   },
   {
    "symbol": "AUDCAD",
+   "family": "multi_speed_trend",
+   "timeframe": "D1",
+   "params": {
+    "timeframe": "D1"
+   },
+   "n": 93,
+   "exp_r": 0.0035,
+   "max_dd_r": -6.23,
+   "source": "orthogonal_sweep:multi_speed_trend",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "spread_state",
+   "timeframe": "D1",
+   "params": {
+    "timeframe": "D1"
+   },
+   "n": 113,
+   "exp_r": 0.1829,
+   "max_dd_r": -2.34,
+   "source": "orthogonal_sweep:spread_state",
+   "mechanism_status": "NAMED",
+   "mechanism_note": ""
+  },
+  {
+   "symbol": "AUDCAD",
    "family": "cross_asset_residual",
    "timeframe": "H1",
    "params": {
     "factor_symbols": [
+     "BCHUSD",
      "ETHUSD",
-     "BTCUSD",
-     "EURCHF",
-     "XAUUSD",
-     "AUDHUF",
-     "AUS200",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
      "XNGUSD",
      "WHEAT"
     ]
    },
-   "n": 575,
-   "exp_r": 0.0932,
-   "max_dd_r": -35.81,
+   "n": 633,
+   "exp_r": 0.0604,
+   "max_dd_r": -30.35,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments, on this cell's own chart"
@@ -196,10 +302,45 @@
    "family": "overnight_gap_decay",
    "timeframe": "H1",
    "params": {},
-   "n": 397,
-   "exp_r": 0.0551,
-   "max_dd_r": -8.37,
+   "n": 438,
+   "exp_r": 0.2048,
+   "max_dd_r": -2.05,
    "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "pca_residual",
+   "timeframe": "H1",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 268,
+   "exp_r": 0.0558,
+   "max_dd_r": -20.51,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments on this cell's own chart (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "session_handoff",
+   "timeframe": "H1",
+   "params": {},
+   "n": 639,
+   "exp_r": 0.0149,
+   "max_dd_r": -39.44,
+   "source": "orthogonal_sweep:session_handoff",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
@@ -208,12 +349,350 @@
    "family": "spread_state",
    "timeframe": "H1",
    "params": {},
-   "n": 967,
-   "exp_r": 0.0377,
-   "max_dd_r": -17.42,
+   "n": 644,
+   "exp_r": 0.2547,
+   "max_dd_r": -8.66,
    "source": "orthogonal_sweep:spread_state",
    "mechanism_status": "NAMED",
    "mechanism_note": ""
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "cross_asset_residual",
+   "timeframe": "H4",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ],
+    "timeframe": "H4"
+   },
+   "n": 176,
+   "exp_r": 0.0939,
+   "max_dd_r": -20.82,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments, on this cell's own chart"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "pca_residual",
+   "timeframe": "H4",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ],
+    "timeframe": "H4"
+   },
+   "n": 74,
+   "exp_r": 0.206,
+   "max_dd_r": -6.04,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments on this cell's own chart (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "spread_state",
+   "timeframe": "H4",
+   "params": {
+    "timeframe": "H4"
+   },
+   "n": 686,
+   "exp_r": 0.0232,
+   "max_dd_r": -14.09,
+   "source": "orthogonal_sweep:spread_state",
+   "mechanism_status": "NAMED",
+   "mechanism_note": ""
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "liquidity_gamma_reversal",
+   "timeframe": "M15",
+   "params": {
+    "timeframe": "M15"
+   },
+   "n": 61,
+   "exp_r": 0.324,
+   "max_dd_r": -2.3,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "overnight_gap_decay",
+   "timeframe": "M15",
+   "params": {
+    "timeframe": "M15"
+   },
+   "n": 480,
+   "exp_r": 0.4201,
+   "max_dd_r": -31.59,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "spread_state",
+   "timeframe": "M15",
+   "params": {
+    "timeframe": "M15"
+   },
+   "n": 1171,
+   "exp_r": 0.2839,
+   "max_dd_r": -8.74,
+   "source": "orthogonal_sweep:spread_state",
+   "mechanism_status": "NAMED",
+   "mechanism_note": ""
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "multi_speed_trend",
+   "timeframe": "D1",
+   "params": {
+    "timeframe": "D1"
+   },
+   "n": 91,
+   "exp_r": 0.0458,
+   "max_dd_r": -2.47,
+   "source": "orthogonal_sweep:multi_speed_trend",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "turn_of_month",
+   "timeframe": "D1",
+   "params": {
+    "ttl_bars": 2,
+    "timeframe": "D1"
+   },
+   "n": 144,
+   "exp_r": 0.0248,
+   "max_dd_r": -6.08,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "drawdown_conditional",
+   "timeframe": "H1",
+   "params": {},
+   "n": 157,
+   "exp_r": 0.1023,
+   "max_dd_r": -8.52,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "fx_fixing_reversal",
+   "timeframe": "H1",
+   "params": {},
+   "n": 1199,
+   "exp_r": 0.0133,
+   "max_dd_r": -32.74,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "hedging_demand_close",
+   "timeframe": "H1",
+   "params": {},
+   "n": 1028,
+   "exp_r": 0.0326,
+   "max_dd_r": -30.07,
+   "source": "orthogonal_sweep:hedging_demand_close",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "jump",
+   "timeframe": "H1",
+   "params": {},
+   "n": 421,
+   "exp_r": 0.0172,
+   "max_dd_r": -19.65,
+   "source": "orthogonal_sweep:jump",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "macro_conditional",
+   "timeframe": "H1",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 963,
+   "exp_r": 0.0254,
+   "max_dd_r": -36.37,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "multi_speed_trend",
+   "timeframe": "H1",
+   "params": {},
+   "n": 272,
+   "exp_r": 0.1264,
+   "max_dd_r": -20.55,
+   "source": "orthogonal_sweep:multi_speed_trend",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "overnight_gap_decay",
+   "timeframe": "H1",
+   "params": {},
+   "n": 63,
+   "exp_r": 0.0721,
+   "max_dd_r": -8.32,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "spread_state",
+   "timeframe": "H1",
+   "params": {},
+   "n": 6039,
+   "exp_r": 0.0146,
+   "max_dd_r": -45.28,
+   "source": "orthogonal_sweep:spread_state",
+   "mechanism_status": "NAMED",
+   "mechanism_note": ""
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "correlation_regime",
+   "timeframe": "H4",
+   "params": {
+    "peer_symbol": "AUDUSD",
+    "timeframe": "H4"
+   },
+   "n": 90,
+   "exp_r": 0.1487,
+   "max_dd_r": -5.18,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument, on this cell's own chart"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "cross_asset_residual",
+   "timeframe": "H4",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ],
+    "timeframe": "H4"
+   },
+   "n": 164,
+   "exp_r": 0.1117,
+   "max_dd_r": -13.9,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments, on this cell's own chart"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "multi_speed_trend",
+   "timeframe": "H4",
+   "params": {
+    "timeframe": "H4"
+   },
+   "n": 109,
+   "exp_r": 0.0998,
+   "max_dd_r": -8.94,
+   "source": "orthogonal_sweep:multi_speed_trend",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "pca_residual",
+   "timeframe": "H4",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ],
+    "timeframe": "H4"
+   },
+   "n": 78,
+   "exp_r": 0.0972,
+   "max_dd_r": -6.84,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments on this cell's own chart (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "spread_state",
+   "timeframe": "H4",
+   "params": {
+    "timeframe": "H4"
+   },
+   "n": 132,
+   "exp_r": 0.0269,
+   "max_dd_r": -8.15,
+   "source": "orthogonal_sweep:spread_state",
+   "mechanism_status": "NAMED",
+   "mechanism_note": ""
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "multi_speed_trend",
+   "timeframe": "D1",
+   "params": {
+    "timeframe": "D1"
+   },
+   "n": 90,
+   "exp_r": 0.0231,
+   "max_dd_r": -4.55,
+   "source": "orthogonal_sweep:multi_speed_trend",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
   }
  ],
  "partial": true

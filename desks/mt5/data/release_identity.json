@@ -1,9 +1,9 @@
 {
  "ok": false,
- "running_sha": "a87b01670c107976c86de885d6b3615f200daa9e",
+ "running_sha": "b621a8b82b37eb636cc5148f2c3e97b0e37d0c87",
  "release_sha": "9ca04f7eac627e8a8bdeac7eb5a03a03d9bb46b4",
- "reason": "running a87b01670c10 carries 110 path(s) the sealed release 9ca04f7eac62 never named: ['.gitignore', 'desks/mt5/frontier_intel/data/frontier_queue.jsonl', 'desks/mt5/macro/sources.py', 'desks/mt5/moat/capture_watch.py', 'desks/mt5/mt5desk/decision_core.py', 'desks/mt5/mt5desk/families.py']; money path drifted on disk: ['desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/decision_core.py', 'desks/mt5/mt5desk/families.py', 'desks/mt5/research/pf_allocator.py', 'desks/mt5/research/promoter.py']; the signed judge manifest on disk is not the one the release sealed",
- "age_h": 13.689,
+ "reason": "running b621a8b82b37 carries 111 path(s) the sealed release 9ca04f7eac62 never named: ['.gitignore', 'desks/mt5/frontier_intel/data/frontier_queue.jsonl', 'desks/mt5/macro/sources.py', 'desks/mt5/moat/capture_watch.py', 'desks/mt5/mt5desk/decision_core.py', 'desks/mt5/mt5desk/families.py']; money path drifted on disk: ['desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/decision_core.py', 'desks/mt5/mt5desk/families.py', 'desks/mt5/research/pf_allocator.py', 'desks/mt5/research/promoter.py']; the signed judge manifest on disk is not the one the release sealed",
+ "age_h": 15.252,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -105,6 +105,7 @@
   "pyproject.toml",
   "scripts/breadth_expander.py",
   "scripts/build_zentech_state.py",
+  "scripts/check_immutable_evaluator.py",
   "scripts/collector_author.py",
   "scripts/hypothesis_generator.py",
   "scripts/kimi_hunter.py",
@@ -129,7 +130,7 @@
   "desks/mt5/research/promoter.py"
  ],
  "report": [],
- "at": "2026-09-12T07:23:18+00:00",
+ "at": "2026-09-12T08:57:05+00:00",
  "allows_new_risk": false,
  "verdict": "REFUSED"
 }

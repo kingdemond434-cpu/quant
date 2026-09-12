@@ -1,5 +1,5 @@
 {
- "at": "2026-09-12T07:19:53.337937+00:00",
+ "at": "2026-09-12T09:50:31.149077+00:00",
  "min_source_n": 12,
  "min_tier_sources": 4,
  "note": "Tier priors are a starting ordering; both levels re-fit from measured verification outcomes written by attribution.py. Speed is reported SEPARATELY from reliability -- a reliable source that arrives after the move has an unpriced fraction of zero and is worth nothing to trade on.",

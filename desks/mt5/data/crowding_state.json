@@ -1,16 +1,16 @@
 {
- "updated": "2026-09-12T06:26:05.642674+00:00",
+ "updated": "2026-09-12T09:26:04.823517+00:00",
  "latest": {
-  "ts": "2026-09-12T06:26:05.616275+00:00",
-  "query": "fakeout breakout trading",
-  "mechanism": "breakout_fakeout",
+  "ts": "2026-09-12T09:26:04.822884+00:00",
+  "query": "cross asset momentum lead lag",
+  "mechanism": "cross_asset",
   "github": {
    "count": 1,
    "top_stars": [
     0
    ],
    "top_names": [
-    "MrMaca11an/fakeout-radar"
+    "EzioAuditore027/High-Frequency-Limit-Order-Book-Predictive-Model"
    ]
   },
   "reddit": {
@@ -33,5 +33,5 @@
   "edge_publicity": "LOW",
   "expected_decay": "NORMAL"
  },
- "history_len": 76
+ "history_len": 79
 }

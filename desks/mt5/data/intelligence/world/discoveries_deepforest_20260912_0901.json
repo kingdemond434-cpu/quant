@@ -1,0 +1,30 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "CBS Statline",
+  "url": "https://opendata.cbs.nl/statline/",
+  "published": "2026-09-12T09:00:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "nl",
+  "language": "nl",
+  "endpoints": [
+   "https://opendata.cbs.nl/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "72a0dc1bcc9dd75142a1",
+  "host": "opendata.cbs.nl",
+  "ground": "CBS StatLine",
+  "region": "nl",
+  "cluster": "eu",
+  "dataset_class": "macro_vintages",
+  "available_time": "2026-09-12T09:00:38+00:00",
+  "ingested_time": "2026-09-12T09:00:38+00:00",
+  "source_hash": "72a0dc1bcc9dd75142a1",
+  "claims": [],
+  "n_claims": 0
+ }
+]

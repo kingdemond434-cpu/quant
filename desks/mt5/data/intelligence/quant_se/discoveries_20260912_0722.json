@@ -1,0 +1,461 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How would one calculate yield to first call for a debt security which is currently and always callable?",
+  "url": "https://quant.stackexchange.com/questions/79113/how-would-one-calculate-yield-to-first-call-for-a-debt-security-which-is-current",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "fixed-income",
+   "yield",
+   "callable-bonds",
+   "debt"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "In-sample volatility measurement",
+  "url": "https://quant.stackexchange.com/questions/45682/in-sample-volatility-measurement",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 3,
+  "tags": [
+   "volatility",
+   "garch",
+   "standard-deviation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Vega P&amp;L Attribution",
+  "url": "https://quant.stackexchange.com/questions/85839/vega-pl-attribution",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "pnl"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does FICC pay the seller out of its own pocket before it gets paid by the buyer?",
+  "url": "https://quant.stackexchange.com/questions/85838/does-ficc-pay-the-seller-out-of-its-own-pocket-before-it-gets-paid-by-the-buyer",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "fixed-income",
+   "market-microstructure",
+   "treasury",
+   "settlement"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "GARCH(1,1)-M MLE optimization with fmincon in R",
+  "url": "https://quant.stackexchange.com/questions/51645/garch1-1-m-mle-optimization-with-fmincon-in-r",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 8,
+  "tags": [
+   "options",
+   "programming",
+   "time-series",
+   "garch",
+   "estimation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Mathematical derivation of FRTB SA framework for market risk capital requirements",
+  "url": "https://quant.stackexchange.com/questions/85837/mathematical-derivation-of-frtb-sa-framework-for-market-risk-capital-requirement",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "risk",
+   "risk-management",
+   "basel",
+   "market-risk",
+   "expected-shortfall"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Is the older London Call (privilege), different from European Call?",
+  "url": "https://quant.stackexchange.com/questions/85832/is-the-older-london-call-privilege-different-from-european-call",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "call",
+   "european",
+   "american"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Mid price vs micro price for IV calculation",
+  "url": "https://quant.stackexchange.com/questions/85835/mid-price-vs-micro-price-for-iv-calculation",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Credit loss data (discounted)",
+  "url": "https://quant.stackexchange.com/questions/70041/credit-loss-data-discounted",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 1,
+  "tags": [
+   "credit-risk",
+   "recovery"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Pricing curve for corporate bonds from EU, US, and GB?",
+  "url": "https://quant.stackexchange.com/questions/85834/pricing-curve-for-corporate-bonds-from-eu-us-and-gb",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "bond",
+   "yield-curve",
+   "libor",
+   "rfr"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "not understanding ATR calculation",
+  "url": "https://quant.stackexchange.com/questions/79174/not-understanding-atr-calculation",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": -1,
+  "tags": [
+   "risk-management",
+   "position-sizing",
+   "atr"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Dupire (Local Vol with Imp Vol)",
+  "url": "https://quant.stackexchange.com/questions/61661/dupire-local-vol-with-imp-vol",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 3,
+  "tags": [
+   "volatility",
+   "volatility-surface",
+   "implied",
+   "local"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Backtesting: what happens to real-executed order if mine fills instead?",
+  "url": "https://quant.stackexchange.com/questions/37080/backtesting-what-happens-to-real-executed-order-if-mine-fills-instead",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 5,
+  "tags": [
+   "quant-trading-strategies",
+   "backtesting",
+   "strategy"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How is anything bespoke priced and traded?",
+  "url": "https://quant.stackexchange.com/questions/85824/how-is-anything-bespoke-priced-and-traded",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "options"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to ascertain/establish certainty of a portfolio rebalancing strategy?",
+  "url": "https://quant.stackexchange.com/questions/39265/how-to-ascertain-establish-certainty-of-a-portfolio-rebalancing-strategy",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 2,
+  "tags": [
+   "portfolio-optimization",
+   "portfolio",
+   "strategy",
+   "rebalancing"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "What to predict in delta-gamma hedging?",
+  "url": "https://quant.stackexchange.com/questions/79069/what-to-predict-in-delta-gamma-hedging",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "delta-hedging",
+   "delta",
+   "gamma"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Reconstructing the CRR model knowing put and call prices",
+  "url": "https://quant.stackexchange.com/questions/76463/reconstructing-the-crr-model-knowing-put-and-call-prices",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "european-options"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Using options theta and delta for calculating leverage over underlying?",
+  "url": "https://quant.stackexchange.com/questions/80328/using-options-theta-and-delta-for-calculating-leverage-over-underlying",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "greeks",
+   "delta",
+   "leverage",
+   "theta"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Constructing Factor Mimicking Portfolios",
+  "url": "https://quant.stackexchange.com/questions/83891/constructing-factor-mimicking-portfolios",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 2,
+  "tags": [
+   "factor-models",
+   "factor-investing"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Extract yield volatility from bond option prices",
+  "url": "https://quant.stackexchange.com/questions/80690/extract-yield-volatility-from-bond-option-prices",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "volatility",
+   "bond"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Adjust a quality measure (Sortino Ratio) to account for Autocorrelation in Trade Returns",
+  "url": "https://quant.stackexchange.com/questions/85823/adjust-a-quality-measure-sortino-ratio-to-account-for-autocorrelation-in-trade",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "trading",
+   "return",
+   "auto-correlation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Hedging exotic options",
+  "url": "https://quant.stackexchange.com/questions/77751/hedging-exotic-options",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 1,
+  "tags": [
+   "options",
+   "option-pricing",
+   "hedging",
+   "delta-hedging",
+   "asian-option"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Interpolation of term structure of implied volatility",
+  "url": "https://quant.stackexchange.com/questions/79045/interpolation-of-term-structure-of-implied-volatility",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "implied-volatility",
+   "volatility-surface",
+   "interpolation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Were internet related companies at the height of the dot-com bubble really overvalued from a long term persepective?",
+  "url": "https://quant.stackexchange.com/questions/85287/were-internet-related-companies-at-the-height-of-the-dot-com-bubble-really-overv",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 2,
+  "tags": [
+   "equities",
+   "time-series",
+   "returns",
+   "market-data",
+   "historical-data"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Plotting Treasury Futures implied repo over time: what should the time series look like?",
+  "url": "https://quant.stackexchange.com/questions/85576/plotting-treasury-futures-implied-repo-over-time-what-should-the-time-series-lo",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "fixed-income",
+   "bond-futures",
+   "treasuries",
+   "basis"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "what is the best academic dataset for returns of European stocks?",
+  "url": "https://quant.stackexchange.com/questions/81358/what-is-the-best-academic-dataset-for-returns-of-european-stocks",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "data",
+   "historical-data",
+   "database"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Analytical formula for discounted exposure of a European Put on a stock in Real-World measure",
+  "url": "https://quant.stackexchange.com/questions/76175/analytical-formula-for-discounted-exposure-of-a-european-put-on-a-stock-in-real",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 1,
+  "tags": [
+   "black-scholes",
+   "put",
+   "expected-value",
+   "european",
+   "real-world-measure"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Fedwire Security Service - where securities are stored?",
+  "url": "https://quant.stackexchange.com/questions/85829/fedwire-security-service-where-securities-are-stored",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 1,
+  "tags": [
+   "banks",
+   "central-banking",
+   "settlement"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to prove with put-call parity: return multiplier ratio of ILCD (index linked certificate deposit ) &lt; 1",
+  "url": "https://quant.stackexchange.com/questions/70664/how-to-prove-with-put-call-parity-return-multiplier-ratio-of-ilcd-index-linked",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 0,
+  "tags": [
+   "put-call-parity"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Where to get historical intraday stock data?",
+  "url": "https://quant.stackexchange.com/questions/51043/where-to-get-historical-intraday-stock-data",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-12T07:29:06+00:00",
+  "score": 12,
+  "tags": [
+   "equities",
+   "data",
+   "intraday"
+  ]
+ }
+]
