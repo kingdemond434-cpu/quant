@@ -48,10 +48,39 @@ IMMUTABLE: tuple[str, ...] = (
 
 
 def _hashes() -> dict[str, str]:
+    """SHA-256 of each guarded file, over LINE-ENDING-NORMALISED bytes.
+
+    WHY NORMALISED, measured 2026-09-12 on the Windows trading box. A signature is a claim about
+    CONTENT. Hashing raw bytes made it a claim about content AND about how the checkout happened
+    to write newlines, and those two came apart:
+
+        working tree  desks/mt5/research/promoter.py  ->  766a1119abcd663a   (CRLF)
+        HEAD blob     desks/mt5/research/promoter.py  ->  8e1f39e3f4a6905f   (LF)
+
+    Identical code, byte-different files. `run_law_gate` judges HEAD in a DETACHED WORKTREE
+    whenever the tree is dirty -- and this box's tree is permanently dirty, because live state
+    files (gateway_state.json and friends) are tracked and rewritten every pass. So the fence
+    always hashed the LF checkout while `--sign` always hashed the CRLF working copy, and the two
+    could never agree. The fence reported a BREACH on a file nobody had touched, on every run, and
+    since a failing law fence refuses the push, the trading box could not reach origin at all.
+
+    That is the worst shape a constitutional fence can take: permanently red, red about nothing,
+    and blocking. A fence that cannot be satisfied by correct code stops being read as evidence
+    and starts being read as an obstacle -- and then the day it fires on a REAL tamper, it looks
+    exactly like the eleven days it fired on newlines.
+
+    Normalising CRLF -> LF makes the hash mean what it always claimed to mean. It does not weaken
+    the guard: any change to a byte that is not a carriage return still changes the digest, so
+    every tamper this caught before it still catches.
+    """
     out = {}
     for rel in IMMUTABLE:
         p = ROOT / rel
-        out[rel] = hashlib.sha256(p.read_bytes()).hexdigest()[:16] if p.exists() else "<absent>"
+        if not p.exists():
+            out[rel] = "<absent>"
+            continue
+        raw = p.read_bytes().replace(b"\r\n", b"\n")
+        out[rel] = hashlib.sha256(raw).hexdigest()[:16]
     return out
 
 
