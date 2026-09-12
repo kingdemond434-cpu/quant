@@ -285,10 +285,28 @@ def test_the_books_fraction_reaches_the_venue_unshrunk(monkeypatch) -> None:
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.017, None) == pytest.approx(0.75)
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.5, None, from_book=True) == pytest.approx(5.0)
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.04, True, from_book=True) == pytest.approx(2.0)
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None, from_book=True) == 0.0
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, None, None, from_book=True) == 0.0
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, "x", None, from_book=True) == 0.0
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, -0.01, None, from_book=True) == 0.0
+    # THE PRINCIPAL REVERSED THIS ON 2026-09-12: "all sleeves must trade at least 0.01 lots
+    # overriding the risk per trade cuz thats broker minimum no matter what". A rostered sleeve
+    # the allocator zeroed used to return 0.0 and be skipped at three gateway sites; it now
+    # trades the symbol's own venue minimum. The allocator's zero still travels in the sizing
+    # basis, so the record still says the optimiser declined -- what changed is the lot.
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None,
+               from_book=True) == dc.venue_min_lot("EURUSD")
+    # AN UNPARSEABLE FRACTION TRADES THE MINIMUM TOO, under the same 2026-09-12 order. A
+    # missing h_i is a DATA defect rather than an allocator decision, and the two are not the
+    # same thing -- but "no matter what" covers both, and a live rostered sleeve that silently
+    # stops trading because a number was malformed is the failure the order exists to end. The
+    # distinction survives in the sizing BASIS, which says whether the allocator declined or the
+    # fraction was unreadable, so a data defect stays visible as one.
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, None, None,
+               from_book=True) == dc.venue_min_lot("EURUSD")
+    # A GARBAGE FRACTION AND A NEGATIVE ONE LAND IN THE SAME PLACE, and deliberately so: both
+    # are "this sleeve has no usable positive fraction", which is exactly the case the order
+    # covers. A negative heat is not an instruction to go short a smaller amount.
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, "x", None,
+               from_book=True) == dc.venue_min_lot("EURUSD")
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, -0.01, None,
+               from_book=True) == dc.venue_min_lot("EURUSD")
 
 
 def test_promoted_lot_end_to_end_prices_in_the_sleeves_own_units() -> None:

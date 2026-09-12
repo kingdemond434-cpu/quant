@@ -256,9 +256,25 @@ def test_a_zeroed_sleeve_is_sized_at_zero_instead_of_the_three_percent_floor() -
     assert book == {"a": 0.12, "b": 0.08, "c": 0.0}
     assert "held at zero" in why
     assert sum(book.values()) == pytest.approx(0.2), "zeros must not disturb the drift check"
-    # `promoted_lot` on the book path returns no lot at all for a zero fraction, which is the
-    # gateway's own "allocator gave this sleeve no heat; skipped" path.
-    assert dc.promoted_lot(10_000.0, 0, 5.0, "EURUSD", None, 0.0, None, from_book=True) == 0.0
+    # THE ZERO STILL HAS TO REACH `promoted_lot`, WHICH IS THE WHOLE POINT OF THIS TEST. What
+    # it does once it arrives changed on 2026-09-12: the principal's order is that a live sleeve
+    # is never skipped for being unsizeable, so a zeroed sleeve now trades the venue minimum
+    # rather than returning 0.0 to the gateway's "allocator gave this sleeve no heat; skipped".
+    #
+    # The hole this test exists to pin is NOT reopened by that. The failure was the allocator
+    # being unable to say "none" -- a zeroed sleeve vanished from the filtered book, the gateway
+    # read `from_book=False`, and `clamp_risk_frac` FLOORED it at 3%, a lot orders of magnitude
+    # larger than what the allocator asked for. `book_zeroed` still carries the zero through, and
+    # the zero still collapses the size to the smallest ticket the broker will accept. "Small"
+    # and "none" remain distinguishable; "none" now means minimum rather than nothing.
+    zeroed_lot = dc.promoted_lot(10_000.0, 0, 5.0, "EURUSD", None, 0.0, None, from_book=True)
+    assert zeroed_lot == dc.venue_min_lot("EURUSD")
+    # ON A REALISTIC STOP, so the difference is visible as a LOT and not just as a fraction.
+    # At the 5.0 stop above -- 5 whole price units on EURUSD -- fixed-fractional sizing is
+    # floor-bound at 0.01 for every fraction, so the zero and the 3% clamp land on the same lot
+    # and a comparison there would assert nothing. At a 50-pip stop they are 0.01 against 0.69.
+    assert dc.promoted_lot(10_000.0, 0, 0.0050, "EURUSD", None, 0.0, None, from_book=True)         < dc.promoted_lot(10_000.0, 0, 0.0050, "EURUSD", None, 0.03, None, from_book=True), (
+        "the zero must still be far smaller than the 3% floor it used to be rounded up to")
     # And absence changes nothing: the old answer, byte for byte.
     same, why2 = dc.book_from_allocation(0.2, {"a": 0.12, "b": 0.08}, None, certified=True,
                                          why="proof 1h old")

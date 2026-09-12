@@ -89,8 +89,23 @@ def test_the_books_fraction_reaches_the_venue_unshrunk(monkeypatch) -> None:
     # The outer per-trade envelope still holds, the fade still reduces, no heat is no lot.
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.5, None, from_book=True) == pytest.approx(5.0)
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.04, True, from_book=True) == pytest.approx(2.0)
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None, from_book=True) == 0.0
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, None, None, from_book=True) == 0.0
+    # "NO HEAT IS NO LOT" BECAME "NO HEAT IS THE SMALLEST LOT THE BROKER TAKES" (principal,
+    # 2026-09-12: "all sleeves must trade atleast 0.01 lots overriding the risk per trade cuz
+    # thats broker minimum no matter what"). What this test is actually about is UNCHANGED and is
+    # the four lines above: the book's fraction reaches the venue un-re-shrunk. The zero is still
+    # the smallest thing the desk can send, and it is still nothing like the 3% clamp floor the
+    # gateway used to fall back to -- which is the growth-governance point.
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None,
+               from_book=True) == pytest.approx(_dc.venue_min_lot("EURUSD"))
+    # A MISSING FRACTION AND AN EXPLICIT ZERO GET THE SAME ANSWER, and that is deliberate rather
+    # than sloppy. `None` here is a rostered sleeve the book has no readable number for -- an
+    # ABSENCE, not a decision, and L1.28a is why the two are worth separating in the first place.
+    # They separate in the LOG, where the basis says which one happened; they do not separate in
+    # the LOT, because the principal's order is unconditional ("no matter what") and because the
+    # answer absence gets is the smallest action available, not a licence to size. Sizing an
+    # unreadable fraction as though it were a number is the failure L1.28a actually guards.
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, None, None,
+               from_book=True) == pytest.approx(_dc.venue_min_lot("EURUSD"))
 
 
 def test_every_promoted_lot_call_site_passes_from_book() -> None:

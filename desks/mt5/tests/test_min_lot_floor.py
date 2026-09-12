@@ -131,17 +131,23 @@ def test_promoted_sleeves_get_the_floor_too() -> None:
     assert lot >= dc.min_lot(), f"a promoted sleeve sized to {lot}, below the desk floor"
 
 
-def test_a_leg_the_allocator_zeroed_is_still_zero() -> None:
-    """THE ONE EXCEPTION, and it is not negotiable.
+def test_a_leg_the_allocator_zeroed_now_trades_the_venue_minimum() -> None:
+    """REVERSED BY THE PRINCIPAL, 2026-09-12: "all sleeves must trade at least 0.01 lots
+    overriding the risk per trade cuz thats broker minimum no matter what".
 
-    `book_zeroed` puts a sleeve the solve gave NO heat into the book at exactly 0.0 so it places
-    nothing while keeping any bracket it still has open. A floor applied after that would put
-    capital on the single sleeve the optimiser explicitly refused -- the worst leg in the book,
-    chosen by a rounding rule.
+    This test was `test_a_leg_the_allocator_zeroed_is_still_zero` and pinned the opposite rule.
+    The reasoning it protected was that a floor lifting a zeroed leg would "put capital on the
+    one sleeve the optimiser explicitly refused" -- sound, and superseded. Gold has had this
+    exemption since 2026-09-07; the rest of the book has it now.
+
+    The allocator's zero still TRAVELS: it is reported in the sizing basis, so the record still
+    says the optimiser declined and what overrode it. What changed is the lot, not the story.
     """
-    assert dc.promoted_lot(5_000.0, 300, 20.0, "EURUSD", None,
-                           risk_frac=0.0, from_book=True) == 0.0
+    from mt5desk import decision_core as dc
 
+    lot = dc.promoted_lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None, from_book=True)
+    assert lot == dc.venue_min_lot("EURUSD")
+    assert lot > 0.0
 
 def test_the_floor_is_a_lot_floor_and_not_a_risk_base() -> None:
     """Principal 2026-09-07: "its base floor minimum of minimum but not risk floor base".

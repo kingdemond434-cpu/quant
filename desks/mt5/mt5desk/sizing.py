@@ -76,9 +76,26 @@ def risk_lot(equity: float, sl_dist_price: float, tick_value: float, tick_size: 
     """Lots such that (stop distance x per-lot value) == risk_frac x ramp x equity.
 
     tick_value/tick_size are the broker's account-currency economics for ONE lot, so the
-    FX conversion is the broker's, not ours. Returns 0.0 when the trade cannot be sized
-    honestly (degenerate inputs, or even volume_min risks more than twice the target --
-    an unsizeable trade is skipped, never silently oversized).
+    FX conversion is the broker's, not ours. Returns 0.0 ONLY for degenerate inputs -- a
+    non-positive equity, stop, tick value, tick size, step or minimum -- which are unpriceable
+    rather than merely small.
+
+    THE VENUE MINIMUM OVERRIDES THE RISK TARGET (principal, 2026-09-12: "all sleeves must trade
+    at least 0.01 lots overriding the risk per trade cuz thats broker minimum no matter what").
+
+    This used to refuse when `volume_min` risked more than 2x the target -- "an unsizeable trade
+    is skipped, never silently oversized" -- and that refusal is what the order replaces. The
+    reasoning behind it was never wrong about the ARITHMETIC: at EUR 607 equity the venue's
+    smallest ticket genuinely does risk many multiples of a 3% target, and `capacity.py` measured
+    the size of it on 2026-09-12, 40 of 40 live sleeves floor-bound with several over 1,000x
+    policy. What the principal has decided is that a trade the broker will accept is better than
+    no trade, and that the overshoot is a fact about the account size rather than a reason to
+    stand down.
+
+    IT IS NOT SILENT. `realised_q` exists precisely to report the fraction the account WILL run
+    as against the one policy asked for, and the gateway logs it on every placement. The
+    oversizing is published, which is the difference between this and the thing the old comment
+    was guarding against.
     """
     if equity <= 0 or sl_dist_price <= 0 or tick_value <= 0 or tick_size <= 0 \
             or volume_step <= 0 or volume_min <= 0:
@@ -90,8 +107,9 @@ def risk_lot(equity: float, sl_dist_price: float, tick_value: float, tick_size: 
     lots = int(raw / volume_step) * volume_step          # round DOWN: never oversize
     lots = round(lots, 8)
     if lots < volume_min:
-        # volume_min itself may still be acceptable if it does not blow the target badly.
-        if per_lot_risk * volume_min <= 2.0 * target:
-            return float(min(volume_min, volume_max))
-        return 0.0
+        # THE BROKER MINIMUM WINS. The 2x refusal that stood here is removed by the principal's
+        # order of 2026-09-12; `volume_max` still caps it, because a floor that exceeded the
+        # venue's own MAXIMUM would be an order the broker also refuses -- the same failure at
+        # the other end.
+        return float(min(volume_min, volume_max))
     return float(min(lots, volume_max))

@@ -336,10 +336,25 @@ def _c_null_admission() -> dict[str, Any]:
 
 def _c_stale_artifact() -> dict[str, Any]:
     """An organ whose report stopped updating while its scheduler reported healthy."""
+    # LOADED BY PATH, NOT AS `ops.organ_contract`. `test_gateway_loop_finds_libs` forbids any
+    # desk module from bare-importing a repo-ROOT directory name: this file puts ROOT first on
+    # sys.path, and `ops`, `data`, `config` and `scripts` are all directories there, so such an
+    # import can silently resolve to a namespace package of the wrong directory on a box whose
+    # cwd differs. The fence caught this one the day it was written. `ops/process_health.py`
+    # gets away with `import organ_contract` because it already lives in that directory; a desk
+    # module has to say which file it means.
+    import importlib.util
+
+    _oc = ROOT / "ops" / "organ_contract.py"
     try:
-        from ops.organ_contract import check
-    except ImportError as exc:
-        return _unk(f"organ_contract not importable ({exc})")
+        _spec = importlib.util.spec_from_file_location("quantbench_organ_contract", _oc)
+        if _spec is None or _spec.loader is None:
+            return _unk(f"organ_contract not loadable from {_oc}")
+        _mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        check = _mod.check
+    except Exception as exc:
+        return _unk(f"organ_contract not importable ({type(exc).__name__}: {exc})")
     try:
         res = check()
     except Exception as exc:

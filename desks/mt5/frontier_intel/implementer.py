@@ -80,10 +80,22 @@ def _refuse_money_path(target: Path) -> None:
     THE ONE LINE THAT MATTERS. Checked on the RESOLVED path, so a module name carrying `..` --
     which a generated name plausibly could -- cannot escape into the live tree. A denylist alone
     would not be enough for that; the containment check is what makes it safe.
+
+    IT WAS ALSO THE ONE LINE THAT DID NOT WORK HERE. The test read `startswith(str(root) + "/")`
+    with a hard-coded POSIX separator, and this module's only home is the WINDOWS trading box,
+    where a resolved path is separated by backslashes. So the check failed for EVERY target
+    including the legitimate ones: `_refuse_money_path` refused a path that was plainly inside
+    the root it named, the implementer could not write a single challenger on the one machine
+    that runs it, and the six tests that walk this path had been red ever since. A fence nobody
+    could pass is not a strict fence, it is a dead organ (III.16) -- and it fails in the
+    direction that LOOKS safe, which is why it survived.
+
+    `Path.is_relative_to` does the same comparison on parsed components, so there is no separator
+    to get wrong and no string prefix to fake: `/a/bc` is not inside `/a/b` under either.
     """
     resolved = target.resolve()
     root = CHALLENGERS.resolve()
-    if not str(resolved).startswith(str(root) + "/") and resolved != root:
+    if not resolved.is_relative_to(root):
         raise PermissionError(
             f"implementer may only write under {root}; refused {resolved}")
     for banned in MONEY_PATH:

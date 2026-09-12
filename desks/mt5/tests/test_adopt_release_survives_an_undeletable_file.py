@@ -198,7 +198,33 @@ def test_recording_the_merge_before_the_tree_matches_would_bury_the_release(
     assert _git(repo, "diff", "--name-only", "HEAD", target).strip() == "money.py"
 
 
-@pytest.mark.skipif(os.geteuid() == 0,
+# THIS TEST WAS POSIX-SHAPED AND ITS SUBJECT IS A WINDOWS SCRIPT. Two faults, one cause.
+#
+# `os.geteuid` is POSIX-only and was evaluated at IMPORT, so it raised AttributeError during
+# COLLECTION and the whole desks/mt5 suite could not be collected on the trading box -- the one
+# machine `Adopt-Release.ps1` runs on, and the only place any of these tests mean anything.
+#
+# Un-break the collection and the test itself then fails, because `chmod(0o555)` on a directory
+# is not how NTFS refuses an unlink: Windows honours the read-only attribute on FILES and ignores
+# a directory's mode bits, so the unlink succeeds and `pytest.raises(PermissionError)` is what
+# fails. Skipping it there would have left the claim untested on the only platform that runs it.
+#
+# So the SETUP is now platform-appropriate and the PROPERTY asserted is identical on both. On
+# Windows an open handle denies DELETE sharing, which is the box's real failure mode -- two of
+# this branch's own adoption commits say "NTFS entry corruption blocks unlink" -- and truncating
+# through a second handle is exactly what `Adopt-Release.ps1` does. On POSIX the directory bits
+# still do it, and the root guard stands, because root does ignore them.
+def _undeletable(f: Path):
+    """Make `f` refuse `unlink` the way its own platform does. Returns a teardown callable."""
+    if hasattr(os, "geteuid"):
+        d = f.parent
+        d.chmod(0o555)                   # entries may not be created or removed
+        return lambda: d.chmod(0o755)
+    fh = open(f, "r+b")                  # Windows: an open handle denies DELETE sharing
+    return fh.close
+
+
+@pytest.mark.skipif(getattr(os, "geteuid", lambda: 1)() == 0,
                     reason="root ignores directory permission bits, so unlink still succeeds")
 def test_in_place_truncate_writes_a_file_that_cannot_be_unlinked(tmp_path: Path) -> None:
     """The claim the whole script rests on, against a filesystem that refuses to unlink."""
@@ -206,7 +232,7 @@ def test_in_place_truncate_writes_a_file_that_cannot_be_unlinked(tmp_path: Path)
     d.mkdir()
     f = d / "run_external_backtest.py"
     f.write_bytes(b"old contents\n")
-    d.chmod(0o555)                       # entries may not be created or removed
+    teardown = _undeletable(f)
     try:
         with pytest.raises(PermissionError):
             f.unlink()
@@ -215,7 +241,7 @@ def test_in_place_truncate_writes_a_file_that_cannot_be_unlinked(tmp_path: Path)
             fh.write(b"new contents\n")
         assert f.read_bytes() == b"new contents\n"
     finally:
-        d.chmod(0o755)
+        teardown()
 
 
 def _executable_lines(text: str) -> str:

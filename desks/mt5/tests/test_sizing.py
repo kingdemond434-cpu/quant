@@ -45,11 +45,23 @@ def test_ramp_scales_risk_not_just_lots() -> None:
     assert authority_ramp(0) == 0.25 and authority_ramp(199) == 0.5 and authority_ramp(200) == 1.0
 
 
-def test_unsizeable_returns_zero_not_minimum() -> None:
-    # tiny equity where even volume_min risks far more than 2x the 3% target -> skip (0.0)
+def test_the_venue_minimum_overrides_the_risk_target() -> None:
+    """REVERSED BY THE PRINCIPAL, 2026-09-12: "all sleeves must trade at least 0.01 lots
+    overriding the risk per trade cuz thats broker minimum no matter what".
+
+    This test was `test_unsizeable_returns_zero_not_minimum` and pinned the opposite rule: at a
+    tiny equity, where even volume_min risks far more than 2x the 3% target, risk_lot refused.
+    The arithmetic behind that refusal was never wrong -- `capacity.py` measured it on the same
+    day, 40 of 40 live sleeves floor-bound with several over 1,000x policy -- and the principal's
+    decision is that a trade the broker will accept beats no trade, with the overshoot published
+    by `realised_q` rather than hidden.
+
+    The name changed with the rule. A test called "returns zero" that asserts a non-zero lot is
+    how a suite stops being readable.
+    """
     lot = risk_lot(equity=100, sl_dist_price=5.0, tick_value=1.0, tick_size=0.01,
                    volume_min=0.01, volume_step=0.01, volume_max=100.0)
-    assert lot == 0.0
+    assert lot == 0.01
 
 
 def test_volume_min_tolerated_within_2x_target() -> None:

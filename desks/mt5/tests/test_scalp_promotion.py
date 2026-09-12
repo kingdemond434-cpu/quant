@@ -378,9 +378,18 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
     # of the slice it is a NameError the moment an armed pass reaches `order_send` -- which is
     # the one line these tests exist to reach. Repaired 2026-09-09; it had been red since the
     # identity was added, so the armed scalp path was going unmeasured, not merely unasserted.
+    # `unarmed_why` rides along for the same reason, and was missing the same way. It landed in
+    # b4a5656b on 2026-09-11 ("name the arming term that is actually false") on the UNARMED log
+    # line, and outside the slice that is a NameError on the exact path
+    # `test_unarmed_the_scalp_executor_logs_the_order_and_places_nothing` exists to walk -- so
+    # the unarmed scalp path went unmeasured from the day the diagnostic was added. It is pure
+    # over the state dict. Second time this slice has lost a helper this way; both times the
+    # symptom was a red test on a path the live gateway runs fine, because there the name is
+    # module-level.
     return _exec(("run_scalp_sleeves", "manage_scalp_baskets", "resolve_scalp_order",
                   "scalp_open_basket_q", "close_sleeve_positions",
-                  "_retarget_sleeve_positions", "_sleeve_positions", "_sleeve_identity"), ns)
+                  "_retarget_sleeve_positions", "_sleeve_positions", "_sleeve_identity",
+                  "unarmed_why"), ns)
 
 
 def _run_scalp(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:

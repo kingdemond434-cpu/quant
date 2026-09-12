@@ -162,7 +162,15 @@ def load_units(path: Path | None = None, *, refresh: bool = False) -> dict[str, 
             symbol=sym,
             tick_size=float(m.get("tick_size", 0) or 0),
             tick_value=float(m.get("tick_value", 0) or 0),
-            min_volume=float(m.get("min_volume", 0) or 0) or 0.01,
+            # THE SNAPSHOT'S KEY IS `volume_min`, NOT `min_volume` (measured 2026-09-12).
+            # This read `min_volume`, which universe.json does not contain, so EVERY symbol fell
+            # through to the `or 0.01` default -- including the share CFDs the same file records
+            # at 0.1 (3M, ADP among them). A lot below a symbol's venue minimum is not a small
+            # order, it is a REJECTED one, so this returned a floor that cannot fill for every
+            # instrument whose floor is not 0.01. Both spellings are accepted: the live
+            # `symbol_info` path below calls it `volume_min` too, and a snapshot written by an
+            # older fetcher should not silently re-introduce the default.
+            min_volume=float(m.get("volume_min", m.get("min_volume", 0)) or 0) or 0.01,
             volume_step=float(m.get("volume_step", 0) or 0) or 0.01,
             source="universe",
             as_of=str(m.get("last", "")),

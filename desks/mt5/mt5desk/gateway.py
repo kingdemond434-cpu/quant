@@ -239,6 +239,20 @@ def gold_min_lot() -> float:
     return _core.gold_min_lot()
 
 
+def venue_min_lot(symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
+    """The smallest lot THIS VENUE accepts for THIS symbol -- `decision_core.venue_min_lot`.
+
+    Bound here by name for the same reason every other sizing decision is: the reachability
+    fence in `test_decision_core` walks this file's surface and fails when a decision that moves
+    a live order cannot be reached through the gateway. It caught this function on the pass that
+    introduced it, which is the fence doing its job.
+
+    It decides a live order under the principal's 2026-09-12 order -- a sleeve the allocator
+    zeroed trades the venue minimum rather than being skipped -- so it belongs on this surface.
+    """
+    return _core.venue_min_lot(symbol, info)
+
+
 def gold_lot(equity: float, dist_usd: float | None = None,
              info: object | None = None) -> float:
     """The gold book's lot, floored at the principal's minimum -- `decision_core.gold_lot`,

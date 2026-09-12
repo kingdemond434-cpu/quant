@@ -203,10 +203,27 @@ def test_the_gateway_honours_a_measured_envelope_below_the_constant() -> None:
 
 
 def test_the_gateway_never_deploys_a_heat_nobody_sampled() -> None:
-    cap, _ = live_heat_ceiling({"envelope": {"survival": {"status": MEASURED},
-                                             "operative_ceiling": 0.95}})
-    assert cap == pytest.approx(ABSOLUTE_SIM_MAX)
-    assert ABSOLUTE_SIM_MAX == 0.45, "must equal pf_allocator.CURVE_SAMPLE_MAX"
+    """THE PROBE MUST EXCEED THE BOUND OR THIS TEST PROVES NOTHING.
+
+    Written when ABSOLUTE_SIM_MAX was 0.45, this fed an operative ceiling of 0.95 -- comfortably
+    over the bound -- and asserted the clamp. `pf_allocator` then widened CURVE_SAMPLE_MAX to
+    1.00 so the growth curve could find where growth genuinely turns rather than reporting the
+    edge of its own grid, and `decision_core` followed. 0.95 is now BELOW the bound, so the
+    clamp no longer binds and the assertion read 0.95 == 1.0: red, on the drift it exists to
+    catch, in the checker rather than in the code. The probe moves with the bound.
+
+    A second assertion, `ABSOLUTE_SIM_MAX == 0.45`, stood here and was stale the same way. It is
+    deleted rather than updated: the very next test holds ABSOLUTE_SIM_MAX and CURVE_SAMPLE_MAX
+    equal against EACH OTHER, which is the actual invariant, and cannot go stale because it
+    names no number.
+    """
+    probe = ABSOLUTE_SIM_MAX + 0.5
+    cap, why = live_heat_ceiling({"envelope": {"survival": {"status": MEASURED},
+                                               "operative_ceiling": probe}})
+    assert cap == pytest.approx(ABSOLUTE_SIM_MAX), (
+        "a heat nobody sampled is a heat nobody certified: the deploy bound is the edge of the "
+        "evidence and it rises only when the sweep is widened")
+    assert cap < probe, "the clamp must actually bind, or this test asserts nothing"
 
 
 def test_the_simulation_bound_matches_the_allocators_sampling_bound() -> None:

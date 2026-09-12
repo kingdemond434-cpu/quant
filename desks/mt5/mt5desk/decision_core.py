@@ -300,6 +300,36 @@ def min_lot_risk_eur(symbol: str = GOLD_SYMBOL, dist_price: float | None = None,
     return 0.01 * d * _eur_per_price_unit(symbol, info)
 
 
+def venue_min_lot(symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
+    """The smallest lot THIS VENUE accepts for THIS symbol, never below the desk floor.
+
+    0.01 IS NOT THE BROKER MINIMUM EVERYWHERE, and using it as one sends orders the broker
+    rejects. Measured in `universe.json` on 2026-09-12: FX and crypto CFDs carry
+    `volume_min` 0.01, and share CFDs carry 0.1 -- 3M and ADP among them. An order below a
+    symbol's own minimum is not a small trade, it is a REJECTED trade, which is a worse outcome
+    than the skip the principal's order is replacing.
+
+    So the floor is the symbol's own `volume_min` from the live terminal, else the universe
+    snapshot, raised to the desk's `min_lot()` where that is higher. An unreadable symbol falls
+    back to the desk floor rather than raising: this function exists to make a trade happen, and
+    refusing here would reinstate the skip it was written to remove.
+    """
+    # THIS IS THE VENUE'S NUMBER AND NOTHING ELSE. Gold's 0.02 is a DESK policy floor, not a
+    # broker one, and it is enforced where it always has been -- `gold_lot` / `gold_min_lot` on
+    # the gold path. Returning 0.02 here conflated the two and raised gold's floor inside
+    # `promoted_lot`, a path that has always floored gold at the venue's 0.01; the stop-aware
+    # sizing fence caught it on the same pass. A policy floor and a venue floor answer different
+    # questions and only one of them is what "broker minimum" means.
+    floor = min_lot()
+    try:
+        from mt5desk import risk_units as _ru
+
+        v = float(_ru.unit_for(symbol, info).min_volume)      # type: ignore[arg-type]
+    except Exception:
+        return floor
+    return float(max(floor, v)) if v > 0 else floor
+
+
 def _lot_steps(raw_lot: float) -> float:
     """Snap a raw lot DOWN to the venue's 0.01 grain. Never up.
 
@@ -447,10 +477,19 @@ def auto_lot(equity: float, dist_usd: float | None = None,
 #: x fade and still sizes `auto_lot` with it. This clamps only the LOT that comes out the far
 #: end, in venue units, after the policy has had its say.
 #:
-#: A LEG THE ALLOCATOR PRICED AT ZERO STAYS ZERO. `promoted_lot` returns 0.0 for a sleeve the
-#: solve gave no heat, before this floor is reached -- `book_zeroed` depends on that, and a
-#: floor that lifted a zeroed leg off the floor would put capital on the one sleeve the
-#: optimiser explicitly refused.
+#: A LEG THE ALLOCATOR PRICED AT ZERO NOW TRADES THE VENUE MINIMUM (principal, 2026-09-12:
+#: "all sleeves must trade at least 0.01 lots overriding the risk per trade cuz thats broker
+#: minimum no matter what"). This REVERSES the note that stood here, which read "a leg the
+#: allocator priced at zero stays zero ... a floor that lifted a zeroed leg off the floor would
+#: put capital on the one sleeve the optimiser explicitly refused". That reasoning was sound and
+#: it is superseded: the principal's order is that a live sleeve is never skipped for being
+#: unsizeable, and gold has ALREADY been treated this way since 2026-09-07 (`gold_book_lot`
+#: returns its policy lot with basis "the allocator gave this window no heat"). This makes the
+#: rest of the book consistent with the leg that already had the exemption.
+#:
+#: `book_zeroed` KEEPS ITS MEANING. The allocator's zero still travels -- it is reported in the
+#: sizing basis as "allocator zeroed; venue minimum per principal order" -- so the record still
+#: says the optimiser declined and what overrode it. What changes is the lot, not the story.
 MIN_LOT = 0.01
 #: A box may override the floor without a code push. Absent or unreadable -> MIN_LOT.
 MIN_LOT_FILE = _DESK / "data" / "MIN_LOT.json"
@@ -642,7 +681,12 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
         except (TypeError, ValueError):
             h_i = 0.0
         if not (h_i > 0.0):
-            return 0.0
+            # THE PRINCIPAL'S ORDER, 2026-09-12: a live sleeve is never skipped for being
+            # unsizeable. This returned 0.0 and three gateway sites then logged "allocator gave
+            # this sleeve no heat; skipped". Gold has had this exemption since 2026-09-07; the
+            # rest of the book gets it now. The venue minimum is the symbol's OWN minimum, so a
+            # share CFD gets 0.1 and not an order the broker refuses.
+            return float(min(venue_min_lot(symbol, info), 5.0))
         q_eff = min(h_i, MAX_RISK_FRAC) * decay_factor(decay_faded)
     else:
         q_eff = ramped_fraction(risk_frac, live_n, decay_faded)
@@ -651,10 +695,10 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     # exists to prevent, on exactly the sleeves with the least forward evidence.
     lot = math.floor(lot / 0.01 + 1e-9) * 0.01
     # THE DESK FLOOR, applied where the venue's 0.01 was (principal 2026-09-07: "0.02 lots each
-    # trade but same as before"). Reached only by a leg that was going to trade: the
-    # allocator-zeroed `return 0.0` above happens first, so a sleeve the solve gave no heat is
-    # still given none. `min` last, so the floor can never push a leg past the 5.0 ceiling.
-    return float(min(max(lot, min_lot()), 5.0))
+    # trade but same as before"), raised to the SYMBOL'S OWN venue minimum where that is higher
+    # -- a share CFD's 0.1 is as real a floor as gold's 0.02, and an order below it is rejected
+    # rather than small. `min` last, so no floor can push a leg past the 5.0 ceiling.
+    return float(min(max(lot, min_lot(), venue_min_lot(symbol, info)), 5.0))
 
 
 def sleeve_live_n(name: str, ledger: Path) -> int:

@@ -60,6 +60,26 @@ def test_an_ordinary_challenger_path_is_allowed() -> None:
     implementer._refuse_money_path(implementer.CHALLENGERS / "cand_x" / "ensembles.py")
 
 
+def test_the_fence_is_component_wise_and_not_a_string_prefix() -> None:
+    """BOTH DIRECTIONS OF THE BUG THAT MADE THIS FENCE USELESS ON ITS OWN BOX.
+
+    It was `startswith(str(root) + "/")` -- a hard-coded POSIX separator, in a module whose only
+    home is the Windows trading box, where a resolved path is separated by backslashes. The
+    check therefore failed for EVERY target, legitimate ones included, so nothing could be
+    written at all and the failure looked like strictness. That is the first assertion below,
+    and the six tests above it were red for the same reason.
+
+    The second is the fault a string prefix has on any platform: `<root>_evil` starts with the
+    root's text and is not inside it. Both are the same mistake -- comparing paths as text --
+    and `Path.is_relative_to` compares parsed components, so neither is expressible.
+    """
+    implementer._refuse_money_path(implementer.CHALLENGERS / "cand_x" / "deep" / "mod.py")
+    sibling = implementer.CHALLENGERS.resolve().parent / (
+        implementer.CHALLENGERS.resolve().name + "_evil")
+    with pytest.raises(PermissionError):
+        implementer._refuse_money_path(sibling / "mod.py")
+
+
 def test_the_money_path_list_names_the_files_that_move_money() -> None:
     """Pinned so a future edit cannot quietly shorten it."""
     for required in ("mt5desk/gateway.py", "mt5desk/decision_core.py",
