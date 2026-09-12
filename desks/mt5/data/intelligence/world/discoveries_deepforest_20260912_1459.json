@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Christine Lagarde: Europe seen from Normandy",
+  "url": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp260912~fafa4b35b0.en.html",
+  "published": "2026-09-12T14:59:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0da178dbbb04723a7cd7",
+  "host": "www.ecb.europa.eu",
+  "ground": "Central bank RSS bundle",
+  "region": "institutional",
+  "cluster": "institutional",
+  "dataset_class": null,
+  "available_time": "2026-09-12T14:59:05+00:00",
+  "ingested_time": "2026-09-12T14:59:05+00:00",
+  "source_hash": "0da178dbbb04723a7cd7",
+  "claims": [],
+  "n_claims": 0
+ }
+]
