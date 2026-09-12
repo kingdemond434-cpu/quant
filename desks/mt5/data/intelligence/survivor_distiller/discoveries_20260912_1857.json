@@ -1,0 +1,124 @@
+{
+ "source": "survivor_distiller",
+ "generated_at": "2026-09-12T18:57:53.460979+00:00",
+ "tests_run": 82,
+ "discoveries": [
+  {
+   "source": "survivor_distiller",
+   "kind": "survivor_distiller",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "mechanism": "discovered on EURCHF: session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price (mutation: step_horizon_down)",
+   "title": "EURCHF.discovered.step_horizon_down from external.EURCHF.discovered.p=c14e361e680e6d0b",
+   "url": "",
+   "evidence": {
+    "n_independent": 2245,
+    "gross_per_trade": 0.00046406,
+    "net_per_trade": 0.00040831,
+    "cost_frac": 5.575e-05,
+    "t_gross": 24.38,
+    "t_deflated_sweep": 22.087,
+    "n_tests_sweep": 82,
+    "t_deflated_lifetime": 20.466,
+    "n_tests_lifetime": 20423,
+    "parent": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+    "operator": "step_horizon_down",
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   },
+   "event_time": null,
+   "available_time": "2026-09-12T18:57:53.454422+00:00",
+   "ingested_time": "2026-09-12T18:57:53.454422+00:00",
+   "source_version": "bbcff80a7",
+   "payload_hash": "3b5001bd66d76f9eddcd85c3"
+  },
+  {
+   "source": "survivor_distiller",
+   "kind": "survivor_distiller",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.0,
+     0.25
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "mechanism": "discovered on EURCHF: session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price (mutation: step_band_up)",
+   "title": "EURCHF.discovered.step_band_up from external.EURCHF.discovered.p=c14e361e680e6d0b",
+   "url": "",
+   "evidence": {
+    "n_independent": 2245,
+    "gross_per_trade": 0.00047959,
+    "net_per_trade": 0.00042384,
+    "cost_frac": 5.575e-05,
+    "t_gross": 21.822,
+    "t_deflated_sweep": 19.529,
+    "n_tests_sweep": 82,
+    "t_deflated_lifetime": 17.908,
+    "n_tests_lifetime": 20423,
+    "parent": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+    "operator": "step_band_up",
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   },
+   "event_time": null,
+   "available_time": "2026-09-12T18:57:53.459887+00:00",
+   "ingested_time": "2026-09-12T18:57:53.459887+00:00",
+   "source_version": "bbcff80a7",
+   "payload_hash": "6cccdc7c13d08362e96177c6"
+  },
+  {
+   "source": "survivor_distiller",
+   "kind": "survivor_distiller",
+   "symbol": "NZDCAD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_48",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "mechanism": "discovered on NZDCAD: distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed (mutation: swap_side)",
+   "title": "NZDCAD.discovered.swap_side from external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+   "url": "",
+   "evidence": {
+    "n_independent": 1856,
+    "gross_per_trade": 0.00044717,
+    "net_per_trade": 0.00031056,
+    "cost_frac": 0.00013661,
+    "t_gross": 8.579,
+    "t_deflated_sweep": 6.286,
+    "n_tests_sweep": 82,
+    "t_deflated_lifetime": 4.665,
+    "n_tests_lifetime": 20423,
+    "parent": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+    "operator": "swap_side",
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   },
+   "event_time": null,
+   "available_time": "2026-09-12T18:57:53.459989+00:00",
+   "ingested_time": "2026-09-12T18:57:53.459989+00:00",
+   "source_version": "bbcff80a7",
+   "payload_hash": "6f8ff967413816342d71bc4b"
+  }
+ ],
+ "counts": {
+  "donated": 3,
+  "refused_unstamped": 0
+ },
+ "refusals": [],
+ "rule": "a candidate without a point-in-time stamp is refused here and counted, never written: absence of an available_time is not permission to use the row"
+}
