@@ -66,6 +66,35 @@ def _timestamp(value: Any) -> datetime | None:
         return None
 
 
+def _issue_board(now: datetime) -> dict[str, Any]:
+    """An hourly board's old verdict is retained evidence, never current health."""
+    report = _read(DESK / "reports" / "ISSUE_BOARD.json")
+    stamp = _timestamp(report.get("measured_at"))
+    age = (now - stamp).total_seconds() if stamp else None
+    status = ("UNMEASURED" if age is None or age < 0
+              else "STALE" if age > 2 * 3600 else "FRESH")
+    result = {**report, "freshness": {"status": status, "age_seconds": age,
+                                     "max_age_seconds": 2 * 3600}}
+    if status == "FRESH":
+        return result
+    # Keep original alarms and measured_at. A missing/future timestamp cannot clear them.
+    issues = list(report.get("issues") or [])
+    issues.append({
+        "key": "stale:issue_board", "severity": "BLIND",
+        "what": f"Issue-board evidence is {status}; current health is unknown",
+        "detail": "desks/mt5/reports/ISSUE_BOARD.json measured_at="
+                  f"{report.get('measured_at')!s}. Retained issues describe that observation, "
+                  "not a fresh detector pass. The hourly producer and cross-host pull must "
+                  "both complete before this clears.",
+        "repair": "Verify hourly_cycle issue_board output and ops/pull_desk_state.sh consumption",
+        "auto_repairable": False,
+    })
+    severity = dict(report.get("by_severity") or {})
+    severity["BLIND"] = severity.get("BLIND", 0) + 1
+    result.update(issues=issues, count=len(issues), by_severity=severity)
+    return result
+
+
 def _ledger() -> list[dict[str, Any]]:
     path = DESK / "data" / "live_ledger.jsonl"
     try:
@@ -992,7 +1021,7 @@ def build() -> dict[str, Any]:
         # EVERY ISSUE THE DESK CAN SEE, ON THE BOARD. Detection was never the gap -- 121
         # check_* scripts already worked. What was missing was one surface showing the
         # aggregate, so a real breach could be detected correctly and read by nobody.
-        "issues": _read(DESK / "reports" / "ISSUE_BOARD.json"),
+        "issues": _issue_board(now),
         "health": {
             "newest_h1_file": newest_bar_file, "midnight": midnight,
             "daily_cycle": daily, "status": live_state,

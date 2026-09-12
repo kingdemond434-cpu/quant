@@ -45,3 +45,51 @@ def test_terminal_shadow_rows_never_display_promotion_authority(
     assert rows["retired"]["source_promotion_authority"] is True
     assert rows["retired"]["promotion_authority"] is False
     assert rows["active"]["promotion_authority"] is True
+
+def test_stale_issue_board_cannot_render_a_clean_current_verdict(monkeypatch, tmp_path):
+    from datetime import UTC, datetime
+
+    reports = tmp_path / 'reports'
+    reports.mkdir()
+    path = reports / 'ISSUE_BOARD.json'
+    original = {'measured_at': '2026-09-11T08:11:34+00:00', 'issues': [],
+                'count': 0, 'by_severity': {}}
+    path.write_text(json.dumps(original))
+    monkeypatch.setattr(module, 'DESK', tmp_path)
+    board = module._issue_board(datetime(2026, 9, 12, 3, tzinfo=UTC))
+    assert board['freshness']['status'] == 'STALE'
+    assert board['issues'][0]['key'] == 'stale:issue_board'
+    assert board['count'] == 1
+    assert board['measured_at'] == original['measured_at']
+    assert json.loads(path.read_text()) == original
+
+
+def test_issue_board_preserves_alarm_and_refuses_unknown_or_future_time(monkeypatch, tmp_path):
+    from datetime import UTC, datetime
+
+    reports = tmp_path / 'reports'
+    reports.mkdir()
+    monkeypatch.setattr(module, 'DESK', tmp_path)
+    alarm = {'key': 'alarm:CANARY_ALARM.txt', 'severity': 'CAPITAL'}
+    for stamp in (None, 'invalid', '2026-09-13T00:00:00Z'):
+        (reports / 'ISSUE_BOARD.json').write_text(json.dumps({
+            'measured_at': stamp, 'issues': [alarm], 'by_severity': {'CAPITAL': 1},
+        }))
+        board = module._issue_board(datetime(2026, 9, 12, 3, tzinfo=UTC))
+        assert board['freshness']['status'] == 'UNMEASURED'
+        assert board['issues'][0] == alarm
+        assert board['by_severity'] == {'CAPITAL': 1, 'BLIND': 1}
+
+
+def test_fresh_issue_board_has_no_synthetic_alarm(monkeypatch, tmp_path):
+    from datetime import UTC, datetime
+
+    reports = tmp_path / 'reports'
+    reports.mkdir()
+    monkeypatch.setattr(module, 'DESK', tmp_path)
+    original = {'measured_at': '2026-09-12T02:30:00Z', 'issues': [], 'count': 0}
+    (reports / 'ISSUE_BOARD.json').write_text(json.dumps(original))
+    board = module._issue_board(datetime(2026, 9, 12, 3, tzinfo=UTC))
+    assert board['freshness']['status'] == 'FRESH'
+    assert board['issues'] == []
+    assert board['count'] == 0

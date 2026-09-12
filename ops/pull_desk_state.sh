@@ -100,6 +100,37 @@ for f in universal_gates_external.json recertification_audit.json; do
     && mv "desks/mt5/reports/$f.tmp" "desks/mt5/reports/$f"
 done
 
+# The public projection reads the issue board from disk, not from the pulled dashboard.
+# Carry its original evidence and the canary report; never restamp a stopped producer.
+# ISSUE_EVIDENCE_PULL_BEGIN
+for f in ISSUE_BOARD.json ADVERSARY.json; do
+  _report="desks/mt5/reports/$f"
+  if scp -pq "$REMOTE:C:/opt/quant/$_report" "$_report.tmp" 2>/dev/null; then
+    if .venv/bin/python - "$_report.tmp" <<'PYJSON'
+import json
+import sys
+from datetime import datetime
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as source:
+        report = json.load(source)
+    stamp = report["measured_at"]
+    datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    if not isinstance(report, dict):
+        raise ValueError("report is not an object")
+except (OSError, ValueError, KeyError, TypeError, AttributeError):
+    sys.exit(1)
+PYJSON
+    then
+      mv -f "$_report.tmp" "$_report"
+    else
+      echo "pull refused invalid $f; keeping last valid evidence"
+    fi
+  fi
+  rm -f "$_report.tmp"
+done
+# ISSUE_EVIDENCE_PULL_END
+
 # THE DOCKET ITSELF. Every breadth, ROI and backlog judgement made on this box reads
 # external_survivors.json, and it was never on the pull list -- it arrived only when a fixer
 # happened to scp it as a side effect. So the coverage checks were grading a docket that could be
